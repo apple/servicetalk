@@ -291,7 +291,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertFalse(response2.headers().contains(CONNECTION));
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testGracefulShutdownWhileIdle() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
@@ -305,7 +305,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testGracefulShutdownWhileReadingPayload() throws Exception {
         ignoreTestWhen(IMMEDIATE, IMMEDIATE);
@@ -326,7 +326,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testImmediateShutdownWhileReadingPayload() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
@@ -339,7 +339,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
@@ -360,7 +360,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
@@ -381,7 +381,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
@@ -394,7 +394,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);

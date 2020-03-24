@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -116,7 +117,7 @@ public class InsufficientlySizedExecutorHttpTest {
         insufficientServerCapacityStreaming0();
     }
 
-    // TODO Windows seeing CHANNEL_CLOSED_INBOUND. Is 1 thread enough with control events (e.g. close)?
+    @Ignore("https://github.com/apple/servicetalk/issues/336")
     @Test
     public void insufficientServerCapacityStreamingWithConnectionAcceptor() throws Exception {
         initWhenServerUnderProvisioned(true);

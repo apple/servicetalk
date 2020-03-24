@@ -67,7 +67,7 @@ public class NettyHttpServerConnectionDrainTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void requestIsAutoDrainedWhenUserFailsToConsume() throws Exception {
         BlockingHttpClient client = null;
@@ -113,7 +113,7 @@ public class NettyHttpServerConnectionDrainTest {
         }
     }
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test(expected = TimeoutException.class)
     public void requestTimesOutWithoutAutoDrainingOrUserConsuming() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);

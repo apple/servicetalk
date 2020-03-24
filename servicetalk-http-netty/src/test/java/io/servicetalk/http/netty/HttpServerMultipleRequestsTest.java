@@ -66,7 +66,7 @@ public class HttpServerMultipleRequestsTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    @Ignore("todo NettyHttpServer repeat WriteStreamSubscriber issues")
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
         StreamingHttpService service = (ctx, request, responseFactory) -> {

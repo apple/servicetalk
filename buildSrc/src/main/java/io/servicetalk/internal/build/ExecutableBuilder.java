@@ -41,10 +41,10 @@ public final class ExecutableBuilder {
     public static void buildWindowsExecutable(String uberJarName, File outputFile) throws IOException {
         prepareOutputFile(outputFile);
         try(FileOutputStream execOutputStream = new FileOutputStream(outputFile)) {
-            execOutputStream.write(("@ECHO OFF\n" +
-                    "pushd %~dp0\n" +
-                    "java -jar " + uberJarName + " %*\n" +
-                    "popd\n").getBytes(StandardCharsets.US_ASCII));
+            execOutputStream.write(("@ECHO OFF\r\n" +
+                    "pushd %~dp0\r\n" +
+                    "java -jar " + uberJarName + " %*\r\n" +
+                    "popd\r\n").getBytes(StandardCharsets.US_ASCII));
         }
         finalizeOutputFile(outputFile);
     }
