@@ -24,12 +24,15 @@ import java.util.Map;
 
 import static io.servicetalk.http.router.jaxrs.ParameterUtil.castTo;
 
-public class PathParameter extends Parameter {
+public class PathParameter implements Parameter {
 
     private final PathTemplateDelegate pathTemplate;
+    private final String name;
+    private final Class<?> type;
 
     public PathParameter(String name, Class<?> type, final PathTemplateDelegate pathTemplate) {
-        super(name, type);
+        this.name = name;
+        this.type = type;
         this.pathTemplate = pathTemplate;
     }
 
