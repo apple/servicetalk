@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import io.netty.util.CharsetUtil;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -66,6 +67,7 @@ public class NettyHttpServerConnectionDrainTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test
     public void requestIsAutoDrainedWhenUserFailsToConsume() throws Exception {
         BlockingHttpClient client = null;
@@ -111,6 +113,7 @@ public class NettyHttpServerConnectionDrainTest {
         }
     }
 
+    @Ignore("https://github.com/apple/servicetalk/issues/981")
     @Test(expected = TimeoutException.class)
     public void requestTimesOutWithoutAutoDrainingOrUserConsuming() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);

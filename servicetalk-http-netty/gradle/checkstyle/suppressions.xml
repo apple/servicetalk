@@ -19,6 +19,6 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress checks="FallThrough" files="io/servicetalk/http/netty/HttpObjectDecoder.java"/>
-  <suppress checks="FallThrough" files="io/servicetalk/http/netty/HttpObjectEncoder.java"/>
+  <suppress checks="FallThrough" files="io[\\/]servicetalk[\\/]http[\\/]netty[\\/]HttpObjectDecoder.java"/>
+  <suppress checks="FallThrough" files="io[\\/]servicetalk[\\/]http[\\/]netty[\\/]HttpObjectEncoder.java"/>
 </suppressions>

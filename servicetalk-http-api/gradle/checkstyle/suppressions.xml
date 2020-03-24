@@ -19,8 +19,9 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress checks="ModifiedControlVariable" files="io/servicetalk/http/api/HttpUri.java"/>
-  <suppress checks="IllegalThrowsCheck" files="io/servicetalk/http/api/TrailersTransformer.java"/>
-  <suppress checks="IllegalThrowsCheck" files="io/servicetalk/http/api/StatelessTrailersTransformer.java"/>
-  <suppress checks="LineLength" files="gradle/spotbugs/main-exclusions.xml"/>
+  <suppress checks="ModifiedControlVariable" files="io[\\/]servicetalk[\\/]http[\\/]api[\\/]HttpUri.java"/>
+  <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]http[\\/]api[\\/]TrailersTransformer.java"/>
+  <suppress checks="IllegalThrowsCheck"
+            files="io[\\/]servicetalk[\\/]http[\\/]api[\\/]StatelessTrailersTransformer.java"/>
+  <suppress checks="LineLength" files="gradle[\\/]spotbugs[\\/]main-exclusions.xml"/>
 </suppressions>

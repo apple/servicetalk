@@ -19,5 +19,6 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress checks="MissingSwitchDefault" files="io/servicetalk/http/router/jersey/ExecutionStrategyTest.java"/>
+  <suppress checks="MissingSwitchDefault"
+            files="io[\\/]servicetalk[\\/]http[\\/]router[\\/]jersey[\\/]ExecutionStrategyTest.java"/>
 </suppressions>

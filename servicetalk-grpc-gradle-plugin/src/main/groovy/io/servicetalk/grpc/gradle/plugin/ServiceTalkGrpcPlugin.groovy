@@ -21,11 +21,9 @@ import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.plugins.ide.eclipse.EclipsePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
-import org.gradle.tooling.model.idea.IdeaModule
 import org.gradle.util.GradleVersion
 
 class ServiceTalkGrpcPlugin implements Plugin<Project> {
@@ -41,6 +39,15 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
     ServiceTalkGrpcExtension extension = project.extensions.create("serviceTalkGrpc", ServiceTalkGrpcExtension)
     extension.conventionMapping.generatedCodeDir = { project.file("$project.buildDir/generated/source/proto") }
+
+    def compileOnlyDeps = project.getConfigurations().getByName("compileOnly")
+    project.beforeEvaluate {
+      def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
+      if (!serviceTalkProtocPluginPath) {
+        compileOnlyDeps.add(
+            project.getDependencies().create("io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all"))
+      }
+    }
 
     project.afterEvaluate {
       Properties pluginProperties = new Properties()
@@ -60,7 +67,6 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
         throw new InvalidUserDataException("Please set `serviceTalkGrpc.protobufVersion`.")
       }
 
-
       project.configure(project) {
         Task ideaTask = extension.generateIdeConfiguration ? project.tasks.findByName("ideaModule") : null
         Task eclipseTask = extension.generateIdeConfiguration ? project.tasks.findByName("eclipse") : null
@@ -75,7 +81,8 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
               if (serviceTalkProtocPluginPath) {
                 path = file(serviceTalkProtocPluginPath)
               } else {
-                artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion"
+                artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion@" +
+                    (org.gradle.internal.os.OperatingSystem.current().isWindows() ? "bat" : "sh")
               }
             }
           }

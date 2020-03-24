@@ -125,6 +125,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -655,6 +656,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.closeAsyncGracefully().subscribe();
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
+                .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             try {

@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -116,6 +117,7 @@ public class InsufficientlySizedExecutorHttpTest {
         insufficientServerCapacityStreaming0();
     }
 
+    @Ignore("https://github.com/apple/servicetalk/issues/336")
     @Test
     public void insufficientServerCapacityStreamingWithConnectionAcceptor() throws Exception {
         initWhenServerUnderProvisioned(true);
