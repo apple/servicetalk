@@ -21,18 +21,9 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import javax.annotation.Nullable;
 
-public abstract class Parameter {
-
-    protected final String name;
-
-    protected final Class<?> type;
-
-    public Parameter(String name, Class<?> type) {
-        this.name = name;
-        this.type = type;
-    }
+public interface Parameter {
 
     @Nullable
-    public abstract Object get(HttpServiceContext ctx, StreamingHttpRequest request,
-                               StreamingHttpResponseFactory responseFactory);
+    Object get(HttpServiceContext ctx, StreamingHttpRequest request,
+               StreamingHttpResponseFactory responseFactory);
 }

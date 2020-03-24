@@ -19,57 +19,70 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Objects;
 import javax.annotation.Nullable;
-import javax.ws.rs.core.MediaType;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
+import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-public class BodyParameter extends Parameter {
+public class BodyParameter implements Parameter {
 
-    private static final Logger log = LoggerFactory.getLogger(BodyParameter.class);
-    private static final HttpDeserializer<String> textDeserializer = HttpSerializationProviders.textDeserializer();
+    private static final HttpDeserializer<String> textDeserializer = textDeserializer();
     private static final HttpSerializationProvider jsonSerializer = jsonSerializer(new JacksonSerializationProvider());
 
+    private final Type type;
+    @Nullable
+    private final Class<?> classType;
     private final String expectedContentType;
 
-    public BodyParameter(String name, Class<?> type, String expectedContentType) {
-        super(name, type);
+    public BodyParameter(Type type, String expectedContentType) {
+        this.type = type;
         this.expectedContentType = expectedContentType;
+
+        final ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type typeArgument = null;
+        final Type rawType = parameterizedType.getRawType();
+
+        final boolean ok = rawType instanceof Class &&
+                // sourceClass.isAssignableFrom((Class<?>) rawType) &&
+                (typeArgument = getSingleTypeArgumentOrNull(parameterizedType)) != null &&
+                typeArgument instanceof Class;
+        // contentClass.isAssignableFrom((Class<?>) typeArgument);
+        this.classType = ok ? (Class) typeArgument : null;
+    }
+
+    @Nullable
+    private static Type getSingleTypeArgumentOrNull(final ParameterizedType parameterizedType) {
+        final Type[] typeArguments = parameterizedType.getActualTypeArguments();
+        return typeArguments.length != 1 ? null : typeArguments[0];
     }
 
     @Nullable
     @Override
     public Object get(final HttpServiceContext ctx, final StreamingHttpRequest request,
                       final StreamingHttpResponseFactory responseFactory) {
-        final CharSequence contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
-        if (contentType == null || !contentType.equals(expectedContentType)) {
-            throw new RuntimeException("Wrong content type. Expecting " + expectedContentType + ".");
+        final HttpHeaders headers = request.headers();
+        final CharSequence contentType = headers.get(HttpHeaderNames.CONTENT_TYPE);
+        if (!Objects.equals(contentType, expectedContentType)) {
+            return Single.failed(new RuntimeException("Wrong content type. Expecting " + expectedContentType + "."));
         }
 
-        switch (expectedContentType) {
-            case MediaType.APPLICATION_JSON :
-                Single<String> data;
-                try {
-                    data = request.payloadBody(textDeserializer).firstOrElse(() -> null);
-                    if (type == String.class) {
-                        return data;
-                    }
-                    return request.payloadBody(jsonSerializer.deserializerFor(type));
-                } catch (Exception e) {
-                    log.error("Unexpected error during parsing body param.", e);
-                    throw new RuntimeException("Unexpected error during parsing body param.", e);
-                }
-            default :
-                return request.payloadBody(textDeserializer).firstOrElse(() -> null);
+        if (!APPLICATION_JSON.equals(expectedContentType)) {
+            return Single.failed(new RuntimeException("Wrong content type. Expecting " + APPLICATION_JSON + "."));
+        }
+        try {
+            return jsonSerializer.deserializerFor(classType).deserialize(headers, request.payloadBody());
+        } catch (Exception e) {
+            return Single.failed(e).toPublisher();
         }
     }
 }

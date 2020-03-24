@@ -158,17 +158,17 @@ public final class HttpJaxRsRouterBuilder {
 
                     final FormParam formParamAnnotation = parameter.getAnnotation(FormParam.class);
                     if (formParamAnnotation != null) {
-                        parameters.add(i, new FormParameter(formParamAnnotation.value(), parameter.getType()));
+                        parameters.add(i, new FormParameter(formParamAnnotation.value()));
                     }
 
                     final HeaderParam headerParamAnnotation = parameter.getAnnotation(HeaderParam.class);
                     if (headerParamAnnotation != null) {
-                        parameters.add(i, new HeaderParameter(headerParamAnnotation.value(), parameter.getType()));
+                        parameters.add(i, new HeaderParameter(headerParamAnnotation.value()));
                     }
 
                     final CookieParam cookieParamAnnotation = parameter.getAnnotation(CookieParam.class);
                     if (cookieParamAnnotation != null) {
-                        parameters.add(i, new CookieParameter(cookieParamAnnotation.value(), parameter.getType()));
+                        parameters.add(i, new CookieParameter(cookieParamAnnotation.value()));
                     }
 
                     final Annotation contextAnnotation = parameter.getAnnotation(Context.class);
@@ -183,7 +183,7 @@ public final class HttpJaxRsRouterBuilder {
                             headerParamAnnotation == null &&
                             cookieParamAnnotation == null
                     ) {
-                        parameters.add(i, new BodyParameter(parameter.getName(), parameter.getType(), contentType));
+                        parameters.add(i, new BodyParameter(parameter.getParameterizedType(), contentType));
                     }
                 }
 

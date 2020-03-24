@@ -26,12 +26,15 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.router.jaxrs.ParameterUtil.castTo;
 import static io.servicetalk.http.router.jaxrs.ParameterUtil.toList;
 
-public class QueryParameter extends Parameter {
+public class QueryParameter implements Parameter {
     @Nullable
     private final String defaultValue;
+    private final String name;
+    private final Class<?> type;
 
     public QueryParameter(String name, Class<?> type, @Nullable String defaultValue) {
-        super(name, type);
+        this.name = name;
+        this.type = type;
         this.defaultValue = defaultValue;
     }
 
