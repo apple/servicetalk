@@ -21,10 +21,12 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import javax.annotation.Nullable;
 
-public class ContextParameter extends Parameter {
+public class ContextParameter implements Parameter {
+
+    private final Class<?> type;
 
     public ContextParameter(Class<?> type) {
-        super(type.getSimpleName(), type);
+        this.type = type;
     }
 
     @Nullable

@@ -19,16 +19,23 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
-public class HeaderParameter extends Parameter {
+import java.util.Iterator;
 
-    public HeaderParameter(String name, Class<?> type) {
-        super(name, type);
+public class HeaderParameter implements Parameter {
+
+    private final String name;
+
+    public HeaderParameter(String name) {
+        this.name = name;
     }
 
     @Override
     public Object get(final HttpServiceContext ctx, final StreamingHttpRequest request,
                       final StreamingHttpResponseFactory responseFactory) {
-        final CharSequence header = request.headers().get(name);
-        return header == null ? null : header.toString();
+        final Iterator<? extends CharSequence> iterator = request.headers().valuesIterator(name);
+        if (iterator.hasNext()) {
+            return iterator.next().toString();
+        }
+        return null;
     }
 }

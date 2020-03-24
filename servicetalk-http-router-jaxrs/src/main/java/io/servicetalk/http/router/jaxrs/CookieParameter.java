@@ -23,10 +23,11 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Cookie;
 
-public class CookieParameter extends Parameter {
+public class CookieParameter implements Parameter {
+    private final String name;
 
-    public CookieParameter(String name, Class<?> type) {
-        super(name, type);
+    public CookieParameter(String name) {
+        this.name = name;
     }
 
     @Nullable
