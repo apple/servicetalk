@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import static io.servicetalk.internal.build.ExecutableBuilder.*
-
 buildscript {
   dependencies {
     classpath "com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
@@ -24,6 +22,7 @@ buildscript {
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
 apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
@@ -52,7 +51,7 @@ shadowJar {
 
 def grpcPluginUberJarName = project.name + "-" + project.version + "-all.jar"
 
-task copyUberJarForDevelopment(type: Copy) {
+task buildExecutable(type: Copy) {
   dependsOn tasks.shadowJar
   from shadowJar.outputs.files.singleFile
   into file("$buildDir/buildExecutable")
@@ -61,94 +60,32 @@ task copyUberJarForDevelopment(type: Copy) {
     return grpcPluginUberJarName
   }
 }
-
-task buildExecutable {
-  def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
-  def outputFile = new File("$buildDir/buildExecutable/" +
-      addExecutablePostFix("protoc-gen-servicetalk_grpc", isWindows))
-  dependsOn tasks.copyUberJarForDevelopment
-  inputs.files shadowJar.outputs.files
-  outputs.file outputFile
-
-  doLast {
-    if (isWindows) {
-      buildWindowsExecutable(grpcPluginUberJarName, outputFile)
-    } else {
-      buildUnixExecutable(grpcPluginUberJarName, outputFile)
-    }
-  }
-}
 tasks.compileJava.finalizedBy(buildExecutable)
-
-task buildExecutableWindowsPublishing {
-  def outputFile = new File("$buildDir/buildExecutable/" +
-      addExecutablePostFix("protoc-gen-servicetalk-windows_grpc", true))
-  dependsOn tasks.copyUberJarForDevelopment
-  inputs.files shadowJar.outputs.files
-  outputs.file outputFile
-
-  doLast {
-    buildWindowsExecutable(grpcPluginUberJarName, outputFile)
-  }
-}
-
-// we attempt to generate both grpc executables when on windows, and don't publish from windows anyways.
-tasks.withType(PublishToMavenRepository) {
-  onlyIf {
-    !org.gradle.internal.os.OperatingSystem.current().isWindows()
-  }
-}
 
 publishing {
   publications {
     mavenJava {
-      artifact(buildExecutable.outputs.files.singleFile) {
-        classifier = "linux-x86_64"
-        extension = "sh"
-        builtBy buildExecutable
-      }
-      artifact(buildExecutable.outputs.files.singleFile) {
-        classifier = "osx-x86_64"
-        extension = "sh"
-        builtBy buildExecutable
-      }
-      artifact(buildExecutableWindowsPublishing.outputs.files.singleFile) {
-        classifier = "windows-x86_64"
-        extension = "bat"
-        builtBy buildExecutableWindowsPublishing
-      }
       artifact(shadowJar.outputs.files.singleFile) {
         classifier = "all"
         extension = "jar"
-        builtBy buildExecutableWindowsPublishing
       }
     }
   }
 }
 
-protobuf {
-  protoc {
-    artifact = "com.google.protobuf:protoc:$protobufVersion"
-  }
+serviceTalkGrpc {
+  protobufVersion = project.property("protobufVersion")
 
-  plugins {
-    servicetalk_grpc {
-      path = "$buildDir/buildExecutable/" +
-          addExecutablePostFix("protoc-gen-servicetalk_grpc",
-              org.gradle.internal.os.OperatingSystem.current().isWindows())
-    }
-  }
+  // The following setting must be omitted in users projects and is necessary here
+  // only because we want to use the locally built version of the plugin
+  serviceTalkProtocPluginPath =
+      "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/servicetalk-grpc-protoc-" +
+          project.version + "-all.jar"
+}
 
-  // We validate that our protoc plugin outputs valid code by generating test classes which are compiled by Gradle
-  generateProtoTasks {
-    ofSourceSet("test").each { task ->
-      task.plugins {
-        servicetalk_grpc {
-          outputSubDir = "java"
-        }
-      }
-    }
-  }
+afterEvaluate {
+  // break the circular dependency (compileJava->generateProto->buildExecutable->compileJava).
+  generateProto.enabled = false
 }
 
 clean {
