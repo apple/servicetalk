@@ -120,7 +120,6 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         exceptionCaught0(throwable);
     }
 
-
     private void exceptionCaught0(Throwable throwable) {
         if (subscription == null || shouldBuffer()) {
             addPending(TerminalNotification.error(throwable));
