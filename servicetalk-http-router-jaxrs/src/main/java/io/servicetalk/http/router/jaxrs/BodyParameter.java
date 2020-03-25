@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jaxrs;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpSerializationProvider;
@@ -31,21 +30,17 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 public class BodyParameter implements Parameter {
 
-    private static final HttpDeserializer<String> textDeserializer = textDeserializer();
     private static final HttpSerializationProvider jsonSerializer = jsonSerializer(new JacksonSerializationProvider());
 
-    private final Type type;
     @Nullable
     private final Class<?> classType;
     private final String expectedContentType;
 
     public BodyParameter(Type type, String expectedContentType) {
-        this.type = type;
         this.expectedContentType = expectedContentType;
 
         final ParameterizedType parameterizedType = (ParameterizedType) type;
@@ -53,10 +48,8 @@ public class BodyParameter implements Parameter {
         final Type rawType = parameterizedType.getRawType();
 
         final boolean ok = rawType instanceof Class &&
-                // sourceClass.isAssignableFrom((Class<?>) rawType) &&
                 (typeArgument = getSingleTypeArgumentOrNull(parameterizedType)) != null &&
                 typeArgument instanceof Class;
-        // contentClass.isAssignableFrom((Class<?>) typeArgument);
         this.classType = ok ? (Class) typeArgument : null;
     }
 

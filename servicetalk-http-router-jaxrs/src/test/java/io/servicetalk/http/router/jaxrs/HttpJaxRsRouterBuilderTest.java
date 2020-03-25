@@ -53,6 +53,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nonnull;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -181,11 +182,36 @@ public class HttpJaxRsRouterBuilderTest {
     public void testPathParam() {
         when(request.path()).thenReturn("/all/b/1");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
-        assertSame(responseC, jaxRsRouter.handle(ctx, request, reqRespFactory));
 
+        assertThat("1", equalTo(makeRequest()));
+    }
+
+    @Test
+    public void testPathParams() {
         when(request.path()).thenReturn("/all/c/1/abc");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
-        assertSame(responseD, jaxRsRouter.handle(ctx, request, reqRespFactory));
+
+        assertThat("1abc", equalTo(makeRequest()));
+    }
+
+    @Test
+    public void testIntPathParams() {
+        when(request.path()).thenReturn("/all/h/1/2");
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
+        assertThat("12", equalTo(makeRequest()));
+    }
+
+    private String makeRequest() {
+        final Single<StreamingHttpResponse> responseSingle = jaxRsRouter.handle(ctx, request, reqRespFactory);
+
+        try {
+            final StreamingHttpResponse response = responseSingle.toFuture().get();
+
+            return response.payloadBody().map(buffer -> buffer.toString(UTF_8))
+                    .firstOrError().toFuture().get();
+        } catch (InterruptedException | ExecutionException e) {
+           throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -243,13 +269,21 @@ public class HttpJaxRsRouterBuilderTest {
         }
 
         @Path("/b/{c}")
-        Single<StreamingHttpResponse> param(@PathParam("c") String c) {
-            return responseC;
+        Single<StreamingHttpResponse> param(@PathParam("c") String c,
+                                            @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(c, responseFactory);
         }
 
         @Path("/c/{a}/{b}")
-        Single<StreamingHttpResponse> paramAb(@PathParam("a") String a, @PathParam("b") String b) {
-            return responseD;
+        Single<StreamingHttpResponse> paramAb(@PathParam("a") String a, @PathParam("b") String b,
+                                              @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(a + b, responseFactory);
+        }
+
+        @Path("/h/{a}/{b}")
+        Single<StreamingHttpResponse> paramAb(@PathParam("a") int a, @PathParam("b") int b,
+                                              @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse("" + a + b, responseFactory);
         }
 
         @Path("/d")
@@ -269,6 +303,13 @@ public class HttpJaxRsRouterBuilderTest {
             return succeeded(responseFactory.ok().payloadBody(modelPublisher,
                     jsonSerializer.serializerFor(Model.class)));
         }
+    }
+
+    @Nonnull
+    private Single<StreamingHttpResponse> buildStringResponse(
+            @PathParam("c") final String c,
+            @Context final StreamingHttpResponseFactory responseFactory) {
+        return succeeded(responseFactory.ok().payloadBody(succeeded(allocator.fromAscii(c)).toPublisher()));
     }
 
     public static class Model {
