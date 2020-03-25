@@ -27,9 +27,12 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -113,18 +116,72 @@ public class NettyChannelPublisherTest {
         }
     }
 
-    @Test
-    public void testCancelThenReadThenResubscribeDeliversErrorAndNotQueuedData() throws InterruptedException {
-        testCancelThenResubscribeDeliversErrorAndNotQueuedData(true);
+    private void setupFireReadOnCloseEvents() throws Exception {
+        if (channel != null) {
+            channel.close();
+        }
+        channel = new EmbeddedChannel();
+        NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
+                immediate(), new TerminalPredicate<>((Integer obj) -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                defaultFlushStrategy(), null, channel -> {
+                    channel.pipeline().addLast(new ChannelDuplexHandler() {
+                        @Override
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                            if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                                ctx.fireChannelRead(10);
+                            }
+                            ctx.fireUserEventTriggered(evt);
+                        }
+
+                        @Override
+                        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                            ctx.fireChannelRead(11);
+                            ctx.fireChannelInactive();
+                        }
+
+                        @Override
+                        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+                            ctx.fireChannelRead(12);
+                            ctx.close(promise);
+                        }
+                    });
+                    channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+                        @Override
+                        public void read(ChannelHandlerContext ctx) throws Exception {
+                            readRequested = true;
+                            super.read(ctx);
+                        }
+                    });
+                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
+        publisher = connection.read();
+        channel.config().setAutoRead(false);
     }
 
     @Test
-    public void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws InterruptedException {
-        testCancelThenResubscribeDeliversErrorAndNotQueuedData(false);
+    public void testNettyHandlerSendsQueuedDataOnShutdownInputFromCancel() throws Exception {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(false, true);
     }
 
-    private void testCancelThenResubscribeDeliversErrorAndNotQueuedData(boolean doChannelRead)
-            throws InterruptedException {
+    @Test
+    public void testNettyHandlerSendsQueuedDataOnShutdownInputFromClose() throws Exception {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(true, true);
+    }
+
+    @Test
+    public void testCancelThenReadThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(true, false);
+    }
+
+    @Test
+    public void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws Exception {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(false, false);
+    }
+
+    private void testCancelThenResubscribeDeliversErrorAndNotQueuedData(boolean doChannelRead,
+                                                                        boolean setupFireReadOnClose) throws Exception {
+        if (setupFireReadOnClose) {
+            setupFireReadOnCloseEvents();
+        }
         TestCollectingPublisherSubscriber<Integer> subscriber1 = new TestCollectingPublisherSubscriber<>();
         TestCollectingPublisherSubscriber<Integer> subscriber2 = new TestCollectingPublisherSubscriber<>();
         toSource(publisher).subscribe(subscriber1);
@@ -567,7 +624,7 @@ public class NettyChannelPublisherTest {
     public void testSubscribeAndRequestWithinOnErrorWithPendingData() {
         // With data and a fatal error queued up in NettyChannelPublisher, when an existing subscriber terminates and a
         // new Subscriber requests data synchronously from the previous terminal signal, the demand should trigger
-        // observing a ClosedChannelException.`
+        // observing a ClosedChannelException.
 
         // queue up data and trigger terminal failure
         fireChannelReadToBuffer(1);
