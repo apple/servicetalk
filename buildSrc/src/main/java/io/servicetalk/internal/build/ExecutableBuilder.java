@@ -31,9 +31,10 @@ public final class ExecutableBuilder {
         prepareOutputFile(outputFile);
         try(FileOutputStream execOutputStream = new FileOutputStream(outputFile)) {
             execOutputStream.write(("#!/bin/sh\n" +
-                    "pushd $(dirname \"$0\") > /dev/null\n" +
+                    "PWD_BEFORE=$PWD\n"+
+                    "cd $(dirname \"$0\")\n" +
                     "exec java -jar " + uberJarName + " \"$@\"\n" +
-                    "popd > /dev/null\n").getBytes(StandardCharsets.US_ASCII));
+                    "cd $PWD_BEFORE\n").getBytes(StandardCharsets.US_ASCII));
         }
         finalizeOutputFile(outputFile);
     }
