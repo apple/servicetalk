@@ -116,76 +116,18 @@ public final class HttpJaxRsRouterBuilder {
                     continue;
                 }
 
+                final PathTemplateDelegate pathTemplate =
+                        new PathTemplateDelegate(rootPath.value() + methodPath.value());
+
                 Consumes consumes = method.getAnnotation(Consumes.class);
                 String contentType = MediaType.APPLICATION_JSON;
                 if (consumes != null) {
                     contentType = consumes.value()[0];
                 }
 
-                final HttpRequestMethod httpMethod;
+                final HttpRequestMethod httpMethod = buildHttpRequestMethod(method);
 
-                if (method.isAnnotationPresent(POST.class)) {
-                    httpMethod = HttpRequestMethod.POST;
-                } else if (method.isAnnotationPresent(PUT.class)) {
-                    httpMethod = HttpRequestMethod.PUT;
-                } else if (method.isAnnotationPresent(DELETE.class)) {
-                    httpMethod = HttpRequestMethod.DELETE;
-                } else {
-                    httpMethod = HttpRequestMethod.GET;
-                }
-
-                final String path = rootPath.value() + methodPath.value();
-                final PathTemplateDelegate pathTemplate = new PathTemplateDelegate(path);
-
-                final List<Parameter> parameters = new ArrayList<>(method.getParameterCount());
-
-                for (int i = 0; i < method.getParameterCount(); i++) {
-                    java.lang.reflect.Parameter parameter = method.getParameters()[i];
-
-                    final QueryParam queryParamAnnotation = parameter.getAnnotation(QueryParam.class);
-                    if (queryParamAnnotation != null) {
-                        final DefaultValue defaultValueAnnotation = parameter.getAnnotation(DefaultValue.class);
-                        String defaultValue = defaultValueAnnotation == null ? null : defaultValueAnnotation.value();
-                        parameters.add(i, new QueryParameter(queryParamAnnotation.value(),
-                                parameter.getType(), defaultValue));
-                    }
-
-                    final PathParam pathParamAnnotation = parameter.getAnnotation(PathParam.class);
-                    if (pathParamAnnotation != null) {
-                        parameters.add(i, new PathParameter(pathParamAnnotation.value(),
-                                parameter.getType(), pathTemplate));
-                    }
-
-                    final FormParam formParamAnnotation = parameter.getAnnotation(FormParam.class);
-                    if (formParamAnnotation != null) {
-                        parameters.add(i, new FormParameter(formParamAnnotation.value()));
-                    }
-
-                    final HeaderParam headerParamAnnotation = parameter.getAnnotation(HeaderParam.class);
-                    if (headerParamAnnotation != null) {
-                        parameters.add(i, new HeaderParameter(headerParamAnnotation.value()));
-                    }
-
-                    final CookieParam cookieParamAnnotation = parameter.getAnnotation(CookieParam.class);
-                    if (cookieParamAnnotation != null) {
-                        parameters.add(i, new CookieParameter(cookieParamAnnotation.value()));
-                    }
-
-                    final Annotation contextAnnotation = parameter.getAnnotation(Context.class);
-                    if (contextAnnotation != null) {
-                        parameters.add(i, new ContextParameter(parameter.getType()));
-                    }
-
-                    if (pathParamAnnotation == null &&
-                            queryParamAnnotation == null &&
-                            formParamAnnotation == null &&
-                            contextAnnotation == null &&
-                            headerParamAnnotation == null &&
-                            cookieParamAnnotation == null
-                    ) {
-                        parameters.add(i, new BodyParameter(parameter.getParameterizedType(), contentType));
-                    }
-                }
+                final List<Parameter> parameters = buildParameters(method, contentType, pathTemplate);
 
                 final StreamingHttpService streamingService =
                         new ReflectionStreamingService(resource, method, parameters);
@@ -197,6 +139,74 @@ public final class HttpJaxRsRouterBuilder {
         }
 
         return routerBuilder.buildStreaming();
+    }
+
+    private static HttpRequestMethod buildHttpRequestMethod(final Method method) {
+        final HttpRequestMethod httpMethod;
+
+        if (method.isAnnotationPresent(POST.class)) {
+            httpMethod = HttpRequestMethod.POST;
+        } else if (method.isAnnotationPresent(PUT.class)) {
+            httpMethod = HttpRequestMethod.PUT;
+        } else if (method.isAnnotationPresent(DELETE.class)) {
+            httpMethod = HttpRequestMethod.DELETE;
+        } else {
+            httpMethod = HttpRequestMethod.GET;
+        }
+        return httpMethod;
+    }
+
+    private static List<Parameter> buildParameters(final Method method, final String contentType,
+                                                   final PathTemplateDelegate pathTemplate) {
+        final List<Parameter> parameters = new ArrayList<>(method.getParameterCount());
+        for (int i = 0; i < method.getParameterCount(); i++) {
+            java.lang.reflect.Parameter parameter = method.getParameters()[i];
+
+            final QueryParam queryParamAnnotation = parameter.getAnnotation(QueryParam.class);
+            if (queryParamAnnotation != null) {
+                final DefaultValue defaultValueAnnotation = parameter.getAnnotation(DefaultValue.class);
+                String defaultValue = defaultValueAnnotation == null ? null : defaultValueAnnotation.value();
+                parameters.add(i, new QueryParameter(queryParamAnnotation.value(),
+                        parameter.getType(), defaultValue));
+            }
+
+            final PathParam pathParamAnnotation = parameter.getAnnotation(PathParam.class);
+            if (pathParamAnnotation != null) {
+                parameters.add(i, new PathParameter(pathParamAnnotation.value(),
+                        parameter.getType(), pathTemplate));
+            }
+
+            final FormParam formParamAnnotation = parameter.getAnnotation(FormParam.class);
+            if (formParamAnnotation != null) {
+                parameters.add(i, new FormParameter(formParamAnnotation.value()));
+            }
+
+            final HeaderParam headerParamAnnotation = parameter.getAnnotation(HeaderParam.class);
+            if (headerParamAnnotation != null) {
+                parameters.add(i, new HeaderParameter(headerParamAnnotation.value()));
+            }
+
+            final CookieParam cookieParamAnnotation = parameter.getAnnotation(CookieParam.class);
+            if (cookieParamAnnotation != null) {
+                parameters.add(i, new CookieParameter(cookieParamAnnotation.value()));
+            }
+
+            final Annotation contextAnnotation = parameter.getAnnotation(Context.class);
+            if (contextAnnotation != null) {
+                parameters.add(i, new ContextParameter(parameter.getType()));
+            }
+
+            if (pathParamAnnotation == null &&
+                    queryParamAnnotation == null &&
+                    formParamAnnotation == null &&
+                    contextAnnotation == null &&
+                    headerParamAnnotation == null &&
+                    cookieParamAnnotation == null
+            ) {
+                parameters.add(i, new BodyParameter(parameter.getParameterizedType(), contentType));
+            }
+        }
+        return parameters;
     }
 
     static HttpService toAggregated(StreamingHttpService router) {
