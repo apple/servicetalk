@@ -38,7 +38,7 @@ final class ProjectUtils {
    * Typically these repositories are defined in the `buildscript.repositories` of the build script,
    * so this method attempts to copy them to the main `repositories`, if they are not already there.
    */
-  static void inheritRepositoriesFromBuildscript(Project project) {
+  static void inheritRepositoriesFromBuildScript(Project project) {
     if (project.hasProperty(DISABLE_REPOS_INHERIT_PROP)) {
       return
     }
