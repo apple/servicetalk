@@ -79,14 +79,9 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
           // uber jar which contains the protoc logic, as otherwise the grpc-gradle-plugin will only add a dependency
           // on the executable script
           File uberJarFile
-          String scriptNamePrefix
           if (serviceTalkProtocPluginPath) {
-            scriptNamePrefix = serviceTalkGrpcProtoc + "-" +
-                // fallback to the current project.version if there is no version in plugin meta
-                (isVersion(serviceTalkVersion) ? serviceTalkVersion : project.version)
             uberJarFile = new File(serviceTalkProtocPluginPath.toString())
           } else {
-            scriptNamePrefix = serviceTalkGrpcProtoc + "-" + serviceTalkVersion
             def stGrpcProtocDep =
                 project.getDependencies().create("io.servicetalk:$serviceTalkGrpcProtoc:$serviceTalkVersion:all")
             compileOnlyDeps.add(stGrpcProtocDep)
@@ -100,7 +95,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
           }
 
           final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
-          File scriptExecutableFile = new File("${project.buildDir}/scripts/${scriptNamePrefix}." +
+          File scriptExecutableFile = new File("${project.buildDir}/scripts/${serviceTalkGrpcProtoc}." +
               (isWindows ? "bat" : "sh"))
 
           doFirst {
