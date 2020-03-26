@@ -15,7 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -25,7 +27,6 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
@@ -47,12 +48,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
@@ -71,6 +74,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +83,7 @@ public class NettyPipelinedConnectionTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestCollectingPublisherSubscriber<Integer> readSubscriber = new TestCollectingPublisherSubscriber<>();
-    private final TestCollectingPublisherSubscriber<Integer> secondReadSubscriber =
+    private final TestCollectingPublisherSubscriber<Integer> readSubscriber2 =
             new TestCollectingPublisherSubscriber<>();
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
@@ -101,16 +105,11 @@ public class NettyPipelinedConnectionTest {
         requester = new NettyPipelinedConnection<>(connection);
     }
 
-    private Publisher<Integer> write(Publisher<Integer> publisher) {
-        return requester.write(publisher, FlushStrategies::defaultFlushStrategy,
-                WriteDemandEstimators::newDefaultEstimator);
-    }
-
     @Test
     public void pipelinedWriteAndReadCompleteSequential() throws InterruptedException {
-        toSource(write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         assertTrue(writePublisher1.isSubscribed());
         assertFalse(writePublisher2.isSubscribed());
         writePublisher1.onNext(1);
@@ -121,21 +120,21 @@ public class NettyPipelinedConnectionTest {
         assertEquals(next.intValue(), 1);
         readSubscriber.awaitOnComplete();
 
-        secondReadSubscriber.awaitSubscription().request(1);
+        readSubscriber2.awaitSubscription().request(1);
         writePublisher2.onNext(1);
         writePublisher2.onComplete();
         channel.writeInbound(2);
-        next = secondReadSubscriber.takeOnNext();
+        next = readSubscriber2.takeOnNext();
         assertNotNull(next);
         assertEquals(next.intValue(), 2);
-        secondReadSubscriber.awaitOnComplete();
+        readSubscriber2.awaitOnComplete();
     }
 
     @Test
     public void pipelinedWritesCompleteBeforeReads() throws InterruptedException {
-        toSource(write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         assertTrue(writePublisher1.isSubscribed());
         assertFalse(writePublisher2.isSubscribed());
         writePublisher1.onNext(1);
@@ -158,19 +157,19 @@ public class NettyPipelinedConnectionTest {
         assertEquals(next.intValue(), 1);
         readSubscriber.awaitOnComplete();
 
-        PublisherSource.Subscription subscription2 = secondReadSubscriber.awaitSubscription();
+        Subscription subscription2 = readSubscriber2.awaitSubscription();
         subscription2.request(1);
-        next = secondReadSubscriber.takeOnNext();
+        next = readSubscriber2.takeOnNext();
         assertNotNull(next);
         assertEquals(next.intValue(), 2);
-        secondReadSubscriber.awaitOnComplete();
+        readSubscriber2.awaitOnComplete();
     }
 
     @Test
     public void pipelinedReadsCompleteBeforeWrites() throws InterruptedException {
-        toSource(write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         channel.writeInbound(1);
         channel.writeInbound(2); // write before the second subscribe to test queuing works properly
@@ -190,8 +189,8 @@ public class NettyPipelinedConnectionTest {
 
         // for pipelining we need to wait until the previous write completes before we can see anything on the next
         // read stream.
-        secondReadSubscriber.awaitSubscription().request(1);
-        next = secondReadSubscriber.takeOnNext();
+        readSubscriber2.awaitSubscription().request(1);
+        next = readSubscriber2.takeOnNext();
         assertNotNull(next);
         assertEquals(next.intValue(), 2);
         // technically the read has completed here, but see the comment below about the merge operator.
@@ -206,7 +205,7 @@ public class NettyPipelinedConnectionTest {
         // from a "full duplex" perspective this could be verified earlier after the first element is read because
         // the underlying transport read stream completes. however in order to provide visibility into write errors
         // to the user there is a merge operation which delays the completion of the returned response Publisher.
-        secondReadSubscriber.awaitOnComplete();
+        readSubscriber2.awaitOnComplete();
 
         channelWrite = channel.readOutbound();
         assertNotNull(channelWrite);
@@ -234,7 +233,7 @@ public class NettyPipelinedConnectionTest {
         toSource(requester.write(writePublisher1, () -> flushStrategy1, WriteDemandEstimators::newDefaultEstimator))
                 .subscribe(readSubscriber);
         toSource(requester.write(writePublisher2, () -> flushStrategy2, WriteDemandEstimators::newDefaultEstimator))
-                .subscribe(secondReadSubscriber);
+                .subscribe(readSubscriber2);
         readSubscriber.awaitSubscription().request(1);
         assertTrue(writePublisher1.isSubscribed());
         assertFalse(writePublisher2.isSubscribed());
@@ -262,11 +261,11 @@ public class NettyPipelinedConnectionTest {
     @Test
     public void readCancelErrorsPendingReadCancelsPendingWrite() throws InterruptedException {
         TestSubscription writePublisher1Subscription = new TestSubscription();
-        toSource(write(writePublisher1
+        toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
-        PublisherSource.Subscription readSubscription = readSubscriber.awaitSubscription();
+        Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         assertTrue(writePublisher1.isSubscribed());
         readSubscription.cancel(); // cancelling an active read will close the connection.
@@ -274,7 +273,7 @@ public class NettyPipelinedConnectionTest {
         // readSubscriber was cancelled, so it may or may not terminate, but other sources that have not terminated
         // should be terminated, cancelled, or not subscribed.
 
-        assertThat(secondReadSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         writePublisher1Subscription.awaitCancelledUninterruptibly();
         assertFalse(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
@@ -283,11 +282,11 @@ public class NettyPipelinedConnectionTest {
     @Test
     public void channelCloseErrorsPendingReadCancelsPendingWrite() throws InterruptedException {
         TestSubscription writePublisher1Subscription = new TestSubscription();
-        toSource(write(writePublisher1
+        toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
-        PublisherSource.Subscription readSubscription = readSubscriber.awaitSubscription();
+        Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         assertTrue(writePublisher1.isSubscribed());
         assertFalse(writePublisher2.isSubscribed());
@@ -295,7 +294,7 @@ public class NettyPipelinedConnectionTest {
         channel.close();
 
         assertThat(readSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
-        assertThat(secondReadSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         writePublisher1Subscription.awaitCancelledUninterruptibly();
         assertFalse(writePublisher2.isSubscribed());
     }
@@ -303,9 +302,9 @@ public class NettyPipelinedConnectionTest {
     @Test
     public void readCancelClosesConnectionThenWriteDoesNotSubscribe() throws InterruptedException {
         TestSubscription writePublisher1Subscription = new TestSubscription();
-        toSource(write(writePublisher1
+        toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
-        PublisherSource.Subscription readSubscription = readSubscriber.awaitSubscription();
+        Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
 
         assertTrue(writePublisher1.isSubscribed());
@@ -317,23 +316,169 @@ public class NettyPipelinedConnectionTest {
         writePublisher1Subscription.awaitCancelledUninterruptibly();
         assertFalse(channel.isOpen());
 
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
-        assertThat(secondReadSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         assertFalse(writePublisher2.isSubscribed());
     }
 
     @Test
     public void writeErrorFailsPendingReadsDoesNotSubscribeToPendingWrites() throws InterruptedException {
-        toSource(write(writePublisher1)).subscribe(readSubscriber);
-        PublisherSource.Subscription readSubscription = readSubscriber.awaitSubscription();
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
-        toSource(write(writePublisher2)).subscribe(secondReadSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         writePublisher1.onError(DELIBERATE_EXCEPTION);
         assertThat(readSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
-        assertThat(secondReadSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         assertFalse(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
+    }
+
+    @Test
+    public void writeSubscribeThrowsWritesStillProcessed() throws InterruptedException {
+        AtomicBoolean firstReadOperation = new AtomicBoolean();
+        TestPublisher<Integer> mockReadPublisher1 = new TestPublisher<>();
+        TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation ->
+                firstReadOperation.compareAndSet(false, true) ? mockReadPublisher1 : mockReadPublisher2
+        ).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> new Completable() {
+            @Override
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                throw DELIBERATE_EXCEPTION;
+            }
+        }).when(mockConnection).write(eq(writePublisher1), any(), any());
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(eq(writePublisher2), any(), any());
+        requester = new NettyPipelinedConnection<>(mockConnection);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        Subscription readSubscription = readSubscriber.awaitSubscription();
+        readSubscription.request(1);
+
+        assertTrue(mockReadPublisher1.isSubscribed());
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+
+        assertFalse(writePublisher1.isSubscribed());
+
+        verifySecondRequestProcessed(mockReadPublisher2, mockConnection);
+    }
+
+    @Test
+    public void readSubscribeThrowsWritesStillProcessed() throws InterruptedException {
+        AtomicBoolean thrownError = new AtomicBoolean();
+        Publisher<Integer> mockReadPublisher = new Publisher<Integer>() {
+            @Override
+            protected void handleSubscribe(final PublisherSource.Subscriber<? super Integer> subscriber) {
+                if (thrownError.compareAndSet(false, true)) {
+                    throw DELIBERATE_EXCEPTION;
+                } else {
+                    deliverTerminalFromSource(subscriber);
+                }
+            }
+        };
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        when(mockConnection.read()).thenReturn(mockReadPublisher);
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(any(), any(), any());
+        requester = new NettyPipelinedConnection<>(mockConnection);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        Subscription readSubscription = readSubscriber.awaitSubscription();
+        readSubscription.request(1);
+
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertTrue(writePublisher1.isSubscribed());
+        writePublisher1.onComplete();
+
+        readSubscriber2.awaitSubscription();
+        assertTrue(writePublisher2.isSubscribed());
+        writePublisher2.onComplete();
+        readSubscriber2.awaitOnComplete();
+        verify(mockConnection, never()).closeAsync();
+    }
+
+    @Test
+    public void readThrowsLetsSubsequentRequestsThrough() throws InterruptedException {
+        AtomicBoolean thrownError = new AtomicBoolean();
+        TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation -> {
+            if (thrownError.compareAndSet(false, true)) {
+                throw DELIBERATE_EXCEPTION;
+            } else {
+                return mockReadPublisher2;
+            }
+        }).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(any(), any(), any());
+        requester = new NettyPipelinedConnection<>(mockConnection);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        Subscription readSubscription = readSubscriber.awaitSubscription();
+        readSubscription.request(1);
+
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertFalse(writePublisher1.isSubscribed());
+
+        verifySecondRequestProcessed(mockReadPublisher2, mockConnection);
+    }
+
+    @Test
+    public void writeThrowsLetsSubsequentRequestsThrough() throws InterruptedException {
+        AtomicBoolean firstReadOperation = new AtomicBoolean();
+        TestPublisher<Integer> mockReadPublisher1 = new TestPublisher<>();
+        TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
+        @SuppressWarnings("unchecked")
+        NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
+        doAnswer((Answer<Publisher<Integer>>) invocation ->
+                firstReadOperation.compareAndSet(false, true) ? mockReadPublisher1 : mockReadPublisher2
+        ).when(mockConnection).read();
+        doAnswer((Answer<Completable>) invocation -> new Completable() {
+            @Override
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                throw DELIBERATE_EXCEPTION;
+            }
+        }).when(mockConnection).write(eq(writePublisher1), any(), any());
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(eq(writePublisher2), any(), any());
+        requester = new NettyPipelinedConnection<>(mockConnection);
+        toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
+        Subscription readSubscription = readSubscriber.awaitSubscription();
+        readSubscription.request(1);
+
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        assertFalse(writePublisher1.isSubscribed());
+
+        verifySecondRequestProcessed(mockReadPublisher2, mockConnection);
+    }
+
+    private void verifySecondRequestProcessed(TestPublisher<Integer> mockReadPublisher2,
+                                              NettyConnection<Integer, Integer> mockConnection)
+            throws InterruptedException {
+        Subscription readSubscription2 = readSubscriber2.awaitSubscription();
+        readSubscription2.request(1);
+        assertTrue(writePublisher2.isSubscribed());
+        writePublisher2.onComplete();
+        mockReadPublisher2.onNext(2);
+        mockReadPublisher2.onComplete();
+        assertThat(readSubscriber2.takeOnNext(), is(2));
+        readSubscriber2.awaitOnComplete();
+        verify(mockConnection, never()).closeAsync();
     }
 
     @Test
@@ -363,9 +508,7 @@ public class NettyPipelinedConnectionTest {
                         return Single.<Collection<Integer>>failed(
                                 new AssertionError("failure during request " + finalI, e)).toFuture().get();
                     }
-                    return pipelinedConnection.write(Publisher.from(finalI),
-                            FlushStrategies::defaultFlushStrategy,
-                            WriteDemandEstimators::newDefaultEstimator).toFuture().get();
+                    return pipelinedConnection.write(Publisher.from(finalI)).toFuture().get();
                 }));
             }
 

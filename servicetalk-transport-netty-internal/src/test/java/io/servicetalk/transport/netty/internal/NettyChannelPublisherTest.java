@@ -120,7 +120,7 @@ public class NettyChannelPublisherTest {
         }
         channel = new EmbeddedChannel();
         NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), new TerminalPredicate<>((Integer obj) -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                immediate(), (Integer obj) -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                 defaultFlushStrategy(), null, channel -> {
                     channel.pipeline().addLast(new ChannelDuplexHandler() {
                         @Override

@@ -39,8 +39,7 @@ final class PipelinedStreamingHttpConnection
     protected Publisher<Object> writeAndRead(Publisher<Object> requestStream,
                                              @Nullable final FlushStrategy flushStrategy) {
         if (flushStrategy == null) {
-            return connection.write(requestStream, connection::defaultFlushStrategy,
-                    WriteDemandEstimators::newDefaultEstimator);
+            return connection.write(requestStream);
         } else {
             // TODO(scott): if we can remove the flush state on the connection we can simplify the control flow here.
             return Publisher.defer(() -> {
