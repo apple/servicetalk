@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 
 import java.util.ArrayDeque;
@@ -71,16 +70,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelRead(T data) {
         assertInEventloop();
-
         if (data instanceof ReferenceCounted) {
-            /*
-             * We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
-             * in error conditions. Hence we fail-fast when we see such objects.
-             */
-            ReferenceCountUtil.release(data);
-            exceptionCaught(new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
-                    data.getClass().getSimpleName()));
-            channel.close();
+            channelReadReferenceCounted((ReferenceCounted) data);
+            return;
+        }
+        if (fatalError != null) {
             return;
         }
 
@@ -94,6 +88,22 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
+    private void channelReadReferenceCounted(ReferenceCounted data) {
+        try {
+            data.release();
+        } finally {
+            // We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
+            // in error conditions. Hence we fail-fast when we see such objects.
+            pending = null;
+            if (fatalError == null) {
+                fatalError = new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
+                        data.getClass().getSimpleName());
+                exceptionCaught0(fatalError);
+            }
+            channel.close();
+        }
+    }
+
     void onReadComplete() {
         assertInEventloop();
         requested = false;
@@ -104,6 +114,13 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void exceptionCaught(Throwable throwable) {
         assertInEventloop();
+        if (fatalError != null) {
+            return;
+        }
+        exceptionCaught0(throwable);
+    }
+
+    private void exceptionCaught0(Throwable throwable) {
         if (subscription == null || shouldBuffer()) {
             addPending(TerminalNotification.error(throwable));
             if (subscription != null) {
@@ -116,10 +133,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelInboundClosed() {
         assertInEventloop();
-        Throwable error = StacklessClosedChannelException.newInstance(
-                NettyChannelPublisher.class, "channelInboundClosed");
-        fatalError = error;
-        exceptionCaught(error);
+        if (fatalError == null) {
+            fatalError = StacklessClosedChannelException.newInstance(
+                    NettyChannelPublisher.class, "channelInboundClosed");
+            exceptionCaught0(fatalError);
+        }
     }
 
     // All private methods MUST be invoked from the eventloop.
@@ -234,6 +252,14 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             return;
         }
         resetSubscription();
+
+        // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
+        // any future Subscribers don't get partial data delivered from the queue.
+        pending = null;
+        if (fatalError == null) {
+            fatalError = StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel");
+        }
+
         // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete,
         // which should not close the channel.
         closeChannelInbound();
@@ -270,13 +296,13 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
-            requestCount = 0; // Don't pollute requested count between subscribers
+            assert requestCount == 0;
             subscription = new SubscriptionImpl(subscriber);
             this.subscription = subscription;
             subscriber.onSubscribe(subscription);
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
-            if (!processPending(subscription) && fatalError != null && pending != null && pending.isEmpty()) {
+            if (!processPending(subscription) && (fatalError != null && (pending == null || pending.isEmpty()))) {
                 // We are already on the eventloop, so we are sure that nobody else is emitting to the Subscriber.
                 sendErrorToTarget(subscription, fatalError);
             }
