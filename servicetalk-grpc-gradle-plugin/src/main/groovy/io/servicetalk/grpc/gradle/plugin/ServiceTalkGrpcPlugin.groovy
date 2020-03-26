@@ -36,7 +36,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
     }
 
     if (project.plugins.hasPlugin("com.google.protobuf")) {
-      throw new InvalidUserCodeException("Plugin `servicetalk-grpc` needs to be applied " +
+      throw new InvalidUserCodeException("Plugin `io.servicetalk.servicetalk-grpc-gradle-plugin` needs to be applied " +
           "*before* plugin `com.google.protobuf`. (The latter is applied automatically by the former.)")
     }
 
@@ -54,7 +54,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
       def serviceTalkGrpcProtoc = "servicetalk-grpc-protoc"
       def serviceTalkVersion = pluginProperties."implementation-version"
       def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
-      if (!serviceTalkVersion && !serviceTalkProtocPluginPath) {
+      if (!isVersion(serviceTalkVersion) && !serviceTalkProtocPluginPath) {
         throw new IllegalStateException("Failed to retrieve ServiceTalk version from plugin meta " +
           "and `serviceTalkGrpc.serviceTalkProtocPluginPath` is not set.")
       }
@@ -64,12 +64,11 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
         throw new InvalidUserDataException("Please set `serviceTalkGrpc.protobufVersion`.")
       }
 
-      Project rootProject = project.rootProject != null ? project.rootProject : project
       String serviceTalkGrpcProtocGenerateScriptTaskName = "serviceTalkGrpcProtocGenerateScript"
-      if (rootProject.getTasksByName(serviceTalkGrpcProtocGenerateScriptTaskName, false).isEmpty()) {
-        rootProject.task(serviceTalkGrpcProtocGenerateScriptTaskName, {
+      if (project.getTasksByName(serviceTalkGrpcProtocGenerateScriptTaskName, false).isEmpty()) {
+        project.task(serviceTalkGrpcProtocGenerateScriptTaskName, {
           Set<Task> deleteTasks = new HashSet<>()
-          rootProject.allprojects.forEach({ subProject ->
+          project.allprojects.forEach({ subProject ->
             deleteTasks.addAll(subProject.tasks.withType(Delete))
             deleteTasks.add(subProject.tasks.findByPath('clean'))
           })
@@ -82,7 +81,9 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
           File uberJarFile
           String scriptNamePrefix
           if (serviceTalkProtocPluginPath) {
-            scriptNamePrefix = serviceTalkGrpcProtoc + "-" + project.version
+            scriptNamePrefix = serviceTalkGrpcProtoc + "-" +
+                // fallback to the current project.version if there is no version in plugin meta
+                (isVersion(serviceTalkVersion) ? serviceTalkVersion : project.version)
             uberJarFile = new File(serviceTalkProtocPluginPath.toString())
           } else {
             scriptNamePrefix = serviceTalkGrpcProtoc + "-" + serviceTalkVersion
@@ -93,13 +94,13 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
             Object rawUberJarFile = project.configurations.compileOnly.find { it.name.startsWith(serviceTalkGrpcProtoc) }
             if (!(rawUberJarFile instanceof File)) {
-              throw new IllegalStateException("failed to find the $serviceTalkGrpcProtoc:$serviceTalkVersion:all. found: " + rawUberJarFile)
+              throw new IllegalStateException("Failed to find the $serviceTalkGrpcProtoc:$serviceTalkVersion:all. found: " + rawUberJarFile)
             }
             uberJarFile = (File) rawUberJarFile
           }
 
           final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
-          File scriptExecutableFile = new File("${rootProject.buildDir}/scripts/${scriptNamePrefix}." +
+          File scriptExecutableFile = new File("${project.buildDir}/scripts/${scriptNamePrefix}." +
               (isWindows ? "bat" : "sh"))
 
           doFirst {
@@ -138,7 +139,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
           plugins {
             servicetalk_grpc {
-              path = rootProject.tasks.serviceTalkGrpcProtocGenerateScript.outputs.files.singleFile
+              path = project.tasks.serviceTalkGrpcProtocGenerateScript.outputs.files.singleFile
             }
           }
 
@@ -156,7 +157,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
               if (eclipseTask != null) {
                 eclipseTask.dependsOn(task)
               }
-              task.dependsOn rootProject.tasks.serviceTalkGrpcProtocGenerateScript
+              task.dependsOn project.tasks.serviceTalkGrpcProtocGenerateScript
             }
           }
 
@@ -224,9 +225,6 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
   }
 
   private static boolean createNewScriptFile(File outputFile) throws IOException {
-    if (outputFile.exists()) {
-      return false
-    }
     if (!outputFile.getParentFile().isDirectory() && !outputFile.getParentFile().mkdirs()) {
       throw new IOException("unable to make directories for file: " + outputFile.getCanonicalPath())
     }
@@ -238,5 +236,9 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
       outputFile.delete()
       throw new IOException("unable to set file as executable: " + outputFile.getCanonicalPath())
     }
+  }
+
+  private static boolean isVersion(String text) {
+    return text != null && !text.isEmpty() && text.charAt(0).isDigit()
   }
 }
