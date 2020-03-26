@@ -26,6 +26,8 @@ import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.util.GradleVersion
 
+import java.nio.charset.StandardCharsets
+
 class ServiceTalkGrpcPlugin implements Plugin<Project> {
   void apply(Project project) {
     if (GradleVersion.current().baseVersion < GradleVersion.version("4.10")) {
@@ -40,21 +42,15 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
     ServiceTalkGrpcExtension extension = project.extensions.create("serviceTalkGrpc", ServiceTalkGrpcExtension)
     extension.conventionMapping.generatedCodeDir = { project.file("$project.buildDir/generated/source/proto") }
 
-    def compileOnlyDeps = project.getConfigurations().getByName("compileOnly")
-    project.beforeEvaluate {
-      def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
-      if (!serviceTalkProtocPluginPath) {
-        compileOnlyDeps.add(
-            project.getDependencies().create("io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all"))
-      }
-    }
-
+    def compileOnlyDeps = project.getConfigurations().getByName("compileOnly").getDependencies()
+    def testCompileOnlyDeps = project.getConfigurations().getByName("testCompileOnly").getDependencies()
     project.afterEvaluate {
       Properties pluginProperties = new Properties()
       pluginProperties.load(getClass().getResourceAsStream("/META-INF/servicetalk-grpc-gradle-plugin.properties"))
 
       // In order to locate servicetalk-grpc-protoc we need either the ServiceTalk version for artifact resolution
       // or be provided with a direct path to the protoc plugin executable
+      def serviceTalkGrpcProtoc = "servicetalk-grpc-protoc"
       def serviceTalkVersion = pluginProperties."implementation-version"
       def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
       if (!serviceTalkVersion && !serviceTalkProtocPluginPath) {
@@ -65,6 +61,49 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
       def protobufVersion = extension.protobufVersion
       if (!protobufVersion) {
         throw new InvalidUserDataException("Please set `serviceTalkGrpc.protobufVersion`.")
+      }
+
+      // If this project is outside of ServiceTalk's gradle build we need to add an explicit dependency on the
+      // uber jar which contains the protoc logic, as otherwise the grpc-gradle-plugin will only add a dependency
+      // on the executable script
+      File uberJarFile
+      String scriptNamePrefix
+      if (serviceTalkProtocPluginPath) {
+        scriptNamePrefix = serviceTalkGrpcProtoc + "-" + project.version
+        uberJarFile = new File(serviceTalkProtocPluginPath)
+      } else {
+        scriptNamePrefix = serviceTalkGrpcProtoc + "-" + serviceTalkVersion
+        def stGrpcProtocDep =
+            project.getDependencies().create("io.servicetalk:$servicetalk-grpc-protoc:$serviceTalkVersion:all")
+        compileOnlyDeps.add(stGrpcProtocDep)
+        testCompileOnlyDeps.add(stGrpcProtocDep)
+
+        uberJarFile = project.configurations.compileOnly.find { it.name.startsWith(serviceTalkGrpcProtoc) }
+        if (uberJarFile == null) {
+          throw new IllegalStateException("failed to find the $serviceTalkGrpcProtoc:$serviceTalkVersion:all")
+        }
+      }
+
+      File scriptExecutableFile
+      try {
+        if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
+          scriptExecutableFile = File.createTempFile(scriptNamePrefix, ".bat")
+          prepareScriptFile(scriptExecutableFile)
+          new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
+            execOutputStream.write(("@ECHO OFF\r\n" +
+                "java -jar " + uberJarFile.getAbsolutePath() + " %*\r\n").getBytes(StandardCharsets.US_ASCII))
+          }
+        } else {
+          scriptExecutableFile = File.createTempFile(scriptNamePrefix, ".sh")
+          prepareScriptFile(scriptExecutableFile)
+          new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
+            execOutputStream.write(("#!/bin/sh\n" +
+                "exec java -jar " + uberJarFile.getAbsolutePath() + " \"\$@\"\n").getBytes(StandardCharsets.US_ASCII))
+          }
+        }
+        finalizeOutputFile(scriptExecutableFile)
+      } catch (Exception e) {
+        throw new IllegalStateException("servicetalk-grpc-gradle plugin failed to create executable script file which executes the protoc jar plugin.", e)
       }
 
       project.configure(project) {
@@ -78,12 +117,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
           plugins {
             servicetalk_grpc {
-              if (serviceTalkProtocPluginPath) {
-                path = file(serviceTalkProtocPluginPath)
-              } else {
-                artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion@" +
-                    (org.gradle.internal.os.OperatingSystem.current().isWindows() ? "bat" : "sh")
-              }
+              path = scriptExecutableFile
             }
           }
 
@@ -164,6 +198,24 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
           ideaModel.module.testSourceDirs.remove(generatedTestDir)
         }
       }
+    }
+  }
+
+  private static void prepareScriptFile(File outputFile) throws IOException {
+    if (!outputFile.exists()) {
+      if (!outputFile.getParentFile().isDirectory() && !outputFile.getParentFile().mkdirs()) {
+        throw new IOException("unable to make directories for file: " + outputFile.getCanonicalPath())
+      }
+    } else {
+      // Clear the file's contents
+      new PrintWriter(outputFile).close()
+    }
+  }
+
+  private static void finalizeOutputFile(File outputFile) throws IOException {
+    if (!outputFile.setExecutable(true)) {
+      outputFile.delete()
+      throw new IOException("unable to set file as executable: " + outputFile.getCanonicalPath())
     }
   }
 }
