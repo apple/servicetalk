@@ -64,64 +64,61 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
         throw new InvalidUserDataException("Please set `serviceTalkGrpc.protobufVersion`.")
       }
 
-      String serviceTalkGrpcProtocGenerateScriptTaskName = "serviceTalkGrpcProtocGenerateScript"
-      if (project.getTasksByName(serviceTalkGrpcProtocGenerateScriptTaskName, false).isEmpty()) {
-        project.task(serviceTalkGrpcProtocGenerateScriptTaskName, {
-          Set<Task> deleteTasks = new HashSet<>()
-          project.allprojects.forEach({ subProject ->
-            deleteTasks.addAll(subProject.tasks.withType(Delete))
-            deleteTasks.add(subProject.tasks.findByPath('clean'))
-          })
-          deleteTasks.remove(null)
-          mustRunAfter = deleteTasks
-
-          // If this project is outside of ServiceTalk's gradle build we need to add an explicit dependency on the
-          // uber jar which contains the protoc logic, as otherwise the grpc-gradle-plugin will only add a dependency
-          // on the executable script
-          File uberJarFile
-          if (serviceTalkProtocPluginPath) {
-            uberJarFile = new File(serviceTalkProtocPluginPath.toString())
-          } else {
-            def stGrpcProtocDep =
-                project.getDependencies().create("io.servicetalk:$serviceTalkGrpcProtoc:$serviceTalkVersion:all")
-            compileOnlyDeps.add(stGrpcProtocDep)
-            testCompileOnlyDeps.add(stGrpcProtocDep)
-
-            Object rawUberJarFile = project.configurations.compileOnly.find { it.name.startsWith(serviceTalkGrpcProtoc) }
-            if (!(rawUberJarFile instanceof File)) {
-              throw new IllegalStateException("Failed to find the $serviceTalkGrpcProtoc:$serviceTalkVersion:all. found: " + rawUberJarFile)
-            }
-            uberJarFile = (File) rawUberJarFile
-          }
-
-          final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
-          File scriptExecutableFile = new File("${project.buildDir}/scripts/${serviceTalkGrpcProtoc}." +
-              (isWindows ? "bat" : "sh"))
-
-          doFirst {
-            try {
-              if (createNewScriptFile(scriptExecutableFile)) {
-                if (isWindows) {
-                  new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
-                    execOutputStream.write(("@ECHO OFF\r\n" +
-                        "java -jar " + uberJarFile.getAbsolutePath() + " %*\r\n").getBytes(StandardCharsets.US_ASCII))
-                  }
-                } else {
-                  new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
-                    execOutputStream.write(("#!/bin/sh\n" +
-                        "exec java -jar " + uberJarFile.getAbsolutePath() + " \"\$@\"\n").getBytes(StandardCharsets.US_ASCII))
-                  }
-                }
-                finalizeScriptFile(scriptExecutableFile)
-              }
-            } catch (Exception e) {
-              throw new IllegalStateException("$serviceTalkGrpcProtoc plugin failed to create executable script file which executes the protoc jar plugin.", e)
-            }
-          }
-
-          outputs.file(scriptExecutableFile)
+      project.task("serviceTalkGrpcProtocGenerateScript", {
+        Set<Task> deleteTasks = new HashSet<>()
+        project.allprojects.forEach({ subProject ->
+          deleteTasks.addAll(subProject.tasks.withType(Delete))
+          deleteTasks.add(subProject.tasks.findByPath('clean'))
         })
-      }
+        deleteTasks.remove(null)
+        mustRunAfter = deleteTasks
+
+        // If this project is outside of ServiceTalk's gradle build we need to add an explicit dependency on the
+        // uber jar which contains the protoc logic, as otherwise the grpc-gradle-plugin will only add a dependency
+        // on the executable script
+        File uberJarFile
+        if (serviceTalkProtocPluginPath) {
+          uberJarFile = new File(serviceTalkProtocPluginPath.toString())
+        } else {
+          def stGrpcProtocDep =
+              project.getDependencies().create("io.servicetalk:$serviceTalkGrpcProtoc:$serviceTalkVersion:all")
+          compileOnlyDeps.add(stGrpcProtocDep)
+          testCompileOnlyDeps.add(stGrpcProtocDep)
+
+          Object rawUberJarFile = project.configurations.compileOnly.find { it.name.startsWith(serviceTalkGrpcProtoc) }
+          if (!(rawUberJarFile instanceof File)) {
+            throw new IllegalStateException("Failed to find the $serviceTalkGrpcProtoc:$serviceTalkVersion:all. found: " + rawUberJarFile)
+          }
+          uberJarFile = (File) rawUberJarFile
+        }
+
+        final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        File scriptExecutableFile = new File("${project.buildDir}/scripts/${serviceTalkGrpcProtoc}." +
+            (isWindows ? "bat" : "sh"))
+
+        doFirst {
+          try {
+            if (createNewScriptFile(scriptExecutableFile)) {
+              if (isWindows) {
+                new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
+                  execOutputStream.write(("@ECHO OFF\r\n" +
+                      "java -jar " + uberJarFile.getAbsolutePath() + " %*\r\n").getBytes(StandardCharsets.US_ASCII))
+                }
+              } else {
+                new FileOutputStream(scriptExecutableFile).withCloseable { execOutputStream ->
+                  execOutputStream.write(("#!/bin/sh\n" +
+                      "exec java -jar " + uberJarFile.getAbsolutePath() + " \"\$@\"\n").getBytes(StandardCharsets.US_ASCII))
+                }
+              }
+              finalizeScriptFile(scriptExecutableFile)
+            }
+          } catch (Exception e) {
+            throw new IllegalStateException("$serviceTalkGrpcProtoc plugin failed to create executable script file which executes the protoc jar plugin.", e)
+          }
+        }
+
+        outputs.file(scriptExecutableFile)
+      })
 
       project.configure(project) {
         Task ideaTask = extension.generateIdeConfiguration ? project.tasks.findByName("ideaModule") : null
