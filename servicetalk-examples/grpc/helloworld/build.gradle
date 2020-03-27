@@ -37,3 +37,9 @@ serviceTalkGrpc {
       "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/servicetalk-grpc-protoc-" +
           project.version + "-all.jar"
 }
+
+// The following setting must be omitted in users projects and is necessary here
+// only because we want to use the locally built version of the plugin
+afterEvaluate {
+  generateProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
+}

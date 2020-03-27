@@ -59,6 +59,8 @@ serviceTalkGrpc {
           project.version + "-all.jar"
 }
 
+// The following setting must be omitted in users projects and is necessary here
+// only because we want to use the locally built version of the plugin
 afterEvaluate {
   generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
 }
