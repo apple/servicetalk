@@ -252,6 +252,8 @@
 
     <!-- Coding -->
     <module name="ArrayTrailingComma"/>
+    <module name="AvoidDoubleBraceInitialization"/>
+    <module name="AvoidNoArgumentSuperConstructorCall"/>
     <module name="CovariantEquals"/>
     <module name="DeclarationOrder">
       <property name="ignoreModifiers" value="true"/>

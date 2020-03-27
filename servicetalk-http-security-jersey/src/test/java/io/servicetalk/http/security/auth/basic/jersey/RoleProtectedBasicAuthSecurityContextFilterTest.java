@@ -34,10 +34,9 @@ public class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBas
 
     @Override
     protected Application application(@Nullable final Key<BasicUserInfo> userInfoKey) {
-        return new ResourceConfig(RoleProtectedResource.class) {
-            {
-                register(RolesAllowedDynamicFeature.class);
-                registerInstances(userInfoKey != null ?
+        return new ResourceConfig(RoleProtectedResource.class)
+                .register(RolesAllowedDynamicFeature.class)
+                .registerInstances(userInfoKey != null ?
                         BasicAuthSecurityContextFilters.forGlobalBinding(userInfoKey)
                                 .securityContextFunction((__, userInfo) ->
                                         new BasicAuthSecurityContext(new BasicAuthPrincipal<>(userInfo), false,
@@ -47,8 +46,6 @@ public class RoleProtectedBasicAuthSecurityContextFilterTest extends AbstractBas
                                 .securityContextFunction(__ ->
                                         new BasicAuthSecurityContext(() -> "N/A", false, "USER"::equals))
                                 .build());
-            }
-        };
     }
 
     @Test
