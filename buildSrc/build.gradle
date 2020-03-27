@@ -24,7 +24,7 @@ if (!repositories) {
   File sourceFile = file("../servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal" +
       "/ProjectUtils.groovy")
   Class groovyClass = new GroovyClassLoader(this.class.classLoader).parseClass(sourceFile)
-  groovyClass.getDeclaredMethod("inheritRepositoriesFromBuildscript", Project).invoke(null, project)
+  groovyClass.getDeclaredMethod("inheritRepositoriesFromBuildScript", Project).invoke(null, project)
 }
 
 apply plugin: "java-gradle-plugin"
