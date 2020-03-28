@@ -36,7 +36,6 @@ public class BodyParameter implements Parameter {
 
     private static final HttpSerializationProvider jsonSerializer = jsonSerializer(new JacksonSerializationProvider());
 
-    @Nullable
     private final Class<?> classType;
     private final String expectedContentType;
 
@@ -50,7 +49,11 @@ public class BodyParameter implements Parameter {
         final boolean ok = rawType instanceof Class &&
                 (typeArgument = getSingleTypeArgumentOrNull(parameterizedType)) != null &&
                 typeArgument instanceof Class;
-        this.classType = ok ? (Class) typeArgument : null;
+        if (ok) {
+            this.classType = (Class) typeArgument;
+        } else {
+            throw new IllegalStateException("wrong body parameter class type " + type);
+        }
     }
 
     @Nullable
