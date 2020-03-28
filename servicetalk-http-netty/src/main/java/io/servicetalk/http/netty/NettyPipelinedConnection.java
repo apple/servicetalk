@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableOperator;
 import io.servicetalk.concurrent.api.Publisher;
@@ -103,9 +104,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                     try {
                         delayedReadPublisher.processSubscribers();
                     } catch (Throwable cause) {
-                        connection.closeAsync().subscribe();
-                        LOGGER.warn("closing connection={} due to unexpected error subscribing to read publisher={}",
-                                connection, delayedReadPublisher, cause);
+                        closeOnError(connection, delayedReadPublisher, cause);
                     }
                 }
             };
@@ -122,24 +121,36 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                             readQueue.offer(readNode);
                         } catch (Throwable cause) {
                             delayedWriteCompletable.failSubscribers(cause);
-                            throw cause;
+                            // We have not started the write at this point, and the above operation will:
+                            // - fail the write subscriber (pop the next write). We haven't subscribed to
+                            // Completable returned from connection.write(..) and therefore the connection hasn't
+                            // subscribed to the requestPublisher so there is nothing to cancel on the write side.
+                            // - fail the merge operator (pop the next read, if still in progress), cancel the
+                            // connection.read() (which may close the connection if the read is still active), and
+                            // deliver an error to the downstream read Subscriber.
+                            return;
                         }
 
                         delayedWriteCompletable.processSubscribers();
                     } catch (Throwable cause) {
-                        connection.closeAsync().subscribe();
-                        LOGGER.warn(
-                                "closing connection={} due to unexpected error offering to readQueue or subscribing " +
-                                "to write publisher={}", connection, delayedWriteCompletable, cause);
+                        closeOnError(connection, delayedWriteCompletable, cause);
                     }
                 }
             };
 
-            writeQueue.offer(writeNode);
+            try {
+                writeQueue.offer(writeNode);
 
-            return delayedWriteCompletable.liftSync(new WritePopNextOperator(writeNode))
-                    // If there is an error on the read/write side we propagate the errors between the two via merge.
-                    .merge(composedReadPublisher);
+                return delayedWriteCompletable.liftSync(new WritePopNextOperator(writeNode))
+                        // If there is an error on the read/write side propagate the errors between the two via merge.
+                        .merge(composedReadPublisher);
+            } catch (Throwable cause) {
+                // The writeNode's run method handles exceptions as a result of Subscribe/external calls. An Exception
+                // would be a catastrophic failure from the queue (e.g. OOME). We can't try to pop from the queue
+                // because we aren't sure if writeNode is the head, and manually popping may break the queue ordering.
+                closeOnError(connection, writeQueue, cause);
+                return Publisher.failed(cause);
+            }
         });
     }
 
@@ -218,6 +229,11 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     @Override
     public FlushStrategy defaultFlushStrategy() {
         return connection.defaultFlushStrategy();
+    }
+
+    private static void closeOnError(AsyncCloseable connection, Object source, Throwable cause) {
+        connection.closeAsync().subscribe();
+        LOGGER.warn("closing connection={} due to unexpected error source={}", connection, source, cause);
     }
 
     /**
