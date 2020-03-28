@@ -34,7 +34,7 @@ public class HeaderParameter implements Parameter {
                       final StreamingHttpResponseFactory responseFactory) {
         final Iterator<? extends CharSequence> iterator = request.headers().valuesIterator(name);
         if (iterator.hasNext()) {
-            return iterator.next().toString();
+            return iterator.next();
         }
         return null;
     }

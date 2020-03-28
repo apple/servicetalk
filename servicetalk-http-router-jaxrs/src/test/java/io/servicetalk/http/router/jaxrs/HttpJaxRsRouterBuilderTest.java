@@ -32,6 +32,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpSerializationProviders;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -49,19 +50,19 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -71,6 +72,7 @@ import javax.ws.rs.core.Cookie;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -78,8 +80,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -94,6 +98,9 @@ public class HttpJaxRsRouterBuilderTest {
 
     static HttpSerializationProvider jsonSerializer = HttpSerializationProviders
             .jsonSerializer(jacksonSerializationProvider);
+
+    static HttpSerializer<String> textSerializer = HttpSerializationProviders
+            .textSerializer();
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule().silent();
@@ -140,15 +147,13 @@ public class HttpJaxRsRouterBuilderTest {
                 .from(application);
     }
 
-    @SuppressWarnings("unchecked")
-    <T> Answer<Iterator<T>> answerIteratorOf(final T... values) {
-        return invocation -> asList(values).iterator();
-    }
-
     @Test
     public void testPath() {
         when(request.path()).thenReturn("/all/a");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
+
         assertThat("a", equalTo(makeRequest()));
 
         when(request.path()).thenReturn("/all/b");
@@ -160,6 +165,8 @@ public class HttpJaxRsRouterBuilderTest {
     public void testPathParam() {
         when(request.path()).thenReturn("/all/b/1");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
 
         assertThat("1", equalTo(makeRequest()));
     }
@@ -168,6 +175,8 @@ public class HttpJaxRsRouterBuilderTest {
     public void testPathParams() {
         when(request.path()).thenReturn("/all/c/1/abc");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
 
         assertThat("1abc", equalTo(makeRequest()));
     }
@@ -176,6 +185,9 @@ public class HttpJaxRsRouterBuilderTest {
     public void testIntPathParams() {
         when(request.path()).thenReturn("/all/h/1/2");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
+
         assertThat("12", equalTo(makeRequest()));
     }
 
@@ -188,7 +200,7 @@ public class HttpJaxRsRouterBuilderTest {
             return response.payloadBody().map(buffer -> buffer.toString(UTF_8))
                     .firstOrError().toFuture().get();
         } catch (InterruptedException | ExecutionException e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -196,8 +208,21 @@ public class HttpJaxRsRouterBuilderTest {
     public void testHeaderParam() {
         when(request.path()).thenReturn("/all/d");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
-        when(headers.valuesIterator("a")).then(answerIteratorOf("value"));
+        when(headers.valuesIterator(eq("a"))).then(answerIteratorOf("value"));
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
+
         assertThat("value", equalTo(makeRequest()));
+    }
+
+    @Test
+    public void testHeaderContentType() {
+        when(request.path()).thenReturn("/all/text");
+        when(request.method()).thenReturn(HttpRequestMethod.PUT);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(TEXT_PLAIN));
+
+        assertThat("1", equalTo(makeRequest()));
     }
 
     @Test
@@ -205,16 +230,21 @@ public class HttpJaxRsRouterBuilderTest {
         when(request.path()).thenReturn("/all/cookie");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
         when(headers.getCookie(eq("a"))).thenReturn(new DefaultHttpCookiePair("a", "value"));
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
+
         assertThat("value", equalTo(makeRequest()));
     }
 
     @Test
     public void testQueryParam() {
         when(request.path()).thenReturn("/all/query");
-        when(request.queryParameters(eq("a"))).thenReturn(listOf("123"));
-        when(request.queryParameters(eq("b"))).thenReturn(listOf("1"));
-        when(request.queryParameters()).thenReturn(mapOf("a", "123").entrySet());
-        when(request.queryParameters()).thenReturn(mapOf("b", "1").entrySet());
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
+        when(request.queryParameters(eq("a"))).thenAnswer(answerIterableOf("123"));
+        when(request.queryParameters(eq("b"))).thenAnswer(answerIterableOf("1"));
+        when(request.queryParameters()).thenAnswer(answerIterableMapOf("a", "123"));
+        when(request.queryParameters()).thenAnswer(answerIterableMapOf("b", "1"));
         when(request.method()).thenReturn(HttpRequestMethod.GET);
         assertThat("1231", equalTo(makeRequest()));
     }
@@ -222,6 +252,8 @@ public class HttpJaxRsRouterBuilderTest {
     @Test
     public void testQueryParamDefaultValue() {
         when(request.path()).thenReturn("/all/queryDefault");
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(APPLICATION_JSON));
         when(request.queryParameters(eq("a"))).thenReturn(emptyList());
         when(request.queryParameters(eq("b"))).thenReturn(emptyList());
         when(request.queryParameters()).thenReturn(Collections.<String, String>emptyMap().entrySet());
@@ -229,32 +261,11 @@ public class HttpJaxRsRouterBuilderTest {
         assertThat("01", equalTo(makeRequest()));
     }
 
-    @Nonnull
-    private Map<String, String> mapOf(String... keyValues) {
-        Map<String, String> queryMap = new HashMap<>();
-        String key = null;
-        for (int i = 0; i < keyValues.length; i++) {
-            if (i % 2 == 0) {
-                key = keyValues[i];
-            } else {
-                queryMap.put(key, keyValues[i]);
-                key = null;
-            }
-        }
-
-        return queryMap;
-    }
-
-    @Nonnull
-    private List<String> listOf(String... values) {
-        return new ArrayList<>(asList(values));
-    }
-
     @Test
     public void testBodyParam() throws InterruptedException, ExecutionException {
         when(request.path()).thenReturn("/all/e");
         when(request.method()).thenReturn(HttpRequestMethod.POST);
-        when(headers.valuesIterator(CONTENT_TYPE)).then(answerIteratorOf(APPLICATION_JSON));
+        when(headers.values(CONTENT_TYPE)).then(answerIterableOf(APPLICATION_JSON));
         when(headers.get(eq(CONTENT_TYPE))).thenReturn(APPLICATION_JSON);
 
         Model model = new Model();
@@ -275,7 +286,33 @@ public class HttpJaxRsRouterBuilderTest {
         assertThat(model.name, equalTo(resultModel.name));
     }
 
+    static <T> Answer<Iterable<T>> answerIterableOf(final T... values) {
+        return invocation -> asList(values);
+    }
+
+    static <T> Answer<Iterator<T>> answerIteratorOf(final T... values) {
+        return invocation -> asList(values).iterator();
+    }
+
+    static <T> Answer<Iterable<Map.Entry<T, T>>> answerIterableMapOf(T... keyValues) {
+        return invocation -> {
+            Map<T, T> queryMap = new HashMap<>();
+            T key = null;
+            for (int i = 0; i < keyValues.length; i++) {
+                if (i % 2 == 0) {
+                    key = keyValues[i];
+                } else {
+                    queryMap.put(key, keyValues[i]);
+                    key = null;
+                }
+            }
+
+            return queryMap.entrySet();
+        };
+    }
+
     @Path("/all")
+    @Consumes(value = APPLICATION_JSON)
     public static final class TestResource {
 
         @Path("/a")
@@ -332,6 +369,11 @@ public class HttpJaxRsRouterBuilderTest {
             return buildStringResponse(a + b, responseFactory);
         }
 
+        @Path("/text")
+        Single<StreamingHttpResponse> text(@Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse("1", responseFactory);
+        }
+
         @POST
         @Path("/e")
         Single<StreamingHttpResponse> body(@Context StreamingHttpResponseFactory responseFactory,
@@ -339,10 +381,18 @@ public class HttpJaxRsRouterBuilderTest {
             return succeeded(responseFactory.ok().payloadBody(modelPublisher,
                     jsonSerializer.serializerFor(Model.class)));
         }
+
+        @PUT
+        @Consumes(value = {TEXT_PLAIN})
+        @Path("/text")
+        Single<StreamingHttpResponse> contentType(@Context StreamingHttpResponseFactory responseFactory) {
+            return succeeded(responseFactory.ok().payloadBody(succeeded("1").toPublisher(), textSerializer));
+        }
     }
 
     @Nonnull
-    private static Single<StreamingHttpResponse> buildStringResponse(final String c,
+    private static Single<StreamingHttpResponse> buildStringResponse(
+            final String c,
             final StreamingHttpResponseFactory responseFactory) {
         return succeeded(responseFactory.ok().payloadBody(succeeded(allocator.fromAscii(c)).toPublisher()));
     }

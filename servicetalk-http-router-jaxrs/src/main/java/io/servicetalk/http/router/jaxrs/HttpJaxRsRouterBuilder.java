@@ -17,16 +17,23 @@ package io.servicetalk.http.router.jaxrs;
 
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.HttpApiConversions;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
+import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
+import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
@@ -40,7 +47,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+
+import static javax.ws.rs.core.MediaType.WILDCARD;
 
 /**
  * Builds an {@link StreamingHttpService} which routes requests to JAX-RS annotated classes,
@@ -109,6 +117,8 @@ public final class HttpJaxRsRouterBuilder {
                 continue;
             }
 
+            Consumes resourceConsumes = resource.getClass().getAnnotation(Consumes.class);
+
             for (Method method : resource.getClass().getDeclaredMethods()) {
                 final Path methodPath = method.getAnnotation(Path.class);
 
@@ -119,10 +129,13 @@ public final class HttpJaxRsRouterBuilder {
                 final PathTemplateDelegate pathTemplate =
                         new PathTemplateDelegate(rootPath.value() + methodPath.value());
 
-                Consumes consumes = method.getAnnotation(Consumes.class);
-                String contentType = MediaType.APPLICATION_JSON;
-                if (consumes != null) {
-                    contentType = consumes.value()[0];
+                final Consumes methodConsumes = method.getAnnotation(Consumes.class);
+
+                final String contentType;
+                if (methodConsumes == null) {
+                    contentType = resourceConsumes == null ? WILDCARD : resourceConsumes.value()[0];
+                } else {
+                    contentType = methodConsumes.value()[0];
                 }
 
                 final HttpRequestMethod httpMethod = buildHttpRequestMethod(method);
@@ -132,13 +145,32 @@ public final class HttpJaxRsRouterBuilder {
                 final StreamingHttpService streamingService =
                         new ReflectionStreamingService(resource, method, parameters);
 
-                routerBuilder.whenPathMatches(pathTemplate.getRegex())
-                        .andMethod(httpMethod)
-                        .thenRouteTo(streamingService);
+                final RouteContinuation routeContinuation = routerBuilder.whenPathMatches(pathTemplate.getRegex())
+                        .andMethod(httpMethod);
+
+                if (!WILDCARD.equals(contentType)) {
+                    routeContinuation
+                            .and(addHeader(HttpHeaderNames.CONTENT_TYPE, contentType));
+                }
+
+                routeContinuation.thenRouteTo(streamingService);
             }
         }
 
         return routerBuilder.buildStreaming();
+    }
+
+    @Nonnull
+    private static BiPredicate<ConnectionContext, StreamingHttpRequest> addHeader(final CharSequence name,
+                                                                                  final CharSequence value) {
+        return (ctx, req) -> {
+            for (CharSequence header : req.headers().values(name)) {
+                if (CharSequences.contentEqualsIgnoreCase(header, value)) {
+                    return true;
+                }
+            }
+            return false;
+        };
     }
 
     private static HttpRequestMethod buildHttpRequestMethod(final Method method) {
