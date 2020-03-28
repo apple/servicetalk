@@ -344,9 +344,9 @@ public class HttpJaxRsRouterBuilderTest {
         }
 
         @Path("/d")
-        Single<StreamingHttpResponse> header(@HeaderParam("a") String a,
+        Single<StreamingHttpResponse> header(@HeaderParam("a") CharSequence a,
                                              @Context StreamingHttpResponseFactory responseFactory) {
-            return buildStringResponse(a, responseFactory);
+            return buildStringResponse(a.toString(), responseFactory);
         }
 
         @Path("/cookie")

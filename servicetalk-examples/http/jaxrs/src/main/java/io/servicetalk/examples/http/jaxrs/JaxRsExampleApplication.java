@@ -56,20 +56,22 @@ public class JaxRsExampleApplication {
     @Path("/b/{a}")
     public Single<StreamingHttpResponse> b(@Nullable @PathParam("a") String a,
                                            @Nullable @QueryParam("b") String b,
-                                           @Nullable @HeaderParam("Host") String host,
+                                           @Nullable @HeaderParam("Host") CharSequence host,
                                            @Context StreamingHttpResponseFactory responseFactory) {
         if (a == null) {
+            logger.error("parameter 'a' is null");
             return succeeded(responseFactory.badRequest());
         }
 
         if (b == null) {
+            logger.error("parameter 'b' is null");
             return succeeded(responseFactory.badRequest());
         }
 
         Example example = new Example();
         example.a = a;
         example.b = b;
-        example.host = host;
+        example.host = host == null ? "" : host.toString();
 
         return succeeded(responseFactory.ok().payloadBody(succeeded(example).toPublisher(),
                 serializer.serializerFor(Example.class)));
