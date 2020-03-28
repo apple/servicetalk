@@ -49,21 +49,26 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 import javax.ws.rs.CookieParam;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Cookie;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -71,11 +76,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertSame;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -98,8 +102,6 @@ public class HttpJaxRsRouterBuilderTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Mock
-    StreamingHttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
-    @Mock
     HttpExecutionContext executionCtx;
     @Mock
     TestHttpServiceContext ctx;
@@ -107,8 +109,6 @@ public class HttpJaxRsRouterBuilderTest {
     StreamingHttpRequest request;
     @Mock
     HttpHeaders headers;
-    @Mock
-    Single<StreamingHttpResponse> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
 
     StreamingHttpService jaxRsRouter;
 
@@ -125,27 +125,6 @@ public class HttpJaxRsRouterBuilderTest {
 
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-
-        when(serviceA.handle(any(), eq(request), any())).thenReturn(responseA);
-        when(serviceB.handle(any(), eq(request), any())).thenReturn(responseB);
-        when(serviceC.handle(any(), eq(request), any())).thenReturn(responseC);
-        when(serviceD.handle(any(), eq(request), any())).thenReturn(responseD);
-        when(serviceE.handle(any(), eq(request), any())).thenReturn(responseE);
-        when(fallbackService.handle(any(), eq(request), any())).thenReturn(fallbackResponse);
-
-        when(serviceA.closeAsync()).thenReturn(completed());
-        when(serviceB.closeAsync()).thenReturn(completed());
-        when(serviceC.closeAsync()).thenReturn(completed());
-        when(serviceD.closeAsync()).thenReturn(completed());
-        when(serviceE.closeAsync()).thenReturn(completed());
-        when(fallbackService.closeAsync()).thenReturn(completed());
-
-        when(serviceA.closeAsyncGracefully()).thenReturn(completed());
-        when(serviceB.closeAsyncGracefully()).thenReturn(completed());
-        when(serviceC.closeAsyncGracefully()).thenReturn(completed());
-        when(serviceD.closeAsyncGracefully()).thenReturn(completed());
-        when(serviceE.closeAsyncGracefully()).thenReturn(completed());
-        when(fallbackService.closeAsyncGracefully()).thenReturn(completed());
 
         final TestResource resource = new TestResource();
         final Application application = new Application() {
@@ -168,14 +147,13 @@ public class HttpJaxRsRouterBuilderTest {
 
     @Test
     public void testPath() {
-
         when(request.path()).thenReturn("/all/a");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
-        assertSame(responseA, jaxRsRouter.handle(ctx, request, reqRespFactory));
+        assertThat("a", equalTo(makeRequest()));
 
         when(request.path()).thenReturn("/all/b");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
-        assertSame(responseB, jaxRsRouter.handle(ctx, request, reqRespFactory));
+        assertThat("b", equalTo(makeRequest()));
     }
 
     @Test
@@ -219,7 +197,7 @@ public class HttpJaxRsRouterBuilderTest {
         when(request.path()).thenReturn("/all/d");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
         when(headers.valuesIterator("a")).then(answerIteratorOf("value"));
-        assertSame(responseE, jaxRsRouter.handle(ctx, request, reqRespFactory));
+        assertThat("value", equalTo(makeRequest()));
     }
 
     @Test
@@ -227,7 +205,49 @@ public class HttpJaxRsRouterBuilderTest {
         when(request.path()).thenReturn("/all/cookie");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
         when(headers.getCookie(eq("a"))).thenReturn(new DefaultHttpCookiePair("a", "value"));
-        assertSame(responseE, jaxRsRouter.handle(ctx, request, reqRespFactory));
+        assertThat("value", equalTo(makeRequest()));
+    }
+
+    @Test
+    public void testQueryParam() {
+        when(request.path()).thenReturn("/all/query");
+        when(request.queryParameters(eq("a"))).thenReturn(listOf("123"));
+        when(request.queryParameters(eq("b"))).thenReturn(listOf("1"));
+        when(request.queryParameters()).thenReturn(mapOf("a", "123").entrySet());
+        when(request.queryParameters()).thenReturn(mapOf("b", "1").entrySet());
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
+        assertThat("1231", equalTo(makeRequest()));
+    }
+
+    @Test
+    public void testQueryParamDefaultValue() {
+        when(request.path()).thenReturn("/all/queryDefault");
+        when(request.queryParameters(eq("a"))).thenReturn(emptyList());
+        when(request.queryParameters(eq("b"))).thenReturn(emptyList());
+        when(request.queryParameters()).thenReturn(Collections.<String, String>emptyMap().entrySet());
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
+        assertThat("01", equalTo(makeRequest()));
+    }
+
+    @Nonnull
+    private Map<String, String> mapOf(String... keyValues) {
+        Map<String, String> queryMap = new HashMap<>();
+        String key = null;
+        for (int i = 0; i < keyValues.length; i++) {
+            if (i % 2 == 0) {
+                key = keyValues[i];
+            } else {
+                queryMap.put(key, keyValues[i]);
+                key = null;
+            }
+        }
+
+        return queryMap;
+    }
+
+    @Nonnull
+    private List<String> listOf(String... values) {
+        return new ArrayList<>(asList(values));
     }
 
     @Test
@@ -256,16 +276,16 @@ public class HttpJaxRsRouterBuilderTest {
     }
 
     @Path("/all")
-    public final class TestResource {
+    public static final class TestResource {
 
         @Path("/a")
-        Single<StreamingHttpResponse> a() {
-            return responseA;
+        Single<StreamingHttpResponse> a(@Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse("a", responseFactory);
         }
 
         @Path("/b")
-        Single<StreamingHttpResponse> b() {
-            return responseB;
+        Single<StreamingHttpResponse> b(@Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse("b", responseFactory);
         }
 
         @Path("/b/{c}")
@@ -287,13 +307,29 @@ public class HttpJaxRsRouterBuilderTest {
         }
 
         @Path("/d")
-        Single<StreamingHttpResponse> header(@HeaderParam("a") String a) {
-            return responseE;
+        Single<StreamingHttpResponse> header(@HeaderParam("a") String a,
+                                             @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(a, responseFactory);
         }
 
         @Path("/cookie")
-        Single<StreamingHttpResponse> cookie(@CookieParam("a") Cookie cookie) {
-            return responseE;
+        Single<StreamingHttpResponse> cookie(@CookieParam("a") Cookie cookie,
+                                             @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(cookie.getValue(), responseFactory);
+        }
+
+        @Path("/query")
+        Single<StreamingHttpResponse> query(@QueryParam("a") String a,
+                                            @QueryParam("b") int b,
+                                            @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(a + b, responseFactory);
+        }
+
+        @Path("/queryDefault")
+        Single<StreamingHttpResponse> queryDefault(@QueryParam("a") @DefaultValue("0") String a,
+                                                   @QueryParam("b") @DefaultValue("1") int b,
+                                                   @Context StreamingHttpResponseFactory responseFactory) {
+            return buildStringResponse(a + b, responseFactory);
         }
 
         @POST
@@ -306,9 +342,8 @@ public class HttpJaxRsRouterBuilderTest {
     }
 
     @Nonnull
-    private Single<StreamingHttpResponse> buildStringResponse(
-            @PathParam("c") final String c,
-            @Context final StreamingHttpResponseFactory responseFactory) {
+    private static Single<StreamingHttpResponse> buildStringResponse(final String c,
+            final StreamingHttpResponseFactory responseFactory) {
         return succeeded(responseFactory.ok().payloadBody(succeeded(allocator.fromAscii(c)).toPublisher()));
     }
 

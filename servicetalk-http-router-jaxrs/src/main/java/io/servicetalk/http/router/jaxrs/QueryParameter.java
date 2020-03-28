@@ -44,7 +44,7 @@ public class QueryParameter implements Parameter {
         List<String> params = toList(request.queryParameters(name));
 
         if (params.isEmpty()) {
-            return defaultValue;
+            return defaultValue == null ? null : castTo(type, defaultValue);
         }
 
         if (type == List.class) {
