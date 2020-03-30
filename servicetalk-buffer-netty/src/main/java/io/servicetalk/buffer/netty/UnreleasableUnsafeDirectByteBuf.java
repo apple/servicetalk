@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.buffer.netty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 
 import java.nio.ByteBuffer;
@@ -44,28 +43,8 @@ class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     }
 
     @Override
-    public final ByteBuf asReadOnly() {
-        return Unpooled.unreleasableBuffer(super.asReadOnly());
-    }
-
-    @Override
-    public final ByteBuf readSlice(int length) {
-        return Unpooled.unreleasableBuffer(super.readSlice(length));
-    }
-
-    @Override
     public final ByteBuf readRetainedSlice(int length) {
         return readSlice(length);
-    }
-
-    @Override
-    public final ByteBuf slice() {
-        return Unpooled.unreleasableBuffer(super.slice());
-    }
-
-    @Override
-    public final ByteBuf slice(int index, int length) {
-        return Unpooled.unreleasableBuffer(super.slice(index, length));
     }
 
     @Override
@@ -76,11 +55,6 @@ class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     @Override
     public final ByteBuf retainedSlice(int index, int length) {
         return slice(index, length);
-    }
-
-    @Override
-    public final ByteBuf duplicate() {
-        return Unpooled.unreleasableBuffer(super.duplicate());
     }
 
     @Override

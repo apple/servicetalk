@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import java.util.Collection;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +68,30 @@ public class BufferAllocatorsTest {
 
     @Test
     public void testNewCompositeBuffer() {
-        assertByteBufIsUnreleasable(allocator.newCompositeBuffer());
+        assertBufferIsUnreleasable(allocator.newCompositeBuffer());
+    }
+
+    @Test
+    public void testNewCompositeBufferWithSingleComponent() {
+        assertBufferIsUnreleasable(allocator.newCompositeBuffer()
+                .addBuffer(allocator.fromAscii("test")));
+    }
+
+    @Test
+    public void testNewCompositeBufferWithMultipleComponents() {
+        assertBufferIsUnreleasable(allocator.newCompositeBuffer()
+                .addBuffer(allocator.fromAscii("test1"))
+                .addBuffer(allocator.fromAscii("test2"))
+                .addBuffer(allocator.fromAscii("test3")));
+    }
+
+    @Test
+    public void testNewConsolidatedCompositeBufferWithMultipleComponents() {
+        assertBufferIsUnreleasable(allocator.newCompositeBuffer()
+                .addBuffer(allocator.fromAscii("test1"))
+                .addBuffer(allocator.fromAscii("test2"))
+                .addBuffer(allocator.fromAscii("test3"))
+                .consolidate());
     }
 
     @Test
@@ -126,27 +151,53 @@ public class BufferAllocatorsTest {
             assertTrue(buffer.hasArray());
             assertFalse(buffer.isDirect());
         }
-        assertByteBufIsUnreleasable(buffer);
+        assertBufferIsUnreleasable(buffer);
     }
 
-    private static void assertByteBufIsUnreleasable(Buffer buffer) {
+    private static void assertBufferIsUnreleasable(Buffer buffer) {
         ByteBuf byteBuf = BufferUtils.toByteBuf(buffer);
+        byteBuf.markReaderIndex();
+
+        // ServiceTalk buffers are unreleasable. There are some optimizations in Netty which use `refCnt() > 1` to
+        // judge if a ByteBuf maybe shared, and if not shared Netty may assume is is safe to make changes to the
+        // underlying storage (e.g. write reallocation, compact data in place) of the ByteBuf which may lead to
+        // visibility issues across threads and data corruption. We want to make sure `refCnt() > 1` here to imply the
+        // ByteBuf maybe shared and these optimizations are not safe.
+        assertThat(byteBuf.refCnt(), greaterThan(1));
         assertByteBufIsUnreleasable(byteBuf);
+
+        assertByteBufIsUnreleasable(byteBuf.asReadOnly());
         assertByteBufIsUnreleasable(byteBuf.slice());
         assertByteBufIsUnreleasable(byteBuf.slice(0, 0));
         assertByteBufIsUnreleasable(byteBuf.retainedSlice());
+        assertByteBufIsUnreleasable(byteBuf.retainedSlice(0, 0));
 
-        assertByteBufIsUnreleasable(byteBuf.readSlice(0));
         assertByteBufIsUnreleasable(byteBuf.duplicate());
         assertByteBufIsUnreleasable(byteBuf.retainedDuplicate());
         assertByteBufIsUnreleasable(byteBuf.order(ByteOrder.BIG_ENDIAN));
         assertByteBufIsUnreleasable(byteBuf.order(ByteOrder.LITTLE_ENDIAN));
+
+        assertByteBufIsUnreleasable(byteBuf.readSlice(0));
+        assertByteBufIsUnreleasable(byteBuf.readSlice(byteBuf.readableBytes()));
+        byteBuf.resetReaderIndex();
+
+        assertByteBufIsUnreleasable(byteBuf.readRetainedSlice(0));
+        assertByteBufIsUnreleasable(byteBuf.readRetainedSlice(byteBuf.readableBytes()));
+        byteBuf.resetReaderIndex();
+
+        assertByteBufIsUnreleasable(byteBuf.readBytes(0));
+        assertByteBufIsUnreleasable(byteBuf.readBytes(byteBuf.readableBytes()));
+        byteBuf.resetReaderIndex();
+
+        assertByteBufIsUnreleasable(byteBuf.copy());
+        assertByteBufIsUnreleasable(byteBuf.copy(0, 0));
     }
 
     private static void assertByteBufIsUnreleasable(ByteBuf byteBuf) {
         int refCnt = byteBuf.refCnt();
 
-        assertTrue(refCnt > 0);
+        // Expect greater than 0 as some operations may return Unpooled.EMPTY_BUFFER with refCnt == 1
+        assertThat(refCnt, greaterThan(0));
 
         byteBuf.release();
         assertEquals(refCnt, byteBuf.refCnt());
