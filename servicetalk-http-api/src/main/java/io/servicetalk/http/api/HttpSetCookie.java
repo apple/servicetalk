@@ -56,6 +56,15 @@ public interface HttpSetCookie extends HttpCookiePair {
     CharSequence expires();
 
     /**
+     * Get the value for the
+     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-5.3.7">SameSite attribute</a>.
+     * @return The value for the
+     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-5.3.7">SameSite attribute</a>.
+     */
+    @Nullable
+    SameSite sameSite();
+
+    /**
      * Checks to see if this {@link HttpSetCookie} is secure.
      *
      * @return True if this {@link HttpSetCookie} is secure, otherwise false
@@ -71,4 +80,14 @@ public interface HttpSetCookie extends HttpCookiePair {
      * @return True if this {@link HttpSetCookie} is HTTP-only or false if it isn't
      */
     boolean isHttpOnly();
+
+    /**
+     * Represents
+     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-4.1.1">samesite-value</a>
+     * for the
+     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-5.3.7">SameSite attribute</a>.
+     */
+    enum SameSite {
+        Lax, Strict, None
+    }
 }
