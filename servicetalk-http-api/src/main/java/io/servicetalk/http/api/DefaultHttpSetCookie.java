@@ -20,13 +20,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
-import static java.lang.Character.toLowerCase;
 import static java.lang.Long.parseLong;
 
 /**
@@ -402,7 +402,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         }
         if (sameSite != null) {
             sb.append(ENCODED_LABEL_SAMESITE);
-            sb.append(sameSite.toString());
+            sb.append(sameSite);
         }
         if (httpOnly) {
             sb.append(ENCODED_LABEL_HTTP_ONLY);
@@ -481,29 +481,34 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
 
     @Nullable
     private static SameSite fromSequence(CharSequence cs, int begin, int end) {
-        final int length = end - begin;
-        if (length == Lax.toString().length()) {
-            if (toLowerCase(cs.charAt(begin)) == 'l' &&
-                    toLowerCase(cs.charAt(begin + 1)) == 'a' &&
-                    toLowerCase(cs.charAt(begin + 2)) == 'x') {
-                return Lax;
-            }
-        } else if (length == None.toString().length()) {
-            if (toLowerCase(cs.charAt(begin)) == 'n' &&
-                    toLowerCase(cs.charAt(begin + 1)) == 'o' &&
-                    toLowerCase(cs.charAt(begin + 2)) == 'n' &&
-                    toLowerCase(cs.charAt(begin + 3)) == 'e') {
-                return None;
-            }
-        } else if (length == Strict.toString().length()) {
-            if (toLowerCase(cs.charAt(begin)) == 's' &&
-                    toLowerCase(cs.charAt(begin + 1)) == 't' &&
-                    toLowerCase(cs.charAt(begin + 2)) == 'r' &&
-                    toLowerCase(cs.charAt(begin + 3)) == 'i' &&
-                    toLowerCase(cs.charAt(begin + 4)) == 'c' &&
-                    toLowerCase(cs.charAt(begin + 5)) == 't') {
-                return Strict;
-            }
+        switch (end - begin) {
+            case 3:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 'l') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 'a') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'x')) {
+                    return Lax;
+                }
+                break;
+            case 4:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 'n') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 'o') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'n') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 3), 'e')) {
+                    return None;
+                }
+                break;
+            case 6:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 's') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 't') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'r') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 3), 'i') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 4), 'c') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 5), 't')) {
+                    return Strict;
+                }
+                break;
+            default:
+                break;
         }
         return null;
     }

@@ -158,6 +158,17 @@ public final class CharSequences {
         return a == b || toLowerCase(a) == toLowerCase(b);
     }
 
+    /**
+     * Compare an unknown ascii character {@code a} with a known lowercase character {@code lowerCaseChar} in a case
+     * insensitive manner.
+     * @param a an unknown ascii character.
+     * @param lowerCaseChar a known to be lowercase ascii character.
+     * @return {@code true} if {@code a} and {@code lowerCaseChar} are case insensitive equal.
+     */
+    static boolean equalsIgnoreCaseLower(final char a, final char lowerCaseChar) {
+        return a == lowerCaseChar || toLowerCase(a) == lowerCaseChar;
+    }
+
     private static char toLowerCase(final char c) {
         return isUpperCase(c) ? (char) (c + 32) : c;
     }
