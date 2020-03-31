@@ -30,6 +30,14 @@ public final class TerminalSignalConsumerMock implements TerminalSignalConsumer 
     private Runnable runnable;
     private TerminalSignalConsumer signalConsumer;
 
+    /**
+     * Creates a new instance.
+     */
+    public TerminalSignalConsumerMock() {
+        runnable = Mockito.mock(Runnable.class);
+        signalConsumer = Mockito.mock(TerminalSignalConsumer.class, delegatesTo(TerminalSignalConsumer.from(runnable)));
+    }
+
     @Override
     public void onComplete() {
         signalConsumer.onComplete();
@@ -46,13 +54,8 @@ public final class TerminalSignalConsumerMock implements TerminalSignalConsumer 
     }
 
     /**
-     * Creates a new instance.
+     * Verifies that only {@link TerminalSignalConsumer#onComplete()} was invoked and no other methods.
      */
-    public TerminalSignalConsumerMock() {
-        runnable = Mockito.mock(Runnable.class);
-        signalConsumer = Mockito.mock(TerminalSignalConsumer.class, delegatesTo(TerminalSignalConsumer.from(runnable)));
-    }
-
     public void verifyOnComplete() {
         verify(signalConsumer).onComplete();
         verify(signalConsumer, never()).onError(any(Throwable.class));
@@ -60,6 +63,9 @@ public final class TerminalSignalConsumerMock implements TerminalSignalConsumer 
         verify(runnable).run();
     }
 
+    /**
+     * Verifies that only {@link TerminalSignalConsumer#onError(Throwable)} was invoked and no other methods.
+     */
     public void verifyOnError(final Throwable throwable) {
         verify(signalConsumer).onError(throwable);
         verify(signalConsumer, never()).onComplete();
@@ -67,6 +73,9 @@ public final class TerminalSignalConsumerMock implements TerminalSignalConsumer 
         verify(runnable).run();
     }
 
+    /**
+     * Verifies that only {@link TerminalSignalConsumer#onCancel()} ()} was invoked and no other methods.
+     */
     public void verifyOnCancel() {
         verify(signalConsumer).onCancel();
         verify(signalConsumer, never()).onComplete();
@@ -74,6 +83,11 @@ public final class TerminalSignalConsumerMock implements TerminalSignalConsumer 
         verify(runnable).run();
     }
 
+    /**
+     * Returns internal mock object of {@link TerminalSignalConsumer} that could be used for other verifications.
+     *
+     * @return internal mock object of {@link TerminalSignalConsumer}
+     */
     public TerminalSignalConsumer mock() {
         return signalConsumer;
     }
