@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
@@ -32,18 +33,18 @@ import static org.junit.Assert.assertFalse;
 
 public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
-    protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, Runnable runnable) {
-        return toSource(publisher.beforeFinally(runnable));
+    protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer) {
+        return toSource(publisher.beforeFinally(signalConsumer));
     }
 
     @Override
     @Test
     public void testCallbackThrowsErrorOnComplete() {
         AtomicInteger invocationCount = new AtomicInteger();
-        doFinally(publisher, () -> {
+        doFinally(publisher, TerminalSignalConsumer.from(() -> {
             invocationCount.incrementAndGet();
             throw DELIBERATE_EXCEPTION;
-        }).subscribe(subscriber);
+        })).subscribe(subscriber);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -56,10 +57,10 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         AtomicInteger invocationCount = new AtomicInteger();
-        doFinally(publisher, () -> {
+        doFinally(publisher, TerminalSignalConsumer.from(() -> {
             invocationCount.incrementAndGet();
             throw exception;
-        }).subscribe(subscriber);
+        })).subscribe(subscriber);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), sameInstance(exception));
         assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));

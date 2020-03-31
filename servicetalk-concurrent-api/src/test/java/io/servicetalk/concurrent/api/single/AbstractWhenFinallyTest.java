@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.TerminalSignalConsumerMock;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,8 +29,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenFinallyTest {
 
@@ -39,46 +38,41 @@ public abstract class AbstractWhenFinallyTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private Runnable doFinally;
-
-    @Before
-    public void setUp() throws Exception {
-        doFinally = mock(Runnable.class);
-    }
+    private TerminalSignalConsumerMock doFinally = new TerminalSignalConsumerMock();
 
     @Test
     public void testForCancel() {
         listener.listen(Single.<String>never().afterFinally(doFinally));
         listener.cancel();
-        verify(doFinally).run();
+        doFinally.verifyOnCancel();
     }
 
     @Test
     public void testForCancelPostSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.cancel();
-        verify(doFinally).run();
+        doFinally.verifyOnComplete();
     }
 
     @Test
     public void testForCancelPostError() {
         listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.cancel();
-        verify(doFinally).run();
+        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testForSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.verifySuccess("Hello").cancel();
-        verify(doFinally).run();
+        doFinally.verifyOnComplete();
     }
 
     @Test
     public void testForError() {
         listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
-        verify(doFinally).run();
+        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
     }
 
     @Test
@@ -87,9 +81,9 @@ public abstract class AbstractWhenFinallyTest {
 
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
-            listener.listen(doFinally(single, () -> {
+            listener.listen(doFinally(single, TerminalSignalConsumer.from(() -> {
                 throw DELIBERATE_EXCEPTION;
-            })).cancel();
+            }))).cancel();
             fail();
         } finally {
             single.verifyCancelled();
@@ -102,5 +96,5 @@ public abstract class AbstractWhenFinallyTest {
     @Test
     public abstract void testCallbackThrowsErrorOnError();
 
-    protected abstract <T> Single<T> doFinally(Single<T> single, Runnable runnable);
+    protected abstract <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer signalConsumer);
 }

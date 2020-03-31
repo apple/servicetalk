@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
+
+import io.servicetalk.concurrent.api.TerminalSignalConsumers.RunnableTerminalSignalConsumer;
 
 /**
  * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
@@ -39,5 +41,15 @@ public interface TerminalSignalConsumer {
      * Callback to signal cancellation of the {@code Subscription} for this {@code Subscriber}.
      */
     default void onCancel() {
+    }
+
+    /**
+     * Creates a new {@link TerminalSignalConsumer} from {@link Runnable}.
+     *
+     * @param onFinally a {@link Runnable} to run on any terminal signal
+     * @return a new {@link TerminalSignalConsumer} from {@link Runnable}
+     */
+    static TerminalSignalConsumer from(Runnable onFinally) {
+        return new RunnableTerminalSignalConsumer(onFinally);
     }
 }

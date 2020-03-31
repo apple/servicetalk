@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
@@ -34,8 +35,8 @@ import static org.junit.Assert.fail;
 
 public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
-    protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, Runnable runnable) {
-        return toSource(publisher.afterFinally(runnable));
+    protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, TerminalSignalConsumer signalConsumer) {
+        return toSource(publisher.afterFinally(signalConsumer));
     }
 
     @Override
@@ -44,10 +45,10 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            doFinally(publisher, () -> {
+            doFinally(publisher, TerminalSignalConsumer.from(() -> {
                 invocationCount.incrementAndGet();
                 throw DELIBERATE_EXCEPTION;
-            }).subscribe(subscriber);
+            })).subscribe(subscriber);
             assertFalse(subscription.isCancelled());
             publisher.onComplete();
             fail();
@@ -66,10 +67,10 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
 
         AtomicInteger invocationCount = new AtomicInteger();
         try {
-            doFinally(publisher, () -> {
+            doFinally(publisher, TerminalSignalConsumer.from(() -> {
                 invocationCount.incrementAndGet();
                 throw exception;
-            }).subscribe(subscriber);
+            })).subscribe(subscriber);
             publisher.onError(DELIBERATE_EXCEPTION);
             fail();
         } finally {

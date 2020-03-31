@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,16 +74,6 @@ public final class BeforeFinallyOnHttpResponseOperator
      */
     public BeforeFinallyOnHttpResponseOperator(final TerminalSignalConsumer beforeFinally) {
         this.beforeFinally = requireNonNull(beforeFinally);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
-     * across both sources.
-     */
-    public BeforeFinallyOnHttpResponseOperator(final Runnable beforeFinally) {
-        this(new RunnableTerminalSignalConsumer(beforeFinally));
     }
 
     @Override
@@ -252,30 +242,6 @@ public final class BeforeFinallyOnHttpResponseOperator
         @Override
         public void onComplete() {
             // Ignore.
-        }
-    }
-
-    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
-
-        private final Runnable onFinally;
-
-        private RunnableTerminalSignalConsumer(Runnable onFinally) {
-            this.onFinally = requireNonNull(onFinally);
-        }
-
-        @Override
-        public void onComplete() {
-            onFinally.run();
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            onFinally.run();
-        }
-
-        @Override
-        public void onCancel() {
-            onFinally.run();
         }
     }
 }

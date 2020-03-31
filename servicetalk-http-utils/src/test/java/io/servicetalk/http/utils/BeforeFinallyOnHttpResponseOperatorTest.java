@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.TerminalSignalConsumerMock;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.CancellationException;
@@ -56,7 +55,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -70,8 +68,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Mock
-    private TerminalSignalConsumer beforeFinally;
+    private TerminalSignalConsumerMock beforeFinally = new TerminalSignalConsumerMock();
 
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
@@ -86,10 +83,10 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
 
         toSource(Single.<StreamingHttpResponse>succeeded(null).liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
-        verify(beforeFinally).onComplete();
+        beforeFinally.verifyOnComplete();
 
         subscriber.verifyNullResponseReceived();
-        verifyNoMoreInteractions(beforeFinally);
+        verifyNoMoreInteractions(beforeFinally.mock());
     }
 
     @Test
@@ -109,12 +106,12 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
+        final StreamingHttpResponse response = reqRespFactory.ok();
         subRef.get().onSuccess(response);
         final StreamingHttpResponse received = subscriber.verifyResponseReceived();
-        verifyZeroInteractions(beforeFinally);
+        verifyZeroInteractions(beforeFinally.mock());
 
-        final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
+        final StreamingHttpResponse response2 = reqRespFactory.badRequest();
 
         try {
             subRef.get().onSuccess(response2);
@@ -125,7 +122,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
         // Old response should be preserved.
         assertThat("Duplicate response received.", received2, is(received));
-        verifyZeroInteractions(beforeFinally);
+        verifyZeroInteractions(beforeFinally.mock());
     }
 
     @Test
@@ -136,14 +133,14 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(beforeFinally).onCancel();
+        beforeFinally.verifyOnCancel();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         responseSingle.onSuccess(response);
 
         subscriber.verifyResponseReceived();
-        verifyNoMoreInteractions(beforeFinally);
+        verifyNoMoreInteractions(beforeFinally.mock());
         assert subscriber.response != null;
         expectedException.expectCause(instanceOf(CancellationException.class));
         subscriber.response.payloadBody().toFuture().get();
@@ -157,12 +154,12 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(beforeFinally).onCancel();
+        beforeFinally.verifyOnCancel();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
         assertThat("onError called post cancel.", subscriber.error, is(DELIBERATE_EXCEPTION));
-        verifyNoMoreInteractions(beforeFinally);
+        verifyNoMoreInteractions(beforeFinally.mock());
     }
 
     @Test
@@ -175,12 +172,12 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
         responseSingle.onSuccess(response);
 
-        verifyZeroInteractions(beforeFinally);
+        verifyZeroInteractions(beforeFinally.mock());
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
 
         subscriber.cancellable.cancel();
-        verifyZeroInteractions(beforeFinally);
+        verifyZeroInteractions(beforeFinally.mock());
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -194,11 +191,11 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
 
-        verify(beforeFinally).onError(DELIBERATE_EXCEPTION);
+        beforeFinally.verifyOnError(DELIBERATE_EXCEPTION);
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
-        verifyNoMoreInteractions(beforeFinally);
+        verifyNoMoreInteractions(beforeFinally.mock());
         // We unconditionally cancel and let the original single handle the cancel post terminate
         responseSingle.verifyCancelled();
     }
@@ -214,7 +211,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);
         responseSingle.onSuccess(response);
 
-        verifyZeroInteractions(beforeFinally);
+        verifyZeroInteractions(beforeFinally.mock());
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
         assert subscriber.response != null;
@@ -224,7 +221,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
 
         payload.onComplete();
 
-        verify(beforeFinally).onComplete();
+        beforeFinally.verifyOnComplete();
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

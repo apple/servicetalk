@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
@@ -24,24 +25,24 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 
 public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
-    protected <T> Single<T> doFinally(Single<T> single, Runnable runnable) {
-        return single.afterFinally(runnable);
+    protected <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer doFinally) {
+        return single.afterFinally(doFinally);
     }
 
     @Test
     @Override
     public void testCallbackThrowsErrorOnSuccess() {
-        listener.listen(doFinally(Single.succeeded("Hello"), () -> {
+        listener.listen(doFinally(Single.succeeded("Hello"), TerminalSignalConsumer.from(() -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifySuccess("Hello");
+        }))).verifySuccess("Hello");
     }
 
     @Test
     @Override
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
-        listener.listen(doFinally(Single.failed(exception), () -> {
+        listener.listen(doFinally(Single.failed(exception), TerminalSignalConsumer.from(() -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(exception);
+        }))).verifyFailure(exception);
     }
 }

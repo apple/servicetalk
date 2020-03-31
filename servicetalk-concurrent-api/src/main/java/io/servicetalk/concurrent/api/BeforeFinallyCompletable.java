@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,48 +16,40 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import static java.util.Objects.requireNonNull;
+import io.servicetalk.concurrent.api.TerminalSignalConsumers.CompleteTerminalSignalConsumer;
 
 final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOperator {
 
-    private final Runnable runnable;
+    private final TerminalSignalConsumer doFinally;
 
-    BeforeFinallyCompletable(Completable original, Runnable runnable, Executor executor) {
+    BeforeFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.runnable = requireNonNull(runnable);
+        this.doFinally = new CompleteTerminalSignalConsumer(doFinally);
     }
 
     @Override
     public Subscriber apply(Subscriber subscriber) {
-        return new BeforeFinallyCompletableSubscriber(subscriber, runnable);
+        return new BeforeFinallyCompletableSubscriber(subscriber, doFinally);
     }
 
     private static final class BeforeFinallyCompletableSubscriber implements Subscriber {
         private final Subscriber original;
-        private final Runnable runnable;
+        private final TerminalSignalConsumer doFinally;
 
-        private static final AtomicIntegerFieldUpdater<BeforeFinallyCompletableSubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(BeforeFinallyCompletableSubscriber.class, "complete");
-        @SuppressWarnings("unused")
-        private volatile int complete;
-
-        BeforeFinallyCompletableSubscriber(Subscriber original, Runnable runnable) {
+        BeforeFinallyCompletableSubscriber(Subscriber original, TerminalSignalConsumer doFinally) {
             this.original = original;
-            this.runnable = runnable;
+            this.doFinally = doFinally;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(this::beforeFinally, originalCancellable));
+            original.onSubscribe(new BeforeCancellable(doFinally::onCancel, originalCancellable));
         }
 
         @Override
         public void onComplete() {
             try {
-                beforeFinally();
+                doFinally.onComplete();
             } catch (Throwable error) {
                 original.onError(error);
                 return;
@@ -68,19 +60,13 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
         @Override
         public void onError(Throwable cause) {
             try {
-                beforeFinally();
+                doFinally.onError(cause);
             } catch (Throwable error) {
                 error.addSuppressed(cause);
                 original.onError(error);
                 return;
             }
             original.onError(cause);
-        }
-
-        private void beforeFinally() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                runnable.run();
-            }
         }
     }
 }
