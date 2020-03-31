@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableOperator;
 import io.servicetalk.concurrent.api.Publisher;
@@ -33,8 +32,6 @@ import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -54,8 +51,6 @@ import static java.util.Objects.requireNonNull;
  * @param <Resp> Type of responses read from this connection.
  */
 final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelinedConnection.class);
-
     private final NettyConnection<Resp, Req> connection;
     private final MpmcSequentialRunQueue writeQueue;
     private final MpmcSequentialRunQueue readQueue;
@@ -92,66 +87,50 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     Publisher<Resp> write(final Publisher<Req> requestPublisher,
                           final Supplier<FlushStrategy> flushStrategySupplier,
                           final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier) {
-        return Publisher.defer(() -> {
-            // Lazy modification of local state required (e.g. nodes, delayed subscriber, queue modifications)
-
-            // Setup read side publisher and nodes
-            DelayedSubscribePublisher<Resp> delayedReadPublisher = new DelayedSubscribePublisher<>(
-                    toSource(connection.read()));
-            Node readNode = new Node() {
-                @Override
-                public void run() {
-                    try {
-                        delayedReadPublisher.processSubscribers();
-                    } catch (Throwable cause) {
-                        closeOnError(connection, delayedReadPublisher, cause);
-                    }
-                }
-            };
-            Publisher<Resp> composedReadPublisher = delayedReadPublisher.liftSync(new ReadPopNextOperator(readNode));
-
-            // Setup write side publisher and nodes
-            DelayedSubscribeCompletable delayedWriteCompletable = new DelayedSubscribeCompletable(toSource(
-                            connection.write(requestPublisher, flushStrategySupplier, writeDemandEstimatorSupplier)));
-            Node writeNode = new Node() {
-                @Override
-                public void run() {
-                    try {
-                        try {
-                            readQueue.offer(readNode);
-                        } catch (Throwable cause) {
-                            delayedWriteCompletable.failSubscribers(cause);
-                            // We have not started the write at this point, and the above operation will:
-                            // - fail the write subscriber (pop the next write). We haven't subscribed to
-                            // Completable returned from connection.write(..) and therefore the connection hasn't
-                            // subscribed to the requestPublisher so there is nothing to cancel on the write side.
-                            // - fail the merge operator (pop the next read, if still in progress), cancel the
-                            // connection.read() (which may close the connection if the read is still active), and
-                            // deliver an error to the downstream read Subscriber.
-                            return;
+        // Lazy modification of local state required (e.g. nodes, delayed subscriber, queue modifications)
+        return new Publisher<Resp>() {
+            @Override
+            protected void handleSubscribe(final PublisherSource.Subscriber<? super Resp> subscriber) {
+                try {
+                    // Setup read side publisher and nodes
+                    DelayedSubscribePublisher<Resp> delayedReadPublisher = new DelayedSubscribePublisher<>(
+                            toSource(connection.read()));
+                    Node readNode = new Node() {
+                        @Override
+                        public void run() {
+                            delayedReadPublisher.processSubscribers();
+                            // This results in a Publisher#subscribe(..) call and is not expected to throw.
                         }
+                    };
+                    Publisher<Resp> composedReadPublisher = delayedReadPublisher
+                            .liftSync(new ReadPopNextOperator(readNode));
 
-                        delayedWriteCompletable.processSubscribers();
-                    } catch (Throwable cause) {
-                        closeOnError(connection, delayedWriteCompletable, cause);
-                    }
+                    // Setup write side publisher and nodes
+                    DelayedSubscribeCompletable delayedWriteCompletable = new DelayedSubscribeCompletable(toSource(
+                            connection.write(requestPublisher, flushStrategySupplier, writeDemandEstimatorSupplier)));
+                    Node writeNode = new Node() {
+                        @Override
+                        public void run() {
+                            readQueue.offer(readNode);
+                            // offering to this queue is not expected to throw:
+                            // - MpmcSequentialRunQueue doesn't do any allocation (nodes allocated outside the scope)
+                            // - Node#run() method which maybe invoked as a result is not expected to throw
+                            delayedWriteCompletable.processSubscribers();
+                            // This results in a Publisher#subscribe(..) call and is not expected to throw.
+                        }
+                    };
+
+                    writeQueue.offer(writeNode);
+
+                    toSource(delayedWriteCompletable.liftSync(new WritePopNextOperator(writeNode))
+                            // Merge connects error propagation should be connected between the read/write.
+                            .merge(composedReadPublisher)).subscribe(subscriber);
+                } catch (Throwable cause) {
+                    // Exceptions are not expected, and assumed to be fatal (e.g. OOME), so force close the connection.
+                    toSource(connection.closeAsync().concat(Publisher.<Resp>failed(cause))).subscribe(subscriber);
                 }
-            };
-
-            try {
-                writeQueue.offer(writeNode);
-
-                return delayedWriteCompletable.liftSync(new WritePopNextOperator(writeNode))
-                        // If there is an error on the read/write side propagate the errors between the two via merge.
-                        .merge(composedReadPublisher);
-            } catch (Throwable cause) {
-                // The writeNode's run method handles exceptions as a result of Subscribe/external calls. An Exception
-                // would be a catastrophic failure from the queue (e.g. OOME). We can't try to pop from the queue
-                // because we aren't sure if writeNode is the head, and manually popping may break the queue ordering.
-                closeOnError(connection, writeQueue, cause);
-                return Publisher.failed(cause);
             }
-        });
+        };
     }
 
     @Override
@@ -231,14 +210,9 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         return connection.defaultFlushStrategy();
     }
 
-    private static void closeOnError(AsyncCloseable connection, Object source, Throwable cause) {
-        connection.closeAsync().subscribe();
-        LOGGER.warn("closing connection={} due to unexpected error source={}", connection, source, cause);
-    }
-
     /**
      * Logically equivalent to {@link Publisher#afterFinally(Runnable)} but relies upon
-     * {@link MpmcSequentialRunQueue#pop(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
+     * {@link MpmcSequentialRunQueue#poll(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
      * operation).
      */
     private final class ReadPopNextOperator implements PublisherOperator<Resp, Resp> {
@@ -294,7 +268,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                 }
 
                 private void pollNext() {
-                    readQueue.pop(readNode);
+                    readQueue.poll(readNode);
                 }
             };
         }
@@ -302,7 +276,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
 
     /**
      * Logically equivalent to {@link Completable#afterFinally(Runnable)} but relies upon
-     * {@link MpmcSequentialRunQueue#pop(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
+     * {@link MpmcSequentialRunQueue#poll(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
      * operation).
      */
     private final class WritePopNextOperator implements CompletableOperator {
@@ -347,7 +321,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         }
 
         private void pollNext() {
-            writeQueue.pop(writeNode);
+            writeQueue.poll(writeNode);
         }
     }
 }

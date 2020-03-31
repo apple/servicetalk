@@ -23,11 +23,11 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 /**
  * This queue allows for Muli-Producer Multi-Consumer (Mpmc) threading semantics while also invoking the head
  * {@link Node}'s {@link Node#run()} in a serial fashion. The {@link Node#run()} will eventually trigger a
- * {@link #pop(Node)} (possibly asynchronously on another thread) which will invoke {@link Node#run()} on the next head
+ * {@link #poll(Node)} (possibly asynchronously on another thread) which will invoke {@link Node#run()} on the next head
  * (assuming one exists).
  * <p>
- * Although this queue supports Multi-Consumer threading semantics the {@link #pop(Node)} is typically only invoked from
- * a single thread (assuming successful runnable completion), it maybe invoked multiple times (potentially from
+ * Although this queue supports Multi-Consumer threading semantics the {@link #poll(Node)} is typically only invoked
+ * from a single thread (assuming successful runnable completion), it maybe invoked multiple times (potentially from
  * different threads) with the same {@link Node} due to cancellation/failure.
  */
 final class MpmcSequentialRunQueue {
@@ -105,7 +105,7 @@ final class MpmcSequentialRunQueue {
      * @param head A {@link Node} which has been passed to {@link #offer(Node)}, and whose {@link Node#run()} has been
      * invoked by this queue.
      */
-    void pop(final Node head) {
+    void poll(final Node head) {
         // This method maybe called multiple times on the same node, in which case next will be EMPTY_NODE and the run
         // method will be a noop.
         Node next = head.pop();

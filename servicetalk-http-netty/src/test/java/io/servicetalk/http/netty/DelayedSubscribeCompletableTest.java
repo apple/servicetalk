@@ -29,69 +29,38 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class DelayedSubscribeCompletableTest {
     @Test
     public void singleSubscriberDelayed() {
-        singleSubscriberDelayed(false);
-    }
-
-    @Test
-    public void singleFailSubscriberDelayed() {
-        singleSubscriberDelayed(true);
-    }
-
-    private static void singleSubscriberDelayed(boolean fail) {
         Subscriber subscriber = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
         DelayedSubscribeCompletable delayedCompletable = new DelayedSubscribeCompletable(toSource(completable));
         toSource(delayedCompletable).subscribe(subscriber);
         assertFalse(completable.isSubscribed());
-        processSubscribers(delayedCompletable, fail);
-        assertThat(completable.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber, fail);
+        processSubscribers(delayedCompletable);
+        assertTrue(completable.isSubscribed());
+        verifySubscriber(subscriber);
     }
 
     @Test
     public void singleSubscriberPassThrough() {
-        singleSubscriberPassThrough(false);
-    }
-
-    @Test
-    public void singleFailSubscriberPassThrough() {
-        singleSubscriberPassThrough(true);
-    }
-
-    private static void singleSubscriberPassThrough(boolean fail) {
         Subscriber subscriber = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
         DelayedSubscribeCompletable delayedCompletable = new DelayedSubscribeCompletable(toSource(completable));
-        processSubscribers(delayedCompletable, fail);
+        processSubscribers(delayedCompletable);
         toSource(delayedCompletable).subscribe(subscriber);
-        assertThat(completable.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber, fail);
+        assertTrue(completable.isSubscribed());
+        verifySubscriber(subscriber);
     }
 
     @Test
     public void singleSubscriberMultiThreaded() throws Exception {
-        singleSubscriberMultiThreaded(false);
-    }
-
-    @Test
-    public void singleFailSubscriberMultiThreaded() throws Exception {
-        singleSubscriberMultiThreaded(true);
-    }
-
-    private static void singleSubscriberMultiThreaded(boolean fail) throws Exception {
         Subscriber subscriber = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
         DelayedSubscribeCompletable delayedCompletable = new DelayedSubscribeCompletable(toSource(completable));
@@ -109,12 +78,12 @@ public class DelayedSubscribeCompletableTest {
 
             barrier.await(); // wait until the other thread is ready to call subscribe
 
-            processSubscribers(delayedCompletable, fail);
+            processSubscribers(delayedCompletable);
 
             f.get(); // wait until after the subscribe is done
 
-            assertThat(completable.isSubscribed(), not(equalTo(fail)));
-            verifySubscriber(subscriber, fail);
+            assertTrue(completable.isSubscribed());
+            verifySubscriber(subscriber);
         } finally {
             executorService.shutdown();
         }
@@ -122,15 +91,6 @@ public class DelayedSubscribeCompletableTest {
 
     @Test
     public void multiSubscriberDelayed() {
-        multiSubscriberDelayed(false);
-    }
-
-    @Test
-    public void multiFailSubscriberDelayed() {
-        multiSubscriberDelayed(true);
-    }
-
-    private static void multiSubscriberDelayed(boolean fail) {
         Subscriber subscriber1 = mock(Subscriber.class);
         Subscriber subscriber2 = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
@@ -138,70 +98,43 @@ public class DelayedSubscribeCompletableTest {
         toSource(delayedCompletable).subscribe(subscriber1);
         toSource(delayedCompletable).subscribe(subscriber2);
         assertFalse(completable.isSubscribed());
-        processSubscribers(delayedCompletable, fail);
-        assertThat(completable.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        processSubscribers(delayedCompletable);
+        assertTrue(completable.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberPassThrough() {
-        multiSubscriberPassThrough(false);
-    }
-
-    @Test
-    public void multiFailSubscriberPassThrough() {
-        multiSubscriberPassThrough(true);
-    }
-
-    private static void multiSubscriberPassThrough(boolean fail) {
         Subscriber subscriber1 = mock(Subscriber.class);
         Subscriber subscriber2 = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
         DelayedSubscribeCompletable delayedCompletable = new DelayedSubscribeCompletable(toSource(completable));
-        processSubscribers(delayedCompletable, fail);
+        processSubscribers(delayedCompletable);
         toSource(delayedCompletable).subscribe(subscriber1);
         toSource(delayedCompletable).subscribe(subscriber2);
-        assertThat(completable.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        assertTrue(completable.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberMixed() {
-        multiSubscriberMixed(false);
-    }
-
-    @Test
-    public void multiFailSubscriberMixed() {
-        multiSubscriberMixed(true);
-    }
-
-    private static void multiSubscriberMixed(boolean fail) {
         Subscriber subscriber1 = mock(Subscriber.class);
         Subscriber subscriber2 = mock(Subscriber.class);
         TestCompletable completable = new TestCompletable();
         DelayedSubscribeCompletable delayedCompletable = new DelayedSubscribeCompletable(toSource(completable));
         toSource(delayedCompletable).subscribe(subscriber1);
         assertFalse(completable.isSubscribed());
-        processSubscribers(delayedCompletable, fail);
+        processSubscribers(delayedCompletable);
         toSource(delayedCompletable).subscribe(subscriber2);
-        assertThat(completable.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        assertTrue(completable.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberMultiThreaded() throws Exception {
-        multiSubscriberMultiThreaded(false);
-    }
-
-    @Test
-    public void multiFailSubscriberMultiThreaded() throws Exception {
-        multiSubscriberMultiThreaded(true);
-    }
-
-    private static void multiSubscriberMultiThreaded(boolean fail) throws Exception {
         final int numberSubscribers = 10;
         Subscriber[] subscribers = (Subscriber[]) Array.newInstance(Subscriber.class, 10);
         for (int i = 0; i < subscribers.length; ++i) {
@@ -227,32 +160,25 @@ public class DelayedSubscribeCompletableTest {
 
             barrier.await(); // wait until the other thread is ready to call subscribe
 
-            processSubscribers(delayedCompletable, fail);
+            processSubscribers(delayedCompletable);
 
             int i = 0;
             for (Future<?> future : futures) {
                 future.get(); // wait until after the subscribe is done
-                verifySubscriber(subscribers[i++], fail);
+                verifySubscriber(subscribers[i++]);
             }
 
-            assertThat(completable.isSubscribed(), not(equalTo(fail)));
+            assertTrue(completable.isSubscribed());
         } finally {
             executorService.shutdown();
         }
     }
 
-    private static void processSubscribers(DelayedSubscribeCompletable delayedCompletable, boolean fail) {
-        if (fail) {
-            delayedCompletable.failSubscribers(DELIBERATE_EXCEPTION);
-        } else {
-            delayedCompletable.processSubscribers();
-        }
+    private static void processSubscribers(DelayedSubscribeCompletable delayedCompletable) {
+        delayedCompletable.processSubscribers();
     }
 
-    private static void verifySubscriber(Subscriber subscriber, boolean fail) {
+    private static void verifySubscriber(Subscriber subscriber) {
         verify(subscriber).onSubscribe(any());
-        if (fail) {
-            verify(subscriber).onError(eq(DELIBERATE_EXCEPTION));
-        }
     }
 }

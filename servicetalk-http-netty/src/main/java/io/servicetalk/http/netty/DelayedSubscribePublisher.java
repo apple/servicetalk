@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -44,7 +43,6 @@ final class DelayedSubscribePublisher<T> extends Publisher<T> {
      * One of the following:
      * <ul>
      *     <li>{@code null} - initial state</li>
-     *     <li>{@link Throwable} - if {@link #failSubscribers(Throwable)} is called</li>
      *     <li>{@link #ALLOW_SUBSCRIBE} - {@link #handleSubscribe(Subscriber)} methods will pass through to
      *     {@link #delayedPublisher}</li>
      *     <li>{@link #DRAINING_SUBSCRIBERS} - set in {@link #processSubscribers()} while calling
@@ -67,55 +65,19 @@ final class DelayedSubscribePublisher<T> extends Publisher<T> {
     }
 
     /**
-     * Terminate any pending/future {@link Subscriber}s via  {@link Subscriber#onError(Throwable)}.
-     * @param cause The {@link Throwable} to use for {@link Subscriber#onError(Throwable)}.
-     */
-    public void failSubscribers(Throwable cause) {
-        for (;;) {
-            Object currentState = state;
-            if (currentState == null || currentState == ALLOW_SUBSCRIBE) {
-                if (stateUpdater.compareAndSet(this, currentState, cause)) {
-                    break;
-                }
-            } else if (currentState instanceof Throwable) {
-                break;
-            } else if (currentState instanceof Subscriber) {
-                @SuppressWarnings("unchecked")
-                Subscriber<? super T> currentSubscriber = (Subscriber<? super T>) currentState;
-                if (stateUpdater.compareAndSet(this, currentState, DRAINING_SUBSCRIBERS)) {
-                    deliverTerminalFromSource(currentSubscriber, cause);
-                    if (stateUpdater.compareAndSet(this, DRAINING_SUBSCRIBERS, cause)) {
-                        break;
-                    }
-                }
-            } else if (stateUpdater.compareAndSet(this, currentState, DRAINING_SUBSCRIBERS)) {
-                assert currentState != DRAINING_SUBSCRIBERS;
-                @SuppressWarnings("unchecked")
-                Subscriber<? super T>[] subscribers = (Subscriber<? super T>[]) currentState;
-                for (Subscriber<? super T> subscriber : subscribers) {
-                    deliverTerminalFromSource(subscriber, cause);
-                }
-                if (stateUpdater.compareAndSet(this, DRAINING_SUBSCRIBERS, cause)) {
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
      * Any previous calls to {@link PublisherSource#subscribe(Subscriber)} on this object will be
      * forwarded to the delayed {@link PublisherSource}. All future calls to
      * {@link PublisherSource#subscribe(Subscriber)} will behave as a direct pass through to the
      * delayed {@link PublisherSource} after this method is called.
      */
-    public void processSubscribers() {
+    void processSubscribers() {
         for (;;) {
             Object currentState = state;
             if (currentState == null) {
                 if (stateUpdater.compareAndSet(this, null, ALLOW_SUBSCRIBE)) {
                     break;
                 }
-            } else if (currentState == ALLOW_SUBSCRIBE || currentState instanceof Throwable) {
+            } else if (currentState == ALLOW_SUBSCRIBE) {
                 break;
             } else if (currentState instanceof Subscriber) {
                 @SuppressWarnings("unchecked")
@@ -150,9 +112,6 @@ final class DelayedSubscribePublisher<T> extends Publisher<T> {
                 }
             } else if (currentState == ALLOW_SUBSCRIBE) {
                 delayedPublisher.subscribe(subscriber);
-                break;
-            } else if (currentState instanceof Throwable) {
-                deliverTerminalFromSource(subscriber, (Throwable) currentState);
                 break;
             } else if (currentState instanceof Subscriber) {
                 // Ideally we can propagate the onSubscribe ASAP to allow for cancellation but this publisher is

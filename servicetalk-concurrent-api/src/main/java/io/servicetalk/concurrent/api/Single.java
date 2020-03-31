@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -1853,8 +1854,7 @@ public abstract class Single<T> {
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.
             // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
             // further signals occur.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
+            deliverTerminalFromSource(subscriber, t);
         }
     }
 

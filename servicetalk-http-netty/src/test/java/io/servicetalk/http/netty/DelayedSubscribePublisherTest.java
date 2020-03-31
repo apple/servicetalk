@@ -29,71 +29,40 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class DelayedSubscribePublisherTest {
     @Test
     public void singleSubscriberDelayed() {
-        singleSubscriberDelayed(false);
-    }
-
-    @Test
-    public void singleFailSubscriberDelayed() {
-        singleSubscriberDelayed(true);
-    }
-
-    private static void singleSubscriberDelayed(boolean fail) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber = mock(Subscriber.class);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         DelayedSubscribePublisher<Integer> delayedPublisher = new DelayedSubscribePublisher<>(toSource(publisher));
         toSource(delayedPublisher).subscribe(subscriber);
         assertFalse(publisher.isSubscribed());
-        processSubscribers(delayedPublisher, fail);
-        assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber, fail);
+        processSubscribers(delayedPublisher);
+        assertTrue(publisher.isSubscribed());
+        verifySubscriber(subscriber);
     }
 
     @Test
     public void singleSubscriberPassThrough() {
-        singleSubscriberPassThrough(false);
-    }
-
-    @Test
-    public void singleFailSubscriberPassThrough() {
-        singleSubscriberPassThrough(true);
-    }
-
-    private static void singleSubscriberPassThrough(boolean fail) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber = mock(Subscriber.class);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         DelayedSubscribePublisher<Integer> delayedPublisher = new DelayedSubscribePublisher<>(toSource(publisher));
-        processSubscribers(delayedPublisher, fail);
+        processSubscribers(delayedPublisher);
         toSource(delayedPublisher).subscribe(subscriber);
-        assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber, fail);
+        assertTrue(publisher.isSubscribed());
+        verifySubscriber(subscriber);
     }
 
     @Test
     public void singleSubscriberMultiThreaded() throws Exception {
-        singleSubscriberMultiThreaded(false);
-    }
-
-    @Test
-    public void singleFailSubscriberMultiThreaded() throws Exception {
-        singleSubscriberMultiThreaded(true);
-    }
-
-    private static void singleSubscriberMultiThreaded(boolean fail) throws Exception {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber = mock(Subscriber.class);
         TestPublisher<Integer> publisher = new TestPublisher<>();
@@ -112,12 +81,12 @@ public class DelayedSubscribePublisherTest {
 
             barrier.await(); // wait until the other thread is ready to call subscribe
 
-            processSubscribers(delayedPublisher, fail);
+            processSubscribers(delayedPublisher);
 
             f.get(); // wait until after the subscribe is done
 
-            assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-            verifySubscriber(subscriber, fail);
+            assertTrue(publisher.isSubscribed());
+            verifySubscriber(subscriber);
         } finally {
             executorService.shutdown();
         }
@@ -125,15 +94,6 @@ public class DelayedSubscribePublisherTest {
 
     @Test
     public void multiSubscriberDelayed() {
-        multiSubscriberDelayed(false);
-    }
-
-    @Test
-    public void multiFailSubscriberDelayed() {
-        multiSubscriberDelayed(true);
-    }
-
-    private static void multiSubscriberDelayed(boolean fail) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber1 = mock(Subscriber.class);
         @SuppressWarnings("unchecked")
@@ -143,48 +103,30 @@ public class DelayedSubscribePublisherTest {
         toSource(delayedPublisher).subscribe(subscriber1);
         toSource(delayedPublisher).subscribe(subscriber2);
         assertFalse(publisher.isSubscribed());
-        processSubscribers(delayedPublisher, fail);
-        assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        processSubscribers(delayedPublisher);
+        assertTrue(publisher.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberPassThrough() {
-        multiSubscriberPassThrough(false);
-    }
-
-    @Test
-    public void multiFailSubscriberPassThrough() {
-        multiSubscriberPassThrough(true);
-    }
-
-    private static void multiSubscriberPassThrough(boolean fail) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber1 = mock(Subscriber.class);
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber2 = mock(Subscriber.class);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         DelayedSubscribePublisher<Integer> delayedPublisher = new DelayedSubscribePublisher<>(toSource(publisher));
-        processSubscribers(delayedPublisher, fail);
+        processSubscribers(delayedPublisher);
         toSource(delayedPublisher).subscribe(subscriber1);
         toSource(delayedPublisher).subscribe(subscriber2);
-        assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        assertTrue(publisher.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberMixed() {
-        multiSubscriberMixed(false);
-    }
-
-    @Test
-    public void multiFailSubscriberMixed() {
-        multiSubscriberMixed(true);
-    }
-
-    private static void multiSubscriberMixed(boolean fail) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber1 = mock(Subscriber.class);
         @SuppressWarnings("unchecked")
@@ -193,24 +135,15 @@ public class DelayedSubscribePublisherTest {
         DelayedSubscribePublisher<Integer> delayedPublisher = new DelayedSubscribePublisher<>(toSource(publisher));
         toSource(delayedPublisher).subscribe(subscriber1);
         assertFalse(publisher.isSubscribed());
-        processSubscribers(delayedPublisher, fail);
+        processSubscribers(delayedPublisher);
         toSource(delayedPublisher).subscribe(subscriber2);
-        assertThat(publisher.isSubscribed(), not(equalTo(fail)));
-        verifySubscriber(subscriber1, fail);
-        verifySubscriber(subscriber2, fail);
+        assertTrue(publisher.isSubscribed());
+        verifySubscriber(subscriber1);
+        verifySubscriber(subscriber2);
     }
 
     @Test
     public void multiSubscriberMultiThreaded() throws Exception {
-        multiSubscriberMultiThreaded(false);
-    }
-
-    @Test
-    public void multiFailSubscriberMultiThreaded() throws Exception {
-        multiSubscriberMultiThreaded(true);
-    }
-
-    private static void multiSubscriberMultiThreaded(boolean fail) throws Exception {
         final int numberSubscribers = 10;
         @SuppressWarnings("unchecked")
         Subscriber<Integer>[] subscribers = (Subscriber<Integer>[]) Array.newInstance(Subscriber.class, 10);
@@ -239,32 +172,25 @@ public class DelayedSubscribePublisherTest {
 
             barrier.await(); // wait until the other thread is ready to call subscribe
 
-            processSubscribers(delayedPublisher, fail);
+            processSubscribers(delayedPublisher);
 
             int i = 0;
             for (Future<?> future : futures) {
                 future.get(); // wait until after the subscribe is done
-                verifySubscriber(subscribers[i++], fail);
+                verifySubscriber(subscribers[i++]);
             }
 
-            assertThat(publisher.isSubscribed(), not(equalTo(fail)));
+            assertTrue(publisher.isSubscribed());
         } finally {
             executorService.shutdown();
         }
     }
 
-    private static void processSubscribers(DelayedSubscribePublisher<Integer> delayedPublisher, boolean fail) {
-        if (fail) {
-            delayedPublisher.failSubscribers(DELIBERATE_EXCEPTION);
-        } else {
-            delayedPublisher.processSubscribers();
-        }
+    private static void processSubscribers(DelayedSubscribePublisher<Integer> delayedPublisher) {
+        delayedPublisher.processSubscribers();
     }
 
-    private static void verifySubscriber(Subscriber<Integer> subscriber, boolean fail) {
+    private static void verifySubscriber(Subscriber<Integer> subscriber) {
         verify(subscriber).onSubscribe(any());
-        if (fail) {
-            verify(subscriber).onError(eq(DELIBERATE_EXCEPTION));
-        }
     }
 }
