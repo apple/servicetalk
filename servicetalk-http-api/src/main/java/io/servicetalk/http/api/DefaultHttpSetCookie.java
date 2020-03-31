@@ -20,9 +20,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
+import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
+import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
+import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
 import static java.lang.Long.parseLong;
 
 /**
@@ -35,9 +39,10 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private static final String ENCODED_LABEL_MAX_AGE = "; max-age=";
     private static final String ENCODED_LABEL_HTTP_ONLY = "; httponly";
     private static final String ENCODED_LABEL_SECURE = "; secure";
+    private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
 
     /**
-     * An underlying size of 8 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
+     * An underlying size of 16 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
      * with the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
      * this initial value should be re-evaluated.
      * <p>
@@ -45,13 +50,14 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      * if/else block we lean on {@link HttpHeaders} which provides an associative array that compares keys in a case
      * case-insensitive manner.
      */
-    private static final HttpHeaders AV_FIELD_NAMES = new DefaultHttpHeaders(8, false, false);
+    private static final HttpHeaders AV_FIELD_NAMES = new DefaultHttpHeaders(16, false, false);
 
     static {
         AV_FIELD_NAMES.add(newAsciiString("path"), new ParseStateCharSequence(ParseState.ParsingPath));
         AV_FIELD_NAMES.add(newAsciiString("domain"), new ParseStateCharSequence(ParseState.ParsingDomain));
         AV_FIELD_NAMES.add(newAsciiString("expires"), new ParseStateCharSequence(ParseState.ParsingExpires));
         AV_FIELD_NAMES.add(newAsciiString("max-age"), new ParseStateCharSequence(ParseState.ParsingMaxAge));
+        AV_FIELD_NAMES.add(newAsciiString("samesite"), new ParseStateCharSequence(ParseState.ParsingSameSite));
     }
 
     private final CharSequence name;
@@ -64,6 +70,8 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private final CharSequence expires;
     @Nullable
     private final Long maxAge;
+    @Nullable
+    private final SameSite sameSite;
     private final boolean wrapped;
     private final boolean secure;
     private final boolean httpOnly;
@@ -92,7 +100,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      */
     public DefaultHttpSetCookie(final CharSequence name, final CharSequence value,
                                 final boolean wrapped, final boolean secure, final boolean httpOnly) {
-        this(name, value, null, null, null, null, wrapped, secure, httpOnly);
+        this(name, value, null, null, null, null, null, wrapped, secure, httpOnly);
     }
 
     /**
@@ -111,11 +119,13 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      * @param secure the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">secure-av</a>.
      * @param httpOnly the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">httponly-av</a> (see
      * <a href="http://www.owasp.org/index.php/HTTPOnly">HTTP-only</a>).
+     * @param sameSite the
+     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-5.3.7">SameSite attribute</a>.
      */
     public DefaultHttpSetCookie(final CharSequence name, final CharSequence value, @Nullable final CharSequence path,
                                 @Nullable final CharSequence domain, @Nullable final CharSequence expires,
-                                @Nullable final Long maxAge, final boolean wrapped, final boolean secure,
-                                final boolean httpOnly) {
+                                @Nullable final Long maxAge, @Nullable final SameSite sameSite, final boolean wrapped,
+                                final boolean secure, final boolean httpOnly) {
         validateCookieNameAndValue(name, value);
         this.name = name;
         this.value = value;
@@ -123,6 +133,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         this.domain = domain;
         this.expires = expires;
         this.maxAge = maxAge;
+        this.sameSite = sameSite;
         this.wrapped = wrapped;
         this.secure = secure;
         this.httpOnly = httpOnly;
@@ -135,6 +146,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         CharSequence domain = null;
         CharSequence expires = null;
         Long maxAge = null;
+        SameSite sameSite = null;
         boolean isWrapped = false;
         boolean isSecure = false;
         boolean isHttpOnly = false;
@@ -219,6 +231,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         case ParsingMaxAge:
                             maxAge = parseLong(setCookieString.subSequence(begin, i).toString());
                             break;
+                        case ParsingSameSite:
+                            sameSite = fromSequence(setCookieString, begin, i);
+                            break;
                         default:
                             if (name == null) {
                                 throw new IllegalArgumentException("cookie value not found at index " + i);
@@ -260,6 +275,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                 case ParsingExpires:
                     expires = setCookieString.subSequence(begin, i);
                     break;
+                case ParsingSameSite:
+                    sameSite = fromSequence(setCookieString, begin, i);
+                    break;
                 case ParsingMaxAge:
                     maxAge = parseLong(setCookieString.subSequence(begin, i).toString());
                     break;
@@ -277,7 +295,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
             }
         }
 
-        return new DefaultHttpSetCookie(name, value, path, domain, expires, maxAge, isWrapped, isSecure, isHttpOnly);
+        assert name != null && value != null; // these are checked at runtime in the constructor
+        return new DefaultHttpSetCookie(name, value, path, domain, expires, maxAge, sameSite, isWrapped, isSecure,
+                isHttpOnly);
     }
 
     /**
@@ -331,6 +351,12 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         return expires;
     }
 
+    @Nullable
+    @Override
+    public SameSite sameSite() {
+        return sameSite;
+    }
+
     @Override
     public boolean isSecure() {
         return secure;
@@ -349,6 +375,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                 (path != null ? ENCODED_LABEL_PATH.length() + path.length() : 0) +
                 (expires != null ? ENCODED_LABEL_EXPIRES.length() + expires.length() : 0) +
                 (maxAge != null ? ENCODED_LABEL_MAX_AGE.length() + 11 : 0) +
+                (sameSite != null ? ENCODED_LABEL_SAMESITE.length() + Strict.toString().length() : 0) +
                 (httpOnly ? ENCODED_LABEL_HTTP_ONLY.length() : 0) +
                 (secure ? ENCODED_LABEL_SECURE.length() : 0));
         sb.append(name).append('=');
@@ -372,6 +399,10 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         if (maxAge != null) {
             sb.append(ENCODED_LABEL_MAX_AGE);
             sb.append(maxAge);
+        }
+        if (sameSite != null) {
+            sb.append(ENCODED_LABEL_SAMESITE);
+            sb.append(sameSite);
         }
         if (httpOnly) {
             sb.append(ENCODED_LABEL_HTTP_ONLY);
@@ -421,6 +452,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         ParsingDomain,
         ParsingExpires,
         ParsingMaxAge,
+        ParsingSameSite,
         Unknown
     }
 
@@ -445,6 +477,40 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         public CharSequence subSequence(final int start, final int end) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Nullable
+    private static SameSite fromSequence(CharSequence cs, int begin, int end) {
+        switch (end - begin) {
+            case 3:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 'l') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 'a') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'x')) {
+                    return Lax;
+                }
+                break;
+            case 4:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 'n') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 'o') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'n') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 3), 'e')) {
+                    return None;
+                }
+                break;
+            case 6:
+                if (equalsIgnoreCaseLower(cs.charAt(begin), 's') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 1), 't') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 2), 'r') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 3), 'i') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 4), 'c') &&
+                    equalsIgnoreCaseLower(cs.charAt(begin + 5), 't')) {
+                    return Strict;
+                }
+                break;
+            default:
+                break;
+        }
+        return null;
     }
 
     /**
