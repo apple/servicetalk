@@ -42,7 +42,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
 
     /**
-     * An underlying size of 8 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
+     * An underlying size of 16 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
      * with the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
      * this initial value should be re-evaluated.
      * <p>
