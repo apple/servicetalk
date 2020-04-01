@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.TerminalSignalConsumers.RunnableTerminalSignalConsumer;
-
 /**
  * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
  * {@code Source} and {@code Subscription}.
@@ -44,12 +42,16 @@ public interface TerminalSignalConsumer {
     }
 
     /**
-     * Creates a new {@link TerminalSignalConsumer} from {@link Runnable}.
+     * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
+     * invoked for each call to {@link TerminalSignalConsumer#onComplete()},
+     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#onCancel()}.
      *
-     * @param onFinally a {@link Runnable} to run on any terminal signal
-     * @return a new {@link TerminalSignalConsumer} from {@link Runnable}
+     * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
+     * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onComplete()},
+     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#onCancel()}.
+     * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
      */
     static TerminalSignalConsumer from(Runnable onFinally) {
-        return new RunnableTerminalSignalConsumer(onFinally);
+        return TerminalSignalConsumers.from(onFinally);
     }
 }

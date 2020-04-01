@@ -216,8 +216,8 @@ public abstract class Completable {
     }
 
     /**
-     * Invokes an appropriate terminal signal of the {@link TerminalSignalConsumer}, when any of the following terminal
-     * methods are called:
+     * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
+     * following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -236,7 +236,7 @@ public abstract class Completable {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
      *
@@ -806,8 +806,8 @@ public abstract class Completable {
     }
 
     /**
-     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
-     * methods are called:
+     * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
+     * <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -819,10 +819,13 @@ public abstract class Completable {
      * <pre>{@code
      *  try {
      *      resultOfThisCompletable();
-     *  } finally {
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *  } catch(Throwable t) {
+     *      doFinally.onError(t);
      *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      return;
      *  }
+     *  doFinally.onComplete();
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
      *
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
@@ -976,8 +979,8 @@ public abstract class Completable {
     }
 
     /**
-     * Invokes an appropriate terminal signal of the {@link TerminalSignalConsumer} <strong>after</strong> any of the
-     * following terminal methods are called:
+     * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
+     * <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -991,7 +994,7 @@ public abstract class Completable {
      *      resultOfThisCompletable();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
      *

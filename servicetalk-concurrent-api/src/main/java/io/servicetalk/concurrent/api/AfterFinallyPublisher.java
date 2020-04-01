@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.TerminalSignalConsumers.CompleteTerminalSignalConsumer;
+import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
 
 final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
@@ -23,7 +23,7 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
 
     AfterFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = new CompleteTerminalSignalConsumer(doFinally);
+        this.doFinally = atomic(doFinally);
     }
 
     @Override

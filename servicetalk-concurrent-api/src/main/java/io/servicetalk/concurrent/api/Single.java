@@ -295,8 +295,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Invokes an appropriate terminal signal of the {@link TerminalSignalConsumer}, when any of the following terminal
-     * methods are called:
+     * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
+     * following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -315,7 +315,7 @@ public abstract class Single<T> {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once, when any of the
@@ -714,8 +714,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Invokes an appropriate terminal signal of the {@link TerminalSignalConsumer} <strong>before</strong> any of the
-     * following terminal methods are called:
+     * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
+     * <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -727,10 +727,13 @@ public abstract class Single<T> {
      * <pre>{@code
      *  try {
      *      T result = resultOfThisSingle();
-     *  } finally {
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *  } catch(Throwable t) {
+     *      doFinally.onError(t);
      *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      return;
      *  }
+     *  doFinally.onComplete();
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
      * <strong>before</strong> any of the following terminal methods are called:
@@ -880,8 +883,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Invokes an appropriate terminal signal of the {@link TerminalSignalConsumer} <strong>after</strong> any of the
-     * following terminal methods are called:
+     * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
+     * <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
@@ -895,7 +898,7 @@ public abstract class Single<T> {
      *      T result = resultOfThisSingle();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes an appropriate terminal signal
+     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once

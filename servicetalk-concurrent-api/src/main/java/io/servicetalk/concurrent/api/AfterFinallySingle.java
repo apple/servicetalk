@@ -16,7 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.TerminalSignalConsumers.CompleteTerminalSignalConsumer;
+
+import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
 
 final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
@@ -24,7 +25,7 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
 
     AfterFinallySingle(Single<T> original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = new CompleteTerminalSignalConsumer(doFinally);
+        this.doFinally = atomic(doFinally);
     }
 
     @Override

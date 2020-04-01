@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verify;
  */
 public final class TerminalSignalConsumerMock implements TerminalSignalConsumer {
 
-    private Runnable runnable;
-    private TerminalSignalConsumer signalConsumer;
+    private final Runnable runnable;
+    private final TerminalSignalConsumer signalConsumer;
 
     /**
      * Creates a new instance.

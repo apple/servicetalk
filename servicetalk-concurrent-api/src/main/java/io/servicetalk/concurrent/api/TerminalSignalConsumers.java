@@ -19,13 +19,17 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
-final class TerminalSignalConsumers implements TerminalSignalConsumer {
+final class TerminalSignalConsumers {
 
-    static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+    private TerminalSignalConsumers() {
+        // No instances
+    }
+
+    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
 
         private final Runnable onFinally;
 
-        RunnableTerminalSignalConsumer(Runnable onFinally) {
+        RunnableTerminalSignalConsumer(final Runnable onFinally) {
             this.onFinally = requireNonNull(onFinally);
         }
 
@@ -45,39 +49,46 @@ final class TerminalSignalConsumers implements TerminalSignalConsumer {
         }
     }
 
-    static final class CompleteTerminalSignalConsumer implements TerminalSignalConsumer {
+    private static final class AtomicTerminalSignalConsumer implements TerminalSignalConsumer {
 
-        private static final AtomicIntegerFieldUpdater<TerminalSignalConsumers.CompleteTerminalSignalConsumer>
-                completeUpdater = AtomicIntegerFieldUpdater.newUpdater(
-                        TerminalSignalConsumers.CompleteTerminalSignalConsumer.class, "complete");
+        private static final AtomicIntegerFieldUpdater<AtomicTerminalSignalConsumer> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AtomicTerminalSignalConsumer.class, "done");
         @SuppressWarnings("unused")
-        private volatile int complete;
+        private volatile int done;
 
-        private final TerminalSignalConsumer deletage;
+        private final TerminalSignalConsumer delegate;
 
-        CompleteTerminalSignalConsumer(final TerminalSignalConsumer deletage) {
-            this.deletage = requireNonNull(deletage);
+        AtomicTerminalSignalConsumer(final TerminalSignalConsumer delegate) {
+            this.delegate = requireNonNull(delegate);
         }
 
         @Override
         public void onComplete() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                deletage.onComplete();
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                delegate.onComplete();
             }
         }
 
         @Override
         public void onError(final Throwable throwable) {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                deletage.onError(throwable);
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                delegate.onError(throwable);
             }
         }
 
         @Override
         public void onCancel() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                deletage.onCancel();
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                delegate.onCancel();
             }
         }
+    }
+
+    static TerminalSignalConsumer from(final Runnable runnable) {
+        return new RunnableTerminalSignalConsumer(runnable);
+    }
+
+    static TerminalSignalConsumer atomic(final TerminalSignalConsumer delegate) {
+        return new AtomicTerminalSignalConsumer(delegate);
     }
 }
