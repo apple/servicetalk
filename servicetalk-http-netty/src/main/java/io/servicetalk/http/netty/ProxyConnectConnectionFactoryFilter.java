@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,11 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.Single.TerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -32,6 +31,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -47,17 +48,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
-final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
-        extends ListenableAsyncCloseable & FilterableStreamingHttpConnection>
-        implements ConnectionFactoryFilter<ResolvedAddress, C>,
-                   HttpExecutionStrategyInfluencer {
+final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends FilterableStreamingHttpConnection>
+        implements ConnectionFactoryFilter<ResolvedAddress, C>, HttpExecutionStrategyInfluencer {
 
-    private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final String connectAddress;
 
-    ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress,
-                                        final StreamingHttpRequestResponseFactory reqRespFactory) {
-        this.reqRespFactory = reqRespFactory;
+    ProxyConnectConnectionFactoryFilter(final CharSequence connectAddress) {
         this.connectAddress = connectAddress.toString();
     }
 
@@ -74,14 +70,21 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-            return delegate().newConnection(resolvedAddress).flatMap(c ->
+            return delegate().newConnection(resolvedAddress).flatMap(c -> {
+            try {
                 // We currently only have access to a StreamingHttpRequester, which means we are forced to provide an
                 // HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the connection
                 // filters we use the default strategy which should offload everything to be safe.
-                c.request(defaultStrategy(),
-                            reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                  .flatMap(response -> {
-                if (SUCCESSFUL_2XX.contains(response.status())) {
+                    // Drain response payload body asynchronously as we are not interested in it:
+                    response.payloadBodyAndTrailers().ignoreElements().subscribe();
+
+                    if (response.status().statusClass() != SUCCESSFUL_2XX) {
+                        return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
+                                connectAddress, response.status()));
+                    }
+
                     final Channel channel = ((NettyConnectionContext) c.connectionContext()).nettyChannel();
                     final SingleSource.Processor<C, C> processor = newSingleProcessor();
 
@@ -100,26 +103,41 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                         }
                     });
 
-                    DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
+                    final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
                     if (deferSslHandler == null) {
-                        return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
-                                new IllegalStateException("Failed to find a handler of type " +
-                                        DeferSslHandler.class + " in channel pipeline.")));
+                        return failed(new IllegalStateException("Failed to find a handler of type " +
+                                DeferSslHandler.class + " in channel pipeline."));
                     }
-
                     deferSslHandler.ready();
 
-                    // There is no need to apply offloading explicitly (despite completing `processor` on the
-                    // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
-                    // request.
-                    return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
-                } else {
-                    return response.payloadBodyAndTrailers().ignoreElements().concat(
-                            failed(new ProxyResponseException("Bad response from proxy CONNECT " + connectAddress,
-                                    response.status())));
-                }
-            }));
+                    return fromSource(processor);
+                    // Close recently created connection in case of any error or cancellation while it connects to proxy
+                 }).whenFinally(new TerminalSignalConsumer<C>() {
+                    @Override
+                    public void onSuccess(@Nullable final C result) {
+                        // noop
+                    }
+
+                    @Override
+                    public void onError(final Throwable ignore) {
+                        closeConnection(c);
+                    }
+
+                    @Override
+                    public void cancel() {
+                        closeConnection(c);
+                    }
+                 });
+            } catch (Exception e) {
+                closeConnection(c);
+                return failed(e);
+            }
+            });
         }
+    }
+
+    private static <C extends FilterableStreamingHttpConnection> void closeConnection(C connection) {
+        connection.closeAsync().subscribe();
     }
 
     @Override
