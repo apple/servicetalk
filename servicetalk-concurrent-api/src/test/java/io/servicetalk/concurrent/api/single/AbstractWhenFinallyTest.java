@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.concurrent.api.TerminalSignalConsumerMock;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +28,10 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public abstract class AbstractWhenFinallyTest {
 
@@ -38,41 +41,53 @@ public abstract class AbstractWhenFinallyTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private TerminalSignalConsumerMock doFinally = new TerminalSignalConsumerMock();
+    private final Runnable runnable = mock(Runnable.class);
+    private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class,
+            delegatesTo(TerminalSignalConsumer.from(runnable)));
 
     @Test
     public void testForCancel() {
         listener.listen(Single.<String>never().afterFinally(doFinally));
         listener.cancel();
-        doFinally.verifyOnCancel();
+        verify(doFinally).onCancel();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
     }
 
     @Test
     public void testForCancelPostSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.cancel();
-        doFinally.verifyOnComplete();
+        verify(doFinally).onComplete();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
     }
 
     @Test
     public void testForCancelPostError() {
         listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.cancel();
-        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
+        verify(doFinally).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
     }
 
     @Test
     public void testForSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.verifySuccess("Hello").cancel();
-        doFinally.verifyOnComplete();
+        verify(doFinally).onComplete();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
     }
 
     @Test
     public void testForError() {
         listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
-        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
+        verify(doFinally).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
     }
 
     @Test

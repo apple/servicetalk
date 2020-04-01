@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.concurrent.api.TerminalSignalConsumerMock;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -37,6 +36,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public abstract class AbstractWhenFinallyTest {
 
@@ -46,7 +49,10 @@ public abstract class AbstractWhenFinallyTest {
     final TestPublisher<String> publisher = new TestPublisher<>();
     final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     final TestSubscription subscription = new TestSubscription();
-    private TerminalSignalConsumerMock doFinally = new TerminalSignalConsumerMock();
+
+    private final Runnable runnable = mock(Runnable.class);
+    private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class,
+            delegatesTo(TerminalSignalConsumer.from(runnable)));
 
     @Test
     public void testForCancelPostEmissions() {
@@ -56,7 +62,9 @@ public abstract class AbstractWhenFinallyTest {
         publisher.onNext("Hello");
         assertThat(subscriber.takeItems(), contains("Hello"));
         subscriber.cancel();
-        doFinally.verifyOnCancel();
+        verify(doFinally).onCancel();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertTrue(subscription.isCancelled());
     }
 
@@ -65,7 +73,9 @@ public abstract class AbstractWhenFinallyTest {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.cancel();
-        doFinally.verifyOnCancel();
+        verify(doFinally).onCancel();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertTrue(subscription.isCancelled());
     }
 
@@ -75,7 +85,9 @@ public abstract class AbstractWhenFinallyTest {
         publisher.onSubscribe(subscription);
         publisher.onError(DELIBERATE_EXCEPTION);
         subscriber.cancel();
-        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
+        verify(doFinally).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertTrue(subscription.isCancelled());
     }
 
@@ -86,7 +98,9 @@ public abstract class AbstractWhenFinallyTest {
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
         subscriber.cancel();
-        doFinally.verifyOnComplete();
+        verify(doFinally).onComplete();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertTrue(subscription.isCancelled());
     }
 
@@ -100,7 +114,9 @@ public abstract class AbstractWhenFinallyTest {
         publisher.onComplete();
         assertThat(subscriber.takeItems(), contains("Hello"));
         assertThat(subscriber.takeTerminal(), is(complete()));
-        doFinally.verifyOnComplete();
+        verify(doFinally).onComplete();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertFalse(subscription.isCancelled());
     }
 
@@ -112,7 +128,9 @@ public abstract class AbstractWhenFinallyTest {
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
         assertThat(subscriber.takeTerminal(), is(complete()));
-        doFinally.verifyOnComplete();
+        verify(doFinally).onComplete();
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertFalse(subscription.isCancelled());
     }
 
@@ -125,7 +143,9 @@ public abstract class AbstractWhenFinallyTest {
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeItems(), contains("Hello"));
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
+        verify(doFinally).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertFalse(subscription.isCancelled());
     }
 
@@ -136,7 +156,9 @@ public abstract class AbstractWhenFinallyTest {
         subscriber.request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        doFinally.verifyOnError(DELIBERATE_EXCEPTION);
+        verify(doFinally).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(doFinally);
+        verify(runnable).run();
         assertFalse(subscription.isCancelled());
     }
 
