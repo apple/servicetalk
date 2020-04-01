@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableOperator;
 import io.servicetalk.concurrent.api.Publisher;
@@ -40,6 +41,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -90,44 +92,22 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         // Lazy modification of local state required (e.g. nodes, delayed subscriber, queue modifications)
         return new Publisher<Resp>() {
             @Override
-            protected void handleSubscribe(final PublisherSource.Subscriber<? super Resp> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
+                final WriteNode node;
                 try {
-                    // Setup read side publisher and nodes
-                    DelayedSubscribePublisher<Resp> delayedReadPublisher = new DelayedSubscribePublisher<>(
-                            toSource(connection.read()));
-                    Node readNode = new Node() {
-                        @Override
-                        public void run() {
-                            delayedReadPublisher.processSubscribers();
-                            // This results in a Publisher#subscribe(..) call and is not expected to throw.
-                        }
-                    };
-                    Publisher<Resp> composedReadPublisher = delayedReadPublisher
-                            .liftSync(new ReadPopNextOperator(readNode));
-
-                    // Setup write side publisher and nodes
-                    DelayedSubscribeCompletable delayedWriteCompletable = new DelayedSubscribeCompletable(toSource(
-                            connection.write(requestPublisher, flushStrategySupplier, writeDemandEstimatorSupplier)));
-                    Node writeNode = new Node() {
-                        @Override
-                        public void run() {
-                            readQueue.offer(readNode);
-                            // offering to this queue is not expected to throw:
-                            // - MpmcSequentialRunQueue doesn't do any allocation (nodes allocated outside the scope)
-                            // - Node#run() method which maybe invoked as a result is not expected to throw
-                            delayedWriteCompletable.processSubscribers();
-                            // This results in a Publisher#subscribe(..) call and is not expected to throw.
-                        }
-                    };
-
-                    writeQueue.offer(writeNode);
-
-                    toSource(delayedWriteCompletable.liftSync(new WritePopNextOperator(writeNode))
-                            // Merge connects error propagation should be connected between the read/write.
-                            .merge(composedReadPublisher)).subscribe(subscriber);
+                    node = new WriteNode(subscriber, requestPublisher, flushStrategySupplier,
+                            writeDemandEstimatorSupplier);
                 } catch (Throwable cause) {
-                    // Exceptions are not expected, and assumed to be fatal (e.g. OOME), so force close the connection.
-                    toSource(connection.closeAsync().concat(Publisher.<Resp>failed(cause))).subscribe(subscriber);
+                    deliverTerminalFromSource(subscriber, cause);
+                    return;
+                }
+
+                try {
+                    writeQueue.offer(node);
+                } catch (Throwable cause) {
+                    // The queue offer is not expected to throw, but if it does we cannot poll the WriteNode to recover.
+                    // It is only safe to poll from the queue from Node#run() (or after it executes), so close.
+                    closeConnection(subscriber, cause);
                 }
             }
         };
@@ -210,6 +190,77 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         return connection.defaultFlushStrategy();
     }
 
+    private void closeConnection(final Subscriber<? super Resp> subscriber, final Throwable cause) {
+        toSource(connection.closeAsync().concat(Publisher.<Resp>failed(cause))).subscribe(subscriber);
+    }
+
+    private final class WriteNode extends Node {
+        private final Subscriber<? super Resp> subscriber;
+        private final Publisher<Req> requestPublisher;
+        private final Supplier<FlushStrategy> flushStrategySupplier;
+        private final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier;
+
+        private WriteNode(final Subscriber<? super Resp> subscriber,
+                          final Publisher<Req> requestPublisher,
+                          final Supplier<FlushStrategy> flushStrategySupplier,
+                          final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier) {
+            this.subscriber = subscriber;
+            this.requestPublisher = requestPublisher;
+            this.flushStrategySupplier = flushStrategySupplier;
+            this.writeDemandEstimatorSupplier = writeDemandEstimatorSupplier;
+        }
+
+        @Override
+        void run() {
+            final PublisherSource<Resp> src;
+            try {
+                src = toSource(connection.write(requestPublisher, flushStrategySupplier, writeDemandEstimatorSupplier)
+                        .liftSync(new WritePopNextOperator(this))
+                        .merge(new Publisher<Resp>() {
+                            @Override
+                            protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
+                                try {
+                                    readQueue.offer(new ReadNode(rSubscriber));
+                                } catch (Throwable cause) {
+                                    // We started the write, but failed to setup the read. This is considered fatal as
+                                    // we will be out of sync for delivering future read responses.
+                                    closeConnection(rSubscriber, cause);
+                                }
+                            }
+                        }));
+            } catch (Throwable cause) {
+                // We failed to setup the write operation, which means we also failed to setup the read operation.
+                // This failure maybe recoverable as our internal state isn't corrupted, so just propagate the error.
+                deliverTerminalFromSource(subscriber, cause);
+                writeQueue.poll(this);
+                return;
+            }
+            src.subscribe(subscriber);
+        }
+    }
+
+    private final class ReadNode extends Node {
+        private final Subscriber<? super Resp> subscriber;
+
+        private ReadNode(final Subscriber<? super Resp> subscriber) {
+            this.subscriber = subscriber;
+        }
+
+        @Override
+        void run() {
+            final PublisherSource<Resp> src;
+            try {
+                src = toSource(connection.read().liftSync(new ReadPopNextOperator(this)));
+            } catch (Throwable cause) {
+                // We started the write, but failed to setup the read. This is considered fatal as we will be out of
+                // sync for delivering future read responses.
+                closeConnection(subscriber, cause);
+                return;
+            }
+            src.subscribe(subscriber);
+        }
+    }
+
     /**
      * Logically equivalent to {@link Publisher#afterFinally(Runnable)} but relies upon
      * {@link MpmcSequentialRunQueue#poll(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
@@ -223,8 +274,8 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         }
 
         @Override
-        public PublisherSource.Subscriber<? super Resp> apply(PublisherSource.Subscriber<? super Resp> subscriber) {
-            return new PublisherSource.Subscriber<Resp>() {
+        public Subscriber<? super Resp> apply(Subscriber<? super Resp> subscriber) {
+            return new Subscriber<Resp>() {
                 @Override
                 public void onSubscribe(final PublisherSource.Subscription subscription) {
                     subscriber.onSubscribe(new PublisherSource.Subscription() {

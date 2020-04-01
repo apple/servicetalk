@@ -409,24 +409,28 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void writeThrowsClosesConnection() throws InterruptedException {
-        TestPublisher<Integer> mockReadPublisher1 = new TestPublisher<>();
+    public void writeThrowsLetsSubsequentRequestsThrough() throws InterruptedException {
+        TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
         @SuppressWarnings("unchecked")
         NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
-        doAnswer((Answer<Publisher<Integer>>) invocation -> mockReadPublisher1).when(mockConnection).read();
+        doAnswer((Answer<Publisher<Integer>>) invocation -> mockReadPublisher2).when(mockConnection).read();
         doAnswer((Answer<Completable>) invocation -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(mockConnection).write(any(), any(), any());
-        when(mockConnection.closeAsync()).thenReturn(completed());
+        }).when(mockConnection).write(eq(writePublisher1), any(), any());
+        doAnswer((Answer<Completable>) invocation -> {
+            Publisher<Integer> writePub = invocation.getArgument(0);
+            return writePub.ignoreElements();
+        }).when(mockConnection).write(eq(writePublisher2), any(), any());
         requester = new NettyPipelinedConnection<>(mockConnection);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
+        toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
 
-        assertFalse(mockReadPublisher1.isSubscribed());
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertFalse(writePublisher1.isSubscribed());
-        verify(mockConnection).closeAsync();
+
+        verifySecondRequestProcessed(mockReadPublisher2, mockConnection);
     }
 
     @Test
@@ -447,7 +451,7 @@ public class NettyPipelinedConnectionTest {
         readSubscription.request(1);
 
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        assertFalse(writePublisher1.isSubscribed());
+        assertTrue(writePublisher1.isSubscribed());
         verify(mockConnection).closeAsync();
     }
 
