@@ -42,52 +42,32 @@ class UnreleasableHeapByteBuf extends UnpooledHeapByteBuf {
     }
 
     @Override
-    public ByteBuf readRetainedSlice(int length) {
-        return readSlice(length);
-    }
-
-    @Override
-    public ByteBuf retainedSlice() {
-        return slice();
-    }
-
-    @Override
-    public ByteBuf retainedSlice(int index, int length) {
-        return slice(index, length);
-    }
-
-    @Override
-    public ByteBuf retainedDuplicate() {
-        return duplicate();
-    }
-
-    @Override
-    public ByteBuf retain(int increment) {
+    public final ByteBuf retain(int increment) {
         return this;
     }
 
     @Override
-    public ByteBuf retain() {
+    public final ByteBuf retain() {
         return this;
     }
 
     @Override
-    public ByteBuf touch() {
+    public final ByteBuf touch() {
         return this;
     }
 
     @Override
-    public ByteBuf touch(Object hint) {
+    public final ByteBuf touch(Object hint) {
         return this;
     }
 
     @Override
-    public boolean release() {
+    public final boolean release() {
         return false;
     }
 
     @Override
-    public boolean release(int decrement) {
+    public final boolean release(int decrement) {
         return false;
     }
 }

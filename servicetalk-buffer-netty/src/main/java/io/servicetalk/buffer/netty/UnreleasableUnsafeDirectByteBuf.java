@@ -43,26 +43,6 @@ class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     }
 
     @Override
-    public final ByteBuf readRetainedSlice(int length) {
-        return readSlice(length);
-    }
-
-    @Override
-    public final ByteBuf retainedSlice() {
-        return slice();
-    }
-
-    @Override
-    public final ByteBuf retainedSlice(int index, int length) {
-        return slice(index, length);
-    }
-
-    @Override
-    public final ByteBuf retainedDuplicate() {
-        return duplicate();
-    }
-
-    @Override
     public final ByteBuf retain(int increment) {
         return this;
     }

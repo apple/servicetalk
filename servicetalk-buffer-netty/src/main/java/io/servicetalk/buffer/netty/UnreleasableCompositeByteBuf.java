@@ -15,7 +15,6 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 
@@ -29,26 +28,6 @@ final class UnreleasableCompositeByteBuf extends CompositeByteBuf {
         // visibility issues across threads and data corruption. We retain() here to imply the ByteBuf maybe shared and
         // these optimizations are not safe.
         super.retain();
-    }
-
-    @Override
-    public ByteBuf readRetainedSlice(int length) {
-        return readSlice(length);
-    }
-
-    @Override
-    public ByteBuf retainedSlice() {
-        return slice();
-    }
-
-    @Override
-    public ByteBuf retainedSlice(int index, int length) {
-        return slice(index, length);
-    }
-
-    @Override
-    public ByteBuf retainedDuplicate() {
-        return duplicate();
     }
 
     @Override
