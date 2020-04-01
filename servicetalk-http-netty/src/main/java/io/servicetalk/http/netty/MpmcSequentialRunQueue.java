@@ -46,56 +46,63 @@ final class MpmcSequentialRunQueue {
      */
     void offer(final Node node) {
         for (;;) {
-            Node tail = tailUpdater.get(this);
-            if (tail == null) {
+            final Node currentTail = this.tail;
+            if (currentTail == null) {
                 if (tailUpdater.compareAndSet(this, null, node)) {
                     // node has been inserted and is the only node, we initiate processing.
                     node.run();
                     break;
                 }
                 // Another thread won the race to offer a node, loop around and try again.
-            } else if (tail.append(node)) {
+            } else if (currentTail.append(node)) {
                 // Make the newly appended node visible as the tail. This is a best effort CAS and may fail because:
                 // 1. Another thread is also inserting, has a stale tail, followed its existing tail links, and updated
                 // the tail reference via offerPatchTail.
                 // 2. The consumer thread has seen the link from the old tail to the new node, processed node,
                 // popped node from the list (updated node's next to point to EMPTY_NODE), another producer thread
                 // appends a new node, sees the tail is popped, and updates the tail reference via CAS.
-                tailUpdater.compareAndSet(this, tail, node);
+                tailUpdater.compareAndSet(this, currentTail, node);
                 break;
-            } else if (tail.isPopped()) {
+            } else if (currentTail.isPopped()) {
                 // A previously appended node was processed, and popped before updating the tail after append. In that
                 // case the tail maybe pointing to an invalid node and we clear it out.
-                if (tailUpdater.compareAndSet(this, tail, node)) {
+                if (tailUpdater.compareAndSet(this, currentTail, node)) {
                     node.run();
                     break;
                 }
                 // Best effort to clear the tail, and failure is OK because:
                 // 1. Another thread is in offer and already patched up the tail pointer and we will read the new tail
                 // on the next loop iteration.
-            } else if (offerPatchTail(node, tail)) {
-                break;
+            } else {
+                // We failed to append to currentTail's next pointer, which means currentTail isn't the tail, and
+                // currentTail hasn't been popped. This means the tail pointer is stale, so we re-read the reference
+                // to see if it changed, and if not attempt to walk the list and update the tail pointer.
+                final Node newTail = this.tail;
+                if (newTail == currentTail && offerUpdateStaleTail(node, currentTail)) {
+                    break;
+                }
             }
         }
     }
 
-    private boolean offerPatchTail(final Node node, final Node tail) {
-        Node currentTail = tailUpdater.get(this);
-        if (currentTail == tail) {
-            // tail is stale so attempt to iterate through the linked list and update tail.
-            currentTail = tail.iterateToTail();
-            if (currentTail.isPopped()) {
-                if (tailUpdater.compareAndSet(this, tail, node)) {
-                    node.run();
-                    return true;
-                }
-            } else {
-                tailUpdater.compareAndSet(this, tail, currentTail);
+    private boolean offerUpdateStaleTail(final Node node, final Node oldTail) {
+        // tail is stale so attempt to iterate through the linked list and get the current tail reference.
+        Node currentTail = oldTail.iterateToTail();
+
+        // Best effort check to see if the node is popped, then we attempt to directly insert node.
+        if (currentTail.isPopped()) {
+            if (tailUpdater.compareAndSet(this, oldTail, node)) {
+                node.run();
+                return true;
             }
-            // Best effort to update/clear the tail, and failure is OK because:
-            // 1. Another thread is in offer and already patched up the tail pointer and we will read the new
-            // tail on the next loop iteration.
+        } else {
+            // It is possible the currentTail has been popped after our best-effort check above. That is OK because
+            // the offer method accounts for stale tail replacement.
+            tailUpdater.compareAndSet(this, oldTail, currentTail);
         }
+        // Best effort to update/clear the tail, and failure is OK because:
+        // 1. Another thread is in offer and already patched up the tail pointer and we will read the new
+        // tail on the next loop iteration.
         return false;
     }
 
