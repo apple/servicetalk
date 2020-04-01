@@ -26,6 +26,9 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * {@link #poll(Node)} (possibly asynchronously on another thread) which will invoke {@link Node#run()} on the next head
  * (assuming one exists).
  * <p>
+ * Below is the expected interaction pattern and lifecycle of a Node:
+ *     <pre>{@link #offer(Node)} -> {@link Node#run()} -> {@link #poll(Node)}</pre>
+ * <p>
  * Although this queue supports Multi-Consumer threading semantics the {@link #poll(Node)} is typically only invoked
  * from a single thread (assuming successful runnable completion), it maybe invoked multiple times (potentially from
  * different threads) with the same {@link Node} due to cancellation/failure.
