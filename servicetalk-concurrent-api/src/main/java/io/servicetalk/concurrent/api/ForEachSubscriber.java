@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.util.Objects.requireNonNull;
 
 final class ForEachSubscriber<T> extends SequentialCancellable implements Subscriber<T> {
@@ -40,11 +39,12 @@ final class ForEachSubscriber<T> extends SequentialCancellable implements Subscr
 
     @Override
     public void onSubscribe(Subscription s) {
-        // We wrap the subscription into ConcurrentSubscription as cancel on SequentialCancellable (this) can be
+        // We wrap the subscription into DelayedCancellable as cancel on SequentialCancellable (this) can be
         // concurrent with the request-n below.
-        ConcurrentSubscription cs = wrap(s);
-        nextCancellable(cs::cancel);
-        cs.request(Long.MAX_VALUE);
+        DelayedCancellable delayedCancellable = new DelayedCancellable();
+        nextCancellable(delayedCancellable);
+        s.request(Long.MAX_VALUE);
+        delayedCancellable.delayedCancellable(s);
     }
 
     @Override

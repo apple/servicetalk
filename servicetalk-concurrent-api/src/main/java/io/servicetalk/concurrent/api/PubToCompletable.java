@@ -17,10 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 
 /**
  * A {@link Completable} created from a {@link Publisher}.
@@ -64,9 +62,10 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onSubscribe(final Subscription s) {
-            final ConcurrentSubscription cs = wrap(s);
-            subscriber.onSubscribe(cs);
-            cs.request(Long.MAX_VALUE);
+            DelayedCancellable delayedCancellable = new DelayedCancellable();
+            subscriber.onSubscribe(delayedCancellable);
+            s.request(Long.MAX_VALUE);
+            delayedCancellable.delayedCancellable(s);
         }
 
         @Override

@@ -16,12 +16,13 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             private final HttpPayloadWriter<Buffer> payloadWriter;
             private volatile int terminated;
             @Nullable
-            private ConcurrentSubscription subscription;
+            private Cancellable cancellable;
 
             PayloadPump(final Subscriber subscriber, final HttpPayloadWriter<Buffer> payloadWriter) {
                 this.subscriber = subscriber;
@@ -117,9 +118,11 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             @Override
             public void onSubscribe(final PublisherSource.Subscription inSubscription) {
                 // We need to protect sub.cancel() from concurrent invocation with sub.request(MAX)
-                subscription = ConcurrentSubscription.wrap(inSubscription);
-                subscriber.onSubscribe(subscription);
-                subscription.request(Long.MAX_VALUE);
+                DelayedCancellable delayedCancellable = new DelayedCancellable();
+                cancellable = delayedCancellable;
+                subscriber.onSubscribe(delayedCancellable);
+                inSubscription.request(Long.MAX_VALUE);
+                delayedCancellable.delayedCancellable(inSubscription);
             }
 
             @Override
@@ -143,8 +146,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                             throwException(e);
                         }
                     } finally {
-                        assert subscription != null;
-                        subscription.cancel();
+                        assert cancellable != null;
+                        cancellable.cancel();
                     }
                 }
             }
