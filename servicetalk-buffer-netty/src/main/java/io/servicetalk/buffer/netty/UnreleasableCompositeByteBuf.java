@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,8 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 
 final class UnreleasableCompositeByteBuf extends CompositeByteBuf {
 
@@ -30,51 +28,6 @@ final class UnreleasableCompositeByteBuf extends CompositeByteBuf {
         // visibility issues across threads and data corruption. We retain() here to imply the ByteBuf maybe shared and
         // these optimizations are not safe.
         super.retain();
-    }
-
-    @Override
-    public ByteBuf asReadOnly() {
-        return Unpooled.unreleasableBuffer(super.asReadOnly());
-    }
-
-    @Override
-    public ByteBuf readSlice(int length) {
-        return Unpooled.unreleasableBuffer(super.readSlice(length));
-    }
-
-    @Override
-    public ByteBuf readRetainedSlice(int length) {
-        return readSlice(length);
-    }
-
-    @Override
-    public ByteBuf slice() {
-        return Unpooled.unreleasableBuffer(super.slice());
-    }
-
-    @Override
-    public ByteBuf slice(int index, int length) {
-        return Unpooled.unreleasableBuffer(super.slice(index, length));
-    }
-
-    @Override
-    public ByteBuf retainedSlice() {
-        return slice();
-    }
-
-    @Override
-    public ByteBuf retainedSlice(int index, int length) {
-        return slice(index, length);
-    }
-
-    @Override
-    public ByteBuf duplicate() {
-        return Unpooled.unreleasableBuffer(super.duplicate());
-    }
-
-    @Override
-    public ByteBuf retainedDuplicate() {
-        return duplicate();
     }
 
     @Override
