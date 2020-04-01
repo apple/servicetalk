@@ -54,7 +54,7 @@ final class MpmcSequentialRunQueue {
             } else if (tail.append(node)) {
                 // Make the newly appended node visible as the tail. This is a best effort CAS and may fail because:
                 // 1. Another thread is also inserting, has a stale tail, followed its existing tail links, and updated
-                // the tail reference via queueOfferPatchTail.
+                // the tail reference via offerPatchTail.
                 // 2. The consumer thread has seen the link from the old tail to the new node, processed node,
                 // popped node from the list (updated node's next to point to EMPTY_NODE), another producer thread
                 // appends a new node, sees the tail is popped, and updates the tail reference via CAS.
