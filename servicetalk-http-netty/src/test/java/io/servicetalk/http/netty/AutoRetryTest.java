@@ -51,7 +51,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forPort;
-import static io.servicetalk.http.netty.StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,7 +73,8 @@ public class AutoRetryTest {
     public AutoRetryTest() throws Exception {
         svcCtx = forPort(0).listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         clientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
-                .loadBalancerFactory(new InspectingLoadBalancerFactory<>(), provideStaticScoreIfNeeded(1))
+                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
+                        .from(new InspectingLoadBalancerFactory<>()).build())
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
         lbSelectInvoked = new AtomicInteger();
     }

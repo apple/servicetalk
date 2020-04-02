@@ -559,8 +559,8 @@ public class ClientEffectiveStrategyTest {
                                     new StreamingHttpConnectionFilter(connection) { });
                         }
                         if (addLoadBalancer) {
-                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl(),
-                                    StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1));
+                            clientBuilder.loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
+                                    .from(new LoadBalancerFactoryImpl()).build());
                         }
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.

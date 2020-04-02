@@ -16,10 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -59,7 +59,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
     }
 
-    void add(LoadBalancerFactory<?, ?> lb) {
+    void add(HttpLoadBalancerFactory<?> lb) {
         if (!clientChain.prependIfInfluencer(lb)) {
             // If the load balancer is not influencing strategy, then the default is to offload all.
             clientChain.prepend(defaultStreamingInfluencer());
