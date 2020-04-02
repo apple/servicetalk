@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,7 @@ import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
-final class ForEachSubscriber<T> extends SequentialCancellable implements Subscriber<T> {
+final class ForEachSubscriber<T> extends DelayedCancellable implements Subscriber<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForEachSubscriber.class);
 
@@ -39,12 +38,10 @@ final class ForEachSubscriber<T> extends SequentialCancellable implements Subscr
 
     @Override
     public void onSubscribe(Subscription s) {
-        // We wrap the subscription into DelayedCancellable as cancel on SequentialCancellable (this) can be
-        // concurrent with the request-n below.
-        DelayedCancellable delayedCancellable = new DelayedCancellable();
-        nextCancellable(delayedCancellable);
+        // We want to avoid concurrent invocation on the Subscription, so we request first and then make the
+        // cancellable visible.
         s.request(Long.MAX_VALUE);
-        delayedCancellable.delayedCancellable(s);
+        delayedCancellable(s);
     }
 
     @Override
