@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -32,6 +30,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
@@ -42,19 +42,17 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
     @Test
     public void testCallbackThrowsErrorOnComplete() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-        AtomicInteger invocationCount = new AtomicInteger();
+        TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         try {
-            doFinally(publisher, TerminalSignalConsumer.from(() -> {
-                invocationCount.incrementAndGet();
-                throw DELIBERATE_EXCEPTION;
-            })).subscribe(subscriber);
+            doFinally(publisher, mock).subscribe(subscriber);
             assertFalse(subscription.isCancelled());
+            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
             publisher.onComplete();
             fail();
         } finally {
             assertThat(subscriber.takeTerminal(), is(complete()));
-            assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));
+            verify(mock).onComplete();
+            verifyNoMoreInteractions(mock);
             assertFalse(subscription.isCancelled());
         }
     }
@@ -63,19 +61,16 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Test
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
-        thrown.expect(is(sameInstance(exception)));
-
-        AtomicInteger invocationCount = new AtomicInteger();
+        TerminalSignalConsumer mock = throwableMock(exception);
         try {
-            doFinally(publisher, TerminalSignalConsumer.from(() -> {
-                invocationCount.incrementAndGet();
-                throw exception;
-            })).subscribe(subscriber);
+            doFinally(publisher, mock).subscribe(subscriber);
+            thrown.expect(is(sameInstance(exception)));
             publisher.onError(DELIBERATE_EXCEPTION);
             fail();
         } finally {
             assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-            assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));
+            verify(mock).onError(DELIBERATE_EXCEPTION);
+            verifyNoMoreInteractions(mock);
             assertFalse(subscription.isCancelled());
         }
     }

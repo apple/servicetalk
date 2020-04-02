@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -33,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public abstract class AbstractWhenFinallyTest {
+abstract class AbstractWhenFinallyTest {
 
     @Rule
     public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
@@ -41,9 +43,8 @@ public abstract class AbstractWhenFinallyTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private final Runnable runnable = mock(Runnable.class);
-    private final TerminalSignalConsumer<String> doFinally = mock(TerminalSignalConsumer.class,
-            delegatesTo(TerminalSignalConsumer.from(runnable)));
+    @SuppressWarnings("unchecked")
+    private final TerminalSignalConsumer<String> doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
     public void testForCancel() {
@@ -51,16 +52,15 @@ public abstract class AbstractWhenFinallyTest {
         listener.cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
     public void testForCancelPostSuccess() {
-        listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
+        String result = "Hello";
+        listener.listen(doFinally(Single.succeeded(result), doFinally));
         listener.cancel();
-        verify(doFinally).onSuccess("Hello");
+        verify(doFinally).onSuccess(result);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -69,16 +69,15 @@ public abstract class AbstractWhenFinallyTest {
         listener.cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
     public void testForSuccess() {
-        listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
-        listener.verifySuccess("Hello").cancel();
-        verify(doFinally).onSuccess("Hello");
+        String result = "Hello";
+        listener.listen(doFinally(Single.succeeded(result), doFinally));
+        listener.verifySuccess(result).cancel();
+        verify(doFinally).onSuccess(result);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -87,21 +86,21 @@ public abstract class AbstractWhenFinallyTest {
         listener.verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
     public void testCallbackThrowsErrorOnCancel() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
+        TerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
-            listener.listen(doFinally(single, TerminalSignalConsumer.from(() -> {
-                throw DELIBERATE_EXCEPTION;
-            }))).cancel();
+            listener.listen(doFinally(single, mock));
+            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
+            listener.cancel();
             fail();
         } finally {
             single.verifyCancelled();
+            verify(mock).cancel();
+            verifyNoMoreInteractions(mock);
         }
     }
 
@@ -112,4 +111,24 @@ public abstract class AbstractWhenFinallyTest {
     public abstract void testCallbackThrowsErrorOnError();
 
     protected abstract <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer<T> signalConsumer);
+
+    @SuppressWarnings("unchecked")
+    protected TerminalSignalConsumer<String> throwableMock(RuntimeException exception) {
+        return mock(TerminalSignalConsumer.class, delegatesTo(new TerminalSignalConsumer<String>() {
+            @Override
+            public void onSuccess(@Nullable final String result) {
+                throw exception;
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                throw exception;
+            }
+
+            @Override
+            public void cancel() {
+                throw exception;
+            }
+        }));
+    }
 }

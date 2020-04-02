@@ -711,7 +711,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeFinally(Runnable doFinally) {
-        return beforeFinally(TerminalSignalConsumer.from(doFinally));
+        return beforeFinally(new RunnableTerminalSignalConsumer<>(doFinally));
     }
 
     /**
@@ -881,7 +881,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(Runnable doFinally) {
-        return afterFinally(TerminalSignalConsumer.from(doFinally));
+        return afterFinally(new RunnableTerminalSignalConsumer<>(doFinally));
     }
 
     /**
@@ -1788,21 +1788,6 @@ public abstract class Single<T> {
          * {@link Cancellable#cancel()} is received.
          */
         void cancel();
-
-        /**
-         * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
-         * invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
-         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-         *
-         * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
-         * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
-         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-         * @param <T> Type of the result of the {@link Single}.
-         * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
-         */
-        static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
-            return new RunnableTerminalSignalConsumer<>(onFinally);
-        }
     }
 
     private static final class RunnableTerminalSignalConsumer<T> implements TerminalSignalConsumer<T> {

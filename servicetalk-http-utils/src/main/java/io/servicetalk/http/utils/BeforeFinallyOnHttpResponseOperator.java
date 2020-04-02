@@ -83,7 +83,7 @@ public final class BeforeFinallyOnHttpResponseOperator
      * across both sources.
      */
     public BeforeFinallyOnHttpResponseOperator(final Runnable beforeFinally) {
-        this(TerminalSignalConsumer.from(beforeFinally));
+        this(new RunnableTerminalSignalConsumer(beforeFinally));
     }
 
     @Override
@@ -252,6 +252,30 @@ public final class BeforeFinallyOnHttpResponseOperator
         @Override
         public void onComplete() {
             // Ignore.
+        }
+    }
+
+    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+
+        private final Runnable onFinally;
+
+        private RunnableTerminalSignalConsumer(Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onComplete() {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void cancel() {
+            onFinally.run();
         }
     }
 }

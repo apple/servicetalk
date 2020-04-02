@@ -802,7 +802,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(Runnable doFinally) {
-        return beforeFinally(TerminalSignalConsumer.from(doFinally));
+        return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
     }
 
     /**
@@ -975,7 +975,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(Runnable doFinally) {
-        return afterFinally(TerminalSignalConsumer.from(doFinally));
+        return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
     }
 
     /**

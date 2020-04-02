@@ -1540,7 +1540,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(Runnable doFinally) {
-        return beforeFinally(TerminalSignalConsumer.from(doFinally));
+        return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
     }
 
     /**
@@ -1758,7 +1758,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(Runnable doFinally) {
-        return afterFinally(TerminalSignalConsumer.from(doFinally));
+        return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
     }
 
     /**

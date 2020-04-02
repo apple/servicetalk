@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
@@ -32,17 +34,21 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Test
     @Override
     public void testCallbackThrowsErrorOnSuccess() {
-        listener.listen(doFinally(Single.succeeded("Hello"), TerminalSignalConsumer.from(() -> {
-            throw DELIBERATE_EXCEPTION;
-        }))).verifySuccess("Hello");
+        TerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
+        String result = "Hello";
+        listener.listen(doFinally(Single.succeeded(result), mock))
+                .verifySuccess(result);
+        verify(mock).onSuccess(result);
+        verifyNoMoreInteractions(mock);
     }
 
     @Test
     @Override
     public void testCallbackThrowsErrorOnError() {
-        DeliberateException exception = new DeliberateException();
-        listener.listen(doFinally(Single.failed(exception), TerminalSignalConsumer.from(() -> {
-            throw DELIBERATE_EXCEPTION;
-        }))).verifyFailure(exception);
+        TerminalSignalConsumer<String> mock = throwableMock(new DeliberateException());
+        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), mock))
+                .verifyFailure(DELIBERATE_EXCEPTION);
+        verify(mock).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(mock);
     }
 }

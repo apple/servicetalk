@@ -27,12 +27,13 @@ import org.junit.rules.ExpectedException;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.fail;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public abstract class AbstractWhenFinallyTest {
+abstract class AbstractWhenFinallyTest {
 
     @Rule
     public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
@@ -40,9 +41,7 @@ public abstract class AbstractWhenFinallyTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private final Runnable runnable = mock(Runnable.class);
-    private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class,
-            delegatesTo(TerminalSignalConsumer.from(runnable)));
+    private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
     public void testForCancel() {
@@ -50,7 +49,6 @@ public abstract class AbstractWhenFinallyTest {
         listener.cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -59,7 +57,6 @@ public abstract class AbstractWhenFinallyTest {
         listener.cancel();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -68,7 +65,6 @@ public abstract class AbstractWhenFinallyTest {
         listener.cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -77,7 +73,6 @@ public abstract class AbstractWhenFinallyTest {
         listener.verifyCompletion().cancel();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
@@ -86,20 +81,21 @@ public abstract class AbstractWhenFinallyTest {
         listener.verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
-        verify(runnable).run();
     }
 
     @Test
     public void testCallbackThrowsErrorWhenCancel() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
+        TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
-            listener.listen(doFinally(completable, TerminalSignalConsumer.from(() -> {
-                throw DELIBERATE_EXCEPTION;
-            }))).cancel();
+            listener.listen(doFinally(completable, mock));
+            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
+            listener.cancel();
+            fail();
         } finally {
             completable.verifyCancelled();
+            verify(mock).cancel();
+            verifyNoMoreInteractions(mock);
         }
     }
 
@@ -110,4 +106,23 @@ public abstract class AbstractWhenFinallyTest {
     public abstract void testCallbackThrowsErrorOnError();
 
     protected abstract Completable doFinally(Completable completable, TerminalSignalConsumer doFinally);
+
+    protected TerminalSignalConsumer throwableMock(RuntimeException exception) {
+        return mock(TerminalSignalConsumer.class, delegatesTo(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                throw exception;
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                throw exception;
+            }
+
+            @Override
+            public void cancel() {
+                throw exception;
+            }
+        }));
+    }
 }

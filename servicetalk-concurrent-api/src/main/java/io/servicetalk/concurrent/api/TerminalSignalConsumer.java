@@ -37,18 +37,4 @@ public interface TerminalSignalConsumer {
      * Callback to signal cancellation of the {@code Subscription} by this {@code Subscriber}.
      */
     void cancel();
-
-    /**
-     * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
-     * invoked for each call to {@link TerminalSignalConsumer#onComplete()},
-     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-     *
-     * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
-     * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onComplete()},
-     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-     * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
-     */
-    static TerminalSignalConsumer from(Runnable onFinally) {
-        return new RunnableTerminalSignalConsumer(onFinally);
-    }
 }
