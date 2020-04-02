@@ -103,6 +103,7 @@ public abstract class Single<T> {
          * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
          * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
          * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
+         * @param <T> Type of the result of the {@link Single}.
          * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
          */
         static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
