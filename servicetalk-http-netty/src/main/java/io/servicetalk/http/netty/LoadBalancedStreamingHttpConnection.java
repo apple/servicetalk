@@ -158,7 +158,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
     }
 
     @Override
-    public float score() {
+    public int score() {
         return filteredConnection.score();
     }
 }

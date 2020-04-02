@@ -66,6 +66,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -117,7 +118,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
-        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1);
+        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(MAX_VALUE);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -128,7 +129,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
-        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1);
+        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(MAX_VALUE);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
