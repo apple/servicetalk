@@ -51,7 +51,7 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, () -> {
+            original.onSubscribe(new ComposedCancellable(originalCancellable, () -> {
                 if (doneUpdater.compareAndSet(this, 0, 1)) {
                     doFinally.cancel();
                 }

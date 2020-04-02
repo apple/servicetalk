@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ final class WhenCancellableSingle<T> extends AbstractSynchronousSingleOperator<T
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(parent.before ? new BeforeCancellable(parent.cancellable, originalCancellable) :
-                    new BeforeCancellable(originalCancellable, parent.cancellable));
+            original.onSubscribe(parent.before ? new ComposedCancellable(parent.cancellable, originalCancellable) :
+                    new ComposedCancellable(originalCancellable, parent.cancellable));
         }
 
         @Override

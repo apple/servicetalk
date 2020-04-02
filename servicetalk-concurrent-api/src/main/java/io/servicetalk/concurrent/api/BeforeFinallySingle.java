@@ -51,7 +51,7 @@ final class BeforeFinallySingle<T> extends AbstractSynchronousSingleOperator<T, 
 
         @Override
         public void onSubscribe(Cancellable originalCancellabe) {
-            original.onSubscribe(new BeforeCancellable(() -> {
+            original.onSubscribe(new ComposedCancellable(() -> {
                 if (doneUpdater.compareAndSet(this, 0, 1)) {
                     doFinally.cancel();
                 }

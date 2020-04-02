@@ -51,7 +51,7 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(() -> {
+            original.onSubscribe(new ComposedCancellable(() -> {
                 if (doneUpdater.compareAndSet(this, 0, 1)) {
                     doFinally.cancel();
                 }
