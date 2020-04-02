@@ -26,12 +26,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-public class ReflectionStreamingService implements StreamingHttpService {
+final class ReflectionStreamingService implements StreamingHttpService {
     private final Object resource;
     private final Method method;
     private final List<Parameter> parameters;
 
-    public ReflectionStreamingService(final Object resource, final Method method, final List<Parameter> parameters) {
+    ReflectionStreamingService(final Object resource, final Method method, final List<Parameter> parameters) {
         this.resource = resource;
         this.method = method;
         this.parameters = parameters;

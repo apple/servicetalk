@@ -21,7 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import javax.annotation.Nullable;
 
-public interface Parameter {
+interface Parameter {
 
     @Nullable
     Object get(HttpServiceContext ctx, StreamingHttpRequest request,

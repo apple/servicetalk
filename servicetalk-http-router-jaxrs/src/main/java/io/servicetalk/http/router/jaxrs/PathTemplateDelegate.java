@@ -20,10 +20,10 @@ import org.glassfish.jersey.uri.PathTemplate;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class PathTemplateDelegate {
+final class PathTemplateDelegate {
     private final PathTemplate pathTemplate;
 
-    public PathTemplateDelegate(final String path) {
+    PathTemplateDelegate(final String path) {
         this.pathTemplate = new PathTemplate(path);
     }
 

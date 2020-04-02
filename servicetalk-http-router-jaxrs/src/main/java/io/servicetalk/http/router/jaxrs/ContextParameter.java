@@ -19,17 +19,14 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
-import javax.annotation.Nullable;
-
-public class ContextParameter implements Parameter {
+final class ContextParameter implements Parameter {
 
     private final Class<?> type;
 
-    public ContextParameter(Class<?> type) {
+    ContextParameter(final Class<?> type) {
         this.type = type;
     }
 
-    @Nullable
     @Override
     public Object get(final HttpServiceContext ctx, final StreamingHttpRequest request,
                       final StreamingHttpResponseFactory responseFactory) {
@@ -44,6 +41,6 @@ public class ContextParameter implements Parameter {
             return responseFactory;
         }
 
-        return ctx;
+        return null;
     }
 }

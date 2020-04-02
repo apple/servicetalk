@@ -102,7 +102,7 @@ public final class HttpJaxRsRouterBuilder {
 
     public StreamingHttpService from(final Application application) {
 
-        HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
+        final HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
 
         if (!application.getClasses().isEmpty()) {
             throw new UnsupportedOperationException("Method application.getClasses() is not supported. " +

@@ -24,14 +24,14 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import java.util.List;
 import java.util.Map;
 
-public class FormParameter implements Parameter {
+final class FormParameter implements Parameter {
 
     private static final HttpDeserializer<Map<String, List<String>>> formDeserializer =
             HttpSerializationProviders.formUrlEncodedDeserializer();
 
     private final String name;
 
-    public FormParameter(String name) {
+    FormParameter(final String name) {
         this.name = name;
     }
 

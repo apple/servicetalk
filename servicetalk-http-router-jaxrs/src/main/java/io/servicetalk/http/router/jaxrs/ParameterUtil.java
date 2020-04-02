@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public final class ParameterUtil {
+final class ParameterUtil {
 
     private ParameterUtil() {
     }
 
-    public static Object castTo(Class<?> type, String value) {
+    public static Object castTo(final Class<?> type, final String value) {
         if (type == byte.class || type == Byte.class) {
             return Byte.valueOf(value);
         }

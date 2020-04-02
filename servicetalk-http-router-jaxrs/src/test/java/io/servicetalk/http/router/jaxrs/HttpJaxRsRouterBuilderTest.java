@@ -56,7 +56,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nonnull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
@@ -390,7 +389,6 @@ public class HttpJaxRsRouterBuilderTest {
         }
     }
 
-    @Nonnull
     private static Single<StreamingHttpResponse> buildStringResponse(
             final String c,
             final StreamingHttpResponseFactory responseFactory) {

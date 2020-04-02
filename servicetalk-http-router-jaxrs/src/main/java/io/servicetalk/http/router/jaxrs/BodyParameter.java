@@ -32,14 +32,14 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-public class BodyParameter implements Parameter {
+final class BodyParameter implements Parameter {
 
     private static final HttpSerializationProvider jsonSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     private final Class<?> classType;
     private final String expectedContentType;
 
-    public BodyParameter(Type type, String expectedContentType) {
+    BodyParameter(final Type type, final String expectedContentType) {
         this.expectedContentType = expectedContentType;
 
         final ParameterizedType parameterizedType = (ParameterizedType) type;

@@ -21,11 +21,11 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import java.util.Iterator;
 
-public class HeaderParameter implements Parameter {
+final class HeaderParameter implements Parameter {
 
     private final String name;
 
-    public HeaderParameter(String name) {
+    HeaderParameter(final String name) {
         this.name = name;
     }
 
