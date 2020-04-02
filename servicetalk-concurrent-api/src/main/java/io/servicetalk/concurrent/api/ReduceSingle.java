@@ -75,7 +75,8 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ReduceSubscriber<R, T> implements PublisherSource.Subscriber<T> {
+    private static final class ReduceSubscriber<R, T> extends DelayedCancellable
+            implements PublisherSource.Subscriber<T> {
 
         private final BiFunction<? super R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;
@@ -91,10 +92,9 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
 
         @Override
         public void onSubscribe(final Subscription s) {
-            DelayedCancellable delayedCancellable = new DelayedCancellable();
-            subscriber.onSubscribe(delayedCancellable);
+            subscriber.onSubscribe(this);
             s.request(Long.MAX_VALUE);
-            delayedCancellable.delayedCancellable(s);
+            delayedCancellable(s);
         }
 
         @Override

@@ -52,7 +52,8 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
         source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class PubToCompletableSubscriber<T> implements PublisherSource.Subscriber<T> {
+    private static final class PubToCompletableSubscriber<T> extends DelayedCancellable
+            implements PublisherSource.Subscriber<T> {
 
         private final Subscriber subscriber;
 
@@ -62,10 +63,9 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onSubscribe(final Subscription s) {
-            DelayedCancellable delayedCancellable = new DelayedCancellable();
-            subscriber.onSubscribe(delayedCancellable);
+            subscriber.onSubscribe(this);
             s.request(Long.MAX_VALUE);
-            delayedCancellable.delayedCancellable(s);
+            delayedCancellable(s);
         }
 
         @Override
