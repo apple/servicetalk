@@ -49,6 +49,6 @@ public interface TerminalSignalConsumer {
      * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
      */
     static TerminalSignalConsumer from(Runnable onFinally) {
-        return TerminalSignalConsumers.from(onFinally);
+        return new RunnableTerminalSignalConsumer(onFinally);
     }
 }

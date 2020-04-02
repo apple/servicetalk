@@ -106,7 +106,30 @@ public abstract class Single<T> {
          * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
          */
         static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
-            return TerminalSignalConsumers.forSingle(onFinally);
+            return new RunnableTerminalSignalConsumer<>(onFinally);
+        }
+    }
+
+    private static final class RunnableTerminalSignalConsumer<T> implements TerminalSignalConsumer<T> {
+        private final Runnable onFinally;
+
+        RunnableTerminalSignalConsumer(final Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T result) {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void cancel() {
+            onFinally.run();
         }
     }
 

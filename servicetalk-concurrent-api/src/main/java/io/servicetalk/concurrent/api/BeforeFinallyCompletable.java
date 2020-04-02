@@ -17,7 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOperator {
 
@@ -25,7 +27,7 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
 
     BeforeFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = atomic(doFinally);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
@@ -37,6 +39,11 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
         private final Subscriber original;
         private final TerminalSignalConsumer doFinally;
 
+        private static final AtomicIntegerFieldUpdater<BeforeFinallyCompletableSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(BeforeFinallyCompletableSubscriber.class, "done");
+        @SuppressWarnings("unused")
+        private volatile int done;
+
         BeforeFinallyCompletableSubscriber(Subscriber original, TerminalSignalConsumer doFinally) {
             this.original = original;
             this.doFinally = doFinally;
@@ -44,13 +51,19 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(doFinally::cancel, originalCancellable));
+            original.onSubscribe(new BeforeCancellable(() -> {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.cancel();
+                }
+            }, originalCancellable));
         }
 
         @Override
         public void onComplete() {
             try {
-                doFinally.onComplete();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             } catch (Throwable error) {
                 original.onError(error);
                 return;
@@ -61,7 +74,9 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
         @Override
         public void onError(Throwable cause) {
             try {
-                doFinally.onError(cause);
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             } catch (Throwable error) {
                 error.addSuppressed(cause);
                 original.onError(error);

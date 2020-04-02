@@ -15,7 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
@@ -23,7 +25,7 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
 
     BeforeFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = atomic(doFinally);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
@@ -34,6 +36,11 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
     private static final class BeforeFinallyPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final TerminalSignalConsumer doFinally;
+
+        private static final AtomicIntegerFieldUpdater<BeforeFinallyPublisherSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(BeforeFinallyPublisherSubscriber.class, "done");
+        @SuppressWarnings("unused")
+        private volatile int done;
 
         BeforeFinallyPublisherSubscriber(Subscriber<? super T> original, TerminalSignalConsumer doFinally) {
             this.original = original;
@@ -51,7 +58,9 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
                 @Override
                 public void cancel() {
                     try {
-                        doFinally.cancel();
+                        if (doneUpdater.compareAndSet(BeforeFinallyPublisherSubscriber.this, 0, 1)) {
+                            doFinally.cancel();
+                        }
                     } finally {
                         s.cancel();
                     }
@@ -67,7 +76,9 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
         @Override
         public void onComplete() {
             try {
-                doFinally.onComplete();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             } catch (Throwable err) {
                 original.onError(err);
                 return;
@@ -78,7 +89,9 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
         @Override
         public void onError(Throwable cause) {
             try {
-                doFinally.onError(cause);
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             } catch (Throwable err) {
                 err.addSuppressed(cause);
                 original.onError(err);

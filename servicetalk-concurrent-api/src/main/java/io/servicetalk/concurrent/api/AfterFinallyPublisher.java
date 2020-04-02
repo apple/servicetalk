@@ -15,7 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
@@ -23,7 +25,7 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
 
     AfterFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = atomic(doFinally);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
@@ -34,6 +36,11 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
     private static final class AfterFinallyPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final TerminalSignalConsumer doFinally;
+
+        private static final AtomicIntegerFieldUpdater<AfterFinallyPublisherSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyPublisherSubscriber.class, "done");
+        @SuppressWarnings("unused")
+        private volatile int done;
 
         AfterFinallyPublisherSubscriber(Subscriber<? super T> original, TerminalSignalConsumer doFinally) {
             this.original = original;
@@ -53,7 +60,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
                     try {
                         s.cancel();
                     } finally {
-                        doFinally.cancel();
+                        if (doneUpdater.compareAndSet(AfterFinallyPublisherSubscriber.this, 0, 1)) {
+                            doFinally.cancel();
+                        }
                     }
                 }
             });
@@ -69,7 +78,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
             try {
                 original.onComplete();
             } finally {
-                doFinally.onComplete();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             }
         }
 
@@ -78,7 +89,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
             try {
                 original.onError(cause);
             } finally {
-                doFinally.onError(cause);
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }

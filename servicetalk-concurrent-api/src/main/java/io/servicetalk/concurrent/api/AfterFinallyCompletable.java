@@ -17,7 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperator {
 
@@ -25,7 +27,7 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
 
     AfterFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = atomic(doFinally);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
@@ -37,6 +39,11 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
         private final Subscriber original;
         private final TerminalSignalConsumer doFinally;
 
+        private static final AtomicIntegerFieldUpdater<AfterFinallyCompletableSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyCompletableSubscriber.class, "done");
+        @SuppressWarnings("unused")
+        private volatile int done;
+
         AfterFinallyCompletableSubscriber(Subscriber original, TerminalSignalConsumer doFinally) {
             this.original = original;
             this.doFinally = doFinally;
@@ -44,7 +51,11 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, doFinally::cancel));
+            original.onSubscribe(new BeforeCancellable(originalCancellable, () -> {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.cancel();
+                }
+            }));
         }
 
         @Override
@@ -52,7 +63,9 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
             try {
                 original.onComplete();
             } finally {
-                doFinally.onComplete();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             }
         }
 
@@ -61,7 +74,9 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
             try {
                 original.onError(cause);
             } finally {
-                doFinally.onError(cause);
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }
