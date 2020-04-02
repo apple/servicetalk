@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
@@ -97,7 +96,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             toSource(payloadBodyAndTrailers).subscribe(new PayloadPump(subscriber, payloadWriter));
         }
 
-        private static final class PayloadPump implements PublisherSource.Subscriber<Object> {
+        private static final class PayloadPump extends DelayedCancellable
+                implements PublisherSource.Subscriber<Object> {
 
             private static final Logger LOGGER = LoggerFactory.getLogger(PayloadPump.class);
 
@@ -107,8 +107,6 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             private final Subscriber subscriber;
             private final HttpPayloadWriter<Buffer> payloadWriter;
             private volatile int terminated;
-            @Nullable
-            private Cancellable cancellable;
 
             PayloadPump(final Subscriber subscriber, final HttpPayloadWriter<Buffer> payloadWriter) {
                 this.subscriber = subscriber;
@@ -118,11 +116,9 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             @Override
             public void onSubscribe(final PublisherSource.Subscription inSubscription) {
                 // We need to protect sub.cancel() from concurrent invocation with sub.request(MAX)
-                DelayedCancellable delayedCancellable = new DelayedCancellable();
-                cancellable = delayedCancellable;
-                subscriber.onSubscribe(delayedCancellable);
+                subscriber.onSubscribe(this);
                 inSubscription.request(Long.MAX_VALUE);
-                delayedCancellable.delayedCancellable(inSubscription);
+                delayedCancellable(inSubscription);
             }
 
             @Override
@@ -146,8 +142,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                             throwException(e);
                         }
                     } finally {
-                        assert cancellable != null;
-                        cancellable.cancel();
+                        this.cancel();
                     }
                 }
             }
