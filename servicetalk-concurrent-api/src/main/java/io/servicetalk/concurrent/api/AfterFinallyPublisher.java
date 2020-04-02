@@ -53,7 +53,7 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
                     try {
                         s.cancel();
                     } finally {
-                        doFinally.onCancel();
+                        doFinally.cancel();
                     }
                 }
             });

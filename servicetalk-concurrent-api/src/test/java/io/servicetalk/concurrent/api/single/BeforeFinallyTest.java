@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.Single.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 
 public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
-    protected <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer doFinally) {
+    protected <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer<T> doFinally) {
         return single.beforeFinally(doFinally);
     }
 

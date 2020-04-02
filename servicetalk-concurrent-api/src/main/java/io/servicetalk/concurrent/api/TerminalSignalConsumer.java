@@ -16,39 +16,36 @@
 package io.servicetalk.concurrent.api;
 
 /**
- * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
- * {@code Source} and {@code Subscription}.
+ * Callback interface for {@link Publisher} and {@link Completable} on which only a single method is ever called
+ * matching the terminal outcome of the associated {@code Source} and {@code Subscription}.
  */
 public interface TerminalSignalConsumer {
 
     /**
      * Callback to signal completion of the {@code Subscription} for this {@code Subscriber}.
      */
-    default void onComplete() {
-    }
+    void onComplete();
 
     /**
-     * Callback to receive an {@link Throwable error} for this {@code Subscriber}.
+     * Callback to signal an {@link Throwable error} of the {@code Subscription} for this {@code Subscriber}.
      *
-     * @param throwable the {@link Exception} observed.
+     * @param throwable the observed {@link Throwable}.
      */
-    default void onError(Throwable throwable) {
-    }
+    void onError(Throwable throwable);
 
     /**
-     * Callback to signal cancellation of the {@code Subscription} for this {@code Subscriber}.
+     * Callback to signal cancellation of the {@code Subscription} by this {@code Subscriber}.
      */
-    default void onCancel() {
-    }
+    void cancel();
 
     /**
      * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
      * invoked for each call to {@link TerminalSignalConsumer#onComplete()},
-     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#onCancel()}.
+     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
      *
      * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
      * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onComplete()},
-     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#onCancel()}.
+     * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
      * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
      */
     static TerminalSignalConsumer from(Runnable onFinally) {

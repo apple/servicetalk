@@ -78,7 +78,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                             }
 
                             @Override
-                            public void onCancel() {
+                            public void cancel() {
                                 // If the request gets cancelled, we pessimistically assume that the transport will
                                 // close the connection since the Subscriber did not read the entire response and
                                 // cancelled. This reduces the time window during which a connection is eligible for

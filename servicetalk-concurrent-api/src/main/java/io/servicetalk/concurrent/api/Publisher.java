@@ -703,7 +703,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
      * <p>
@@ -727,7 +727,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1549,7 +1549,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
      * <p>
@@ -1571,7 +1571,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1767,7 +1767,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
      * <p>
@@ -1786,7 +1786,7 @@ public abstract class Publisher<T> {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.

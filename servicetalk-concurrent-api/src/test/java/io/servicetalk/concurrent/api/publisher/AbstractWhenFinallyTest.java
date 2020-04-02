@@ -62,7 +62,7 @@ public abstract class AbstractWhenFinallyTest {
         publisher.onNext("Hello");
         assertThat(subscriber.takeItems(), contains("Hello"));
         subscriber.cancel();
-        verify(doFinally).onCancel();
+        verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
         assertTrue(subscription.isCancelled());
@@ -73,7 +73,7 @@ public abstract class AbstractWhenFinallyTest {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.cancel();
-        verify(doFinally).onCancel();
+        verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
         assertTrue(subscription.isCancelled());

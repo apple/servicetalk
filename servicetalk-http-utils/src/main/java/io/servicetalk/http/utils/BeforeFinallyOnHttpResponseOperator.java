@@ -76,6 +76,16 @@ public final class BeforeFinallyOnHttpResponseOperator
         this.beforeFinally = requireNonNull(beforeFinally);
     }
 
+    /**
+     * Create a new instance.
+     *
+     * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
+     */
+    public BeforeFinallyOnHttpResponseOperator(final Runnable beforeFinally) {
+        this(TerminalSignalConsumer.from(beforeFinally));
+    }
+
     @Override
     public SingleSource.Subscriber<? super StreamingHttpResponse> apply(
             final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -108,7 +118,7 @@ public final class BeforeFinallyOnHttpResponseOperator
             subscriber.onSubscribe(() -> {
                 try {
                     if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
-                        beforeFinally.onCancel();
+                        beforeFinally.cancel();
                     }
                 } finally {
                     // Cancel unconditionally, let the original Single handle cancel post termination, if required
@@ -138,7 +148,7 @@ public final class BeforeFinallyOnHttpResponseOperator
                                                 try {
                                                     if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
                                                             PROCESSING_PAYLOAD, TERMINATED)) {
-                                                        beforeFinally.onCancel();
+                                                        beforeFinally.cancel();
                                                     }
                                                 } finally {
                                                     subscription.cancel();

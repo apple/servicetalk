@@ -221,7 +221,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
      * <p>
@@ -245,7 +245,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -811,7 +811,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
      * <p>
@@ -832,7 +832,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -984,7 +984,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
      * <p>
@@ -1003,7 +1003,7 @@ public abstract class Completable {
      * <ul>
      *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.

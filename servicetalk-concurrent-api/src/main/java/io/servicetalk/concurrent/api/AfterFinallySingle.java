@@ -17,15 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import static io.servicetalk.concurrent.api.TerminalSignalConsumers.atomic;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
-    private final TerminalSignalConsumer doFinally;
+    private final TerminalSignalConsumer<T> doFinally;
 
-    AfterFinallySingle(Single<T> original, TerminalSignalConsumer doFinally, Executor executor) {
+    AfterFinallySingle(Single<T> original, TerminalSignalConsumer<T> doFinally, Executor executor) {
         super(original, executor);
-        this.doFinally = atomic(doFinally);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
@@ -35,16 +37,25 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
 
     private static final class AfterFinallySingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
-        private final TerminalSignalConsumer doFinally;
+        private final TerminalSignalConsumer<T> doFinally;
 
-        AfterFinallySingleSubscriber(Subscriber<? super T> original, TerminalSignalConsumer doFinally) {
+        private static final AtomicIntegerFieldUpdater<AfterFinallySingleSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallySingleSubscriber.class, "done");
+        @SuppressWarnings("unused")
+        private volatile int done;
+
+        AfterFinallySingleSubscriber(Subscriber<? super T> original, TerminalSignalConsumer<T> doFinally) {
             this.original = original;
             this.doFinally = doFinally;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, doFinally::onCancel));
+            original.onSubscribe(new BeforeCancellable(originalCancellable, () -> {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.cancel();
+                }
+            }));
         }
 
         @Override
@@ -52,7 +63,9 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
             try {
                 original.onSuccess(value);
             } finally {
-                doFinally.onComplete();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onSuccess(value);
+                }
             }
         }
 
@@ -61,7 +74,9 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
             try {
                 original.onError(cause);
             } finally {
-                doFinally.onError(cause);
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }

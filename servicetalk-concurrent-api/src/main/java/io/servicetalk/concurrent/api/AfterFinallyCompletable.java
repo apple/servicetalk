@@ -44,7 +44,7 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, doFinally::onCancel));
+            original.onSubscribe(new BeforeCancellable(originalCancellable, doFinally::cancel));
         }
 
         @Override

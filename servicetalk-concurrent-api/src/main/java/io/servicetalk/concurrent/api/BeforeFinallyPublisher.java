@@ -51,7 +51,7 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
                 @Override
                 public void cancel() {
                     try {
-                        doFinally.onCancel();
+                        doFinally.cancel();
                     } finally {
                         s.cancel();
                     }

@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
 final class TerminalSignalConsumers {
@@ -44,7 +46,31 @@ final class TerminalSignalConsumers {
         }
 
         @Override
-        public void onCancel() {
+        public void cancel() {
+            onFinally.run();
+        }
+    }
+
+    private static final class RunnableSingleTerminalSignalConsumer<T> implements Single.TerminalSignalConsumer<T> {
+
+        private final Runnable onFinally;
+
+        RunnableSingleTerminalSignalConsumer(final Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T result) {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void cancel() {
             onFinally.run();
         }
     }
@@ -77,15 +103,19 @@ final class TerminalSignalConsumers {
         }
 
         @Override
-        public void onCancel() {
+        public void cancel() {
             if (doneUpdater.compareAndSet(this, 0, 1)) {
-                delegate.onCancel();
+                delegate.cancel();
             }
         }
     }
 
     static TerminalSignalConsumer from(final Runnable runnable) {
         return new RunnableTerminalSignalConsumer(runnable);
+    }
+
+    static <T> Single.TerminalSignalConsumer<T> forSingle(final Runnable runnable) {
+        return new RunnableSingleTerminalSignalConsumer<T>(runnable);
     }
 
     static TerminalSignalConsumer atomic(final TerminalSignalConsumer delegate) {

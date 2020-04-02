@@ -48,7 +48,7 @@ public abstract class AbstractWhenFinallyTest {
     public void testForCancel() {
         listener.listen(doFinally(Completable.never(), doFinally));
         listener.cancel();
-        verify(doFinally).onCancel();
+        verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
     }

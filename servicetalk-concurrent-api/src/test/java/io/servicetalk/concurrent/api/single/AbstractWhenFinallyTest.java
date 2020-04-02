@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.Single.TerminalSignalConsumer;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,14 +42,14 @@ public abstract class AbstractWhenFinallyTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     private final Runnable runnable = mock(Runnable.class);
-    private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class,
+    private final TerminalSignalConsumer<String> doFinally = mock(TerminalSignalConsumer.class,
             delegatesTo(TerminalSignalConsumer.from(runnable)));
 
     @Test
     public void testForCancel() {
         listener.listen(Single.<String>never().afterFinally(doFinally));
         listener.cancel();
-        verify(doFinally).onCancel();
+        verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
     }
@@ -58,7 +58,7 @@ public abstract class AbstractWhenFinallyTest {
     public void testForCancelPostSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.cancel();
-        verify(doFinally).onComplete();
+        verify(doFinally).onSuccess("Hello");
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
     }
@@ -76,7 +76,7 @@ public abstract class AbstractWhenFinallyTest {
     public void testForSuccess() {
         listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.verifySuccess("Hello").cancel();
-        verify(doFinally).onComplete();
+        verify(doFinally).onSuccess("Hello");
         verifyNoMoreInteractions(doFinally);
         verify(runnable).run();
     }
@@ -111,5 +111,5 @@ public abstract class AbstractWhenFinallyTest {
     @Test
     public abstract void testCallbackThrowsErrorOnError();
 
-    protected abstract <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer signalConsumer);
+    protected abstract <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer<T> signalConsumer);
 }

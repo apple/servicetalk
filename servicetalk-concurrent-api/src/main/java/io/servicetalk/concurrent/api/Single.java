@@ -64,6 +64,52 @@ import static java.util.function.Function.identity;
  * @param <T> Type of the result of the single.
  */
 public abstract class Single<T> {
+
+    /**
+     * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
+     * {@link Single} and {@link Cancellable}.
+     *
+     * @param <T> Type of the result of the {@link Single}.
+     */
+    public interface TerminalSignalConsumer<T> {
+
+        /**
+         * Callback to signal a successful result of the {@link Single} for this {@link Subscriber} when
+         * {@link Subscriber#onSuccess(Object)} is received.
+         *
+         * @param result the observed result of type {@link T}.
+         */
+        void onSuccess(@Nullable T result);
+
+        /**
+         * Callback to signal an {@link Throwable error} produced by the {@link Single} for this {@link Subscriber} when
+         * {@link Subscriber#onError(Throwable)} is received.
+         *
+         * @param throwable the observed {@link Throwable}.
+         */
+        void onError(Throwable throwable);
+
+        /**
+         * Callback to signal cancellation of the subscription to the {@link Single} by this {@link Subscriber} when
+         * {@link Cancellable#cancel()} is received.
+         */
+        void cancel();
+
+        /**
+         * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
+         * invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
+         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
+         *
+         * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
+         * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
+         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
+         * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
+         */
+        static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
+            return TerminalSignalConsumers.forSingle(onFinally);
+        }
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
@@ -298,9 +344,9 @@ public abstract class Single<T> {
      * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
      * following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
      * <p>
@@ -321,16 +367,16 @@ public abstract class Single<T> {
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once, when any of the
      * following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
      */
-    public final Single<T> whenFinally(TerminalSignalConsumer doFinally) {
+    public final Single<T> whenFinally(TerminalSignalConsumer<T> doFinally) {
         return afterFinally(doFinally);
     }
 
@@ -717,37 +763,38 @@ public abstract class Single<T> {
      * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
      * <strong>before</strong> any of the following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
+     *  T result;
      *  try {
-     *      T result = resultOfThisSingle();
+     *      result = resultOfThisSingle();
      *  } catch(Throwable t) {
      *      doFinally.onError(t);
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *      return;
      *  }
-     *  doFinally.onComplete();
+     *  doFinally.onSuccess(result);
      *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
      * <strong>before</strong> any of the following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Single<T> beforeFinally(TerminalSignalConsumer doFinally) {
+    public final Single<T> beforeFinally(TerminalSignalConsumer<T> doFinally) {
         return new BeforeFinallySingle<>(this, doFinally, executor);
     }
 
@@ -886,9 +933,9 @@ public abstract class Single<T> {
      * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
      * <strong>after</strong> any of the following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
      * <p>
@@ -904,16 +951,16 @@ public abstract class Single<T> {
      * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
      * <strong>after</strong> any of the following terminal methods are called:
      * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#onCancel()}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Single<T> afterFinally(TerminalSignalConsumer doFinally) {
+    public final Single<T> afterFinally(TerminalSignalConsumer<T> doFinally) {
         return new AfterFinallySingle<>(this, doFinally, executor);
     }
 
