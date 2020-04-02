@@ -65,75 +65,6 @@ import static java.util.function.Function.identity;
  */
 public abstract class Single<T> {
 
-    /**
-     * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
-     * {@link Single} and {@link Cancellable}.
-     *
-     * @param <T> Type of the result of the {@link Single}.
-     */
-    public interface TerminalSignalConsumer<T> {
-
-        /**
-         * Callback to signal a successful result of the {@link Single} for this {@link Subscriber} when
-         * {@link Subscriber#onSuccess(Object)} is received.
-         *
-         * @param result the observed result of type {@link T}.
-         */
-        void onSuccess(@Nullable T result);
-
-        /**
-         * Callback to signal an {@link Throwable error} produced by the {@link Single} for this {@link Subscriber} when
-         * {@link Subscriber#onError(Throwable)} is received.
-         *
-         * @param throwable the observed {@link Throwable}.
-         */
-        void onError(Throwable throwable);
-
-        /**
-         * Callback to signal cancellation of the subscription to the {@link Single} by this {@link Subscriber} when
-         * {@link Cancellable#cancel()} is received.
-         */
-        void cancel();
-
-        /**
-         * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
-         * invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
-         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-         *
-         * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
-         * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
-         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
-         * @param <T> Type of the result of the {@link Single}.
-         * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
-         */
-        static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
-            return new RunnableTerminalSignalConsumer<>(onFinally);
-        }
-    }
-
-    private static final class RunnableTerminalSignalConsumer<T> implements TerminalSignalConsumer<T> {
-        private final Runnable onFinally;
-
-        RunnableTerminalSignalConsumer(final Runnable onFinally) {
-            this.onFinally = requireNonNull(onFinally);
-        }
-
-        @Override
-        public void onSuccess(@Nullable final T result) {
-            onFinally.run();
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            onFinally.run();
-        }
-
-        @Override
-        public void cancel() {
-            onFinally.run();
-        }
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
@@ -1827,4 +1758,73 @@ public abstract class Single<T> {
     //
     // Internal Methods End
     //
+
+    /**
+     * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
+     * {@link Single} and {@link Cancellable}.
+     *
+     * @param <T> Type of the result of the {@link Single}.
+     */
+    public interface TerminalSignalConsumer<T> {
+
+        /**
+         * Callback to signal a successful result of the {@link Single} for this {@link Subscriber} when
+         * {@link Subscriber#onSuccess(Object)} is received.
+         *
+         * @param result the observed result of type {@link T}.
+         */
+        void onSuccess(@Nullable T result);
+
+        /**
+         * Callback to signal an {@link Throwable error} produced by the {@link Single} for this {@link Subscriber} when
+         * {@link Subscriber#onError(Throwable)} is received.
+         *
+         * @param throwable the observed {@link Throwable}.
+         */
+        void onError(Throwable throwable);
+
+        /**
+         * Callback to signal cancellation of the subscription to the {@link Single} by this {@link Subscriber} when
+         * {@link Cancellable#cancel()} is received.
+         */
+        void cancel();
+
+        /**
+         * Adapts the passed {@link Runnable} to a {@link TerminalSignalConsumer} such that {@link Runnable#run()} is
+         * invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
+         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
+         *
+         * @param onFinally a {@link Runnable} to adapt to the returned {@link TerminalSignalConsumer} such that
+         * {@link Runnable#run()} is invoked for each call to {@link TerminalSignalConsumer#onSuccess(Object)},
+         * {@link TerminalSignalConsumer#onError(Throwable)}, or {@link TerminalSignalConsumer#cancel()}.
+         * @param <T> Type of the result of the {@link Single}.
+         * @return a {@link TerminalSignalConsumer} that adapts the passed {@link Runnable}.
+         */
+        static <T> TerminalSignalConsumer<T> from(Runnable onFinally) {
+            return new RunnableTerminalSignalConsumer<>(onFinally);
+        }
+    }
+
+    private static final class RunnableTerminalSignalConsumer<T> implements TerminalSignalConsumer<T> {
+        private final Runnable onFinally;
+
+        RunnableTerminalSignalConsumer(final Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T result) {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void cancel() {
+            onFinally.run();
+        }
+    }
 }
