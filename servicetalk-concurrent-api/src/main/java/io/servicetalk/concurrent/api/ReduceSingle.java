@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.BiFunction;
@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -76,7 +75,8 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ReduceSubscriber<R, T> implements PublisherSource.Subscriber<T> {
+    private static final class ReduceSubscriber<R, T> extends DelayedCancellable
+            implements PublisherSource.Subscriber<T> {
 
         private final BiFunction<? super R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;
@@ -92,9 +92,9 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
 
         @Override
         public void onSubscribe(final Subscription s) {
-            final ConcurrentSubscription cs = wrap(s);
-            subscriber.onSubscribe(cs);
-            cs.request(Long.MAX_VALUE);
+            subscriber.onSubscribe(this);
+            s.request(Long.MAX_VALUE);
+            delayedCancellable(s);
         }
 
         @Override
