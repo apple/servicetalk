@@ -19,17 +19,26 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpEventKey;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
+import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link HttpLoadBalancerFactory}.
@@ -38,33 +47,32 @@ import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFa
  */
 public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         implements HttpLoadBalancerFactory<ResolvedAddress>, HttpExecutionStrategyInfluencer {
-    private final Config<ResolvedAddress> config;
+    private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
+    private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-    private DefaultHttpLoadBalancerFactory(final Config<ResolvedAddress> config) {
-        this.config = config;
+    DefaultHttpLoadBalancerFactory(
+            final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
+            final HttpExecutionStrategyInfluencer strategyInfluencer) {
+        this.rawFactory = rawFactory;
+        this.strategyInfluencer = strategyInfluencer;
     }
 
     @Override
     public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
             final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends FilterableStreamingHttpLoadBalancedConnection> cf) {
-        return config.rawFactory.newLoadBalancer(eventPublisher, cf);
+        return rawFactory.newLoadBalancer(eventPublisher, cf);
     }
 
     @Override
     public FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             final FilterableStreamingHttpConnection connection) {
-        return new AbstractFilterableStreamingHttpLoadBalancedConnection(connection) {
-            @Override
-            public float score() {
-                return 1;
-            }
-        };
+        return new DefaultFilterableStreamingHttpLoadBalancedConnection(connection);
     }
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return config.strategyInfluencer.influenceStrategy(strategy);
+        return strategyInfluencer.influenceStrategy(strategy);
     }
 
     /**
@@ -90,7 +98,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(new Config<>(rawFactory, strategyInfluencer));
+            return new DefaultHttpLoadBalancerFactory<>(rawFactory, strategyInfluencer);
         }
 
         /**
@@ -121,21 +129,72 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             } else if (rawFactory instanceof RoundRobinLoadBalancerFactory) {
                 strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
             } else {
-                /* user provided load balancer assumed to be blocking unless told otherwise */
+                // user provided load balancer assumed to be blocking unless it implements
+                // HttpExecutionStrategyInfluencer
                 strategyInfluencer = defaultStreamingInfluencer();
             }
             return new Builder<>(rawFactory, strategyInfluencer);
         }
     }
 
-    private static final class Config<Addr> {
-        private final LoadBalancerFactory<Addr, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
-        private final HttpExecutionStrategyInfluencer strategyInfluencer;
+    private static final class DefaultFilterableStreamingHttpLoadBalancedConnection
+            implements FilterableStreamingHttpLoadBalancedConnection {
 
-        Config(final LoadBalancerFactory<Addr, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
-               final HttpExecutionStrategyInfluencer strategyInfluencer) {
-            this.rawFactory = rawFactory;
-            this.strategyInfluencer = strategyInfluencer;
+        private final FilterableStreamingHttpConnection delegate;
+
+        DefaultFilterableStreamingHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        public float score() {
+            return 1;
+        }
+
+        @Override
+        public HttpConnectionContext connectionContext() {
+            return delegate.connectionContext();
+        }
+
+        @Override
+        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+            return delegate.transportEventStream(eventKey);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return delegate.request(strategy, request);
+        }
+
+        @Override
+        public HttpExecutionContext executionContext() {
+            return delegate.executionContext();
+        }
+
+        @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return delegate.httpResponseFactory();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+            return delegate.newRequest(method, requestTarget);
         }
     }
 }
