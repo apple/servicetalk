@@ -722,14 +722,8 @@ public abstract class Publisher<T> {
      *  }
      * }</pre>
      *
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once, when any of the
-     * following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
      * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
@@ -1536,7 +1530,6 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(Runnable doFinally) {
@@ -1566,16 +1559,9 @@ public abstract class Publisher<T> {
      *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
      *
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
-     * <strong>before</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(TerminalSignalConsumer doFinally) {
@@ -1754,7 +1740,6 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(Runnable doFinally) {
@@ -1781,16 +1766,9 @@ public abstract class Publisher<T> {
      *  }
      * }</pre>
      *
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
-     * <strong>after</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(TerminalSignalConsumer doFinally) {

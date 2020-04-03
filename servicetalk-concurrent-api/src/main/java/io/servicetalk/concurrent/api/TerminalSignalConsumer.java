@@ -15,26 +15,32 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
+
 /**
- * Callback interface for {@link Publisher} and {@link Completable} on which only a single method is ever called
- * matching the terminal outcome of the associated {@code Source} and {@code Subscription}.
+ * A contract that provides discrete callbacks for various ways in which a {@link PublisherSource.Subscriber} or a
+ * {@link CompletableSource.Subscriber} can terminate.
  */
 public interface TerminalSignalConsumer {
 
     /**
-     * Callback to signal completion of the {@code Subscription} for this {@code Subscriber}.
+     * Callback to indicate termination via {@link PublisherSource.Subscriber#onComplete()} or
+     * {@link CompletableSource.Subscriber#onComplete()}.
      */
     void onComplete();
 
     /**
-     * Callback to signal an {@link Throwable error} of the {@code Subscription} for this {@code Subscriber}.
+     * Callback to indicate termination via {@link PublisherSource.Subscriber#onError(Throwable)} or
+     * {@link CompletableSource.Subscriber#onError(Throwable)}.
      *
      * @param throwable the observed {@link Throwable}.
      */
     void onError(Throwable throwable);
 
     /**
-     * Callback to signal cancellation of the {@code Subscription} by this {@code Subscriber}.
+     * Callback to indicate termination via {@link Cancellable#cancel()}.
      */
     void cancel();
 }

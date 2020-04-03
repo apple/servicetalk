@@ -280,6 +280,7 @@ public abstract class Single<T> {
      *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -319,14 +320,9 @@ public abstract class Single<T> {
      *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once, when any of the
-     * following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
      * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
@@ -701,6 +697,7 @@ public abstract class Single<T> {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -709,6 +706,7 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(Runnable doFinally) {
         return beforeFinally(new RunnableTerminalSignalConsumer<>(doFinally));
@@ -737,16 +735,10 @@ public abstract class Single<T> {
      *  doFinally.onSuccess(result);
      *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
-     * <strong>before</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
-     * @return The new {@link Single}.
      *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Single}.
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(TerminalSignalConsumer<T> doFinally) {
@@ -869,6 +861,7 @@ public abstract class Single<T> {
      *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -877,7 +870,6 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(Runnable doFinally) {
@@ -903,16 +895,10 @@ public abstract class Single<T> {
      *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
      *  }
      * }</pre>
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
-     * <strong>after</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
-     * @return The new {@link Single}.
      *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Single}.
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(TerminalSignalConsumer<T> doFinally) {
@@ -1760,32 +1746,29 @@ public abstract class Single<T> {
     //
 
     /**
-     * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
-     * {@link Single} and {@link Cancellable}.
+     * A contract that provides discrete callbacks for various ways in which a {@link SingleSource.Subscriber} can
+     * terminate.
      *
      * @param <T> Type of the result of the {@link Single}.
      */
     public interface TerminalSignalConsumer<T> {
 
         /**
-         * Callback to signal a successful result of the {@link Single} for this {@link Subscriber} when
-         * {@link Subscriber#onSuccess(Object)} is received.
+         * Callback to indicate termination via {@link Subscriber#onSuccess(Object)}.
          *
          * @param result the observed result of type {@link T}.
          */
         void onSuccess(@Nullable T result);
 
         /**
-         * Callback to signal an {@link Throwable error} produced by the {@link Single} for this {@link Subscriber} when
-         * {@link Subscriber#onError(Throwable)} is received.
+         * Callback to indicate termination via {@link Subscriber#onError(Throwable)}.
          *
          * @param throwable the observed {@link Throwable}.
          */
         void onError(Throwable throwable);
 
         /**
-         * Callback to signal cancellation of the subscription to the {@link Single} by this {@link Subscriber} when
-         * {@link Cancellable#cancel()} is received.
+         * Callback to indicate termination via {@link Cancellable#cancel()}.
          */
         void cancel();
     }

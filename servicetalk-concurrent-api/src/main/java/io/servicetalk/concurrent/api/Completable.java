@@ -240,14 +240,8 @@ public abstract class Completable {
      *  }
      * }</pre>
      *
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once, when any of the
-     * following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
      * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
@@ -798,7 +792,6 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(Runnable doFinally) {
@@ -828,15 +821,9 @@ public abstract class Completable {
      *  nextOperation(); // Maybe notifying of cancellation, or termination
      * }</pre>
      *
-     * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(TerminalSignalConsumer doFinally) {
@@ -971,7 +958,6 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(Runnable doFinally) {
@@ -998,16 +984,9 @@ public abstract class Completable {
      *  }
      * }</pre>
      *
-     * @param doFinally an appropriate method of {@link TerminalSignalConsumer} is invoked exactly once
-     * <strong>after</strong> any of the following terminal methods are called:
-     * <ul>
-     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
-     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
-     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
-     * </ul>
-     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(TerminalSignalConsumer doFinally) {
