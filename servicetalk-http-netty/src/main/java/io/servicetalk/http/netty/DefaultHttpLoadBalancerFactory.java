@@ -118,7 +118,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             final HttpExecutionStrategyInfluencer strategyInfluencer;
             if (rawFactory instanceof HttpExecutionStrategyInfluencer) {
                 strategyInfluencer = (HttpExecutionStrategyInfluencer) rawFactory;
-            } else if(rawFactory instanceof RoundRobinLoadBalancerFactory) {
+            } else if (rawFactory instanceof RoundRobinLoadBalancerFactory) {
                 strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
             } else {
                 /* user provided load balancer assumed to be blocking unless told otherwise */
