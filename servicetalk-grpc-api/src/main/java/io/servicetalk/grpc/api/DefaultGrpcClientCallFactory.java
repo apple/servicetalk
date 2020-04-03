@@ -156,6 +156,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
                 final Resp firstItem = iterator.next();
+                assert firstItem != null;
                 if (iterator.hasNext()) {
                     iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
                     throw new IllegalArgumentException("More than one response message received");
@@ -194,7 +195,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return streamingHttpClient.onClose();
     }
 
-    private GrpcMessageEncoding getMessageEncoding(final GrpcClientMetadata metadata) {
+    private GrpcMessageEncoding getMessageEncoding(@SuppressWarnings("unused") final GrpcClientMetadata metadata) {
         // compression not yet supported.
         return None;
     }

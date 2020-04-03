@@ -598,6 +598,7 @@ final class GrpcRouter {
                                             SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
                                 }
                                 firstItem = requestIterator.next();
+                                assert firstItem != null;
                                 if (requestIterator.hasNext()) {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();

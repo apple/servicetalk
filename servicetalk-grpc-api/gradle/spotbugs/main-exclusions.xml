@@ -15,4 +15,12 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.grpc.api.DefaultGrpcClientCallFactory"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$Builder$9"/>
+    </Or>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+  </Match>
 </FindBugsFilter>
