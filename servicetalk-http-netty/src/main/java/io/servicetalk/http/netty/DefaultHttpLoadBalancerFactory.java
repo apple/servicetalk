@@ -25,7 +25,10 @@ import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory;
 
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 
 /**
@@ -61,8 +64,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // Load balancers are assumed to be non-blocking.
-        return strategy;
+        return config.strategyInfluencer.influenceStrategy(strategy);
     }
 
     /**
@@ -73,10 +75,13 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
      */
     public static final class Builder<ResolvedAddress> {
         private final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
+        private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
         private Builder(
-                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
+                final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
+                final HttpExecutionStrategyInfluencer strategyInfluencer) {
             this.rawFactory = rawFactory;
+            this.strategyInfluencer = strategyInfluencer;
         }
 
         /**
@@ -85,7 +90,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          * @return A {@link DefaultHttpLoadBalancerFactory}.
          */
         public DefaultHttpLoadBalancerFactory<ResolvedAddress> build() {
-            return new DefaultHttpLoadBalancerFactory<>(new Config<>(rawFactory));
+            return new DefaultHttpLoadBalancerFactory<>(new Config<>(rawFactory, strategyInfluencer));
         }
 
         /**
@@ -110,15 +115,27 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
          */
         public static <ResolvedAddress> Builder<ResolvedAddress> from(
                 final LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
-            return new Builder<>(rawFactory);
+            final HttpExecutionStrategyInfluencer strategyInfluencer;
+            if (rawFactory instanceof HttpExecutionStrategyInfluencer) {
+                strategyInfluencer = (HttpExecutionStrategyInfluencer) rawFactory;
+            } else if(rawFactory instanceof RoundRobinLoadBalancerFactory) {
+                strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
+            } else {
+                /* user provided load balancer assumed to be blocking unless told otherwise */
+                strategyInfluencer =  defaultStreamingInfluencer();
+            }
+            return new Builder<>(rawFactory, strategyInfluencer);
         }
     }
 
     private static final class Config<Addr> {
         private final LoadBalancerFactory<Addr, FilterableStreamingHttpLoadBalancedConnection> rawFactory;
+        private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-        Config(final LoadBalancerFactory<Addr, FilterableStreamingHttpLoadBalancedConnection> rawFactory) {
+        Config(final LoadBalancerFactory<Addr, FilterableStreamingHttpLoadBalancedConnection> rawFactory,
+               final HttpExecutionStrategyInfluencer strategyInfluencer) {
             this.rawFactory = rawFactory;
+            this.strategyInfluencer = strategyInfluencer;
         }
     }
 }
