@@ -29,7 +29,6 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
-import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
@@ -156,10 +155,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
-                final Resp firstItem;
-                if (!iterator.hasNext() || (firstItem = iterator.next()) == null) {
-                    throw new NoSuchElementException("Empty or null return value is not supported");
-                }
+                final Resp firstItem = iterator.next();
+                assert firstItem != null;
                 if (iterator.hasNext()) {
                     iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
                     throw new IllegalArgumentException("More than one response message received");

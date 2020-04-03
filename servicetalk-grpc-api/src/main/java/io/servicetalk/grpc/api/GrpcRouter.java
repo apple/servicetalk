@@ -593,10 +593,12 @@ final class GrpcRouter {
                                            final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                             final Req firstItem;
                             try (BlockingIterator<Req> requestIterator = request.iterator()) {
-                                if (!requestIterator.hasNext() || (firstItem = requestIterator.next()) == null) {
+                                if (!requestIterator.hasNext()) {
                                     throw new GrpcStatus(INVALID_ARGUMENT, null,
                                             SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
                                 }
+                                firstItem = requestIterator.next();
+                                assert firstItem != null;
                                 if (requestIterator.hasNext()) {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();
