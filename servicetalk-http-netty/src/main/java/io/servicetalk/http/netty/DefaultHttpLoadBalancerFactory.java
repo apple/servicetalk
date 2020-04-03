@@ -38,6 +38,7 @@ import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancer
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -147,8 +148,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         @Override
-        public float score() {
-            return 1;
+        public int score() {
+            return MAX_VALUE;
         }
 
         @Override

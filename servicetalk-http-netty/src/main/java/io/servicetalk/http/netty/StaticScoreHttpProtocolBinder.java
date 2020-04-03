@@ -29,15 +29,15 @@ import java.util.function.Function;
 final class StaticScoreHttpProtocolBinder extends StreamingHttpConnectionFilter
         implements FilterableStreamingHttpLoadBalancedConnection {
 
-    private final float score;
+    private final int score;
 
-    private StaticScoreHttpProtocolBinder(final FilterableStreamingHttpConnection delegate, float score) {
+    private StaticScoreHttpProtocolBinder(final FilterableStreamingHttpConnection delegate, int score) {
         super(delegate);
         this.score = score;
     }
 
     @Override
-    public float score() {
+    public int score() {
         return score;
     }
 
@@ -50,7 +50,7 @@ final class StaticScoreHttpProtocolBinder extends StreamingHttpConnectionFilter
      * @return the wrapped connection
      */
     static Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
-    provideStaticScoreIfNeeded(float score) {
+    provideStaticScoreIfNeeded(int score) {
         return conn -> conn instanceof FilterableStreamingHttpLoadBalancedConnection ?
                 (FilterableStreamingHttpLoadBalancedConnection) conn : new StaticScoreHttpProtocolBinder(conn, score);
     }

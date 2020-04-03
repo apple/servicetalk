@@ -21,9 +21,9 @@ package io.servicetalk.client.api;
 public interface ScoreSupplier {
 
     /**
-     * Returns the current score of a resource, where 0.0 is the lowest score and 1.0 is the highest. {@link
-     * LoadBalancer}s prefer resources with a higher score.
+     * Returns the current score of a resource. {@link LoadBalancer}s prefer resources with a higher score.
+     *
      * @return the score
      */
-    float score();
+    int score();
 }
