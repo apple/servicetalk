@@ -226,10 +226,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
      */
     public static <ResolvedAddress, C extends LoadBalancedConnection>
-    LoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
-        return (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
-                connectionFactory,
-                comparingInt(Object::hashCode));
+    RoundRobinLoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
+        return new RoundRobinLoadBalancerFactory<>();
     }
 
     @Override
@@ -329,6 +327,25 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     @Override
     public Completable closeAsyncGracefully() {
         return asyncCloseable.closeAsyncGracefully();
+    }
+
+    /**
+     * {@link LoadBalancerFactory} for {@link RoundRobinLoadBalancer}.
+     *
+     * @param <ResolvedAddress> The resolved address type.
+     * @param <C> The type of connection.
+     */
+    public static final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
+            implements LoadBalancerFactory<ResolvedAddress, C> {
+
+        @Override
+        public LoadBalancer<? extends C> newLoadBalancer(
+                final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
+            return new RoundRobinLoadBalancer<>(eventPublisher,
+                    connectionFactory,
+                    comparingInt(Object::hashCode));
+        }
     }
 
     // Visible for testing

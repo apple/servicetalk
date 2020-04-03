@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
@@ -97,9 +96,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract
-    MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
-            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinding);
+    MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(

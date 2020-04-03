@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -31,9 +30,9 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -449,11 +448,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress,
-                    FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);
+            final HttpLoadBalancerFactory<InetSocketAddress> loadBalancerFactory) {
+        builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }
 

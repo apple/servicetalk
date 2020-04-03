@@ -19,22 +19,19 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 interface SingleAddressGrpcClientBuilder<U, R,
@@ -122,15 +119,10 @@ interface SingleAddressGrpcClientBuilder<U, R,
             ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     /**
-     * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
+     * Set a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
      *
-     * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
-     * @param protocolBinder The {@link Function} that bridges the HTTP protocol to the {@link LoadBalancedConnection}
-     * which exposes a {@link LoadBalancedConnection#score()} function which may inform the {@link LoadBalancer} created
-     * from the provided {@code loadBalancerFactory} while making connection selection decisions.
+     * @param loadBalancerFactory {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.
      * @return {@code this}.
      */
-    SingleAddressGrpcClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
-            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
+    SingleAddressGrpcClientBuilder<U, R, SDE> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 }

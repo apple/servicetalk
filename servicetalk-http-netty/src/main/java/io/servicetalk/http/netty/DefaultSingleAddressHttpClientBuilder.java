@@ -22,7 +22,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
@@ -33,10 +32,10 @@ import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -65,8 +64,6 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -86,8 +83,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final HttpClientConfig config;
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
-    private LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory;
-    private Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder;
+    private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
@@ -117,8 +113,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
-        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(MAX_VALUE);
+        this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -128,8 +123,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
-        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(MAX_VALUE);
+        this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -141,7 +135,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         influencerChainBuilder = from.influencerChainBuilder.copy();
         this.loadBalancerFactory = from.loadBalancerFactory;
-        this.protocolBinder = from.protocolBinder;
         this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
@@ -261,17 +254,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.protocolBinder);
+                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().isAlpnConfigured()) {
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.protocolBinder);
+                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else {
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
-                        connectionFactoryFilter, ctx.builder.protocolBinder);
+                        connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
 
             @SuppressWarnings("unchecked")
@@ -333,11 +326,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-        final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
-                new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.protocolConfigs().h2Config().headersFactory(), HTTP_2_0) :
-                new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
+        final StreamingHttpRequestResponseFactory reqRespFactory;
+        if (clonedBuilder.config.isH2PriorKnowledge()) {
+            assert clonedBuilder.config.protocolConfigs().h2Config() != null;
+            reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
+                    clonedBuilder.config.protocolConfigs().h2Config().headersFactory(), HTTP_2_0);
+        } else {
+            assert clonedBuilder.config.protocolConfigs().h1Config() != null;
+            reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
+                    clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
+        }
 
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, proxyAddress);
     }
@@ -439,12 +437,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
+            final HttpLoadBalancerFactory<R> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         influencerChainBuilder.add(loadBalancerFactory);
-        this.protocolBinder = protocolBinder;
         return this;
     }
 
@@ -510,30 +505,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             return -1;
         }
         return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
-    }
-
-    private static final class StrategyInfluencingLoadBalancerFactory<R> implements LoadBalancerFactory<R,
-            FilterableStreamingHttpLoadBalancedConnection>, HttpExecutionStrategyInfluencer {
-
-
-        private final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate;
-
-        private StrategyInfluencingLoadBalancerFactory(
-                final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
-                final Publisher<? extends ServiceDiscovererEvent<R>> eventPublisher,
-                final ConnectionFactory<R, ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
-            return delegate.newLoadBalancer(eventPublisher, connectionFactory);
-        }
-
-        @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;
-        }
     }
 
     private static final class NoopServiceDiscoverer<OriginalAddress>

@@ -18,7 +18,6 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
@@ -26,7 +25,7 @@ import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
@@ -36,7 +35,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -127,11 +125,8 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
-        httpClientBuilder.loadBalancerFactory(loadBalancerFactory, protocolBinder);
+    public GrpcClientBuilder<U, R> loadBalancerFactory(final HttpLoadBalancerFactory<R> loadBalancerFactory) {
+        httpClientBuilder.loadBalancerFactory(loadBalancerFactory);
         return this;
     }
 
