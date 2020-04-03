@@ -122,7 +122,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
                 strategyInfluencer = strategy -> strategy; // RoundRobinLoadBalancer is non-blocking.
             } else {
                 /* user provided load balancer assumed to be blocking unless told otherwise */
-                strategyInfluencer =  defaultStreamingInfluencer();
+                strategyInfluencer = defaultStreamingInfluencer();
             }
             return new Builder<>(rawFactory, strategyInfluencer);
         }
