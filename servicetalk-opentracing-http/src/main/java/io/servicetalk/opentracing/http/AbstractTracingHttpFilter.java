@@ -55,7 +55,7 @@ abstract class AbstractTracingHttpFilter {
         this.formatter = traceStateFormatter(validateTraceKeyFormat);
     }
 
-    class ScopeTracker implements TerminalSignalConsumer {
+    static class ScopeTracker implements TerminalSignalConsumer {
 
         protected final Scope currentScope;
         @Nullable

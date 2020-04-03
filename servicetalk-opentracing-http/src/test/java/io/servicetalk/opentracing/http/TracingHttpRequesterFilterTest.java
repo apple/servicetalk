@@ -15,13 +15,23 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
@@ -29,12 +39,15 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentracing.Tracer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
@@ -52,8 +65,11 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
+import static io.servicetalk.opentracing.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
 import static io.servicetalk.opentracing.http.TestUtils.isHexId;
+import static io.servicetalk.opentracing.http.TestUtils.verifyTraceIdPresentInLogs;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.PARENT_SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
@@ -61,19 +77,21 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
+import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.rules.ExpectedException.none;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class TracingHttpRequesterFilterTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TracingHttpRequesterFilterTest.class);
     private static final HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     @Rule
@@ -87,6 +105,12 @@ public class TracingHttpRequesterFilterTest {
     @Before
     public void setup() {
         initMocks(this);
+        LoggerStringWriter.reset();
+    }
+
+    @After
+    public void tearDown() {
+        LoggerStringWriter.remove();
     }
 
     @Test
@@ -97,7 +121,8 @@ public class TracingHttpRequesterFilterTest {
                 .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
+                    .appendClientFilter(new TracingHttpRequesterFilter(tracer, "testClient"))
+                    .appendClientFilter(new TestTracingLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                 TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
                         TestSpanState.class));
@@ -117,6 +142,9 @@ public class TracingHttpRequesterFilterTest {
                 assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                 assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                 assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
+
+                verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
+                        serverSpanState.spanId, serverSpanState.parentSpanId, TRACING_TEST_LOG_LINE_PREFIX);
             }
         }
     }
@@ -129,7 +157,8 @@ public class TracingHttpRequesterFilterTest {
                 .addListener(spanListener).build();
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendConnectionFilter(new TracingHttpRequesterFilter(tracer, "testClient")).build()) {
+                    .appendClientFilter(new TracingHttpRequesterFilter(tracer, "testClient"))
+                    .appendClientFilter(new TestTracingLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
                 try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {
                     HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
                     TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
@@ -153,6 +182,9 @@ public class TracingHttpRequesterFilterTest {
                     assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
                     assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
                     assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
+
+                    verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
+                            serverSpanState.spanId, serverSpanState.parentSpanId, TRACING_TEST_LOG_LINE_PREFIX);
                 }
             }
         }
@@ -188,5 +220,55 @@ public class TracingHttpRequesterFilterTest {
     @Nullable
     private static String toStringOrNull(@Nullable CharSequence cs) {
         return cs == null ? null : cs.toString();
+    }
+
+    private static final class TestTracingLoggerFilter implements StreamingHttpClientFilterFactory {
+        private final String[] logLinePrefix;
+
+        TestTracingLoggerFilter(final String[] logLinePrefix) {
+            this.logLinePrefix = requireNonNull(logLinePrefix);
+            if (logLinePrefix.length < 6) {
+                throw new IllegalArgumentException("logLinePrefix length must be >= 6");
+            }
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    LOGGER.debug(logLinePrefix[0], request.path());
+                    return delegate.request(strategy, request).map(response -> {
+                        LOGGER.debug(logLinePrefix[1], request.path());
+                        return response.transformRawPayloadBody(payload -> {
+                            LOGGER.debug(logLinePrefix[2], request.path());
+                            return payload.beforeSubscriber(() -> new PublisherSource.Subscriber<Object>() {
+                                @Override
+                                public void onSubscribe(final PublisherSource.Subscription subscription) {
+                                    LOGGER.debug(logLinePrefix[3], request.path());
+                                }
+
+                                @Override
+                                public void onNext(@Nullable final Object o) {
+                                    LOGGER.debug(logLinePrefix[4], request.path());
+                                }
+
+                                @Override
+                                public void onError(final Throwable t) {
+                                    LOGGER.debug(logLinePrefix[5], request.path());
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    LOGGER.debug(logLinePrefix[5], request.path());
+                                }
+                            });
+                        });
+                    });
+                }
+            };
+        }
     }
 }
