@@ -58,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -225,6 +226,16 @@ public class HttpJaxRsRouterBuilderTest {
     }
 
     @Test
+    public void testEmptyConsumes() {
+        when(request.path()).thenReturn("/all/emptyConsumes");
+        when(request.method()).thenReturn(HttpRequestMethod.DELETE);
+        when(headers.values(argThat(argument -> contentEqualsIgnoreCase(argument, CONTENT_TYPE))))
+                .thenAnswer(answerIterableOf(TEXT_PLAIN));
+
+        assertThat("1", equalTo(makeRequest()));
+    }
+
+    @Test
     public void testCookieParam() {
         when(request.path()).thenReturn("/all/cookie");
         when(request.method()).thenReturn(HttpRequestMethod.GET);
@@ -283,6 +294,21 @@ public class HttpJaxRsRouterBuilderTest {
                 .firstOrError().toFuture().get();
 
         assertThat(model.name, equalTo(resultModel.name));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void failedResource() {
+        final Application application = new Application() {
+
+            @Override
+            public Set<Object> getSingletons() {
+
+                return Collections.singleton(new FailedResource());
+            }
+        };
+
+        new HttpJaxRsRouterBuilder()
+                .from(application);
     }
 
     static <T> Answer<Iterable<T>> answerIterableOf(final T... values) {
@@ -386,6 +412,26 @@ public class HttpJaxRsRouterBuilderTest {
         @Path("/text")
         Single<StreamingHttpResponse> contentType(@Context StreamingHttpResponseFactory responseFactory) {
             return succeeded(responseFactory.ok().payloadBody(succeeded("1").toPublisher(), textSerializer));
+        }
+
+        @DELETE
+        @Consumes
+        @Path("/emptyConsumes")
+        Single<StreamingHttpResponse> emptyConsumes(@Context StreamingHttpResponseFactory responseFactory) {
+            return succeeded(responseFactory.ok().payloadBody(succeeded("1").toPublisher(), textSerializer));
+        }
+    }
+
+    @Path("/failed")
+    @Consumes(value = APPLICATION_JSON)
+    public static final class FailedResource {
+
+        @POST
+        @Consumes(TEXT_PLAIN)
+        @Path("/testNonJsonModel")
+        Single<StreamingHttpResponse> testNonJsonModel(@Context StreamingHttpResponseFactory responseFactory,
+                                                       Model model) {
+            throw new RuntimeException("never been called");
         }
     }
 

@@ -48,6 +48,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
 /**
@@ -235,7 +236,13 @@ public final class HttpJaxRsRouterBuilder {
                     headerParamAnnotation == null &&
                     cookieParamAnnotation == null
             ) {
-                parameters.add(i, new BodyParameter(parameter.getParameterizedType(), contentType));
+
+                if (!APPLICATION_JSON.equals(contentType)) {
+                    throw new IllegalStateException("Wrong content type. Expecting " +
+                            APPLICATION_JSON + " for method " + method.getName());
+                }
+
+                parameters.add(i, new JsonBodyParameter(parameter.getParameterizedType()));
             }
         }
         return parameters;

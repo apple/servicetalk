@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jaxrs;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -26,22 +25,17 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-final class BodyParameter implements Parameter {
+final class JsonBodyParameter implements Parameter {
 
     private static final HttpSerializationProvider jsonSerializer = jsonSerializer(new JacksonSerializationProvider());
 
     private final Class<?> classType;
-    private final String expectedContentType;
 
-    BodyParameter(final Type type, final String expectedContentType) {
-        this.expectedContentType = expectedContentType;
-
+    JsonBodyParameter(final Type type) {
         final ParameterizedType parameterizedType = (ParameterizedType) type;
         Type typeArgument = null;
         final Type rawType = parameterizedType.getRawType();
@@ -62,19 +56,10 @@ final class BodyParameter implements Parameter {
         return typeArguments.length != 1 ? null : typeArguments[0];
     }
 
-    @Nullable
     @Override
     public Object get(final HttpServiceContext ctx, final StreamingHttpRequest request,
                       final StreamingHttpResponseFactory responseFactory) {
         final HttpHeaders headers = request.headers();
-        final CharSequence contentType = headers.get(HttpHeaderNames.CONTENT_TYPE);
-        if (!Objects.equals(contentType, expectedContentType)) {
-            return Single.failed(new RuntimeException("Wrong content type. Expecting " + expectedContentType + "."));
-        }
-
-        if (!APPLICATION_JSON.equals(expectedContentType)) {
-            return Single.failed(new RuntimeException("Wrong content type. Expecting " + APPLICATION_JSON + "."));
-        }
         try {
             return jsonSerializer.deserializerFor(classType).deserialize(headers, request.payloadBody());
         } catch (Exception e) {
