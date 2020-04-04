@@ -289,8 +289,8 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Single<T> whenFinally(Runnable doFinally) {
         return afterFinally(doFinally);
@@ -312,20 +312,25 @@ public abstract class Single<T> {
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
+     *  T result;
      *  try {
-     *      T result = resultOfThisSingle();
-     *  } finally {
+     *      result = resultOfThisSingle();
+     *  } catch(Throwable t) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onSuccess(result);
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
-     * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Single<T> whenFinally(TerminalSignalConsumer<T> doFinally) {
         return afterFinally(doFinally);
@@ -888,12 +893,16 @@ public abstract class Single<T> {
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
+     *  T result;
      *  try {
-     *      T result = resultOfThisSingle();
-     *  } finally {
+     *      result = resultOfThisSingle();
+     *  } catch(Throwable t) {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onSuccess(result);
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this

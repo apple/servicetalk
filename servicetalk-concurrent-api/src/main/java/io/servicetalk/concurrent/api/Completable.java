@@ -208,8 +208,8 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Completable whenFinally(Runnable doFinally) {
         return afterFinally(doFinally);
@@ -233,18 +233,22 @@ public abstract class Completable {
      * <pre>{@code
      *  try {
      *      resultOfThisCompletable();
-     *  } finally {
+     *  } catch(Throwable t) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
-     * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Completable whenFinally(TerminalSignalConsumer doFinally) {
         return afterFinally(doFinally);
@@ -978,10 +982,13 @@ public abstract class Completable {
      * <pre>{@code
      *  try {
      *      resultOfThisCompletable();
-     *  } finally {
+     *  } catch(Throwable t) {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this

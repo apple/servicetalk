@@ -690,8 +690,8 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Publisher<T> whenFinally(Runnable doFinally) {
         return afterFinally(doFinally);
@@ -715,18 +715,22 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *  try {
      *      List<T> results = resultOfThisPublisher();
-     *  } finally {
+     *  } catch(Throwable t) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
-     * @see #afterFinally(TerminalSignalConsumer)
      * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Publisher<T> whenFinally(TerminalSignalConsumer doFinally) {
         return afterFinally(doFinally);
@@ -1760,10 +1764,13 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *  try {
      *      List<T> results = resultOfThisPublisher();
-     *  } finally {
+     *  } catch(Throwable t) {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.onTerminalSignal(); // Invokes the corresponding terminal signal
+     *      doFinally.onError(t);
+     *      return;
      *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
      * }</pre>
      *
      * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
