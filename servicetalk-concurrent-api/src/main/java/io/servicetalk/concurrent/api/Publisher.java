@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -678,7 +678,7 @@ public abstract class Publisher<T> {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
      *
@@ -690,10 +690,49 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Publisher<T> whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
+    }
+
+    /**
+     * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
+     * following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(TerminalSignalConsumer)} and
+     * {@link #afterFinally(TerminalSignalConsumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } catch(Throwable t) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Publisher}.
+     * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
+     */
+    public final Publisher<T> whenFinally(TerminalSignalConsumer doFinally) {
         return afterFinally(doFinally);
     }
 
@@ -1468,7 +1507,7 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * Invokes the {@code beforeFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1482,7 +1521,7 @@ public abstract class Publisher<T> {
      *  try {
      *      List<T> results = resultOfThisPublisher();
      *  } finally {
-     *      whenFinally.run();
+     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
@@ -1495,10 +1534,41 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(Runnable doFinally) {
+        return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
+     * <strong>before</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } catch(Throwable t) {
+     *      doFinally.onError(t);
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      return;
+     *  }
+     *  doFinally.onComplete();
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Publisher}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Publisher<T> beforeFinally(TerminalSignalConsumer doFinally) {
         return new BeforeFinallyPublisher<>(this, doFinally, executor);
     }
 
@@ -1647,7 +1717,7 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * Invokes the {@code afterFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1662,7 +1732,7 @@ public abstract class Publisher<T> {
      *      List<T> results = resultOfThisPublisher();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
      *
@@ -1674,10 +1744,41 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(Runnable doFinally) {
+        return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
+     * <strong>after</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Subscription#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } catch(Throwable t) {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Publisher}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Publisher<T> afterFinally(TerminalSignalConsumer doFinally) {
         return new AfterFinallyPublisher<>(this, doFinally, executor);
     }
 

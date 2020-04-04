@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,30 +21,30 @@ import static java.util.Objects.requireNonNull;
 
 final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
-    private final Runnable runnable;
+    private final TerminalSignalConsumer doFinally;
 
-    AfterFinallyPublisher(Publisher<T> original, Runnable runnable, Executor executor) {
+    AfterFinallyPublisher(Publisher<T> original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.runnable = requireNonNull(runnable);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new AfterFinallyPublisherSubscriber<>(subscriber, runnable);
+        return new AfterFinallyPublisherSubscriber<>(subscriber, doFinally);
     }
 
     private static final class AfterFinallyPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
-        private final Runnable runnable;
+        private final TerminalSignalConsumer doFinally;
 
-        private static final AtomicIntegerFieldUpdater<AfterFinallyPublisherSubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyPublisherSubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<AfterFinallyPublisherSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyPublisherSubscriber.class, "done");
         @SuppressWarnings("unused")
-        private volatile int complete;
+        private volatile int done;
 
-        AfterFinallyPublisherSubscriber(Subscriber<? super T> original, Runnable runnable) {
+        AfterFinallyPublisherSubscriber(Subscriber<? super T> original, TerminalSignalConsumer doFinally) {
             this.original = original;
-            this.runnable = runnable;
+            this.doFinally = doFinally;
         }
 
         @Override
@@ -60,7 +60,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
                     try {
                         s.cancel();
                     } finally {
-                        afterFinally();
+                        if (doneUpdater.compareAndSet(AfterFinallyPublisherSubscriber.this, 0, 1)) {
+                            doFinally.cancel();
+                        }
                     }
                 }
             });
@@ -76,7 +78,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
             try {
                 original.onComplete();
             } finally {
-                afterFinally();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             }
         }
 
@@ -85,13 +89,9 @@ final class AfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperato
             try {
                 original.onError(cause);
             } finally {
-                afterFinally();
-            }
-        }
-
-        private void afterFinally() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                runnable.run();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }

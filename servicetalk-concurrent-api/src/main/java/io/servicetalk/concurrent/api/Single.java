@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import static java.util.function.Function.identity;
  * @param <T> Type of the result of the single.
  */
 public abstract class Single<T> {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
@@ -276,9 +277,10 @@ public abstract class Single<T> {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -287,10 +289,50 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Single<T> whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
+    }
+
+    /**
+     * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
+     * following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(TerminalSignalConsumer)} and
+     * {@link #afterFinally(TerminalSignalConsumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result;
+     *  try {
+     *      result = resultOfThisSingle();
+     *  } catch(Throwable t) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onSuccess(result);
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Single}.
+     * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
+     */
+    public final Single<T> whenFinally(TerminalSignalConsumer<T> doFinally) {
         return afterFinally(doFinally);
     }
 
@@ -656,10 +698,11 @@ public abstract class Single<T> {
      *  try {
      *      T result = resultOfThisSingle();
      *  } finally {
-     *      whenFinally.run();
+     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -668,8 +711,42 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(Runnable doFinally) {
+        return beforeFinally(new RunnableTerminalSignalConsumer<>(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
+     * <strong>before</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result;
+     *  try {
+     *      result = resultOfThisSingle();
+     *  } catch(Throwable t) {
+     *      doFinally.onError(t);
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      return;
+     *  }
+     *  doFinally.onSuccess(result);
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Single}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Single<T> beforeFinally(TerminalSignalConsumer<T> doFinally) {
         return new BeforeFinallySingle<>(this, doFinally, executor);
     }
 
@@ -786,9 +863,10 @@ public abstract class Single<T> {
      *      T result = resultOfThisSingle();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -797,8 +875,42 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(Runnable doFinally) {
+        return afterFinally(new RunnableTerminalSignalConsumer<>(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
+     * <strong>after</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onSuccess(Object)} - invokes {@link TerminalSignalConsumer#onSuccess(Object)}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result;
+     *  try {
+     *      result = resultOfThisSingle();
+     *  } catch(Throwable t) {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onSuccess(result);
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Single}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Single<T> afterFinally(TerminalSignalConsumer<T> doFinally) {
         return new AfterFinallySingle<>(this, doFinally, executor);
     }
 
@@ -1641,4 +1753,55 @@ public abstract class Single<T> {
     //
     // Internal Methods End
     //
+
+    /**
+     * A contract that provides discrete callbacks for various ways in which a {@link SingleSource.Subscriber} can
+     * terminate.
+     *
+     * @param <T> Type of the result of the {@link Single}.
+     */
+    public interface TerminalSignalConsumer<T> {
+
+        /**
+         * Callback to indicate termination via {@link Subscriber#onSuccess(Object)}.
+         *
+         * @param result the observed result of type {@link T}.
+         */
+        void onSuccess(@Nullable T result);
+
+        /**
+         * Callback to indicate termination via {@link Subscriber#onError(Throwable)}.
+         *
+         * @param throwable the observed {@link Throwable}.
+         */
+        void onError(Throwable throwable);
+
+        /**
+         * Callback to indicate termination via {@link Cancellable#cancel()}.
+         */
+        void cancel();
+    }
+
+    private static final class RunnableTerminalSignalConsumer<T> implements TerminalSignalConsumer<T> {
+        private final Runnable onFinally;
+
+        RunnableTerminalSignalConsumer(final Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T result) {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void cancel() {
+            onFinally.run();
+        }
+    }
 }

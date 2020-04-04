@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,35 +23,39 @@ import static java.util.Objects.requireNonNull;
 
 final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperator {
 
-    private final Runnable runnable;
+    private final TerminalSignalConsumer doFinally;
 
-    AfterFinallyCompletable(Completable original, Runnable runnable, Executor executor) {
+    AfterFinallyCompletable(Completable original, TerminalSignalConsumer doFinally, Executor executor) {
         super(original, executor);
-        this.runnable = requireNonNull(runnable);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
     public Subscriber apply(final Subscriber subscriber) {
-        return new AfterFinallyCompletableSubscriber(subscriber, runnable);
+        return new AfterFinallyCompletableSubscriber(subscriber, doFinally);
     }
 
     private static final class AfterFinallyCompletableSubscriber implements Subscriber {
         private final Subscriber original;
-        private final Runnable runnable;
+        private final TerminalSignalConsumer doFinally;
 
-        private static final AtomicIntegerFieldUpdater<AfterFinallyCompletableSubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyCompletableSubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<AfterFinallyCompletableSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallyCompletableSubscriber.class, "done");
         @SuppressWarnings("unused")
-        private volatile int complete;
+        private volatile int done;
 
-        AfterFinallyCompletableSubscriber(Subscriber original, Runnable runnable) {
+        AfterFinallyCompletableSubscriber(Subscriber original, TerminalSignalConsumer doFinally) {
             this.original = original;
-            this.runnable = runnable;
+            this.doFinally = doFinally;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, this::afterFinally));
+            original.onSubscribe(new ComposedCancellable(originalCancellable, () -> {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.cancel();
+                }
+            }));
         }
 
         @Override
@@ -59,7 +63,9 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
             try {
                 original.onComplete();
             } finally {
-                afterFinally();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onComplete();
+                }
             }
         }
 
@@ -68,13 +74,9 @@ final class AfterFinallyCompletable extends AbstractSynchronousCompletableOperat
             try {
                 original.onError(cause);
             } finally {
-                afterFinally();
-            }
-        }
-
-        private void afterFinally() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                runnable.run();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }

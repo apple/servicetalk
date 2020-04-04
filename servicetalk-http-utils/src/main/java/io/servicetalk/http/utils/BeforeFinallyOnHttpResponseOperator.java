@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ public final class BeforeFinallyOnHttpResponseOperator
             subscriber.onSubscribe(() -> {
                 try {
                     if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
-                        beforeFinally.onCancel();
+                        beforeFinally.cancel();
                     }
                 } finally {
                     // Cancel unconditionally, let the original Single handle cancel post termination, if required
@@ -148,7 +148,7 @@ public final class BeforeFinallyOnHttpResponseOperator
                                                 try {
                                                     if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
                                                             PROCESSING_PAYLOAD, TERMINATED)) {
-                                                        beforeFinally.onCancel();
+                                                        beforeFinally.cancel();
                                                     }
                                                 } finally {
                                                     subscription.cancel();
@@ -274,7 +274,7 @@ public final class BeforeFinallyOnHttpResponseOperator
         }
 
         @Override
-        public void onCancel() {
+        public void cancel() {
             onFinally.run();
         }
     }

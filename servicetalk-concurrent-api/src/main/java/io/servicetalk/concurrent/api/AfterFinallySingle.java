@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,35 +23,39 @@ import static java.util.Objects.requireNonNull;
 
 final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
-    private final Runnable runnable;
+    private final TerminalSignalConsumer<T> doFinally;
 
-    AfterFinallySingle(Single<T> original, Runnable runnable, Executor executor) {
+    AfterFinallySingle(Single<T> original, TerminalSignalConsumer<T> doFinally, Executor executor) {
         super(original, executor);
-        this.runnable = requireNonNull(runnable);
+        this.doFinally = requireNonNull(doFinally);
     }
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
-        return new AfterFinallySingleSubscriber<>(subscriber, runnable);
+        return new AfterFinallySingleSubscriber<>(subscriber, doFinally);
     }
 
     private static final class AfterFinallySingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
-        private final Runnable runnable;
+        private final TerminalSignalConsumer<T> doFinally;
 
-        private static final AtomicIntegerFieldUpdater<AfterFinallySingleSubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(AfterFinallySingleSubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<AfterFinallySingleSubscriber> doneUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(AfterFinallySingleSubscriber.class, "done");
         @SuppressWarnings("unused")
-        private volatile int complete;
+        private volatile int done;
 
-        AfterFinallySingleSubscriber(Subscriber<? super T> original, Runnable runnable) {
+        AfterFinallySingleSubscriber(Subscriber<? super T> original, TerminalSignalConsumer<T> doFinally) {
             this.original = original;
-            this.runnable = runnable;
+            this.doFinally = doFinally;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new BeforeCancellable(originalCancellable, this::afterFinally));
+            original.onSubscribe(new ComposedCancellable(originalCancellable, () -> {
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.cancel();
+                }
+            }));
         }
 
         @Override
@@ -59,7 +63,9 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
             try {
                 original.onSuccess(value);
             } finally {
-                afterFinally();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onSuccess(value);
+                }
             }
         }
 
@@ -68,13 +74,9 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
             try {
                 original.onError(cause);
             } finally {
-                afterFinally();
-            }
-        }
-
-        private void afterFinally() {
-            if (completeUpdater.compareAndSet(this, 0, 1)) {
-                runnable.run();
+                if (doneUpdater.compareAndSet(this, 0, 1)) {
+                    doFinally.onError(cause);
+                }
             }
         }
     }

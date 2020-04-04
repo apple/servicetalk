@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-final class BeforeCancellable implements Cancellable {
+final class ComposedCancellable implements Cancellable {
 
     private final Cancellable first;
     private final Cancellable second;
 
-    BeforeCancellable(Cancellable first, Cancellable second) {
+    ComposedCancellable(Cancellable first, Cancellable second) {
         this.first = first;
         this.second = second;
     }

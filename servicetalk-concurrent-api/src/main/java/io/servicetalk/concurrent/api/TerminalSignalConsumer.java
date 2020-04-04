@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,32 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
+
 /**
- * Callback interface on which only a single method is ever called matching the terminal outcome of the associated
- * {@code Source} and {@code Subscription}.
+ * A contract that provides discrete callbacks for various ways in which a {@link PublisherSource.Subscriber} or a
+ * {@link CompletableSource.Subscriber} can terminate.
  */
 public interface TerminalSignalConsumer {
 
     /**
-     * Callback to signal completion of the {@code Subscription} for this {@code Subscriber}.
+     * Callback to indicate termination via {@link PublisherSource.Subscriber#onComplete()} or
+     * {@link CompletableSource.Subscriber#onComplete()}.
      */
-    default void onComplete() {
-    }
+    void onComplete();
 
     /**
-     * Callback to receive an {@link Throwable error} for this {@code Subscriber}.
+     * Callback to indicate termination via {@link PublisherSource.Subscriber#onError(Throwable)} or
+     * {@link CompletableSource.Subscriber#onError(Throwable)}.
      *
-     * @param throwable the {@link Exception} observed.
+     * @param throwable the observed {@link Throwable}.
      */
-    default void onError(Throwable throwable) {
-    }
+    void onError(Throwable throwable);
 
     /**
-     * Callback to signal cancellation of the {@code Subscription} for this {@code Subscriber}.
+     * Callback to indicate termination via {@link Cancellable#cancel()}.
      */
-    default void onCancel() {
-    }
+    void cancel();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,40 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
-    protected Completable doFinally(Completable completable, Runnable runnable) {
-        return completable.beforeFinally(runnable);
+    protected Completable doFinally(Completable completable, TerminalSignalConsumer doFinally) {
+        return completable.beforeFinally(doFinally);
     }
 
     @Test
     @Override
     public void testCallbackThrowsErrorOnComplete() {
-        listener.listen(doFinally(Completable.completed(), () -> {
-            throw DELIBERATE_EXCEPTION;
-        }));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
+        listener.listen(doFinally(Completable.completed(), mock))
+                .verifyFailure(DELIBERATE_EXCEPTION);
+        verify(mock).onComplete();
+        verifyNoMoreInteractions(mock);
     }
 
+    @Test
     @Override
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
-        listener.listen(doFinally(Completable.failed(DELIBERATE_EXCEPTION), () -> {
-            throw exception;
-        }));
-        listener.verifyFailure(exception);
-        listener.verifySuppressedFailure(DELIBERATE_EXCEPTION);
+        TerminalSignalConsumer mock = throwableMock(exception);
+        listener.listen(doFinally(Completable.failed(DELIBERATE_EXCEPTION), mock))
+                .verifyFailure(exception)
+                .verifySuppressedFailure(DELIBERATE_EXCEPTION);
+        verify(mock).onError(DELIBERATE_EXCEPTION);
+        verifyNoMoreInteractions(mock);
     }
 }

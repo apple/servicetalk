@@ -90,7 +90,7 @@ abstract class AbstractTracingHttpFilter {
         }
 
         @Override
-        public void onCancel() {
+        public void cancel() {
             tagStatusCode();
             ERROR.set(currentScope.span(), true);
             currentScope.close();

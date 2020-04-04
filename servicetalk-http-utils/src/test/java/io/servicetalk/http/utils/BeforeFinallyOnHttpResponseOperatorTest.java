@@ -136,7 +136,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(beforeFinally).onCancel();
+        verify(beforeFinally).cancel();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
@@ -157,7 +157,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(beforeFinally).onCancel();
+        verify(beforeFinally).cancel();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);

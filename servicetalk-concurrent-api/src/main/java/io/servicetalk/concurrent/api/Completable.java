@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ public abstract class Completable {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
      *
@@ -208,10 +208,49 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #afterFinally(Runnable)
      * @see #beforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
      */
     public final Completable whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
+    }
+
+    /**
+     * Invokes the corresponding method on {@code whenFinally} {@link TerminalSignalConsumer} argument when any of the
+     * following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(TerminalSignalConsumer)} and
+     * {@link #afterFinally(TerminalSignalConsumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } catch(Throwable t) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Completable}.
+     * @see #beforeFinally(TerminalSignalConsumer)
+     * @see #afterFinally(TerminalSignalConsumer)
+     */
+    public final Completable whenFinally(TerminalSignalConsumer doFinally) {
         return afterFinally(doFinally);
     }
 
@@ -744,7 +783,7 @@ public abstract class Completable {
      *  try {
      *      resultOfThisCompletable();
      *  } finally {
-     *      whenFinally.run();
+     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
@@ -757,8 +796,41 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(Runnable doFinally) {
+        return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code beforeFinally} {@link TerminalSignalConsumer} argument
+     * <strong>before</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } catch(Throwable t) {
+     *      doFinally.onError(t);
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      return;
+     *  }
+     *  doFinally.onComplete();
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Completable}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Completable beforeFinally(TerminalSignalConsumer doFinally) {
         return new BeforeFinallyCompletable(this, doFinally, executor);
     }
 
@@ -878,7 +950,7 @@ public abstract class Completable {
      *      resultOfThisCompletable();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      whenFinally.run();
+     *      doFinally.run();
      *  }
      * }</pre>
      *
@@ -890,8 +962,41 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(Runnable doFinally) {
+        return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
+    }
+
+    /**
+     * Invokes the corresponding method on {@code afterFinally} {@link TerminalSignalConsumer} argument
+     * <strong>after</strong> any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()} - invokes {@link TerminalSignalConsumer#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)} - invokes {@link TerminalSignalConsumer#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()} - invokes {@link TerminalSignalConsumer#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } catch(Throwable t) {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.onError(t);
+     *      return;
+     *  }
+     *  nextOperation(); // Maybe notifying of cancellation, or termination
+     *  doFinally.onComplete();
+     * }</pre>
+     *
+     * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
+     * {@link TerminalSignalConsumer} will be invoked.
+     * @return The new {@link Completable}.
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Completable afterFinally(TerminalSignalConsumer doFinally) {
         return new AfterFinallyCompletable(this, doFinally, executor);
     }
 
