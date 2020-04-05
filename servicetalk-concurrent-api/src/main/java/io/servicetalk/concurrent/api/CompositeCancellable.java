@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.Cancellable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -59,13 +60,30 @@ final class CompositeCancellable implements Cancellable {
     public void cancel() {
         if (cancelledUpdater.compareAndSet(this, 0, 1)) {
             if (others == null) {
-                //noinspection ConstantConditions
-                first.cancel();
-                //noinspection ConstantConditions
-                second.cancel();
+                try {
+                    //noinspection ConstantConditions
+                    first.cancel();
+                } finally {
+                    //noinspection ConstantConditions
+                    second.cancel();
+                }
             } else {
+                Throwable t = null;
                 for (Cancellable other : others) {
-                    other.cancel();
+                    try {
+                        if (other != null) {
+                            other.cancel();
+                        }
+                    } catch (Throwable tt) {
+                        if (t == null) {
+                            t = tt;
+                        } else {
+                            t.addSuppressed(tt);
+                        }
+                    }
+                }
+                if (t != null) {
+                    throwException(t);
                 }
             }
         }
