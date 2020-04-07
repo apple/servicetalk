@@ -44,11 +44,12 @@ import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  * <p>
- * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters appended
- * after this filter that use operators with the <strong>after*</strong> prefix on the
- * {@link StreamingHttpResponse#transformRawPayloadBody(UnaryOperator) response payload body} (e.g.
- * {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and therefore
- * will not see the {@link Span} for the current request/response.
+ * Append this filter before others that are expected to to see {@link Scope} for this request/response. Filters
+ * appended after this filter that use operators with the <strong>after*</strong> prefix on
+ * {@link StreamingHttpService#handle(HttpServiceContext, StreamingHttpRequest, StreamingHttpResponseFactory)
+ * response meta data} or the {@link StreamingHttpResponse#transformRawPayloadBody(UnaryOperator) response payload body}
+ * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
+ * therefore will not see the {@link Span} for the current request/response.
  */
 public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implements StreamingHttpServiceFilterFactory {
 

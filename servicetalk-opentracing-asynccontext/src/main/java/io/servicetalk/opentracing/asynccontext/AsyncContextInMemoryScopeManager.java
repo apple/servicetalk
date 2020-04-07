@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link InMemoryScopeManager} that uses {@link AsyncContext} as the backing storage.
  */
 public final class AsyncContextInMemoryScopeManager implements InMemoryScopeManager {
-    private static final AsyncContextMap.Key<AsyncContextInMemoryScope> SCOPE_KEY = newKey("opentracing");
+    private static final AsyncContextMap.Key<InMemoryScope> SCOPE_KEY = newKey("opentracing");
     public static final InMemoryScopeManager SCOPE_MANAGER = new AsyncContextInMemoryScopeManager();
 
     private AsyncContextInMemoryScopeManager() {
@@ -54,11 +54,11 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
 
     private static final class AsyncContextInMemoryScope implements InMemoryScope {
         @Nullable
-        private final AsyncContextInMemoryScope previousScope;
+        private final InMemoryScope previousScope;
         private final InMemorySpan span;
         private final boolean finishSpanOnClose;
 
-        AsyncContextInMemoryScope(@Nullable AsyncContextInMemoryScope previousScope,
+        AsyncContextInMemoryScope(@Nullable InMemoryScope previousScope,
                                   InMemorySpan span, boolean finishSpanOnClose) {
             this.previousScope = previousScope;
             this.span = requireNonNull(span);
