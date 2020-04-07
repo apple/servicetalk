@@ -53,16 +53,15 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSync(new BeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
+ *                     .liftSync(new BeforeFinallyHttpOperator(tracker::requestFinished));
  *
  *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
  *     return requester.request(strategy, request)
  *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSync(new BeforeFinallyOnHttpResponseOperator(tracker));
+ *                     .liftSync(new BeforeFinallyHttpOperator(tracker));
  * }</pre>
  */
-public final class BeforeFinallyOnHttpResponseOperator
-        implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
+public final class BeforeFinallyHttpOperator implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
     private final TerminalSignalConsumer beforeFinally;
 
@@ -72,7 +71,7 @@ public final class BeforeFinallyOnHttpResponseOperator
      * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      */
-    public BeforeFinallyOnHttpResponseOperator(final TerminalSignalConsumer beforeFinally) {
+    public BeforeFinallyHttpOperator(final TerminalSignalConsumer beforeFinally) {
         this.beforeFinally = requireNonNull(beforeFinally);
     }
 
@@ -82,7 +81,7 @@ public final class BeforeFinallyOnHttpResponseOperator
      * @param beforeFinally the callback which is executed just once whenever the sources reach a terminal state
      * across both sources.
      */
-    public BeforeFinallyOnHttpResponseOperator(final Runnable beforeFinally) {
+    public BeforeFinallyHttpOperator(final Runnable beforeFinally) {
         this(new RunnableTerminalSignalConsumer(beforeFinally));
     }
 
