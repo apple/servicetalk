@@ -144,7 +144,7 @@ public abstract class Completable {
      * @see #afterOnComplete(Runnable)
      */
     public final Completable whenOnComplete(Runnable onComplete) {
-        return afterOnComplete(onComplete);
+        return beforeOnComplete(onComplete);
     }
 
     /**
@@ -173,7 +173,7 @@ public abstract class Completable {
      * @see #afterOnError(Consumer)
      */
     public final Completable whenOnError(Consumer<Throwable> onError) {
-        return afterOnError(onError);
+        return beforeOnError(onError);
     }
 
     /**
@@ -212,7 +212,7 @@ public abstract class Completable {
      * @see #afterFinally(Runnable)
      */
     public final Completable whenFinally(Runnable doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -251,7 +251,7 @@ public abstract class Completable {
      * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Completable whenFinally(TerminalSignalConsumer doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -268,7 +268,7 @@ public abstract class Completable {
      * @see #afterCancel(Runnable)
      */
     public final Completable whenCancel(Runnable onCancel) {
-        return afterCancel(onCancel);
+        return beforeCancel(onCancel);
     }
 
     /**
@@ -878,7 +878,7 @@ public abstract class Completable {
      * @see #afterOnSubscribe(Consumer)
      */
     public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return afterOnSubscribe(onSubscribe);
+        return beforeOnSubscribe(onSubscribe);
     }
 
     /**
@@ -1025,7 +1025,7 @@ public abstract class Completable {
      * @return The new {@link Completable}.
      */
     public final Completable whenSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
-        return afterSubscriber(subscriberSupplier);
+        return beforeSubscriber(subscriberSupplier);
     }
 
     /**

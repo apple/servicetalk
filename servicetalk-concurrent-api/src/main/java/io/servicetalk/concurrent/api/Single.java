@@ -226,7 +226,7 @@ public abstract class Single<T> {
      * @see #afterOnSuccess(Consumer)
      */
     public final Single<T> whenOnSuccess(Consumer<? super T> onSuccess) {
-        return afterOnSuccess(onSuccess);
+        return beforeOnSuccess(onSuccess);
     }
 
     /**
@@ -254,7 +254,7 @@ public abstract class Single<T> {
      * @see #afterOnError(Consumer)
      */
     public final Single<T> whenOnError(Consumer<Throwable> onError) {
-        return afterOnError(onError);
+        return beforeOnError(onError);
     }
 
     /**
@@ -293,7 +293,7 @@ public abstract class Single<T> {
      * @see #afterFinally(Runnable)
      */
     public final Single<T> whenFinally(Runnable doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -333,7 +333,7 @@ public abstract class Single<T> {
      * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Single<T> whenFinally(TerminalSignalConsumer<T> doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -350,7 +350,7 @@ public abstract class Single<T> {
      * @see #afterCancel(Runnable)
      */
     public final Single<T> whenCancel(Runnable onCancel) {
-        return afterCancel(onCancel);
+        return beforeCancel(onCancel);
     }
 
     /**
@@ -793,7 +793,7 @@ public abstract class Single<T> {
      * @see #afterOnSubscribe(Consumer)
      */
     public final Single<T> whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return afterOnSubscribe(onSubscribe);
+        return beforeOnSubscribe(onSubscribe);
     }
 
     /**
@@ -939,7 +939,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return afterSubscriber(subscriberSupplier);
+        return beforeSubscriber(subscriberSupplier);
     }
 
     /**

@@ -122,7 +122,7 @@ public class SingleToPublisherTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(Single.succeeded("Hello").toPublisher().whenOnNext(n -> {
+        toSource(Single.succeeded("Hello").toPublisher().afterOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.

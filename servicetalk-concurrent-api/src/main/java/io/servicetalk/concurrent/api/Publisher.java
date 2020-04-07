@@ -575,7 +575,7 @@ public abstract class Publisher<T> {
      * @see #afterOnNext(Consumer)
      */
     public final Publisher<T> whenOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-        return afterOnSubscribe(onSubscribe);
+        return beforeOnSubscribe(onSubscribe);
     }
 
     /**
@@ -601,7 +601,7 @@ public abstract class Publisher<T> {
      * @see #afterOnNext(Consumer)
      */
     public final Publisher<T> whenOnNext(Consumer<? super T> onNext) {
-        return afterOnNext(onNext);
+        return beforeOnNext(onNext);
     }
 
     /**
@@ -626,7 +626,7 @@ public abstract class Publisher<T> {
      * @see #afterOnComplete(Runnable)
      */
     public final Publisher<T> whenOnComplete(Runnable onComplete) {
-        return afterOnComplete(onComplete);
+        return beforeOnComplete(onComplete);
     }
 
     /**
@@ -655,7 +655,7 @@ public abstract class Publisher<T> {
      * @see #afterOnError(Consumer)
      */
     public final Publisher<T> whenOnError(Consumer<Throwable> onError) {
-        return afterOnError(onError);
+        return beforeOnError(onError);
     }
 
     /**
@@ -694,7 +694,7 @@ public abstract class Publisher<T> {
      * @see #afterFinally(Runnable)
      */
     public final Publisher<T> whenFinally(Runnable doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -733,7 +733,7 @@ public abstract class Publisher<T> {
      * @see #afterFinally(TerminalSignalConsumer)
      */
     public final Publisher<T> whenFinally(TerminalSignalConsumer doFinally) {
-        return afterFinally(doFinally);
+        return beforeFinally(doFinally);
     }
 
     /**
@@ -746,7 +746,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> whenRequest(LongConsumer onRequest) {
-        return afterRequest(onRequest);
+        return beforeRequest(onRequest);
     }
 
     /**
@@ -762,7 +762,7 @@ public abstract class Publisher<T> {
      * @see #afterCancel(Runnable)
      */
     public final Publisher<T> whenCancel(Runnable onCancel) {
-        return afterCancel(onCancel);
+        return beforeCancel(onCancel);
     }
 
     /**
@@ -1809,7 +1809,7 @@ public abstract class Publisher<T> {
      *  @return The new {@link Publisher}.
      */
     public final Publisher<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return afterSubscriber(subscriberSupplier);
+        return beforeSubscriber(subscriberSupplier);
     }
 
     /**
@@ -1841,7 +1841,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> whenSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
-        return afterSubscription(subscriptionSupplier);
+        return beforeSubscription(subscriptionSupplier);
     }
 
     /**
