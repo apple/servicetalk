@@ -98,7 +98,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     public void testRequestPostError() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
-        toSource(source.publisher().whenOnNext(n -> {
+        toSource(source.publisher().afterOnNext(n -> {
             if (n == null) {
                 throw DELIBERATE_EXCEPTION;
             }
@@ -155,7 +155,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testCancelFromInOnNext() {
         InMemorySource source = newSource(2);
-        toSource(source.publisher().whenOnNext(n -> {
+        toSource(source.publisher().afterOnNext(n -> {
             subscriber.cancel();
         })).subscribe(subscriber);
         subscriber.request(1);
