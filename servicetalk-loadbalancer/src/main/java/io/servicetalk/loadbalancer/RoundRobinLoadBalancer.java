@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,18 +277,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be used
                     // concurrently and hence a new connection can be rejected by the selector.
                     if (!selector.test(newCnx)) {
-                        newCnx.closeAsync().subscribe();
                         // Failure in selection could be temporary, hence add it to the queue and be consistent with the
                         // fact that select failure does not close a connection.
-                        return failed(new ConnectionRejectedException("Newly created connection " + newCnx +
-                                " rejected by the selection filter."));
+                        return newCnx.closeAsync().concat(failed(new ConnectionRejectedException(
+                                "Newly created connection " + newCnx + " rejected by the selection filter.")));
                     }
                     if (host.addConnection(newCnx)) {
                         // If the LB has closed, we attempt to remove the connection, if the removal succeeds, close it.
                         // If we can't remove it, it means it's been removed concurrently and we assume that whoever
                         // removed it also closed it or that it has been removed as a consequence of closing.
+                        boolean needClose = false;
                         if (closed) {
-
                             List<C> existing = connections;
                             for (;;) {
                                 if (existing == Host.INACTIVE) {
@@ -299,18 +298,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                     break;
                                 }
                                 if (Host.connectionsUpdater.compareAndSet(host, existing, connectionRemoved)) {
-                                    newCnx.closeAsync().subscribe();
+                                    needClose = true;
                                     break;
                                 }
                                 existing = connections;
                             }
 
-                            return failed(new IllegalStateException("LoadBalancer has closed"));
+                            final Single<C> lbClosed = failed(new IllegalStateException("LoadBalancer has closed"));
+                            return needClose ? newCnx.closeAsync().concat(lbClosed) : lbClosed;
                         }
                         return succeeded(newCnx);
                     }
-                    return failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
-                            host.address + ", host inactive? " + (host.connections == Host.INACTIVE)));
+                    return newCnx.closeAsync().concat(failed(new ConnectionRejectedException(
+                            "Failed to add newly created connection for host: " + host.address + ", host inactive? " +
+                                    (host.connections == Host.INACTIVE))));
                 });
     }
 
@@ -386,7 +387,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             for (;;) {
                 List<C> existing = this.connections;
                 if (existing == INACTIVE) {
-                    connection.closeAsync().subscribe();
                     return false;
                 }
                 ArrayList<C> connectionAdded = new ArrayList<>(existing);

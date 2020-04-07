@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
@@ -72,18 +73,21 @@ import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -98,10 +102,10 @@ public class RoundRobinLoadBalancerTest {
     public final LegacyMockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener =
             new LegacyMockedSingleListenerRule<>();
 
-    private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
+    private TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> lb;
     private DelegatingConnectionFactory connectionFactory;
 
@@ -384,6 +388,22 @@ public class RoundRobinLoadBalancerTest {
     public void closeClosesConnectionFactory() throws Exception {
         awaitIndefinitely(lb.closeAsync());
         assertTrue("ConnectionFactory not closed.", connectionFactory.isClosed());
+    }
+
+    @Test
+    public void newConnectionIsClosedWhenSelectorRejects() throws Exception {
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        try {
+            awaitIndefinitely(lb.selectConnection(__ -> false));
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(ConnectionRejectedException.class)));
+        }
+        assertThat(connectionsCreated, hasSize(1));
+        TestLoadBalancedConnection connection = connectionsCreated.get(0);
+        assertThat(connection, is(notNullValue()));
+        assertThat(connection.address(), is(equalTo("address-1")));
+        awaitIndefinitely(connection.onClose());
     }
 
     @SuppressWarnings("unchecked")
