@@ -15,6 +15,7 @@
  */
 package io.servicetalk.opentracing.http;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -34,6 +35,8 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
 
+import java.util.function.UnaryOperator;
+
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
@@ -41,6 +44,13 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 
 /**
  * An HTTP filter that supports open tracing.
+ * <p>
+ * Append this filter before others that are expected to to see {@link Scope} for this request/response. Filters
+ * appended after this filter that use operators with the <strong>after*</strong> prefix on
+ * {@link io.servicetalk.http.api.StreamingHttpClient#request(StreamingHttpRequest) response meta data} or the
+ * {@link StreamingHttpResponse#transformRawPayloadBody(UnaryOperator) response payload body}
+ * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
+ * therefore will not see the {@link Span} for the current request/response.
  */
 public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,

@@ -30,10 +30,16 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class AsyncContextInMemoryScopeManagerTest {
     @Mock
     private InMemorySpan mockSpan;
+    @Mock
+    private InMemorySpan mockSpan2;
 
     @Before
     public void setup() {
         initMocks(this);
+        InMemoryScope previousScope = SCOPE_MANAGER.active();
+        if (previousScope != null) {
+            previousScope.close();
+        }
     }
 
     @Test
@@ -46,11 +52,12 @@ public class AsyncContextInMemoryScopeManagerTest {
     }
 
     @Test
-    public void closedScopeReturnedByActiveOrClosed() {
+    public void previousScopeRestoredAfterCurrentScopeClosed() {
+        InMemoryScope previousScope = SCOPE_MANAGER.activate(mockSpan2, true);
         InMemoryScope scope = SCOPE_MANAGER.activate(mockSpan, true);
         assertSame(scope, SCOPE_MANAGER.active());
         assertSame(mockSpan, scope.span());
         scope.close();
-        assertSame(scope, SCOPE_MANAGER.currentScope());
+        assertSame(previousScope, SCOPE_MANAGER.active());
     }
 }

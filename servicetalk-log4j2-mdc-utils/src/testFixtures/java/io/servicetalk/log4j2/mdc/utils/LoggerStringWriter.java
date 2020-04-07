@@ -19,9 +19,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.StringLayout;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public final class LoggerStringWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerStringWriter.class);
+    private static final String APPENDER_NAME = "writer";
     @Nullable
     private static StringWriter logStringWriter;
 
@@ -54,6 +55,13 @@ public final class LoggerStringWriter {
      */
     public static void reset() {
         getStringWriter().getBuffer().setLength(0);
+    }
+
+    /**
+     * Remove the underlying in-memory log appender.
+     */
+    public static void remove() {
+        removeStringWriter();
     }
 
     /**
@@ -157,21 +165,41 @@ public final class LoggerStringWriter {
         return logStringWriter;
     }
 
+    private static synchronized void removeStringWriter() {
+        if (logStringWriter == null) {
+            return;
+        }
+        removeWriterAppender((LoggerContext) LogManager.getContext(false));
+        logStringWriter = null;
+    }
+
     private static StringWriter addWriterAppender(final LoggerContext context, Level level) {
         final Configuration config = context.getConfiguration();
         final StringWriter writer = new StringWriter();
 
         final Map.Entry<String, Appender> existing = config.getAppenders().entrySet().iterator().next();
         final WriterAppender writerAppender = WriterAppender.newBuilder()
-                .setName("writer")
-                .setLayout((StringLayout) existing.getValue().getLayout())
+                .setName(APPENDER_NAME)
+                .setLayout(existing.getValue().getLayout())
                 .setTarget(writer)
                 .build();
-        writerAppender.start();
 
-        config.addAppender(writerAppender);
+        writerAppender.start();
         config.getRootLogger().addAppender(writerAppender, level, null);
 
         return writer;
+    }
+
+    private static void removeWriterAppender(final LoggerContext context) {
+        final Configuration config = context.getConfiguration();
+        LoggerConfig rootConfig = config.getRootLogger();
+        // Stopping the logger is subject to race conditions where logging during cleanup on global executor
+        // may still try to log and raise an error.
+        WriterAppender writerAppender = (WriterAppender) rootConfig.getAppenders().get(APPENDER_NAME);
+        if (writerAppender != null) {
+            writerAppender.stop(0, NANOSECONDS);
+        }
+        // Don't remove directly from map, because the root logger also cleans up filters.
+        rootConfig.removeAppender(APPENDER_NAME);
     }
 }

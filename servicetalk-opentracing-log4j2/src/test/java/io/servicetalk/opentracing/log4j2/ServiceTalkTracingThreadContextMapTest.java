@@ -20,6 +20,7 @@ import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -36,6 +37,11 @@ public class ServiceTalkTracingThreadContextMapTest {
     @Before
     public void setup() {
         LoggerStringWriter.reset();
+    }
+
+    @After
+    public void tearDown() {
+        LoggerStringWriter.remove();
     }
 
     @Test
