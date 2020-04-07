@@ -187,8 +187,8 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      * Blocking close method delegates to {@link #closeAsync()}.
      */
     @Override
-    public void close() {
-        closeable.onClose();
+    public void close() throws Exception {
+        closeable.closeAsync().toFuture().get();
     }
 
     /**
