@@ -15,146 +15,97 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanLog;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.MaxMessagesRecvByteBufAllocator;
-import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import io.opentracing.tag.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import zipkin2.Endpoint;
 import zipkin2.Span;
-import zipkin2.codec.SpanBytesEncoder;
+import zipkin2.reporter.Reporter;
 
 import java.io.Closeable;
-import java.net.InetAddress;
+import java.io.Flushable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
-import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
-import static java.lang.Thread.currentThread;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * A publisher of {@link io.opentracing.Span}s to the zipkin transport.
  */
-public final class ZipkinPublisher implements InMemorySpanEventListener, Closeable {
+public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCloseable, Closeable {
+
     private static final Logger logger = LoggerFactory.getLogger(ZipkinPublisher.class);
 
-    /**
-     * The default maximum {@link DatagramPacket} size.
-     */
-    private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048;
-    private static final MaxMessagesRecvByteBufAllocator DEFAULT_RECV_BUF_ALLOCATOR =
-            new FixedRecvByteBufAllocator(DEFAULT_MAX_DATAGRAM_PACKET_SIZE);
-
+    private final Reporter<Span> reporter;
     private final Endpoint endpoint;
-    private final EventLoopGroup group;
-    private final Channel channel;
+    private final ListenableAsyncCloseable closeable;
 
-    /**
-     * The serialization format for the zipkin write format data.
-     */
-    public enum Encoder {
-        JSON_V1(SpanBytesEncoder.JSON_V1), JSON_V2(SpanBytesEncoder.JSON_V2),
-        THRIFT(SpanBytesEncoder.THRIFT), PROTO3(SpanBytesEncoder.PROTO3);
-
-        final SpanBytesEncoder encoder;
-
-        Encoder(SpanBytesEncoder encoder) {
-            this.encoder = encoder;
-        }
-    }
-
-    /**
-     * The networking transport to use.
-     */
-    public enum Transport {
-        UDP {
-            Bootstrap buildBootstrap(EventLoopGroup group, Encoder encoder, SocketAddress collectorAddress) {
-                if (!(collectorAddress instanceof InetSocketAddress)) {
-                    throw new IllegalArgumentException("collectorAddress " + collectorAddress +
-                            " is invalid for transport " + this);
-                }
-                return new Bootstrap()
-                        .group(group)
-                        .channel(datagramChannel(group))
-                        .option(RCVBUF_ALLOCATOR, DEFAULT_RECV_BUF_ALLOCATOR)
-                        .handler(new ChannelOutboundHandlerAdapter() {
-                            @Override
-                            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-                                if (msg instanceof Span) {
-                                    byte[] bytes = encoder.encoder.encode((Span) msg);
-                                    ctx.write(new DatagramPacket(Unpooled.wrappedBuffer(bytes),
-                                            (InetSocketAddress) collectorAddress));
-                                } else {
-                                    ctx.write(msg, promise);
-                                }
-                            }
-                        });
+    private ZipkinPublisher(final String serviceName,
+                            final Reporter<Span> reporter,
+                            @Nullable final InetSocketAddress localSocketAddress) {
+        this.reporter = reporter;
+        this.endpoint = buildEndpoint(serviceName, localSocketAddress);
+        this.closeable = toAsyncCloseable(graceful -> {
+            // Some Reporter implementations may batch and need an explicit flush before closing (AsyncReporter)
+            Completable flush = Completable.completed();
+            if (graceful && reporter instanceof Flushable) {
+                flush = globalExecutionContext().executor().submit(() -> {
+                    try {
+                        ((Flushable) reporter).flush();
+                    } catch (IOException e) {
+                        logger.error("Exception while flushing reporter: {}", e.getMessage(), e);
+                    }
+                });
             }
-        };
-
-        abstract Bootstrap buildBootstrap(EventLoopGroup group, Encoder encoder, SocketAddress collectorAddress);
+            // ST Reporters can implement AsyncCloseable so we wouldn't have to call a blocking close in that case
+            Completable close = Completable.completed();
+            if (reporter instanceof AsyncCloseable) {
+                close = graceful ? ((AsyncCloseable) reporter).closeAsyncGracefully() :
+                        ((AsyncCloseable) reporter).closeAsync();
+            } else if (reporter instanceof Closeable) {
+                close = globalExecutionContext().executor().submit(() -> {
+                    try {
+                        ((Closeable) reporter).close();
+                    } catch (IOException e) {
+                        logger.error("Exception while closing reporter: {}", e.getMessage(), e);
+                    }
+                });
+            }
+            return flush.concat(close);
+        });
     }
 
     /**
      * Builder for {@link ZipkinPublisher}.
      */
     public static final class Builder {
-        private String serviceName;
-        private SocketAddress collectorAddress;
+
+        private final String serviceName;
+        private final Reporter<Span> reporter;
         @Nullable
         private InetSocketAddress localAddress;
-        private Encoder encoder = Encoder.JSON_V2;
-        private Transport transport = Transport.UDP;
 
         /**
          * Create a new instance.
-         * @param serviceName the service name.
-         * @param collectorAddress the {@link SocketAddress} of the collector.
-         */
-        public Builder(String serviceName, SocketAddress collectorAddress) {
-            this.serviceName = requireNonNull(serviceName);
-            this.collectorAddress = requireNonNull(collectorAddress);
-        }
-
-        /**
-         * Configures the service name.
          *
          * @param serviceName the service name.
-         * @return this.
+         * @param reporter a {@link Reporter} implementation to send {@link Span}s to
          */
-        public Builder serviceName(String serviceName) {
+        public Builder(String serviceName, Reporter<Span> reporter) {
             this.serviceName = requireNonNull(serviceName);
-            return this;
-        }
-
-        /**
-         * Configures the collector address.
-         *
-         * @param collectorAddress the {@link SocketAddress} of the collector.
-         * @return this.
-         */
-        public Builder collectorAddress(SocketAddress collectorAddress) {
-            this.collectorAddress = requireNonNull(collectorAddress);
-            return this;
+            this.reporter = requireNonNull(reporter);
         }
 
         /**
@@ -164,108 +115,60 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
          * @return this.
          */
         public Builder localAddress(InetSocketAddress localAddress) {
-            this.localAddress = localAddress;
+            this.localAddress = requireNonNull(localAddress);
             return this;
         }
 
         /**
-         * Configures the format.
+         * Builds the ZipkinPublisher with supplied options.
          *
-         * @param encoder the {@link Encoder} to use.
-         * @return this.
-         */
-        public Builder encoder(Encoder encoder) {
-            this.encoder = requireNonNull(encoder);
-            return this;
-        }
-
-        /**
-         * Configures the transport.
-         *
-         * @param transport the {@link Transport} to use.
-         * @return this.
-         */
-        public Builder protocol(Transport transport) {
-            this.transport = requireNonNull(transport);
-            return this;
-        }
-
-        /**
-         * Note that this may block while the underlying channel is bound/connected.
-         * @return An interface which can publish tracing data using the zipkin API.
+         * @return A ZipkinPublisher which can publish tracing data using the zipkin Reporter API.
          */
         public ZipkinPublisher build() {
-            return new ZipkinPublisher(serviceName, collectorAddress, localAddress, encoder, transport);
+            return new ZipkinPublisher(serviceName, reporter, localAddress);
         }
     }
 
-    private ZipkinPublisher(String serviceName,
-                            SocketAddress collectorAddress,
-                            @Nullable InetSocketAddress localAddress,
-                            Encoder encoder,
-                            Transport transport) {
-        requireNonNull(serviceName);
-        requireNonNull(collectorAddress);
-        requireNonNull(encoder);
-        requireNonNull(transport);
-
-        endpoint = buildEndpoint(serviceName, localAddress);
-
-        group = createEventLoopGroup(1, new DefaultThreadFactory("zipkin-publisher", true));
-        try {
-            final Bootstrap bootstrap = transport.buildBootstrap(group, encoder, collectorAddress);
-            channel = bootstrap.bind(0).sync().channel();
-        } catch (InterruptedException e) {
-            currentThread().interrupt(); // Reset the interrupted flag.
-            throw new IllegalStateException("Failed to create " + transport + " client");
-        } catch (Exception e) {
-            logger.warn("Failed to create {} client", transport, e);
-            group.shutdownGracefully(0, 0, SECONDS);
-            throw e;
-        }
-    }
-
-    static Endpoint buildEndpoint(String serviceName, @Nullable InetSocketAddress localSocketAddress) {
+    private static Endpoint buildEndpoint(String serviceName, @Nullable InetSocketAddress localSocketAddress) {
         final Endpoint.Builder builder = Endpoint.newBuilder().serviceName(serviceName);
         if (localSocketAddress != null) {
-            final InetAddress localAddress = localSocketAddress.getAddress();
-            builder.ip(localAddress).port(localSocketAddress.getPort());
+            builder.ip(localSocketAddress.getAddress()).port(localSocketAddress.getPort());
         }
         return builder.build();
     }
 
     @Override
-    public void close() {
-        channel.close();
-        group.shutdownGracefully(0, 1, SECONDS);
-    }
-
-    @Override
     public void onSpanStarted(final InMemorySpan span) {
+        // nothing to do
     }
 
     @Override
     public void onEventLogged(final InMemorySpan span, final long epochMicros, final String eventName) {
+        // nothing to do
     }
 
     @Override
     public void onEventLogged(final InMemorySpan span, final long epochMicros, final Map<String, ?> fields) {
+        // nothing to do
     }
 
+    /**
+     * Converts a finished {@link InMemorySpan} to a {@link Span} and passes it to the {@link Reporter#report(Object)}.
+     */
     @Override
     public void onSpanFinished(final InMemorySpan span, long durationMicros) {
         final long begin = span.startEpochMicros();
         final long end = begin + durationMicros;
 
         Span.Builder builder = Span.newBuilder()
-            .name(span.operationName())
-            .traceId(span.traceIdHex())
-            .id(span.spanId())
-            .parentId(span.parentSpanIdHex())
-            .timestamp(begin)
-            .addAnnotation(end, "end")
-            .localEndpoint(endpoint)
-            .duration(durationMicros);
+                .name(span.operationName())
+                .traceId(span.traceIdHex())
+                .id(span.spanId())
+                .parentId(span.parentSpanIdHex())
+                .timestamp(begin)
+                .addAnnotation(end, "end")
+                .localEndpoint(endpoint)
+                .duration(durationMicros);
         span.tags().forEach((k, v) -> builder.putTag(k, v.toString()));
         Iterable<? extends InMemorySpanLog> logs = span.logs();
         if (logs != null) {
@@ -278,6 +181,35 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
             builder.kind(Span.Kind.CLIENT);
         }
 
-        channel.writeAndFlush(builder.build());
+        Span s = builder.build();
+        reporter.report(s);
+    }
+
+    /**
+     * Blocking close method delegates to {@link #closeAsync()}.
+     */
+    @Override
+    public void close() {
+        awaitTermination(closeable.closeAsync().toFuture());
+    }
+
+    /**
+     * Attempts to close the configured {@link Reporter}.
+     *
+     * @return a {@link Completable} that is completed when the close is done
+     */
+    @Override
+    public Completable closeAsync() {
+        return closeable.closeAsync();
+    }
+
+    /**
+     * Attempts to flush and close the configured {@link Reporter}.
+     *
+     * @return a {@link Completable} that is completed when the flush and close is done
+     */
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
     }
 }

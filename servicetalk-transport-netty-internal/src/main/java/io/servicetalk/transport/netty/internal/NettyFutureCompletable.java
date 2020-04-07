@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  * A {@link Completable} that wraps a netty {@link Future}.
  */
-final class NettyFutureCompletable extends SubscribableCompletable {
+public final class NettyFutureCompletable extends SubscribableCompletable {
 
     private final Supplier<Future<?>> futureSupplier;
 
@@ -34,7 +34,7 @@ final class NettyFutureCompletable extends SubscribableCompletable {
      *
      * @param futureSupplier A {@link Supplier} that is invoked every time this {@link Completable} is subscribed.
      */
-    NettyFutureCompletable(Supplier<Future<?>> futureSupplier) {
+    public NettyFutureCompletable(Supplier<Future<?>> futureSupplier) {
         this.futureSupplier = futureSupplier;
     }
 
