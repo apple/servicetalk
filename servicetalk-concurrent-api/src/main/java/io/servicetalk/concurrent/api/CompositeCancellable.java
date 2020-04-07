@@ -18,25 +18,20 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Cancellable} that cancels multiple {@link Cancellable} instances when it is cancelled.
  */
 final class CompositeCancellable implements Cancellable {
-    @Nullable
-    private final Cancellable[] others;
-    @Nullable
-    private final Cancellable first;
-    @Nullable
-    private final Cancellable second;
-    @SuppressWarnings("unused")
-    private volatile int cancelled;
-
     private static final AtomicIntegerFieldUpdater<CompositeCancellable> cancelledUpdater =
             AtomicIntegerFieldUpdater.newUpdater(CompositeCancellable.class, "cancelled");
+
+    private final Cancellable[] others;
+    @SuppressWarnings("unused")
+    private volatile int cancelled;
 
     /**
      * New instance.
@@ -44,29 +39,29 @@ final class CompositeCancellable implements Cancellable {
      * @param others All {@link Cancellable}s to compose.
      */
     private CompositeCancellable(Cancellable... others) {
-        if (others.length == 2) {
-            first = requireNonNull(others[0]);
-            second = requireNonNull(others[1]);
-            this.others = null;
-        } else {
-            this.others = others;
-            this.first = null;
-            this.second = null;
-        }
+        assert others.length > 2;
+        this.others = requireNonNull(others);
     }
 
     @Override
     public void cancel() {
         if (cancelledUpdater.compareAndSet(this, 0, 1)) {
-            if (others == null) {
-                //noinspection ConstantConditions
-                first.cancel();
-                //noinspection ConstantConditions
-                second.cancel();
-            } else {
-                for (Cancellable other : others) {
-                    other.cancel();
+            Throwable t = null;
+            for (Cancellable other : others) {
+                try {
+                    if (other != null) {
+                        other.cancel();
+                    }
+                } catch (Throwable tt) {
+                    if (t == null) {
+                        t = tt;
+                    } else {
+                        t.addSuppressed(tt);
+                    }
                 }
+            }
+            if (t != null) {
+                throwException(t);
             }
         }
     }
@@ -82,7 +77,17 @@ final class CompositeCancellable implements Cancellable {
             case 0:
                 throw new IllegalArgumentException("At least one Cancellable required to compose.");
             case 1:
-                return toCompose[0];
+                return requireNonNull(toCompose[0]);
+            case 2:
+                Cancellable first = requireNonNull(toCompose[0]);
+                Cancellable second = requireNonNull(toCompose[1]);
+                return () -> {
+                    try {
+                        first.cancel();
+                    } finally {
+                        second.cancel();
+                    }
+                };
             default:
                 return new CompositeCancellable(toCompose);
         }

@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,6 +25,8 @@ import org.mockito.Mockito;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class CompositeCancellableTest {
@@ -53,8 +56,34 @@ public class CompositeCancellableTest {
         holder.init(5).cancel();
     }
 
-    private static class MockedCancellableHolder extends Verifier {
+    @Test
+    public void cancelThrowsForTwo() {
+        testCancelThrows(holder.init(2));
+    }
 
+    @Test
+    public void cancelThrowsForMany() {
+        testCancelThrows(holder.init(5));
+    }
+
+    @Test
+    public void cancellablesMayContainNull() {
+        Cancellable cancellable = holder.init(5);
+        holder.components[3] = null;
+        cancellable.cancel();
+        holder.verify();
+    }
+
+    private void testCancelThrows(final Cancellable cancellable) {
+        for (Cancellable component : holder.components) {
+            doThrow(new DeliberateException()).when(component).cancel();
+        }
+        assertThrows("Unexpected exception from cancel.", DeliberateException.class, cancellable::cancel);
+        holder.verify();
+    }
+
+    private static class MockedCancellableHolder extends Verifier {
+        @SuppressWarnings("NotNullFieldNotInitialized")
         Cancellable[] components;
 
         Cancellable init(int count) {
@@ -68,7 +97,9 @@ public class CompositeCancellableTest {
         @Override
         protected void verify() {
             for (Cancellable component : components) {
-                Mockito.verify(component).cancel();
+                if (component != null) {
+                    Mockito.verify(component).cancel();
+                }
             }
         }
     }

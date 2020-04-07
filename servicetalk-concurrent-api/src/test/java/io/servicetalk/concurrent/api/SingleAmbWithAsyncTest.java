@@ -1,0 +1,234 @@
+/*
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.concurrent.api;
+
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
+
+import static io.servicetalk.concurrent.api.ExecutorRule.withNamePrefix;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.never;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.rules.ExpectedException.none;
+
+public class SingleAmbWithAsyncTest {
+    private static final String FIRST_EXECUTOR_THREAD_NAME_PREFIX = "first";
+    private static final String SECOND_EXECUTOR_THREAD_NAME_PREFIX = "second";
+
+    private static final Key<Integer> BEFORE_SUBSCRIBE_KEY = Key.newKey("before-subscribe");
+    private static final int BEFORE_SUBSCRIBE_KEY_VAL = 1;
+    private static final int BEFORE_SUBSCRIBE_KEY_VAL_2 = 2;
+    private static final Key<Integer> BEFORE_ON_SUBSCRIBE_KEY = Key.newKey("before-on-subscribe");
+    private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL = 2;
+    private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL_2 = 3;
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExpectedException expectedException = none();
+    @Rule
+    public final ExecutorRule<Executor> firstExec = withNamePrefix(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
+    @Rule
+    public final ExecutorRule<Executor> secondExec = withNamePrefix(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
+
+    @Test
+    public void offloadSuccessFromFirst() throws Exception {
+        assertThat("Unexpected result.", testOffloadSecond(succeeded(1), never()), is(1));
+    }
+
+    @Test
+    public void offloadErrorFromFirst() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void offloadSuccessFromSecond() throws Exception {
+        assertThat("Unexpected result.", testOffloadSecond(never(), succeeded(2)), is(2));
+    }
+
+    @Test
+    public void offloadErrorFromSecond() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void contextFromSubscribeFirstSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSubscribe(succeeded(1), never()), is(1));
+    }
+
+    @Test
+    public void contextFromSubscribeFirstError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    }
+
+    @Test
+    public void contextFromSubscribeSecondSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSubscribe(never(), succeeded(2)), is(2));
+    }
+
+    @Test
+    public void contextFromSubscribeSecondError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void contextFromSecondSubscribeFirstSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSecondSubscribe(succeeded(1), never()), is(1));
+    }
+
+    @Test
+    public void contextFromSecondSubscribeFirstError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSecondSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    }
+
+    @Test
+    public void contextFromSecondSubscribeSecondSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSecondSubscribe(never(), succeeded(2)), is(2));
+    }
+
+    @Test
+    public void contextFromSecondSubscribeSecondError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSecondSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void contextFromOnSubscribeFirstSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromOnSubscribe(succeeded(1), never()), is(1));
+    }
+
+    @Test
+    public void contextFromOnSubscribeFirstError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromOnSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    }
+
+    @Test
+    public void contextFromOnSubscribeSecondSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromOnSubscribe(never(), succeeded(2)), is(2));
+    }
+
+    @Test
+    public void contextFromOnSubscribeSecondError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromOnSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void contextFromSecondOnSubscribeFirstSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSecondOnSubscribe(succeeded(1), never()), is(1));
+    }
+
+    @Test
+    public void contextFromSecondOnSubscribeFirstError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSecondOnSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    }
+
+    @Test
+    public void contextFromSecondOnSubscribeSecondSuccess() throws Exception {
+        assertThat("Unexpected result.", testContextFromSecondOnSubscribe(never(), succeeded(2)), is(2));
+    }
+
+    @Test
+    public void contextFromSecondOnSubscribeSecondError() throws Exception {
+        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
+        testContextFromSecondOnSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    }
+
+    private int testOffloadSecond(final Single<Integer> first, final Single<Integer> second) throws Exception {
+        return first.publishOn(firstExec.executor())
+                .ambWith(second.publishOn(secondExec.executor()))
+                .beforeFinally(() ->
+                        assertThat("Unexpected thread.", Thread.currentThread().getName(),
+                                startsWith(FIRST_EXECUTOR_THREAD_NAME_PREFIX)))
+                .toFuture().get();
+    }
+
+    private int testContextFromSubscribe(final Single<Integer> first, final Single<Integer> second) throws Exception {
+        return first.publishOn(firstExec.executor())
+                .ambWith(second.publishOn(secondExec.executor()))
+                .beforeFinally(() ->
+                        assertThat("Unexpected context value.", AsyncContext.current().get(BEFORE_SUBSCRIBE_KEY),
+                        is(BEFORE_SUBSCRIBE_KEY_VAL)))
+                .<Integer>liftSync(subscriber -> {
+                    AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL);
+                    return subscriber;
+                })
+                .toFuture().get();
+    }
+
+    private int testContextFromOnSubscribe(final Single<Integer> first, final Single<Integer> second) throws Exception {
+        return first.beforeOnSubscribe(__ -> AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL))
+                .publishOn(firstExec.executor())
+                .ambWith(second.publishOn(secondExec.executor()))
+                .beforeFinally(() ->
+                        assertThat("Unexpected context value.",
+                                AsyncContext.current().get(BEFORE_ON_SUBSCRIBE_KEY),
+                        is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
+                .toFuture().get();
+    }
+
+    private int testContextFromSecondSubscribe(final Single<Integer> first, final Single<Integer> second)
+            throws Exception {
+        return first.publishOn(firstExec.executor())
+                .ambWith(second.publishOn(secondExec.executor())
+                        .liftSync(subscriber -> {
+                            // Modify value for the same key, this update should not be visible back in the original
+                            // chain
+                            AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL_2);
+                            return subscriber;
+                        })
+                )
+                .beforeFinally(() ->
+                        assertThat("Unexpected context value.", AsyncContext.current().get(BEFORE_SUBSCRIBE_KEY),
+                                is(BEFORE_SUBSCRIBE_KEY_VAL)))
+                .<Integer>liftSync(subscriber -> {
+                    AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL);
+                    return subscriber;
+                })
+                .toFuture().get();
+    }
+
+    private int testContextFromSecondOnSubscribe(final Single<Integer> first, final Single<Integer> second)
+            throws Exception {
+        return first.beforeOnSubscribe(__ -> AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL))
+                .publishOn(firstExec.executor())
+                .ambWith(second.publishOn(secondExec.executor())
+                        .beforeOnSubscribe(__ ->
+                                AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL_2)))
+                .beforeFinally(() ->
+                        assertThat("Unexpected context value.",
+                                AsyncContext.current().get(BEFORE_ON_SUBSCRIBE_KEY),
+                                is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
+                .toFuture().get();
+    }
+}
