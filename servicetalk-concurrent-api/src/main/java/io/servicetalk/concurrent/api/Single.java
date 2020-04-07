@@ -1128,9 +1128,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that ambiguates the result of this {@link Single} with the passed {@code other}
-     * {@link Single} such that whichever of them terminates first (successfully or with an error), the returned
-     * {@link Single} will return that result.
+     * Creates a new {@link Single} that terminates with the result (either success or error) of either this
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1141,9 +1140,8 @@ public abstract class Single<T> {
      * }</pre>
      *
      * @param other {@link Single} with which the result of this {@link Single} is to be ambiguated.
-     * @return A new {@link Single} that ambiguates the result of this {@link Single} with the passed {@code other}
-     * {@link Single} such that whichever of them terminates first (successfully or with an error), the returned
-     * {@link Single} will return that result.
+     * @return A new {@link Single} that terminates with the result (either success or error) of either this
+     * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Single<T> ambWith(final Single<T> other) {
@@ -1657,8 +1655,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that ambiguates the result of all the passed {@code singles} such that whichever
-     * of them terminates first (successfully or with an error), the returned {@link Single} will return that result.
+     * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1670,8 +1668,8 @@ public abstract class Single<T> {
      *
      * @param singles {@link Single}s the result of which are to be ambiguated.
      * @param <T> Type of the result of the individual {@link Single}s
-     * @return A new {@link Single} that ambiguates the result of all the passed {@code singles} such that whichever
-     * of them terminates first (successfully or with an error), the returned {@link Single} will return that result.
+     * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
@@ -1680,8 +1678,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that ambiguates the result of all the passed {@code singles} such that whichever
-     * of them terminates first (successfully or with an error), the returned {@link Single} will return that result.
+     * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1693,12 +1691,57 @@ public abstract class Single<T> {
      *
      * @param singles {@link Single}s the result of which are to be ambiguated.
      * @param <T> Type of the result of the individual {@link Single}s
-     * @return A new {@link Single} that ambiguates the result of all the passed {@code singles} such that whichever
-     * of them terminates first (successfully or with an error), the returned {@link Single} will return that result.
+     * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> amb(final Iterable<Single<? extends T>> singles) {
         return new AmbSingles<>(singles);
+    }
+
+    /**
+     * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<T> ft: futures) { // Provided Futures (analogous to the Singles here)
+     *          // This is an approximation, this operator will pick the first result from any of the futures.
+     *          return ft.get();
+     *      }
+     * }</pre>
+     *
+     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
+     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     */
+    @SafeVarargs
+    public static <T> Single<T> anyOf(final Single<? extends T>... singles) {
+        return amb(singles);
+    }
+
+    /**
+     * Creates a new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<T> ft: futures) { // Provided Futures (analogous to the Singles here)
+     *          // This is an approximation, this operator will pick the first result from any of the futures.
+     *          return ft.get();
+     *      }
+     * }</pre>
+     *
+     * @param singles {@link Single}s the result of which are to be ambiguated.
+     * @param <T> Type of the result of the individual {@link Single}s
+     * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
+     * passed {@code singles} that terminates first.
+     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     */
+    public static <T> Single<T> anyOf(final Iterable<Single<? extends T>> singles) {
+        return amb(singles);
     }
 
     //

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.AmbSingles.AmbSubscriber;
 import io.servicetalk.concurrent.api.AmbSingles.State;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -35,11 +36,17 @@ final class SingleAmbWith<T> extends AbstractNoHandleSubscribeSingle<T> {
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         State<T> state = new State<>(subscriber);
-        subscriber.onSubscribe(state);
-        AmbSubscriber<T> originalSubscriber = new AmbSubscriber<>(state);
-        AmbSubscriber<T> ambWithSubscriber = new AmbSubscriber<>(state);
-        state.delayedCancellable(CompositeCancellable.create(originalSubscriber, ambWithSubscriber));
         try {
+            subscriber.onSubscribe(state);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
+
+        try {
+            AmbSubscriber<T> originalSubscriber = new AmbSubscriber<>(state);
+            AmbSubscriber<T> ambWithSubscriber = new AmbSubscriber<>(state);
+            state.delayedCancellable(CompositeCancellable.create(originalSubscriber, ambWithSubscriber));
             original.delegateSubscribe(originalSubscriber, signalOffloader, contextMap, contextProvider);
             // If the other Single's result is propagated then we should offload it to the original Single's Executor
             ambWith.subscribeInternal(signalOffloader.offloadSubscriber(

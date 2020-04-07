@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -52,7 +53,12 @@ final class AmbSingles<T> extends Single<T> {
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         final Cancellable[] cancellables = new Cancellable[singles.length];
         final State<T> state = new State<>(subscriber);
-        subscriber.onSubscribe(state);
+        try {
+            subscriber.onSubscribe(state);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
         try {
             for (int i = 0; i < singles.length; i++) {
                 AmbSubscriber<T> sub = new AmbSubscriber<>(state);
@@ -60,8 +66,11 @@ final class AmbSingles<T> extends Single<T> {
                 singles[i].subscribeInternal(sub);
             }
         } catch (Throwable t) {
-            state.delayedCancellable(CompositeCancellable.create(cancellables));
-            state.tryError(t);
+            try {
+                state.delayedCancellable(CompositeCancellable.create(cancellables));
+            } finally {
+                state.tryError(t);
+            }
             return;
         }
         state.delayedCancellable(CompositeCancellable.create(cancellables));
@@ -92,8 +101,7 @@ final class AmbSingles<T> extends Single<T> {
 
     static final class State<T> extends DelayedCancellable {
         @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<State> doneUpdater =
-                newUpdater(State.class, "done");
+        private static final AtomicIntegerFieldUpdater<State> doneUpdater = newUpdater(State.class, "done");
         private final Subscriber<? super T> target;
 
         private volatile int done;

@@ -1217,9 +1217,8 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Completable} that ambiguates the result of this {@link Completable} with the passed
-     * {@code other} {@link Completable} such that whichever of them terminates first (successfully or with an error),
-     * the returned {@link Completable} will return that result.
+     * Creates a new {@link Completable} that terminates with the result (either success or error) of either this
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1230,9 +1229,8 @@ public abstract class Completable {
      * }</pre>
      *
      * @param other {@link Completable} with which the result of this {@link Completable} is to be ambiguated.
-     * @return A new {@link Completable} that ambiguates the result of this {@link Completable} with the passed
-     * {@code other} @link Completable} such that whichever of them terminates first (successfully or with an error),
-     * the returned {@link Completable} will return that result.
+     * @return A new {@link Completable} that terminates with the result (either success or error) of either this
+     * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Completable ambWith(final Completable other) {
@@ -1670,9 +1668,8 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Completable} that ambiguates the result of all the passed {@code completables} such that
-     * whichever of them terminates first (successfully or with an error), the returned {@link Completable} will return
-     * that result.
+     * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1683,9 +1680,8 @@ public abstract class Completable {
      * }</pre>
      *
      * @param completables {@link Completable}s the result of which are to be ambiguated.
-     * @return A new {@link Completable} that ambiguates the result of all the passed {@code completables} such that
-     * whichever of them terminates first (successfully or with an error), the returned {@link Completable} will return
-     * that result.
+     * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Completable... completables) {
@@ -1694,9 +1690,8 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Completable} that ambiguates the result of all the passed {@code completables} such that
-     * whichever of them terminates first (successfully or with an error), the returned {@link Completable} will return
-     * that result.
+     * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1707,14 +1702,57 @@ public abstract class Completable {
      * }</pre>
      *
      * @param completables {@link Completable}s the result of which are to be ambiguated.
-     * @return A new {@link Completable} that ambiguates the result of all the passed {@code completables} such that
-     * whichever of them terminates first (successfully or with an error), the returned {@link Completable} will return
+     * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
      * that result.
      * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Iterable<Completable> completables) {
         return Single.amb(stream(completables.spliterator(), false)
                 .map(Completable::toSingle).collect(toList())).ignoreElement();
+    }
+
+    /**
+     * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<T> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator will pick the first result from any of the futures.
+     *          return ft.get();
+     *      }
+     * }</pre>
+     *
+     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
+     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     */
+    public static Completable anyOf(final Completable... completables) {
+        return amb(completables);
+    }
+
+    /**
+     * Creates a new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      for (Future<T> ft: futures) { // Provided Futures (analogous to the Completables here)
+     *          // This is an approximation, this operator will pick the first result from any of the futures.
+     *          return ft.get();
+     *      }
+     * }</pre>
+     *
+     * @param completables {@link Completable}s the result of which are to be ambiguated.
+     * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
+     * the passed {@code completables} that terminates first.
+     * that result.
+     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     */
+    public static Completable anyOf(final Iterable<Completable> completables) {
+        return amb(completables);
     }
 
     //
