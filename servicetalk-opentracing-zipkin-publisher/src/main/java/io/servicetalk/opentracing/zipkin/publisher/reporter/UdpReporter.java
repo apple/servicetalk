@@ -17,9 +17,11 @@ package io.servicetalk.opentracing.zipkin.publisher.reporter;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.NettyFutureCompletable;
+import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
+import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.bootstrap.Bootstrap;
@@ -48,7 +50,7 @@ import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -70,12 +72,9 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
     private final ListenableAsyncCloseable closeable;
 
     private UdpReporter(final Builder builder) {
-        EventLoopGroup group;
-        if (builder.ioExecutor != null) {
-            group = toEventLoopAwareNettyIoExecutor(builder.ioExecutor).eventLoopGroup();
-        } else {
-            group = toEventLoopAwareNettyIoExecutor(globalExecutionContext().ioExecutor()).eventLoopGroup();
-        }
+        EventLoopGroup group = toEventLoopAwareNettyIoExecutor(
+                builder.ioExecutor != null ? builder.ioExecutor : globalExecutionContext().ioExecutor()
+        ).eventLoopGroup();
         try {
             final Bootstrap bootstrap = buildBootstrap(group, builder.codec, builder.collectorAddress,
                     builder.loggerName);
@@ -87,7 +86,9 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
             logger.warn("Failed to create UDP client", e);
             throw e;
         }
-        closeable = toAsyncCloseable(graceful -> new NettyFutureCompletable(channel::closeFuture));
+        Executor executor = builder.executor != null ? builder.executor :
+                globalExecutionContext().executor();
+        closeable = new NettyChannelListenableAsyncCloseable(channel, executor);
     }
 
     /**
@@ -113,6 +114,8 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         @Nullable
         private IoExecutor ioExecutor;
         @Nullable
+        private Executor executor;
+        @Nullable
         private String loggerName;
 
         /**
@@ -136,13 +139,25 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         }
 
         /**
-         * Sets an IoExecutor to use for writing to the datagram channel.
+         * Sets an {@link IoExecutor} to use for writing to the datagram channel. Defaults to the
+         * {@link GlobalExecutionContext} {@link IoExecutor}.
          *
          * @param ioExecutor IoExecutor to use to write with.
          * @return {@code this}
          */
         public Builder ioExecutor(IoExecutor ioExecutor) {
             this.ioExecutor = requireNonNull(ioExecutor);
+            return this;
+        }
+
+        /**
+         * Sets an {@link Executor} to use when required.
+         *
+         * @param executor {@link Executor} to use
+         * @return {@code this}
+         */
+        public Builder executor(Executor executor) {
+            this.executor = executor;
             return this;
         }
 
@@ -221,16 +236,26 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
      */
     @Override
     public void close() {
-        closeable.onClose();
+        awaitTermination(closeable.closeAsync().toFuture());
     }
 
     /**
-     * Marks the {@link UdpReporter} as closed to prevent accepting any more {@link Span}s.
+     * Closes this {@link UdpReporter} and all resources within.
      *
-     * @return a {@link Completable} that is completed when close is done.
+     * @return a {@link Completable} that is completed when close is done
      */
     @Override
     public Completable closeAsync() {
         return closeable.closeAsync();
+    }
+
+    /**
+     * Gracefully cleans up and closes this {@link UdpReporter} and all resources within.
+     *
+     * @return a {@link Completable} that is completed when close is done
+     */
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
     }
 }

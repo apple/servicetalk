@@ -72,7 +72,8 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
             // ST Reporters can implement AsyncCloseable so we wouldn't have to call a blocking close in that case
             Completable close = Completable.completed();
             if (reporter instanceof AsyncCloseable) {
-                close = ((AsyncCloseable) reporter).closeAsyncGracefully();
+                close = graceful ? ((AsyncCloseable) reporter).closeAsyncGracefully() :
+                        ((AsyncCloseable) reporter).closeAsync();
             } else if (reporter instanceof Closeable) {
                 close = globalExecutionContext().executor().submit(() -> {
                     try {
@@ -188,8 +189,8 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      * Blocking close method delegates to {@link #closeAsync()}.
      */
     @Override
-    public void close() throws Exception {
-        closeable.closeAsync().toFuture().get();
+    public void close() {
+        awaitTermination(closeable.closeAsync().toFuture());
     }
 
     /**
@@ -199,7 +200,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      */
     @Override
     public Completable closeAsync() {
-        return awaitTermination(closeable.closeAsync().toFuture());
+        return closeable.closeAsync();
     }
 
     /**
