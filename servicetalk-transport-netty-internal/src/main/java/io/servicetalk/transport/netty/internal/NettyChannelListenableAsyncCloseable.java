@@ -50,7 +50,7 @@ public class NettyChannelListenableAsyncCloseable implements ListenableAsyncClos
      * @param offloadingExecutor {@link Executor} used to offload any signals to any asynchronous created by this
      * {@link NettyChannelListenableAsyncCloseable} which could interact with the EventLoop.
      */
-    protected NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
+    public NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
         onClose = new SubscribableCompletable() {
             @Override

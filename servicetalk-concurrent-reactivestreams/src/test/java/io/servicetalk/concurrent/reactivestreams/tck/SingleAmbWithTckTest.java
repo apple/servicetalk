@@ -13,29 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.reactivestreams.tck;
 
-import static java.util.Objects.requireNonNull;
+import io.servicetalk.concurrent.api.Single;
 
-final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
-    private final Runnable onFinally;
+import org.testng.annotations.Test;
 
-    RunnableTerminalSignalConsumer(final Runnable onFinally) {
-        this.onFinally = requireNonNull(onFinally);
-    }
+import static io.servicetalk.concurrent.api.Single.never;
 
-    @Override
-    public void onComplete() {
-        onFinally.run();
-    }
+@Test
+public class SingleAmbWithTckTest extends AbstractSingleOperatorTckTest<Integer> {
 
     @Override
-    public void onError(final Throwable throwable) {
-        onFinally.run();
-    }
-
-    @Override
-    public void cancel() {
-        onFinally.run();
+    protected Single<Integer> composeSingle(Single<Integer> single) {
+        return single.ambWith(never());
     }
 }

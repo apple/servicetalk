@@ -15,17 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
-final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+final class RunnableSingleTerminalSignalConsumer<T> implements SingleTerminalSignalConsumer<T> {
     private final Runnable onFinally;
 
-    RunnableTerminalSignalConsumer(final Runnable onFinally) {
+    RunnableSingleTerminalSignalConsumer(final Runnable onFinally) {
         this.onFinally = requireNonNull(onFinally);
     }
 
     @Override
-    public void onComplete() {
+    public void onSuccess(@Nullable final T result) {
         onFinally.run();
     }
 

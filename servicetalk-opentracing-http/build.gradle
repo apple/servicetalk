@@ -31,11 +31,15 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-opentracing-asynccontext")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-opentracing-log4j2")
+  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

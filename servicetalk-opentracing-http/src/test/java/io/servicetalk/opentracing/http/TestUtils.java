@@ -17,6 +17,7 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
+import io.servicetalk.opentracing.internal.TracingConstants;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -27,7 +28,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
+
 final class TestUtils {
+    static final String[] TRACING_TEST_LOG_LINE_PREFIX = new String[] {
+            "filter request path={}",
+            "filter response map path={}",
+            "filter response transform path={}",
+            "filter response onSubscribe path={}",
+            "filter response onNext path={}",
+            "filter response terminated path={}"};
+
     private TestUtils() { } // no instantiation
 
     static String randomHexId() {
@@ -41,6 +52,36 @@ final class TestUtils {
         } while (sb.length() < numchars);
 
         return sb.toString().substring(0, numchars);
+    }
+
+    static void verifyTraceIdPresentInLogs(String logs, String requestPath, String traceId, String spanId,
+                                           @Nullable String parentSpanId, String[] logLinePrefix) {
+        if (parentSpanId == null) {
+            parentSpanId = TracingConstants.NO_PARENT_ID;
+        }
+        String[] lines = logs.split("\\r?\\n");
+        for (final String linePrefix : logLinePrefix) {
+            String prefix = linePrefix.replaceFirst("\\{}", requestPath);
+            boolean foundMatch = false;
+            for (String line : lines) {
+                int matchIndex = line.indexOf(prefix);
+                if (matchIndex != -1) {
+                    foundMatch = true;
+                    try {
+                        assertContainsMdcPair(line, "traceId=", traceId);
+                        assertContainsMdcPair(line, "spanId=", spanId);
+                        assertContainsMdcPair(line, "parentSpanId=", parentSpanId);
+                    } catch (Throwable cause) {
+                        cause.addSuppressed(new AssertionError("failed on prefix: " + prefix));
+                        throw cause;
+                    }
+                    break;
+                }
+            }
+            if (!foundMatch) {
+                throw new AssertionError("could not find log line with prefix: " + prefix);
+            }
+        }
     }
 
     static Matcher<String> isHexId() {

@@ -244,7 +244,7 @@ public class PublisherConcatMapIterableTest {
     @Test
     public void exceptionFromOnErrorIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
-                .whenOnError(t -> {
+                .afterOnError(t -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
@@ -285,7 +285,7 @@ public class PublisherConcatMapIterableTest {
     @Test
     public void exceptionFromOnCompleteIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
-                .whenOnComplete(() -> {
+                .afterOnComplete(() -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         assertTrue(subscriber.subscriptionReceived());
