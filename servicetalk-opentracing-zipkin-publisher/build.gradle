@@ -22,6 +22,7 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "io.netty:netty-codec:$nettyVersion"
   implementation "io.netty:netty-transport:$nettyVersion"

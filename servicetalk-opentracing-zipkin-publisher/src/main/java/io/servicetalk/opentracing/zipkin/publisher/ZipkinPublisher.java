@@ -37,6 +37,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
@@ -198,7 +199,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
      */
     @Override
     public Completable closeAsync() {
-        return closeable.closeAsync();
+        return awaitTermination(closeable.closeAsync().toFuture());
     }
 
     /**
