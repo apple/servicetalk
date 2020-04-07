@@ -45,4 +45,14 @@ public interface SingleTerminalSignalConsumer<T> {
      * Callback to indicate termination via {@link Cancellable#cancel()}.
      */
     void cancel();
+
+    /**
+     * Create a {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+     * @param runnable The {@link Runnable} which is invoked in each method of the returned
+     * {@link SingleTerminalSignalConsumer}.
+     * @return a {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+     */
+    static <X> SingleTerminalSignalConsumer<X> from(Runnable runnable) {
+        return new RunnableSingleTerminalSignalConsumer<>(runnable);
+    }
 }

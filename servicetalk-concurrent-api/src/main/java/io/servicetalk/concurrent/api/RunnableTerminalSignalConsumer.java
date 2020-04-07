@@ -17,17 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * A {@link TerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
- */
-public final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
     private final Runnable onFinally;
 
-    /**
-     * Create a new instance.
-     * @param onFinally The {@link Runnable} to run for each method.
-     */
-    public RunnableTerminalSignalConsumer(final Runnable onFinally) {
+    RunnableTerminalSignalConsumer(final Runnable onFinally) {
         this.onFinally = requireNonNull(onFinally);
     }
 

@@ -19,10 +19,6 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * A {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
- * @param <T> Type of the result of the {@link Single}.
- */
 final class RunnableSingleTerminalSignalConsumer<T> implements SingleTerminalSignalConsumer<T> {
     private final Runnable onFinally;
 

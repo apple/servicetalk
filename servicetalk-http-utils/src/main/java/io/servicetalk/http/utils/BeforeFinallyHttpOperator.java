@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.RunnableTerminalSignalConsumer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -83,7 +82,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
      * across both sources.
      */
     public BeforeFinallyHttpOperator(final Runnable beforeFinally) {
-        this(new RunnableTerminalSignalConsumer(beforeFinally));
+        this(TerminalSignalConsumer.from(beforeFinally));
     }
 
     @Override
