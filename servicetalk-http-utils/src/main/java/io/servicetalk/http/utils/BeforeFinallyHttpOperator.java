@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.RunnableTerminalSignalConsumer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -251,30 +252,6 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         @Override
         public void onComplete() {
             // Ignore.
-        }
-    }
-
-    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
-
-        private final Runnable onFinally;
-
-        private RunnableTerminalSignalConsumer(Runnable onFinally) {
-            this.onFinally = requireNonNull(onFinally);
-        }
-
-        @Override
-        public void onComplete() {
-            onFinally.run();
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            onFinally.run();
-        }
-
-        @Override
-        public void cancel() {
-            onFinally.run();
         }
     }
 }

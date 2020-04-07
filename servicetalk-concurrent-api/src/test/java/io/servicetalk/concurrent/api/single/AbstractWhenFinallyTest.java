@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.Single.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +44,7 @@ abstract class AbstractWhenFinallyTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     @SuppressWarnings("unchecked")
-    private final TerminalSignalConsumer<String> doFinally = mock(TerminalSignalConsumer.class);
+    private final SingleTerminalSignalConsumer<String> doFinally = mock(SingleTerminalSignalConsumer.class);
 
     @Test
     public void testForCancel() {
@@ -90,7 +90,7 @@ abstract class AbstractWhenFinallyTest {
 
     @Test
     public void testCallbackThrowsErrorOnCancel() {
-        TerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
+        SingleTerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
             listener.listen(doFinally(single, mock));
@@ -110,11 +110,11 @@ abstract class AbstractWhenFinallyTest {
     @Test
     public abstract void testCallbackThrowsErrorOnError();
 
-    protected abstract <T> Single<T> doFinally(Single<T> single, TerminalSignalConsumer<T> signalConsumer);
+    protected abstract <T> Single<T> doFinally(Single<T> single, SingleTerminalSignalConsumer<T> signalConsumer);
 
     @SuppressWarnings("unchecked")
-    protected TerminalSignalConsumer<String> throwableMock(RuntimeException exception) {
-        return mock(TerminalSignalConsumer.class, delegatesTo(new TerminalSignalConsumer<String>() {
+    protected SingleTerminalSignalConsumer<String> throwableMock(RuntimeException exception) {
+        return mock(SingleTerminalSignalConsumer.class, delegatesTo(new SingleTerminalSignalConsumer<String>() {
             @Override
             public void onSuccess(@Nullable final String result) {
                 throw exception;

@@ -23,9 +23,9 @@ import static java.util.Objects.requireNonNull;
 
 final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
-    private final TerminalSignalConsumer<T> doFinally;
+    private final SingleTerminalSignalConsumer<T> doFinally;
 
-    AfterFinallySingle(Single<T> original, TerminalSignalConsumer<T> doFinally, Executor executor) {
+    AfterFinallySingle(Single<T> original, SingleTerminalSignalConsumer<T> doFinally, Executor executor) {
         super(original, executor);
         this.doFinally = requireNonNull(doFinally);
     }
@@ -37,14 +37,14 @@ final class AfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T
 
     private static final class AfterFinallySingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
-        private final TerminalSignalConsumer<T> doFinally;
+        private final SingleTerminalSignalConsumer<T> doFinally;
 
         private static final AtomicIntegerFieldUpdater<AfterFinallySingleSubscriber> doneUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(AfterFinallySingleSubscriber.class, "done");
         @SuppressWarnings("unused")
         private volatile int done;
 
-        AfterFinallySingleSubscriber(Subscriber<? super T> original, TerminalSignalConsumer<T> doFinally) {
+        AfterFinallySingleSubscriber(Subscriber<? super T> original, SingleTerminalSignalConsumer<T> doFinally) {
             this.original = original;
             this.doFinally = doFinally;
         }

@@ -15,24 +15,23 @@
  */
 package io.servicetalk.concurrent.api;
 
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link TerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+ * A {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+ * @param <T> Type of the result of the {@link Single}.
  */
-public final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+final class RunnableSingleTerminalSignalConsumer<T> implements SingleTerminalSignalConsumer<T> {
     private final Runnable onFinally;
 
-    /**
-     * Create a new instance.
-     * @param onFinally The {@link Runnable} to run for each method.
-     */
-    public RunnableTerminalSignalConsumer(final Runnable onFinally) {
+    RunnableSingleTerminalSignalConsumer(final Runnable onFinally) {
         this.onFinally = requireNonNull(onFinally);
     }
 
     @Override
-    public void onComplete() {
+    public void onSuccess(@Nullable final T result) {
         onFinally.run();
     }
 
