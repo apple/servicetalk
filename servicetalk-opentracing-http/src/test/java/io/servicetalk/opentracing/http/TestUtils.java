@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
+import static org.junit.Assert.assertTrue;
 
 final class TestUtils {
     static final String[] TRACING_TEST_LOG_LINE_PREFIX = new String[] {
@@ -78,9 +79,7 @@ final class TestUtils {
                     break;
                 }
             }
-            if (!foundMatch) {
-                throw new AssertionError("could not find log line with prefix: " + prefix);
-            }
+            assertTrue("could not find log line with prefix: " + prefix, foundMatch);
         }
     }
 
