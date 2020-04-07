@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BeforeFinallyOnHttpResponseOperatorTest {
+public class BeforeFinallyHttpOperatorTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
@@ -77,7 +77,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
 
     @Before
     public void setUp() {
-        operator = new BeforeFinallyOnHttpResponseOperator(beforeFinally);
+        operator = new BeforeFinallyHttpOperator(beforeFinally);
     }
 
     @Test
