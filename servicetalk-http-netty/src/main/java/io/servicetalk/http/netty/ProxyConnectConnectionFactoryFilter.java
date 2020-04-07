@@ -108,9 +108,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
     private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
         try {
             if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
-                        new ProxyResponseException("Non-successful response from proxy CONNECT " +
-                                connectAddress, response.status())));
+                return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
+                        connectAddress, response.status()));
             }
 
             final Channel channel = ((NettyConnectionContext) connection.connectionContext()).nettyChannel();
@@ -132,9 +131,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
             final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
             if (deferSslHandler == null) {
-                return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
-                        new IllegalStateException("Failed to find a handler of type " +
-                                DeferSslHandler.class + " in channel pipeline.")));
+                return failed(new IllegalStateException("Failed to find a handler of type " +
+                        DeferSslHandler.class + " in channel pipeline."));
             }
             deferSslHandler.ready();
 
@@ -143,7 +141,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
             // request.
             return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
         } catch (Throwable t) {
-            return response.payloadBodyAndTrailers().ignoreElements().concat(failed(t));
+            return failed(t);
         }
     }
 

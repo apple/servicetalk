@@ -164,8 +164,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
 
         assertThat(subscriber.isErrored(), is(true));
         assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
-        verify(connection).connect(any());
-        verify(connection).request(any(), any());
+        assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
 
@@ -184,7 +183,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         assertThat(error, is(notNullValue()));
         assertThat(error, instanceOf(ProxyResponseException.class));
         assertThat(((ProxyResponseException) error).status(), is(INTERNAL_SERVER_ERROR));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
 
@@ -201,7 +200,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         Throwable error = subscriber.error();
         assertThat(error, is(notNullValue()));
         assertThat(error, instanceOf(ClassCastException.class));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
 
@@ -219,7 +218,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         assertThat(error, is(notNullValue()));
         assertThat(error, instanceOf(IllegalStateException.class));
         assertThat(error.getMessage(), containsString(DeferSslHandler.class.getSimpleName()));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
 
@@ -235,7 +234,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
 
         assertThat(subscriber.isErrored(), is(true));
         assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
 
@@ -251,7 +250,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
 
         assertThat(subscriber.isErrored(), is(true));
         assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
@@ -270,7 +269,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         assertThat(subscriber.isSuccess(), is(false));
         assertThat(connectionClose.isSubscribed(), is(false));
         subscriber.cancel();
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
 
@@ -285,14 +284,15 @@ public class ProxyConnectConnectionFactoryFilterTest {
 
         assertThat(subscriber.isSuccess(), is(true));
         assertThat(subscriber.result(), is(sameInstance(this.connection)));
-        assertConnectPayloadConsumed();
+        assertConnectPayloadConsumed(true);
         assertThat("Connection closed", connectionClose.isSubscribed(), is(false));
     }
 
-    private void assertConnectPayloadConsumed() {
+    private void assertConnectPayloadConsumed(boolean expected) {
         verify(connection).connect(any());
         verify(connection).request(any(), any());
-        assertThat("CONNECT response payload body was not consumed", payloadBodyAndTrailers.isSubscribed(), is(true));
+        assertThat("CONNECT response payload body was " + (expected ? "was" : "unnecessarily") + " consumed",
+                payloadBodyAndTrailers.isSubscribed(), is(expected));
     }
 
     private void assertConnectionClosed() {
