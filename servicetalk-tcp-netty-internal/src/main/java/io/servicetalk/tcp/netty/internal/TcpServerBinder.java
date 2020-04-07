@@ -122,7 +122,7 @@ public final class TcpServerBinder {
                                     // subscribeOn is required to offload calls to connectionAcceptor#accept
                                     .subscribeOn(executionContext.executor()));
                 }
-                connectionSingle.afterOnError(cause -> {
+                connectionSingle.beforeOnError(cause -> {
                     // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Failed to create a connection for remote address {}", channel.remoteAddress(),
