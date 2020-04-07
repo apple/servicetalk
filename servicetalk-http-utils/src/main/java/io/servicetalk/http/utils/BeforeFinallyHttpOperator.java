@@ -82,7 +82,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
      * across both sources.
      */
     public BeforeFinallyHttpOperator(final Runnable beforeFinally) {
-        this(new RunnableTerminalSignalConsumer(beforeFinally));
+        this(TerminalSignalConsumer.from(beforeFinally));
     }
 
     @Override
@@ -251,30 +251,6 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         @Override
         public void onComplete() {
             // Ignore.
-        }
-    }
-
-    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
-
-        private final Runnable onFinally;
-
-        private RunnableTerminalSignalConsumer(Runnable onFinally) {
-            this.onFinally = requireNonNull(onFinally);
-        }
-
-        @Override
-        public void onComplete() {
-            onFinally.run();
-        }
-
-        @Override
-        public void onError(final Throwable throwable) {
-            onFinally.run();
-        }
-
-        @Override
-        public void cancel() {
-            onFinally.run();
         }
     }
 }

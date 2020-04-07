@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.PublisherSource;
  * {@link CompletableSource.Subscriber} can terminate.
  */
 public interface TerminalSignalConsumer {
-
     /**
      * Callback to indicate termination via {@link PublisherSource.Subscriber#onComplete()} or
      * {@link CompletableSource.Subscriber#onComplete()}.
@@ -43,4 +42,14 @@ public interface TerminalSignalConsumer {
      * Callback to indicate termination via {@link Cancellable#cancel()}.
      */
     void cancel();
+
+    /**
+     * Create a {@link TerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+     * @param runnable The {@link Runnable} which is invoked in each method of the returned
+     * {@link TerminalSignalConsumer}.
+     * @return a {@link TerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
+     */
+    static TerminalSignalConsumer from(Runnable runnable) {
+        return new RunnableTerminalSignalConsumer(runnable);
+    }
 }
