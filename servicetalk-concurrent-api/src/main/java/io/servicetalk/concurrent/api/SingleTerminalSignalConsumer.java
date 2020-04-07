@@ -50,6 +50,7 @@ public interface SingleTerminalSignalConsumer<T> {
      * Create a {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
      * @param runnable The {@link Runnable} which is invoked in each method of the returned
      * {@link SingleTerminalSignalConsumer}.
+     * @param <X> The type of {@link SingleTerminalSignalConsumer}.
      * @return a {@link SingleTerminalSignalConsumer} where each method executes a {@link Runnable#run()}.
      */
     static <X> SingleTerminalSignalConsumer<X> from(Runnable runnable) {
