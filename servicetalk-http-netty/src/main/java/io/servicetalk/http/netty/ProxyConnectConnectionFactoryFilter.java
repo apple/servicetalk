@@ -20,10 +20,10 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.Single.TerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -31,8 +31,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -71,73 +69,63 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
             return delegate().newConnection(resolvedAddress).flatMap(c -> {
-            try {
-                // We currently only have access to a StreamingHttpRequester, which means we are forced to provide an
-                // HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the connection
-                // filters we use the default strategy which should offload everything to be safe.
-                return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
-                 .flatMap(response -> {
-                    // Drain response payload body asynchronously as we are not interested in it:
-                    response.payloadBodyAndTrailers().ignoreElements().subscribe();
-
-                    if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                        return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
-                                connectAddress, response.status()));
-                    }
-
-                    final Channel channel = ((NettyConnectionContext) c.connectionContext()).nettyChannel();
-                    final SingleSource.Processor<C, C> processor = newSingleProcessor();
-
-                    channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                            if (evt instanceof SslHandshakeCompletionEvent) {
-                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
-                                if (event.isSuccess()) {
-                                    processor.onSuccess(c);
-                                } else {
-                                    processor.onError(event.cause());
-                                }
-                            }
-                            ctx.fireUserEventTriggered(evt);
-                        }
-                    });
-
-                    final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
-                    if (deferSslHandler == null) {
-                        return failed(new IllegalStateException("Failed to find a handler of type " +
-                                DeferSslHandler.class + " in channel pipeline."));
-                    }
-                    deferSslHandler.ready();
-
-                    return fromSource(processor);
-                    // Close recently created connection in case of any error or cancellation while it connects to proxy
-                 }).whenFinally(new TerminalSignalConsumer<C>() {
-                    @Override
-                    public void onSuccess(@Nullable final C result) {
-                        // noop
-                    }
-
-                    @Override
-                    public void onError(final Throwable ignore) {
-                        closeConnection(c);
-                    }
-
-                    @Override
-                    public void cancel() {
-                        closeConnection(c);
-                    }
-                 });
-            } catch (Exception e) {
-                closeConnection(c);
-                return failed(e);
-            }
+                try {
+                    // We currently only have access to a StreamingHttpRequester, which means we are forced to provide
+                    // an HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the
+                    // connection filters we use the default strategy which should offload everything to be safe.
+                    return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                            .flatMap(response -> handleConnectResponse(c, response))
+                            // Close recently created connection in case of any error while it connects to the proxy
+                            // or cancellation:
+                            .recoverWith(t -> c.closeAsync().concat(failed(t)))
+                            .whenCancel(() -> c.closeAsync().subscribe());
+                } catch (Throwable t) {
+                    return c.closeAsync().concat(failed(t));
+                }
             });
         }
     }
 
-    private static <C extends FilterableStreamingHttpConnection> void closeConnection(C connection) {
-        connection.closeAsync().subscribe();
+    private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
+        try {
+            if (response.status().statusClass() != SUCCESSFUL_2XX) {
+                return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
+                        new ProxyResponseException("Non-successful response from proxy CONNECT " +
+                                connectAddress, response.status())));
+            }
+
+            final Channel channel = ((NettyConnectionContext) connection.connectionContext()).nettyChannel();
+            final SingleSource.Processor<C, C> processor = newSingleProcessor();
+            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt instanceof SslHandshakeCompletionEvent) {
+                        SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                        if (event.isSuccess()) {
+                            processor.onSuccess(connection);
+                        } else {
+                            processor.onError(event.cause());
+                        }
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+
+            final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
+            if (deferSslHandler == null) {
+                return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
+                        new IllegalStateException("Failed to find a handler of type " +
+                                DeferSslHandler.class + " in channel pipeline.")));
+            }
+            deferSslHandler.ready();
+
+            // There is no need to apply offloading explicitly (despite completing `processor` on the
+            // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
+            // request.
+            return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
+        } catch (Throwable t) {
+            return response.payloadBodyAndTrailers().ignoreElements().concat(failed(t));
+        }
     }
 
     @Override

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
@@ -39,6 +40,7 @@ import org.mockito.stubbing.Answer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -65,14 +67,36 @@ public class ProxyConnectConnectionFactoryFilterTest {
     private static final String CONNECT_ADDRESS = "foo.bar";
     private static final String RESOLVED_ADDRESS = "bar.foo";
 
-    private final TestCompletable connectionClose = new TestCompletable();
-    private final FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
-    private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber = new TestSingleSubscriber<>();
-    private final TestPublisher<Object> payloadBodyAndTrailers = new TestPublisher<>();
+    private final FilterableStreamingHttpConnection connection;
+    private final TestCompletable connectionClose;
+    private final TestPublisher<Object> payloadBodyAndTrailers;
+    private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
 
     public ProxyConnectConnectionFactoryFilterTest() {
+        connection = mock(FilterableStreamingHttpConnection.class);
+        connectionClose = new TestCompletable.Builder().build(subscriber -> {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onComplete();
+            return subscriber;
+        });
         when(connection.closeAsync()).thenReturn(connectionClose);
-        payloadBodyAndTrailers.whenRequest(__ -> payloadBodyAndTrailers.onComplete());
+
+        payloadBodyAndTrailers = new TestPublisher.Builder<>().build(subscriber -> {
+            subscriber.onSubscribe(new PublisherSource.Subscription() {
+                @Override
+                public void request(final long n) {
+                    subscriber.onComplete();
+                }
+
+                @Override
+                public void cancel() {
+                    // noop
+                }
+            });
+            return subscriber;
+        });
+
+        subscriber = new TestSingleSubscriber<>();
     }
 
     private ChannelPipeline configurePipeline(@Nullable SslHandshakeCompletionEvent event) {
