@@ -77,7 +77,6 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
-import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -226,10 +225,10 @@ public class TracingHttpRequesterFilterTest {
         private final String[] logLinePrefix;
 
         TestTracingLoggerFilter(final String[] logLinePrefix) {
-            this.logLinePrefix = requireNonNull(logLinePrefix);
             if (logLinePrefix.length < 6) {
                 throw new IllegalArgumentException("logLinePrefix length must be >= 6");
             }
+            this.logLinePrefix = logLinePrefix.clone();
         }
 
         @Override
