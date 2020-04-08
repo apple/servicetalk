@@ -81,8 +81,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                             // Close recently created connection in case of any error while it connects to the proxy
                             // or cancellation:
                             .recoverWith(t -> c.closeAsync().concat(failed(t)))
-                            // Use whenFinally to prevent handling cancel event after termination:
-                            .whenFinally(new SingleTerminalSignalConsumer<C>() {
+                            // Use afterFinally to prevent handling cancel event after termination:
+                            .afterFinally(new SingleTerminalSignalConsumer<C>() {
                                 @Override
                                 public void cancel() {
                                     c.closeAsync().subscribe();
