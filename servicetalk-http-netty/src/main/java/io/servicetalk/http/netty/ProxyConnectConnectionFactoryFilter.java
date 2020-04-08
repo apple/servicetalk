@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -32,8 +31,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -78,26 +75,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                     // connection filters we use the default strategy which should offload everything to be safe.
                     return c.request(defaultStrategy(), c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                             .flatMap(response -> handleConnectResponse(c, response))
-                            // Close recently created connection in case of any error while it connects to the proxy
-                            // or cancellation:
-                            .recoverWith(t -> c.closeAsync().concat(failed(t)))
-                            // Use afterFinally to prevent handling cancel event after termination:
-                            .afterFinally(new SingleTerminalSignalConsumer<C>() {
-                                @Override
-                                public void cancel() {
-                                    c.closeAsync().subscribe();
-                                }
-
-                                @Override
-                                public void onSuccess(@Nullable final C result) {
-                                    // noop
-                                }
-
-                                @Override
-                                public void onError(final Throwable throwable) {
-                                    // noop
-                                }
-                            });
+                            // Close recently created connection in case of any error while it connects to the proxy:
+                            .recoverWith(t -> c.closeAsync().concat(failed(t)));
                 } catch (Throwable t) {
                     return c.closeAsync().concat(failed(t));
                 }

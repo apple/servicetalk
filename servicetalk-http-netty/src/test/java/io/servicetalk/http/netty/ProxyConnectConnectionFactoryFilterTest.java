@@ -34,6 +34,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -255,6 +256,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
+    @Ignore("https://github.com/apple/servicetalk/issues/1010")
     public void cancelledBeforeSslHandshakeCompletionEvent() {
         ChannelPipeline pipeline = configurePipeline(null); // Do not generate any SslHandshakeCompletionEvent
 
