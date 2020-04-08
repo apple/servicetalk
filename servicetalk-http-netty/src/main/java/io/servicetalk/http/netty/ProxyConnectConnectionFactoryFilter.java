@@ -82,41 +82,41 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                 }
             });
         }
-    }
 
-    private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
-        if (response.status().statusClass() != SUCCESSFUL_2XX) {
-            return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
-                    connectAddress, response.status()));
-        }
-
-        final Channel channel = ((NettyConnectionContext) connection.connectionContext()).nettyChannel();
-        final SingleSource.Processor<C, C> processor = newSingleProcessor();
-        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                if (evt instanceof SslHandshakeCompletionEvent) {
-                    SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
-                    if (event.isSuccess()) {
-                        processor.onSuccess(connection);
-                    } else {
-                        processor.onError(event.cause());
-                    }
-                }
-                ctx.fireUserEventTriggered(evt);
+        private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
+            if (response.status().statusClass() != SUCCESSFUL_2XX) {
+                return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
+                        connectAddress, response.status()));
             }
-        });
 
-        final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
-        if (deferSslHandler == null) {
-            return failed(new IllegalStateException("Failed to find a handler of type " +
-                    DeferSslHandler.class + " in channel pipeline."));
+            final Channel channel = ((NettyConnectionContext) connection.connectionContext()).nettyChannel();
+            final SingleSource.Processor<C, C> processor = newSingleProcessor();
+            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt instanceof SslHandshakeCompletionEvent) {
+                        SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                        if (event.isSuccess()) {
+                            processor.onSuccess(connection);
+                        } else {
+                            processor.onError(event.cause());
+                        }
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+
+            final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
+            if (deferSslHandler == null) {
+                return failed(new IllegalStateException("Failed to find a handler of type " +
+                        DeferSslHandler.class + " in channel pipeline."));
+            }
+            deferSslHandler.ready();
+
+            // There is no need to apply offloading explicitly (despite completing `processor` on the EventLoop)
+            // because `payloadBody()` will be offloaded according to the strategy for the request.
+            return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
         }
-        deferSslHandler.ready();
-
-        // There is no need to apply offloading explicitly (despite completing `processor` on the EventLoop)
-        // because `payloadBody()` will be offloaded according to the strategy for the request.
-        return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
     }
 
     @Override
