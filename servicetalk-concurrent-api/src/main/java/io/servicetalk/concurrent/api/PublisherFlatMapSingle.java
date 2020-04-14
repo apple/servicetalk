@@ -89,8 +89,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceRequested");
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> sourceEmittedUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceEmitted");
-        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "active");
+        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeMappedSourcesUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "activeMappedSources");
         private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification>
                 terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
                 "terminalNotification");
@@ -106,8 +106,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private volatile long sourceEmitted;
         @SuppressWarnings("unused")
         private volatile long sourceRequested;
-        @SuppressWarnings("unused")
-        private volatile int active; // Number of currently active Singles.
+        private volatile int activeMappedSources;
         @SuppressWarnings("unused")
         @Nullable
         private volatile Subscription subscription;
@@ -180,7 +179,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             // If we are cancelled the activeUpdater count is best effort depending upon which sources finish. This best
             // effort behavior mimics the semantics of cancel though so we don't take any special action to try to
             // adjust the count or prematurely terminate.
-            activeUpdater.incrementAndGet(this);
+            activeMappedSourcesUpdater.incrementAndGet(this);
             next.subscribeInternal(new FlatMapSingleSubscriber());
         }
 
@@ -193,13 +192,39 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onComplete() {
-            // active must be checked after setting the terminal event, because they are accessed in the reverse way in
-            // FlatMapSingleSubscriber and if it were reversed here the FlatMapSingleSubscriber would be racy and may
-            // not detect the terminal event.
-            if (trySetTerminal(complete(), false, terminalNotificationUpdater, this) && active == 0) {
-                // Since onComplete and onNext can not be concurrent and onNext must not be invoked post onComplete,
-                // if we see active == 0 here, active must not change after this.
+            // Setting terminal must be done before terminateActiveMappedSources to ensure visibility of the terminal.
+            final boolean setTerminal = trySetTerminal(complete(), false, terminalNotificationUpdater, this);
+            final boolean allSourcesTerminated = terminateActiveMappedSources();
+            if (setTerminal && allSourcesTerminated) {
                 enqueueAndDrain(complete());
+            }
+        }
+
+        private boolean terminateActiveMappedSources() {
+            for (;;) {
+                final int prevActiveMappedSources = activeMappedSources;
+                // Should always be >= 0, but just in case there is a bug in user code that results in multiple terminal
+                // events we avoid corrupting our internal state.
+                if (prevActiveMappedSources < 0 || activeMappedSourcesUpdater.compareAndSet(this,
+                        prevActiveMappedSources, -prevActiveMappedSources)) {
+                    return prevActiveMappedSources == 0;
+                }
+            }
+        }
+
+        private boolean decrementActiveMappedSources() {
+            for (;;) {
+                final int prevActivePublishers = activeMappedSources;
+                assert prevActivePublishers != 0;
+                if (prevActivePublishers > 0) {
+                    if (activeMappedSourcesUpdater.compareAndSet(this, prevActivePublishers,
+                            prevActivePublishers - 1)) {
+                        return false;
+                    }
+                } else if (activeMappedSourcesUpdater.compareAndSet(this, prevActivePublishers,
+                        prevActivePublishers + 1)) {
+                    return prevActivePublishers == -1;
+                }
             }
         }
 
@@ -351,9 +376,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             private boolean onSingleTerminated() {
                 assert singleCancellable != null;
                 cancellable.remove(singleCancellable);
-                // The ordering of events is important here. If this changes then onComplete must also change otherwise
-                // there is a race condition.
-                return activeUpdater.decrementAndGet(FlatMapSubscriber.this) == 0 && terminalNotification != null;
+                return decrementActiveMappedSources();
             }
         }
     }
