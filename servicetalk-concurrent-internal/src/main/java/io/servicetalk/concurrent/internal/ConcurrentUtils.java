@@ -15,9 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Consumer;
 
 /**
  * Utilities which can be used for concurrency.
@@ -63,43 +61,5 @@ public final class ConcurrentUtils {
      */
     public static <T> boolean releaseLock(AtomicIntegerFieldUpdater<T> lockUpdater, T owner) {
         return lockUpdater.getAndSet(owner, CONCURRENT_IDLE) == CONCURRENT_EMITTING;
-    }
-
-    /**
-     * Drains the passed single-consumer {@link Queue} and ensures that it is empty before returning.
-     * This accounts for any additions to the {@link Queue} while drain is in progress.
-     * Multiple threads can call this method concurrently but only one thread will actively drain the {@link Queue}.
-     *
-     * @param queue {@link Queue} to drain.
-     * @param forEach {@link Consumer} for each item that is drained.
-     * @param drainActiveUpdater An {@link AtomicIntegerFieldUpdater} for an {@code int} that is used to guard against
-     * concurrent drains.
-     * @param flagOwner Holding instance for {@code drainActiveUpdater}.
-     * @param <T> Type of items stored in the {@link Queue}.
-     * @param <R> Type of the object holding the {@link int} referred by {@link AtomicIntegerFieldUpdater}.
-     * @return Number of items drained from the queue.
-     */
-    public static <T, R> long drainSingleConsumerQueue(final Queue<T> queue, final Consumer<T> forEach,
-                                                       final AtomicIntegerFieldUpdater<R> drainActiveUpdater,
-                                                       final R flagOwner) {
-        long drainedCount = 0;
-        do {
-            if (!drainActiveUpdater.compareAndSet(flagOwner, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                break;
-            }
-            try {
-                T t;
-                while ((t = queue.poll()) != null) {
-                    ++drainedCount;
-                    forEach.accept(t);
-                }
-            } finally {
-                drainActiveUpdater.set(flagOwner, CONCURRENT_IDLE);
-            }
-            // We need to loop around again and check if we can acquire the "drain lock" in case there was elements
-            // added after we finished draining the queue but before we released the "drain lock".
-        } while (!queue.isEmpty());
-
-        return drainedCount;
     }
 }
