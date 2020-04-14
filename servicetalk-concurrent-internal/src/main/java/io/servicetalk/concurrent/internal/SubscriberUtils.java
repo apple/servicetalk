@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static java.lang.Math.min;
 
 /**
  * A set of utilities for common {@link Subscriber} tasks.
@@ -109,7 +110,7 @@ public final class SubscriberUtils {
             // emitted ...[outstanding]... sourceRequested ...[delta]... requested
             final long outstanding = sourceRequested - emittedUpdater.get(owner);
             final long delta = requested - sourceRequested;
-            final int toRequest = (int) (limit - outstanding >= delta ? delta : limit - outstanding);
+            final int toRequest = (int) min(limit - outstanding, delta);
             if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
                 return toRequest;
             }
