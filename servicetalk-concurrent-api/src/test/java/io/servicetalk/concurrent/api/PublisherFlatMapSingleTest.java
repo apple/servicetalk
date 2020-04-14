@@ -46,11 +46,11 @@ import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppress
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -67,7 +67,7 @@ import static org.junit.Assert.fail;
 
 public class PublisherFlatMapSingleTest {
     @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<Integer> source = new TestPublisher<>();
@@ -557,7 +557,7 @@ public class PublisherFlatMapSingleTest {
         toSource(source.flatMapMergeSingle(Single::succeeded, 2).beforeOnNext(received::add)).subscribe(subscriber);
         source.onSubscribe(subscription);
         CountDownLatch requestingStarting = new CountDownLatch(1);
-        Future<?> submit = executorService.submit(() -> {
+        Future<?> submitFuture = executorService.submit(() -> {
             requestingStarting.countDown();
             for (int i = 0; i < totalToRequest; i++) {
                 subscriber.request(1);
@@ -565,18 +565,12 @@ public class PublisherFlatMapSingleTest {
         });
         // Just to make sure we have both threads running concurrently.
         requestingStarting.await();
-        for (int i = 1; i <= totalToRequest; i++) {
-            int sent = i - 1;
-            //noinspection StatementWithEmptyBody
-            while (subscription.requested() - sent <= 0) {
-                // Don't send if we emit faster than request.
-            }
+        for (int i = 0; i < totalToRequest; i++) {
+            subscription.awaitRequestN(i + 1);
             source.onNext(i);
         }
-        submit.get(); // Await everything requested.
+        submitFuture.get(); // Await everything requested.
         assertThat("Unexpected items emitted.", received, hasSize(totalToRequest));
-        List<Integer> last = received.stream().skip(totalToRequest - 1).collect(toList());
-        assertThat("Unexpected number of items in last.", last, hasSize(1));
-        assertThat("Unexpected order of items received: " + received, last.get(0), equalTo(totalToRequest));
+        assertThat(received, containsInAnyOrder(range(0, totalToRequest).boxed().toArray()));
     }
 }

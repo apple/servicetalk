@@ -16,11 +16,22 @@
 package io.servicetalk.concurrent.internal;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * Utilities which can be used for concurrency.
  */
 public final class ConcurrentUtils {
+    /**
+     * {@link Thread#getId()} is defined be a positive number. The lock value can be in one of the following states:
+     * <ul>
+     *     <li>{@code 0} - unlocked</li>
+     *     <li>{@code >0} - locked by the {@link Thread} whose {@link Thread#getId()} matches this value</li>
+     *     <li>{@code <0} - locked by the {@link Thread} whose {@link Thread#getId()} matches this negative of this
+     *     value. Only externally visible to the thread that owns the lock on reentrant acquires.</li>
+     * </ul>
+     */
+    private static final long REENTRANT_LOCK_ZERO_THREAD_ID = 0;
     private static final int CONCURRENT_IDLE = 0;
     private static final int CONCURRENT_EMITTING = 1;
     private static final int CONCURRENT_PENDING = 2;
@@ -61,5 +72,48 @@ public final class ConcurrentUtils {
      */
     public static <T> boolean releaseLock(AtomicIntegerFieldUpdater<T> lockUpdater, T owner) {
         return lockUpdater.getAndSet(owner, CONCURRENT_IDLE) == CONCURRENT_EMITTING;
+    }
+
+    /**
+     * Acquire a lock that allows reentry and attempts to acquire the lock while it is
+     * held can be detected by {@link #releaseReentrantLock(AtomicLongFieldUpdater, long, Object)}.
+     * @param lockUpdater The {@link AtomicLongFieldUpdater} used to control the lock state.
+     * @param owner The owner of the lock object.
+     * @param <T> The type of object that owns the lock.
+     * @return {@code 0} if the acquire was unsuccessful, otherwise an identifier that must be passed to a subsequent
+     * call of {@link #releaseReentrantLock(AtomicLongFieldUpdater, long, Object)}.
+     */
+    public static <T> long tryAcquireReentrantLock(final AtomicLongFieldUpdater<T> lockUpdater, final T owner) {
+        final long threadId = Thread.currentThread().getId();
+        for (;;) {
+            final long prevThreadId = lockUpdater.get(owner);
+            if (prevThreadId == REENTRANT_LOCK_ZERO_THREAD_ID) {
+                if (lockUpdater.compareAndSet(owner, REENTRANT_LOCK_ZERO_THREAD_ID, threadId)) {
+                    return threadId;
+                }
+            } else if (prevThreadId == threadId || prevThreadId == -threadId) {
+                return -threadId;
+            } else if (lockUpdater.compareAndSet(owner, prevThreadId,
+                    prevThreadId > REENTRANT_LOCK_ZERO_THREAD_ID ? -prevThreadId : prevThreadId)) {
+                return REENTRANT_LOCK_ZERO_THREAD_ID;
+            }
+        }
+    }
+
+    /**
+     * Release a lock that was previously acquired via {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     * @param lockUpdater The {@link AtomicLongFieldUpdater} used to control the lock state.
+     * @param acquireId The value returned from the previous call to
+     * {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     * @param owner The owner of the lock object.
+     * @param <T> The type of object that owns the lock.
+     * @return {@code true} if the lock was released, or this method call corresponds to a prior re-entrant call
+     * to {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     */
+    public static <T> boolean releaseReentrantLock(final AtomicLongFieldUpdater<T> lockUpdater,
+                                                   final long acquireId, final T owner) {
+        assert acquireId != REENTRANT_LOCK_ZERO_THREAD_ID;
+        return acquireId < REENTRANT_LOCK_ZERO_THREAD_ID ||
+                lockUpdater.getAndSet(owner, REENTRANT_LOCK_ZERO_THREAD_ID) == acquireId;
     }
 }
