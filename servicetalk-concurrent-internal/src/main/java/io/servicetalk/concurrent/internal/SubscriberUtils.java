@@ -306,4 +306,33 @@ public final class SubscriberUtils {
             LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
+
+    /**
+     * Invokes {@link PublisherSource.Subscriber#onError(Throwable)} ignoring an occurred exception if any.
+     * @param subscriber The {@link PublisherSource.Subscriber} that may threw an exception from
+     * {@link PublisherSource.Subscriber#onError(Throwable)}.
+     * @param cause The occurred {@link Throwable} for {@link PublisherSource.Subscriber#onError(Throwable)}.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
+     */
+    public static <T> void safeOnError(PublisherSource.Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
+
+    /**
+     * Invokes {@link Subscriber#onComplete()} ignoring an occurred exception if any.
+     * @param subscriber The {@link PublisherSource.Subscriber} that may threw an exception from
+     * {@link Subscriber#onComplete()}.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
+     */
+    public static <T> void safeOnComplete(PublisherSource.Subscriber<T> subscriber) {
+        try {
+            subscriber.onComplete();
+        } catch (Throwable t) {
+            LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+        }
+    }
 }

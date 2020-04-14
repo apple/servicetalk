@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static java.util.Collections.singletonList;
+
 final class TestRecordStore implements RecordStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
@@ -65,6 +67,17 @@ final class TestRecordStore implements RecordStore {
         defaultRecords.put(recordType, records);
         LOGGER.debug("Set default response for {} type {} to {}", domain, recordType, records);
         return this;
+    }
+
+    public TestRecordStore addSrvResponse(final String domain, String targetDomain, final int priority,
+                                          final int weight, final int port) {
+        return addSrvResponse(domain, targetDomain, priority, weight, port, DEFAULT_TTL);
+    }
+
+    public TestRecordStore addSrvResponse(final String domain, String targetDomain, final int priority,
+                                          final int weight, final int port, final int ttl) {
+        return addResponse(domain, RecordType.SRV,
+                () -> singletonList(createSrvRecord(domain, targetDomain, priority, weight, port, ttl)));
     }
 
     public TestRecordStore addResponse(final String domain, final RecordType recordType,
@@ -120,6 +133,16 @@ final class TestRecordStore implements RecordStore {
         return null;
     }
 
+    static ResourceRecord createSrvRecord(final String domain, String targetDomain, final int priority,
+                                          final int weight, final int port, final int ttl) {
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(DnsAttribute.SERVICE_PRIORITY, priority);
+        attributes.put(DnsAttribute.SERVICE_WEIGHT, weight);
+        attributes.put(DnsAttribute.SERVICE_PORT, port);
+        attributes.put(DnsAttribute.DOMAIN_NAME, targetDomain);
+        return new TestResourceRecord(domain, RecordType.SRV, RecordClass.IN, ttl, attributes);
+    }
+
     static ResourceRecord createRecord(final String domain, final RecordType recordType, final int ttl,
                                        final String ipAddress) {
         final Map<String, Object> attributes = new HashMap<>();
@@ -129,7 +152,7 @@ final class TestRecordStore implements RecordStore {
 
     // `ResourceRecordImpl`'s hashCode/equals don't include `attributes`, so it's impossible to include multiple
     // `ResourceRecordImpl`s, with different IPs, in a `Set`.
-    private static class TestResourceRecord implements ResourceRecord {
+    private static final class TestResourceRecord implements ResourceRecord {
         private final String domainName;
         private final RecordType recordType;
         private final RecordClass recordClass;

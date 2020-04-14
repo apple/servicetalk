@@ -58,6 +58,17 @@ public final class GrpcClients {
     }
 
     /**
+     * Creates a {@link GrpcClientBuilder} for a service name with default {@link LoadBalancer} and
+     * <a href="https://tools.ietf.org/html/rfc2782">SRV DNS</a> resolution.
+     *
+     * @param serviceName the service name to query via <a href="https://tools.ietf.org/html/rfc2782">SRV DNS</a>.
+     * @return new builder for the address
+     */
+    public static GrpcClientBuilder<String, InetSocketAddress> forSrvAddress(final String serviceName) {
+        return new DefaultGrpcClientBuilder<>(HttpClients.forSrvAddress(serviceName));
+    }
+
+    /**
      * Creates a {@link GrpcClientBuilder} for a resolved address with default {@link LoadBalancer}.
      *
      * @param host resolved host address to connect to.

@@ -15,32 +15,31 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscovererFilterFactory;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.resolver.dns.DnsNameResolverTimeoutException;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.ServiceDiscovererFilterFactory.identity;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
+import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Builder for DNS {@link ServiceDiscoverer} which will attempt to resolve {@code A}, {@code AAAA}, and {@code CNAME}
- * type queries.
+ * Builder for DNS {@link ServiceDiscoverer} which will attempt to resolve {@code A}, {@code AAAA}, {@code CNAME}, and
+ * {@code SRV} type queries.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
@@ -58,8 +57,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private Duration queryTimeout;
     private boolean applyRetryFilter = true;
     private int minTTLSeconds = 10;
-    private ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-            serviceDiscoveryFilterFactory = identity();
+    @Nullable
+    private DnsClientFilterFactory filterFactory;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -142,7 +141,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      *
      * @return a default value for {@link #invalidateHostsOnDnsFailure(Predicate)}
      */
-    public Predicate<Throwable> defaultInvalidateHostsOnDnsFailurePredicate() {
+    public static Predicate<Throwable> defaultInvalidateHostsOnDnsFailurePredicate() {
         return t -> t instanceof UnknownHostException &&
                 !(t.getCause() instanceof DnsNameResolverTimeoutException);
     }
@@ -173,8 +172,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * Append the filter to the chain of filters used to decorate the {@link ServiceDiscoverer} created by this
      * builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build()}/{@link #buildInetDiscoverer()} before
-     * it is returned to the user.
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
@@ -186,14 +184,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
      * </pre>
      *
-     * @param factory {@link ServiceDiscovererFilterFactory} to decorate a {@link ServiceDiscoverer} for the purpose of
+     * @param factory {@link DnsClientFilterFactory} to decorate a {@link DnsClient} for the purpose of
      * filtering.
      * @return {@code this}
      */
-    public DefaultDnsServiceDiscovererBuilder appendFilter(
-            final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-                    factory) {
-        serviceDiscoveryFilterFactory = serviceDiscoveryFilterFactory.append(factory);
+    DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
+        filterFactory = filterFactory == null ? requireNonNull(factory) : filterFactory.append(factory);
         return this;
     }
 
@@ -209,75 +205,49 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Build a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
-     *
-     * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;String, InetAddress&gt;}.
+     * Build a new {@link ServiceDiscoverer} which queries
+     * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
+     * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
+     * @return a new {@link ServiceDiscoverer} which queries
+     * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
+     * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
      */
-    public ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> buildInetDiscoverer() {
-        return newDefaultDnsServiceDiscoverer();
+    public ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+            buildSrvDiscoverer() {
+        return asSrvDiscoverer(build());
     }
 
     /**
-     * Build a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;HostAndPort, InetSocketAddress&gt;}.
-     *
-     * @return a new instance of {@link ServiceDiscoverer ServiceDiscoverer&lt;HostAndPort, InetSocketAddress&gt;}.
-     * @see HostAndPort
+     * Build a new {@link ServiceDiscoverer} which targets
+     * <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
+     * a fixed port derived from the {@link HostAndPort}.
+     * @return a new {@link ServiceDiscoverer} which targets
+     * <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
+     * a fixed port derived from the {@link HostAndPort}.
      */
-    public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> build() {
-        return toHostAndPortDiscoverer(newDefaultDnsServiceDiscoverer());
+    public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+            buildARecordDiscoverer() {
+        return asHostAndPortDiscoverer(build());
     }
 
-    private ServiceDiscoverer<String, InetAddress,
-            ServiceDiscovererEvent<InetAddress>> newDefaultDnsServiceDiscoverer() {
-        ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>> factory =
-                this.serviceDiscoveryFilterFactory;
-
-        if (applyRetryFilter) {
-            final ServiceDiscovererFilterFactory<String, InetAddress, ServiceDiscovererEvent<InetAddress>>
-                    defaultFilterFactory = serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
-                    serviceDiscoverer, retryWithConstantBackoffAndJitter(
-                    Integer.MAX_VALUE, t -> true, Duration.ofSeconds(60), immediate()));
-            factory = defaultFilterFactory.append(factory);
-        }
-        return factory.create(new DefaultDnsServiceDiscoverer(
+    /**
+     * Create a new instance of {@link DnsClient}.
+     *
+     * @return a new instance of {@link DnsClient}.
+     */
+    DnsClient build() {
+        DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
-                dnsServerAddressStreamProvider));
-    }
-
-    /**
-     * Convert this object from {@link String} host names and {@link InetAddress} resolved address to
-     * {@link HostAndPort} to {@link InetSocketAddress}.
-     *
-     * @return a resolver which will convert from {@link String} host names and {@link InetAddress} resolved address to
-     * {@link HostAndPort} to {@link InetSocketAddress}.
-     */
-    private static ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> toHostAndPortDiscoverer(
-            final ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> serviceDiscoverer) {
-        return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
-            @Override
-            public Completable closeAsync() {
-                return serviceDiscoverer.closeAsync();
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return serviceDiscoverer.closeAsyncGracefully();
-            }
-
-            @Override
-            public Completable onClose() {
-                return serviceDiscoverer.onClose();
-            }
-
-            @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
-                return serviceDiscoverer.discover(hostAndPort.hostName()).map(originalEvent ->
-                        new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
-                                hostAndPort.port()), originalEvent.isAvailable())
-                );
-            }
-        };
+                dnsServerAddressStreamProvider);
+        DnsClientFilterFactory rawFilterFactory = filterFactory;
+        if (applyRetryFilter) {
+            DnsClientFilterFactory retryFilterFactory = client -> new RetryingDnsClientFilter(client,
+                    retryWithConstantBackoffAndJitter(Integer.MAX_VALUE, t -> t instanceof UnknownHostException,
+                            ofSeconds(60), immediate()));
+            rawFilterFactory = rawFilterFactory == null ? retryFilterFactory :
+                    retryFilterFactory.append(rawFilterFactory);
+        }
+        return rawFilterFactory == null ? rawClient : rawFilterFactory.create(rawClient);
     }
 }

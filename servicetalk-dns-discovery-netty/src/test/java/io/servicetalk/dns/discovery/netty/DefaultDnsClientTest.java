@@ -15,9 +15,7 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.ServiceDiscovererFilter;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -34,6 +32,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -71,14 +70,14 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-public class DefaultDnsServiceDiscovererTest {
+public class DefaultDnsClientTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private TestRecordStore recordStore = new TestRecordStore();
+    private final TestRecordStore recordStore = new TestRecordStore();
     private TestDnsServer dnsServer;
-    private ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer;
+    private DnsClient client;
 
     @Before
     public void setup() throws Exception {
@@ -86,12 +85,12 @@ public class DefaultDnsServiceDiscovererTest {
 
         dnsServer = new TestDnsServer(recordStore);
         dnsServer.start();
-        discoverer = serviceDiscovererBuilder().buildInetDiscoverer();
+        client = dnsClientBuilder().build();
     }
 
     @After
     public void tearDown() throws Exception {
-        discoverer.closeAsync().toFuture().get();
+        client.closeAsync().toFuture().get();
         dnsServer.stop();
         nettyIoExecutor.closeAsync().toFuture().get();
     }
@@ -99,18 +98,18 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void unknownHostDiscover() throws Exception {
         CountDownLatch retryLatch = new CountDownLatch(2);
-        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilderWithoutRetry()
-                        .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
+        DnsClient filteredClient =
+                clientBuilderWithoutRetry()
+                        .appendFilter(serviceDiscoverer -> new RetryingDnsClientFilter(
                                 serviceDiscoverer, (retryCount, cause) -> {
                             retryLatch.countDown();
                             return retryCount == 1 && cause instanceof UnknownHostException ?
                                     globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : failed(cause);
-                        })).buildInetDiscoverer();
+                        })).build();
 
         try {
             AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("unknown.com");
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = filteredClient.dnsQuery("unknown.com");
             final CountDownLatch latch = new CountDownLatch(1);
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
@@ -123,8 +122,110 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.activeCount(), equalTo(0));
             assertThat(subscriber.inactiveCount(), equalTo(0));
         } finally {
-            discoverer.closeAsync().toFuture().get();
+            filteredClient.closeAsync().toFuture().get();
         }
+    }
+
+    @Test
+    public void singleSrvSingleADiscover() throws InterruptedException {
+        final String domain = "mysvc.apple.com";
+        final String targetDomain = "target.mysvc.apple.com";
+        final int targetPort = 9876;
+        recordStore.addSrvResponse(domain, targetDomain, 10, 10, targetPort);
+        recordStore.addResponse(targetDomain, A, nextIp());
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain);
+        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Ignore("Publisher#flatMapMerge required https://github.com/apple/servicetalk/pull/1011")
+    @Test
+    public void singleSrvMultipleADiscover() throws InterruptedException {
+        final String domain = "mysvc.apple.com";
+        final String targetDomain = "target.mysvc.apple.com";
+        final int targetPort = 9876;
+        recordStore.addSrvResponse(domain, targetDomain, 10, 10, targetPort);
+        recordStore.addResponse(targetDomain, A, nextIp(), nextIp());
+        final int expectedActiveCount = 2;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain);
+        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
+    public void multipleSrvSingleADiscover() throws InterruptedException {
+        final String domain = "mysvc.apple.com";
+        final String targetDomain1 = "target1.mysvc.apple.com";
+        final String targetDomain2 = "target2.mysvc.apple.com";
+        final int targetPort1 = 9876;
+        final int targetPort2 = 9878;
+        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
+        recordStore.addSrvResponse(domain, targetDomain2, 10, 10, targetPort2);
+        recordStore.addResponse(targetDomain1, A, nextIp());
+        recordStore.addResponse(targetDomain2, A, nextIp());
+        final int expectedActiveCount = 2;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain);
+        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Ignore("Publisher#flatMapMerge required https://github.com/apple/servicetalk/pull/1011")
+    @Test
+    public void multipleSrvMultipleADiscover() throws InterruptedException {
+        final String domain = "mysvc.apple.com";
+        final String targetDomain1 = "target1.mysvc.apple.com";
+        final String targetDomain2 = "target2.mysvc.apple.com";
+        final int targetPort1 = 9876;
+        final int targetPort2 = 9878;
+        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
+        recordStore.addSrvResponse(domain, targetDomain2, 10, 10, targetPort2);
+        recordStore.addResponse(targetDomain1, A, nextIp(), nextIp());
+        recordStore.addResponse(targetDomain2, A, nextIp(), nextIp());
+        final int expectedActiveCount = 4;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain);
+        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
 
     @Test
@@ -135,7 +236,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
         toSource(publisher).subscribe(subscriber);
@@ -155,7 +256,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
         toSource(publisher).subscribe(subscriber);
@@ -176,7 +277,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
         toSource(publisher).subscribe(subscriber);
@@ -197,7 +298,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         toSource(publisher).subscribe(subscriber);
@@ -218,7 +319,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         toSource(publisher).subscribe(subscriber);
@@ -245,8 +346,8 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch stLatch = new CountDownLatch(expectedStActiveCount + expectedStInactiveCount);
 
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = discoverer.discover("apple.com");
-        Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
+        Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = client.dnsQuery("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = client.dnsQuery("servicetalk.io");
         ServiceDiscovererTestSubscriber<InetAddress> appleSubscriber =
                 new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
         ServiceDiscovererTestSubscriber<InetAddress> stSubscriber =
@@ -282,7 +383,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         toSource(publisher).subscribe(subscriber);
@@ -320,7 +421,7 @@ public class DefaultDnsServiceDiscovererTest {
         final int expectedInactiveCount = 2;
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
         toSource(publisher).subscribe(subscriber);
 
@@ -345,7 +446,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         toSource(publisher).subscribe(subscriber);
@@ -360,17 +461,14 @@ public class DefaultDnsServiceDiscovererTest {
     public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp());
 
-        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilderWithoutRetry()
-                        .invalidateHostsOnDnsFailure(__ -> false)
-                        .buildInetDiscoverer();
+        DnsClient customClient = clientBuilderWithoutRetry().invalidateHostsOnDnsFailure(__ -> false).build();
         try {
             final int expectedActiveCount = 1;
             final int expectedInactiveCount = 0;
 
             CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
             AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = customClient.dnsQuery("apple.com");
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
             toSource(publisher).subscribe(subscriber);
@@ -381,7 +479,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
             assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
-            discoverer.closeAsync().toFuture().get();
+            customClient.closeAsync().toFuture().get();
         }
     }
 
@@ -395,7 +493,7 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
         toSource(publisher.beforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
@@ -424,14 +522,13 @@ public class DefaultDnsServiceDiscovererTest {
             return emptyList();
         });
 
-        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilder()
+        DnsClient filteredClient =
+                dnsClientBuilder()
                         .queryTimeout(Duration.ofMillis(100))
-                        .appendFilter(client -> new ServiceDiscovererFilter<String, InetAddress,
-                                ServiceDiscovererEvent<InetAddress>>(client) {
+                        .appendFilter(client -> new DnsClientFilter(client) {
                             @Override
-                            public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String s) {
-                                return super.discover(s).whenOnError(t -> {
+                            public Publisher<ServiceDiscovererEvent<InetAddress>> dnsQuery(final String s) {
+                                return super.dnsQuery(s).whenOnError(t -> {
                                     if (t.getCause() instanceof DnsNameResolverTimeoutException) {
                                         timeoutLatch.countDown();
                                     } else {
@@ -439,8 +536,7 @@ public class DefaultDnsServiceDiscovererTest {
                                     }
                                 });
                             }
-                        })
-                        .buildInetDiscoverer();
+                        }).build();
 
         try {
             final int expectedActiveCount = 1;
@@ -448,7 +544,7 @@ public class DefaultDnsServiceDiscovererTest {
 
             CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
             AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = filteredClient.dnsQuery("apple.com");
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                     new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
             toSource(publisher).subscribe(subscriber);
@@ -464,7 +560,7 @@ public class DefaultDnsServiceDiscovererTest {
             assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
         } finally {
             responseLatch.countDown();
-            discoverer.closeAsync().toFuture().get();
+            filteredClient.closeAsync().toFuture().get();
         }
     }
 
@@ -480,7 +576,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
         toSource(publisher).subscribe(subscriber);
 
@@ -503,7 +599,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
         toSource(publisher).subscribe(subscriber);
 
@@ -525,7 +621,7 @@ public class DefaultDnsServiceDiscovererTest {
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         final TestSubscriber subscriber = new TestSubscriber(latch);
         toSource(publisher).subscribe(subscriber);
 
@@ -542,9 +638,7 @@ public class DefaultDnsServiceDiscovererTest {
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
         recordStore.defaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
-        ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
-                serviceDiscovererBuilderWithoutRetry()
-                        .buildInetDiscoverer();
+        DnsClient noRetryClient = clientBuilderWithoutRetry().build();
         Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 
         try {
@@ -556,11 +650,11 @@ public class DefaultDnsServiceDiscovererTest {
             }).when(subscriber).onSubscribe(any(Subscription.class));
             doThrow(DELIBERATE_EXCEPTION).when(subscriber).onError(any());
 
-            toSource(discoverer.discover("apple.com")).subscribe(subscriber);
+            toSource(noRetryClient.dnsQuery("apple.com")).subscribe(subscriber);
             latchOnSubscribe.await();
         } finally {
             try {
-                discoverer.closeAsync().toFuture().get();
+                noRetryClient.closeAsync().toFuture().get();
                 fail("Expected exception");
             } catch (ExecutionException e) {
                 assertThat(e.getCause().getCause(), equalTo(DELIBERATE_EXCEPTION));
@@ -568,7 +662,7 @@ public class DefaultDnsServiceDiscovererTest {
         }
     }
 
-    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilderWithoutRetry() {
+    private DefaultDnsServiceDiscovererBuilder clientBuilderWithoutRetry() {
         return new DefaultDnsServiceDiscovererBuilder()
                 .ioExecutor(nettyIoExecutor)
                 .noRetriesOnDnsFailures()
@@ -580,10 +674,10 @@ public class DefaultDnsServiceDiscovererTest {
                 .minTTL(1);
     }
 
-    private DefaultDnsServiceDiscovererBuilder serviceDiscovererBuilder() {
-        return serviceDiscovererBuilderWithoutRetry()
-                .appendFilter(serviceDiscoverer -> new RetryingDnsServiceDiscovererFilter(
-                        serviceDiscoverer, (i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
+        return clientBuilderWithoutRetry()
+                .appendFilter(dnsClient -> new RetryingDnsClientFilter(
+                        dnsClient, (i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
     }
 
     private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {
