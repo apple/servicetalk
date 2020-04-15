@@ -90,7 +90,6 @@ public class NettyPipelinedConnectionTest {
             new TestCollectingPublisherSubscriber<>();
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
-    private int requestNext = MAX_VALUE;
     private NettyPipelinedConnection<Integer, Integer> requester;
     private EmbeddedChannel channel;
 
@@ -100,7 +99,7 @@ public class NettyPipelinedConnectionTest {
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();
-        when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> requestNext);
+        when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> MAX_VALUE);
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), obj -> true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
@@ -409,7 +408,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void writeThrowsLetsSubsequentRequestsThrough() throws InterruptedException {
+    public void writeThrowsClosesConnection() throws InterruptedException {
         TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
         @SuppressWarnings("unchecked")
         NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
@@ -421,6 +420,7 @@ public class NettyPipelinedConnectionTest {
             Publisher<Integer> writePub = invocation.getArgument(0);
             return writePub.ignoreElements();
         }).when(mockConnection).write(eq(writePublisher2), any(), any());
+        when(mockConnection.closeAsync()).thenReturn(completed());
         requester = new NettyPipelinedConnection<>(mockConnection);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
@@ -429,8 +429,7 @@ public class NettyPipelinedConnectionTest {
 
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertFalse(writePublisher1.isSubscribed());
-
-        verifySecondRequestProcessed(mockReadPublisher2, mockConnection);
+        verify(mockConnection).closeAsync();
     }
 
     @Test

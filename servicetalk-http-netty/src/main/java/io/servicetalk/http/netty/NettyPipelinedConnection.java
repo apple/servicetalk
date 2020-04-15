@@ -16,15 +16,12 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableOperator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.netty.MpmcSequentialRunQueue.Node;
+import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -36,13 +33,19 @@ import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Contract for using a {@link NettyConnection} to make pipelined requests, typically for a client.
@@ -53,9 +56,19 @@ import static java.util.Objects.requireNonNull;
  * @param <Resp> Type of responses read from this connection.
  */
 final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContext {
+    @SuppressWarnings("rawtypes")
+    private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> writeQueueLockUpdater =
+            newUpdater(NettyPipelinedConnection.class, "writeQueueLock");
+    @SuppressWarnings("rawtypes")
+    private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> readQueueLockUpdater =
+            newUpdater(NettyPipelinedConnection.class, "readQueueLock");
     private final NettyConnection<Resp, Req> connection;
-    private final MpmcSequentialRunQueue writeQueue;
-    private final MpmcSequentialRunQueue readQueue;
+    private final Queue<WriteTask> writeQueue;
+    private final Queue<Subscriber<? super Resp>> readQueue;
+    @SuppressWarnings("unused")
+    private volatile int writeQueueLock;
+    @SuppressWarnings("unused")
+    private volatile int readQueueLock;
 
     /**
      * New instance.
@@ -64,8 +77,8 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      */
     NettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
         this.connection = requireNonNull(connection);
-        writeQueue = new MpmcSequentialRunQueue();
-        readQueue = new MpmcSequentialRunQueue();
+        writeQueue = newUnboundedMpscQueue();
+        readQueue = newUnboundedMpscQueue();
     }
 
     /**
@@ -93,21 +106,18 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         return new Publisher<Resp>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
-                final WriteNode node;
+                final WriteTask firstWriteTask;
                 try {
-                    node = new WriteNode(subscriber, requestPublisher, flushStrategySupplier,
-                            writeDemandEstimatorSupplier);
+                    firstWriteTask = offerTryAcquireLock(writeQueue, writeQueueLockUpdater,
+                            new WriteTask(subscriber, requestPublisher, flushStrategySupplier,
+                                    writeDemandEstimatorSupplier));
                 } catch (Throwable cause) {
-                    deliverTerminalFromSource(subscriber, cause);
+                    handleWriteSetupError(subscriber, cause);
                     return;
                 }
 
-                try {
-                    writeQueue.offer(node);
-                } catch (Throwable cause) {
-                    // The queue offer is not expected to throw, but if it does we cannot poll the WriteNode to recover.
-                    // It is only safe to poll from the queue from Node#run() (or after it executes), so close.
-                    closeConnection(subscriber, cause);
+                if (firstWriteTask != null) {
+                    firstWriteTask.run();
                 }
             }
         };
@@ -177,7 +187,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
 
     @Override
     public String toString() {
-        return getClass().getName() + '(' + connection + ')';
+        return getClass().getSimpleName() + '(' + connection + ')';
     }
 
     @Override
@@ -194,13 +204,28 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         toSource(connection.closeAsync().concat(Publisher.<Resp>failed(cause))).subscribe(subscriber);
     }
 
-    private final class WriteNode extends Node {
+    private void tryStartRead(@Nullable Subscriber<? super Resp> subscriber) {
+        if (subscriber == null) {
+            return;
+        }
+        final PublisherSource<Resp> src;
+        try {
+            src = toSource(connection.read().afterFinally(() ->
+                    tryStartRead(pollWithLockAcquired(readQueue, readQueueLockUpdater))));
+        } catch (Throwable cause) {
+            handleReadSetupError(subscriber, cause);
+            return;
+        }
+        src.subscribe(subscriber);
+    }
+
+    private final class WriteTask {
         private final Subscriber<? super Resp> subscriber;
         private final Publisher<Req> requestPublisher;
         private final Supplier<FlushStrategy> flushStrategySupplier;
         private final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier;
 
-        private WriteNode(final Subscriber<? super Resp> subscriber,
+        private WriteTask(final Subscriber<? super Resp> subscriber,
                           final Publisher<Req> requestPublisher,
                           final Supplier<FlushStrategy> flushStrategySupplier,
                           final Supplier<WriteDemandEstimator> writeDemandEstimatorSupplier) {
@@ -210,169 +235,110 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
             this.writeDemandEstimatorSupplier = writeDemandEstimatorSupplier;
         }
 
-        @Override
         void run() {
             final PublisherSource<Resp> src;
             try {
-                src = toSource(connection.write(requestPublisher, flushStrategySupplier, writeDemandEstimatorSupplier)
-                        .liftSync(new WritePopNextOperator(this))
-                        .merge(new Publisher<Resp>() {
+                src = toSource(connection.write(requestPublisher, flushStrategySupplier,
+                        writeDemandEstimatorSupplier)
+                        .afterFinally(() -> {
+                            WriteTask nextWriteTask = pollWithLockAcquired(writeQueue, writeQueueLockUpdater);
+                            if (nextWriteTask != null) {
+                                nextWriteTask.run();
+                            }
+                        }).merge(new Publisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
-                                try {
-                                    readQueue.offer(new ReadNode(rSubscriber));
-                                } catch (Throwable cause) {
-                                    // We started the write, but failed to setup the read. This is considered fatal as
-                                    // we will be out of sync for delivering future read responses.
-                                    closeConnection(rSubscriber, cause);
-                                }
+                                tryStartRead(
+                                        offerTryAcquireLock(readQueue, readQueueLockUpdater, rSubscriber));
                             }
                         }));
             } catch (Throwable cause) {
-                // We failed to setup the write operation, which means we also failed to setup the read operation.
-                // This failure maybe recoverable as our internal state isn't corrupted, so just propagate the error.
-                deliverTerminalFromSource(subscriber, cause);
-                writeQueue.poll(this);
+                handleWriteSetupError(subscriber, cause);
                 return;
             }
             src.subscribe(subscriber);
         }
     }
 
-    private final class ReadNode extends Node {
-        private final Subscriber<? super Resp> subscriber;
-
-        private ReadNode(final Subscriber<? super Resp> subscriber) {
-            this.subscriber = subscriber;
+    private void handleWriteSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
+        try {
+            closeConnection(subscriber, cause);
+        } finally {
+            // the lock has been acquired!
+            do {
+                WriteTask nextWriteTask;
+                while ((nextWriteTask = writeQueue.poll()) != null) {
+                    deliverTerminalFromSource(nextWriteTask.subscriber, cause);
+                }
+            } while (!releaseLock(writeQueueLockUpdater, this));
         }
+    }
 
-        @Override
-        void run() {
-            final PublisherSource<Resp> src;
-            try {
-                src = toSource(connection.read().liftSync(new ReadPopNextOperator(this)));
-            } catch (Throwable cause) {
-                // We started the write, but failed to setup the read. This is considered fatal as we will be out of
-                // sync for delivering future read responses.
-                closeConnection(subscriber, cause);
-                return;
+    private void handleReadSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
+        try {
+            closeConnection(subscriber, cause);
+        } finally {
+            // the lock has been acquired!
+            do {
+                Subscriber<? super Resp> nextSubscriber;
+                while ((nextSubscriber = readQueue.poll()) != null) {
+                    deliverTerminalFromSource(nextSubscriber, cause);
+                }
+            } while (!releaseLock(readQueueLockUpdater, this));
+        }
+    }
+
+    /**
+     * Offer {@code item} to the queue, try to acquire the processing lock, and if successful return an item for
+     * single-consumer style processing. If non-{@code null} is returned the caller is responsible for releasing
+     * the lock!
+     * @param queue The {@link Queue#offer(Object)} and {@link Queue#poll()} (assuming lock was acquired).
+     * @param lockUpdater Used to acquire the lock via
+     * {@link ConcurrentUtils#tryAcquireLock(AtomicIntegerFieldUpdater, Object)}.
+     * @param item The item to {@link Queue#offer(Object)}.
+     * @param <T> The type of item in the {@link Queue}.
+     * @return {@code null} if the queue was empty, or the lock couldn't be acquired. otherwise the lock has been
+     * acquired and it is the caller's responsibility to release!
+     */
+    @Nullable
+    private <T> T offerTryAcquireLock(final Queue<T> queue,
+          @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater, T item) {
+        queue.add(item);
+        while (tryAcquireLock(lockUpdater, this)) {
+            final T next = queue.poll();
+            if (next != null) {
+                return next; // lock must be released by caller!
+            } else if (releaseLock(lockUpdater, this)) {
+                return null;
             }
-            src.subscribe(subscriber);
         }
+        return null;
     }
 
     /**
-     * Logically equivalent to {@link Publisher#afterFinally(Runnable)} but relies upon
-     * {@link MpmcSequentialRunQueue#poll(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
-     * operation).
+     * Poll the {@code queue} and attempt to process an item. The lock must be acquired on entry into this method and
+     * if this method return non-{@code null} the lock will not be released (caller's responsibility to later release)
+     * to continue the single-consumer style processing.
+     * @param queue The queue to {@link Queue#poll()}.
+     * @param lockUpdater Used to release via
+     * {@link ConcurrentUtils#releaseLock(AtomicIntegerFieldUpdater, Object)} if the queue is empty
+     * @param <T> The type of item in the {@link Queue}.
+     * @return {@code null} if the queue was empty. otherwise the lock remains acquired and it is the caller's
+     * responsibility to release (via subsequent calls to this method).
      */
-    private final class ReadPopNextOperator implements PublisherOperator<Resp, Resp> {
-        private final Node readNode;
+    @Nullable
+    private <T> T pollWithLockAcquired(final Queue<T> queue,
+               @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater) {
+        // the lock has been acquired!
+        do {
+            final T next = queue.poll();
+            if (next != null) {
+                return next; // lock must be released by caller!
+            } else if (releaseLock(lockUpdater, this)) {
+                return null;
+            }
+        } while (tryAcquireLock(lockUpdater, this));
 
-        private ReadPopNextOperator(final Node readNode) {
-            this.readNode = readNode;
-        }
-
-        @Override
-        public Subscriber<? super Resp> apply(Subscriber<? super Resp> subscriber) {
-            return new Subscriber<Resp>() {
-                @Override
-                public void onSubscribe(final PublisherSource.Subscription subscription) {
-                    subscriber.onSubscribe(new PublisherSource.Subscription() {
-                        @Override
-                        public void request(final long n) {
-                            subscription.request(n);
-                        }
-
-                        @Override
-                        public void cancel() {
-                            try {
-                                subscription.cancel();
-                            } finally {
-                                pollNext();
-                            }
-                        }
-                    });
-                }
-
-                @Override
-                public void onNext(@Nullable final Resp t) {
-                    subscriber.onNext(t);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    try {
-                        subscriber.onError(t);
-                    } finally {
-                        pollNext();
-                    }
-                }
-
-                @Override
-                public void onComplete() {
-                    try {
-                        subscriber.onComplete();
-                    } finally {
-                        pollNext();
-                    }
-                }
-
-                private void pollNext() {
-                    readQueue.poll(readNode);
-                }
-            };
-        }
-    }
-
-    /**
-     * Logically equivalent to {@link Completable#afterFinally(Runnable)} but relies upon
-     * {@link MpmcSequentialRunQueue#poll(Node)} CAS operations to prevent multiple executions (e.g. reduces a CAS
-     * operation).
-     */
-    private final class WritePopNextOperator implements CompletableOperator {
-        private final Node writeNode;
-
-        WritePopNextOperator(final Node writeNode) {
-            this.writeNode = writeNode;
-        }
-
-        @Override
-        public CompletableSource.Subscriber apply(final CompletableSource.Subscriber subscriber) {
-            return new CompletableSource.Subscriber() {
-                @Override
-                public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(() -> {
-                        try {
-                            cancellable.cancel();
-                        } finally {
-                            pollNext();
-                        }
-                    });
-                }
-
-                @Override
-                public void onComplete() {
-                    try {
-                        subscriber.onComplete();
-                    } finally {
-                        pollNext();
-                    }
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    try {
-                        subscriber.onError(t);
-                    } finally {
-                        pollNext();
-                    }
-                }
-            };
-        }
-
-        private void pollNext() {
-            writeQueue.poll(writeNode);
-        }
+        return null;
     }
 }
