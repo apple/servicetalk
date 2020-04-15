@@ -112,7 +112,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                             new WriteTask(subscriber, requestPublisher, flushStrategySupplier,
                                     writeDemandEstimatorSupplier));
                 } catch (Throwable cause) {
-                    handleWriteSetupError(subscriber, cause);
+                    closeConnection(subscriber, cause);
                     return;
                 }
 
@@ -248,8 +248,16 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                         }).merge(new Publisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
-                                tryStartRead(
-                                        offerTryAcquireLock(readQueue, readQueueLockUpdater, rSubscriber));
+                                final Subscriber<? super Resp> firstReadSubscriber;
+                                try {
+                                    firstReadSubscriber =
+                                            offerTryAcquireLock(readQueue, readQueueLockUpdater, rSubscriber);
+                                } catch (Throwable cause) {
+                                    closeConnection(rSubscriber, cause);
+                                    return;
+                                }
+
+                                tryStartRead(firstReadSubscriber);
                             }
                         }));
             } catch (Throwable cause) {
@@ -305,6 +313,9 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
           @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater, T item) {
         queue.add(item);
         while (tryAcquireLock(lockUpdater, this)) {
+            // exceptions are not expected from poll, and if they occur we can't reliably recover which would involve
+            // draining the queue. just throw with the lock poisoned, callers will propagate the exception to related
+            // subscriber and close the connection.
             final T next = queue.poll();
             if (next != null) {
                 return next; // lock must be released by caller!
@@ -331,7 +342,15 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater) {
         // the lock has been acquired!
         do {
-            final T next = queue.poll();
+            // exceptions are not expected from poll, and if they occur we can't reliably recover which would involve
+            // draining the queue. just throw with the lock poisoned and close the connection.
+            final T next;
+            try {
+                next = queue.poll();
+            } catch (Throwable cause) {
+                connection.closeAsync().subscribe();
+                throw cause;
+            }
             if (next != null) {
                 return next; // lock must be released by caller!
             } else if (releaseLock(lockUpdater, this)) {
