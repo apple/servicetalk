@@ -278,7 +278,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                 while ((nextWriteTask = writeQueue.poll()) != null) {
                     deliverTerminalFromSource(nextWriteTask.subscriber, cause);
                 }
-            } while (!releaseLock(writeQueueLockUpdater, this));
+            } while (!releaseLock(writeQueueLockUpdater, this) && tryAcquireLock(writeQueueLockUpdater, this));
         }
     }
 
@@ -292,7 +292,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                 while ((nextSubscriber = readQueue.poll()) != null) {
                     deliverTerminalFromSource(nextSubscriber, cause);
                 }
-            } while (!releaseLock(readQueueLockUpdater, this));
+            } while (!releaseLock(readQueueLockUpdater, this) && tryAcquireLock(readQueueLockUpdater, this));
         }
     }
 
