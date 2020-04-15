@@ -54,14 +54,11 @@ public class CollectTest {
 
     @Test
     public void collectVarArgFailure() throws Exception {
-        AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAll(failed(DELIBERATE_EXCEPTION),
-                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<Void> future = mergeAll(failed(DELIBERATE_EXCEPTION), completed()).toFuture();
         try {
             future.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat("Second source subscribed.", secondSubscribed.get(), is(false));
             assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
@@ -109,14 +106,11 @@ public class CollectTest {
 
     @Test
     public void collectIterableFailure() throws Exception {
-        AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAll(asList(failed(DELIBERATE_EXCEPTION),
-                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+        Future<Void> future = mergeAll(asList(failed(DELIBERATE_EXCEPTION), completed())).toFuture();
         try {
             future.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat("Second source subscribed.", secondSubscribed.get(), is(false));
             assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
