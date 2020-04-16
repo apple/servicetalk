@@ -18,6 +18,10 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-opentracing-inmemory-api")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-transport-api")
+  api "io.zipkin.zipkin2:zipkin:$zipkinVersion"
+  api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
@@ -28,8 +32,6 @@ dependencies {
   implementation "io.netty:netty-transport:$nettyVersion"
   implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
   implementation "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
-  implementation "io.zipkin.zipkin2:zipkin:$zipkinVersion"
-  implementation "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
