@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
@@ -139,8 +138,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         }
 
         /**
-         * Sets an {@link IoExecutor} to use for writing to the datagram channel. Defaults to the
-         * {@link GlobalExecutionContext} {@link IoExecutor}.
+         * Sets an {@link IoExecutor} to use for writing to the datagram channel.
          *
          * @param ioExecutor IoExecutor to use to write with.
          * @return {@code this}
@@ -186,8 +184,8 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         }
     }
 
-    private Bootstrap buildBootstrap(EventLoopGroup group, Codec codec, SocketAddress collectorAddress,
-                                     @Nullable String loggerName) {
+    private static Bootstrap buildBootstrap(EventLoopGroup group, Codec codec, SocketAddress collectorAddress,
+                                            @Nullable String loggerName) {
         if (!(collectorAddress instanceof InetSocketAddress)) {
             throw new IllegalArgumentException("collectorAddress " + collectorAddress +
                     " is invalid for UDP");

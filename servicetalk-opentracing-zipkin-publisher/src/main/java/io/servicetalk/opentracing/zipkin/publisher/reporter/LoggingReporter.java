@@ -41,9 +41,14 @@ public final class LoggingReporter implements Reporter<Span> {
      * A builder to create a new {@link LoggingReporter}.
      */
     public static final class Builder {
-        private String loggerName;
+        private final String loggerName;
         private LogLevel logLevel = LogLevel.INFO;
 
+        /**
+         * Creates a new instance.
+         *
+         * @param loggerName the name of the logger
+         */
         public Builder(String loggerName) {
             this.loggerName = requireNonNull(loggerName);
         }
