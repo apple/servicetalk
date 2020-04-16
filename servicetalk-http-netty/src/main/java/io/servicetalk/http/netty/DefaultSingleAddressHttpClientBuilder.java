@@ -63,8 +63,8 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.netty.GlobalDnsClient.globalDnsSrv;
-import static io.servicetalk.http.netty.GlobalDnsClient.globalDnsWithFixedPort;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -155,19 +155,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsWithFixedPort());
+        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
-    static DefaultSingleAddressHttpClientBuilder<String, InetSocketAddress> forSrvAddress(
+    static DefaultSingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalDnsSrv());
+        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress,
                 hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()),
-                globalDnsWithFixedPort());
+                globalDnsServiceDiscoverer());
     }
 
     static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(
@@ -193,7 +193,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
-        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsWithFixedPort());
+        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
     }
 
     static final class HttpClientBuildContext<U, R> {

@@ -32,10 +32,10 @@ import java.net.InetSocketAddress;
  * A lazily initialized singleton DNS {@link ServiceDiscoverer} using a default {@link ExecutionContext}, the lifecycle
  * of this instance shouldn't need to be managed by the user. Don't attempt to close the {@link ServiceDiscoverer}.
  */
-final class GlobalDnsClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalDnsClient.class);
+final class GlobalDnsServiceDiscoverer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalDnsServiceDiscoverer.class);
 
-    private GlobalDnsClient() {
+    private GlobalDnsServiceDiscoverer() {
         // No instances
     }
 
@@ -45,7 +45,7 @@ final class GlobalDnsClient {
      * @return the singleton instance
      */
     static ServiceDiscoverer<HostAndPort, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> globalDnsWithFixedPort() {
+            ServiceDiscovererEvent<InetSocketAddress>> globalDnsServiceDiscoverer() {
         return HostAndPortClientInitializer.HOST_PORT_SD;
     }
 
@@ -55,7 +55,7 @@ final class GlobalDnsClient {
      * @return the singleton instance
      */
     static ServiceDiscoverer<String, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> globalDnsSrv() {
+            ServiceDiscovererEvent<InetSocketAddress>> globalSrvDnsServiceDiscoverer() {
         return SrvClientInitializer.SRV_SD;
     }
 

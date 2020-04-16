@@ -29,12 +29,9 @@ import java.time.Duration;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -242,9 +239,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 dnsServerAddressStreamProvider);
         DnsClientFilterFactory rawFilterFactory = filterFactory;
         if (applyRetryFilter) {
-            DnsClientFilterFactory retryFilterFactory = client -> new RetryingDnsClientFilter(client,
-                    retryWithConstantBackoffAndJitter(Integer.MAX_VALUE, t -> t instanceof UnknownHostException,
-                            ofSeconds(60), immediate()));
+            DnsClientFilterFactory retryFilterFactory = new RetryingDnsClientFilter();
             rawFilterFactory = rawFilterFactory == null ? retryFilterFactory :
                     retryFilterFactory.append(rawFilterFactory);
         }

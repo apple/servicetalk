@@ -294,7 +294,7 @@ public final class SubscriberUtils {
 
     /**
      * Invokes {@link SingleSource.Subscriber#onError(Throwable)} ignoring an occurred exception if any.
-     * @param subscriber The {@link SingleSource.Subscriber} that may threw an exception from
+     * @param subscriber The {@link SingleSource.Subscriber} that may throw an exception from
      * {@link SingleSource.Subscriber#onError(Throwable)}.
      * @param cause The occurred {@link Throwable} for {@link SingleSource.Subscriber#onError(Throwable)}.
      * @param <T> The type of {@link SingleSource.Subscriber}.
@@ -309,7 +309,7 @@ public final class SubscriberUtils {
 
     /**
      * Invokes {@link PublisherSource.Subscriber#onError(Throwable)} ignoring an occurred exception if any.
-     * @param subscriber The {@link PublisherSource.Subscriber} that may threw an exception from
+     * @param subscriber The {@link PublisherSource.Subscriber} that may throw an exception from
      * {@link PublisherSource.Subscriber#onError(Throwable)}.
      * @param cause The occurred {@link Throwable} for {@link PublisherSource.Subscriber#onError(Throwable)}.
      * @param <T> The type of {@link PublisherSource.Subscriber}.
@@ -324,7 +324,7 @@ public final class SubscriberUtils {
 
     /**
      * Invokes {@link Subscriber#onComplete()} ignoring an occurred exception if any.
-     * @param subscriber The {@link PublisherSource.Subscriber} that may threw an exception from
+     * @param subscriber The {@link PublisherSource.Subscriber} that may throw an exception from
      * {@link Subscriber#onComplete()}.
      * @param <T> The type of {@link PublisherSource.Subscriber}.
      */

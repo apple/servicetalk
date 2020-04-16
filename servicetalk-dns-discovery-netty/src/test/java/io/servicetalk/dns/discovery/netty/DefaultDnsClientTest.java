@@ -100,8 +100,7 @@ public class DefaultDnsClientTest {
         CountDownLatch retryLatch = new CountDownLatch(2);
         DnsClient filteredClient =
                 clientBuilderWithoutRetry()
-                        .appendFilter(serviceDiscoverer -> new RetryingDnsClientFilter(
-                                serviceDiscoverer, (retryCount, cause) -> {
+                        .appendFilter(new RetryingDnsClientFilter((retryCount, cause) -> {
                             retryLatch.countDown();
                             return retryCount == 1 && cause instanceof UnknownHostException ?
                                     globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : failed(cause);
@@ -675,9 +674,8 @@ public class DefaultDnsClientTest {
     }
 
     private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
-        return clientBuilderWithoutRetry()
-                .appendFilter(dnsClient -> new RetryingDnsClientFilter(
-                        dnsClient, (i, t) -> globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
+        return clientBuilderWithoutRetry().appendFilter(new RetryingDnsClientFilter((i, t) ->
+                        globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
     }
 
     private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {

@@ -19,12 +19,10 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.internal.ServiceDiscovererUtils;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
@@ -64,9 +62,9 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtectionIfNotNegative;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -89,14 +87,14 @@ final class DefaultDnsClient implements DnsClient {
     private static final Comparator<HostAndPort> HOST_AND_PORT_COMPARATOR = comparing(HostAndPort::hostName)
             .thenComparingInt(HostAndPort::port);
     private static final Cancellable TERMINATED = () -> { };
-    private static final Cancellable WAITING_FOR_REQUEST_N = () -> { };
+    private static final Cancellable TERMINATE_ON_NEXT_REQUEST_N = () -> { };
 
-    private final Processor closeCompletable = newCompletableProcessor();
     private final Map<String, List<ARecordPublisher>> srvARecordMap = new HashMap<>(8);
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
     private final Predicate<Throwable> invalidateHostsOnDnsFailure;
+    private final ListenableAsyncCloseable asyncCloseable;
     private boolean closed;
 
     DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL,
@@ -108,6 +106,13 @@ final class DefaultDnsClient implements DnsClient {
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
+        asyncCloseable = toAsyncCloseable(graceful -> {
+            if (nettyIoExecutor.isCurrentThreadEventLoop()) {
+                closeAsync0();
+                return completed();
+            }
+            return nettyIoExecutor.asExecutor().submit(this::closeAsync0);
+        });
         final EventLoop eventLoop = this.nettyIoExecutor.eventLoopGroup().next();
         @SuppressWarnings("unchecked")
         final Class<? extends SocketChannel> socketChannelClass =
@@ -138,9 +143,6 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         resolver = builder.build();
-        LOGGER.debug("Created a new DNS discoverer {} with minimum TTL (seconds): {}, ndots: {}, " +
-                        "optResourceEnabled {}, dnsResolverAddressTypes {}, dnsServerAddressStreamProvider {}.",
-                this, minTTL, ndots, optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
     }
 
     @Override
@@ -165,7 +167,9 @@ final class DefaultDnsClient implements DnsClient {
                 return entry.flatMapConcatIterable(identity()).map(inetEvent -> new DefaultServiceDiscovererEvent<>(
                         new InetSocketAddress(inetEvent.address(), srvEvent.address().port()), inetEvent.isAvailable())
                        ).firstOrElse(() -> {
-                           throw new IllegalStateException("0 SRV records found. 1 SRV record is required!");
+                           LOGGER.info("No A/AAAA records found for hostname {} corresponding to SRV name {}",
+                                   srvEvent.address().hostName(), serviceName);
+                           return null;
                        });
             } else {
                 final List<ARecordPublisher> inetWatchers = srvARecordMap.remove(srvEvent.address().hostName());
@@ -205,22 +209,17 @@ final class DefaultDnsClient implements DnsClient {
 
     @Override
     public Completable onClose() {
-        return fromSource(closeCompletable);
+        return asyncCloseable.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return new SubscribableCompletable() {
-            @Override
-            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-                closeCompletable.subscribe(subscriber);
-                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
-                    closeAsync0();
-                } else {
-                    nettyIoExecutor.asExecutor().execute(DefaultDnsClient.this::closeAsync0);
-                }
-            }
-        };
+        return asyncCloseable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return asyncCloseable.closeAsyncGracefully();
     }
 
     private void closeAsync0() {
@@ -232,7 +231,6 @@ final class DefaultDnsClient implements DnsClient {
         closed = true;
         resolver.close();
         ttlCache.clear();
-        closeCompletable.onComplete();
     }
 
     private void assertInEventloop() {
@@ -244,6 +242,11 @@ final class DefaultDnsClient implements DnsClient {
 
         private SrvRecordPublisher(String serviceName) {
             this.serviceName = serviceName;
+        }
+
+        @Override
+        public String toString() {
+            return serviceName;
         }
 
         @Override
@@ -318,6 +321,11 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         @Override
+        public String toString() {
+            return inetHost;
+        }
+
+        @Override
         protected AbstractEntriesPublisherSubscription newSubscription(
                 final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
             return new AbstractEntriesPublisherSubscription(subscriber) {
@@ -382,12 +390,10 @@ final class DefaultDnsClient implements DnsClient {
     private abstract class EntriesPublisher<T>
             extends SubscribablePublisher<Iterable<ServiceDiscovererEvent<T>>> {
         @Nullable
-        private Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> discoverySubscriber;
-        @Nullable
         private AbstractEntriesPublisherSubscription subscription;
 
         protected abstract AbstractEntriesPublisherSubscription
-        newSubscription(Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber);
+                newSubscription(Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber);
 
         @Override
         protected final void handleSubscribe(
@@ -403,16 +409,15 @@ final class DefaultDnsClient implements DnsClient {
                 final Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber) {
             assertInEventloop();
 
-            if (discoverySubscriber != null) {
+            if (subscription != null) {
                 deliverTerminalFromSource(subscriber,
-                        new DuplicateSubscribeException(discoverySubscriber, subscriber));
+                        new DuplicateSubscribeException(subscription, subscriber));
             } else if (closed) {
                 deliverTerminalFromSource(subscriber,
                         new ClosedServiceDiscovererException(DefaultDnsClient.this +
                                 " has been closed!"));
             } else {
                 subscription = newSubscription(subscriber);
-                discoverySubscriber = subscriber;
                 subscriber.onSubscribe(subscription);
             }
         }
@@ -420,11 +425,9 @@ final class DefaultDnsClient implements DnsClient {
         final void close0() {
             assertInEventloop();
 
-            final Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> oldSubscriber = discoverySubscriber;
-            discoverySubscriber = null;
-            if (oldSubscriber != null) {
-                assert subscription != null;
-                subscription.cancelWithoutRemove0(true);
+            if (subscription != null) {
+                // tryClose0 will null out subscription after the subscription is terminated.
+                subscription.closeAndTerminate0();
             }
         }
 
@@ -448,7 +451,7 @@ final class DefaultDnsClient implements DnsClient {
 
             @Nullable
             protected abstract List<ServiceDiscovererEvent<T>>
-            calculateDifference(List<T> previousList, List<T> newList);
+                    calculateDifference(List<T> previousList, List<T> newList);
 
             protected abstract void removeFromWatchers();
 
@@ -474,11 +477,11 @@ final class DefaultDnsClient implements DnsClient {
                 assertInEventloop();
 
                 if (!isRequestNValid(n)) {
-                    handleError0(newExceptionForInvalidRequestN(n), __ -> false);
+                    handleTerminalError0(newExceptionForInvalidRequestN(n));
                     return;
                 }
 
-                pendingRequests = addWithOverflowProtectionIfNotNegative(pendingRequests, n);
+                pendingRequests = addWithOverflowProtection(pendingRequests, n);
                 if (cancellableForQuery == null) {
                     if (ttlNanos < 0) {
                         doQuery0();
@@ -490,9 +493,9 @@ final class DefaultDnsClient implements DnsClient {
                             scheduleQuery0(ttlNanos - durationNs);
                         }
                     }
-                } else if (cancellableForQuery == WAITING_FOR_REQUEST_N) {
-                    cancellableForQuery = TERMINATED;
-                    terminateOnComplete();
+                } else if (cancellableForQuery == TERMINATE_ON_NEXT_REQUEST_N) {
+                    assert pendingRequests > 0;
+                    tryTerminateOnComplete(); // we were waiting for demand, and got it. time to deliver the data.
                 }
             }
 
@@ -501,9 +504,10 @@ final class DefaultDnsClient implements DnsClient {
 
                 if (closed) {
                     // best effort check to cleanup state after close.
-                    handleError0(new ClosedServiceDiscovererException(DefaultDnsClient.this +
-                            " has been closed!"), __ -> false);
+                    handleTerminalError0(new ClosedServiceDiscovererException(DefaultDnsClient.this +
+                            " has been closed!"));
                 } else {
+                    LOGGER.trace("DnsClient {}, querying DNS for {}.", DefaultDnsClient.this, EntriesPublisher.this);
                     final Future<DnsAnswer<T>> addressFuture = doDnsQuery();
                     cancellableForQuery = () -> addressFuture.cancel(true);
                     if (addressFuture.isDone()) {
@@ -518,37 +522,47 @@ final class DefaultDnsClient implements DnsClient {
                 assertInEventloop();
 
                 removeFromWatchers();
-                cancelWithoutRemove0(false);
-            }
-
-            private void cancelWithoutRemove0(boolean tryGenerateInactiveEvents) {
                 if (cancellableForQuery != null) {
-                    cancellableForQuery = TERMINATED;
-                    discoverySubscriber = null;
-                    pendingRequests = -1;
                     cancellableForQuery.cancel();
                 }
-                if (tryGenerateInactiveEvents) {
-                    if (activeAddresses.isEmpty() || pendingRequests > 0) {
-                        terminateOnComplete();
-                    } else {
-                        cancellableForQuery = WAITING_FOR_REQUEST_N;
-                    }
-                }
+                clearState();
             }
 
-            private void terminateOnComplete() {
+            private void clearState() {
+                cancellableForQuery = TERMINATED;
+                subscription = null;
+            }
+
+            private void closeAndTerminate0() {
+                removeFromWatchers();
+                if (cancellableForQuery != null) {
+                    cancellableForQuery.cancel();
+                }
+                tryTerminateOnComplete();
+            }
+
+            private void tryTerminateOnComplete() {
+                final boolean deliverTerminal;
                 try {
-                    clearAddressesAndPropagateRemovalEvents();
+                    deliverTerminal = clearAddressesAndPropagateRemovalEvents();
                 } catch (Throwable cause) {
+                    clearState(); // must null out subscription before terminating to allow for re-subscribe.
                     safeOnError(subscriber, cause);
                     return;
                 }
-                safeOnComplete(subscriber);
+                if (deliverTerminal) {
+                    clearState(); // must null out subscription before terminating to allow for re-subscribe.
+                    safeOnComplete(subscriber);
+                } else {
+                    cancellableForQuery = TERMINATE_ON_NEXT_REQUEST_N;
+                }
             }
 
             private void scheduleQuery0(final long nanos) {
                 assertInEventloop();
+
+                LOGGER.trace("DnsClient {}, scheduling DNS query for {} after {} nanos.",
+                        DefaultDnsClient.this, EntriesPublisher.this, nanos);
 
                 // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                 // in the builder is 1 second.
@@ -558,59 +572,67 @@ final class DefaultDnsClient implements DnsClient {
 
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture) {
                 assertInEventloop();
+                assert pendingRequests > 0;
+                if (cancellableForQuery == TERMINATED) {
+                    return;
+                } else if (cancellableForQuery == TERMINATE_ON_NEXT_REQUEST_N) {
+                    tryTerminateOnComplete();
+                    return;
+                }
+                final Throwable cause = addressFuture.cause();
+                if (cause != null) {
+                    boolean deliverTerminal = true;
+                    try {
+                        deliverTerminal = !invalidateHostsOnDnsFailure.test(cause) ||
+                                clearAddressesAndPropagateRemovalEvents();
+                    } catch (Throwable cause2) {
+                        logUnexpectedException(cause2);
+                    }
 
-                // If `discoverySubscriber` is null, then this publisher has terminated, so we can't send any more
-                // signals. There's no point in even scheduling a query in that case.
-                if (discoverySubscriber != null) {
-                    final Throwable cause = addressFuture.cause();
-                    if (cause != null) {
-                        handleError0(cause, invalidateHostsOnDnsFailure);
+                    if (deliverTerminal) {
+                        cancel0();
+                        safeOnError(subscriber, cause);
                     } else {
-                        // DNS lookup can return duplicate InetAddress
-                        DnsAnswer<T> dnsAnswer = addressFuture.getNow();
-                        final List<T> addresses = dnsAnswer.answer();
-                        final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses);
-                        ttlNanos = dnsAnswer.ttlNanos();
-                        if (events != null) {
-                            activeAddresses = addresses;
-                            --pendingRequests;
-                            if (pendingRequests > 0) {
-                                scheduleQuery0(ttlNanos);
-                            } else {
-                                resolveDoneNoScheduleTime = nanoTime();
-                                cancellableForQuery = null;
-                            }
-                            try {
-                                subscriber.onNext(events);
-                            } catch (final Throwable error) {
-                                handleError0(error, __ -> false);
-                            }
-                        } else {
+                        cancellableForQuery = TERMINATE_ON_NEXT_REQUEST_N;
+                    }
+                } else {
+                    // DNS lookup can return duplicate InetAddress
+                    DnsAnswer<T> dnsAnswer = addressFuture.getNow();
+                    final List<T> addresses = dnsAnswer.answer();
+                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses);
+                    ttlNanos = dnsAnswer.ttlNanos();
+                    if (events != null) {
+                        activeAddresses = addresses;
+                        if (--pendingRequests > 0) {
                             scheduleQuery0(ttlNanos);
+                        } else {
+                            resolveDoneNoScheduleTime = nanoTime();
+                            cancellableForQuery = null;
                         }
+                        try {
+                            LOGGER.debug("DnsClient {}, sending events for address: {} (size {}) {}.",
+                                    DefaultDnsClient.this, EntriesPublisher.this, events.size(), events);
+
+                            subscriber.onNext(events);
+                        } catch (final Throwable error) {
+                            handleTerminalError0(error);
+                        }
+                    } else {
+                        LOGGER.trace("DnsClient {}, resolution done but no changes for address: {} (size {}) {}.",
+                                DefaultDnsClient.this, EntriesPublisher.this, activeAddresses.size(),
+                                activeAddresses);
+
+                        scheduleQuery0(ttlNanos);
                     }
                 }
             }
 
-            private void handleError0(final Throwable cause,
-                                      final Predicate<Throwable> invalidateHostsOnDnsFailure) {
+            private void handleTerminalError0(final Throwable cause) {
                 assertInEventloop();
-
-                final boolean wasAlreadyTerminated = discoverySubscriber == null;
-                discoverySubscriber = null; // allow sequential subscriptions
-                cancel0();
-                if (wasAlreadyTerminated) {
-                    return;
+                if (cancellableForQuery != TERMINATED) {
+                    cancel0();
+                    safeOnError(subscriber, cause);
                 }
-
-                if (invalidateHostsOnDnsFailure.test(cause)) {
-                    try {
-                        clearAddressesAndPropagateRemovalEvents();
-                    } catch (final Throwable e) {
-                        logUnexpectedException(e);
-                    }
-                }
-                safeOnError(subscriber, cause);
             }
 
             private void logUnexpectedException(Throwable cause) {
@@ -619,10 +641,13 @@ final class DefaultDnsClient implements DnsClient {
             }
 
             @SuppressWarnings("ForLoopReplaceableByForEach")
-            private void clearAddressesAndPropagateRemovalEvents() {
-                if (!activeAddresses.isEmpty()) {
-                    // cleanup code may invoke this method after pendingRequests is set to negative
-                    assert pendingRequests != 0;
+            private boolean clearAddressesAndPropagateRemovalEvents() {
+                assertInEventloop();
+
+                if (activeAddresses.isEmpty()) {
+                    activeAddresses = emptyList();
+                    return true;
+                } else if (pendingRequests > 0) {
                     --pendingRequests;
                     final List<ServiceDiscovererEvent<T>> events = new ArrayList<>(activeAddresses.size());
                     if (activeAddresses instanceof RandomAccess) {
@@ -634,9 +659,11 @@ final class DefaultDnsClient implements DnsClient {
                             events.add(new DefaultServiceDiscovererEvent<>(address, false));
                         }
                     }
+                    activeAddresses = emptyList();
                     subscriber.onNext(events);
+                    return true;
                 }
-                activeAddresses = emptyList();
+                return false;
             }
         }
     }
