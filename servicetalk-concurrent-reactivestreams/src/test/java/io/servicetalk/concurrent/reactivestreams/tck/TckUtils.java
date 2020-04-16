@@ -16,7 +16,9 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.DeliberateException;
+
+import static io.servicetalk.concurrent.api.Publisher.range;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 final class TckUtils {
 
@@ -30,15 +32,7 @@ final class TckUtils {
      * @return the publisher.
      */
     static Publisher<Integer> newPublisher(int numElements) {
-        return Publisher.from(newArray(numElements));
-    }
-
-    static Integer[] newArray(int numElements) {
-        Integer[] values = new Integer[numElements];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = i;
-        }
-        return values;
+        return range(0, numElements);
     }
 
     static int maxElementsFromPublisher() {
@@ -52,6 +46,6 @@ final class TckUtils {
     }
 
     static <T> Publisher<T> newFailedPublisher() {
-        return Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION);
+        return Publisher.failed(DELIBERATE_EXCEPTION);
     }
 }
