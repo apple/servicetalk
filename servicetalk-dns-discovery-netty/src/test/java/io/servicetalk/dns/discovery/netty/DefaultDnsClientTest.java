@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import io.netty.resolver.dns.DnsNameResolverTimeoutException;
+import org.apache.directory.server.dns.messages.ResourceRecord;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -48,7 +48,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
+import static io.servicetalk.dns.discovery.netty.TestRecordStore.DEFAULT_TTL;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createRecord;
+import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -57,6 +59,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.directory.server.dns.messages.RecordType.A;
 import static org.apache.directory.server.dns.messages.RecordType.AAAA;
+import static org.apache.directory.server.dns.messages.RecordType.SRV;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -71,7 +74,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class DefaultDnsClientTest {
-    @Rule
+    // @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private EventLoopAwareNettyIoExecutor nettyIoExecutor;
@@ -184,7 +187,40 @@ public class DefaultDnsClientTest {
         recordStore.addResponse(targetDomain1, A, nextIp());
         recordStore.addResponse(targetDomain2, A, nextIp());
         final int expectedActiveCount = 2;
-        final int expectedInactiveCount = 0;
+        final int expectedInactiveCount = 1;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain);
+        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
+    public void multipleSrvChangeSingleADiscover() throws InterruptedException {
+        final String domain = "mysvc.apple.com";
+        final String targetDomain1 = "target1.mysvc.apple.com";
+        final String targetDomain2 = "target2.mysvc.apple.com";
+        final String targetDomain3 = "target3.mysvc.apple.com";
+        final int targetPort1 = 9876;
+        final int targetPort2 = 9877;
+        final int targetPort3 = 9879;
+        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
+        List<ResourceRecord> defaultSrvRecords = new ArrayList<>();
+        defaultSrvRecords.add(createSrvRecord(domain, targetDomain2, 10, 10, targetPort2, DEFAULT_TTL));
+        defaultSrvRecords.add(createSrvRecord(domain, targetDomain3, 10, 10, targetPort3, DEFAULT_TTL));
+        recordStore.defaultResponse(domain, SRV, () -> defaultSrvRecords);
+        recordStore.addResponse(targetDomain1, A, nextIp());
+        recordStore.defaultResponse(targetDomain2, A, nextIp());
+        recordStore.defaultResponse(targetDomain3, A, nextIp());
+        final int expectedActiveCount = 3;
+        final int expectedInactiveCount = 1;
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
