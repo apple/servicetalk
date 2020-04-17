@@ -28,6 +28,7 @@ import org.apache.directory.server.dns.messages.ResourceRecord;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -74,7 +75,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class DefaultDnsClientTest {
-    // @Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private EventLoopAwareNettyIoExecutor nettyIoExecutor;
