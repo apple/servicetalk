@@ -129,6 +129,19 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for the passed {@code serviceName} with default
+     * {@link LoadBalancer} and a DNS {@link ServiceDiscoverer} using
+     * <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
+     *
+     * @param serviceName The service name to resolve with <a href="https://tools.ietf.org/html/rfc2782">SRV DNS</a>.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
+            final String serviceName) {
+        return DefaultSingleAddressHttpClientBuilder.forServiceAddress(serviceName);
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
      * and DNS {@link ServiceDiscoverer}.
      *

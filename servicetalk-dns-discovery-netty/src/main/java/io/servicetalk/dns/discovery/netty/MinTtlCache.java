@@ -34,8 +34,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * While netty's {@link DnsCache} can be called by any thread calling the {@link DnsNameResolver}, we ensure, in
- * {@link DefaultDnsServiceDiscoverer} that the resolver is only ever called on the event loop. This allows us to
- * not worry about multithreaded access in this class.
+ * {@link DefaultDnsClient} that the resolver is only ever called on the event loop. This allows us to not worry about
+ * multithreaded access in this class.
  */
 final class MinTtlCache implements DnsCache {
 
@@ -81,7 +81,7 @@ final class MinTtlCache implements DnsCache {
         final List<? extends DnsCacheEntry> entries = cache.get(hostname, additionals);
         if (entries != null) {
             // This means that either:
-            //  1. there were multiple `discover` calls for the same hostname (on `DefaultDnsServiceDiscoverer`), or
+            //  1. there were multiple `discover` calls for the same hostname (on `DefaultDnsClient`), or
             //  2. the scheduled lookup happened before the cache expired the entries.
             // #1 is ok. #2 means that stale results will be returned until the next TTL scheduled lookup.
             LOGGER.debug("Found cached entries for {}: {}", hostname, entries);

@@ -64,6 +64,7 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -155,6 +156,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
+    }
+
+    static DefaultSingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
+            final String serviceName) {
+        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
@@ -270,7 +276,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             @SuppressWarnings("unchecked")
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) closeOnException.prepend(
-                    ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+                            ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
