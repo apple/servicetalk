@@ -22,14 +22,11 @@ import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
-import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
@@ -37,13 +34,12 @@ import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedLinked
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<SingleProcessor, Object> terminalSignalUpdater =
             AtomicReferenceFieldUpdater.newUpdater(SingleProcessor.class, Object.class, "terminalSignal");
-    private static final AtomicIntegerFieldUpdater<SingleProcessor> drainingTheQueueUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(SingleProcessor.class, "drainingTheQueue");
     private static final Object TERMINAL_NULL = new Object();
 
-    private final Queue<Subscriber<? super T>> subscribers = newUnboundedLinkedMpscQueue();
+    private final Queue<Subscriber<? super T>> subscribers = new ConcurrentLinkedQueue<>();
     @Nullable
     @SuppressWarnings("unused")
     private volatile Object terminalSignal = TERMINAL_NULL;
@@ -68,20 +64,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                     // these references.
-                    if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                        return;
-                    }
-                    try {
-                        subscribers.remove(subscriber);
-                    } finally {
-                        drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
-                    }
-                    // Because we held the lock we need to check if any terminal event has occurred in the mean time,
-                    // and if so notify subscribers.
-                    Object terminalSignal2 = this.terminalSignal;
-                    if (terminalSignal2 != TERMINAL_NULL) {
-                        notifyListeners(terminalSignal2);
-                    }
+                    subscribers.remove(subscriber);
                 });
             }
         } else {
@@ -111,16 +94,35 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
     }
 
     private void notifyListeners(@Nullable Object terminalSignal) {
+        Subscriber<? super T> subscriber;
+        Throwable delayedCause = null;
         if (terminalSignal instanceof TerminalNotification) {
             final Throwable error = ((TerminalNotification) terminalSignal).cause();
             assert error != null : "Cause can't be null from TerminalNotification.error(..)";
-            drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onError(error),
-                    drainingTheQueueUpdater, this);
+            while ((subscriber = subscribers.poll()) != null) {
+                try {
+                    subscriber.onError(error);
+                } catch (Throwable cause) {
+                    if (delayedCause == null) {
+                        delayedCause = cause;
+                    }
+                }
+            }
         } else {
             @SuppressWarnings("unchecked")
             final T value = (T) terminalSignal;
-            drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> subscriber.onSuccess(value),
-                    drainingTheQueueUpdater, this);
+            while ((subscriber = subscribers.poll()) != null) {
+                try {
+                    subscriber.onSuccess(value);
+                } catch (Throwable cause) {
+                    if (delayedCause == null) {
+                        delayedCause = cause;
+                    }
+                }
+            }
+        }
+        if (delayedCause != null) {
+            throwException(delayedCause);
         }
     }
 

@@ -22,33 +22,25 @@ import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-
     private static final AtomicReferenceFieldUpdater<CompletableProcessor, TerminalNotification> terminalSignalUpdater =
             AtomicReferenceFieldUpdater.newUpdater(CompletableProcessor.class, TerminalNotification.class,
                     "terminalSignal");
-    private static final AtomicIntegerFieldUpdater<CompletableProcessor> drainingTheQueueUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(CompletableProcessor.class, "drainingTheQueue");
 
-    private final Queue<Subscriber> subscribers = newUnboundedLinkedMpscQueue();
+    private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     @Nullable
     private volatile TerminalNotification terminalSignal;
-    @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private volatile int drainingTheQueue;
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
@@ -67,20 +59,7 @@ final class CompletableProcessor extends Completable implements Processor {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                     // these references.
-                    if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                        return;
-                    }
-                    try {
-                        subscribers.remove(subscriber);
-                    } finally {
-                        drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
-                    }
-                    // Because we held the lock we need to check if any terminal event has occurred in the mean time,
-                    // and if so notify subscribers.
-                    TerminalNotification terminalSignal2 = this.terminalSignal;
-                    if (terminalSignal2 != null) {
-                        notifyListeners(terminalSignal2);
-                    }
+                    subscribers.remove(subscriber);
                 });
             }
         } else {
@@ -111,7 +90,20 @@ final class CompletableProcessor extends Completable implements Processor {
     }
 
     private void notifyListeners(TerminalNotification terminalSignal) {
-        drainSingleConsumerQueueDelayThrow(subscribers, terminalSignal::terminate, drainingTheQueueUpdater, this);
+        Throwable delayedCause = null;
+        Subscriber subscriber;
+        while ((subscriber = subscribers.poll()) != null) {
+            try {
+                terminalSignal.terminate(subscriber);
+            } catch (Throwable cause) {
+                if (delayedCause == null) {
+                    delayedCause = cause;
+                }
+            }
+        }
+        if (delayedCause != null) {
+            throwException(delayedCause);
+        }
     }
 
     @Override

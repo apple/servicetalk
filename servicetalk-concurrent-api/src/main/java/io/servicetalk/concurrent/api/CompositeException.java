@@ -16,10 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
-import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link RuntimeException} that allows to add {@link Throwable} instances at a lower cost than
@@ -28,13 +27,7 @@ import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQu
  */
 final class CompositeException extends RuntimeException {
     private static final long serialVersionUID = 7827495486030277692L;
-
-    private final Queue<Throwable> suppressed = newUnboundedMpscQueue(4);
-
-    private static final AtomicIntegerFieldUpdater<CompositeException> drainingUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(CompositeException.class, "draining");
-    @SuppressWarnings("unused")
-    private volatile int draining;
+    private final Queue<Throwable> suppressed = new ConcurrentLinkedQueue<>();
 
     /**
      * New instance.
@@ -55,13 +48,30 @@ final class CompositeException extends RuntimeException {
         if (!suppressed.offer(toAdd)) {
             addSuppressed(toAdd);
         }
+        // if addAllPendingSuppressed has already been called don't bother trying to synchronize/drain the queue
+        // as it is assumed the exception will be thrown after that method is called.
     }
 
     /**
      * Adds all {@link Throwable}s added using {@link #add(Throwable)} to this {@link CompositeException} using
      * {@link #addSuppressed(Throwable)}.
+     * <p>
+     * It is assumed that {@link #add(Throwable)} won't be called after this method.
      */
     void addAllPendingSuppressed() {
-        drainSingleConsumerQueueDelayThrow(suppressed, this::addSuppressed, drainingUpdater, this);
+        Throwable delayedCause = null;
+        Throwable next;
+        while ((next = suppressed.poll()) != null) {
+            try {
+                addSuppressed(next);
+            } catch (Throwable cause) {
+                if (delayedCause == null) {
+                    delayedCause = cause;
+                }
+            }
+        }
+        if (delayedCause != null) {
+            throwException(delayedCause);
+        }
     }
 }

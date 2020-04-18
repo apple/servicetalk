@@ -17,19 +17,42 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.util.Collections.newSetFromMap;
 
-final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> cancelledUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(QueueDynamicCompositeCancellable.class, "cancelled");
+/**
+ * A {@link Cancellable} that contains other {@link Cancellable}s.
+ * <p>
+ * {@link Cancellable#cancel()} is propagated to all active {@link Cancellable}s. Any new {@link Cancellable} added
+ * after that will be immediately cancelled.
+ */
+final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
+    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelledUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelled");
     @SuppressWarnings("unused")
     private volatile int cancelled;
 
-    private final Queue<Cancellable> cancellables = new ConcurrentLinkedQueue<>();
+    private final Set<Cancellable> cancellables;
+
+    /**
+     * Create a new instance.
+     */
+    SetDynamicCompositeCancellable() {
+        this(8);
+    }
+
+    /**
+     * Create a new instance.
+     * @param initialSize The initial size of the internal {@link Set}.
+     */
+    SetDynamicCompositeCancellable(int initialSize) {
+        cancellables = newSetFromMap(new ConcurrentHashMap<>(initialSize));
+    }
 
     @Override
     public void cancel() {
@@ -40,8 +63,8 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.offer(toAdd)) {
-            toAdd.cancel();
+        if (!cancellables.add(toAdd)) {
+            toAdd.cancel(); // out of memory, or user has implemented equals/hashCode so there is overlap.
         } else if (isCancelled()) {
             cancelAll();
             return false;
@@ -61,9 +84,11 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
 
     private void cancelAll() {
         Throwable delayedCause = null;
-        Cancellable cancellable;
-        while ((cancellable = cancellables.poll()) != null) {
+        Iterator<Cancellable> itr = cancellables.iterator();
+        while (itr.hasNext()) {
             try {
+                Cancellable cancellable = itr.next();
+                itr.remove();
                 cancellable.cancel();
             } catch (Throwable cause) {
                 if (delayedCause == null) {

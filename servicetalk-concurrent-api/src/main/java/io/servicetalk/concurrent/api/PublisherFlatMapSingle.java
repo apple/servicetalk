@@ -121,7 +121,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private boolean targetTerminated;
 
         private final Queue<Object> pending;
-        private final DynamicCompositeCancellable cancellable = new MapDynamicCompositeCancellable();
+        private final DynamicCompositeCancellable cancellable = new SetDynamicCompositeCancellable();
         private final PublisherFlatMapSingle<T, R> source;
         private final Subscriber<? super R> target;
 

@@ -30,8 +30,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.acquirePendingLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releasePendingLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.Collections.emptyIterator;
@@ -53,23 +53,25 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
     }
 
     private static final class FlatMapIterableSubscriber<T, U> implements Subscriber<T>, Subscription {
+        @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapIterableSubscriber> requestNUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapIterableSubscriber.class, "requestN");
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapIterableSubscriber> emittingUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapIterableSubscriber.class, "emitting");
         private final Function<? super T, ? extends Iterable<? extends U>> mapper;
         private final Subscriber<? super U> target;
         @Nullable
-        private volatile Subscription sourceSubscription;
+        private Subscription sourceSubscription;
         @Nullable
-        private volatile TerminalNotification terminalNotification;
+        private TerminalNotification terminalNotification;
         /**
          * We only ever request a single {@link Iterable} at a time, and wait to request another {@link Iterable} until
          * {@link Iterator#hasNext()} returns {@code false}. This means we don't need to queue {@link Iterator}s, and
          * was done because we don't know how many elements will be returned by each {@link Iterator} and so we are as
          * conservative as we can be about memory consumption.
          */
-        private volatile Iterator<? extends U> currentIterator = emptyIterator();
+        private Iterator<? extends U> currentIterator = emptyIterator();
         @SuppressWarnings("unused")
         private volatile long requestN;
         @SuppressWarnings("unused")
@@ -91,67 +93,54 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         @Override
         public void onNext(T u) {
-            Subscription sourceSubscription = this.sourceSubscription;
-            assert sourceSubscription != null;
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
-            Iterator<? extends U> currentIterator = requireNonNull(mapper.apply(u).iterator());
-            this.currentIterator = currentIterator;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
-                    ErrorHandlingStrategyInDrain.Throw);
+            currentIterator = requireNonNull(mapper.apply(u).iterator());
+            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Throw);
         }
 
         @Override
         public void onError(Throwable t) {
-            Subscription sourceSubscription = this.sourceSubscription;
-            assert sourceSubscription != null;
-            TerminalNotification terminalNotification = TerminalNotification.error(t);
-            this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
-                    ErrorHandlingStrategyInDrain.Propagate);
+            terminalNotification = TerminalNotification.error(t);
+            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
         public void onComplete() {
-            Subscription sourceSubscription = this.sourceSubscription;
-            assert sourceSubscription != null;
-            TerminalNotification terminalNotification = TerminalNotification.complete();
-            this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
-                    ErrorHandlingStrategyInDrain.Propagate);
+            terminalNotification = TerminalNotification.complete();
+            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
         public void request(long n) {
-            Subscription sourceSubscription = this.sourceSubscription;
             assert sourceSubscription != null;
             if (!isRequestNValid(n)) {
                 sourceSubscription.request(n);
             } else {
-                tryDrainIterator(currentIterator, sourceSubscription, terminalNotification,
-                        requestNUpdater.accumulateAndGet(this, n,
-                                FlowControlUtils::addWithOverflowProtectionIfNotNegative),
-                        ErrorHandlingStrategyInDrain.PropagateAndCancel);
+                tryDrainIterator(requestNUpdater.accumulateAndGet(this, n,
+                                    FlowControlUtils::addWithOverflowProtectionIfNotNegative),
+                                 ErrorHandlingStrategyInDrain.PropagateAndCancel);
             }
         }
 
         @Override
         public void cancel() {
-            Subscription sourceSubscription = this.sourceSubscription;
-            assert sourceSubscription != null;
-            if (requestNUpdater.getAndSet(this, -1) >= 0 && emittingUpdater.compareAndSet(this, CONCURRENT_IDLE,
-                    CONCURRENT_EMITTING)) {
-                doCancel(sourceSubscription);
+            if (requestNUpdater.getAndSet(this, -1) >= 0 && acquirePendingLock(emittingUpdater, this)) {
+                doCancel();
             }
         }
 
-        private void doCancel(Subscription sourceSubscription) {
-            Iterator<? extends U> currentIterator = this.currentIterator;
+        private void doCancel() {
+            assert sourceSubscription != null;
+            final Iterator<? extends U> currentIterator = this.currentIterator;
             this.currentIterator = EmptyIterator.instance();
-            if (currentIterator instanceof AutoCloseable) {
-                closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
+            try {
+                if (currentIterator instanceof AutoCloseable) {
+                    closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
+                }
+            } finally {
+                sourceSubscription.cancel();
             }
-            sourceSubscription.cancel();
         }
 
         private enum ErrorHandlingStrategyInDrain {
@@ -160,13 +149,13 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             Throw
         }
 
-        private void tryDrainIterator(Iterator<? extends U> currentIterator, Subscription sourceSubscription,
-                                      @Nullable TerminalNotification terminalNotification, long requestN,
-                                      ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
+        private void tryDrainIterator(long requestN, ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
+            assert sourceSubscription != null;
             boolean hasNext = false;
             boolean terminated = false;
+            boolean releasedLock = false;
             do {
-                if (!emittingUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
+                if (!acquirePendingLock(emittingUpdater, this)) {
                     break;
                 }
                 final long initialRequestN = requestN;
@@ -180,7 +169,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         switch (errorHandlingStrategyInDrain) {
                             case PropagateAndCancel:
                                 terminated = true;
-                                doCancel(sourceSubscription);
+                                doCancel();
                                 try {
                                     target.onError(cause);
                                 } catch (Throwable cause2) {
@@ -210,9 +199,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         terminated = true;
                         // We clear out the current iterator to allow for GC, and we don't want to deliver any more data
                         // because it may be out of order or incomplete ... so simulate a terminated event.
-                        doCancel(sourceSubscription);
+                        doCancel();
                     } else if (!terminated) {
-                        final Iterator<? extends U> previousIterator;
                         try {
                             if (terminalNotification == null && !hasNext && requestN > 0 &&
                                     currentIterator != EmptyIterator.instance()) {
@@ -220,37 +208,21 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 // we will not be getting an onNext call, so we write to the currentIterator variable
                                 // here before we unlock emitting so visibility to other threads should be taken care of
                                 // by the write to emitting below (and later read).
-                                this.currentIterator = previousIterator = EmptyIterator.instance();
+                                this.currentIterator = EmptyIterator.instance();
                                 sourceSubscription.request(1);
-                            } else {
-                                previousIterator = currentIterator;
                             }
                         } finally {
                             // The lock must be released after we interact with the subscription for thread safety
                             // reasons.
-                            emitting = CONCURRENT_IDLE;
+                            releasedLock = releasePendingLock(emittingUpdater, this);
                         }
 
                         // We may have been cancelled while we were holding the lock, so we need to check if we have
                         // been cancelled after we release the lock.
                         requestN = this.requestN;
-
-                        // We may requested more data while we held the lock. If data was delivered in a re-entry
-                        // fashion, or if data was delivered on another thread while we held the lock we may have to try
-                        // to re-acquire the lock and drain the new Iterator.
-                        currentIterator = this.currentIterator;
-                        if (previousIterator != currentIterator) {
-                            // We only want to interact with the iterator inside the lock, and we don't want to exit
-                            // early if we have seen a terminal event in the mean time, so if there is demand we assume
-                            // for now that hasNext is true, and we will find out if there is really data if we
-                            // re-acquire the lock.
-                            hasNext = requestN > 0;
-                        }
                     }
                 }
-            } while (!terminated &&
-                    (requestN < 0 || (requestN > 0 && hasNext) ||
-                    (!hasNext && (terminalNotification = this.terminalNotification) != null)));
+            } while (!terminated && !releasedLock);
         }
 
         /**
@@ -259,6 +231,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
          * @param <U> The type of element in the iterator.
          */
         private static final class EmptyIterator<U> implements Iterator<U> {
+            @SuppressWarnings("rawtypes")
             private static final EmptyIterator INSTANCE = new EmptyIterator();
 
             private EmptyIterator() {

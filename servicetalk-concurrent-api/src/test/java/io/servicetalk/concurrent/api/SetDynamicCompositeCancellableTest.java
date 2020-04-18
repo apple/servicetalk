@@ -23,11 +23,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class MapDynamicCompositeCancellableTest {
+public class SetDynamicCompositeCancellableTest {
 
     @Test
     public void testAddAndRemove() {
-        MapDynamicCompositeCancellable c = new MapDynamicCompositeCancellable();
+        SetDynamicCompositeCancellable c = new SetDynamicCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
         c.add(cancellable);
         c.remove(cancellable);
@@ -37,7 +37,7 @@ public class MapDynamicCompositeCancellableTest {
 
     @Test
     public void testCancel() {
-        MapDynamicCompositeCancellable c = new MapDynamicCompositeCancellable();
+        SetDynamicCompositeCancellable c = new SetDynamicCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
         c.add(cancellable);
         c.cancel();
@@ -47,7 +47,7 @@ public class MapDynamicCompositeCancellableTest {
 
     @Test
     public void testAddPostCancel() {
-        MapDynamicCompositeCancellable c = new MapDynamicCompositeCancellable();
+        SetDynamicCompositeCancellable c = new SetDynamicCompositeCancellable();
         c.cancel();
         Cancellable cancellable = mock(Cancellable.class);
         c.add(cancellable);
