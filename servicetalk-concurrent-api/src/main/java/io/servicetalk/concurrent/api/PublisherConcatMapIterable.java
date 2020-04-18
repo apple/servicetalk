@@ -96,19 +96,19 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
             currentIterator = requireNonNull(mapper.apply(u).iterator());
-            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Throw);
+            tryDrainIterator(ErrorHandlingStrategyInDrain.Throw);
         }
 
         @Override
         public void onError(Throwable t) {
             terminalNotification = TerminalNotification.error(t);
-            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Propagate);
+            tryDrainIterator(ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
         public void onComplete() {
             terminalNotification = TerminalNotification.complete();
-            tryDrainIterator(requestN, ErrorHandlingStrategyInDrain.Propagate);
+            tryDrainIterator(ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
@@ -117,9 +117,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             if (!isRequestNValid(n)) {
                 sourceSubscription.request(n);
             } else {
-                tryDrainIterator(requestNUpdater.accumulateAndGet(this, n,
-                                    FlowControlUtils::addWithOverflowProtectionIfNotNegative),
-                                 ErrorHandlingStrategyInDrain.PropagateAndCancel);
+                requestNUpdater.accumulateAndGet(this, n,
+                        FlowControlUtils::addWithOverflowProtectionIfNotNegative);
+                tryDrainIterator(ErrorHandlingStrategyInDrain.PropagateAndCancel);
             }
         }
 
@@ -149,7 +149,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             Throw
         }
 
-        private void tryDrainIterator(long requestN, ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
+        private void tryDrainIterator(ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
             assert sourceSubscription != null;
             boolean hasNext = false;
             boolean terminated = false;
@@ -158,11 +158,12 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                 if (!acquirePendingLock(emittingUpdater, this)) {
                     break;
                 }
-                final long initialRequestN = requestN;
+                long currRequestN = this.requestN;
+                final long initialRequestN = currRequestN;
                 try {
                     try {
-                        while ((hasNext = currentIterator.hasNext()) && requestN > 0) {
-                            --requestN;
+                        while ((hasNext = currentIterator.hasNext()) && currRequestN > 0) {
+                            --currRequestN;
                             target.onNext(currentIterator.next());
                         }
                     } catch (Throwable cause) {
@@ -193,16 +194,16 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         terminalNotification.terminate(target);
                     }
                 } finally {
-                    requestN = requestNUpdater.accumulateAndGet(this, requestN - initialRequestN,
+                    currRequestN = requestNUpdater.accumulateAndGet(this, currRequestN - initialRequestN,
                             FlowControlUtils::addWithOverflowProtectionIfNotNegative);
-                    if (requestN < 0) {
+                    if (currRequestN < 0) {
                         terminated = true;
                         // We clear out the current iterator to allow for GC, and we don't want to deliver any more data
                         // because it may be out of order or incomplete ... so simulate a terminated event.
                         doCancel();
                     } else if (!terminated) {
                         try {
-                            if (terminalNotification == null && !hasNext && requestN > 0 &&
+                            if (terminalNotification == null && !hasNext && currRequestN > 0 &&
                                     currentIterator != EmptyIterator.instance()) {
                                 // We only request 1 at a time, and therefore we don't have any outstanding demand, so
                                 // we will not be getting an onNext call, so we write to the currentIterator variable
@@ -216,10 +217,6 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                             // reasons.
                             releasedLock = releasePendingLock(emittingUpdater, this);
                         }
-
-                        // We may have been cancelled while we were holding the lock, so we need to check if we have
-                        // been cancelled after we release the lock.
-                        requestN = this.requestN;
                     }
                 }
             } while (!terminated && !releasedLock);
