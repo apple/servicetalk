@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -1392,6 +1393,37 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
+    }
+
+    /**
+     * Create a {@link Publisher} that buffers items from this {@link Publisher} and emit those buffers instead of the
+     * individual items.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List accumulators = strategy.boundaries();
+     *     List buffers = ...;
+     *     BC currentAccumulator;
+     *     for (T t : resultOfThisPublisher()) {
+     *         // This is an approximation; accumulators are emitted asynchronously.
+     *         BC nextAccumulator = accumulators.remove(0).get();
+     *         buffers.add(currentAccumulator.finish());
+     *         currentAccumulator = nextAccumulator;
+     *         currentAccumulator.add(t);
+     *     }
+     *     return buffers;
+     * }</pre>
+     *
+     * @param strategy A {@link BufferStrategy} to use for buffering items from this {@link Publisher}.
+     * @param <BC> Type of the {@link Accumulator} to buffer items from this {@link Publisher}.
+     * @param <B> Type of the buffer emitted from the returned {@link Publisher}.
+     * @return a {@link Publisher} that buffers items from this {@link Publisher} and emit those buffers instead of the
+     * individual items.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/buffer.html">ReactiveX buffer operator.</a>
+     */
+    public final <BC extends Accumulator<T, B>, B> Publisher<B> buffer(final BufferStrategy<T, BC, B> strategy) {
+        return new PublisherBuffer<>(this, executor, strategy);
     }
 
     /**
