@@ -22,7 +22,6 @@ import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -62,11 +61,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -89,6 +87,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RoundRobinLoadBalancerTest {
@@ -105,7 +105,7 @@ public class RoundRobinLoadBalancerTest {
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
-    private TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
+    private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> lb;
     private DelegatingConnectionFactory connectionFactory;
 
@@ -406,6 +406,16 @@ public class RoundRobinLoadBalancerTest {
         awaitIndefinitely(connection.onClose());
     }
 
+    @Test
+    public void hostDownGracefulCloseConnection() throws Exception {
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        TestLoadBalancedConnection conn = lb.selectConnection(any()).toFuture().get();
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        conn.onClose().toFuture().get();
+        verify(conn).closeAsyncGracefully();
+        verify(conn, times(0)).closeAsync();
+    }
+
     @SuppressWarnings("unchecked")
     private void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         serviceDiscoveryPublisher.onNext((ServiceDiscovererEvent<String>[]) events);
@@ -437,12 +447,10 @@ public class RoundRobinLoadBalancerTest {
     @SuppressWarnings("unchecked")
     private TestLoadBalancedConnection newConnection(final String address) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
-        final Processor closeCompletable = newCompletableProcessor();
-        when(cnx.closeAsync()).thenAnswer(__ -> {
-            closeCompletable.onComplete();
-            return closeCompletable;
-        });
-        when(cnx.onClose()).thenReturn(fromSource(closeCompletable));
+        final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+        when(cnx.closeAsync()).thenReturn(closeable.closeAsync());
+        when(cnx.closeAsyncGracefully()).thenReturn(closeable.closeAsyncGracefully());
+        when(cnx.onClose()).thenReturn(closeable.onClose());
         when(cnx.address()).thenReturn(address);
         when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
 
