@@ -378,7 +378,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             @SuppressWarnings("unchecked")
             List<C> toRemove = connectionsUpdater.getAndSet(this, INACTIVE);
             for (C conn : toRemove) {
-                conn.closeAsync().subscribe();
+                conn.closeAsyncGracefully().subscribe();
             }
         }
 
