@@ -26,9 +26,11 @@ import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
@@ -86,6 +88,8 @@ final class KeepAliveManager {
      */
     @Nullable
     private Object keepAliveState;
+    @Nullable
+    private final GenericFutureListener<Future<? super Void>> pingWriteCompletionListener;
 
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
         this(channel, keepAlivePolicy, (task, delayInMillis) ->
@@ -106,11 +110,33 @@ final class KeepAliveManager {
         if (keepAlivePolicy != null) {
             disallowKeepAliveWithoutActiveStreams = !keepAlivePolicy.withoutActiveStreams();
             pingAckTimeoutMillis = keepAlivePolicy.ackTimeout().toMillis();
+            final GenericFutureListener<Future<? super Void>> goAwayListener = f -> {
+                if (f.isSuccess()) {
+                    LOGGER.debug("Closing channel={}, after keep-alive timeout.", this.channel);
+                    KeepAliveManager.this.close0();
+                }
+            };
+            pingWriteCompletionListener = future -> {
+                if (future.isSuccess() && keepAliveState == KEEP_ALIVE_ACK_PENDING) {
+                    // Schedule a task to verify ping ack within the pingAckTimeoutMillis
+                    keepAliveState = scheduler.afterMillis(() -> {
+                        if (keepAliveState != null) {
+                            keepAliveState = KEEP_ALIVE_ACK_TIMEDOUT;
+                            LOGGER.debug(
+                                    "channel={}, timeout {}ms waiting for keep-alive PING(ACK), writing go_away.",
+                                    this.channel, pingAckTimeoutMillis);
+                            channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
+                                    .addListener(goAwayListener);
+                        }
+                    }, pingAckTimeoutMillis);
+                }
+            };
             int idleInSeconds = (int) keepAlivePolicy.idleDuration().getSeconds();
             idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
         } else {
             disallowKeepAliveWithoutActiveStreams = false;
             pingAckTimeoutMillis = DEFAULT_ACK_TIMEOUT.toMillis();
+            pingWriteCompletionListener = null;
         }
     }
 
@@ -159,46 +185,25 @@ final class KeepAliveManager {
         } else {
             try {
                 eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated));
-            } catch (Throwable cause) {
+            } catch (RejectedExecutionException ree) {
                 close0();
                 LOGGER.warn("channel={} EventLoop rejected a task for graceful shutdown, force closing connection",
-                        channel, cause);
+                        channel, ree);
             }
         }
     }
 
     void channelIdle() {
         assert channel.eventLoop().inEventLoop();
+        assert pingWriteCompletionListener != null;
 
-        if (keepAliveState == CLOSED) {
-            return;
-        }
-        if (activeChildChannels == 0 && disallowKeepAliveWithoutActiveStreams) {
+        if (keepAliveState == CLOSED || activeChildChannels == 0 && disallowKeepAliveWithoutActiveStreams) {
             return;
         }
         // idleness detected for the first time, send a ping to detect closure, if any.
         keepAliveState = KEEP_ALIVE_ACK_PENDING;
         channel.writeAndFlush(new DefaultHttp2PingFrame(KEEP_ALIVE_PING_CONTENT, false))
-                .addListener(future -> {
-                    if (future.isSuccess() && keepAliveState == KEEP_ALIVE_ACK_PENDING) {
-                        // Schedule a task to verify ping ack within the pingAckTimeoutMillis
-                        keepAliveState = scheduler.afterMillis(() -> {
-                            if (keepAliveState != null) {
-                                keepAliveState = KEEP_ALIVE_ACK_TIMEDOUT;
-                                LOGGER.debug(
-                                        "channel={}, timeout {}ms waiting for keep-alive PING(ACK), writing go_away.",
-                                        channel, pingAckTimeoutMillis);
-                                channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
-                                        .addListener(f -> {
-                                            if (f.isSuccess()) {
-                                                LOGGER.debug("Closing channel={}, after keep-alive timeout.", channel);
-                                                close0();
-                                            }
-                                        });
-                            }
-                        }, pingAckTimeoutMillis);
-                    }
-                });
+                .addListener(pingWriteCompletionListener);
     }
 
     /**
@@ -240,16 +245,13 @@ final class KeepAliveManager {
             // either we are already closed or have already initiated graceful closure.
             return;
         }
+
+        whenInitiated.run();
+
         // Set the pingState before doing the write, because we will reference the state
         // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the
         // write future may not be executed which sets the timer.
         gracefulCloseState = GRACEFUL_CLOSE_START;
-
-        try {
-            whenInitiated.run();
-        } catch (Throwable t) {
-            LOGGER.error("Failed to invoke callback for graceful closure initiation, ignoring.", t);
-        }
 
         // The graceful close process is described in [1]. It involves sending 2 GOAWAY frames. The first
         // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT

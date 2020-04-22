@@ -68,10 +68,10 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      */
     interface KeepAlivePolicy {
         /**
-         * {@link Duration} of time the connection has to be idle before which a
+         * {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
          *
-         * @return {@link Duration} of time the connection has to be idle before which a
+         * @return {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
          */
         Duration idleDuration();

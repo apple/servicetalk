@@ -82,7 +82,13 @@ public class NettyChannelListenableAsyncCloseable implements ListenableAsyncClos
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
-                    doCloseAsyncGracefully();
+                    try {
+                        doCloseAsyncGracefully();
+                    } catch (Throwable t) {
+                        subscriber.onSubscribe(IGNORE_CANCEL);
+                        subscriber.onError(t);
+                        return;
+                    }
                 }
                 toSource(onClose()).subscribe(subscriber);
             }
