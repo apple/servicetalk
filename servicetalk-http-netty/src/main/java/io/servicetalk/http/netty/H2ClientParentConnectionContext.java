@@ -81,8 +81,9 @@ import static java.util.Objects.requireNonNull;
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
                                             FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                            HttpExecutionStrategy executionStrategy) {
-        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy);
+                                            HttpExecutionStrategy executionStrategy,
+                                            final KeepAliveManager keepAliveManager) {
+        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy, keepAliveManager);
     }
 
     interface H2ClientParentConnection extends FilterableStreamingHttpConnection, NettyConnectionContext {
@@ -103,8 +104,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 final ChannelPipeline pipeline;
                 try {
                     delayedCancellable = new DelayedCancellable();
+                    KeepAliveManager keepAliveManager = new KeepAliveManager(channel, config.keepAlivePolicy());
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, idleTimeoutMs, executionStrategy);
+                            allocator, executor, parentFlushStrategy, idleTimeoutMs, executionStrategy,
+                            keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.

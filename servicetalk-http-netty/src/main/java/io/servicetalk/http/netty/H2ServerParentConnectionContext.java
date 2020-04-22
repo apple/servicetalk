@@ -61,8 +61,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                             final Executor executor, final FlushStrategy flushStrategy,
                                             @Nullable final Long idleTimeoutMs,
                                             final HttpExecutionStrategy executionStrategy,
-                                            final SocketAddress listenAddress) {
-        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy);
+                                            final SocketAddress listenAddress,
+                                            final KeepAliveManager keepAliveManager) {
+        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
     }
 
@@ -109,13 +110,14 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 final ChannelPipeline pipeline;
                 try {
                     delayedCancellable = new DelayedCancellable();
+                    KeepAliveManager keepAliveManager = new KeepAliveManager(channel, h2ServerConfig.keepAlivePolicy());
                     final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
                     final BufferAllocator allocator = httpExecutionContext.bufferAllocator();
                     final Executor executor = httpExecutionContext.executor();
                     final HttpExecutionStrategy executionStrategy = httpExecutionContext.executionStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
                             allocator, executor, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
-                            executionStrategy, listenAddress);
+                            executionStrategy, listenAddress, keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.

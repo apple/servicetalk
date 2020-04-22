@@ -19,6 +19,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 
 import org.slf4j.event.Level;
 
+import java.time.Duration;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
@@ -53,4 +54,46 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      */
     @Nullable
     String frameLoggerName();
+
+    /**
+     * Configured {@link KeepAlivePolicy}.
+     *
+     * @return configured {@link KeepAlivePolicy} or {@code null} if none is configured.
+     */
+    @Nullable
+    KeepAlivePolicy keepAlivePolicy();
+
+    /**
+     * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#page-42">PING frames</a> to the peer.
+     */
+    interface KeepAlivePolicy {
+        /**
+         * {@link Duration} of time the connection has to be idle before which a
+         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         *
+         * @return {@link Duration} of time the connection has to be idle before which a
+         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         */
+        Duration idleDuration();
+
+        /**
+         * {@link Duration} to wait for acknowledgment from the peer after a
+         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent. If there is no acknowledgment
+         * is received, a closure of the connection will be initiated.
+         *
+         * @return {@link Duration} to wait for acknowledgment from the peer after a
+         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         */
+        Duration ackTimeout();
+
+        /**
+         * Whether this policy allows to send <a href="https://tools.ietf.org/html/rfc7540#page-42">pings</a> even if
+         * there are no streams active on the connection.
+         *
+         * @return {@code true} if this policy allows to send
+         * <a href="https://tools.ietf.org/html/rfc7540#page-42">pings</a> even if there are no streams active on the
+         * connection.
+         */
+        boolean withoutActiveStreams();
+    }
 }

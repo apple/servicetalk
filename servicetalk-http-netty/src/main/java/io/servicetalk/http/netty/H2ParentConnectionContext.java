@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -36,70 +36,48 @@ import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelOutboundInvoker;
-import io.netty.channel.EventLoop;
-import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
-import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
-
-    private static final AtomicIntegerFieldUpdater<H2ParentConnectionContext> activeChildChannelsUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(H2ParentConnectionContext.class, "activeChildChannels");
-    private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
-    private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_PENDING = new NoopScheduledFuture();
-    private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_ACK_RECV = new NoopScheduledFuture();
-    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
-    private static final long GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS = 10000;
     final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
-    private final CompletableSource.Processor onClosing = newCompletableProcessor();
+    private final Processor onClosing = newCompletableProcessor();
+    private final KeepAliveManager keepAliveManager;
     @Nullable
     final Long idleTimeoutMs;
     @Nullable
     private SSLSession sslSession;
-    @Nullable
-    private ScheduledFuture<?> gracefulCloseTimeoutFuture;
-    private volatile int activeChildChannels;
 
-    H2ParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
-                              FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                              HttpExecutionStrategy executionStrategy) {
+    H2ParentConnectionContext(final Channel channel, final BufferAllocator allocator, final Executor executor,
+                              final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
+                              final HttpExecutionStrategy executionStrategy,
+                              final KeepAliveManager keepAliveManager) {
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.idleTimeoutMs = idleTimeoutMs;
+        this.keepAliveManager = keepAliveManager;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -163,87 +141,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     protected final void doCloseAsyncGracefully() {
-        EventLoop eventLoop = channel().eventLoop();
-        if (eventLoop.inEventLoop()) {
-            doCloseAsyncGracefully0();
-        } else {
-            try {
-                eventLoop.execute(this::doCloseAsyncGracefully0);
-            } catch (Throwable cause) {
-                close0(channel());
-                LOGGER.warn("channel={} EventLoop rejected a task for graceful shutdown, force closing connection",
-                        channel(), cause);
-            }
-        }
-    }
-
-    final void doCloseAsyncGracefully0() {
-        if (gracefulCloseTimeoutFuture == null) {
-            // Set the gracefulCloseTimeoutFuture before doing the write, because we will reference the state
-            // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the
-            // write future may not be executed which sets the timer.
-            gracefulCloseTimeoutFuture = GRACEFUL_CLOSE_PING_PENDING;
-
-            onClosing.onComplete();
-
-            // The graceful close process is described in [1]. In general it involves sending 2 GOAWAY frames. The first
-            // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT
-            // time duration for inflight frames to land, and the second GOAWAY includes the maximum known stream ID.
-            // To account for 2 RTTs we can send a PING and when the PING(ACK) comes back we can send the second GOAWAY.
-            // https://tools.ietf.org/html/rfc7540#section-6.8
-            DefaultHttp2GoAwayFrame goAwayFrame = new DefaultHttp2GoAwayFrame(NO_ERROR);
-            goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
-            channel().write(goAwayFrame);
-            channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
-                // If gracefulCloseTimeoutFuture is not GRACEFUL_CLOSE_PING_PENDING that means we have
-                // already received the PING(ACK) and there is no need to apply the timeout.
-                if (future.isSuccess() && gracefulCloseTimeoutFuture == GRACEFUL_CLOSE_PING_PENDING) {
-                    gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
-                        // If the PING(ACK) times out we may have under estimated the 2RTT time so we
-                        // optimistically keep the connection open and rely upon higher level timeouts to tear
-                        // down the connection.
-                        gracefulCloseWriteSecondGoAway(channel());
-                        LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
-                                channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
-                    }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
-                }
-            });
-        }
-    }
-
-    final void gracefulCloseWriteSecondGoAway(ChannelOutboundInvoker ctx) {
-        ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
-            if (activeChildChannels == 0) {
-                close0(channel());
-            } else if (future.isSuccess()) {
-                gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
-                    LOGGER.debug("channel={} timeout {}ms waiting for graceful close with {} active streams",
-                            channel(), DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, activeChildChannels);
-                    close0(channel());
-                }, DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, MILLISECONDS);
-            }
-        });
+        keepAliveManager.initiateGracefulClose(onClosing::onComplete);
     }
 
     final void trackActiveStream(Channel streamChannel) {
-        activeChildChannelsUpdater.incrementAndGet(this);
-        streamChannel.closeFuture().addListener(future1 -> {
-            activeChildChannelsUpdater.decrementAndGet(this);
-            if (activeChildChannels == 0 && gracefulCloseTimeoutFuture != null &&
-                    gracefulCloseTimeoutFuture != GRACEFUL_CLOSE_PING_PENDING) {
-                // gracefulCloseTimeoutFuture will be cancelled during connection closure elsewhere.
-                close0(channel());
-            }
-        });
-    }
-
-    private static void close0(Channel channel) {
-        assert channel.eventLoop().inEventLoop();
-        // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
-        // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
-        // closure, if there is no write pending then flush is a noop.
-        channel.flush();
-        channel.close();
+        keepAliveManager.trackActiveStream(streamChannel);
     }
 
     abstract static class AbstractH2ParentConnection extends ChannelInboundHandlerAdapter {
@@ -292,7 +194,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(
                         H2ParentConnectionContext.class, "channelInactive(...)"));
             }
-            doConnectionCleanup();
+            parentContext.keepAliveManager.channelClosed();
         }
 
         @Override
@@ -301,7 +203,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(
                         H2ParentConnectionContext.class, "handlerRemoved(...)"));
             }
-            doConnectionCleanup();
+            parentContext.keepAliveManager.channelClosed();
         }
 
         @Override
@@ -336,23 +238,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.doCloseAsyncGracefully0();
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext.onClosing::onComplete);
             } else if (msg instanceof Http2PingFrame) {
-                Http2PingFrame pingFrame = (Http2PingFrame) msg;
-                if (pingFrame.ack() && pingFrame.content() == GRACEFUL_CLOSE_PING_CONTENT &&
-                        parentContext.gracefulCloseTimeoutFuture != null) {
-                    parentContext.gracefulCloseTimeoutFuture.cancel(true);
-                    parentContext.gracefulCloseTimeoutFuture = GRACEFUL_CLOSE_PING_ACK_RECV;
-                    parentContext.gracefulCloseWriteSecondGoAway(ctx);
-                }
+                parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else {
                 ctx.fireChannelRead(msg);
-            }
-        }
-
-        private void doConnectionCleanup() {
-            if (parentContext.gracefulCloseTimeoutFuture != null) {
-                parentContext.gracefulCloseTimeoutFuture.cancel(true);
             }
         }
 
@@ -364,53 +254,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             } else {
                 tryCompleteSubscriber();
             }
-        }
-    }
-
-    private static final class NoopScheduledFuture implements ScheduledFuture<Object> {
-        @Override
-        public long getDelay(final TimeUnit unit) {
-            return 0;
-        }
-
-        @Override
-        public int compareTo(final Delayed o) {
-            return o == this ? 0 : 1;
-        }
-
-        @Override
-        public boolean cancel(final boolean mayInterruptIfRunning) {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDone() {
-            return false;
-        }
-
-        @Override
-        public Object get() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Object get(final long timeout, final TimeUnit unit) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int hashCode() {
-            return 0;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o == this;
         }
     }
 }
