@@ -29,6 +29,7 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.netty.H2ProtocolConfig;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
+import io.servicetalk.http.netty.KeepAlivePolicies;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
@@ -102,10 +103,11 @@ public class KeepAliveTest {
     private static Object[] newParam(final boolean keepAlivesFromClient, final Duration keepAliveIdleDuration,
                                      final Duration idleTimeoutDuration) {
         return new Object[] {keepAlivesFromClient,
-                (Function<String, H2ProtocolConfig>) frameLogger -> HttpProtocolConfigs.h2().keepAlive()
-                .idleDuration(keepAliveIdleDuration).commit()
-                .enableFrameLogging(frameLogger)
-                .build(), idleTimeoutDuration.toMillis()};
+                (Function<String, H2ProtocolConfig>) frameLogger ->
+                        HttpProtocolConfigs.h2()
+                                .keepAlivePolicy(KeepAlivePolicies.whenIdleFor(keepAliveIdleDuration))
+                                .enableFrameLogging(frameLogger).build(),
+                idleTimeoutDuration.toMillis()};
     }
 
     @After

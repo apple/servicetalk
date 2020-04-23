@@ -64,35 +64,35 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     KeepAlivePolicy keepAlivePolicy();
 
     /**
-     * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#page-42">PING frames</a> to the peer.
+     * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.
      */
     interface KeepAlivePolicy {
         /**
          * {@link Duration} of time the connection has to be idle before a
-         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
          *
          * @return {@link Duration} of time the connection has to be idle before a
-         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
          */
         Duration idleDuration();
 
         /**
          * {@link Duration} to wait for acknowledgment from the peer after a
-         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent. If there is no acknowledgment
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If there is no acknowledgment
          * is received, a closure of the connection will be initiated.
          *
          * @return {@link Duration} to wait for acknowledgment from the peer after a
-         * <a href="https://tools.ietf.org/html/rfc7540#page-42">ping</a> is sent.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
          */
         Duration ackTimeout();
 
         /**
-         * Whether this policy allows to send <a href="https://tools.ietf.org/html/rfc7540#page-42">pings</a> even if
-         * there are no streams active on the connection.
+         * Whether this policy allows to send <a href="https://tools.ietf.org/html/rfc7540#section-6.7">pings</a>
+         * even if there are no streams active on the connection.
          *
          * @return {@code true} if this policy allows to send
-         * <a href="https://tools.ietf.org/html/rfc7540#page-42">pings</a> even if there are no streams active on the
-         * connection.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">pings</a> even if there are no streams active on
+         * the connection.
          */
         boolean withoutActiveStreams();
     }

@@ -58,7 +58,6 @@ final class KeepAliveManager {
 
     private final Channel channel;
     private final long pingAckTimeoutMillis;
-    @Nullable
     private final boolean disallowKeepAliveWithoutActiveStreams;
     private final Scheduler scheduler;
 
@@ -94,8 +93,8 @@ final class KeepAliveManager {
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
         this(channel, keepAlivePolicy, (task, delayInMillis) ->
                 channel.eventLoop().schedule(task, delayInMillis, MILLISECONDS),
-                (ch, idlenessThresholdMillis, onIdle) -> ch.pipeline().addLast(
-                        new IdleStateHandler(idlenessThresholdMillis, idlenessThresholdMillis, 0) {
+                (ch, idlenessThresholdSeconds, onIdle) -> ch.pipeline().addLast(
+                        new IdleStateHandler(idlenessThresholdSeconds, idlenessThresholdSeconds, 0) {
                             @Override
                             protected void channelIdle(final ChannelHandlerContext ctx, final IdleStateEvent evt) {
                                 onIdle.run();
@@ -197,7 +196,7 @@ final class KeepAliveManager {
         assert channel.eventLoop().inEventLoop();
         assert pingWriteCompletionListener != null;
 
-        if (keepAliveState == CLOSED || activeChildChannels == 0 && disallowKeepAliveWithoutActiveStreams) {
+        if (keepAliveState != null || activeChildChannels == 0 && disallowKeepAliveWithoutActiveStreams) {
             return;
         }
         // idleness detected for the first time, send a ping to detect closure, if any.
@@ -231,11 +230,11 @@ final class KeepAliveManager {
          * Configure idleness detection for the passed {@code channel}.
          *
          * @param channel {@link Channel} for which idleness detection is to be configured.
-         * @param idlenessThresholdMillis Millis of idleness after which {@link Runnable#run()} should be called on the
-         * passed {@code onIdle}.
-         * @param onIdle {@link Runnable} to call when the channel is idle more than {@code idlenessThresholdMillis}.
+         * @param idlenessThresholdSeconds Seconds of idleness after which {@link Runnable#run()} should be called on
+         * the passed {@code onIdle}.
+         * @param onIdle {@link Runnable} to call when the channel is idle more than {@code idlenessThresholdSeconds}.
          */
-        void configure(Channel channel, int idlenessThresholdMillis, Runnable onIdle);
+        void configure(Channel channel, int idlenessThresholdSeconds, Runnable onIdle);
     }
 
     private void doCloseAsyncGracefully0(final Runnable whenInitiated) {
