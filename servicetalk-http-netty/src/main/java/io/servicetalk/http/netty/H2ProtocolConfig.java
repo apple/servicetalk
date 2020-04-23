@@ -78,8 +78,8 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
 
         /**
          * {@link Duration} to wait for acknowledgment from the peer after a
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If there is no acknowledgment
-         * is received, a closure of the connection will be initiated.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received,
+         * a closure of the connection will be initiated.
          *
          * @return {@link Duration} to wait for acknowledgment from the peer after a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.

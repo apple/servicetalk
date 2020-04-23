@@ -99,7 +99,8 @@ public final class H2KeepAlivePolicies {
          */
         public KeepAlivePolicyBuilder idleDuration(final Duration idleDuration) {
             if (idleDuration.getSeconds() < 10 || idleDuration.toDays() > 1) {
-                throw new IllegalArgumentException("idleDuration: " + idleDuration + " (expected >= 10 seconds");
+                throw new IllegalArgumentException("idleDuration: " + idleDuration +
+                        " (expected >= 10 seconds and < 1 day)");
             }
             this.idleDuration = idleDuration;
             return this;
