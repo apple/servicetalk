@@ -25,7 +25,7 @@ import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
-import static io.servicetalk.http.netty.KeepAlivePolicies.DISABLE_KEEP_ALIVE;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -90,7 +90,7 @@ public final class H2ProtocolConfigBuilder {
      *
      * @param policy {@link KeepAlivePolicy} to use.
      * @return {@code this}
-     * @see KeepAlivePolicies
+     * @see H2KeepAlivePolicies
      */
     public H2ProtocolConfigBuilder keepAlivePolicy(final KeepAlivePolicy policy) {
         this.keepAlivePolicy = policy == DISABLE_KEEP_ALIVE ? null : requireNonNull(policy);

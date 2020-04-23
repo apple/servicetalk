@@ -34,7 +34,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static java.time.Duration.ofSeconds;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_IDLE_DURATION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -84,8 +86,7 @@ public class KeepAliveManagerTest {
         addActiveStream(manager);
         manager.channelIdle();
         Http2PingFrame ping = verifyWrite(instanceOf(Http2PingFrame.class));
-        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
-        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
+        ScheduledTask ackTimeoutTask = verifyPingAckTimeoutScheduled();
 
         manager.pingReceived(new DefaultHttp2PingFrame(ping.content(), true));
         assertThat("Ping ack timeout task not cancelled.", ackTimeoutTask.promise.isCancelled(), is(true));
@@ -102,8 +103,7 @@ public class KeepAliveManagerTest {
         addActiveStream(manager);
         manager.channelIdle();
         Http2PingFrame ping = verifyWrite(instanceOf(Http2PingFrame.class));
-        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
-        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
+        ScheduledTask ackTimeoutTask = verifyPingAckTimeoutScheduled();
 
         manager.pingReceived(new DefaultHttp2PingFrame(ping.content() + 1, true));
         assertThat("Ping ack timeout task cancelled.", ackTimeoutTask.promise.isCancelled(), is(false));
@@ -117,9 +117,7 @@ public class KeepAliveManagerTest {
         addActiveStream(manager);
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
-        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
-        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
-        verifyChannelCloseOnMissingPingAck(ackTimeoutTask);
+        verifyChannelCloseOnMissingPingAck(verifyPingAckTimeoutScheduled());
     }
 
     @Test
@@ -186,9 +184,7 @@ public class KeepAliveManagerTest {
 
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
-        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
-        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
-        verifyChannelCloseOnMissingPingAck(ackTimeoutTask);
+        verifyChannelCloseOnMissingPingAck(verifyPingAckTimeoutScheduled());
     }
 
     @Test
@@ -222,8 +218,7 @@ public class KeepAliveManagerTest {
         addActiveStream(manager);
         manager.channelIdle();
         verifyWrite(instanceOf(Http2PingFrame.class));
-        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
-        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
+        ScheduledTask ackTimeoutTask = verifyPingAckTimeoutScheduled();
 
         manager.channelClosed();
         assertThat("Keep alive ping ack timeout not cancelled.", ackTimeoutTask.promise.isCancelled(),
@@ -240,6 +235,14 @@ public class KeepAliveManagerTest {
         manager.initiateGracefulClose(() -> { });
         verifyNoWrite();
         verifyNoScheduledTasks();
+    }
+
+    private ScheduledTask verifyPingAckTimeoutScheduled() {
+        ScheduledTask ackTimeoutTask = scheduledTasks.poll();
+        assertThat("Ping ack timeout not scheduled.", ackTimeoutTask, is(notNullValue()));
+        assertThat("Unexpected ping ack timeout duration.", ackTimeoutTask.delayMillis,
+                is(DEFAULT_ACK_TIMEOUT.toMillis()));
+        return ackTimeoutTask;
     }
 
     private void sendGracefulClosePingAckAndVerifySecondGoAway(final KeepAliveManager manager,
@@ -301,13 +304,14 @@ public class KeepAliveManagerTest {
 
     private KeepAliveManager newManager(final boolean allowPingWithoutActiveStreams) {
         KeepAlivePolicy policy = mock(KeepAlivePolicy.class);
-        when(policy.idleDuration()).thenReturn(ofSeconds(10));
-        when(policy.ackTimeout()).thenReturn(ofSeconds(30));
+        when(policy.idleDuration()).thenReturn(DEFAULT_IDLE_DURATION);
+        when(policy.ackTimeout()).thenReturn(DEFAULT_ACK_TIMEOUT);
         when(policy.withoutActiveStreams()).thenReturn(allowPingWithoutActiveStreams);
         return new KeepAliveManager(channel, policy,
-                (task, delayMillis) -> {
+                (task, delay, unit) -> {
                     ChannelPromise promise = channel.newPromise();
-                    ScheduledTask scheduledTask = new ScheduledTask(task, promise, delayMillis);
+                    ScheduledTask scheduledTask = new ScheduledTask(task, promise,
+                            MILLISECONDS.convert(delay, unit));
                     scheduledTasks.add(scheduledTask);
                     return scheduledTask.promise;
                 },

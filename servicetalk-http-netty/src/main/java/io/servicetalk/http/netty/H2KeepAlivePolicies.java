@@ -19,19 +19,20 @@ import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import java.time.Duration;
 
-import static io.servicetalk.http.netty.DefaultKeepAlivePolicy.DEFAULT_ACK_TIMEOUT;
-import static io.servicetalk.http.netty.DefaultKeepAlivePolicy.DEFAULT_IDLE_DURATION;
 import static java.time.Duration.ofDays;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A factory to create {@link KeepAlivePolicy} instances.
  */
-public final class KeepAlivePolicies {
+public final class H2KeepAlivePolicies {
     static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
             new DefaultKeepAlivePolicy(ofDays(365), ofDays(365), false);
+    static final Duration DEFAULT_IDLE_DURATION = ofSeconds(30);
+    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(30);
 
-    private KeepAlivePolicies() {
+    private H2KeepAlivePolicies() {
         // no instances.
     }
 
@@ -51,7 +52,8 @@ public final class KeepAlivePolicies {
      *
      * @param idleDuration {@link Duration} of idleness on a connection after which a
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
-     * @return A {@link KeepAlivePolicy} that disables all keep alive behaviors.
+     * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
+     * ping</a> if the channel is idle for the passed {@code idleDuration}.
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration) {
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).build();
@@ -67,7 +69,9 @@ public final class KeepAlivePolicies {
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
      * @param ackTimeout {@link Duration} to wait for an acknowledgment of a previously sent
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.
-     * @return A {@link KeepAlivePolicy} that disables all keep alive behaviors.
+     * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
+     * ping</a> if the channel is idle for the passed {@code idleDuration} and waits for {@code ackTimeout} for an ack
+     * for that <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration, final Duration ackTimeout) {
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).ackTimeout(ackTimeout).build();
@@ -85,8 +89,8 @@ public final class KeepAlivePolicies {
          * Set the {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
          * <p>
-         * <strong>Too short ping durations may cause high network traffic, implementations may enforce a minimum
-         * duration.</strong>
+         * <strong>Too short ping durations may cause high network traffic, so a minimum duration may be
+         * enforced.</strong>
          *
          * @param idleDuration {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -94,7 +98,7 @@ public final class KeepAlivePolicies {
          * @see KeepAlivePolicy#idleDuration()
          */
         public KeepAlivePolicyBuilder idleDuration(final Duration idleDuration) {
-            if (idleDuration.getSeconds() < 10) {
+            if (idleDuration.getSeconds() < 10 || idleDuration.toDays() > 1) {
                 throw new IllegalArgumentException("idleDuration: " + idleDuration + " (expected >= 10 seconds");
             }
             this.idleDuration = idleDuration;
@@ -117,7 +121,7 @@ public final class KeepAlivePolicies {
         }
 
         /**
-         * Allow/disallow sending or receiving <a href="https://tools.ietf.org/html/rfc7540#section-6.7">pings</a> even
+         * Allow/disallow sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">pings</a> even
          * when no streams are <a href="https://tools.ietf.org/html/rfc7540#section-5.1">active</a>.
          *
          * @param withoutActiveStreams {@code true} if

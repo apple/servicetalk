@@ -27,9 +27,9 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.http.netty.H2KeepAlivePolicies;
 import io.servicetalk.http.netty.H2ProtocolConfig;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
-import io.servicetalk.http.netty.KeepAlivePolicies;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
@@ -105,7 +105,7 @@ public class KeepAliveTest {
         return new Object[] {keepAlivesFromClient,
                 (Function<String, H2ProtocolConfig>) frameLogger ->
                         HttpProtocolConfigs.h2()
-                                .keepAlivePolicy(KeepAlivePolicies.whenIdleFor(keepAliveIdleDuration))
+                                .keepAlivePolicy(H2KeepAlivePolicies.whenIdleFor(keepAliveIdleDuration))
                                 .enableFrameLogging(frameLogger).build(),
                 idleTimeoutDuration.toMillis()};
     }

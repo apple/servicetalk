@@ -19,20 +19,12 @@ import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import java.time.Duration;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultKeepAlivePolicy implements KeepAlivePolicy {
-    static final Duration DEFAULT_IDLE_DURATION = ofSeconds(30);
-    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(30);
-    static final boolean DEFAULT_WITHOUT_ACTIVE_STREAMS = false;
     private final Duration idleDuration;
     private final Duration ackTimeout;
     private final boolean withoutActiveStreams;
-
-    DefaultKeepAlivePolicy() {
-        this(DEFAULT_IDLE_DURATION, DEFAULT_ACK_TIMEOUT, false);
-    }
 
     DefaultKeepAlivePolicy(final Duration idleDuration, final Duration ackTimeout, final boolean withoutActiveStreams) {
         this.idleDuration = requireNonNull(idleDuration);

@@ -30,14 +30,14 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
-import static io.servicetalk.http.netty.DefaultKeepAlivePolicy.DEFAULT_ACK_TIMEOUT;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * An implementation of {@link KeepAlivePolicy} per {@link Channel}.
@@ -57,7 +57,7 @@ final class KeepAliveManager {
     private volatile int activeChildChannels;
 
     private final Channel channel;
-    private final long pingAckTimeoutMillis;
+    private final long pingAckTimeoutNanos;
     private final boolean disallowKeepAliveWithoutActiveStreams;
     private final Scheduler scheduler;
 
@@ -91,8 +91,8 @@ final class KeepAliveManager {
     private final GenericFutureListener<Future<? super Void>> pingWriteCompletionListener;
 
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
-        this(channel, keepAlivePolicy, (task, delayInMillis) ->
-                channel.eventLoop().schedule(task, delayInMillis, MILLISECONDS),
+        this(channel, keepAlivePolicy, (task, delay, unit) ->
+                channel.eventLoop().schedule(task, delay, unit),
                 (ch, idlenessThresholdSeconds, onIdle) -> ch.pipeline().addLast(
                         new IdleStateHandler(idlenessThresholdSeconds, idlenessThresholdSeconds, 0) {
                             @Override
@@ -108,33 +108,32 @@ final class KeepAliveManager {
         this.scheduler = scheduler;
         if (keepAlivePolicy != null) {
             disallowKeepAliveWithoutActiveStreams = !keepAlivePolicy.withoutActiveStreams();
-            pingAckTimeoutMillis = keepAlivePolicy.ackTimeout().toMillis();
-            final GenericFutureListener<Future<? super Void>> goAwayListener = f -> {
-                if (f.isSuccess()) {
-                    LOGGER.debug("Closing channel={}, after keep-alive timeout.", this.channel);
-                    KeepAliveManager.this.close0();
-                }
-            };
+            pingAckTimeoutNanos = keepAlivePolicy.ackTimeout().toNanos();
             pingWriteCompletionListener = future -> {
                 if (future.isSuccess() && keepAliveState == KEEP_ALIVE_ACK_PENDING) {
                     // Schedule a task to verify ping ack within the pingAckTimeoutMillis
-                    keepAliveState = scheduler.afterMillis(() -> {
+                    keepAliveState = scheduler.afterDuration(() -> {
                         if (keepAliveState != null) {
                             keepAliveState = KEEP_ALIVE_ACK_TIMEDOUT;
                             LOGGER.debug(
-                                    "channel={}, timeout {}ms waiting for keep-alive PING(ACK), writing go_away.",
-                                    this.channel, pingAckTimeoutMillis);
+                                    "channel={}, timeout {}ns waiting for keep-alive PING(ACK), writing go_away.",
+                                    this.channel, pingAckTimeoutNanos);
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
-                                    .addListener(goAwayListener);
+                                    .addListener(f -> {
+                                        if (f.isSuccess()) {
+                                            LOGGER.debug("Closing channel={}, after keep-alive timeout.", this.channel);
+                                            KeepAliveManager.this.close0();
+                                        }
+                                    });
                         }
-                    }, pingAckTimeoutMillis);
+                    }, pingAckTimeoutNanos, NANOSECONDS);
                 }
             };
             int idleInSeconds = (int) keepAlivePolicy.idleDuration().getSeconds();
             idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
         } else {
             disallowKeepAliveWithoutActiveStreams = false;
-            pingAckTimeoutMillis = DEFAULT_ACK_TIMEOUT.toMillis();
+            pingAckTimeoutNanos = DEFAULT_ACK_TIMEOUT.toNanos();
             pingWriteCompletionListener = null;
         }
     }
@@ -161,8 +160,8 @@ final class KeepAliveManager {
     void trackActiveStream(final Channel streamChannel) {
         activeChildChannelsUpdater.incrementAndGet(this);
         streamChannel.closeFuture().addListener(f -> {
-            activeChildChannelsUpdater.decrementAndGet(this);
-            if (activeChildChannels == 0 && gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
+            if (activeChildChannelsUpdater.decrementAndGet(this) == 0 &&
+                    gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
                 close0();
             }
         });
@@ -182,13 +181,7 @@ final class KeepAliveManager {
         if (eventLoop.inEventLoop()) {
             doCloseAsyncGracefully0(whenInitiated);
         } else {
-            try {
-                eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated));
-            } catch (RejectedExecutionException ree) {
-                close0();
-                LOGGER.warn("channel={} EventLoop rejected a task for graceful shutdown, force closing connection",
-                        channel, ree);
-            }
+            eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated));
         }
     }
 
@@ -196,7 +189,7 @@ final class KeepAliveManager {
         assert channel.eventLoop().inEventLoop();
         assert pingWriteCompletionListener != null;
 
-        if (keepAliveState != null || activeChildChannels == 0 && disallowKeepAliveWithoutActiveStreams) {
+        if (keepAliveState != null || disallowKeepAliveWithoutActiveStreams && activeChildChannels == 0) {
             return;
         }
         // idleness detected for the first time, send a ping to detect closure, if any.
@@ -212,13 +205,14 @@ final class KeepAliveManager {
     interface Scheduler {
 
         /**
-         * Run the passed {@link Runnable} after {@code delayInMillis} milliseconds.
+         * Run the passed {@link Runnable} after {@code delay} milliseconds.
          *
          * @param task {@link Runnable} to run.
-         * @param delayInMillis Milliseconds after which the task is to be run.
+         * @param delay after which the task is to be run.
+         * @param unit {@link TimeUnit} for the delay.
          * @return {@link Future} for the scheduled task.
          */
-        Future<?> afterMillis(Runnable task, long delayInMillis);
+        Future<?> afterDuration(Runnable task, long delay, TimeUnit unit);
     }
 
     /**
@@ -264,14 +258,14 @@ final class KeepAliveManager {
             // If gracefulCloseState is not GRACEFUL_CLOSE_START that means we have already received the PING(ACK) and
             // there is no need to apply the timeout.
             if (future.isSuccess() && gracefulCloseState == GRACEFUL_CLOSE_START) {
-                gracefulCloseState = scheduler.afterMillis(() -> {
+                gracefulCloseState = scheduler.afterDuration(() -> {
                     // If the PING(ACK) times out we may have under estimated the 2RTT time so we
                     // optimistically keep the connection open and rely upon higher level timeouts to tear
                     // down the connection.
-                    LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close.",
-                            channel, pingAckTimeoutMillis);
+                    LOGGER.debug("channel={} timeout {}ns waiting for PING(ACK) during graceful close.",
+                            channel, pingAckTimeoutNanos);
                     gracefulCloseWriteSecondGoAway();
-                }, pingAckTimeoutMillis);
+                }, pingAckTimeoutNanos, NANOSECONDS);
             }
         });
     }
