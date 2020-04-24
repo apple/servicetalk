@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
+import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -129,7 +130,7 @@ final class KeepAliveManager {
                     }, pingAckTimeoutNanos, NANOSECONDS);
                 }
             };
-            int idleInSeconds = (int) keepAlivePolicy.idleDuration().getSeconds();
+            int idleInSeconds = (int) min(keepAlivePolicy.idleDuration().getSeconds(), Integer.MAX_VALUE);
             idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
         } else {
             disallowKeepAliveWithoutActiveStreams = false;
