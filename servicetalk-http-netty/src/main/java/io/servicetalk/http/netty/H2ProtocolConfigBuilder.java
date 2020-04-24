@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import org.slf4j.event.Level;
 
@@ -24,6 +25,7 @@ import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,6 +39,8 @@ public final class H2ProtocolConfigBuilder {
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
     private String frameLoggerName;
+    @Nullable
+    private KeepAlivePolicy keepAlivePolicy;
 
     H2ProtocolConfigBuilder() {
     }
@@ -82,12 +86,25 @@ public final class H2ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the {@link KeepAlivePolicy} to use.
+     *
+     * @param policy {@link KeepAlivePolicy} to use.
+     * @return {@code this}
+     * @see H2KeepAlivePolicies
+     */
+    public H2ProtocolConfigBuilder keepAlivePolicy(final KeepAlivePolicy policy) {
+        this.keepAlivePolicy = policy == DISABLE_KEEP_ALIVE ? null : requireNonNull(policy);
+        return this;
+    }
+
+    /**
      * Builds {@link H2ProtocolConfig}.
      *
      * @return {@link H2ProtocolConfig}
      */
     public H2ProtocolConfig build() {
-        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerName);
+        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerName,
+                keepAlivePolicy);
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
@@ -96,13 +113,16 @@ public final class H2ProtocolConfigBuilder {
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
         private final String frameLoggerName;
+        @Nullable
+        private final KeepAlivePolicy keepAlivePolicy;
 
         DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
-                                @Nullable final String frameLogger) {
+                                @Nullable final String frameLogger, @Nullable final KeepAlivePolicy keepAlivePolicy) {
             this.headersFactory = headersFactory;
             this.headersSensitivityDetector = headersSensitivityDetector;
             this.frameLoggerName = frameLogger;
+            this.keepAlivePolicy = keepAlivePolicy;
         }
 
         @Override
@@ -120,5 +140,11 @@ public final class H2ProtocolConfigBuilder {
         public String frameLoggerName() {
             return frameLoggerName;
         }
-    }
+
+        @Nullable
+        @Override
+        public KeepAlivePolicy keepAlivePolicy() {
+            return keepAlivePolicy;
+        }
+   }
 }

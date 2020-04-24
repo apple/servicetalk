@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
@@ -82,7 +83,12 @@ public class NettyChannelListenableAsyncCloseable implements ListenableAsyncClos
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
-                    doCloseAsyncGracefully();
+                    try {
+                        doCloseAsyncGracefully();
+                    } catch (Throwable t) {
+                        deliverTerminalFromSource(subscriber, t);
+                        return;
+                    }
                 }
                 toSource(onClose()).subscribe(subscriber);
             }

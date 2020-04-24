@@ -37,8 +37,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.HeaderUtils.indexOf;
 
 final class H2ToStH1Utils {
-    static final int DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS = 30000;
-
     private H2ToStH1Utils() {
         // no instances.
     }
