@@ -110,15 +110,14 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private volatile int active; // Number of currently active Singles.
         @SuppressWarnings("unused")
         @Nullable
-        private volatile Subscription subscription;
-        @SuppressWarnings("unused")
-        @Nullable
         private volatile TerminalNotification terminalNotification;
         /**
          * This variable is only accessed within the "emitting lock" so we rely upon this to provide visibility to
          * other threads.
          */
         private boolean targetTerminated;
+        @Nullable
+        private Subscription subscription;
 
         private final Queue<Object> pending;
         private final DynamicCompositeCancellable cancellable = new MapDynamicCompositeCancellable();
@@ -139,10 +138,9 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void request(long n) {
-            final Subscription s = subscription;
-            assert s != null;
+            assert subscription != null;
             if (!isRequestNValid(n)) {
-                s.request(n);
+                subscription.request(n);
                 return;
             }
 
@@ -150,7 +148,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                     sourceEmittedUpdater, source.maxConcurrency, this);
             if (actualSourceRequestN != 0) {
-                s.request(actualSourceRequestN);
+                subscription.request(actualSourceRequestN);
             }
         }
 
@@ -218,9 +216,6 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         }
 
         private void enqueueAndDrain(Object item) {
-            Subscription s = subscription;
-            assert s != null;
-
             if (!pending.offer(item)) {
                 QueueFullException exception = new QueueFullException("pending");
                 if (item instanceof TerminalNotification) {
@@ -230,10 +225,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                     onError0(exception, true, true);
                 }
             }
-            drainPending(s);
+            drainPending();
         }
 
-        private void drainPending(Subscription subscription) {
+        private void drainPending() {
+            assert subscription != null;
             long drainedCount = drainSingleConsumerQueue(pending, this::sendToTarget, emittingUpdater, this);
             if (drainedCount != 0) {
                 // We ignore overflow here because once we get to this extreme, we won't be able to account for more
