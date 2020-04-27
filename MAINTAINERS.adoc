@@ -1,0 +1,17 @@
+This page lists all active maintainers of this repository. If you were a maintainer and would like to add your name to
+the Emeritus list, please send us a PR.
+
+See xref:GOVERNANCE.adoc[Governance Guidelines] for how to become a maintainer. See
+xref:CONTRIBUTING.adoc[Contributor Guidelines] for general contribution guidelines.
+
+== Maintainers (in alphabetical order)
+* link:https://github.com/idelpivnitskiy[Idel Pivnitskiy]
+* link:https://github.com/NiteshKant[Nitesh Kant]
+* link:https://github.com/normanmaurer[Norman Maurer]
+* link:https://github.com/ScottMitch[Scott Mitchell]
+
+== Emeritus Maintainers (in alphabetical order)
+* link:https://github.com/ddossot[David Dossot]
+* link:https://github.com/lewisd32[Derek Lewis]
+* link:https://github.com/jayv[Jo Voordeckers]
+* link:https://github.com/tomerd[Tomer Doron]
