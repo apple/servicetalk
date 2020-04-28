@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
@@ -103,9 +104,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
                 try {
                     subscriber.onError(error);
                 } catch (Throwable cause) {
-                    if (delayedCause == null) {
-                        delayedCause = cause;
-                    }
+                    delayedCause = catchUnexpected(delayedCause, cause);
                 }
             }
         } else {
@@ -115,9 +114,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
                 try {
                     subscriber.onSuccess(value);
                 } catch (Throwable cause) {
-                    if (delayedCause == null) {
-                        delayedCause = cause;
-                    }
+                    delayedCause = catchUnexpected(delayedCause, cause);
                 }
             }
         }

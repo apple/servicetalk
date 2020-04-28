@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
 
@@ -100,9 +101,7 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
                         itr.remove();
                         cancellable.cancel();
                     } catch (Throwable cause) {
-                        if (delayedCause == null) {
-                            delayedCause = cause;
-                        }
+                        delayedCause = catchUnexpected(delayedCause, cause);
                     }
                 }
             } finally {

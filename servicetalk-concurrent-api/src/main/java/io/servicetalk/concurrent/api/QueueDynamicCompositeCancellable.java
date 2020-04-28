@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
@@ -66,9 +67,7 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
             try {
                 cancellable.cancel();
             } catch (Throwable cause) {
-                if (delayedCause == null) {
-                    delayedCause = cause;
-                }
+                delayedCause = catchUnexpected(delayedCause, cause);
             }
         }
         if (delayedCause != null) {

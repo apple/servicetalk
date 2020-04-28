@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
@@ -65,9 +66,7 @@ final class CompositeException extends RuntimeException {
             try {
                 addSuppressed(next);
             } catch (Throwable cause) {
-                if (delayedCause == null) {
-                    delayedCause = cause;
-                }
+                delayedCause = catchUnexpected(delayedCause, cause);
             }
         }
         if (delayedCause != null) {

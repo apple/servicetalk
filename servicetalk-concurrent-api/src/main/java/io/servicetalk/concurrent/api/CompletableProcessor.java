@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
@@ -96,9 +97,7 @@ final class CompletableProcessor extends Completable implements Processor {
             try {
                 terminalSignal.terminate(subscriber);
             } catch (Throwable cause) {
-                if (delayedCause == null) {
-                    delayedCause = cause;
-                }
+                delayedCause = catchUnexpected(delayedCause, cause);
             }
         }
         if (delayedCause != null) {
