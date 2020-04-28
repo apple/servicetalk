@@ -1,5 +1,5 @@
-This document describes the governance rules of the ServiceTalk project/organization. It is meant to be followed by all
-the repositories / sub-projects in the organization.
+This document describes the governance rules of the ServiceTalk organization. It is meant to be followed by all
+the projects in the organization.
 
 == Contributions
 Everyone is welcome to contribute to ServiceTalk. Contributions aren't limited to submitting pull requests there are
@@ -7,62 +7,61 @@ many different ways for you to get involved, including answering questions and r
 you want to get involved, we ask that you first learn what’s expected of anyone who participates in the project by
 reading the xref:CONTRIBUTING.adoc[Contributor Guidelines].
 
-== Decision Making and Voting
-ServiceTalk is an open source project, and Github serves as the source of truth for the project. Technical disagreements
+== Decision-Making and Voting
+ServiceTalk is an open source project, and GitHub serves as the source of truth for the project. Technical disagreements
 may come up, but all community members are always expected to follow the xref:CODE_OF_CONDUCT.adoc[Code of Conduct]. In
 general it is preferred that direction can be mutually agreed upon by community members. If a disagreement cannot be
 resolved independently, the <<Maintainers>> can be called in to vote on the proposal (e.g. issue/PR) in question. An
-independent link:https://github.com/apple/servicetalk/issues[github issues] should be opened prefixed with "[Vote]" and
+independent link:https://github.com/apple/servicetalk/issues[GitHub issues] should be opened prefixed with "[Vote]" and
 reference the proposal in question. The voting period should remain open for at least 2 weeks. Each Maintainer gets one
 vote and the majority will decide the direction. The final decision including the rational for the majority decision
-must be summarized by a maintainer.
+must be summarized by a Maintainer.
 
 == Maintainers
-The ServiceTalk Maintainers are responsible for the long term maintenance of the ServiceTalk project/organization. Any
+The ServiceTalk Maintainers are responsible for the long term maintenance of the ServiceTalk organization. Any
 additions to the repository are weighted on a spectrum of applicability and maintenance overhead. If a feature lies on
 the limited applicability and high maintenance end of the spectrum the maintainers tend to decide against expanding
-scope of the repository. In the future the maintainers may create a separate organization to facilitate discovery and
+scope of the repository. In the future the Maintainers may create a separate organization to facilitate discovery and
 collaboration for community projects. Until this time contributions can be maintained outside the ServiceTalk
 project, demonstrate maturity/adoption, and then be considered for contribution back to the ServiceTalk organization.
 
 === Become a Maintainer
 Making contributions does not require becoming a maintainer, or obtaining commit access to the ServiceTalk
-project/organization. However if you are interested in taking a more formal role with decision making power you should
+organization. However if you are interested in taking a more formal role with decision-making power you should
 consider becoming a Maintainer. Some characteristics of a Maintainer are as follows:
 
 * Be involved in contributing code, pull request review, triage of issues and addressing user questions in one or more
-forums such as Github, Stackoverflow, etc.
+forums such as GitHub, Stackoverflow, etc.
 * Maintain sustained contribution to the ServiceTalk project and spend a reasonable amount of time on it.
 * Show deep understanding of the areas contributed to, and good consideration of various reliability, usability,
 backward compatibility, and performance requirements.
 
 If you believe you satisfy these above criteria please open a
-link:https://github.com/apple/servicetalk/compare[github pull request] modifying the
+link:https://github.com/apple/servicetalk/compare[GitHub pull request] modifying the
 xref:MAINTAINERS.adoc[Maintainers doc] describing at least 5 non-trivial pull requests that have
 been accepted without major modifications. Please also make your case as to why you feel you will need Maintainer status
 moving forward and intention of continued involvement. Existing Maintainers must vote on the PR and a majority vote is
-required to merge and add the new Maintainer (see <<Decision Making and Voting>>).
+required to merge and add the new Maintainer (see <<Decision-Making and Voting>>).
 
 === Expectations of a Maintainer
 After becoming a Maintainer you have the following expectations:
 
 * You are granted commit-after-approval to all parts of ServiceTalk.
 * You may commit an obvious change without first getting approval. The community expects you to use good judgment.
-Examples are reverting obviously broken patches, correcting code comments, and other minor changes.
-* You are allowed to commit changes without approval to the portions of ServiceTalk to which you have contributed or
-for which you have been assigned responsibility. Such commits must not break the build and follow backward compatibility
-requirements. This is a “trust but verify” policy, and commits of this nature are reviewed after being committed.
-
-Even with commit access, your changes are still subject to code review. Of course, you are also encouraged to review
-other peoples’ changes.
+Examples are reverting obviously broken patches, correcting code comments, and other minor changes. This is a
+“trust but verify” policy, and commits of this nature are reviewed after being committed.
+* Even with commit access, your changes are still subject to code review by at least one other Maintainer. If you are
+not a domain expert in the area of contribution it is good practice to wait for review from a Maintainer who is.
+Of course, you are also encouraged to review other peoples’ changes.
+* In general merges must not break the build and follow backward compatibility requirements.
 
 === Losing Maintainer Status
-If a maintainer is no longer interested or cannot perform the maintainer duties listed above, they should volunteer to
+If a Maintainer is no longer interested or cannot perform the Maintainer duties listed above, they should volunteer to
 be moved to emeritus status. If possible, try to complete your work or help find someone to pick up your work before
-stepping down. If a maintainer has stopped contributing for a reasonable amount of time, other maintainers may propose
-to move such maintainers to emeritus list without prior notice. The PR for a such as change would serve as the notice.
-Such a PR should have @mention of the maintainer in question and should remain open for at least a period of two weeks.
-Any disagreements will be resolved by a vote of the maintainers per the voting process above.
+stepping down. If a Maintainer has stopped contributing for a reasonable amount of time, other Maintainers may propose
+to move such Maintainers to emeritus list without prior notice. The PR for a such as change would serve as the notice.
+Such a PR should have @mention of the Maintainer in question and should remain open for at least a period of two weeks.
+Any disagreements will be resolved by a vote of the Maintainers per the voting process above.
 
 Multiple violations of the Maintainer policies or a single egregious violation may result in loss of Maintainer status.
 
