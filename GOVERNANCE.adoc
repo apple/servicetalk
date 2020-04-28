@@ -12,7 +12,7 @@ ServiceTalk is an open source project, and GitHub serves as the source of truth 
 may come up, but all community members are always expected to follow the xref:CODE_OF_CONDUCT.adoc[Code of Conduct]. In
 general it is preferred that direction can be mutually agreed upon by community members. If a disagreement cannot be
 resolved independently, the <<Maintainers>> can be called in to vote on the proposal (e.g. issue/PR) in question. An
-independent link:https://github.com/apple/servicetalk/issues[GitHub issues] should be opened prefixed with "[Vote]" and
+independent link:https://github.com/apple/servicetalk/issues[GitHub issue] should be opened prefixed with "[Vote]" and
 reference the proposal in question. The voting period should remain open for at least 2 weeks. Each Maintainer gets one
 vote and the majority will decide the direction. The final decision including the rational for the majority decision
 must be summarized by a Maintainer.
@@ -20,7 +20,7 @@ must be summarized by a Maintainer.
 == Maintainers
 The ServiceTalk Maintainers are responsible for the long term maintenance of the ServiceTalk organization. Any
 additions to the repository are weighted on a spectrum of applicability and maintenance overhead. If a feature lies on
-the limited applicability and high maintenance end of the spectrum the maintainers tend to decide against expanding
+the limited applicability and high maintenance end of the spectrum the Maintainers tend to decide against expanding
 scope of the repository. In the future the Maintainers may create a separate organization to facilitate discovery and
 collaboration for community projects. Until this time contributions can be maintained outside the ServiceTalk
 project, demonstrate maturity/adoption, and then be considered for contribution back to the ServiceTalk organization.
