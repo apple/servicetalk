@@ -89,10 +89,10 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
         return cancelled != 0;
     }
 
-    @SuppressWarnings("ContinueOrBreakFromFinallyBlock")
     private void cancelAll() {
         Throwable delayedCause = null;
-        while (tryAcquireLock(cancelAllLockUpdater, this)) {
+        boolean tryAcquire = true;
+        while (tryAcquire && tryAcquireLock(cancelAllLockUpdater, this)) {
             try {
                 Iterator<Cancellable> itr = cancellables.iterator();
                 while (itr.hasNext()) {
@@ -105,9 +105,7 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
                     }
                 }
             } finally {
-                if (releaseLock(cancelAllLockUpdater, this)) {
-                    break;
-                }
+                tryAcquire = !releaseLock(cancelAllLockUpdater, this);
             }
         }
 
