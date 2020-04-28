@@ -16,15 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.QueueFullException;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerCollectionDelayThrow;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
     private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> cancelledUpdater =
@@ -32,34 +30,20 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     @SuppressWarnings("unused")
     private volatile int cancelled;
 
-    private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> drainingUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(QueueDynamicCompositeCancellable.class, "draining");
-    @SuppressWarnings("unused")
-    private volatile int draining;
-
-    // TODO(scott): consider using a MPSC queue from JCTools once remove is supported.
-    // https://github.com/JCTools/JCTools/pull/193#issuecomment-329958251
     private final Queue<Cancellable> cancellables = new ConcurrentLinkedQueue<>();
 
     @Override
     public void cancel() {
-        if (cancelledUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
+        if (cancelledUpdater.compareAndSet(this, 0, 1)) {
             cancelAll();
         }
     }
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (isCancelled()) {
-            toAdd.cancel();
-            return false;
-        }
-
         if (!cancellables.offer(toAdd)) {
-            throw new QueueFullException("cancellables");
-        }
-
-        if (isCancelled()) {
+            toAdd.cancel();
+        } else if (isCancelled()) {
             cancelAll();
             return false;
         }
@@ -77,6 +61,17 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     }
 
     private void cancelAll() {
-        drainSingleConsumerCollectionDelayThrow(cancellables, Cancellable::cancel, drainingUpdater, this);
+        Throwable delayedCause = null;
+        Cancellable cancellable;
+        while ((cancellable = cancellables.poll()) != null) {
+            try {
+                cancellable.cancel();
+            } catch (Throwable cause) {
+                delayedCause = catchUnexpected(delayedCause, cause);
+            }
+        }
+        if (delayedCause != null) {
+            throwException(delayedCause);
+        }
     }
 }

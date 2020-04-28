@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import javax.annotation.Nullable;
+
 /**
  * Utility for creating static {@link Throwable}s.
  */
@@ -57,5 +59,19 @@ public final class ThrowableUtils {
             lhs = lhs.getCause();
         }
         return false;
+    }
+
+    /**
+     * Used in scenarios where multiple operations which aren't expected to throw but exception propagation must be
+     * delayed to preserve control flow.
+     * @param delayedCause A previously thrown {@link Throwable} or {@code null} if no previous exception was thrown.
+     * @param cause The newly thrown {@link Throwable}.
+     * @return The new cause to feed back into this method as {@code delayedCause} this method or later throw.
+     */
+    public static Throwable catchUnexpected(@Nullable Throwable delayedCause, Throwable cause) {
+        // When methods that are not expected to throw actually throw we use best-effort approach for exception
+        // propagation and throw the first exception. An alternative would be to use Throwable#addSuppressed however in
+        // the "first cause" approach is often "good enough" to provide context into the root cause.
+        return delayedCause == null ? cause : delayedCause;
     }
 }
