@@ -26,8 +26,8 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.acquirePendingLock;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.releasePendingLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,35 +57,35 @@ public final class ConcurrentUtilsTest {
 
     @Test
     public void singleThread() {
-        assertTrue(acquirePendingLock(lockUpdater, this));
-        assertTrue(releasePendingLock(lockUpdater, this));
+        assertTrue(tryAcquireLock(lockUpdater, this));
+        assertTrue(releaseLock(lockUpdater, this));
     }
 
     @Test
     public void pendingFromDifferentThread() throws Exception {
-        assertTrue(acquirePendingLock(lockUpdater, this));
-        executor.submit(() -> assertFalse(acquirePendingLock(lockUpdater, this))).get();
+        assertTrue(tryAcquireLock(lockUpdater, this));
+        executor.submit(() -> assertFalse(tryAcquireLock(lockUpdater, this))).get();
 
         // we expect false because we are expected to re-acquire and release the lock. This is a feature of the lock
         // that requires checking the condition protected by the lock again.
-        assertFalse(releasePendingLock(lockUpdater, this));
+        assertFalse(releaseLock(lockUpdater, this));
 
-        assertTrue(acquirePendingLock(lockUpdater, this));
-        assertTrue(releasePendingLock(lockUpdater, this));
+        assertTrue(tryAcquireLock(lockUpdater, this));
+        assertTrue(releaseLock(lockUpdater, this));
     }
 
     @Test
     public void pendingFromDifferentThreadReAcquireFromDifferentThread() throws Exception {
-        assertTrue(acquirePendingLock(lockUpdater, this));
-        executor.submit(() -> assertFalse(acquirePendingLock(lockUpdater, this))).get();
+        assertTrue(tryAcquireLock(lockUpdater, this));
+        executor.submit(() -> assertFalse(tryAcquireLock(lockUpdater, this))).get();
 
         // we expect false because we are expected to re-acquire and release the lock. This is a feature of the lock
         // that requires checking the condition protected by the lock again.
-        assertFalse(releasePendingLock(lockUpdater, this));
+        assertFalse(releaseLock(lockUpdater, this));
 
         executor.submit(() -> {
-            assertTrue(acquirePendingLock(lockUpdater, this));
-            assertTrue(releasePendingLock(lockUpdater, this));
+            assertTrue(tryAcquireLock(lockUpdater, this));
+            assertTrue(releaseLock(lockUpdater, this));
         }).get();
     }
 }

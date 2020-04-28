@@ -18,9 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -30,15 +27,15 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.acquirePendingLock;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.releasePendingLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
 final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherConcatMapIterable.class);
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
     PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper,
@@ -63,6 +60,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         private final Subscriber<? super U> target;
         @Nullable
         private Subscription sourceSubscription;
+        /**
+         * Visibility and thread safety provided by {@link #emitting}.
+         */
         @Nullable
         private TerminalNotification terminalNotification;
         /**
@@ -70,6 +70,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
          * {@link Iterator#hasNext()} returns {@code false}. This means we don't need to queue {@link Iterator}s, and
          * was done because we don't know how many elements will be returned by each {@link Iterator} and so we are as
          * conservative as we can be about memory consumption.
+         * <p>
+         * Visibility and thread safety provided by {@link #emitting}.
          */
         private Iterator<? extends U> currentIterator = emptyIterator();
         @SuppressWarnings("unused")
@@ -125,7 +127,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         @Override
         public void cancel() {
-            if (requestNUpdater.getAndSet(this, -1) >= 0 && acquirePendingLock(emittingUpdater, this)) {
+            if (requestNUpdater.getAndSet(this, -1) >= 0 && tryAcquireLock(emittingUpdater, this)) {
                 doCancel();
             }
         }
@@ -155,7 +157,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             boolean terminated = false;
             boolean releasedLock = false;
             do {
-                if (!acquirePendingLock(emittingUpdater, this)) {
+                if (!tryAcquireLock(emittingUpdater, this)) {
                     break;
                 }
                 long currRequestN = this.requestN;
@@ -171,16 +173,12 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                             case PropagateAndCancel:
                                 terminated = true;
                                 doCancel();
-                                try {
-                                    target.onError(cause);
-                                } catch (Throwable cause2) {
-                                    LOGGER.info("Ignoring exception from onError of Subscriber {}.", target, cause2);
-                                }
-                                break;
+                                safeOnError(target, cause);
+                                return; // hard return to avoid potential for duplicate terminal events
                             case Propagate:
                                 terminated = true;
-                                target.onError(cause);
-                                break;
+                                safeOnError(target, cause);
+                                return; // hard return to avoid potential for duplicate terminal events
                             case Throw:
                                 // let the exception propagate so the upstream source can do the cleanup.
                                 throw cause;
@@ -215,7 +213,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         } finally {
                             // The lock must be released after we interact with the subscription for thread safety
                             // reasons.
-                            releasedLock = releasePendingLock(emittingUpdater, this);
+                            releasedLock = releaseLock(emittingUpdater, this);
                         }
                     }
                 }

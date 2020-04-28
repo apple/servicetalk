@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
 
@@ -34,8 +36,12 @@ import static java.util.Collections.newSetFromMap;
 final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
     private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelledUpdater =
             AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelled");
+    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelAllLockUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelAllLock");
     @SuppressWarnings("unused")
     private volatile int cancelled;
+    @SuppressWarnings("unused")
+    private volatile int cancelAllLock;
 
     private final Set<Cancellable> cancellables;
 
@@ -66,7 +72,7 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
         if (!cancellables.add(toAdd)) {
             toAdd.cancel(); // out of memory, or user has implemented equals/hashCode so there is overlap.
         } else if (isCancelled()) {
-            cancelAll();
+            cancelAll(); // avoid concurrency on toAdd if another thread invokes cancel(), just cancel all.
             return false;
         }
         return true;
@@ -82,20 +88,30 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
         return cancelled != 0;
     }
 
+    @SuppressWarnings("ContinueOrBreakFromFinallyBlock")
     private void cancelAll() {
         Throwable delayedCause = null;
-        Iterator<Cancellable> itr = cancellables.iterator();
-        while (itr.hasNext()) {
+        while (tryAcquireLock(cancelAllLockUpdater, this)) {
             try {
-                Cancellable cancellable = itr.next();
-                itr.remove();
-                cancellable.cancel();
-            } catch (Throwable cause) {
-                if (delayedCause == null) {
-                    delayedCause = cause;
+                Iterator<Cancellable> itr = cancellables.iterator();
+                while (itr.hasNext()) {
+                    try {
+                        Cancellable cancellable = itr.next();
+                        itr.remove();
+                        cancellable.cancel();
+                    } catch (Throwable cause) {
+                        if (delayedCause == null) {
+                            delayedCause = cause;
+                        }
+                    }
+                }
+            } finally {
+                if (releaseLock(cancelAllLockUpdater, this)) {
+                    break;
                 }
             }
         }
+
         if (delayedCause != null) {
             throwException(delayedCause);
         }
