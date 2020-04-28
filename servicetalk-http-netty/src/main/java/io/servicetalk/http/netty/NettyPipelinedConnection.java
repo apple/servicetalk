@@ -341,23 +341,22 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     private <T> T pollWithLockAcquired(final Queue<T> queue,
                @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater) {
         // the lock has been acquired!
-        do {
+        try {
+            do {
+                final T next = queue.poll();
+                if (next != null) {
+                    return next; // lock must be released by caller!
+                } else if (releaseLock(lockUpdater, this)) {
+                    return null;
+                }
+            } while (tryAcquireLock(lockUpdater, this));
+
+            return null;
+        } catch (Throwable cause) {
             // exceptions are not expected from poll, and if they occur we can't reliably recover which would involve
             // draining the queue. just throw with the lock poisoned and close the connection.
-            final T next;
-            try {
-                next = queue.poll();
-            } catch (Throwable cause) {
-                connection.closeAsync().subscribe();
-                throw cause;
-            }
-            if (next != null) {
-                return next; // lock must be released by caller!
-            } else if (releaseLock(lockUpdater, this)) {
-                return null;
-            }
-        } while (tryAcquireLock(lockUpdater, this));
-
-        return null;
+            connection.closeAsync().subscribe();
+            throw cause;
+        }
     }
 }
