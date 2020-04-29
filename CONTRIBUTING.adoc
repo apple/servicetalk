@@ -8,8 +8,9 @@ get involved. Pull requests to update and expand this guide are welcome.
 * <<Before you get started>>
 ** <<Community Guidelines>>
 ** <<Project Licensing>>
-** <<Governance and Decision Making>>
+** <<Governance and Decision-Making>>
 * <<Contributing>>
+** <<Scope of the ServiceTalk Organization>>
 ** <<Opening a Pull Request>>
 ** <<Reporting Issues>>
 * <<Project Communication>>
@@ -23,19 +24,18 @@ xref:CODE_OF_CONDUCT.adoc[Code of Conduct] that we ask all community members to 
 By submitting a pull request, you represent that you have the right to license your contribution to Apple and the
 community, and agree by submitting the patch that your contributions are licensed under the Apache 2.0 license.
 
-=== Governance and Decision Making
-At project launch, ServiceTalk has a light governance structure. The intention is for the community to evolve quickly
-and adopt additional processes as participation grows. Stay tuned, and stay engaged! Your feedback is welcome.
-
-Members of the Apple ServiceTalk team are part of the initial core committers helping review individual contributions;
-you'll see them commenting on your pull requests. Future committers to the open source project, and the process for
-adding individuals in this role will be formalized in the future.
+=== Governance and Decision-Making
+See xref:GOVERNANCE.adoc[Governance] for more details.
 
 == Contributing
+=== Scope of the ServiceTalk Organization
+For more information about which contributions are applicable for the ServiceTalk organization see
+xref:GOVERNANCE.adoc[Governance].
+
 === Opening a Pull Request
 We love pull requests! For minor changes, feel free to open up a PR directly. For larger feature development and any
 changes that may require community discussion, we ask that you discuss your ideas on a
-link:https://github.com/apple/servicetalk/issues[github issue] prior to opening a PR, and then reference that issue
+link:https://github.com/apple/servicetalk/issues[GitHub issue] prior to opening a PR, and then reference that issue
 within your PR comment.
 
 CI will run tests against the PR and post the status back to github.
@@ -63,7 +63,7 @@ git config commit.template .git.commit.template
 ```
 
 === Reporting Issues
-Issues may be reported through link:https://github.com/apple/servicetalk/issues[github issues].
+Issues may be reported through link:https://github.com/apple/servicetalk/issues[GitHub issues].
 
 Please be sure to include:
 
