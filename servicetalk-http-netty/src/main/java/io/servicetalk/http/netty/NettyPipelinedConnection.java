@@ -270,6 +270,8 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     }
 
     private void handleWriteSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
+        closeConnection(subscriber, cause);
+
         // the lock has been acquired!
         do {
             WriteTask nextWriteTask;
@@ -277,11 +279,11 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                 deliverTerminalFromSource(nextWriteTask.subscriber, cause);
             }
         } while (!releaseLock(writeQueueLockUpdater, this) && tryAcquireLock(writeQueueLockUpdater, this));
-
-        closeConnection(subscriber, cause);
     }
 
     private void handleReadSetupError(Subscriber<? super Resp> subscriber, Throwable cause) {
+        closeConnection(subscriber, cause);
+
         // the lock has been acquired!
         do {
             Subscriber<? super Resp> nextSubscriber;
@@ -289,8 +291,6 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                 deliverTerminalFromSource(nextSubscriber, cause);
             }
         } while (!releaseLock(readQueueLockUpdater, this) && tryAcquireLock(readQueueLockUpdater, this));
-
-        closeConnection(subscriber, cause);
     }
 
     /**
