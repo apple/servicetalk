@@ -69,11 +69,40 @@ public class ConcurrentSubscription implements Subscription {
 
     @Override
     public void request(long n) {
+        final long acquireId = tryAcquireReentrantLock(subscriptionLockUpdater, this);
+        if (acquireId != 0) { // fast path (no concurrency) just deliver demand without adding to pending.
+            try {
+                subscription.request(n);
+            } finally {
+                if (!releaseReentrantLock(subscriptionLockUpdater, acquireId, this)) {
+                    // if we failed to release the lock there was concurrent invocation, and we need to drain.
+                    drainPending();
+                }
+            }
+        } else { // slow path (concurrency detected) add pending demand and try to re-acquire lock and process demand.
+            addPending(n);
+            drainPending();
+        }
+    }
+
+    @Override
+    public void cancel() {
+        pendingDemand = CANCELLED;
+        if (tryAcquireReentrantLock(subscriptionLockUpdater, this) != 0) {
+            subscription.cancel();
+            // poison subscriptionLockUpdater
+        }
+    }
+
+    private void addPending(long n) {
         if (!isRequestNValid(n)) {
             pendingDemand = mapInvalidRequestN(n);
         } else {
             pendingDemandUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
         }
+    }
+
+    private void drainPending() {
         Throwable delayedCause = null;
         boolean tryAcquire;
         do {
@@ -81,7 +110,6 @@ public class ConcurrentSubscription implements Subscription {
             if (acquireId == 0) {
                 break;
             }
-
             try {
                 final long prevPendingDemand = pendingDemandUpdater.getAndSet(this, 0);
                 if (prevPendingDemand == CANCELLED) {
@@ -98,15 +126,6 @@ public class ConcurrentSubscription implements Subscription {
 
         if (delayedCause != null) {
             throwException(delayedCause);
-        }
-    }
-
-    @Override
-    public void cancel() {
-        pendingDemand = CANCELLED;
-        if (tryAcquireReentrantLock(subscriptionLockUpdater, this) != 0) {
-            subscription.cancel();
-            // poison subscriptionLockUpdater
         }
     }
 
