@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseReentrantLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireReentrantLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -72,14 +72,7 @@ public class ConcurrentSubscription implements Subscription {
         if (!isRequestNValid(n)) {
             pendingDemand = mapInvalidRequestN(n);
         } else {
-            for (;;) {
-                final long prevPendingDemand = pendingDemand;
-                if (prevPendingDemand < 0 ||
-                        pendingDemandUpdater.compareAndSet(this, prevPendingDemand,
-                                prevPendingDemand + min(Long.MAX_VALUE - prevPendingDemand, n))) {
-                    break;
-                }
-            }
+            pendingDemandUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
         }
         Throwable delayedCause = null;
         boolean tryAcquire;
@@ -97,9 +90,7 @@ public class ConcurrentSubscription implements Subscription {
                     subscription.request(prevPendingDemand);
                 }
             } catch (Throwable cause) {
-                if (delayedCause == null) {
-                    delayedCause = cause;
-                }
+                delayedCause = catchUnexpected(delayedCause, cause);
             } finally {
                 tryAcquire = !releaseReentrantLock(subscriptionLockUpdater, acquireId, this);
             }
