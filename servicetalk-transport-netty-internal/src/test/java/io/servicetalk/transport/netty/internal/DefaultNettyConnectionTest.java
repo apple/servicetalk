@@ -18,17 +18,13 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundBuffer;
@@ -43,12 +39,10 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -95,7 +89,7 @@ public class DefaultNettyConnectionTest {
     private final TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
     private BufferAllocator allocator;
     private EmbeddedChannel channel;
-    private NettyConnection.RequestNSupplier requestNSupplier;
+    private WriteDemandEstimator demandEstimator;
     private int requestNext = MAX_VALUE;
     private DefaultNettyConnection<Buffer, Buffer> conn;
 
@@ -111,15 +105,15 @@ public class DefaultNettyConnectionTest {
     private void setupWithCloseHandler(final CloseHandler closeHandler, Executor executor) throws Exception {
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
-        requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> (long) requestNext);
-        final TerminalPredicate<Buffer> terminalPredicate = new TerminalPredicate<>(buffer -> {
-            if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
-                throw DELIBERATE_EXCEPTION;
-            }
-            return true;
-        });
-        conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
+        demandEstimator = mock(WriteDemandEstimator.class);
+        when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
+        conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
+                buffer -> {
+                    if ("DELIBERATE_EXCEPTION".equals(buffer.toString(US_ASCII))) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                    return true;
+                },
                 closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
                 mock(Protocol.class)).toFuture().get();
         publisher = new TestPublisher<>();
@@ -148,67 +142,9 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testWriteSingle() {
-        writeListener.listen(conn.writeAndFlush(Single.succeeded(newBuffer("Hello"))))
-                .verifyCompletion();
-        pollChannelAndVerifyWrites("Hello");
-    }
-
-    @Test
-    public void testWriteItem() {
-        writeListener.listen(conn.writeAndFlush(newBuffer("Hello"))).verifyCompletion();
-        pollChannelAndVerifyWrites("Hello");
-    }
-
-    @Test
-    public void testAsPipelinedConnection() {
-        final NettyPipelinedConnection<Buffer, Buffer> c = new DefaultNettyPipelinedConnection<>(conn, 2);
-        toSource(c.request(newBuffer("Hello"))).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.request(1);
-        Buffer expected = newBuffer("Hi");
-        channel.writeInbound(expected.duplicate());
-        assertThat(subscriber.takeItems(), contains(expected));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-    }
-
-    @Test
     public void testConcurrentWritePubAndPub() {
         writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
         secondWriteListener.listen(conn.write(Publisher.never())).verifyFailure(IllegalStateException.class);
-    }
-
-    @Test
-    public void testConcurrentWritePubAndSingle() {
-        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(Single.never())).verifyFailure(IllegalStateException.class);
-    }
-
-    @Test
-    public void testConcurrentWritePubAndItem() {
-        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello")))
-                .verifyFailure(IllegalStateException.class);
-    }
-
-    @Test
-    public void testConcurrentWriteSingleAndPub() {
-        writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never())).verifyFailure(IllegalStateException.class);
-    }
-
-    @Test
-    public void testConcurrentWriteSingleAndSingle() {
-        writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(Single.never())).verifyFailure(IllegalStateException.class);
-    }
-
-    @Test
-    public void testConcurrentWriteSingleAndItem() {
-        writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello")))
-                .verifyFailure(IllegalStateException.class);
     }
 
     @Test
@@ -216,81 +152,6 @@ public class DefaultNettyConnectionTest {
         testWritePublisher();
         writeListener.reset();
         testWritePublisher();
-    }
-
-    @Test
-    public void testSequentialPubAndSingle() {
-        testWritePublisher();
-        writeListener.reset();
-        testWriteSingle();
-    }
-
-    @Test
-    public void testSequentialPubAndItem() {
-        testWritePublisher();
-        writeListener.reset();
-        testWriteItem();
-    }
-
-    @Test
-    public void testSequentialSingleAndPub() {
-        testWriteSingle();
-        writeListener.reset();
-        testWritePublisher();
-    }
-
-    @Test
-    public void testSequentialSingleAndSingle() {
-        testWriteSingle();
-        writeListener.reset();
-        testWriteSingle();
-    }
-
-    @Test
-    public void testSequentialSingleAndItem() {
-        testWriteSingle();
-        writeListener.reset();
-        testWriteItem();
-    }
-
-    @Test
-    public void testSequentialItemAndPub() {
-        testWriteItem();
-        writeListener.reset();
-        testWritePublisher();
-    }
-
-    @Test
-    public void testSequentialItemAndSingle() {
-        testWriteItem();
-        writeListener.reset();
-        testWriteSingle();
-    }
-
-    @Test
-    public void testSequentialItemAndItem() {
-        testWriteItem();
-        writeListener.reset();
-        testWriteItem();
-    }
-
-    @Test
-    public void testWriteActiveWithSingle() throws Exception {
-        CompletableFuture<SingleSource.Subscriber<? super Buffer>> capturedListener = new CompletableFuture<>();
-        Single<Buffer> toWrite = new Single<Buffer>() {
-            @Override
-            protected void handleSubscribe(Subscriber<? super Buffer> singleSubscriber) {
-                singleSubscriber.onSubscribe(IGNORE_CANCEL);
-                capturedListener.complete(singleSubscriber);
-            }
-        };
-        writeListener.listen(conn.writeAndFlush(toWrite)).verifyNoEmissions();
-        capturedListener.get(); // make sure subscribe() is called
-        assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
-        capturedListener.get().onSuccess(newBuffer("Hello"));
-        writeListener.verifyCompletion();
-        pollChannelAndVerifyWrites("Hello");
-        assertThat("Unexpected write active state.", conn.isWriteActive(), is(false));
     }
 
     @Test
@@ -312,15 +173,9 @@ public class DefaultNettyConnectionTest {
     }
 
     @Test
-    public void testSingleErrorFailsWrite() {
-        writeListener.listen(conn.writeAndFlush(Single.failed(DELIBERATE_EXCEPTION)))
-                .verifyFailure(DELIBERATE_EXCEPTION);
-    }
-
-    @Test
     public void testPublisherWithPredictor() {
         requestNext = 1;
-        writeListener.listen(conn.write(publisher, () -> requestNSupplier));
+        writeListener.listen(conn.write(publisher, FlushStrategies::defaultFlushStrategy, () -> demandEstimator));
         requestNext = 0;
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
@@ -432,11 +287,11 @@ public class DefaultNettyConnectionTest {
 
     private void verifyPredictorCalled(int channelWritabilityChangedCount, Buffer... items) {
         for (Buffer item : items) {
-            verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
+            verify(demandEstimator).onItemWrite(eq(item), anyLong(), anyLong());
         }
         final boolean hasTrailers = Arrays.asList(items).contains(TRAILER);
-        verify(requestNSupplier, times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount))
-                .requestNFor(anyLong());
+        verify(demandEstimator, times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount))
+                .estimateRequestN(anyLong());
     }
 
     private void changeWritability(boolean writable) {

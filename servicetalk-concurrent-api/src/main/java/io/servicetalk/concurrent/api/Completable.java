@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Arrays.spliterator;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1842,8 +1843,7 @@ public abstract class Completable {
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.
             // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
             // further signals occur.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
+            deliverTerminalFromSource(subscriber, t);
         }
     }
 

@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -147,7 +148,7 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
         try {
             NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
             final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
-            connection.writeAndFlush(buffer).toFuture().get();
+            connection.write(Publisher.from(buffer)).toFuture().get();
             Single<Buffer> read = connection.read().firstOrElse(() -> null);
             Buffer responseBuffer = awaitIndefinitelyNonNull(read);
             assertEquals("Did not receive response payload echoing request",

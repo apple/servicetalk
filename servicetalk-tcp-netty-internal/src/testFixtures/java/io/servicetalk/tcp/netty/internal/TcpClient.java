@@ -22,7 +22,6 @@ import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -96,10 +95,10 @@ public final class TcpClient {
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 channel -> DefaultNettyConnection.initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(),
-                        new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.flushStrategy(), config.idleTimeoutMs(), new TcpClientChannelInitializer(config)
-                                .andThen(channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
+                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        new TcpClientChannelInitializer(config).andThen(
+                                channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
                         executionContext.executionStrategy(), TCP));
     }
 

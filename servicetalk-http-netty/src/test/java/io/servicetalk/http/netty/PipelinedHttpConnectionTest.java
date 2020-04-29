@@ -95,6 +95,10 @@ public class PipelinedHttpConnectionTest {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
         });
+        when(connection.write(any(), any(), any())).then(inv -> {
+            Publisher<Object> publisher = inv.getArgument(0);
+            return publisher.ignoreElements(); // simulate write consuming all
+        });
         when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
 
@@ -111,10 +115,10 @@ public class PipelinedHttpConnectionTest {
         reset(connection); // Simplified mocking
         when(connection.executionContext()).thenReturn(ctx);
         when(connection.write(any())).thenReturn(completed());
+        when(connection.write(any(), any(), any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
         when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
-        Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo"));
+        Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo"));
         toSource(request).subscribe(dataSubscriber1);
         assertTrue(dataSubscriber1.isSuccess());
     }
@@ -126,7 +130,7 @@ public class PipelinedHttpConnectionTest {
         toSource(pipe.request(reqRespFactory.get("/bar").payloadBody(writePublisher2)))
                 .subscribe(dataSubscriber2);
 
-        assertFalse(readPublisher1.isSubscribed());
+        assertTrue(readPublisher1.isSubscribed());
         assertFalse(readPublisher2.isSubscribed());
         assertTrue(writePublisher1.isSubscribed());
         assertFalse(writePublisher2.isSubscribed());

@@ -42,10 +42,12 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -77,8 +79,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.core.CombinableMatcher.either;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -452,20 +455,22 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_ERROR_BEFORE_READ).payloadBody(
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
-        final StreamingHttpResponse response = makeRequest(request);
 
-        assertEquals(OK, response.status());
-        assertEquals(HTTP_1_1, response.version());
-
-        final BlockingIterator<Buffer> httpPayloadChunks = response.payloadBody().toIterable().iterator();
-
-        thrown.expect(RuntimeException.class);
+        thrown.expect(either(instanceOf(RuntimeException.class)).or(instanceOf(ExecutionException.class)));
         // Due to a race condition, the exception cause here can vary.
         // If the socket closure is delayed slightly (for example, by delaying the Publisher.error(...) on the server)
         // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
         // the client throws NativeIoException (KQueue) or IOException (NIO).
         thrown.expectCause(instanceOf(IOException.class));
+
         try {
+            final StreamingHttpResponse response = makeRequest(request);
+
+            assertEquals(OK, response.status());
+            assertEquals(HTTP_1_1, response.version());
+
+            final BlockingIterator<Buffer> httpPayloadChunks = response.payloadBody().toIterable().iterator();
+
             httpPayloadChunks.next();
         } finally {
             assertConnectionClosed();
@@ -505,10 +510,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertClientTransportInboundClosed(clientThrowable);
         // Server outbound channel force closed (reset)
         Throwable serverThrowable = capturedServiceTransportErrorRef.get().toFuture().get();
-        assertThat(serverThrowable, instanceOf(ClosedChannelException.class));
-        assertThat(serverThrowable.getMessage(), startsWith(
-                "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) [id: 0x"));
-        assertThat(serverThrowable.getCause(), nullValue());
+        assertThat(serverThrowable, is(DELIBERATE_EXCEPTION));
     }
 
     private void assertClientTransportInboundClosed(final Throwable clientThrowable) {

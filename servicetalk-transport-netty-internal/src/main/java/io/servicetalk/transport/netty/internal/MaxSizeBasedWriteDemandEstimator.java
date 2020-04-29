@@ -15,31 +15,29 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
-
-import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
+import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 
 /**
- * An implementation of {@link RequestNSupplier} that considers maximum size recorded via
+ * An implementation of {@link WriteDemandEstimator} that considers maximum size recorded via
  * {@link #recordSize(Object, long)} in a sliding window
  * to calculate the number of items required to fill a given write buffer capacity.
  */
-final class MaxSizeBasedRequestNSupplier extends OverlappingCapacityAwareSupplier {
+final class MaxSizeBasedWriteDemandEstimator extends OverlappingCapacityAwareEstimator {
 
     private final long[] sizesRingBuffer;
     private final long defaultSizeInBytes;
     private int currentMaxSizeIndex;
     private int ringBufferIndex;
 
-    MaxSizeBasedRequestNSupplier() {
+    MaxSizeBasedWriteDemandEstimator() {
         this(defaultEstimator(), 8);
     }
 
-    MaxSizeBasedRequestNSupplier(SizeEstimator sizeEstimator, long defaultSizeInBytes) {
+    MaxSizeBasedWriteDemandEstimator(SizeEstimator sizeEstimator, long defaultSizeInBytes) {
         this(sizeEstimator, defaultSizeInBytes, 32);
     }
 
-    MaxSizeBasedRequestNSupplier(SizeEstimator sizeEstimator, long defaultSizeInBytes, int slidingWindowSize) {
+    MaxSizeBasedWriteDemandEstimator(SizeEstimator sizeEstimator, long defaultSizeInBytes, int slidingWindowSize) {
         super(sizeEstimator);
         if (defaultSizeInBytes <= 0) {
             throw new IllegalArgumentException("defaultSizeInBytes: " + defaultSizeInBytes + " (expected > 0)");

@@ -43,7 +43,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 
@@ -256,8 +255,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext.executionContext().bufferAllocator(),
-                                    parentContext.executionContext().executor(),
-                                    new TerminalPredicate<>(LAST_CHUNK_PREDICATE),
+                                    parentContext.executionContext().executor(), LAST_CHUNK_PREDICATE,
                                     // Http2StreamChannel is not of type SocketChannel. Also Netty will manage the half
                                     // closure based upon stream state.
                                     PROTOCOL_OUTBOUND_CLOSE_HANDLER,

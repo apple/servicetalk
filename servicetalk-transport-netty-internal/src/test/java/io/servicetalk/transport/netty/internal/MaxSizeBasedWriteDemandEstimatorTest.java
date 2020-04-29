@@ -17,27 +17,27 @@ package io.servicetalk.transport.netty.internal;
 
 import org.junit.Test;
 
-import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
+import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class MaxSizeBasedRequestNSupplierTest {
+public class MaxSizeBasedWriteDemandEstimatorTest {
 
     @Test
     public void testNoRequestIfLowCapacity() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier(defaultEstimator(), 8);
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator(defaultEstimator(), 8);
         assertThat("Unexpected request-n.", supplier.getRequestNForCapacity(2), is(0L));
     }
 
     @Test
     public void testRequestNNoRecord() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier();
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator();
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(8), is(1L));
     }
 
     @Test
     public void testRequestNWithRecord() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier();
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator();
         supplier.recordSize(1, 2);
         supplier.recordSize(3, 5);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(5), is(1L));
@@ -45,7 +45,7 @@ public class MaxSizeBasedRequestNSupplierTest {
 
     @Test
     public void testRepeatRequestNSameMaxSize() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier();
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator();
         supplier.recordSize(1, 2);
         supplier.recordSize(3, 5);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(5), is(1L));
@@ -54,7 +54,7 @@ public class MaxSizeBasedRequestNSupplierTest {
 
     @Test
     public void testRepeatRequestNWithMaxSizeModified() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier();
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator();
         supplier.recordSize(1, 2);
         supplier.recordSize(3, 5);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(10), is(2L));
@@ -64,7 +64,7 @@ public class MaxSizeBasedRequestNSupplierTest {
 
     @Test
     public void testMaxSizeOverwriteWindowFull() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier(defaultEstimator(), 8, 2);
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator(defaultEstimator(), 8, 2);
         supplier.recordSize(1, 5);
         supplier.recordSize(3, 2);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(10), is(2L));
@@ -74,7 +74,7 @@ public class MaxSizeBasedRequestNSupplierTest {
 
     @Test
     public void testLowerMaxSizeWindowFull() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier(defaultEstimator(), 8, 2);
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator(defaultEstimator(), 8, 2);
         supplier.recordSize(1, 5);
         supplier.recordSize(3, 2);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(10), is(2L));
@@ -84,7 +84,7 @@ public class MaxSizeBasedRequestNSupplierTest {
 
     @Test
     public void testLowestMaxSizeWindowFull() {
-        MaxSizeBasedRequestNSupplier supplier = new MaxSizeBasedRequestNSupplier(defaultEstimator(), 8, 2);
+        MaxSizeBasedWriteDemandEstimator supplier = new MaxSizeBasedWriteDemandEstimator(defaultEstimator(), 8, 2);
         supplier.recordSize(1, 5);
         supplier.recordSize(3, 2);
         assertThat("Unexpected requestN.", supplier.getRequestNForCapacity(10), is(2L));
