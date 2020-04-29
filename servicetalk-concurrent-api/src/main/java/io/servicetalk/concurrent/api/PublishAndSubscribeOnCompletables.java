@@ -18,9 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -35,10 +35,9 @@ final class PublishAndSubscribeOnCompletables {
     static void deliverOnSubscribeAndOnError(Subscriber subscriber, SignalOffloader signalOffloader,
                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
-        subscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
-        subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(cause);
+        deliverTerminalFromSource(
+                signalOffloader.offloadSubscriber(contextProvider.wrapCompletableSubscriber(subscriber, contextMap)),
+                cause);
     }
 
     static Completable publishAndSubscribeOn(Completable original, Executor executor) {

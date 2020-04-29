@@ -39,7 +39,6 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -1924,8 +1923,7 @@ public abstract class Single<T> {
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
         } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
+            deliverTerminalFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(

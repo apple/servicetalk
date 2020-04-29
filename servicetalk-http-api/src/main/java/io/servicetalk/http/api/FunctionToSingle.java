@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class FunctionToSingle<T, R> extends SubscribableSingle<R> {
     private final Function<T, R> func;
@@ -32,7 +33,13 @@ final class FunctionToSingle<T, R> extends SubscribableSingle<R> {
 
     @Override
     protected void handleSubscribe(final Subscriber<? super R> subscriber) {
-        subscriber.onSubscribe(IGNORE_CANCEL);
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable cause) {
+            handleExceptionFromOnSubscribe(subscriber, cause);
+            return;
+        }
+
         final R result;
         try {
             result = func.apply(orig);

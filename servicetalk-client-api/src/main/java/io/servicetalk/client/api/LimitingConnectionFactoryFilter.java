@@ -26,8 +26,8 @@ import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -151,8 +151,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
                         toSource(original.newConnection(resolvedAddress))
                                 .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
                     } else {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(limiter.newConnectionRefusedException(resolvedAddress));
+                        deliverTerminalFromSource(subscriber, limiter.newConnectionRefusedException(resolvedAddress));
                     }
                 }
             };

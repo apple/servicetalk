@@ -65,7 +65,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
@@ -121,8 +120,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(), reqRespFactory);
                 } catch (Throwable cause) {
                     channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    deliverTerminalFromSource(subscriber, cause);
                     return;
                 }
                 subscriber.onSubscribe(delayedCancellable);

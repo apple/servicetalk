@@ -15,14 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 
 final class CompletedCompletable extends AbstractSynchronousCompletable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CompletedCompletable.class);
     static final CompletedCompletable INSTANCE = new CompletedCompletable();
 
     private CompletedCompletable() {
@@ -31,16 +26,6 @@ final class CompletedCompletable extends AbstractSynchronousCompletable {
 
     @Override
     void doSubscribe(final Subscriber subscriber) {
-        try {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-        } catch (Throwable t) {
-            handleExceptionFromOnSubscribe(subscriber, t);
-            return;
-        }
-        try {
-            subscriber.onComplete();
-        } catch (Throwable t) {
-            LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
-        }
+        deliverTerminalFromSource(subscriber);
     }
 }

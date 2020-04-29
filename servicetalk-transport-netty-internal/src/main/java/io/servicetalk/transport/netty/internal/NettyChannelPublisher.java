@@ -28,8 +28,8 @@ import java.util.Queue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -294,8 +294,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private void subscribe0(Subscriber<? super T> subscriber) {
         SubscriptionImpl subscription = this.subscription;
         if (subscription != null) {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
+            deliverTerminalFromSource(subscriber,
+                    new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
             assert requestCount == 0;
             subscription = new SubscriptionImpl(subscriber);

@@ -40,6 +40,7 @@ import java.io.IOException;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
@@ -300,7 +301,13 @@ final class GrpcRouteConversions {
         return AsyncCloseables.toAsyncCloseable(graceful -> new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-                subscriber.onSubscribe(IGNORE_CANCEL);
+                try {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                } catch (Throwable cause) {
+                    handleExceptionFromOnSubscribe(subscriber, cause);
+                    return;
+                }
+
                 try {
                     if (graceful) {
                         original.closeGracefully();

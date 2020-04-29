@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 
 /**
  * A {@link Completable} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it
@@ -39,9 +39,8 @@ abstract class AbstractNoHandleSubscribeCompletable extends Completable implemen
 
     @Override
     protected final void handleSubscribe(Subscriber subscriber) {
-        subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(new UnsupportedOperationException("Subscribe with no executor is not supported for "
-                + getClass()));
+        deliverTerminalFromSource(subscriber,
+                new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
     }
 
     @Override

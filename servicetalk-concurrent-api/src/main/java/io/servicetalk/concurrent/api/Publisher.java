@@ -58,7 +58,6 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
@@ -2616,8 +2615,7 @@ public abstract class Publisher<T> {
             offloadedSubscriber =
                     signalOffloader.offloadSubscription(provider.wrapSubscription(subscriber, contextMap));
         } catch (Throwable t) {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(t);
+            deliverTerminalFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(

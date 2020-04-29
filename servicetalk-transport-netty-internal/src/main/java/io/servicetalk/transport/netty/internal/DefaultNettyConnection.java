@@ -55,7 +55,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
@@ -255,8 +254,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline));
                 } catch (Throwable cause) {
                     channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    deliverTerminalFromSource(subscriber, cause);
                     return;
                 }
                 subscriber.onSubscribe(delayedCancellable);

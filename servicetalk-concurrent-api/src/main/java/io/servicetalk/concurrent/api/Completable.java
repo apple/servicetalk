@@ -37,7 +37,6 @@ import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
@@ -1802,8 +1801,7 @@ public abstract class Completable {
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
         } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
+            deliverTerminalFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
