@@ -398,18 +398,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            if (hasFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION) || cause != null) {
-                try {
-                    closeHandler.closeChannelOutbound(channel);
-                } catch (Throwable t) {
-                    cause = t;
-                }
-            }
             if (cause == null) {
                 try {
                     subscriber.onComplete();
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
+                }
+                if (hasFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION)) {
+                    closeHandler.closeChannelOutbound(channel);
                 }
             } else {
                 try {

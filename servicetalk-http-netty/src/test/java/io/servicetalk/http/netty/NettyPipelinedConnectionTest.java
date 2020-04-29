@@ -331,7 +331,7 @@ public class NettyPipelinedConnectionTest {
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
 
         writePublisher1.onError(DELIBERATE_EXCEPTION);
-        assertThat(readSubscriber.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
         assertFalse(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());

@@ -77,10 +77,10 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testOnErrorNoWrite() {
+    public void testOnErrorNoWrite() throws InterruptedException {
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
-        verify(closeHandler).closeChannelOutbound(any());
+        assertChannelClose();
     }
 
     @Test
@@ -91,13 +91,13 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void testOnErrorPostWrite() {
+    public void testOnErrorPostWrite() throws InterruptedException {
         writeAndFlush("Hello");
         channel.flushOutbound();
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
         assertThat("Message not written.", channel.outboundMessages(), contains("Hello"));
-        verify(closeHandler).closeChannelOutbound(any());
+        assertChannelClose();
     }
 
     @Test
@@ -161,9 +161,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         enableWriteFailure.run();
         subscriber.onNext("Hello2");
         verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
-        verify(closeHandler).closeChannelOutbound(any());
-        channel.closeFuture().sync();
-        assertThat("Channel not closed on write failure.", channel.isActive(), is(false));
+        assertChannelClose();
     }
 
     private void verifyWrite(WriteInfo... infos) {
@@ -180,5 +178,10 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         long post = channel.bytesBeforeUnwritable();
         channel.flushOutbound();
         return new WriteInfo(pre, post, msg);
+    }
+
+    private void assertChannelClose() throws InterruptedException {
+        channel.closeFuture().sync();
+        assertThat("Channel not closed on write failure.", channel.isActive(), is(false));
     }
 }

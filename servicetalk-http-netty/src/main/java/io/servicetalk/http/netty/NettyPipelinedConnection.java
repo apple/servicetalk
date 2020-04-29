@@ -106,9 +106,9 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         return new Publisher<Resp>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
-                final WriteTask firstWriteTask;
+                final WriteTask nextWriteTask;
                 try {
-                    firstWriteTask = offerTryAcquireLock(writeQueue, writeQueueLockUpdater,
+                    nextWriteTask = addAndTryPoll(writeQueue, writeQueueLockUpdater,
                             new WriteTask(subscriber, requestPublisher, flushStrategySupplier,
                                     writeDemandEstimatorSupplier));
                 } catch (Throwable cause) {
@@ -116,8 +116,8 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                     return;
                 }
 
-                if (firstWriteTask != null) {
-                    firstWriteTask.run();
+                if (nextWriteTask != null) {
+                    nextWriteTask.run();
                 }
             }
         };
@@ -204,21 +204,6 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         toSource(connection.closeAsync().concat(Publisher.<Resp>failed(cause))).subscribe(subscriber);
     }
 
-    private void tryStartRead(@Nullable Subscriber<? super Resp> subscriber) {
-        if (subscriber == null) {
-            return;
-        }
-        final PublisherSource<Resp> src;
-        try {
-            src = toSource(connection.read().afterFinally(() ->
-                    tryStartRead(pollWithLockAcquired(readQueue, readQueueLockUpdater))));
-        } catch (Throwable cause) {
-            handleReadSetupError(subscriber, cause);
-            return;
-        }
-        src.subscribe(subscriber);
-    }
-
     private final class WriteTask {
         private final Subscriber<? super Resp> subscriber;
         private final Publisher<Req> requestPublisher;
@@ -248,20 +233,36 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                         }).merge(new Publisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
-                                final Subscriber<? super Resp> firstReadSubscriber;
+                                final Subscriber<? super Resp> nextReadSubscriber;
                                 try {
-                                    firstReadSubscriber =
-                                            offerTryAcquireLock(readQueue, readQueueLockUpdater, rSubscriber);
+                                    nextReadSubscriber =
+                                            addAndTryPoll(readQueue, readQueueLockUpdater, rSubscriber);
                                 } catch (Throwable cause) {
                                     closeConnection(rSubscriber, cause);
                                     return;
                                 }
 
-                                tryStartRead(firstReadSubscriber);
+                                tryStartRead(nextReadSubscriber);
                             }
                         }));
             } catch (Throwable cause) {
                 handleWriteSetupError(subscriber, cause);
+                return;
+            }
+            src.subscribe(subscriber);
+        }
+
+        private void tryStartRead(@Nullable Subscriber<? super Resp> subscriber) {
+            if (subscriber == null) {
+                return;
+            }
+            final PublisherSource<Resp> src;
+            try {
+                src = toSource(connection.read().afterFinally(() ->
+                        tryStartRead(pollWithLockAcquired(readQueue, readQueueLockUpdater)))
+                );
+            } catch (Throwable cause) {
+                handleReadSetupError(subscriber, cause);
                 return;
             }
             src.subscribe(subscriber);
@@ -309,8 +310,8 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      * acquired and it is the caller's responsibility to release!
      */
     @Nullable
-    private <T> T offerTryAcquireLock(final Queue<T> queue,
-          @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater, T item) {
+    private <T> T addAndTryPoll(final Queue<T> queue,
+        @SuppressWarnings("rawtypes") final AtomicIntegerFieldUpdater<NettyPipelinedConnection> lockUpdater, T item) {
         queue.add(item);
         while (tryAcquireLock(lockUpdater, this)) {
             // exceptions are not expected from poll, and if they occur we can't reliably recover which would involve
@@ -318,7 +319,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
             // subscriber and close the connection.
             final T next = queue.poll();
             if (next != null) {
-                return next; // lock must be released by caller!
+                return next; // lock must be released when the returned task completes!
             } else if (releaseLock(lockUpdater, this)) {
                 return null;
             }
@@ -345,7 +346,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
             do {
                 final T next = queue.poll();
                 if (next != null) {
-                    return next; // lock must be released by caller!
+                    return next; // lock must be released when the returned task completes!
                 } else if (releaseLock(lockUpdater, this)) {
                     return null;
                 }
