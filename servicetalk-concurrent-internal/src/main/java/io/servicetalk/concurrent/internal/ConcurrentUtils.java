@@ -27,7 +27,7 @@ public final class ConcurrentUtils {
      * <ul>
      *     <li>{@code 0} - unlocked</li>
      *     <li>{@code >0} - locked by the {@link Thread} whose {@link Thread#getId()} matches this value</li>
-     *     <li>{@code <0} - locked by the {@link Thread} whose {@link Thread#getId()} matches this negative of this
+     *     <li>{@code <0} - locked by the {@link Thread} whose {@link Thread#getId()} matches the negative of this
      *     value. Only externally visible to the thread that owns the lock on reentrant acquires.</li>
      * </ul>
      */
