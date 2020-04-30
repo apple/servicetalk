@@ -56,9 +56,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
 public class KeepAliveTest {
@@ -96,8 +94,8 @@ public class KeepAliveTest {
 
     @Parameterized.Parameters(name = "keepAlivesFromClient? {0}, idleTimeout: {2}")
     public static Collection<Object[]> data() {
-        return asList(newParam(true, ofSeconds(10), ofSeconds(12)),
-                newParam(false, ofSeconds(10), ofSeconds(12)));
+        return asList(newParam(true, ofSeconds(1), ofSeconds(2)),
+                newParam(false, ofSeconds(1), ofSeconds(2)));
     }
 
     private static Object[] newParam(final boolean keepAlivesFromClient, final Duration keepAliveIdleDuration,
@@ -118,9 +116,6 @@ public class KeepAliveTest {
 
     @Test
     public void bidiStream() throws Exception {
-        // Ignore test on CI due to high timeouts
-        assumeThat(ServiceTalkTestTimeout.CI, is(false));
-
         try {
             client.testBiDiStream(never()).toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
             fail("Unexpected response available.");
@@ -131,9 +126,6 @@ public class KeepAliveTest {
 
     @Test
     public void requestStream() throws Exception {
-        // Ignore test on CI due to high timeouts
-        assumeThat(ServiceTalkTestTimeout.CI, is(false));
-
         try {
             client.testRequestStream(never()).toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
             fail("Unexpected response available.");
@@ -144,9 +136,6 @@ public class KeepAliveTest {
 
     @Test
     public void responseStream() throws Exception {
-        // Ignore test on CI due to high timeouts
-        assumeThat(ServiceTalkTestTimeout.CI, is(false));
-
         try {
             client.testResponseStream(TestRequest.newBuilder().build())
                     .toFuture().get(idleTimeoutMillis + 100, MILLISECONDS);
