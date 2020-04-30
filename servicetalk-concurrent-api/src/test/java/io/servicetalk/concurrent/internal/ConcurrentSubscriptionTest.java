@@ -29,9 +29,11 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -88,6 +90,15 @@ public class ConcurrentSubscriptionTest {
         }
         concurrent.cancel();
         cancelledLatch.await();
+    }
+
+    @Test
+    public void singleThreadReentrant() {
+        final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
+        final Subscription concurrent = ConcurrentSubscription.wrap(reentrantSubscription);
+        reentrantSubscription.outerSubscription(concurrent);
+        concurrent.request(1);
+        assertEquals(reentrantSubscription.reentrantLimit, reentrantSubscription.innerSubscription.requested());
     }
 
     @Test
@@ -168,6 +179,62 @@ public class ConcurrentSubscriptionTest {
             cancelledLatch.await();
         } finally {
             executorService.shutdown();
+        }
+    }
+
+    @Test
+    public void multiThreadReentrant() throws Exception {
+        ExecutorService executorService = newFixedThreadPool(1);
+        try {
+            final ReentrantSubscription reentrantSubscription = new ReentrantSubscription(50);
+            final Subscription concurrent = ConcurrentSubscription.wrap(reentrantSubscription);
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            reentrantSubscription.outerSubscription(concurrent);
+            executorService.execute(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                concurrent.request(1);
+            });
+
+            barrier.await();
+            concurrent.request(1);
+            // wait for the expected demand to be delivered.
+            reentrantSubscription.innerSubscription.awaitRequestN(reentrantSubscription.reentrantLimit + 1);
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    private static final class ReentrantSubscription implements Subscription {
+        private final TestSubscription innerSubscription = new TestSubscription();
+        private final int reentrantLimit;
+        private int reentrantCount;
+        @Nullable
+        private Subscription outerSubscription;
+
+        private ReentrantSubscription(final int reentrantLimit) {
+            this.reentrantLimit = reentrantLimit;
+        }
+
+        void outerSubscription(Subscription s) {
+            outerSubscription = s;
+        }
+
+        @Override
+        public void request(final long n) {
+            assert outerSubscription != null;
+            innerSubscription.request(n);
+            if (++reentrantCount < reentrantLimit) {
+                outerSubscription.request(1);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            innerSubscription.cancel();
         }
     }
 }
