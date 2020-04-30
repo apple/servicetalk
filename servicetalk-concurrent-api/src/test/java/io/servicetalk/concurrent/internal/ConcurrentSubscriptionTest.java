@@ -18,20 +18,26 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestSubscription;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ConcurrentSubscriptionTest {
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
@@ -62,6 +68,29 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
+    public void singleThreadCancelDeliveredIfRequestThrows() throws InterruptedException {
+        CountDownLatch cancelledLatch = new CountDownLatch(1);
+        Subscription concurrent = ConcurrentSubscription.wrap(new Subscription() {
+            @Override
+            public void request(final long n) {
+                throw DELIBERATE_EXCEPTION;
+            }
+
+            @Override
+            public void cancel() {
+                cancelledLatch.countDown();
+            }
+        });
+        try {
+            concurrent.request(1);
+        } catch (DeliberateException ignored) {
+            // expected
+        }
+        concurrent.cancel();
+        cancelledLatch.await();
+    }
+
+    @Test
     public void multiThreadRequest() throws ExecutionException, InterruptedException {
         multiThread(300, false);
     }
@@ -72,7 +101,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     private void multiThread(final int threads, boolean cancel) throws ExecutionException, InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        ExecutorService executorService = newFixedThreadPool(threads);
         try {
             List<Future<?>> futures = new ArrayList<>(threads);
             Subscription concurrent = ConcurrentSubscription.wrap(subscription);
@@ -83,7 +112,7 @@ public class ConcurrentSubscriptionTest {
                     try {
                         barrier.await();
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        throw new AssertionError(e);
                     }
                     concurrent.request(1);
                     if (cancel && finalI % 2 == 0) {
@@ -101,6 +130,42 @@ public class ConcurrentSubscriptionTest {
                 subscription.awaitRequestN(threads);
                 assertFalse(subscription.isCancelled());
             }
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    public void multiThreadCancelDeliveredIfRequestThrows() throws Exception {
+        ExecutorService executorService = newFixedThreadPool(1);
+        try {
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            CountDownLatch cancelledLatch = new CountDownLatch(1);
+            Subscription concurrent = ConcurrentSubscription.wrap(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    try {
+                        barrier.await();
+                    } catch (Exception e) {
+                        throw new AssertionError(e);
+                    }
+                    throw DELIBERATE_EXCEPTION;
+                }
+
+                @Override
+                public void cancel() {
+                    cancelledLatch.countDown();
+                }
+            });
+
+            executorService.execute(() -> concurrent.request(1));
+
+            // wait for request to start processing so we issue the cancel concurrently
+            barrier.await();
+            concurrent.cancel();
+
+            // Make sure that cancel is called eventually, despite request throwing.
+            cancelledLatch.await();
         } finally {
             executorService.shutdown();
         }
