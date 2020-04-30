@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 final class LiftSynchronousPublisherToSingle<T, R> extends Single<R> implements SingleSource<R> {
@@ -34,7 +34,7 @@ final class LiftSynchronousPublisherToSingle<T, R> extends Single<R> implements 
 
     @Override
     protected void handleSubscribe(final SingleSource.Subscriber<? super R> subscriber) {
-        deliverTerminalFromSource(subscriber,
+        deliverErrorFromSource(subscriber,
                 new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
     }
 

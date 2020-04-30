@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Single} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
@@ -41,7 +41,7 @@ abstract class AbstractNoHandleSubscribeSingle<T> extends Single<T> implements S
 
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber,
+        deliverErrorFromSource(subscriber,
                 new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
     }
 

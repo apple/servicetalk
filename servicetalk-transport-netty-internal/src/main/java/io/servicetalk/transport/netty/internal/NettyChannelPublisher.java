@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -294,7 +294,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private void subscribe0(Subscriber<? super T> subscriber) {
         SubscriptionImpl subscription = this.subscription;
         if (subscription != null) {
-            deliverTerminalFromSource(subscriber,
+            deliverErrorFromSource(subscriber,
                     new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
             assert requestCount == 0;

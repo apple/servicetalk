@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -241,7 +241,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     if (oldClient != null && oldClient != closed) {
                         toSource(((C) oldClient).closeAsync()).subscribe(subscriber);
                     } else {
-                        deliverTerminalFromSource(subscriber);
+                        deliverCompleteFromSource(subscriber);
                     }
                 }
             };

@@ -43,7 +43,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_ON_NEXT;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_TERMINATED;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Objects.requireNonNull;
@@ -444,7 +444,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
                     requireNonNull(subscriber);
                     final Subscriber<? super T> target = GroupSink.this.target;
                     if (target != null) {
-                        deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(target, subscriber));
+                        deliverErrorFromSource(subscriber, new DuplicateSubscribeException(target, subscriber));
                         return;
                     }
                     // We have to call onSubscribe before we set groupSinkTarget, because otherwise we may deliver data

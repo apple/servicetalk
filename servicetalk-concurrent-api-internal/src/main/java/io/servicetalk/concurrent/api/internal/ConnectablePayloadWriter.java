@@ -33,7 +33,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -261,9 +262,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         protected void handleSubscribe(final Subscriber<? super T> subscriber) {
             if (!stateUpdater.compareAndSet(outer, State.CONNECTING, State.CONNECTED)) {
                 if (stateUpdater.compareAndSet(outer, State.TERMINATING, State.TERMINATED)) {
-                    deliverTerminalFromSource(subscriber);
+                    deliverCompleteFromSource(subscriber);
                 } else {
-                    deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(outer.state, subscriber));
+                    deliverErrorFromSource(subscriber, new DuplicateSubscribeException(outer.state, subscriber));
                 }
                 return;
             }

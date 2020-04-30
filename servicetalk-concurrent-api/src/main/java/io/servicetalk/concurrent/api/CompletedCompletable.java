@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 
 final class CompletedCompletable extends AbstractSynchronousCompletable {
     static final CompletedCompletable INSTANCE = new CompletedCompletable();
@@ -26,6 +26,6 @@ final class CompletedCompletable extends AbstractSynchronousCompletable {
 
     @Override
     void doSubscribe(final Subscriber subscriber) {
-        deliverTerminalFromSource(subscriber);
+        deliverCompleteFromSource(subscriber);
     }
 }

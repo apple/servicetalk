@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -86,7 +86,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                 handleExceptionFromOnSubscribe(subscriber, t);
             }
         } else {
-            deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(null, subscriber));
+            deliverErrorFromSource(subscriber, new DuplicateSubscribeException(null, subscriber));
         }
     }
 

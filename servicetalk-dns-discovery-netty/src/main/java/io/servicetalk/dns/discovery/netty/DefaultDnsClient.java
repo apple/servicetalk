@@ -65,7 +65,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
@@ -389,11 +389,9 @@ final class DefaultDnsClient implements DnsClient {
             assertInEventloop();
 
             if (subscription != null) {
-                deliverTerminalFromSource(subscriber,
-                        new DuplicateSubscribeException(subscription, subscriber));
+                deliverErrorFromSource(subscriber, new DuplicateSubscribeException(subscription, subscriber));
             } else if (closed) {
-                deliverTerminalFromSource(subscriber,
-                        new ClosedServiceDiscovererException(DefaultDnsClient.this +
+                deliverErrorFromSource(subscriber, new ClosedServiceDiscovererException(DefaultDnsClient.this +
                                 " has been closed!"));
             } else {
                 subscription = newSubscription(subscriber);

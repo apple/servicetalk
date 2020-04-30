@@ -59,7 +59,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -2615,7 +2615,7 @@ public abstract class Publisher<T> {
             offloadedSubscriber =
                     signalOffloader.offloadSubscription(provider.wrapSubscription(subscriber, contextMap));
         } catch (Throwable t) {
-            deliverTerminalFromSource(subscriber, t);
+            deliverErrorFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
@@ -2655,7 +2655,7 @@ public abstract class Publisher<T> {
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.
             // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
             // further signals occur.
-            deliverTerminalFromSource(subscriber, t);
+            deliverErrorFromSource(subscriber, t);
         }
     }
 

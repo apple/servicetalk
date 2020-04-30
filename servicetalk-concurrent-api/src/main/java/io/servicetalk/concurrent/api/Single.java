@@ -47,7 +47,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -1923,7 +1923,7 @@ public abstract class Single<T> {
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
         } catch (Throwable t) {
-            deliverTerminalFromSource(subscriber, t);
+            deliverErrorFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
@@ -1964,7 +1964,7 @@ public abstract class Single<T> {
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.
             // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
             // further signals occur.
-            deliverTerminalFromSource(subscriber, t);
+            deliverErrorFromSource(subscriber, t);
         }
     }
 

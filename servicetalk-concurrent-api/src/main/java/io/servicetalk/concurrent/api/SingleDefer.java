@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.SingleSource;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,7 +40,7 @@ final class SingleDefer<T> extends Single<T> implements SingleSource<T> {
         try {
             single = requireNonNull(singleFactory.get());
         } catch (Throwable cause) {
-            deliverTerminalFromSource(subscriber, cause);
+            deliverErrorFromSource(subscriber, cause);
             return;
         }
         // There are technically two sources, this one and the one returned by the factory.

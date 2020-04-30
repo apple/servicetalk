@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
@@ -92,7 +92,7 @@ public class NettyChannelListenableAsyncCloseable implements ListenableAsyncClos
                     try {
                         doCloseAsyncGracefully();
                     } catch (Throwable t) {
-                        deliverTerminalFromSource(subscriber, t);
+                        deliverErrorFromSource(subscriber, t);
                         return;
                     }
                 }

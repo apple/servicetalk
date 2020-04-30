@@ -159,7 +159,7 @@ public final class SubscriberUtils {
      * @param subscriber The {@link Subscriber} to terminate.
      * @param <T> The type of {@link Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber) {
+    public static <T> void deliverCompleteFromSource(Subscriber<T> subscriber) {
         try {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         } catch (Throwable t) {
@@ -176,14 +176,14 @@ public final class SubscriberUtils {
      * @param value The value to pass to {@link SingleSource.Subscriber#onSuccess(Object)}.
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
+    public static <T> void deliverSuccessFromSource(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
             handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
-        safeOnComplete(subscriber, value);
+        safeOnSuccess(subscriber, value);
     }
 
     /**
@@ -192,7 +192,7 @@ public final class SubscriberUtils {
      * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
      * @param <T> The type of {@link CompletableSource.Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(CompletableSource.Subscriber subscriber) {
+    public static <T> void deliverCompleteFromSource(CompletableSource.Subscriber subscriber) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
@@ -209,7 +209,7 @@ public final class SubscriberUtils {
      * @param cause The terminal event.
      * @param <T> The type of {@link Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(Subscriber<T> subscriber, Throwable cause) {
+    public static <T> void deliverErrorFromSource(Subscriber<T> subscriber, Throwable cause) {
         try {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         } catch (Throwable t) {
@@ -226,7 +226,7 @@ public final class SubscriberUtils {
      * @param cause The terminal event.
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
-    public static <T> void deliverTerminalFromSource(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+    public static <T> void deliverErrorFromSource(SingleSource.Subscriber<T> subscriber, Throwable cause) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
@@ -242,7 +242,7 @@ public final class SubscriberUtils {
      * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
      * @param cause The terminal event.
      */
-    public static void deliverTerminalFromSource(CompletableSource.Subscriber subscriber, Throwable cause) {
+    public static void deliverErrorFromSource(CompletableSource.Subscriber subscriber, Throwable cause) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
@@ -371,9 +371,10 @@ public final class SubscriberUtils {
      * Invokes {@link SingleSource.Subscriber#onSuccess(Object)} ignoring an occurred exception if any.
      * @param subscriber The {@link SingleSource.Subscriber} that may throw an exception from
      * {@link SingleSource.Subscriber#onSuccess(Object)}.
+     * @param value The value to pass to {@link SingleSource.Subscriber#onSuccess(Object)}.
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
-    public static <T> void safeOnComplete(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
+    public static <T> void safeOnSuccess(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
         try {
             subscriber.onSuccess(value);
         } catch (Throwable t) {
@@ -385,9 +386,8 @@ public final class SubscriberUtils {
      * Invokes {@link CompletableSource.Subscriber#onComplete()} ignoring an occurred exception if any.
      * @param subscriber The {@link CompletableSource.Subscriber} that may throw an exception from
      * {@link CompletableSource.Subscriber#onComplete()}.
-     * @param <T> The type of {@link CompletableSource.Subscriber}.
      */
-    public static <T> void safeOnComplete(CompletableSource.Subscriber subscriber) {
+    public static void safeOnComplete(CompletableSource.Subscriber subscriber) {
         try {
             subscriber.onComplete();
         } catch (Throwable t) {

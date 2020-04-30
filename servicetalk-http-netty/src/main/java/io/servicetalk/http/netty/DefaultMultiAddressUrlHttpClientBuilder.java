@@ -66,7 +66,7 @@ import static io.netty.handler.codec.http.HttpScheme.HTTPS;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -182,7 +182,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
                     urlKeyCache.clear();
-                    deliverTerminalFromSource(subscriber);
+                    deliverCompleteFromSource(subscriber);
                 }
             };
         }

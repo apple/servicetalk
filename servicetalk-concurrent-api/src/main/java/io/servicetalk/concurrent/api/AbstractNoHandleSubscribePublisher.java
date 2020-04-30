@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A {@link Publisher} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
@@ -42,7 +42,7 @@ abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> implem
 
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber,
+        deliverErrorFromSource(subscriber,
                 new RejectedSubscribeException("Subscribe with no executor is not supported for " + getClass()));
     }
 

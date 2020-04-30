@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
@@ -99,7 +99,7 @@ public final class SpScPublisherProcessor<T> extends SubscribablePublisher<T> {
         for (;;) {
             final Subscriber<? super T> subscriber = this.subscriber;
             if (subscriber != null) {
-                deliverTerminalFromSource(s, new DuplicateSubscribeException(subscriber, s));
+                deliverErrorFromSource(s, new DuplicateSubscribeException(subscriber, s));
                 return;
             } else if (subscriberUpdater.compareAndSet(this, null, CALLING_ON_SUBSCRIBE)) {
                 s.onSubscribe(new Subscription() {

@@ -42,7 +42,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -276,7 +276,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         do {
             WriteTask nextWriteTask;
             while ((nextWriteTask = writeQueue.poll()) != null) {
-                deliverTerminalFromSource(nextWriteTask.subscriber, cause);
+                deliverErrorFromSource(nextWriteTask.subscriber, cause);
             }
         } while (!releaseLock(writeQueueLockUpdater, this) && tryAcquireLock(writeQueueLockUpdater, this));
     }
@@ -288,7 +288,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
         do {
             Subscriber<? super Resp> nextSubscriber;
             while ((nextSubscriber = readQueue.poll()) != null) {
-                deliverTerminalFromSource(nextSubscriber, cause);
+                deliverErrorFromSource(nextSubscriber, cause);
             }
         } while (!releaseLock(readQueueLockUpdater, this) && tryAcquireLock(readQueueLockUpdater, this));
     }

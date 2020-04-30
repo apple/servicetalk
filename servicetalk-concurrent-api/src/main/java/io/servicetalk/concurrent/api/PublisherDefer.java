@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,7 +40,7 @@ final class PublisherDefer<T> extends Publisher<T> implements PublisherSource<T>
         try {
             publisher = requireNonNull(publisherFactory.get());
         } catch (Throwable cause) {
-            deliverTerminalFromSource(subscriber, cause);
+            deliverErrorFromSource(subscriber, cause);
             return;
         }
         // There are technically two sources, this one and the one returned by the factory.

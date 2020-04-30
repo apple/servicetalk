@@ -15,9 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
-
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 final class FailedSingle<T> extends AbstractSynchronousSingle<T> {
@@ -29,6 +27,6 @@ final class FailedSingle<T> extends AbstractSynchronousSingle<T> {
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber, cause);
+        deliverErrorFromSource(subscriber, cause);
     }
 }
