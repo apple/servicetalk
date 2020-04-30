@@ -179,8 +179,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             // If we are cancelled the activeUpdater count is best effort depending upon which sources finish. This best
             // effort behavior mimics the semantics of cancel though so we don't take any special action to try to
             // adjust the count or prematurely terminate.
-            final int activeMappedSources = activeMappedSourcesUpdater.incrementAndGet(this);
-            assert activeMappedSources > 0; // otherwise onComplete was previously invoked, which is invalid.
+            final int activeSources = activeMappedSourcesUpdater.incrementAndGet(this);
+            assert activeSources > 0; // otherwise onComplete was previously invoked or concurrency on this Subscriber.
             next.subscribeInternal(new FlatMapSingleSubscriber());
         }
 
@@ -203,10 +203,10 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private boolean terminateActiveMappedSources() {
             for (;;) {
-                final int prevActiveMappedSources = activeMappedSources;
-                assert prevActiveMappedSources >= 0; // otherwise we have seen multiple onComplete signals
-                if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveMappedSources, -prevActiveMappedSources)) {
-                    return prevActiveMappedSources == 0;
+                final int prevActiveSources = activeMappedSources;
+                assert prevActiveSources >= 0; // otherwise we have seen multiple onComplete signals
+                if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources, -prevActiveSources)) {
+                    return prevActiveSources == 0;
                 }
             }
         }
@@ -216,12 +216,10 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 final int prevActiveSources = activeMappedSources;
                 assert prevActiveSources != 0;
                 if (prevActiveSources > 0) {
-                    if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources,
-                            prevActiveSources - 1)) {
+                    if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources, prevActiveSources - 1)) {
                         return false;
                     }
-                } else if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources,
-                        prevActiveSources + 1)) {
+                } else if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources, prevActiveSources + 1)) {
                     return prevActiveSources == -1;
                 }
             }
