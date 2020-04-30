@@ -88,9 +88,6 @@ public final class H2KeepAlivePolicies {
         /**
          * Set the {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
-         * <p>
-         * <strong>Too short ping durations may cause high network traffic, so a minimum duration may be
-         * enforced.</strong>
          *
          * @param idleDuration {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -98,11 +95,7 @@ public final class H2KeepAlivePolicies {
          * @see KeepAlivePolicy#idleDuration()
          */
         public KeepAlivePolicyBuilder idleDuration(final Duration idleDuration) {
-            if (idleDuration.getSeconds() < 10 || idleDuration.toDays() > 1) {
-                throw new IllegalArgumentException("idleDuration: " + idleDuration +
-                        " (expected >= 10 seconds and < 1 day)");
-            }
-            this.idleDuration = idleDuration;
+            this.idleDuration = requireNonNull(idleDuration);
             return this;
         }
 
