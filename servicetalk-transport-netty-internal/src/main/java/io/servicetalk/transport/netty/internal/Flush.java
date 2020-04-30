@@ -74,8 +74,9 @@ final class Flush {
             try {
                 writeEventsListener.writeStarted();
             } finally {
-                // As long as we call onSubscribe we can let exceptions propagate and the source should terminate
-                // this Subscriber for cleanup.
+                // Any exceptions that occur will escape this method and bubble up to the Source. If this occurs the
+                // Subscription is considered cancelled and the Source should terminate this Subscriber with an onError.
+                // Before the exception propagates we must call onSubscribe so subscriber is ready for onError.
                 subscriber.onSubscribe(new Subscription() {
                     @Override
                     public void request(long n) {

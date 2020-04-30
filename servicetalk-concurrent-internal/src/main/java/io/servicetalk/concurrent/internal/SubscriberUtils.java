@@ -170,6 +170,23 @@ public final class SubscriberUtils {
     }
 
     /**
+     * Invokes {@link SingleSource.Subscriber#onSuccess(Object)} ignoring an occurred exception if any.
+     * @param subscriber The {@link SingleSource.Subscriber} that may throw an exception from
+     * {@link SingleSource.Subscriber#onSuccess(Object)}.
+     * @param value The value to pass to {@link SingleSource.Subscriber#onSuccess(Object)}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void deliverTerminalFromSource(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
+        try {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        } catch (Throwable t) {
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
+        }
+        safeOnComplete(subscriber, value);
+    }
+
+    /**
      * Deliver a terminal complete to a {@link CompletableSource.Subscriber} that has not yet had
      * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} called.
      * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
@@ -354,16 +371,9 @@ public final class SubscriberUtils {
      * Invokes {@link SingleSource.Subscriber#onSuccess(Object)} ignoring an occurred exception if any.
      * @param subscriber The {@link SingleSource.Subscriber} that may throw an exception from
      * {@link SingleSource.Subscriber#onSuccess(Object)}.
-     * @param value The value to pass to {@link SingleSource.Subscriber#onSuccess(Object)}.
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
     public static <T> void safeOnComplete(SingleSource.Subscriber<T> subscriber, @Nullable T value) {
-        try {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-        } catch (Throwable t) {
-            handleExceptionFromOnSubscribe(subscriber, t);
-            return;
-        }
         try {
             subscriber.onSuccess(value);
         } catch (Throwable t) {

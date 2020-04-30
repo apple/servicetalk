@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 
 final class SucceededSingle<T> extends AbstractSynchronousSingle<T> {
     @Nullable
@@ -29,6 +29,6 @@ final class SucceededSingle<T> extends AbstractSynchronousSingle<T> {
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
-        safeOnComplete(subscriber, value);
+        deliverTerminalFromSource(subscriber, value);
     }
 }
