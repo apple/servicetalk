@@ -35,7 +35,18 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     @Override
     public void cancel() {
         if (cancelledUpdater.compareAndSet(this, 0, 1)) {
-            cancelAll();
+            Throwable delayedCause = null;
+            Cancellable cancellable;
+            while ((cancellable = cancellables.poll()) != null) {
+                try {
+                    cancellable.cancel();
+                } catch (Throwable cause) {
+                    delayedCause = catchUnexpected(delayedCause, cause);
+                }
+            }
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
         }
     }
 
@@ -44,7 +55,9 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
         if (!cancellables.offer(toAdd)) {
             toAdd.cancel();
         } else if (isCancelled()) {
-            cancelAll();
+            if (cancellables.remove(toAdd)) {
+                toAdd.cancel();
+            }
             return false;
         }
         return true;
@@ -58,20 +71,5 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     @Override
     public boolean isCancelled() {
         return cancelled != 0;
-    }
-
-    private void cancelAll() {
-        Throwable delayedCause = null;
-        Cancellable cancellable;
-        while ((cancellable = cancellables.poll()) != null) {
-            try {
-                cancellable.cancel();
-            } catch (Throwable cause) {
-                delayedCause = catchUnexpected(delayedCause, cause);
-            }
-        }
-        if (delayedCause != null) {
-            throwException(delayedCause);
-        }
     }
 }

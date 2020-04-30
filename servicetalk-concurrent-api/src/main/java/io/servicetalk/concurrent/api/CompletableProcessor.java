@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
@@ -36,7 +37,7 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
  */
 final class CompletableProcessor extends Completable implements Processor {
     private static final AtomicReferenceFieldUpdater<CompletableProcessor, TerminalNotification> terminalSignalUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(CompletableProcessor.class, TerminalNotification.class,
+            newUpdater(CompletableProcessor.class, TerminalNotification.class,
                     "terminalSignal");
 
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
@@ -53,9 +54,8 @@ final class CompletableProcessor extends Completable implements Processor {
         subscriber.onSubscribe(delayedCancellable);
         if (subscribers.offer(subscriber)) {
             TerminalNotification terminalSignal = this.terminalSignal;
-            if (terminalSignal != null) {
-                // To ensure subscribers are notified in order we go through the queue to notify subscribers.
-                notifyListeners(terminalSignal);
+            if (terminalSignal != null && subscribers.remove(subscriber)) {
+                terminalSignal.terminate(subscriber);
             } else {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
@@ -86,22 +86,18 @@ final class CompletableProcessor extends Completable implements Processor {
 
     private void terminate(TerminalNotification terminalSignal) {
         if (terminalSignalUpdater.compareAndSet(this, null, terminalSignal)) {
-            notifyListeners(terminalSignal);
-        }
-    }
-
-    private void notifyListeners(TerminalNotification terminalSignal) {
-        Throwable delayedCause = null;
-        Subscriber subscriber;
-        while ((subscriber = subscribers.poll()) != null) {
-            try {
-                terminalSignal.terminate(subscriber);
-            } catch (Throwable cause) {
-                delayedCause = catchUnexpected(delayedCause, cause);
+            Throwable delayedCause = null;
+            Subscriber subscriber;
+            while ((subscriber = subscribers.poll()) != null) {
+                try {
+                    terminalSignal.terminate(subscriber);
+                } catch (Throwable cause) {
+                    delayedCause = catchUnexpected(delayedCause, cause);
+                }
             }
-        }
-        if (delayedCause != null) {
-            throwException(delayedCause);
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
         }
     }
 

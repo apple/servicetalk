@@ -58,9 +58,16 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
 
         if (subscribers.offer(subscriber)) {
             Object terminalSignal = this.terminalSignal;
-            if (terminalSignal != TERMINAL_NULL) {
-                // To ensure subscribers are notified in order we go through the queue to notify subscribers.
-                notifyListeners(terminalSignal);
+            if (terminalSignal != TERMINAL_NULL && subscribers.remove(subscriber)) {
+                if (terminalSignal instanceof TerminalNotification) {
+                    final Throwable error = ((TerminalNotification) terminalSignal).cause();
+                    assert error != null : "Cause can't be null from TerminalNotification.error(..)";
+                    subscriber.onError(error);
+                } else {
+                    @SuppressWarnings("unchecked")
+                    final T value = (T) terminalSignal;
+                    subscriber.onSuccess(value);
+                }
             } else {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
