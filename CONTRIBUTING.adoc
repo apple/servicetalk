@@ -13,7 +13,6 @@ get involved. Pull requests to update and expand this guide are welcome.
 ** <<Scope of the ServiceTalk Organization>>
 ** <<Opening a Pull Request>>
 ** <<Reporting Issues>>
-* <<Project Communication>>
 
 == Before you get started
 === Community Guidelines
