@@ -63,10 +63,10 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
 import static io.netty.handler.codec.http.HttpScheme.HTTPS;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -181,9 +181,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
-                    subscriber.onSubscribe(IGNORE_CANCEL);
                     urlKeyCache.clear();
-                    subscriber.onComplete();
+                    deliverCompleteFromSource(subscriber);
                 }
             };
         }

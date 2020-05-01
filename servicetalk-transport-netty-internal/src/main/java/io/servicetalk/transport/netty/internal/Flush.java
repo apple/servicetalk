@@ -23,7 +23,6 @@ import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -74,24 +73,23 @@ final class Flush {
         public void onSubscribe(Subscription subscription) {
             try {
                 writeEventsListener.writeStarted();
-            } catch (Throwable t) {
-                subscription.cancel();
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(t);
-                return;
-            }
-            subscriber.onSubscribe(new Subscription() {
-                @Override
-                public void request(long n) {
-                    subscription.request(n);
-                }
+            } finally {
+                // Any exceptions that occur will escape this method and bubble up to the Source. If this occurs the
+                // Subscription is considered cancelled and the Source should terminate this Subscriber with an onError.
+                // Before the exception propagates we must call onSubscribe so subscriber is ready for onError.
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(long n) {
+                        subscription.request(n);
+                    }
 
-                @Override
-                public void cancel() {
-                    subscription.cancel();
-                    writeEventsListener.writeCancelled();
-                }
-            });
+                    @Override
+                    public void cancel() {
+                        subscription.cancel();
+                        writeEventsListener.writeCancelled();
+                    }
+                });
+            }
         }
 
         @Override

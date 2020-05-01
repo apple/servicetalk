@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
@@ -167,8 +167,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     }).init(channel);
                 } catch (Throwable cause) {
                     channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    deliverErrorFromSource(subscriber, cause);
                     return;
                 }
                 subscriber.onSubscribe(delayedCancellable);

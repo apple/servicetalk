@@ -55,14 +55,13 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
@@ -255,8 +254,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline));
                 } catch (Throwable cause) {
                     channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    deliverErrorFromSource(subscriber, cause);
                     return;
                 }
                 subscriber.onSubscribe(delayedCancellable);
@@ -415,8 +413,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             }
             return true;
         }
-        deliverTerminalFromSource(subscriber,
-                new IllegalStateException("A write is already active on this connection."));
+        deliverErrorFromSource(subscriber, new IllegalStateException("A write is already active on this connection."));
         return false;
     }
 

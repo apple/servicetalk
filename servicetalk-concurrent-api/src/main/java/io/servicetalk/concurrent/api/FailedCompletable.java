@@ -15,9 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
-
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 final class FailedCompletable extends AbstractSynchronousCompletable {
@@ -29,6 +27,6 @@ final class FailedCompletable extends AbstractSynchronousCompletable {
 
     @Override
     void doSubscribe(final Subscriber subscriber) {
-        deliverTerminalFromSource(subscriber, cause);
+        deliverErrorFromSource(subscriber, cause);
     }
 }

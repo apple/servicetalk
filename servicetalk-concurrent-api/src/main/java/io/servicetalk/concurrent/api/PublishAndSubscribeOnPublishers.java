@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -35,9 +35,9 @@ final class PublishAndSubscribeOnPublishers {
     static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
                                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
-        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
-        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-        subscriber.onError(cause);
+        deliverErrorFromSource(
+                signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)),
+                cause);
     }
 
     static <T> Publisher<T> publishAndSubscribeOn(Publisher<T> original, Executor executor) {

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 
 final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
     private static final EmptyPublisher EMPTY_PUBLISHER = new EmptyPublisher();
@@ -26,7 +26,7 @@ final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber);
+        deliverCompleteFromSource(subscriber);
     }
 
     @SuppressWarnings("unchecked")

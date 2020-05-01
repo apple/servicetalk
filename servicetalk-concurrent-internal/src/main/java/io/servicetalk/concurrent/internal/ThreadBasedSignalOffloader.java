@@ -33,8 +33,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -141,8 +140,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         } catch (EnqueueForOffloadingFailed e) {
             // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
             // safe to send the error.
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(e.getCause());
+            deliverErrorFromSource(subscriber, e.getCause());
         }
     }
 
@@ -154,8 +152,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         } catch (EnqueueForOffloadingFailed e) {
             // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
             // safe to send the error.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(e.getCause());
+            deliverErrorFromSource(subscriber, e.getCause());
         }
     }
 
@@ -167,8 +164,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
         } catch (EnqueueForOffloadingFailed e) {
             // Since we failed to enqueue for offloading, we are sure that Subscriber has not been signalled and hence
             // safe to send the error.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(e.getCause());
+            deliverErrorFromSource(subscriber, e.getCause());
         }
     }
 

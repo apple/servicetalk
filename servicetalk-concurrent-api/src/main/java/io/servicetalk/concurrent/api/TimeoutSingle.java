@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -194,7 +194,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     // If there is no Cancellable, that means this.onSubscribe wasn't called before the timeout. In this
                     // case there is no risk of concurrent invocation on target because we won't invoke
                     // target.onSubscribe from this.onSubscribe.
-                    deliverTerminalFromSource(offloadedTarget, newTimeoutException());
+                    deliverErrorFromSource(offloadedTarget, newTimeoutException());
                 }
             }
         }

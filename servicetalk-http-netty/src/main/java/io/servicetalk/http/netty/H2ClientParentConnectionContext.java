@@ -65,10 +65,9 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -121,8 +120,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(), reqRespFactory);
                 } catch (Throwable cause) {
                     channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
+                    deliverErrorFromSource(subscriber, cause);
                     return;
                 }
                 subscriber.onSubscribe(delayedCancellable);
@@ -224,7 +222,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
-                        deliverTerminalFromSource(subscriber, cause);
+                        deliverErrorFromSource(subscriber, cause);
                         return;
                     }
                     subscriber.onSubscribe(sequentialCancellable);

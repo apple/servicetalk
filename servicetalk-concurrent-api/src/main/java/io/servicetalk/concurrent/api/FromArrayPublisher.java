@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -48,7 +48,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
                 handleExceptionFromOnSubscribe(s, t);
             }
         } else {
-            deliverTerminalFromSource(s);
+            deliverCompleteFromSource(s);
         }
     }
 

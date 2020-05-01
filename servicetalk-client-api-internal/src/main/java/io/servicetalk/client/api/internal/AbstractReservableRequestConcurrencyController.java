@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 abstract class AbstractReservableRequestConcurrencyController implements ReservableRequestConcurrencyController {
@@ -93,7 +94,12 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
         return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
-                subscriber.onSubscribe(IGNORE_CANCEL);
+                try {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                } catch (Throwable cause) {
+                    handleExceptionFromOnSubscribe(subscriber, cause);
+                    return;
+                }
                 // Ownership is maintained by the caller.
                 if (pendingRequestsUpdater.compareAndSet(AbstractReservableRequestConcurrencyController.this,
                         STATE_RESERVED, STATE_IDLE)) {

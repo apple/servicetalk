@@ -37,7 +37,6 @@ import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
@@ -45,7 +44,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Arrays.spliterator;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1802,8 +1801,7 @@ public abstract class Completable {
             // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
             offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
         } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
+            deliverErrorFromSource(subscriber, t);
             return;
         }
         signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
@@ -1843,7 +1841,7 @@ public abstract class Completable {
             // 1) Rule 2.12: onSubscribe() MUST be called at most once.
             // 2) Rule 1.7: Once a terminal state has been signaled (onError, onComplete) it is REQUIRED that no
             // further signals occur.
-            deliverTerminalFromSource(subscriber, t);
+            deliverErrorFromSource(subscriber, t);
         }
     }
 

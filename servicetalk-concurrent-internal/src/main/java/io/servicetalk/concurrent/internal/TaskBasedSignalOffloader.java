@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.util.Objects.requireNonNull;
@@ -106,8 +107,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(throwable);
+            deliverErrorFromSource(subscriber, throwable);
         }
     }
 
@@ -118,8 +118,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(throwable);
+            deliverErrorFromSource(subscriber, throwable);
         }
     }
 
@@ -130,8 +129,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
             // We assume that if executor accepted the task, it was run and no exception will be thrown from accept.
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(throwable);
+            deliverErrorFromSource(subscriber, throwable);
         }
     }
 

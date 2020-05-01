@@ -19,6 +19,7 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
+    @SuppressWarnings("rawtypes")
     private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
 
     @Override

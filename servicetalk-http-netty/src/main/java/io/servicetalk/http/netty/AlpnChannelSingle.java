@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 
 /**
@@ -56,8 +56,7 @@ final class AlpnChannelSingle extends SubscribableSingle<String> {
             channelInitializer.init(channel);
         } catch (Throwable cause) {
             channel.close();
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(cause);
+            deliverErrorFromSource(subscriber, cause);
             return;
         }
         subscriber.onSubscribe(channel::close);

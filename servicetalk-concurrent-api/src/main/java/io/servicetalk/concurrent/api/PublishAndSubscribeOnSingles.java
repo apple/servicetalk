@@ -18,9 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -35,9 +35,8 @@ final class PublishAndSubscribeOnSingles {
     static <T> void deliverOnSubscribeAndOnError(SingleSource.Subscriber<? super T> subscriber,
                                                  SignalOffloader signalOffloader, AsyncContextMap contextMap,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
-        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap));
-        subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(cause);
+        deliverErrorFromSource(
+                signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap)), cause);
     }
 
     static <T> Single<T> publishAndSubscribeOn(Single<T> original, Executor executor) {

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
@@ -27,6 +27,6 @@ final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber, cause);
+        deliverErrorFromSource(subscriber, cause);
     }
 }
