@@ -29,13 +29,18 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ConcurrentSubscriptionTest {
     @Rule
@@ -85,8 +90,9 @@ public class ConcurrentSubscriptionTest {
         });
         try {
             concurrent.request(1);
-        } catch (DeliberateException ignored) {
-            // expected
+            fail();
+        } catch (DeliberateException e) {
+            assertSame(DELIBERATE_EXCEPTION, e);
         }
         concurrent.cancel();
         cancelledLatch.await();
@@ -99,6 +105,14 @@ public class ConcurrentSubscriptionTest {
         reentrantSubscription.outerSubscription(concurrent);
         concurrent.request(1);
         assertEquals(reentrantSubscription.reentrantLimit, reentrantSubscription.innerSubscription.requested());
+    }
+
+    @Test
+    public void singleThreadInvalidRequestN() {
+        Subscription concurrent = ConcurrentSubscription.wrap(subscription);
+        final long invalidN = ThreadLocalRandom.current().nextLong(Long.MIN_VALUE, 1);
+        concurrent.request(invalidN);
+        assertThat("unexpected requested with invalidN: " + invalidN, subscription.requested(), lessThanOrEqualTo(0L));
     }
 
     @Test
@@ -155,11 +169,6 @@ public class ConcurrentSubscriptionTest {
             Subscription concurrent = ConcurrentSubscription.wrap(new Subscription() {
                 @Override
                 public void request(final long n) {
-                    try {
-                        barrier.await();
-                    } catch (Exception e) {
-                        throw new AssertionError(e);
-                    }
                     throw DELIBERATE_EXCEPTION;
                 }
 
@@ -169,13 +178,26 @@ public class ConcurrentSubscriptionTest {
                 }
             });
 
-            executorService.execute(() -> concurrent.request(1));
+            Future<?> f = executorService.submit(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                concurrent.request(1);
+            });
 
             // wait for request to start processing so we issue the cancel concurrently
             barrier.await();
             concurrent.cancel();
 
             // Make sure that cancel is called eventually, despite request throwing.
+            try {
+                f.get();
+                // don't fail, if cancel happens first then the Subscription is terminated.
+            } catch (ExecutionException e) {
+                assertSame(DELIBERATE_EXCEPTION, e.getCause());
+            }
             cancelledLatch.await();
         } finally {
             executorService.shutdown();
@@ -190,7 +212,7 @@ public class ConcurrentSubscriptionTest {
             final Subscription concurrent = ConcurrentSubscription.wrap(reentrantSubscription);
             CyclicBarrier barrier = new CyclicBarrier(2);
             reentrantSubscription.outerSubscription(concurrent);
-            executorService.execute(() -> {
+            Future<?> f = executorService.submit(() -> {
                 try {
                     barrier.await();
                 } catch (Exception e) {
@@ -201,8 +223,55 @@ public class ConcurrentSubscriptionTest {
 
             barrier.await();
             concurrent.request(1);
+            f.get();
             // wait for the expected demand to be delivered.
             reentrantSubscription.innerSubscription.awaitRequestN(reentrantSubscription.reentrantLimit + 1);
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    public void multiThreadInvalidRequestN() throws Exception {
+        multiThreadInvalidRequestN(false);
+    }
+
+    @Test
+    public void multiThreadInvalidRequestNCancel() throws Exception {
+        multiThreadInvalidRequestN(true);
+    }
+
+    private void multiThreadInvalidRequestN(boolean cancel) throws Exception {
+        ExecutorService executorService = newFixedThreadPool(1);
+        try {
+            Subscription concurrent = ConcurrentSubscription.wrap(subscription);
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            final long invalidN = ThreadLocalRandom.current().nextLong(Long.MIN_VALUE, 1);
+            Future<?> f = executorService.submit(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+
+                if (cancel) {
+                    concurrent.cancel();
+                } else {
+                    concurrent.request(1);
+                }
+            });
+
+            barrier.await();
+            concurrent.request(invalidN);
+
+            f.get();
+
+            if (cancel) {
+                assertTrue(subscription.isCancelled());
+            } else {
+                assertThat("unexpected requested with invalidN: " + invalidN, subscription.requested(),
+                        lessThanOrEqualTo(0L));
+            }
         } finally {
             executorService.shutdown();
         }
