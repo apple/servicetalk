@@ -1,0 +1,226 @@
+/*
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.concurrent.api;
+
+import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.concurrent.internal.TerminalNotification;
+
+import org.hamcrest.Matcher;
+import org.junit.Test;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class PublisherProcessorTest {
+    private final BlockingQueue<Integer> bufferQueue = new LinkedBlockingQueue<>();
+    private final PublisherProcessor<Integer> processor;
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+    private final TestSubscription subscription = new TestSubscription();
+
+    @Nullable
+    private volatile TerminalNotification terminalNotification;
+
+    public PublisherProcessorTest() {
+        @SuppressWarnings("unchecked")
+        final PublisherProcessorBuffer<Integer> buffer = mock(PublisherProcessorBuffer.class);
+        doAnswer(invocation -> {
+            bufferQueue.add(invocation.getArgument(0));
+            return null;
+        }).when(buffer).add(anyInt());
+        when(buffer.tryConsume(any())).thenAnswer(invocation -> {
+            BufferConsumer<Integer> consumer = invocation.getArgument(0);
+            Integer item = bufferQueue.poll();
+            if (item == null) {
+                return terminateConsumeFromMock(consumer);
+            }
+            consumer.consumeItem(item);
+            return true;
+        });
+        when(buffer.tryConsumeTerminal(any()))
+                .thenAnswer(invocation -> {
+                    if (bufferQueue.peek() == null) {
+                        return terminateConsumeFromMock(invocation.getArgument(0));
+                    }
+                    return false;
+                });
+        doAnswer(__ -> {
+            terminalNotification = TerminalNotification.complete();
+            return null;
+        }).when(buffer).terminate();
+        doAnswer(invocation -> {
+            terminalNotification = TerminalNotification.error(invocation.getArgument(0));
+            return null;
+        }).when(buffer).terminate(any(Throwable.class));
+        processor = new PublisherProcessor<>(buffer);
+        processor.onSubscribe(subscription);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(0L));
+        assertThat("Subscription cancelled.", subscription.isCancelled(), is(false));
+    }
+
+    private boolean terminateConsumeFromMock(final BufferConsumer<Integer> consumer) {
+        TerminalNotification notification = terminalNotification;
+        if (notification == null) {
+            return false;
+        }
+        if (notification.cause() == null) {
+            consumer.consumeTerminal();
+        } else {
+            consumer.consumeTerminal(notification.cause());
+        }
+        return true;
+    }
+
+    @Test
+    public void itemBeforeSubscriber() {
+        processor.onNext(1);
+        toSource(processor).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+    }
+
+    @Test
+    public void itemBeforeRequest() {
+        toSource(processor).subscribe(subscriber);
+        processor.onNext(1);
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+    }
+
+    @Test
+    public void terminalBeforeSubscriber() {
+        processor.onComplete();
+        toSource(processor).subscribe(subscriber);
+        assertThat("Unexpected items received.", subscriber.takeItems(), hasSize(0));
+        verifyTerminal(is(nullValue()), subscriber);
+    }
+
+    @Test
+    public void terminalAfterSubscriber() {
+        toSource(processor).subscribe(subscriber);
+        processor.onComplete();
+        verifyTerminal(is(nullValue()), subscriber);
+    }
+
+    @Test
+    public void terminalErrorBeforeSubscriber() {
+        processor.onError(DELIBERATE_EXCEPTION);
+        toSource(processor).subscribe(subscriber);
+        assertThat("Unexpected items received.", subscriber.takeItems(), hasSize(0));
+        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+    }
+
+    @Test
+    public void terminalErrorAfterSubscriber() {
+        toSource(processor).subscribe(subscriber);
+        processor.onError(DELIBERATE_EXCEPTION);
+        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+    }
+
+    @Test
+    public void completeDeliveredAfterBuffer() {
+        toSource(processor).subscribe(subscriber);
+        processor.onNext(1);
+        processor.onComplete();
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        verifyTerminal(is(nullValue()), subscriber);
+    }
+
+    @Test
+    public void completeNotDeliveredWithoutRequestWhenAfterBuffer() {
+        toSource(processor).subscribe(subscriber);
+        processor.onNext(1);
+        processor.onComplete();
+        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        verifyTerminal(is(nullValue()), subscriber);
+    }
+
+    @Test
+    public void errorDeliveredAfterBuffer() {
+        toSource(processor).subscribe(subscriber);
+        processor.onNext(1);
+        processor.onError(DELIBERATE_EXCEPTION);
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+    }
+
+    @Test
+    public void errorNotDeliveredWithoutRequestWhenAfterBuffer() {
+        toSource(processor).subscribe(subscriber);
+        processor.onNext(1);
+        processor.onError(DELIBERATE_EXCEPTION);
+        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+
+        subscriber.request(1);
+        assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
+        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
+        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+    }
+
+    @Test
+    public void duplicateSubscriber() {
+        toSource(processor).subscribe(subscriber);
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
+        toSource(processor).subscribe(subscriber2);
+        verifyTerminal(instanceOf(DuplicateSubscribeException.class), subscriber2);
+        assertThat("Unexpected terminal.", subscriber.takeTerminal(), is(nullValue()));
+    }
+
+    @Test
+    public void duplicateSubscriberPostCancel() {
+        toSource(processor).subscribe(subscriber);
+        subscriber.cancel();
+        TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
+        toSource(processor).subscribe(subscriber2);
+        verifyTerminal(instanceOf(DuplicateSubscribeException.class), subscriber2);
+        assertThat("Unexpected terminal.", subscriber.takeTerminal(), is(nullValue()));
+    }
+
+    private void verifyTerminal(final Matcher<Object> causeMatcher, final TestPublisherSubscriber<Integer> subscriber) {
+        TerminalNotification terminal = subscriber.takeTerminal();
+        assertThat("Unexpected terminal.", terminal, is(notNullValue()));
+        assertThat("Unexpected terminal.", terminal.cause(), causeMatcher);
+    }
+}

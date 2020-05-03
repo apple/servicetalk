@@ -16,11 +16,11 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
@@ -85,8 +85,11 @@ import javax.annotation.Nullable;
 
 import static com.google.protobuf.Any.pack;
 import static io.grpc.Status.Code.CANCELLED;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
@@ -893,9 +896,10 @@ public class ProtocolCompatibilityTest {
 
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(final Publisher<CompatRequest> request) {
-                final SpScPublisherProcessor<CompatResponse> processor = new SpScPublisherProcessor<>(3);
+                final PublisherSource.Processor<CompatResponse, CompatResponse> processor =
+                        newPublisherProcessor(fixedSize(3));
                 sendRequest(request, stub.bidirectionalStreamingCall(adaptResponse(processor)));
-                return processor;
+                return fromSource(processor);
             }
 
             @Override
@@ -935,9 +939,10 @@ public class ProtocolCompatibilityTest {
 
             @Override
             public Publisher<CompatResponse> serverStreamingCall(final CompatRequest request) {
-                final SpScPublisherProcessor<CompatResponse> processor = new SpScPublisherProcessor<>(3);
+                final PublisherSource.Processor<CompatResponse, CompatResponse> processor =
+                        newPublisherProcessor(fixedSize(3));
                 stub.serverStreamingCall(request, adaptResponse(processor));
-                return processor;
+                return fromSource(processor);
             }
 
             @Override
@@ -994,21 +999,21 @@ public class ProtocolCompatibilityTest {
             }
 
             private StreamObserver<CompatResponse> adaptResponse(
-                    final SpScPublisherProcessor<CompatResponse> processor) {
+                    final PublisherSource.Processor<CompatResponse, CompatResponse> processor) {
                 return new StreamObserver<CompatResponse>() {
                     @Override
                     public void onNext(final CompatResponse value) {
-                        processor.sendOnNext(value);
+                        processor.onNext(value);
                     }
 
                     @Override
                     public void onError(final Throwable t) {
-                        processor.sendOnError(t);
+                        processor.onError(t);
                     }
 
                     @Override
                     public void onCompleted() {
-                        processor.sendOnComplete();
+                        processor.onComplete();
                     }
                 };
             }

@@ -19,13 +19,13 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
@@ -65,7 +65,10 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
@@ -140,7 +143,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final SpScPublisherProcessor<ConsumableEvent<Integer>> maxConcurrencyPublisher;
+        private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
 
@@ -154,9 +157,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
-            maxConcurrencyPublisher = new SpScPublisherProcessor<>(16);
+            maxConcurrencyProcessor = newPublisherProcessor(fixedSize(16));
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
-            maxConcurrencyPublisher.sendOnNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
+            maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
         }
 
@@ -191,7 +194,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 return true;
             }
 
-            maxConcurrencyPublisher.sendOnNext(new MaxConcurrencyConsumableEvent(
+            maxConcurrencyProcessor.onNext(new MaxConcurrencyConsumableEvent(
                     maxConcurrentStreams.intValue(), ctx.channel()));
             return false;
         }
@@ -201,10 +204,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             return parentContext;
         }
 
-        @SuppressWarnings("unchecked")
         @Override
         public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return eventKey == MAX_CONCURRENCY ? (Publisher<T>) maxConcurrencyPublisher :
+            @SuppressWarnings("unchecked")
+            Publisher<T> maxConcurrencyStream = (Publisher<T>) fromSource(maxConcurrencyProcessor);
+            return eventKey == MAX_CONCURRENCY ? maxConcurrencyStream :
                     failed(new IllegalArgumentException("Unknown key: " + eventKey));
         }
 

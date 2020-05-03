@@ -15,28 +15,25 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterable.Processor;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.util.Objects.requireNonNull;
 
-final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Processor<T> {
-    private static final Object NULL_MASK = new Object();
-    private final BlockingQueue<Object> buffer;
-    @Nullable
-    private TerminalNotification terminationReason;
+final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
+    private final BlockingProcessorBuffer<T> buffer;
 
-    DefaultBlockingIterableProcessor(int maxBufferSize) {
-        buffer = new LinkedBlockingQueue<>(maxBufferSize);
+    DefaultBlockingIterableProcessor(final BlockingProcessorBuffer<T> buffer) {
+        this.buffer = requireNonNull(buffer);
     }
 
     @Override
@@ -45,50 +42,28 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
     }
 
     @Override
-    public void next(@Nullable final T nextItem) throws Exception {
-        verifyOpen("Can not emit items to a closed iterable.");
-
-        buffer.put(maskNull(nextItem));
+    public void next(@Nullable final T nextItem) {
+        buffer.add(nextItem);
     }
 
     @Override
-    public void fail(final Throwable cause) throws Exception {
-        verifyOpen("Can not fail iterable that is already closed.");
-
-        terminationReason = TerminalNotification.error(cause);
-        buffer.put(terminationReason);
+    public void fail(final Throwable cause) {
+        buffer.terminate(cause);
     }
 
     @Override
-    public void close() throws Exception {
-        verifyOpen("Iterable already closed.");
-
-        terminationReason = TerminalNotification.complete();
-        buffer.put(terminationReason);
+    public void close() {
+        buffer.terminate();
     }
 
-    private void verifyOpen(final String s) {
-        if (terminationReason != null) {
-            if (terminationReason.cause() == null) {
-                throw new IllegalStateException(s);
-            } else {
-                throwException(terminationReason.cause());
-            }
-        }
-    }
-
-    private static Object maskNull(@Nullable Object nextItem) {
-        return nextItem == null ? NULL_MASK : nextItem;
-    }
-
-    private static final class PollingBlockingIterator<T> implements BlockingIterator<T> {
+    private static final class PollingBlockingIterator<T> implements BlockingIterator<T>, BufferConsumer<T> {
         @Nullable
-        private Object next;
+        private T next;
         @Nullable
         private TerminalNotification terminal;
-        private final BlockingQueue<Object> buffer;
+        private final BlockingProcessorBuffer<T> buffer;
 
-        PollingBlockingIterator(final BlockingQueue<Object> buffer) {
+        PollingBlockingIterator(final BlockingProcessorBuffer<T> buffer) {
             this.buffer = buffer;
         }
 
@@ -100,16 +75,13 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
             if (next != null) {
                 return true;
             }
-            final Object next;
+            final boolean consumed;
             try {
-                next = buffer.poll(timeout, unit);
+                consumed = buffer.consume(this, timeout, unit);
             } catch (InterruptedException e) {
                 return throwException(e);
             }
-            if (next == null) {
-                throw new TimeoutException("Timed out waiting for an item.");
-            }
-            return processHasNext(next);
+            return terminal == null ? consumed : hasNextWhenTerminated();
         }
 
         @Nullable
@@ -118,7 +90,9 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
             if (!hasNext(timeout, unit)) {
                 throw new NoSuchElementException();
             }
-            return processNext();
+            T next = this.next;
+            this.next = null;
+            return next;
         }
 
         @Nullable
@@ -127,7 +101,9 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            return processNext();
+            T next = this.next;
+            this.next = null;
+            return next;
         }
 
         @Override
@@ -144,43 +120,33 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
                 return true;
             }
 
-            final Object next;
+            final boolean consumed;
             try {
-                next = buffer.take();
+                consumed = buffer.consume(this);
             } catch (InterruptedException e) {
                 return throwException(e);
             }
-            return processHasNext(next);
-        }
-
-        @Nullable
-        private T processNext() {
-            Object next = this.next;
-            this.next = null;
-            if (next == NULL_MASK) {
-                return null;
-            } else {
-                @SuppressWarnings("unchecked")
-                T t = (T) next;
-                return t;
-            }
-        }
-
-        private boolean processHasNext(final Object next) {
-            if (next instanceof TerminalNotification) {
-                terminal = (TerminalNotification) next;
-                if (terminal.cause() == null) {
-                    return false;
-                }
-                return throwException(terminal.cause());
-            }
-            this.next = next;
-            return true;
+            return terminal == null ? consumed : hasNextWhenTerminated();
         }
 
         private boolean hasNextWhenTerminated() {
             assert terminal != null;
             return terminal.cause() != null && (boolean) throwException(terminal.cause());
+        }
+
+        @Override
+        public void consumeItem(@Nullable final T item) {
+            this.next = item;
+        }
+
+        @Override
+        public void consumeTerminal(final Throwable cause) {
+            this.terminal = TerminalNotification.error(cause);
+        }
+
+        @Override
+        public void consumeTerminal() {
+            this.terminal = TerminalNotification.complete();
         }
     }
 }

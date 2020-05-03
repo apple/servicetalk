@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
 
 /**
@@ -53,13 +54,41 @@ public final class Processors {
     }
 
     /**
+     * Create a new {@link PublisherSource.Processor} that allows for a single
+     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     *
+     * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
+     * {@link PublisherSource.Processor}.
+     * @return a new {@link PublisherSource.Processor} that allows for a single
+     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     */
+    public static <T> PublisherSource.Processor<T, T> newPublisherProcessor() {
+        return newPublisherProcessor(PublisherProcessorBuffers.fixedSize(32));
+    }
+
+    /**
+     * Create a new {@link PublisherSource.Processor} that allows for a single
+     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     *
+     * @param buffer A {@link PublisherProcessorBuffer} to store items that are requested to be sent via
+     * {@link PublisherSource.Processor#onNext(Object)} but not yet emitted to the {@link PublisherSource.Subscriber}.
+     * @param <T> The {@link PublisherSource} type and {@link PublisherSource.Subscriber} type of the
+     * {@link PublisherSource.Processor}.
+     * @return a new {@link PublisherSource.Processor} that allows for a single
+     * {@link PublisherSource.Subscriber#subscribe(PublisherSource.Subscriber) subscribe}.
+     */
+    public static <T> PublisherSource.Processor<T, T> newPublisherProcessor(final PublisherProcessorBuffer<T> buffer) {
+        return new PublisherProcessor<>(buffer);
+    }
+
+    /**
      * Create a new {@link BlockingIterable.Processor}.
      *
      * @param <T> the type of elements emitted by the returned {@link BlockingIterable}.
      * @return a new {@link BlockingIterable.Processor}.
      */
     public static <T> BlockingIterable.Processor<T> newBlockingIterableProcessor() {
-        return new DefaultBlockingIterableProcessor<>(32);
+        return newBlockingIterableProcessor(32);
     }
 
     /**
@@ -73,6 +102,19 @@ public final class Processors {
      * @return a new {@link BlockingIterable.Processor}.
      */
     public static <T> BlockingIterable.Processor<T> newBlockingIterableProcessor(int maxBufferSize) {
-        return new DefaultBlockingIterableProcessor<>(maxBufferSize);
+        return new DefaultBlockingIterableProcessor<>(new DefaultBlockingProcessorBuffer<>(maxBufferSize));
+    }
+
+    /**
+     * Create a new {@link BlockingIterable.Processor}.
+     *
+     * @param buffer A {@link BlockingProcessorBuffer} to store items that are requested to be sent via
+     * {@link BlockingIterable.Processor#next(Object)} but not yet emitted from a {@link BlockingIterator}.
+     * @param <T> the type of elements emitted by the returned {@link BlockingIterable}.
+     * @return a new {@link BlockingIterable.Processor}.
+     */
+    public static <T> BlockingIterable.Processor<T> newBlockingIterableProcessor(
+            final BlockingProcessorBuffer<T> buffer) {
+        return new DefaultBlockingIterableProcessor<>(buffer);
     }
 }

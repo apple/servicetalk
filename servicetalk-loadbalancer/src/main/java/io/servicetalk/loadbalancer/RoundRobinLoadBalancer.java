@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -30,7 +31,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 
@@ -54,9 +54,12 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
+import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSizeDropOldest;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
@@ -88,8 +91,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
+    @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
 
@@ -115,7 +120,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> activeHosts = emptyList();
 
-    private final SpScPublisherProcessor<Object> eventStream = new SpScPublisherProcessor<>(32);
+    private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final ListenableAsyncCloseable asyncCloseable;
@@ -130,7 +135,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final Comparator<ResolvedAddress> comparator) {
-
+        Processor<Object, Object> eventStreamProcessor = newPublisherProcessor(fixedSizeDropOldest(32));
+        this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
 
         final Comparator<Host<ResolvedAddress, C>> activeAddressComparator =
@@ -157,7 +163,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
                             final List<Host<ResolvedAddress, C>> refreshedAddresses = new ArrayList<>(currentAddresses);
-                            final MutableAddressHost<ResolvedAddress, C> searchHost = new MutableAddressHost();
+                            final MutableAddressHost<ResolvedAddress, C> searchHost = new MutableAddressHost<>();
 
                             searchHost.mutableAddress = event.address();
                             // Binary search because any insertion is performed at the index returned by the search,
@@ -166,7 +172,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
                             if (event.isAvailable()) {
                                 if (i < 0) {
-                                    refreshedAddresses.add(-i - 1, new Host(event.address()));
+                                    refreshedAddresses.add(-i - 1, new Host<>(event.address()));
                                 }
                             } else if (i >= 0) {
                                 Host<ResolvedAddress, C> removed = refreshedAddresses.remove(i);
@@ -183,17 +189,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
                 if (event.isAvailable()) {
                     if (activeAddresses.size() == 1) {
-                        eventStream.sendOnNext(LOAD_BALANCER_READY_EVENT);
+                        eventStreamProcessor.onNext(LOAD_BALANCER_READY_EVENT);
                     }
                 } else if (activeAddresses.isEmpty()) {
-                    eventStream.sendOnNext(LOAD_BALANCER_NOT_READY_EVENT);
+                    eventStreamProcessor.onNext(LOAD_BALANCER_NOT_READY_EVENT);
                 }
             }
 
             @Override
             public void onError(final Throwable t) {
                 List<Host<ResolvedAddress, C>> hosts = activeHosts;
-                eventStream.sendOnError(t);
+                eventStreamProcessor.onError(t);
                 LOGGER.error(
                         "Load balancer {}. Service discoverer {} emitted an error. Last seen addresses (size {}) {}",
                         RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
@@ -202,7 +208,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             @Override
             public void onComplete() {
                 List<Host<ResolvedAddress, C>> hosts = activeHosts;
-                eventStream.sendOnComplete();
+                eventStreamProcessor.onComplete();
                 LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
                         RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
             }
@@ -210,7 +216,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         asyncCloseable = toAsyncCloseable(graceful -> {
             closed = true;
             discoveryCancellable.cancel();
-            eventStream.sendOnComplete();
+            eventStreamProcessor.onComplete();
             @SuppressWarnings("unchecked")
             List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater
                     .getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
@@ -355,10 +361,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
 
+        @SuppressWarnings("rawtypes")
         static final List INACTIVE = emptyList();
+        @SuppressWarnings("rawtypes")
         private static final List NO_CONNECTIONS = new ArrayList(0);
 
         @Nullable

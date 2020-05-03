@@ -27,11 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class DefaultBlockingIterableProcessorTest {
     @Rule
@@ -89,7 +88,7 @@ public class DefaultBlockingIterableProcessorTest {
     @Test
     public void emitAfterFail() throws Exception {
         processor.fail(DELIBERATE_EXCEPTION);
-        expectedException.expect(sameInstance(DELIBERATE_EXCEPTION));
+        expectedException.expect(instanceOf(IllegalStateException.class));
         processor.next(1);
     }
 
