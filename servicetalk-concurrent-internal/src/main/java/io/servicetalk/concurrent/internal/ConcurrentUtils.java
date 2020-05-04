@@ -77,6 +77,9 @@ public final class ConcurrentUtils {
     /**
      * Acquire a lock that allows reentry and attempts to acquire the lock while it is
      * held can be detected by {@link #releaseReentrantLock(AtomicLongFieldUpdater, long, Object)}.
+     * <p>
+     * This lock <strong>must</strong> eventually be released by the same thread that acquired the lock. If the thread
+     * that acquires this lock is terminated before releasing the lock state is undefined.
      * @param lockUpdater The {@link AtomicLongFieldUpdater} used to control the lock state.
      * @param owner The owner of the lock object.
      * @param <T> The type of object that owns the lock.
@@ -107,8 +110,9 @@ public final class ConcurrentUtils {
      * {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
      * @param owner The owner of the lock object.
      * @param <T> The type of object that owns the lock.
-     * @return {@code true} if the lock was released, or this method call corresponds to a prior re-entrant call
-     * to {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     * @return {@code true} if the lock was released, or releases a prior re-entrant acquire, and no other attempts were
+     * made to acquire the lock while it was held. {@code false} if the lock was released but another attempt was made
+     * to acquire the lock before it was released.
      */
     public static <T> boolean releaseReentrantLock(final AtomicLongFieldUpdater<T> lockUpdater,
                                                    final long acquireId, final T owner) {

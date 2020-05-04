@@ -77,6 +77,7 @@ public final class ConcurrentUtilsTest {
         assertThat(acquireId, greaterThan(0L));
         long acquireId2 = tryAcquireReentrantLock(reentrantLockUpdater, this);
         assertThat(acquireId2, is(-acquireId));
+        assertTrue(releaseReentrantLock(reentrantLockUpdater, acquireId2, this));
         assertTrue(releaseReentrantLock(reentrantLockUpdater, acquireId, this));
     }
 
