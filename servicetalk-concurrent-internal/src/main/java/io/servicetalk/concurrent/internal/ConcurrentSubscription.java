@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -23,22 +22,26 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseReentrantLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireReentrantLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Wraps another {@link Subscription} and guards against multiple calls of {@link Subscription#cancel()}.
- * <p>
- * This class exists to enforce the
- * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.7">Reactive Streams, 2.7
- * </a> rule. It also allows a custom {@link Cancellable} to be used in the event that there maybe multiple cancel
- * operations which are linked, but we still need to prevent concurrent invocation of the {@link Subscription#cancel()}
- * and {@link Subscription#cancel()} methods.
+ * This class prevents concurrent invocation of {@link Subscription} methods and preserves the
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.7">Reactive Streams, 2.7
+ * </a> rule when there is a possibility of concurrency.
  */
 public class ConcurrentSubscription implements Subscription {
     private static final AtomicLongFieldUpdater<ConcurrentSubscription> pendingDemandUpdater =
             AtomicLongFieldUpdater.newUpdater(ConcurrentSubscription.class, "pendingDemand");
+    /**
+     * Typically usage of this lock follows the acquire/try/finally{release} usage pattern. However in this case we do
+     * not follow this pattern for the following reasons:
+     * <ol>
+     *     <li>If {@link #subscription} throws, the associated asynchronous source is considered invalid and should be
+     *     cleaned up externally relative to this {@link ConcurrentSubscription}.</li>
+     *     <li>If the previous item is true, then it is OK to poison the lock if {@link #subscription} throws, because
+     *     it is considered invalid and no further interaction is required for clean (it is done externally).</li>
+     * </ol>
+     */
     private static final AtomicLongFieldUpdater<ConcurrentSubscription> subscriptionLockUpdater =
             AtomicLongFieldUpdater.newUpdater(ConcurrentSubscription.class, "subscriptionLock");
     private static final long CANCELLED = Long.MIN_VALUE;
@@ -71,13 +74,10 @@ public class ConcurrentSubscription implements Subscription {
     public void request(long n) {
         final long acquireId = tryAcquireReentrantLock(subscriptionLockUpdater, this);
         if (acquireId != 0) { // fast path (no concurrency) just deliver demand without adding to pending.
-            try {
-                subscription.request(n);
-            } finally {
-                if (!releaseReentrantLock(subscriptionLockUpdater, acquireId, this)) {
-                    // if we failed to release the lock there was concurrent invocation, and we need to drain.
-                    drainPending();
-                }
+            subscription.request(n);
+            if (!releaseReentrantLock(subscriptionLockUpdater, acquireId, this)) {
+                // if we failed to release the lock there was concurrent invocation, and we need to drain.
+                drainPending();
             }
         } else { // slow path (concurrency detected) add pending demand and try to re-acquire lock and process demand.
             addPending(n);
@@ -103,30 +103,19 @@ public class ConcurrentSubscription implements Subscription {
     }
 
     private void drainPending() {
-        Throwable delayedCause = null;
-        boolean tryAcquire;
+        long acquireId;
         do {
-            final long acquireId = tryAcquireReentrantLock(subscriptionLockUpdater, this);
+            acquireId = tryAcquireReentrantLock(subscriptionLockUpdater, this);
             if (acquireId == 0) {
                 break;
             }
-            try {
-                final long prevPendingDemand = pendingDemandUpdater.getAndSet(this, 0);
-                if (prevPendingDemand == CANCELLED) {
-                    subscription.cancel();
-                } else if (prevPendingDemand != 0) {
-                    subscription.request(prevPendingDemand);
-                }
-            } catch (Throwable cause) {
-                delayedCause = catchUnexpected(delayedCause, cause);
-            } finally {
-                tryAcquire = !releaseReentrantLock(subscriptionLockUpdater, acquireId, this);
+            final long prevPendingDemand = pendingDemandUpdater.getAndSet(this, 0);
+            if (prevPendingDemand == CANCELLED) {
+                subscription.cancel();
+            } else if (prevPendingDemand != 0) {
+                subscription.request(prevPendingDemand);
             }
-        } while (tryAcquire);
-
-        if (delayedCause != null) {
-            throwException(delayedCause);
-        }
+        } while (!releaseReentrantLock(subscriptionLockUpdater, acquireId, this));
     }
 
     private static long mapInvalidRequestN(long n) {

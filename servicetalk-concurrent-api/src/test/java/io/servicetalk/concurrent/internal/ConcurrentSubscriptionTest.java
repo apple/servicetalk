@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -161,7 +162,7 @@ public class ConcurrentSubscriptionTest {
     }
 
     @Test
-    public void multiThreadCancelDeliveredIfRequestThrows() throws Exception {
+    public void multiThreadCancelNotDeliveredIfRequestThrows() throws Exception {
         ExecutorService executorService = newFixedThreadPool(1);
         try {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -198,7 +199,7 @@ public class ConcurrentSubscriptionTest {
             } catch (ExecutionException e) {
                 assertSame(DELIBERATE_EXCEPTION, e.getCause());
             }
-            cancelledLatch.await();
+            assertFalse(cancelledLatch.await(10, MILLISECONDS));
         } finally {
             executorService.shutdown();
         }
