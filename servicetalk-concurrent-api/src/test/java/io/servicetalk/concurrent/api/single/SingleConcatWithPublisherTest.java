@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
@@ -28,17 +29,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class SingleConcatWithPublisherTest {
     @Rule
@@ -102,6 +103,17 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
+    public void invalidRequestNWithInlineSourceCompletion() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        toSource(Single.succeeded(1).concat(empty())).subscribe(subscriber);
+        assertThat("Unexpected terminal.", subscriber.subscriptionReceived(), is(true));
+        subscriber.request(-1);
+        TerminalNotification term = subscriber.takeTerminal();
+        assertThat("Unexpected terminal.", term, is(notNullValue()));
+        assertThat("Unexpected terminal.", term.cause(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
     public void invalidRequestAfterNextSubscribe() {
         triggerNextSubscribe();
         subscriber.request(-1);
@@ -140,6 +152,7 @@ public class SingleConcatWithPublisherTest {
     @Test
     public void request0PropagatedAfterSuccess() {
         source.onSuccess(1);
+        subscriber.request(1); // get the success from the Single
         subscriber.request(0);
         next.onSubscribe(subscription);
         assertThat("Invalid request-n propagated " + subscription, subscription.requestedEquals(0),
@@ -150,15 +163,15 @@ public class SingleConcatWithPublisherTest {
     public void sourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat("Unexpected subscriber termination.", subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
     @Test
     public void cancelSource() {
         assertThat("Subscriber terminated unexpectedly.", subscriber.isTerminated(), is(false));
         subscriber.cancel();
-        assertTrue("Original single not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
     @Test
@@ -166,8 +179,8 @@ public class SingleConcatWithPublisherTest {
         assertThat("Subscriber terminated unexpectedly.", subscriber.isTerminated(), is(false));
         subscriber.request(1);
         subscriber.cancel();
-        assertTrue("Original single not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
+        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
     @Test
@@ -175,8 +188,8 @@ public class SingleConcatWithPublisherTest {
         triggerNextSubscribe();
         assertThat("Subscriber terminated unexpectedly.", subscriber.isTerminated(), is(false));
         subscriber.cancel();
-        assertFalse("Original single cancelled unexpectedly.", cancellable.isCancelled());
-        assertTrue("Next source not cancelled.", subscription.isCancelled());
+        assertThat("Original single cancelled unexpectedly.", cancellable.isCancelled(), is(false));
+        assertThat("Next source not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test
