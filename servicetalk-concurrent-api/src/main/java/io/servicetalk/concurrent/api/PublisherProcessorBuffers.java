@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.QueueFullException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.utils.internal.PlatformDependent.newMpscQueue;
 
 /**
@@ -40,7 +41,7 @@ public final class PublisherProcessorBuffers {
      * @return A new {@link PublisherProcessorBuffer}.
      */
     public static <T> PublisherProcessorBuffer<T> fixedSize(final int maxBuffer) {
-        return new AbstractPublisherProcessorBuffer<T, Queue<Object>>(maxBuffer, newMpscQueue(2, maxBuffer)) {
+        return new AbstractPublisherProcessorBuffer<T, Queue<Object>>(maxBuffer, newMpscQueueForItemSize(maxBuffer)) {
             @Override
             void offerPastBufferSize(final Object signal, final Queue<Object> queue) {
                 throw new QueueFullException("processor-buffer", maxBuffer);
@@ -58,7 +59,7 @@ public final class PublisherProcessorBuffers {
      * @return A new {@link PublisherProcessorBuffer}.
      */
     public static <T> PublisherProcessorBuffer<T> fixedSizeDropLatest(final int maxBuffer) {
-        return new AbstractPublisherProcessorBuffer<T, Queue<Object>>(maxBuffer, newMpscQueue(2, maxBuffer)) {
+        return new AbstractPublisherProcessorBuffer<T, Queue<Object>>(maxBuffer, newMpscQueueForItemSize(maxBuffer)) {
             @Override
             void offerPastBufferSize(final Object signal, final Queue<Object> queue) {
                 // noop => drop latest
@@ -84,5 +85,11 @@ public final class PublisherProcessorBuffers {
                 queue.offer(signal);
             }
         };
+    }
+
+    private static Queue<Object> newMpscQueueForItemSize(final int maxBuffer) {
+        return newMpscQueue(2,
+                // max items + 1 terminal
+                addWithOverflowProtection(maxBuffer, 1));
     }
 }

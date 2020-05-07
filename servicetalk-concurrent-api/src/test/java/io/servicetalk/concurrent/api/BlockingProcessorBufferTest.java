@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -47,7 +46,7 @@ public class BlockingProcessorBufferTest {
     }
 
     @Test
-    public void consumeItem() {
+    public void consumeItem() throws Exception {
         buffer.add(1);
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeItem(1);
@@ -62,7 +61,7 @@ public class BlockingProcessorBufferTest {
     }
 
     @Test
-    public void consumeTerminal() {
+    public void consumeTerminal() throws Exception {
         buffer.terminate();
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeTerminal();
@@ -70,22 +69,10 @@ public class BlockingProcessorBufferTest {
     }
 
     @Test
-    public void consumeTerminalError() {
+    public void consumeTerminalError() throws Exception {
         buffer.terminate(DELIBERATE_EXCEPTION);
         assertThat("Item not consumed.", buffer.consume(consumer), is(true));
         verify(consumer).consumeTerminal(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(consumer);
-    }
-
-    @Test
-    public void addPostTerminate() {
-        buffer.terminate();
-        assertThrows("Add allowed post terminal", IllegalStateException.class, () -> buffer.add(1));
-    }
-
-    @Test
-    public void addPostTerminateError() {
-        buffer.terminate(DELIBERATE_EXCEPTION);
-        assertThrows("Add allowed post terminal", IllegalStateException.class, () -> buffer.add(1));
     }
 }

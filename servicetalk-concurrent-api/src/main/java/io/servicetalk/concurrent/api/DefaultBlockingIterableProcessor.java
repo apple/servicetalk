@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterable.Processor;
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.NoSuchElementException;
@@ -42,17 +41,17 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
     }
 
     @Override
-    public void next(@Nullable final T nextItem) {
+    public void next(@Nullable final T nextItem) throws InterruptedException {
         buffer.add(nextItem);
     }
 
     @Override
-    public void fail(final Throwable cause) {
+    public void fail(final Throwable cause) throws InterruptedException {
         buffer.terminate(cause);
     }
 
     @Override
-    public void close() {
+    public void close() throws InterruptedException {
         buffer.terminate();
     }
 
@@ -131,7 +130,11 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
 
         private boolean hasNextWhenTerminated() {
             assert terminal != null;
-            return terminal.cause() != null && (boolean) throwException(terminal.cause());
+            Throwable cause = terminal.cause();
+            if (cause != null) {
+                throwException(cause);
+            }
+            return false;
         }
 
         @Override

@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.BlockingIterable.Processor;
 
@@ -25,7 +26,33 @@ import static io.servicetalk.concurrent.BlockingIterable.Processor;
  *
  * @param <T>  Type of items stored in this buffer.
  */
-public interface BlockingProcessorBuffer<T> extends ProcessorBuffer<T> {
+public interface BlockingProcessorBuffer<T> {
+
+    /**
+     * Adds an item to this buffer.
+     *
+     * @param item to add.
+     * @throws InterruptedException If the add was interrupted.
+     */
+    void add(@Nullable T item) throws InterruptedException;
+
+    /**
+     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
+     * {@link BufferConsumer#consumeTerminal()}  consume termination}.
+     * @throws InterruptedException If termination was interrupted.
+     */
+    void terminate() throws InterruptedException;
+
+    /**
+     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
+     * {@link BufferConsumer#consumeTerminal()}  consume termination}.
+     *
+     * @param cause {@link Throwable} as a cause for termination.
+     * @throws InterruptedException If termination was interrupted.
+     */
+    void terminate(Throwable cause) throws InterruptedException;
 
     /**
      * Consumes the next item stored in this buffer. If there are no items stored in the buffer and the buffer has

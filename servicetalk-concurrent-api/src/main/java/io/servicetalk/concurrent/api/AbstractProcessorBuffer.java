@@ -20,12 +20,9 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-abstract class AbstractProcessorBuffer<T> implements ProcessorBuffer<T> {
-    @SuppressWarnings("rawtypes")
+abstract class AbstractProcessorBuffer {
     private static final AtomicReferenceFieldUpdater<AbstractProcessorBuffer,
             TerminalNotification> terminalUpdater = newUpdater(AbstractProcessorBuffer.class,
             TerminalNotification.class, "terminal");
@@ -34,39 +31,31 @@ abstract class AbstractProcessorBuffer<T> implements ProcessorBuffer<T> {
     @Nullable
     private volatile TerminalNotification terminal;
 
-    @Override
-    public final void add(@Nullable final T item) {
-        final TerminalNotification terminalNotification = terminal;
-        if (terminalNotification != null) {
-            throw new IllegalStateException("Buffer " + this + " is already terminated: " + terminal);
-        }
-        addItem(item == null ? NULL_ITEM : item);
+    final boolean tryTerminate(final TerminalNotification notification) {
+        return terminalUpdater.compareAndSet(this, null, notification);
     }
 
-    @Override
-    public final void terminate() {
-        if (terminalUpdater.compareAndSet(this, null, complete())) {
-            addTerminal(complete());
-        }
+    static <T> Object maskNull(@Nullable final T item) {
+        return item == null ? NULL_ITEM : item;
     }
 
-    @Override
-    public final void terminate(final Throwable cause) {
-        TerminalNotification notification = error(cause);
-        if (terminalUpdater.compareAndSet(this, null, notification)) {
-            addTerminal(notification);
-        }
-    }
-
-    protected abstract void addItem(Object item);
-
-    protected abstract void addTerminal(TerminalNotification terminalNotification);
-
-    protected boolean consumeIfTerminal(final BufferConsumer<T> consumer, @Nullable final Object signal) {
+    /**
+     * Invokes {@link BufferConsumer#consumeTerminal(Throwable)} if the the passed {@code signal} is a
+     * {@link TerminalNotification} representing an error termination. Invokes
+     * {@link BufferConsumer#consumeTerminal()} if the the passed {@code signal} is a {@link TerminalNotification}
+     * representing a successful termination. If the passed {@code signal} is not a {@link TerminalNotification} then
+     * does nothing.
+     *
+     * @param consumer {@link BufferConsumer} to consume the terminal.
+     * @param signal which may be a {@link TerminalNotification}.
+     * @return {@code true} if any method was invoked on the passed {@link BufferConsumer}.
+     */
+    static boolean consumeIfTerminal(final BufferConsumer<?> consumer, @Nullable final Object signal) {
         if (signal instanceof TerminalNotification) {
             TerminalNotification terminalNotification = (TerminalNotification) signal;
-            if (terminalNotification.cause() != null) {
-                consumer.consumeTerminal(terminalNotification.cause());
+            Throwable cause = terminalNotification.cause();
+            if (cause != null) {
+                consumer.consumeTerminal(cause);
             } else {
                 consumer.consumeTerminal();
             }
@@ -75,17 +64,21 @@ abstract class AbstractProcessorBuffer<T> implements ProcessorBuffer<T> {
         return false;
     }
 
-    protected boolean consumeNextItem(final BufferConsumer<T> consumer, @Nullable final Object nextItem) {
+    /**
+     * Invokes {@link BufferConsumer#consumeItem(Object)} if the the passed {@code signal} is not {@code null}.
+     *
+     * @param consumer {@link BufferConsumer} to consume the item.
+     * @param nextItem which either can be {@code null} or an item of type {@link T}.
+     * @param <T> Type of items consumed by {@link BufferConsumer}.
+     * @return {@code true} if any method was invoked on the passed {@link BufferConsumer}.
+     */
+    static <T> boolean consumeNextItem(final BufferConsumer<T> consumer, @Nullable final Object nextItem) {
         if (nextItem == null) {
             return false;
         }
-        if (nextItem == NULL_ITEM) {
-            consumer.consumeItem(null);
-        } else {
-            @SuppressWarnings("unchecked")
-            T t = (T) nextItem;
-            consumer.consumeItem(t);
-        }
+        @SuppressWarnings("unchecked")
+        T t = nextItem == NULL_ITEM ? null : (T) nextItem;
+        consumer.consumeItem(t);
         return true;
     }
 }

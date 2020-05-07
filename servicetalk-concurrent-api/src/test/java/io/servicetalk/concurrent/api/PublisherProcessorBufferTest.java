@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
-
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -28,7 +26,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -112,17 +109,5 @@ public class PublisherProcessorBufferTest {
         buffer.tryConsume(consumer);
         verify(consumer).consumeTerminal(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(consumer);
-    }
-
-    @Test
-    public void addPostTerminate() {
-        buffer.terminate();
-        assertThrows("Add allowed post terminal", IllegalStateException.class, () -> buffer.add(1));
-    }
-
-    @Test
-    public void addPostTerminateError() {
-        buffer.terminate(DELIBERATE_EXCEPTION);
-        assertThrows("Add allowed post terminal", IllegalStateException.class, () -> buffer.add(1));
     }
 }

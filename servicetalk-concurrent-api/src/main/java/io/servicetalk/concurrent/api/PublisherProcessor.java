@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.ProcessorBuffer.BufferConsumer;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -140,8 +139,8 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
     }
 
     private void tryEmitSignals() {
-        boolean lockReleased = false;
-        while (!lockReleased && tryAcquireLock(emittingUpdater, this)) {
+        boolean tryAcquire = true;
+        while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
             final BufferConsumer<T> consumer = this.consumer;
             try {
                 if (consumer instanceof SubscriberBufferConsumer) {
@@ -154,7 +153,7 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
                     }
                 }
             } finally {
-                lockReleased = releaseLock(emittingUpdater, this);
+                tryAcquire = !releaseLock(emittingUpdater, this);
             }
         }
     }
@@ -163,7 +162,7 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
         for (;;) {
             final long cPending = pending;
             if (cPending > 0 && pendingUpdater.compareAndSet(this, cPending, cPending - 1)) {
-                boolean consumed;
+                final boolean consumed;
                 try {
                     consumed = buffer.tryConsume(target);
                 } catch (Throwable t) {
@@ -172,7 +171,7 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
                 }
 
                 if (target.isTerminated()) {
-                    pendingUpdater.getAndSet(this, Long.MIN_VALUE);
+                    pending = Long.MIN_VALUE;
                 } else if (!consumed) {
                     // we optimistically decremented pending, so increment back again.
                     pendingUpdater.accumulateAndGet(this, 1,
@@ -183,8 +182,16 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
                 // cancelled or already terminated
                 return;
             } else if (cPending == 0) {
-                if (buffer.tryConsumeTerminal(target)) {
-                    pendingUpdater.getAndSet(this, Long.MIN_VALUE);
+                final boolean consumed;
+                try {
+                    consumed = buffer.tryConsumeTerminal(target);
+                } catch (Throwable t) {
+                    // Assume that we did not deliver terminal to the consumer.
+                    earlyTerminateConsumerHoldingLock(target, t);
+                    return;
+                }
+                if (consumed) {
+                    pending = Long.MIN_VALUE;
                     return;
                 }
                 break;
@@ -193,9 +200,12 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
     }
 
     private void earlyTerminateConsumerHoldingLock(final SubscriberBufferConsumer<T> consumer, final Throwable cause) {
-        pendingUpdater.getAndSet(this, Long.MIN_VALUE);
-        delayedSubscription.cancel();
-        consumer.consumeTerminal(cause);
+        pending = Long.MIN_VALUE;
+        try {
+            delayedSubscription.cancel();
+        } finally {
+            consumer.consumeTerminal(cause);
+        }
     }
 
     private static final class SubscriberBufferConsumer<T> implements BufferConsumer<T> {

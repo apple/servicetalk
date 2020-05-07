@@ -21,10 +21,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 
-final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer<T> implements BlockingProcessorBuffer<T> {
+final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer implements BlockingProcessorBuffer<T> {
     private final BlockingQueue<Object> signals;
 
     DefaultBlockingProcessorBuffer(final int maxBuffer) {
@@ -32,22 +34,30 @@ final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer<T>
     }
 
     @Override
-    protected void addItem(final Object item) {
-        putSignal(item);
+    public void add(@Nullable final T item) throws InterruptedException {
+        signals.put(maskNull(item));
     }
 
     @Override
-    protected void addTerminal(final TerminalNotification terminalNotification) {
-        putSignal(terminalNotification);
-    }
-
-    @Override
-    public boolean consume(final BufferConsumer<T> consumer) {
-        if (consumeIfTerminal(consumer, signals.peek())) {
-            return true;
+    public void terminate() throws InterruptedException {
+        TerminalNotification terminal = complete();
+        if (tryTerminate(terminal)) {
+            signals.put(terminal);
         }
+    }
 
-        return consumeNextItem(consumer, signals.poll());
+    @Override
+    public void terminate(final Throwable cause) throws InterruptedException {
+        TerminalNotification terminal = error(cause);
+        if (tryTerminate(terminal)) {
+            signals.put(terminal);
+        }
+    }
+
+    @Override
+    public boolean consume(final BufferConsumer<T> consumer) throws InterruptedException {
+        Object signal = signals.take();
+        return consumeIfTerminal(consumer, signal) || consumeNextItem(consumer, signal);
     }
 
     @Override
@@ -62,14 +72,5 @@ final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer<T>
             throw new TimeoutException("Timed out after " + waitFor + "(" + waitForUnit + ") waiting for an item.");
         }
         return consumeNextItem(consumer, nextItem);
-    }
-
-    private void putSignal(final Object signal) {
-        try {
-            signals.put(signal);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throwException(e);
-        }
     }
 }

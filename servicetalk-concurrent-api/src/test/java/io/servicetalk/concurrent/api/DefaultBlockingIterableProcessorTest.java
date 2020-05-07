@@ -79,20 +79,6 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void emitAfterClose() throws Exception {
-        processor.close();
-        expectedException.expect(IllegalStateException.class);
-        processor.next(1);
-    }
-
-    @Test
-    public void emitAfterFail() throws Exception {
-        processor.fail(DELIBERATE_EXCEPTION);
-        expectedException.expect(instanceOf(IllegalStateException.class));
-        processor.next(1);
-    }
-
-    @Test
     public void emitNull() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.next(null);

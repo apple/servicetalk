@@ -20,12 +20,14 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> extends AbstractProcessorBuffer<T>
+abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> extends AbstractProcessorBuffer
         implements PublisherProcessorBuffer<T> {
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<AbstractPublisherProcessorBuffer> bufferedUpdater =
@@ -45,28 +47,39 @@ abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> exte
     }
 
     @Override
-    protected void addItem(final Object item) {
+    public void add(@Nullable final T item) {
         if (bufferedUpdater.getAndAccumulate(this, 1,
-                (prev, next) -> prev == maxBuffer ? maxBuffer :
-                        addWithOverflowProtection(prev, next)) == maxBuffer) {
-            offerPastBufferSize(item, signals);
+                (prev, next) -> prev == maxBuffer ? maxBuffer : (prev + next)) == maxBuffer) {
+            offerPastBufferSize(maskNull(item), signals);
         } else {
-            offerSignal(item);
+            offerSignal(maskNull(item));
         }
     }
 
     @Override
-    protected void addTerminal(final TerminalNotification terminalNotification) {
-        offerSignal(terminalNotification);
+    public void terminate() {
+        TerminalNotification terminal = complete();
+        if (tryTerminate(terminal)) {
+            offerSignal(terminal);
+        }
+    }
+
+    @Override
+    public void terminate(final Throwable cause) {
+        TerminalNotification terminal = error(cause);
+        if (tryTerminate(terminal)) {
+            offerSignal(terminal);
+        }
     }
 
     @Override
     public boolean tryConsume(final BufferConsumer<T> consumer) {
-        if (consumeIfTerminal(consumer, signals.peek())) {
+        Object signal = signals.poll();
+        if (consumeIfTerminal(consumer, signal)) {
             return true;
         }
 
-        if (consumeNextItem(consumer, signals.poll())) {
+        if (consumeNextItem(consumer, signal)) {
             bufferedUpdater.decrementAndGet(this);
             return true;
         }

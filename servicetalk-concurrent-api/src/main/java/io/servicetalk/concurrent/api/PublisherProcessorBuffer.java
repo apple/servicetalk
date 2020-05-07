@@ -17,12 +17,37 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Processor;
 
+import javax.annotation.Nullable;
+
 /**
  * A buffer to store items for a {@link Processor}.
  *
  * @param <T>  Type of items stored in this buffer.
  */
-public interface PublisherProcessorBuffer<T> extends ProcessorBuffer<T> {
+public interface PublisherProcessorBuffer<T> {
+
+    /**
+     * Adds an item to this buffer.
+     *
+     * @param item to add.
+     */
+    void add(@Nullable T item);
+
+    /**
+     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
+     * {@link BufferConsumer#consumeTerminal()} consume termination}.
+     */
+    void terminate();
+
+    /**
+     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
+     * {@link BufferConsumer#consumeTerminal()} consume termination}.
+     *
+     * @param cause {@link Throwable} as a cause for termination.
+     */
+    void terminate(Throwable cause);
 
     /**
      * Try to consume the next item stored in this buffer. If there are no items stored in the buffer and the buffer has
