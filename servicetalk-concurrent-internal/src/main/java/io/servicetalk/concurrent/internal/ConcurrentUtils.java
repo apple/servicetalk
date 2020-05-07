@@ -15,14 +15,23 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * Utilities which can be used for concurrency.
  */
 public final class ConcurrentUtils {
+    /**
+     * {@link Thread#getId()} is defined be a positive number. The lock value can be in one of the following states:
+     * <ul>
+     *     <li>{@code 0} - unlocked</li>
+     *     <li>{@code >0} - locked by the {@link Thread} whose {@link Thread#getId()} matches this value</li>
+     *     <li>{@code <0} - locked by the {@link Thread} whose {@link Thread#getId()} matches the negative of this
+     *     value. Only externally visible to the thread that owns the lock on reentrant acquires.</li>
+     * </ul>
+     */
+    private static final long REENTRANT_LOCK_ZERO_THREAD_ID = 0;
     private static final int CONCURRENT_IDLE = 0;
     private static final int CONCURRENT_EMITTING = 1;
     private static final int CONCURRENT_PENDING = 2;
@@ -66,40 +75,49 @@ public final class ConcurrentUtils {
     }
 
     /**
-     * Drains the passed single-consumer {@link Queue} and ensures that it is empty before returning.
-     * This accounts for any additions to the {@link Queue} while drain is in progress.
-     * Multiple threads can call this method concurrently but only one thread will actively drain the {@link Queue}.
-     *
-     * @param queue {@link Queue} to drain.
-     * @param forEach {@link Consumer} for each item that is drained.
-     * @param drainActiveUpdater An {@link AtomicIntegerFieldUpdater} for an {@code int} that is used to guard against
-     * concurrent drains.
-     * @param flagOwner Holding instance for {@code drainActiveUpdater}.
-     * @param <T> Type of items stored in the {@link Queue}.
-     * @param <R> Type of the object holding the {@link int} referred by {@link AtomicIntegerFieldUpdater}.
-     * @return Number of items drained from the queue.
+     * Acquire a lock that allows reentry and attempts to acquire the lock while it is
+     * held can be detected by {@link #releaseReentrantLock(AtomicLongFieldUpdater, long, Object)}.
+     * <p>
+     * This lock <strong>must</strong> eventually be released by the same thread that acquired the lock. If the thread
+     * that acquires this lock is terminated before releasing the lock state is undefined.
+     * @param lockUpdater The {@link AtomicLongFieldUpdater} used to control the lock state.
+     * @param owner The owner of the lock object.
+     * @param <T> The type of object that owns the lock.
+     * @return {@code 0} if the acquire was unsuccessful, otherwise an identifier that must be passed to a subsequent
+     * call of {@link #releaseReentrantLock(AtomicLongFieldUpdater, long, Object)}.
      */
-    public static <T, R> long drainSingleConsumerQueue(final Queue<T> queue, final Consumer<T> forEach,
-                                                       final AtomicIntegerFieldUpdater<R> drainActiveUpdater,
-                                                       final R flagOwner) {
-        long drainedCount = 0;
-        do {
-            if (!drainActiveUpdater.compareAndSet(flagOwner, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                break;
-            }
-            try {
-                T t;
-                while ((t = queue.poll()) != null) {
-                    ++drainedCount;
-                    forEach.accept(t);
+    public static <T> long tryAcquireReentrantLock(final AtomicLongFieldUpdater<T> lockUpdater, final T owner) {
+        final long threadId = Thread.currentThread().getId();
+        for (;;) {
+            final long prevThreadId = lockUpdater.get(owner);
+            if (prevThreadId == REENTRANT_LOCK_ZERO_THREAD_ID) {
+                if (lockUpdater.compareAndSet(owner, REENTRANT_LOCK_ZERO_THREAD_ID, threadId)) {
+                    return threadId;
                 }
-            } finally {
-                drainActiveUpdater.set(flagOwner, CONCURRENT_IDLE);
+            } else if (prevThreadId == threadId || prevThreadId == -threadId) {
+                return -threadId;
+            } else if (lockUpdater.compareAndSet(owner, prevThreadId,
+                    prevThreadId > REENTRANT_LOCK_ZERO_THREAD_ID ? -prevThreadId : prevThreadId)) {
+                return REENTRANT_LOCK_ZERO_THREAD_ID;
             }
-            // We need to loop around again and check if we can acquire the "drain lock" in case there was elements
-            // added after we finished draining the queue but before we released the "drain lock".
-        } while (!queue.isEmpty());
+        }
+    }
 
-        return drainedCount;
+    /**
+     * Release a lock that was previously acquired via {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     * @param lockUpdater The {@link AtomicLongFieldUpdater} used to control the lock state.
+     * @param acquireId The value returned from the previous call to
+     * {@link #tryAcquireReentrantLock(AtomicLongFieldUpdater, Object)}.
+     * @param owner The owner of the lock object.
+     * @param <T> The type of object that owns the lock.
+     * @return {@code true} if the lock was released, or releases a prior re-entrant acquire, and no other attempts were
+     * made to acquire the lock while it was held. {@code false} if the lock was released but another attempt was made
+     * to acquire the lock before it was released.
+     */
+    public static <T> boolean releaseReentrantLock(final AtomicLongFieldUpdater<T> lockUpdater,
+                                                   final long acquireId, final T owner) {
+        assert acquireId != REENTRANT_LOCK_ZERO_THREAD_ID;
+        return acquireId < REENTRANT_LOCK_ZERO_THREAD_ID ||
+                lockUpdater.getAndSet(owner, REENTRANT_LOCK_ZERO_THREAD_ID) == acquireId;
     }
 }

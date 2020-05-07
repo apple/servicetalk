@@ -219,9 +219,7 @@ public class MulticastPublisherTest {
             barrier.await();
 
             for (int i = 0; i < expectedSubscribers; ++i) {
-                while (subscription.requested() - i <= 0) {
-                    Thread.yield();
-                }
+                subscription.awaitRequestN(i + 1);
                 source.onNext(i);
             }
 

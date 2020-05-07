@@ -33,13 +33,16 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueue;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.trySetTerminal;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -79,18 +82,25 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
     }
 
     private static final class FlatMapSubscriber<T, R> implements Subscriber<T>, Subscription {
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, CompositeException> delayedErrorUpdater =
                 newUpdater(FlatMapSubscriber.class, CompositeException.class, "delayedError");
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "emitting");
+        @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> requestedUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "requested");
+        @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> sourceRequestedUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceRequested");
+        @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> sourceEmittedUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceEmitted");
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeMappedSourcesUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "activeMappedSources");
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification>
                 terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
                 "terminalNotification");
@@ -239,29 +249,55 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private void enqueueAndDrain(Object item) {
             if (!pending.offer(item)) {
-                QueueFullException exception = new QueueFullException("pending");
-                if (item instanceof TerminalNotification) {
-                    LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
-                    throw exception;
-                } else {
-                    onError0(exception, true, true);
-                }
+                enqueueAndDrainFailed(item);
             }
             drainPending();
         }
 
         private void drainPending() {
             assert subscription != null;
-            long drainedCount = drainSingleConsumerQueue(pending, this::sendToTarget, emittingUpdater, this);
-            if (drainedCount != 0) {
+            long drainCount = 0;
+            Throwable delayedCause = null;
+            boolean tryAcquire = true;
+            while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
+                try {
+                    Object t;
+                    while ((t = pending.poll()) != null) {
+                        ++drainCount;
+                        try {
+                            sendToTarget(t);
+                        } catch (Throwable cause) {
+                            delayedCause = catchUnexpected(delayedCause, cause);
+                        }
+                    }
+                } finally {
+                    tryAcquire = !releaseLock(emittingUpdater, this);
+                }
+            }
+
+            if (drainCount != 0) {
                 // We ignore overflow here because once we get to this extreme, we won't be able to account for more
                 // data anyways.
-                sourceEmittedUpdater.addAndGet(this, drainedCount);
+                sourceEmittedUpdater.addAndGet(this, drainCount);
                 int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                         sourceEmittedUpdater, source.maxConcurrency, this);
                 if (actualSourceRequestN != 0) {
                     subscription.request(actualSourceRequestN);
                 }
+            }
+
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
+        }
+
+        private void enqueueAndDrainFailed(Object item) {
+            QueueFullException exception = new QueueFullException("pending");
+            if (item instanceof TerminalNotification) {
+                LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
+                throw exception;
+            } else {
+                onError0(exception, true, true);
             }
         }
 

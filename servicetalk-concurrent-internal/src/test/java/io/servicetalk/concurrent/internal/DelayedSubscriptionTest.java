@@ -28,11 +28,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
-import static java.lang.Long.MIN_VALUE;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -101,7 +101,7 @@ public class DelayedSubscriptionTest {
         delayedSubscription.request(100);
         delayedSubscription.request(0);
         delayedSubscription.delayedSubscription(s1);
-        verify(s1).request(MIN_VALUE);
+        verify(s1).request(leq(0L));
         verifyNoMoreInteractions(s1);
     }
 

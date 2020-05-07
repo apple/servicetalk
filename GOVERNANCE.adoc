@@ -14,8 +14,8 @@ general it is preferred that direction can be mutually agreed upon by community 
 resolved independently, the <<Maintainers>> can be called in to vote on the proposal (e.g. issue/PR) in question. An
 independent link:https://github.com/apple/servicetalk/issues[GitHub issue] should be opened prefixed with "[Vote]" and
 reference the proposal in question. The voting period should remain open for at least 2 weeks. Each Maintainer gets one
-vote and the majority will decide the direction. The final decision including the rational for the majority decision
-must be summarized by a Maintainer.
+yes/no vote and the majority will decide the direction. The final decision including the rational for the majority
+decision must be summarized by a Maintainer.
 
 == Maintainers
 The ServiceTalk Maintainers are responsible for the long term maintenance of the ServiceTalk organization. Any
@@ -40,7 +40,7 @@ If you believe you satisfy these above criteria please open a
 link:https://github.com/apple/servicetalk/compare[GitHub pull request] modifying the
 xref:MAINTAINERS.adoc[Maintainers doc] describing at least 5 non-trivial pull requests that have
 been accepted without major modifications. Please also make your case as to why you feel you will need Maintainer status
-moving forward and intention of continued involvement. Existing Maintainers must vote (yes/no) on the PR and a majority
+moving forward and intention of continued involvement. Existing Maintainers must vote on the PR and a majority
 vote is required to merge and add the new Maintainer (see <<Decision-Making and Voting>>).
 
 === Expectations of a Maintainer

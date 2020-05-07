@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
@@ -46,6 +48,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         private static final Object INITIAL = new Object();
         private static final Object REQUESTED = new Object();
         private static final Object CANCELLED = new Object();
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<ConcatSubscriber, Object> mayBeResultUpdater =
                 newUpdater(ConcatSubscriber.class, Object.class, "mayBeResult");
 
@@ -119,9 +122,14 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                     break;
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
                     if (oldVal != INITIAL) {
-                        @SuppressWarnings("unchecked")
-                        final T tVal = (T) oldVal;
-                        emitSingleSuccessToTarget(tVal);
+                        if (!isRequestNValid(n)) {
+                            target.onError(newExceptionForInvalidRequestN(n));
+                            return;
+                        } else {
+                            @SuppressWarnings("unchecked")
+                            final T tVal = (T) oldVal;
+                            emitSingleSuccessToTarget(tVal);
+                        }
                     }
                     // forward any invalid requestN on to the super class so it can propagate an error if necessary.
                     if (n != 1) {
