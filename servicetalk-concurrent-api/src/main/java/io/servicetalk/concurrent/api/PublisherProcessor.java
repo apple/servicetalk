@@ -182,19 +182,15 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
                 // cancelled or already terminated
                 return;
             } else if (cPending == 0) {
-                final boolean consumed;
                 try {
-                    consumed = buffer.tryConsumeTerminal(target);
+                    if (buffer.tryConsumeTerminal(target)) {
+                        pending = Long.MIN_VALUE;
+                    }
                 } catch (Throwable t) {
                     // Assume that we did not deliver terminal to the consumer.
                     earlyTerminateConsumerHoldingLock(target, t);
-                    return;
                 }
-                if (consumed) {
-                    pending = Long.MIN_VALUE;
-                    return;
-                }
-                break;
+                return;
             }
         }
     }

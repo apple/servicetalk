@@ -39,10 +39,16 @@ abstract class AbstractProcessorBuffer {
         return item == null ? NULL_ITEM : item;
     }
 
+    @SuppressWarnings("unchecked")
+    @Nullable
+    private static <T> T unmaskNull(final Object item) {
+        return item == NULL_ITEM ? null : (T) item;
+    }
+
     /**
-     * Invokes {@link BufferConsumer#consumeTerminal(Throwable)} if the the passed {@code signal} is a
+     * Invokes {@link BufferConsumer#consumeTerminal(Throwable)} if the passed {@code signal} is a
      * {@link TerminalNotification} representing an error termination. Invokes
-     * {@link BufferConsumer#consumeTerminal()} if the the passed {@code signal} is a {@link TerminalNotification}
+     * {@link BufferConsumer#consumeTerminal()} if the passed {@code signal} is a {@link TerminalNotification}
      * representing a successful termination. If the passed {@code signal} is not a {@link TerminalNotification} then
      * does nothing.
      *
@@ -52,8 +58,7 @@ abstract class AbstractProcessorBuffer {
      */
     static boolean consumeIfTerminal(final BufferConsumer<?> consumer, @Nullable final Object signal) {
         if (signal instanceof TerminalNotification) {
-            TerminalNotification terminalNotification = (TerminalNotification) signal;
-            Throwable cause = terminalNotification.cause();
+            Throwable cause = ((TerminalNotification) signal).cause();
             if (cause != null) {
                 consumer.consumeTerminal(cause);
             } else {
@@ -65,7 +70,7 @@ abstract class AbstractProcessorBuffer {
     }
 
     /**
-     * Invokes {@link BufferConsumer#consumeItem(Object)} if the the passed {@code signal} is not {@code null}.
+     * Invokes {@link BufferConsumer#consumeItem(Object)} if the passed {@code signal} is not {@code null}.
      *
      * @param consumer {@link BufferConsumer} to consume the item.
      * @param nextItem which either can be {@code null} or an item of type {@link T}.
@@ -76,8 +81,7 @@ abstract class AbstractProcessorBuffer {
         if (nextItem == null) {
             return false;
         }
-        @SuppressWarnings("unchecked")
-        T t = nextItem == NULL_ITEM ? null : (T) nextItem;
+        T t = unmaskNull(nextItem);
         consumer.consumeItem(t);
         return true;
     }

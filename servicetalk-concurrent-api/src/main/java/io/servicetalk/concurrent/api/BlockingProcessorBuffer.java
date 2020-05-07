@@ -37,7 +37,7 @@ public interface BlockingProcessorBuffer<T> {
     void add(@Nullable T item) throws InterruptedException;
 
     /**
-     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * Terminates this buffer, such that no further modifications of this buffer are expected. Subsequent
      * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
      * {@link BufferConsumer#consumeTerminal()}  consume termination}.
      * @throws InterruptedException If termination was interrupted.
@@ -45,7 +45,7 @@ public interface BlockingProcessorBuffer<T> {
     void terminate() throws InterruptedException;
 
     /**
-     * Terminates this buffer, such that no further modifications of this buffer are allowed. Subsequent
+     * Terminates this buffer, such that no further modifications of this buffer are expected. Subsequent
      * {@link BufferConsumer consumptions} must first consume all previously {@link #add(Object) added} items and then
      * {@link BufferConsumer#consumeTerminal()}  consume termination}.
      *

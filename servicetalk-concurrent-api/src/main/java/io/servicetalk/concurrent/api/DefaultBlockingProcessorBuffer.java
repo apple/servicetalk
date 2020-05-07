@@ -63,14 +63,11 @@ final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer im
     @Override
     public boolean consume(final BufferConsumer<T> consumer, final long waitFor, final TimeUnit waitForUnit)
             throws TimeoutException, InterruptedException {
-        if (consumeIfTerminal(consumer, signals.peek())) {
-            return true;
-        }
-
-        Object nextItem = signals.poll(waitFor, waitForUnit);
-        if (nextItem == null) {
+        Object signal = signals.poll(waitFor, waitForUnit);
+        if (signal == null) {
             throw new TimeoutException("Timed out after " + waitFor + "(" + waitForUnit + ") waiting for an item.");
         }
-        return consumeNextItem(consumer, nextItem);
+
+        return consumeIfTerminal(consumer, signal) || consumeNextItem(consumer, signal);
     }
 }

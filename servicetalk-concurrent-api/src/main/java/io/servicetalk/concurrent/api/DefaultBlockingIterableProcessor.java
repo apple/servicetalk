@@ -89,9 +89,7 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
             if (!hasNext(timeout, unit)) {
                 throw new NoSuchElementException();
             }
-            T next = this.next;
-            this.next = null;
-            return next;
+            return processNext();
         }
 
         @Nullable
@@ -100,9 +98,7 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            T next = this.next;
-            this.next = null;
-            return next;
+            return processNext();
         }
 
         @Override
@@ -135,6 +131,13 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
                 throwException(cause);
             }
             return false;
+        }
+
+        @Nullable
+        private T processNext() {
+            T next = this.next;
+            this.next = null;
+            return next;
         }
 
         @Override
