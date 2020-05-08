@@ -29,9 +29,9 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
-    private final BlockingProcessorBuffer<T> buffer;
+    private final BlockingProcessorSignalsHolder<T> buffer;
 
-    DefaultBlockingIterableProcessor(final BlockingProcessorBuffer<T> buffer) {
+    DefaultBlockingIterableProcessor(final BlockingProcessorSignalsHolder<T> buffer) {
         this.buffer = requireNonNull(buffer);
     }
 
@@ -55,14 +55,14 @@ final class DefaultBlockingIterableProcessor<T> implements Processor<T> {
         buffer.terminate();
     }
 
-    private static final class PollingBlockingIterator<T> implements BlockingIterator<T>, BufferConsumer<T> {
+    private static final class PollingBlockingIterator<T> implements BlockingIterator<T>, ProcessorSignalsConsumer<T> {
         @Nullable
         private T next;
         @Nullable
         private TerminalNotification terminal;
-        private final BlockingProcessorBuffer<T> buffer;
+        private final BlockingProcessorSignalsHolder<T> buffer;
 
-        PollingBlockingIterator(final BlockingProcessorBuffer<T> buffer) {
+        PollingBlockingIterator(final BlockingProcessorSignalsHolder<T> buffer) {
             this.buffer = buffer;
         }
 

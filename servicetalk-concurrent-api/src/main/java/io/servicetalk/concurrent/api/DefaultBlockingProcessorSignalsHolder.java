@@ -26,10 +26,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 
-final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer implements BlockingProcessorBuffer<T> {
+final class DefaultBlockingProcessorSignalsHolder<T> extends AbstractProcessorBuffer
+        implements BlockingProcessorSignalsHolder<T> {
     private final BlockingQueue<Object> signals;
 
-    DefaultBlockingProcessorBuffer(final int maxBuffer) {
+    DefaultBlockingProcessorSignalsHolder(final int maxBuffer) {
         this.signals = new LinkedBlockingQueue<>(maxBuffer);
     }
 
@@ -55,13 +56,13 @@ final class DefaultBlockingProcessorBuffer<T> extends AbstractProcessorBuffer im
     }
 
     @Override
-    public boolean consume(final BufferConsumer<T> consumer) throws InterruptedException {
+    public boolean consume(final ProcessorSignalsConsumer<T> consumer) throws InterruptedException {
         Object signal = signals.take();
         return consumeIfTerminal(consumer, signal) || consumeNextItem(consumer, signal);
     }
 
     @Override
-    public boolean consume(final BufferConsumer<T> consumer, final long waitFor, final TimeUnit waitForUnit)
+    public boolean consume(final ProcessorSignalsConsumer<T> consumer, final long waitFor, final TimeUnit waitForUnit)
             throws TimeoutException, InterruptedException {
         Object signal = signals.poll(waitFor, waitForUnit);
         if (signal == null) {

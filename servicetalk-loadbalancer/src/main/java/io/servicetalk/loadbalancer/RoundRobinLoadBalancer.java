@@ -54,8 +54,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
-import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSizeDropOldest;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -135,7 +134,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final Comparator<ResolvedAddress> comparator) {
-        Processor<Object, Object> eventStreamProcessor = newPublisherProcessor(fixedSizeDropOldest(32));
+        Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
 

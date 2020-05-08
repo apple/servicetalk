@@ -67,7 +67,6 @@ import javax.net.ssl.SSLSession;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -157,7 +156,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
-            maxConcurrencyProcessor = newPublisherProcessor(fixedSize(16));
+            maxConcurrencyProcessor = newPublisherProcessor(16);
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());

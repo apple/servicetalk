@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
+import static io.servicetalk.concurrent.api.PublisherProcessorSignalHolders.fixedSize;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.Executors.newCachedThreadPool;

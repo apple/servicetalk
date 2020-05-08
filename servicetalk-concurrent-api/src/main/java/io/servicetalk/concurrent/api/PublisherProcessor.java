@@ -22,6 +22,9 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -38,11 +41,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T>, Subscription {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherProcessor.class);
     @SuppressWarnings("rawtypes")
-    private static final BufferConsumer CANCELLED = new NoopBufferConsumer();
+    private static final ProcessorSignalsConsumer CANCELLED = new NoopProcessorSignalsConsumer();
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<PublisherProcessor, BufferConsumer> consumerUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(PublisherProcessor.class, BufferConsumer.class, "consumer");
+    private static final AtomicReferenceFieldUpdater<PublisherProcessor, ProcessorSignalsConsumer> consumerUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(PublisherProcessor.class,
+                    ProcessorSignalsConsumer.class, "consumer");
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<PublisherProcessor> emittingUpdater =
             newUpdater(PublisherProcessor.class, "emitting");
@@ -51,17 +56,17 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
             AtomicLongFieldUpdater.newUpdater(PublisherProcessor.class, "pending");
 
     private final DelayedSubscription delayedSubscription;
-    private final PublisherProcessorBuffer<T> buffer;
+    private final PublisherProcessorSignalsHolder<T> buffer;
 
     @Nullable
     private Throwable fatalError; // visible via emitting
     @Nullable
-    private volatile BufferConsumer<T> consumer;
+    private volatile ProcessorSignalsConsumer<T> consumer;
     @SuppressWarnings("unused")
     private volatile int emitting;
     private volatile long pending;
 
-    PublisherProcessor(final PublisherProcessorBuffer<T> buffer) {
+    PublisherProcessor(final PublisherProcessorSignalsHolder<T> buffer) {
         this.buffer = requireNonNull(buffer);
         delayedSubscription = new DelayedSubscription();
     }
@@ -99,15 +104,20 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
             return;
         }
 
-        if (consumerUpdater.compareAndSet(this, null, new SubscriberBufferConsumer<>(subscriber))) {
-            delayedSubscription.delayedSubscription(this);
-            tryEmitSignals();
+        if (consumerUpdater.compareAndSet(this, null, new SubscriberProcessorSignalsConsumer<>(subscriber))) {
+            try {
+                delayedSubscription.delayedSubscription(this);
+                tryEmitSignals();
+            } catch (Throwable t) {
+                LOGGER.error("Unexpected error while delivering signals to the subscriber {}", subscriber, t);
+            }
         } else {
-            BufferConsumer<? super T> existingConsumer = this.consumer;
+            ProcessorSignalsConsumer<? super T> existingConsumer = this.consumer;
             assert existingConsumer != null;
             @SuppressWarnings("unchecked")
-            final Subscriber<? super T> existingSubscriber = existingConsumer instanceof SubscriberBufferConsumer ?
-                    ((SubscriberBufferConsumer<T>) existingConsumer).subscriber : null;
+            final Subscriber<? super T> existingSubscriber =
+                    existingConsumer instanceof PublisherProcessor.SubscriberProcessorSignalsConsumer ?
+                            ((SubscriberProcessorSignalsConsumer<T>) existingConsumer).subscriber : null;
             safeOnError(subscriber, new DuplicateSubscribeException(existingSubscriber, subscriber));
         }
     }
@@ -132,7 +142,9 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
     public void cancel() {
         if (pendingUpdater.getAndSet(this, Long.MIN_VALUE) >= 0) {
             @SuppressWarnings("unchecked")
-            BufferConsumer<T> cancelled = CANCELLED;
+            ProcessorSignalsConsumer<T> cancelled = CANCELLED;
+            // Release reference to the subscriber as per rule 3.13
+            // https://github.com/reactive-streams/reactive-streams-jvm#3.13
             this.consumer = cancelled;
             delayedSubscription.cancel();
         }
@@ -141,10 +153,10 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
     private void tryEmitSignals() {
         boolean tryAcquire = true;
         while (tryAcquire && tryAcquireLock(emittingUpdater, this)) {
-            final BufferConsumer<T> consumer = this.consumer;
+            final ProcessorSignalsConsumer<T> consumer = this.consumer;
             try {
-                if (consumer instanceof SubscriberBufferConsumer) {
-                    SubscriberBufferConsumer<T> target = (SubscriberBufferConsumer<T>) consumer;
+                if (consumer instanceof PublisherProcessor.SubscriberProcessorSignalsConsumer) {
+                    SubscriberProcessorSignalsConsumer<T> target = (SubscriberProcessorSignalsConsumer<T>) consumer;
                     if (fatalError != null) {
                         earlyTerminateConsumerHoldingLock(target, fatalError);
                         return;
@@ -158,7 +170,7 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
         }
     }
 
-    private void emitSignalsHoldingLock(final SubscriberBufferConsumer<T> target) {
+    private void emitSignalsHoldingLock(final SubscriberProcessorSignalsConsumer<T> target) {
         for (;;) {
             final long cPending = pending;
             if (cPending > 0 && pendingUpdater.compareAndSet(this, cPending, cPending - 1)) {
@@ -195,7 +207,8 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
         }
     }
 
-    private void earlyTerminateConsumerHoldingLock(final SubscriberBufferConsumer<T> consumer, final Throwable cause) {
+    private void earlyTerminateConsumerHoldingLock(final SubscriberProcessorSignalsConsumer<T> consumer,
+                                                   final Throwable cause) {
         pending = Long.MIN_VALUE;
         try {
             delayedSubscription.cancel();
@@ -204,11 +217,11 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
         }
     }
 
-    private static final class SubscriberBufferConsumer<T> implements BufferConsumer<T> {
+    private static final class SubscriberProcessorSignalsConsumer<T> implements ProcessorSignalsConsumer<T> {
         private final Subscriber<? super T> subscriber;
         private boolean terminated;
 
-        SubscriberBufferConsumer(final Subscriber<? super T> subscriber) {
+        SubscriberProcessorSignalsConsumer(final Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
         }
 
@@ -235,7 +248,7 @@ final class PublisherProcessor<T> extends Publisher<T> implements Processor<T, T
     }
 
     @SuppressWarnings("rawtypes")
-    private static final class NoopBufferConsumer implements BufferConsumer {
+    private static final class NoopProcessorSignalsConsumer implements ProcessorSignalsConsumer {
 
         @Override
         public void consumeItem(@Nullable final Object item) {

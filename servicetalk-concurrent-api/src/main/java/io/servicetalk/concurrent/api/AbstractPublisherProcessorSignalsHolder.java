@@ -27,18 +27,18 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> extends AbstractProcessorBuffer
-        implements PublisherProcessorBuffer<T> {
+abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object>> extends AbstractProcessorBuffer
+        implements PublisherProcessorSignalsHolder<T> {
     @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<AbstractPublisherProcessorBuffer> bufferedUpdater =
-            newUpdater(AbstractPublisherProcessorBuffer.class, "buffered");
+    private static final AtomicIntegerFieldUpdater<AbstractPublisherProcessorSignalsHolder> bufferedUpdater =
+            newUpdater(AbstractPublisherProcessorSignalsHolder.class, "buffered");
 
     private final int maxBuffer;
     private final Q signals;
 
     private volatile int buffered;
 
-    AbstractPublisherProcessorBuffer(final int maxBuffer, final Q signals) {
+    AbstractPublisherProcessorSignalsHolder(final int maxBuffer, final Q signals) {
         if (maxBuffer <= 0) {
             throw new IllegalArgumentException("maxBuffer: " + maxBuffer + " (expected > 0)");
         }
@@ -73,7 +73,7 @@ abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> exte
     }
 
     @Override
-    public boolean tryConsume(final BufferConsumer<T> consumer) {
+    public boolean tryConsume(final ProcessorSignalsConsumer<T> consumer) {
         Object signal = signals.poll();
         if (consumeIfTerminal(consumer, signal)) {
             return true;
@@ -87,7 +87,7 @@ abstract class AbstractPublisherProcessorBuffer<T, Q extends Queue<Object>> exte
     }
 
     @Override
-    public boolean tryConsumeTerminal(final BufferConsumer<T> consumer) {
+    public boolean tryConsumeTerminal(final ProcessorSignalsConsumer<T> consumer) {
         return consumeIfTerminal(consumer, signals.peek());
     }
 

@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
@@ -34,7 +33,7 @@ public class PublisherProcessorTckTest extends AbstractPublisherTckTest<Integer>
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
         assert elements <= MAX_ITEMS;
-        Processor<Integer, Integer> processor = newPublisherProcessor(fixedSize(max(1, (int) elements)));
+        Processor<Integer, Integer> processor = newPublisherProcessor(max(1, (int) elements));
         for (int i = 0; i < elements; i++) {
             processor.onNext(i);
         }
@@ -44,7 +43,7 @@ public class PublisherProcessorTckTest extends AbstractPublisherTckTest<Integer>
 
     @Override
     public org.reactivestreams.Publisher<Integer> createFailedPublisher() {
-        Processor<Integer, Integer> processor = newPublisherProcessor(fixedSize(1));
+        Processor<Integer, Integer> processor = newPublisherProcessor(1);
         processor.onError(DELIBERATE_EXCEPTION);
         return toReactiveStreamsPublisher(fromSource(processor));
     }

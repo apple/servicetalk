@@ -109,7 +109,6 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
@@ -868,7 +867,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private static Processor<Buffer, Buffer> newProcessor() {
-        return newPublisherProcessor(fixedSize(16));
+        return newPublisherProcessor(16);
     }
 
     private InetSocketAddress bindH2Server(ChannelHandler childChannelHandler,

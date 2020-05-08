@@ -31,15 +31,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class PublisherProcessorBufferTest {
+public class PublisherProcessorSignalsHolderTest {
     private final List<Object> pastBufferSizeSignals;
-    private final AbstractPublisherProcessorBuffer<Integer, Queue<Object>> buffer;
+    private final AbstractPublisherProcessorSignalsHolder<Integer, Queue<Object>> buffer;
     @SuppressWarnings("unchecked")
-    private final BufferConsumer<Integer> consumer = mock(BufferConsumer.class);
+    private final ProcessorSignalsConsumer<Integer> consumer = mock(ProcessorSignalsConsumer.class);
 
-    public PublisherProcessorBufferTest() {
+    public PublisherProcessorSignalsHolderTest() {
         pastBufferSizeSignals = new ArrayList<>();
-        buffer = new AbstractPublisherProcessorBuffer<Integer, Queue<Object>>(1, new ConcurrentLinkedQueue<>()) {
+        buffer = new AbstractPublisherProcessorSignalsHolder<Integer, Queue<Object>>(1, new ConcurrentLinkedQueue<>()) {
             @Override
             void offerPastBufferSize(final Object signal, final Queue<Object> queue) {
                 pastBufferSizeSignals.add(signal);

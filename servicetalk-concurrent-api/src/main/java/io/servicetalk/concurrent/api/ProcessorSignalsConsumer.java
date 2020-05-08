@@ -18,28 +18,27 @@ package io.servicetalk.concurrent.api;
 import javax.annotation.Nullable;
 
 /**
- * Consumer of items from a buffer.
+ * Consumer of items from a {@link PublisherProcessorSignalsHolder} or {@link BlockingProcessorSignalsHolder}.
  *
- * @param <T>  Type of items {@link #consumeItem(Object) consumed} by this buffer.
+ * @param <T> Type of items {@link #consumeItem(Object) consumed} by this consumer.
  */
-public interface BufferConsumer<T> {
-
+public interface ProcessorSignalsConsumer<T> {
     /**
      * Consumes the passed {@code item}.
      *
-     * @param item to consume. This will be {@code null} if {@code null} was added to the buffer.
+     * @param item to consume. This will be {@code null} if a {@code null} was added to the holder.
      */
     void consumeItem(@Nullable T item);
 
     /**
-     * Consumes the {@link Throwable} that terminated the buffer.
+     * Consumes the {@link Throwable} that terminated the holder.
      *
-     * @param cause of termination of the buffer.
+     * @param cause of termination of the holder.
      */
     void consumeTerminal(Throwable cause);
 
     /**
-     * Consumes the termination of the buffer.
+     * Consumes the termination of the holder.
      */
     void consumeTerminal();
 }

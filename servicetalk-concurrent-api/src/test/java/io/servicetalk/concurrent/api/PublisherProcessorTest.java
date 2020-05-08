@@ -52,13 +52,13 @@ public class PublisherProcessorTest {
 
     public PublisherProcessorTest() {
         @SuppressWarnings("unchecked")
-        final PublisherProcessorBuffer<Integer> buffer = mock(PublisherProcessorBuffer.class);
+        final PublisherProcessorSignalsHolder<Integer> buffer = mock(PublisherProcessorSignalsHolder.class);
         doAnswer(invocation -> {
             bufferQueue.add(invocation.getArgument(0));
             return null;
         }).when(buffer).add(anyInt());
         when(buffer.tryConsume(any())).thenAnswer(invocation -> {
-            BufferConsumer<Integer> consumer = invocation.getArgument(0);
+            ProcessorSignalsConsumer<Integer> consumer = invocation.getArgument(0);
             Integer item = bufferQueue.poll();
             if (item == null) {
                 return terminateConsumeFromMock(consumer);
@@ -87,7 +87,7 @@ public class PublisherProcessorTest {
         assertThat("Subscription cancelled.", subscription.isCancelled(), is(false));
     }
 
-    private boolean terminateConsumeFromMock(final BufferConsumer<Integer> consumer) {
+    private boolean terminateConsumeFromMock(final ProcessorSignalsConsumer<Integer> consumer) {
         TerminalNotification notification = terminalNotification;
         if (notification == null) {
             return false;

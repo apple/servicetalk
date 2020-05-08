@@ -33,16 +33,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class BlockingProcessorBufferTest {
+public class BlockingProcessorSignalsHolderTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final DefaultBlockingProcessorBuffer<Integer> buffer;
+    private final DefaultBlockingProcessorSignalsHolder<Integer> buffer;
     @SuppressWarnings("unchecked")
-    private final BufferConsumer<Integer> consumer = mock(BufferConsumer.class);
+    private final ProcessorSignalsConsumer<Integer> consumer = mock(ProcessorSignalsConsumer.class);
 
-    public BlockingProcessorBufferTest() {
-        buffer = new DefaultBlockingProcessorBuffer<>(1);
+    public BlockingProcessorSignalsHolderTest() {
+        buffer = new DefaultBlockingProcessorSignalsHolder<>(1);
     }
 
     @Test

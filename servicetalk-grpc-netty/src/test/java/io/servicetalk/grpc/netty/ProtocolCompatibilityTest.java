@@ -87,7 +87,6 @@ import static com.google.protobuf.Any.pack;
 import static io.grpc.Status.Code.CANCELLED;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.PublisherProcessorBuffers.fixedSize;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -897,7 +896,7 @@ public class ProtocolCompatibilityTest {
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(final Publisher<CompatRequest> request) {
                 final PublisherSource.Processor<CompatResponse, CompatResponse> processor =
-                        newPublisherProcessor(fixedSize(3));
+                        newPublisherProcessor(3);
                 sendRequest(request, stub.bidirectionalStreamingCall(adaptResponse(processor)));
                 return fromSource(processor);
             }
@@ -940,7 +939,7 @@ public class ProtocolCompatibilityTest {
             @Override
             public Publisher<CompatResponse> serverStreamingCall(final CompatRequest request) {
                 final PublisherSource.Processor<CompatResponse, CompatResponse> processor =
-                        newPublisherProcessor(fixedSize(3));
+                        newPublisherProcessor(3);
                 stub.serverStreamingCall(request, adaptResponse(processor));
                 return fromSource(processor);
             }

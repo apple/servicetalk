@@ -46,17 +46,17 @@ abstract class AbstractProcessorBuffer {
     }
 
     /**
-     * Invokes {@link BufferConsumer#consumeTerminal(Throwable)} if the passed {@code signal} is a
+     * Invokes {@link ProcessorSignalsConsumer#consumeTerminal(Throwable)} if the passed {@code signal} is a
      * {@link TerminalNotification} representing an error termination. Invokes
-     * {@link BufferConsumer#consumeTerminal()} if the passed {@code signal} is a {@link TerminalNotification}
+     * {@link ProcessorSignalsConsumer#consumeTerminal()} if the passed {@code signal} is a {@link TerminalNotification}
      * representing a successful termination. If the passed {@code signal} is not a {@link TerminalNotification} then
      * does nothing.
      *
-     * @param consumer {@link BufferConsumer} to consume the terminal.
+     * @param consumer {@link ProcessorSignalsConsumer} to consume the terminal.
      * @param signal which may be a {@link TerminalNotification}.
-     * @return {@code true} if any method was invoked on the passed {@link BufferConsumer}.
+     * @return {@code true} if any method was invoked on the passed {@link ProcessorSignalsConsumer}.
      */
-    static boolean consumeIfTerminal(final BufferConsumer<?> consumer, @Nullable final Object signal) {
+    static boolean consumeIfTerminal(final ProcessorSignalsConsumer<?> consumer, @Nullable final Object signal) {
         if (signal instanceof TerminalNotification) {
             Throwable cause = ((TerminalNotification) signal).cause();
             if (cause != null) {
@@ -70,14 +70,14 @@ abstract class AbstractProcessorBuffer {
     }
 
     /**
-     * Invokes {@link BufferConsumer#consumeItem(Object)} if the passed {@code signal} is not {@code null}.
+     * Invokes {@link ProcessorSignalsConsumer#consumeItem(Object)} if the passed {@code signal} is not {@code null}.
      *
-     * @param consumer {@link BufferConsumer} to consume the item.
+     * @param consumer {@link ProcessorSignalsConsumer} to consume the item.
      * @param nextItem which either can be {@code null} or an item of type {@link T}.
-     * @param <T> Type of items consumed by {@link BufferConsumer}.
-     * @return {@code true} if any method was invoked on the passed {@link BufferConsumer}.
+     * @param <T> Type of items consumed by {@link ProcessorSignalsConsumer}.
+     * @return {@code true} if any method was invoked on the passed {@link ProcessorSignalsConsumer}.
      */
-    static <T> boolean consumeNextItem(final BufferConsumer<T> consumer, @Nullable final Object nextItem) {
+    static <T> boolean consumeNextItem(final ProcessorSignalsConsumer<T> consumer, @Nullable final Object nextItem) {
         if (nextItem == null) {
             return false;
         }
