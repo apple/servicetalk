@@ -40,6 +40,7 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -254,9 +255,11 @@ final class DefaultDnsClient implements DnsClient {
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
+                                    List<DnsRecord> toRelease = null;
                                     try {
                                         @SuppressWarnings("unchecked")
                                         final List<DnsRecord> dnsRecords = (List<DnsRecord>) completedFuture.getNow();
+                                        toRelease = dnsRecords;
                                         final List<HostAndPort> hostAndPorts = new ArrayList<>(dnsRecords.size());
                                         for (DnsRecord dnsRecord : dnsRecords) {
                                             if (!SRV.equals(dnsRecord.type()) || !(dnsRecord instanceof DnsRawRecord)) {
@@ -277,6 +280,12 @@ final class DefaultDnsClient implements DnsClient {
                                     } catch (Throwable cause2) {
                                         promise.setFailure(cause2);
                                         return;
+                                    } finally {
+                                        if (toRelease != null) {
+                                            for (DnsRecord dnsRecord : toRelease) {
+                                                ReferenceCountUtil.release(dnsRecord);
+                                            }
+                                        }
                                     }
                                     promise.setSuccess(dnsAnswer);
                                 }
