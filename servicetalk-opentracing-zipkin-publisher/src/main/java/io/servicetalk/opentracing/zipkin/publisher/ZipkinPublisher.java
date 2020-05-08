@@ -45,8 +45,7 @@ import static java.util.Objects.requireNonNull;
  * A publisher of {@link io.opentracing.Span}s to the zipkin transport.
  */
 public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCloseable, Closeable {
-
-    private static final Logger logger = LoggerFactory.getLogger(ZipkinPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZipkinPublisher.class);
 
     private final Reporter<Span> reporter;
     private final Endpoint endpoint;
@@ -65,7 +64,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
                     try {
                         ((Flushable) reporter).flush();
                     } catch (IOException e) {
-                        logger.error("Exception while flushing reporter: {}", e.getMessage(), e);
+                        LOGGER.error("Exception while flushing reporter: {}", e.getMessage(), e);
                     }
                 });
             }
@@ -79,7 +78,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
                     try {
                         ((Closeable) reporter).close();
                     } catch (IOException e) {
-                        logger.error("Exception while closing reporter: {}", e.getMessage(), e);
+                        LOGGER.error("Exception while closing reporter: {}", e.getMessage(), e);
                     }
                 });
             }
@@ -182,7 +181,11 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
         }
 
         Span s = builder.build();
-        reporter.report(s);
+        try {
+            reporter.report(s);
+        } catch (Throwable t) {
+            LOGGER.error("Failed to report a span {}", s, t);
+        }
     }
 
     /**

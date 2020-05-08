@@ -39,15 +39,14 @@ import zipkin2.codec.SpanBytesDecoder;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.newSpan;
+import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.verifySpan;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class UdpReporterTest {
     private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048;
@@ -71,66 +70,38 @@ public class UdpReporterTest {
 
     @Test
     public void testJsonV1RoundTrip() throws Exception {
-        testRoundTrip(UdpReporter.Codec.JSON_V1, SpanBytesDecoder.JSON_V1);
+        testRoundTrip(Codec.JSON_V1, SpanBytesDecoder.JSON_V1);
     }
 
     @Test
     public void testJsonV2RoundTrip() throws Exception {
-        testRoundTrip(UdpReporter.Codec.JSON_V2, SpanBytesDecoder.JSON_V2);
+        testRoundTrip(Codec.JSON_V2, SpanBytesDecoder.JSON_V2);
     }
 
     @Test
     public void testThriftRoundTrip() throws Exception {
-        testRoundTrip(UdpReporter.Codec.THRIFT, SpanBytesDecoder.THRIFT);
+        testRoundTrip(Codec.THRIFT, SpanBytesDecoder.THRIFT);
     }
 
     @Test
     public void testProto3RoundTrip() throws Exception {
-        testRoundTrip(UdpReporter.Codec.PROTO3, SpanBytesDecoder.PROTO3);
+        testRoundTrip(Codec.PROTO3, SpanBytesDecoder.PROTO3);
     }
 
-    private void testRoundTrip(UdpReporter.Codec codec, SpanBytesDecoder decoder) throws Exception {
+    private void testRoundTrip(Codec codec, SpanBytesDecoder decoder) throws Exception {
         try (TestReceiver receiver = new TestReceiver(decoder)) {
             try (UdpReporter reporter = buildReporter((InetSocketAddress) receiver.channel.localAddress(), codec)) {
-                Span span = Span.newBuilder()
-                        .name("test operation")
-                        .traceId("1234")
-                        .id(2)
-                        .timestamp(123456789L)
-                        .duration(SECONDS.toMicros(1))
-                        .putTag("stringKey", "string")
-                        .putTag("boolKey", String.valueOf(true))
-                        .putTag("shortKey", String.valueOf(Short.MAX_VALUE))
-                        .putTag("intKey", String.valueOf(Integer.MAX_VALUE))
-                        .putTag("longKey", String.valueOf(Long.MAX_VALUE))
-                        .putTag("floatKey", String.valueOf(Float.MAX_VALUE))
-                        .putTag("doubleKey", String.valueOf(Double.MAX_VALUE))
-                        .addAnnotation(System.currentTimeMillis() * 1000, "some event happened")
-                        .build();
-                reporter.report(span);
+                reporter.report(newSpan());
             }
 
             Span span = receiver.queue.take();
 
             assertNotNull(span);
-            assertEquals("test operation", span.name());
-            assertEquals("0000000000001234", span.traceId());
-            assertEquals("0000000000000002", span.id());
-            assertEquals(123456789L, (long) span.timestamp());
-            assertEquals(1000 * 1000, (long) span.duration());
-            Map<String, String> tags = span.tags();
-            assertEquals("string", tags.get("stringKey"));
-            assertEquals(Boolean.TRUE.toString(), tags.get("boolKey"));
-            assertEquals(String.valueOf(Short.MAX_VALUE), tags.get("shortKey"));
-            assertEquals(String.valueOf(Integer.MAX_VALUE), tags.get("intKey"));
-            assertEquals(String.valueOf(Long.MAX_VALUE), tags.get("longKey"));
-            assertEquals(String.valueOf(Float.MAX_VALUE), tags.get("floatKey"));
-            assertEquals(String.valueOf(Double.MAX_VALUE), tags.get("doubleKey"));
-            assertTrue(span.annotations().stream().anyMatch(a -> a.value().equals("some event happened")));
+            verifySpan(span);
         }
     }
 
-    private UdpReporter buildReporter(InetSocketAddress remoteAddress, UdpReporter.Codec codec) {
+    private UdpReporter buildReporter(InetSocketAddress remoteAddress, Codec codec) {
         return new UdpReporter.Builder(remoteAddress)
                 .codec(codec)
                 .build();

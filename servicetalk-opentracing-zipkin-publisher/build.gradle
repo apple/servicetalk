@@ -20,6 +20,7 @@ dependencies {
   api project(":servicetalk-opentracing-inmemory-api")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-transport-api")
+  api project(":servicetalk-http-api")
   api "io.zipkin.zipkin2:zipkin:$zipkinVersion"
   api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
 
@@ -41,6 +42,7 @@ dependencies {
   testImplementation project(":servicetalk-opentracing-asynccontext")
   testImplementation project(":servicetalk-opentracing-inmemory")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-http-netty")
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
