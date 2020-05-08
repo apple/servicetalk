@@ -127,4 +127,14 @@ public interface PublisherSource<T> {
          */
         void request(long n);
     }
+
+    /**
+     * A {@link Processor} represents a processing stage that is both a {@link PublisherSource} and a {@link Subscriber}
+     * and obeys the contracts of both.
+     *
+     * @param <T> The type of {@link Subscriber}.
+     * @param <R> the type of {@link PublisherSource}.
+     */
+    interface Processor<T, R> extends PublisherSource<R>, PublisherSource.Subscriber<T> {
+    }
 }

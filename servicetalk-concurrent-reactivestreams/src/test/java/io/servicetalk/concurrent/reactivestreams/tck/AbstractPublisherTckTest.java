@@ -40,7 +40,7 @@ public abstract class AbstractPublisherTckTest<T> extends AbstractTckTest<T> {
     public abstract Publisher<T> createServiceTalkPublisher(long elements);
 
     @Override
-    public final org.reactivestreams.Publisher<T> createFailedPublisher() {
+    public org.reactivestreams.Publisher<T> createFailedPublisher() {
         return toReactiveStreamsPublisher(TckUtils.newFailedPublisher());
     }
 }
