@@ -255,10 +255,11 @@ final class DefaultDnsClient implements DnsClient {
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
-                                    List<DnsRecord> dnsRecords = null;
+                                    List<DnsRecord> toRelease = null;
                                     try {
-                                        //noinspection unchecked
-                                        dnsRecords = (List<DnsRecord>) completedFuture.getNow();
+                                        @SuppressWarnings("unchecked")
+                                        final List<DnsRecord> dnsRecords = (List<DnsRecord>) completedFuture.getNow();
+                                        toRelease = dnsRecords;
                                         final List<HostAndPort> hostAndPorts = new ArrayList<>(dnsRecords.size());
                                         for (DnsRecord dnsRecord : dnsRecords) {
                                             if (!SRV.equals(dnsRecord.type()) || !(dnsRecord instanceof DnsRawRecord)) {
@@ -280,8 +281,8 @@ final class DefaultDnsClient implements DnsClient {
                                         promise.setFailure(cause2);
                                         return;
                                     } finally {
-                                        if (dnsRecords != null) {
-                                            for (DnsRecord dnsRecord : dnsRecords) {
+                                        if (toRelease != null) {
+                                            for (DnsRecord dnsRecord : toRelease) {
                                                 ReferenceCountUtil.release(dnsRecord);
                                             }
                                         }
