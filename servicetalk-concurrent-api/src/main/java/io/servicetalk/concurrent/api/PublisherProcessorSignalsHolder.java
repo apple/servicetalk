@@ -16,11 +16,21 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Processor;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 
 import javax.annotation.Nullable;
 
 /**
- * A holder of items for a {@link Processor}.
+ * A holder of items for a {@link Processor}. A {@link Processor} decouples {@link Subscriber production of data} from
+ * the {@link Processor#subscribe(Subscriber) consumption of data} and this holder acts as the implementation for that
+ * decoupling by using an intermediate in-memory storage. This in-memory storage layer can be used in different ways,
+ * some of which are enumerated below:
+ * <ul>
+ *     <li>Implement a custom signal rejection strategy when some signals can be dropped in favor of others.</li>
+ *     <li>Store reduced set of signals when intermediary signals can either be discarded or coalesced.</li>
+ *     <li>Reverse order of consumption of items when stored signals reach a threshold.</li>
+ * </ul>
+ *
  * <h2>Multi-threaded access</h2>
  * Implementations may assume that the consumption of the holder (methods {@link #tryConsume(ProcessorSignalsConsumer)}
  * and {@link #tryConsumeTerminal(ProcessorSignalsConsumer)}) is always done serially however the production (methods
