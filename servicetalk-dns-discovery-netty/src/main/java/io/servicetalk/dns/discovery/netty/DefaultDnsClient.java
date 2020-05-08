@@ -119,6 +119,13 @@ final class DefaultDnsClient implements DnsClient {
                 (Class<? extends SocketChannel>) socketChannel(eventLoop, InetSocketAddress.class);
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
+                // Disable the cache for CNAMEs for now as it turned out that it is problematic to cache CNAMEs.
+                // The problem here is that the CNAME itself may not be resolveable by the used nameserver as it
+                // is returned as part of an A / AAAA query that contains all needed details for the final resolution.
+                // If we the CNAME itself remains in the cache but no the final resolved addressed we may end up
+                // to fail the query as what is returned by the CNAME cache is not resolvable with an explicit A / AAAA
+                // query.
+                .cnameCache(NoopDnsCnameCache.INSTANCE)
                 .channelType(datagramChannel(eventLoop))
                 // Enable TCP fallback to be able to handle truncated responses.
                 // https://tools.ietf.org/html/rfc7766
