@@ -32,9 +32,10 @@ import java.util.function.IntConsumer;
 import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_IDLE;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_ON_NEXT;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
@@ -356,7 +357,7 @@ final class MulticastUtils {
                     break;
                 }
             }
-            unboundedSpsc.offer(item == null ? NULL_TOKEN : item);
+            unboundedSpsc.offer(wrapNull(item));
             return true;
         }
 
@@ -445,14 +446,12 @@ final class MulticastUtils {
                         return -totalDrainCount;
                     }
 
-                    @SuppressWarnings("unchecked")
-                    final T t = (T) (next == NULL_TOKEN ? null : next);
                     ++i;
                     // We should always keep the queue count accurate because otherwise if there is re-entry we may
                     // throw an exception due to the queue being full, but there should be at least 1 space remaining.
                     toDrain.decrementSize();
                     try {
-                        target.onNext(t);
+                        target.onNext(unwrapNull(next));
                     } catch (Throwable cause) {
                         nonTerminalErrorConsumer.accept(cause);
                         break;

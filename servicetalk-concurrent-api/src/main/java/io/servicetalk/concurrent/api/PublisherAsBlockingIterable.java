@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.lang.Math.max;
@@ -76,7 +78,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
         private static final Object CANCELLED_SIGNAL = new Object();
-        private static final Object NULL_PLACEHOLDER = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
 
         private final BlockingQueue<Object> data;
@@ -130,7 +131,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void onNext(@Nullable T t) {
-            if (!data.offer(t == null ? NULL_PLACEHOLDER : t)) { // We have received more data than we requested.
+            if (!data.offer(wrapNull(t))) { // We have received more data than we requested.
                 throw new QueueFullException("publisher-iterator", queueCapacity);
             }
         }
@@ -253,12 +254,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 }
                 throw new RuntimeException(cause);
             }
-            if (signal == NULL_PLACEHOLDER) {
-                return null;
-            }
-            @SuppressWarnings("unchecked")
-            T t = (T) signal;
-            return t;
+            return unwrapNull(signal);
         }
     }
 }

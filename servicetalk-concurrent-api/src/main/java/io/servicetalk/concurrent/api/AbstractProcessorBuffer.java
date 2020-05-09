@@ -20,29 +20,19 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 abstract class AbstractProcessorBuffer {
     private static final AtomicReferenceFieldUpdater<AbstractProcessorBuffer,
             TerminalNotification> terminalUpdater = newUpdater(AbstractProcessorBuffer.class,
             TerminalNotification.class, "terminal");
-    private static final Object NULL_ITEM = new Object();
 
     @Nullable
     private volatile TerminalNotification terminal;
 
     final boolean tryTerminate(final TerminalNotification notification) {
         return terminalUpdater.compareAndSet(this, null, notification);
-    }
-
-    static <T> Object maskNull(@Nullable final T item) {
-        return item == null ? NULL_ITEM : item;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    private static <T> T unmaskNull(final Object item) {
-        return item == NULL_ITEM ? null : (T) item;
     }
 
     /**
@@ -81,8 +71,7 @@ abstract class AbstractProcessorBuffer {
         if (nextItem == null) {
             return false;
         }
-        T t = unmaskNull(nextItem);
-        consumer.consumeItem(t);
+        consumer.consumeItem(unwrapNull(nextItem));
         return true;
     }
 }
