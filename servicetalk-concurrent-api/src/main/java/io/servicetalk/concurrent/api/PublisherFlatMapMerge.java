@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.EmptySubscription;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +33,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
@@ -49,19 +49,6 @@ import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-/**
- * This flatMap implementation doesn't rely upon queuing to manage demand. Instead it leases out demand quota
- * (capped by {@link #maxMappedDemand}) mapped {@link Publisher}s and reclaims any unused quota when each mapped
- * {@link Publisher} is terminated or cancelled. {@link FlatMapSubscriber.FlatMapPublisherSubscriber} carefully manages
- * outstanding demand to ensure when quota is reclaimed there are no subsequent
- * {@link Subscriber#onNext(Object) signals} to avoid returning inaccurate amounts which would otherwise result in
- * deadlock (under delivering {@link Subscriber#onNext(Object) signals}) or violation of
- * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.1">Reactive Streams
- * Specification</a> (over delivering {@link Subscriber#onNext(Object) signals}) to the downstream {@link Subscriber}.
- *
- * @param <T> Type of original {@link Publisher}.
- * @param <R> Type of {@link Publisher} returned by the operator.
- */
 final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapMerge.class);
     private final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -95,15 +82,13 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
     }
 
     private static final class FlatMapSubscriber<T, R> implements Subscriber<T>, Subscription {
+        private static final Object MAPPED_SOURCE_COMPLETE = new Object();
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, CompositeException> delayedErrorUpdater =
                 newUpdater(FlatMapSubscriber.class, CompositeException.class, "delayedError");
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingLockUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "emittingLock");
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> tryRequestMoreLockUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "tryRequestMoreLock");
         @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> pendingDemandUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "pendingDemand");
@@ -115,28 +100,24 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
                 "terminalNotification");
 
-        @Nullable
-        private volatile CompositeException delayedError;
-        @SuppressWarnings("unused")
-        private volatile int tryRequestMoreLock;
-        @SuppressWarnings("unused")
-        private volatile int emittingLock;
-        private volatile long pendingDemand;
-        private volatile int activeMappedSources;
         @SuppressWarnings("unused")
         @Nullable
         private volatile TerminalNotification terminalNotification;
+        @Nullable
+        private volatile CompositeException delayedError;
+        @SuppressWarnings("unused")
+        private volatile int emittingLock;
+        private volatile int activeMappedSources;
+        private volatile long pendingDemand;
 
-        /**
-         * This variable is only accessed within the "emitting lock" so we rely upon this to provide visibility to
-         * other threads.
-         */
+        // protected by emitting lock, or only accessed in side the Subscriber thread
         private boolean targetTerminated;
+        private int upstreamDemand;
         @Nullable
         private Subscription subscription;
 
         private final Subscriber<? super R> target;
-        private final Queue<Object> pending;
+        private final Queue<Object> signals;
         private final PublisherFlatMapMerge<T, R> source;
         private final Set<FlatMapPublisherSubscriber<T, R>> subscribers;
 
@@ -144,7 +125,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             this.source = source;
             this.target = target;
             // Start with a small capacity as maxConcurrency can be large.
-            pending = newUnboundedMpscQueue(min(2, source.maxConcurrency));
+            signals = newUnboundedMpscQueue(min(2, source.maxConcurrency * source.maxMappedDemand));
             subscribers = newSetFromMap(new ConcurrentHashMap<>());
         }
 
@@ -158,9 +139,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             assert subscription != null;
             if (!isRequestNValid(n)) {
                 subscription.request(n);
-            } else {
-                pendingDemandUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
-                tryRequestMore();
+            } else if (pendingDemandUpdater.getAndAccumulate(this, n,
+                    FlowControlUtils::addWithOverflowProtectionIfNotNegative) == 0) {
+                drainPending();
             }
         }
 
@@ -175,8 +156,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             subscription = ConcurrentSubscription.wrap(s);
             target.onSubscribe(this);
 
-            // Currently we always request maxConcurrency elements from upstream.
-            subscription.request(source.maxConcurrency);
+            upstreamDemand = source.maxConcurrency;
+            subscription.request(upstreamDemand);
         }
 
         @Override
@@ -194,7 +175,6 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     break;
                 } else if (activeMappedSourcesUpdater.compareAndSet(this, prevActiveSources, prevActiveSources + 1)) {
                     publisher.subscribeInternal(subscriber);
-                    tryRequestMore(subscriber);
                     break;
                 }
             }
@@ -238,6 +218,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             // source completion from incrementing the count to 0 or positive as terminateActiveMappedSources flips
             // the count to negative to signal to mapped sources we have completed.
             activeMappedSources = Integer.MIN_VALUE;
+            pendingDemand = -1;
             try {
                 if (cancelSubscription) {
                     assert subscription != null;
@@ -247,10 +228,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 for (FlatMapPublisherSubscriber<T, R> subscriber : subscribers) {
                     try {
                         subscriber.cancelFromUpstream();
-                    } catch (Throwable c) {
-                        if (delayedCause == null) {
-                            delayedCause = c;
-                        }
+                    } catch (Throwable cause) {
+                        delayedCause = catchUnexpected(delayedCause, cause);
                     }
                 }
                 subscribers.clear();
@@ -260,15 +239,51 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             }
         }
 
-        private void enqueueAndDrain(Object item) {
-            if (!pending.offer(item)) {
-                enqueueAndDrainFailed(item);
+        private boolean tryDecrementDemand() {
+            for (;;) {
+                final long prevPendingDemand = pendingDemand;
+                if (prevPendingDemand <= 0) {
+                    return false;
+                } else if (pendingDemandUpdater.compareAndSet(this, prevPendingDemand, prevPendingDemand - 1)) {
+                    return true;
+                }
             }
+        }
+
+        private void tryEmitItem(Object item, FlatMapPublisherSubscriber<T, R> subscriber) {
+            if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
+                try {
+                    if (subscriber.hasSignalsQueued() || (needsDemand(item) && !tryDecrementDemand())) {
+                        subscriber.markSignalsQueued();
+                        enqueueItem(item); // drain isn't necessary. when demand arrives a drain will be attempted.
+                    } else {
+                        final boolean demandConsumed = sendToTarget(item);
+                        assert demandConsumed == needsDemand(item);
+                    }
+                } finally {
+                    if (!releaseLock(emittingLockUpdater, this)) {
+                        drainPending();
+                    }
+                }
+            } else { // slow path. there is concurrency, go through the queue to avoid concurrent delivery.
+                subscriber.markSignalsQueued();
+                enqueueAndDrain(item);
+            }
+        }
+
+        private void enqueueItem(Object item) {
+            if (!signals.offer(item)) {
+                enqueueFailed(item);
+            }
+        }
+
+        private void enqueueAndDrain(Object item) {
+            enqueueItem(item);
             drainPending();
         }
 
-        private void enqueueAndDrainFailed(Object item) {
-            QueueFullException exception = new QueueFullException("pending");
+        private void enqueueFailed(Object item) {
+            QueueFullException exception = new QueueFullException("signals");
             if (item instanceof TerminalNotification) {
                 LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                 throw exception;
@@ -278,13 +293,20 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private void drainPending() {
-            long emittedCount = 0;
             Throwable delayedCause = null;
             boolean tryAcquire = true;
             while (tryAcquire && tryAcquireLock(emittingLockUpdater, this)) {
                 try {
+                    final long prevPendingDemand = pendingDemandUpdater.getAndSet(this, 0);
+                    long emittedCount = 0;
+                    if (prevPendingDemand < 0) {
+                        // if we have been cancelled then we avoid delivering any signals, but we still deliver error
+                        // terminals below by making sure emittedCount == prevPendingDemand.
+                        pendingDemand = emittedCount = prevPendingDemand;
+                        signals.clear();
+                    }
                     Object t;
-                    while ((t = pending.poll()) != null) {
+                    while (emittedCount < prevPendingDemand && (t = signals.poll()) != null) {
                         try {
                             if (sendToTarget(t)) {
                                 ++emittedCount;
@@ -293,102 +315,98 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                             delayedCause = catchUnexpected(delayedCause, cause);
                         }
                     }
+
+                    // check if a terminal event is pending, or give back demand.
+                    if (emittedCount == prevPendingDemand) {
+                        for (;;) {
+                            try {
+                                t = signals.peek();
+                                if (t == MAPPED_SOURCE_COMPLETE) {
+                                    signals.poll();
+                                    tryRequestMoreFromUpstream();
+                                } else if (t instanceof FlatMapPublisherSubscriber) {
+                                    signals.poll();
+                                    ((FlatMapPublisherSubscriber<?, ?>) t).replenishDemandAndClearSignalsQueued();
+                                } else {
+                                    break;
+                                }
+                            } catch (Throwable cause) {
+                                delayedCause = catchUnexpected(delayedCause, cause);
+                            }
+                        }
+
+                        if (t instanceof TerminalNotification) {
+                            sendToTarget((TerminalNotification) t); // if this throws its OK as we have terminated
+                        } else {
+                            t = terminalNotification;
+                            if (t != null && t != complete()) { // don't wait for demand to process an error
+                                sendToTarget((TerminalNotification) t); // if this throws its OK as we have terminated
+                            }
+                        }
+                    } else {
+                        assert emittedCount < prevPendingDemand;
+                        pendingDemandUpdater.accumulateAndGet(this, prevPendingDemand - emittedCount,
+                                FlowControlUtils::addWithOverflowProtection);
+                    }
                 } finally {
                     tryAcquire = !releaseLock(emittingLockUpdater, this);
                 }
             }
 
-            if (emittedCount != 0) {
-                tryRequestMore();
-            }
-
             if (delayedCause != null) {
                 throwException(delayedCause);
             }
+        }
+
+        private void tryRequestMoreFromUpstream() {
+            if (--upstreamDemand == 0) { // heuristic to replenish demand when it is exhausted.
+                assert subscription != null;
+                upstreamDemand = source.maxConcurrency;
+                subscription.request(source.maxConcurrency);
+            }
+        }
+
+        private static boolean needsDemand(Object item) {
+            return item != MAPPED_SOURCE_COMPLETE &&
+                    !(item instanceof FlatMapPublisherSubscriber) && !(item instanceof TerminalNotification);
         }
 
         private boolean sendToTarget(Object item) {
             if (targetTerminated) {
                 // No notifications past terminal/cancelled
                 return false;
-            }
-            if (item instanceof TerminalNotification) {
-                targetTerminated = true;
+            } else if (item == MAPPED_SOURCE_COMPLETE) {
+                tryRequestMoreFromUpstream();
+                return false;
+            } else if (item instanceof TerminalNotification) {
                 // Load the terminal notification in case an error happened after an onComplete and we override the
                 // terminal value.
                 TerminalNotification terminalNotification = this.terminalNotification;
                 assert terminalNotification != null;
-                CompositeException de = this.delayedError;
-                if (de != null) {
-                    de.finishAndThrow();
-                    if (terminalNotification.cause() == de) {
-                        terminalNotification.terminate(target);
-                    } else {
-                        terminalNotification.terminate(target, de);
-                    }
-                } else {
-                    terminalNotification.terminate(target);
-                }
+                sendToTarget(terminalNotification);
+                return false;
+            } else if (item instanceof FlatMapPublisherSubscriber) {
+                ((FlatMapPublisherSubscriber<?, ?>) item).replenishDemandAndClearSignalsQueued();
                 return false;
             }
-            @SuppressWarnings("unchecked")
-            final R rItem = item == NULL_TOKEN ? null : (R) item;
-            target.onNext(rItem);
+            target.onNext(unwrapNullUnchecked(item));
             return true;
         }
 
-        private void tryRequestMore(FlatMapPublisherSubscriber<T, R> subscriber) {
-            if (tryAcquireLock(tryRequestMoreLockUpdater, this)) {
-                try {
-                    final long availableRequestN = pendingDemandUpdater.getAndSet(this, 0);
-                    if (availableRequestN != 0) {
-                        final int consumedRequestN = subscriber.requestFromUpstream(
-                                (int) min(source.maxMappedDemand, availableRequestN));
-                        assert availableRequestN >= consumedRequestN;
-                        if (consumedRequestN != availableRequestN) {
-                            giveBackRequestN(availableRequestN - consumedRequestN);
-                        }
-                    }
-                } finally {
-                    if (!releaseLock(tryRequestMoreLockUpdater, this)) {
-                        tryRequestMore();
-                    }
+        private void sendToTarget(TerminalNotification terminalNotification) {
+            signals.clear();
+            targetTerminated = true;
+            CompositeException de = this.delayedError;
+            if (de != null) {
+                de.finishAndThrow();
+                if (terminalNotification.cause() == de) {
+                    terminalNotification.terminate(target);
+                } else {
+                    terminalNotification.terminate(target, de);
                 }
+            } else {
+                terminalNotification.terminate(target);
             }
-        }
-
-        private void tryRequestMore() {
-            Throwable delayedCause = null;
-            boolean tryAcquire = true;
-            while (tryAcquire && tryAcquireLock(tryRequestMoreLockUpdater, this)) {
-                try {
-                    final long availableRequestN = pendingDemandUpdater.getAndSet(this, 0);
-                    if (availableRequestN != 0) {
-                        long remainingRequestN = availableRequestN;
-                        Iterator<FlatMapPublisherSubscriber<T, R>> itr = subscribers.iterator();
-                        while (itr.hasNext() && remainingRequestN > 0) {
-                            remainingRequestN -= itr.next().requestFromUpstream(
-                                    (int) Math.min(source.maxMappedDemand, remainingRequestN));
-                        }
-
-                        assert availableRequestN >= remainingRequestN && remainingRequestN >= 0;
-                        if (remainingRequestN > 0) {
-                            giveBackRequestN(remainingRequestN);
-                        }
-                    }
-                } catch (Throwable cause) {
-                    delayedCause = catchUnexpected(delayedCause, cause);
-                } finally {
-                    tryAcquire = !releaseLock(tryRequestMoreLockUpdater, this);
-                }
-            }
-            if (delayedCause != null) {
-                throwException(delayedCause);
-            }
-        }
-
-        private void giveBackRequestN(final long delta) {
-            pendingDemandUpdater.addAndGet(this, delta);
         }
 
         private boolean terminateActiveMappedSources() {
@@ -415,241 +433,81 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             }
         }
 
-        private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber,
-                                         final long requestNGiveBack) {
-            if (subscribers.remove(subscriber)) {
-                if (decrementActiveMappedSources()) {
-                    return true;
-                }
-
-                assert subscription != null;
-                subscription.request(1);
-
-                if (requestNGiveBack > 0) {
-                    giveBackRequestN(requestNGiveBack);
-                    tryRequestMore();
-                }
-            }
-            return false;
+        private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber) {
+            return subscribers.remove(subscriber) && decrementActiveMappedSources();
         }
 
         private static final class FlatMapPublisherSubscriber<T, R> implements Subscriber<R> {
-            private static final long OUTSTANDING_DEMAND_TERMINATED = -1;
-            private static final Subscription CANCELLED = new EmptySubscription();
-            private static final Subscription CANCEL_PENDING = new EmptySubscription();
-            private static final Subscription REQUEST_PENDING = new EmptySubscription();
-            private static final Subscription PROCESSING_REQUEST = new EmptySubscription();
-            private static final Subscription PROCESSING_ONNEXT = new EmptySubscription();
             @SuppressWarnings("rawtypes")
-            private static final AtomicReferenceFieldUpdater<FlatMapPublisherSubscriber, Subscription>
-                    subscriptionUpdater = newUpdater(FlatMapPublisherSubscriber.class, Subscription.class,
-                    "subscription");
-            @SuppressWarnings("rawtypes")
-            private static final AtomicLongFieldUpdater<FlatMapPublisherSubscriber> outstandingDemandUpdater =
-                    AtomicLongFieldUpdater.newUpdater(FlatMapPublisherSubscriber.class, "outstandingDemand");
-            @SuppressWarnings("rawtypes")
-            private static final AtomicLongFieldUpdater<FlatMapPublisherSubscriber> pendingDemandUpdater =
-                    AtomicLongFieldUpdater.newUpdater(FlatMapPublisherSubscriber.class, "pendingDemand");
+            private static final AtomicIntegerFieldUpdater<FlatMapPublisherSubscriber> pendingOnNextUpdater =
+                    AtomicIntegerFieldUpdater.newUpdater(FlatMapPublisherSubscriber.class, "pendingOnNext");
 
             private final FlatMapSubscriber<T, R> parent;
-
-            @SuppressWarnings("unused")
-            @Nullable
-            private volatile Subscription subscription;
-            private volatile long pendingDemand;
-            private volatile long outstandingDemand;
+            private final DelayedSubscription subscription;
+            private volatile int pendingOnNext;
+            /**
+             * visibility provided by the {@link Subscriber} thread in {@link #onNext(Object)}, and then by
+             * {@link #pendingDemand} when written to from {@link #replenishDemandAndClearSignalsQueued()} (potentially
+             * called by a different thread). Demand is exhausted before {@link #replenishDemandAndClearSignalsQueued()}
+             * is called, and that method triggers {@link #request(long)} and
+             * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.1">there’s a
+             * happens-before relationship between requesting elements and receiving elements</a>.
+             */
+            private boolean signalsQueued;
 
             FlatMapPublisherSubscriber(FlatMapSubscriber<T, R> parent) {
                 this.parent = parent;
+                subscription = new DelayedSubscription();
             }
 
             void cancelFromUpstream() {
-                for (;;) {
-                    final Subscription prevSubscription = subscription;
-                    if (prevSubscription == null) {
-                        if (subscriptionUpdater.compareAndSet(this, null, CANCELLED)) {
-                            break;
-                        }
-                    } else if (prevSubscription == CANCELLED || prevSubscription == CANCEL_PENDING) {
-                        break;
-                    } else if (prevSubscription == PROCESSING_ONNEXT || prevSubscription == PROCESSING_REQUEST) {
-                        if (subscriptionUpdater.compareAndSet(this, prevSubscription, CANCEL_PENDING)) {
-                            break;
-                        }
-                    } else if (subscriptionUpdater.compareAndSet(this, prevSubscription, CANCELLED)) {
-                        cancelAndGiveBack(prevSubscription);
-                        break;
-                    }
+                subscription.cancel();
+            }
+
+            void replenishDemandAndClearSignalsQueued() {
+                // clearSignalsQueued must be before pendingOnNext for visibility with onNext.
+                clearSignalsQueued();
+                final int prevPendingOnNext = pendingOnNextUpdater.getAndSet(this, 0);
+                if (prevPendingOnNext > 0) {
+                    subscription.request(prevPendingOnNext);
                 }
             }
 
-            int requestFromUpstream(final int n) {
-                for (;;) {
-                    final long prevOutstandingDemand = outstandingDemand;
-                    if (prevOutstandingDemand == OUTSTANDING_DEMAND_TERMINATED) {
-                        return 0; // we have already been cancelled, or terminated
-                    }
-                    final int quotaToUse = (int) min(Long.MAX_VALUE - prevOutstandingDemand,
-                            min(parent.source.maxMappedDemand - prevOutstandingDemand, n));
-                    if (quotaToUse == 0) {
-                        if (outstandingDemandUpdater.compareAndSet(this, prevOutstandingDemand,
-                                prevOutstandingDemand)) {
-                            return 0;
-                        }
-                    } else if (outstandingDemandUpdater.compareAndSet(this, prevOutstandingDemand,
-                            prevOutstandingDemand + quotaToUse)) {
-                        pendingDemandUpdater.addAndGet(this, quotaToUse);
-                        for (;;) {
-                            final Subscription prevSubscription = subscription;
-                            if (prevSubscription == null) {
-                                if (subscriptionUpdater.compareAndSet(this, null, REQUEST_PENDING)) {
-                                    break;
-                                }
-                            } else if (prevSubscription == CANCELLED || prevSubscription == CANCEL_PENDING) {
-                                break;
-                            } else if (prevSubscription == REQUEST_PENDING || prevSubscription == PROCESSING_ONNEXT ||
-                                       prevSubscription == PROCESSING_REQUEST) {
-                                if (subscriptionUpdater.compareAndSet(this, prevSubscription, REQUEST_PENDING)) {
-                                    break;
-                                }
-                            } else if (subscriptionUpdater.compareAndSet(this, prevSubscription, PROCESSING_REQUEST)) {
-                                doRequestMore(prevSubscription);
-                                break;
-                            }
-                        }
-                        return quotaToUse;
-                    }
-                }
+            void clearSignalsQueued() {
+                signalsQueued = false;
             }
 
-            private void doRequestMore(Subscription prevSubscription) {
-                long availableRequestN = pendingDemandUpdater.getAndSet(this, 0);
-                for (;;) {
-                    if (availableRequestN > 0) {
-                        try {
-                            prevSubscription.request(availableRequestN);
-                        } catch (Throwable cause) {
-                            subscription = CANCELLED;
-                            cancelAndGiveBack(prevSubscription);
-                            throw cause;
-                        }
-                    }
-
-                    final Subscription afterLockSubscription = subscription;
-                    if (afterLockSubscription == PROCESSING_ONNEXT || afterLockSubscription == CANCELLED) {
-                        // onNext is allowed to interrupt, and will handle any pending cancel/request events
-                        // after it completes (otherwise we may drop signals).
-                        break;
-                    } else if (afterLockSubscription == CANCEL_PENDING) {
-                        subscription = CANCELLED;
-                        cancelAndGiveBack(prevSubscription);
-                        break;
-                    } else if (afterLockSubscription == REQUEST_PENDING) {
-                        if (subscriptionUpdater.compareAndSet(this, REQUEST_PENDING, PROCESSING_REQUEST)) {
-                            availableRequestN = pendingDemandUpdater.getAndSet(this, 0);
-                            // continue through next iteration to try to unlock
-                        }
-                    } else if (subscriptionUpdater.compareAndSet(this, PROCESSING_REQUEST, prevSubscription)) {
-                        break;
-                    }
-                }
+            void markSignalsQueued() {
+                signalsQueued = true;
             }
 
-            private void cancelAndGiveBack(Subscription subscription) {
-                try {
-                    subscription.cancel();
-                } finally {
-                    giveBackUnusedRequestN();
-                }
-            }
-
-            private boolean giveBackUnusedRequestN() {
-                // assert subscription == CANCELLED; entry condition to ensure we do not deliver any more data in onNext
-                // We need to give back the outstanding amount that has been requested, but not emitted. Setting the
-                // demand to a negative value will prevent any future use of the Subscription.request() or accepting
-                // more demand from downstream.
-                final long prevOutstandingDemand = outstandingDemandUpdater.getAndSet(this,
-                        OUTSTANDING_DEMAND_TERMINATED);
-                return prevOutstandingDemand != OUTSTANDING_DEMAND_TERMINATED &&
-                        parent.removeSubscriber(this, prevOutstandingDemand);
+            boolean hasSignalsQueued() {
+                return signalsQueued;
             }
 
             @Override
             public void onSubscribe(final Subscription s) {
-                for (;;) {
-                    final Subscription prevSubscription = subscription;
-                    assert prevSubscription != CANCEL_PENDING && prevSubscription != PROCESSING_ONNEXT &&
-                            prevSubscription != PROCESSING_REQUEST;
-                    if (prevSubscription == null) {
-                        if (subscriptionUpdater.compareAndSet(this, null, s)) {
-                            break;
-                        }
-                    } else if (prevSubscription == REQUEST_PENDING) {
-                        if (subscriptionUpdater.compareAndSet(this, REQUEST_PENDING, PROCESSING_REQUEST)) {
-                            doRequestMore(s);
-                            break;
-                        }
-                    } else {
-                        s.cancel(); // already cancelled or duplicate onSubscribe
-                        break;
-                    }
-                }
+                subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
+                subscription.request(parent.source.maxMappedDemand);
             }
 
             @Override
             public void onNext(@Nullable final R r) {
-                boolean acquiredLock = false;
-                for (;;) {
-                    final Subscription prevSubscription = subscription;
-                    assert prevSubscription != null;
-                    if (prevSubscription == CANCELLED || prevSubscription == CANCEL_PENDING) {
-                        // we have already given our undelivered requestN quota up, or will after we unroll process
-                        // onNext. we are not allowed to deliver more data or else we may violate upstream's requestN.
-                        break;
-                    } else if (prevSubscription == PROCESSING_ONNEXT ||
-                            (acquiredLock = subscriptionUpdater.compareAndSet(this,
-                                    prevSubscription, PROCESSING_ONNEXT))) {
-                        final long newOutstandingDemand = outstandingDemandUpdater.decrementAndGet(this);
-                        assert newOutstandingDemand >= 0; // too many items delivered from upstream!
-                        try {
-                            parent.enqueueAndDrain(r == null ? NULL_TOKEN : r);
-                        } finally {
-                            if (acquiredLock) {
-                                for (;;) {
-                                    final Subscription afterLockSubscription = subscription;
-                                    assert afterLockSubscription != PROCESSING_REQUEST;
-                                    if (afterLockSubscription == CANCEL_PENDING) {
-                                        subscription = CANCELLED; // this is a terminal state.
-                                        cancelAndGiveBack(prevSubscription);
-                                        break;
-                                    } else if (afterLockSubscription == REQUEST_PENDING) {
-                                        if (subscriptionUpdater.compareAndSet(this, REQUEST_PENDING,
-                                                PROCESSING_REQUEST)) {
-                                            doRequestMore(prevSubscription);
-                                            break;
-                                        }
-                                    } else if (afterLockSubscription == CANCELLED) {
-                                        break;
-                                    } else if (subscriptionUpdater.compareAndSet(this, PROCESSING_ONNEXT,
-                                            prevSubscription)) {
-                                        // If we have exhausted our quota, try to request more
-                                        if (newOutstandingDemand == 0) {
-                                            parent.tryRequestMore(this);
-                                        }
-                                        break; // we unlocked, so bail out.
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    }
+                // pendingOnNext must be updated before tryEmitItem for visibility of signalsQueued. signalsQueued
+                // is updated in replenishDemandAndClearSignalsQueued (potentially from another thread) before
+                // pendingOnNext is reset and we want signalsQueued to be visible to this thread.
+                //
+                // Heuristic which triggers replenishDemandAndClearSignalsQueued when demand is consumed. It must be
+                // when all demand is consumed in order for clearSignalsQueued to work properly.
+                final boolean doReplenish = pendingOnNextUpdater.incrementAndGet(this) == parent.source.maxMappedDemand;
+                parent.tryEmitItem(wrapNull(r), this);
+                if (doReplenish) {
+                    parent.tryEmitItem(this, this);
                 }
             }
 
             @Override
             public void onError(final Throwable t) {
-                // the Subscription is considered cancelled after a terminal signal.
-                subscription = CANCELLED;
                 if (!parent.source.delayError) {
                     parent.onError0(t, true, true);
                 } else {
@@ -664,22 +522,24 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     } else {
                         de.add(t);
                     }
-                    if (giveBackUnusedRequestN()) {
+                    if (parent.removeSubscriber(this)) {
                         trySetTerminal(TerminalNotification.error(de), true, terminalNotificationUpdater, parent);
 
                         // Since we have already added error to delayedError, we use complete() TerminalNotification
                         // as a dummy signal to start draining and termination.
                         parent.enqueueAndDrain(complete());
+                    } else {
+                        parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                     }
                 }
             }
 
             @Override
             public void onComplete() {
-                // the Subscription is considered cancelled after a terminal signal.
-                subscription = CANCELLED;
-                if (giveBackUnusedRequestN()) {
+                if (parent.removeSubscriber(this)) {
                     parent.enqueueAndDrain(complete());
+                } else {
+                    parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                 }
             }
         }

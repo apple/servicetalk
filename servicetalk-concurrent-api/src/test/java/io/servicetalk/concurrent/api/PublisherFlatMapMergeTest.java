@@ -26,7 +26,9 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -39,6 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.PublisherSource.Subscription;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
@@ -270,7 +273,7 @@ public class PublisherFlatMapMergeTest {
         assertTrue(mappedSubscription.isCancelled());
 
         mappedPublisher.onNext(2);
-        // We carefully track requestN on each mapped publisher, so we don't allow any emissions post cancel/terminal.
+        // We don't allow any emissions post cancel/terminal.
         assertThat(subscriber.pollAllOnNext(), is(empty()));
         if (onError) {
             mappedPublisher.onError(DELIBERATE_EXCEPTION);
@@ -281,86 +284,6 @@ public class PublisherFlatMapMergeTest {
             // aggressive in suppressing onNext signals, and this currently extends to onComplete.
             assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
         }
-    }
-
-    @Test
-    public void maxConcurrencyNotExceeded() throws InterruptedException {
-        List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
-        TestSubscription upstreamSubscription = new TestSubscription();
-        publisher = new TestPublisher.Builder<Integer>()
-                .disableAutoOnSubscribe().build(subscriber1 -> {
-                    subscriber1.onSubscribe(upstreamSubscription);
-                    return subscriber1;
-                });
-        toSource(publisher.flatMapMerge(i -> {
-            TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
-            mappedPublishers.add(pair);
-            return pair.mappedPublisher;
-        }, 2, 1)).subscribe(subscriber);
-        Subscription subscription = subscriber.awaitSubscription();
-        subscription.request(3);
-
-        verifyCumulativeDemand(upstreamSubscription, 2);
-        publisher.onNext(1);
-        publisher.onNext(2);
-
-        // Verify there are two mapped Publishers, and each is given 1 requestN.
-        assertThat(mappedPublishers, hasSize(2));
-        TestSubscriptionPublisherPair<Integer> first = mappedPublishers.get(0);
-        first.doOnSubscribe(1);
-        first.verifyCumulativeDemand(1);
-
-        TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
-        second.doOnSubscribe(2);
-        second.verifyCumulativeDemand(1);
-
-        // Emit an item from the second publisher, there is 1 downstream demand outstanding and it should be given
-        // to the second Publisher.
-        second.mappedPublisher.onNext(21);
-        second.verifyCumulativeDemand(2);
-
-        Integer next = subscriber.takeOnNext();
-        assertThat(next, is(21));
-
-        // Emit an item from the first Publisher, however all 3 of the downstream demand is accounted for, so no more
-        // requestN will be given to first Publisher.
-        first.mappedPublisher.onNext(11);
-        first.verifyCumulativeDemand(1);
-
-        next = subscriber.takeOnNext();
-        assertThat(next, is(11));
-
-        // The second publisher is completed, but still has 1 outstanding request n. This demand should be redistributed
-        // to the first publisher
-        second.mappedPublisher.onComplete();
-        first.verifyCumulativeDemand(2);
-
-        // FlatMap should also request another item from upstream, because there is now only 1 active mapped Publisher.
-        verifyCumulativeDemand(upstreamSubscription, 3);
-
-        publisher.onNext(3);
-        assertThat(mappedPublishers, hasSize(3));
-        TestSubscriptionPublisherPair<Integer> third = mappedPublishers.get(2);
-        third.doOnSubscribe(3);
-        third.verifyCumulativeDemand(0);
-
-        // Use the last of the 3 demand we started with to emit an item from first Publisher.
-        first.mappedPublisher.onNext(12);
-        next = subscriber.takeOnNext();
-        assertThat(next, is(12));
-
-        // Request 3 more, and verify this demand gets distributed to first and third.
-        subscription.request(3);
-        first.verifyCumulativeDemand(3);
-        third.verifyCumulativeDemand(1);
-
-        // Complete outstanding publishers and verify completion.
-        first.mappedPublisher.onComplete();
-        third.mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
-
-        publisher.onComplete();
-        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -391,7 +314,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void requestLongMax() throws InterruptedException {
+    public void mixedOrderMappedEmission() throws InterruptedException {
         List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
@@ -408,7 +331,6 @@ public class PublisherFlatMapMergeTest {
 
         // Should not request more than max concurrency.
         verifyCumulativeDemand(upstreamSubscription, 2);
-
         publisher.onNext(1);
         publisher.onNext(2);
 
@@ -422,13 +344,20 @@ public class PublisherFlatMapMergeTest {
         second.doOnSubscribe(2);
         second.verifyCumulativeDemand(5);
 
-        // Use all the quota provided to first, and verify there is no re-distribution after.
-        first.mappedPublisher.onNext(1, 2, 3, 4, 5);
+        // Mixed emissions between the first two publishers
+        first.mappedPublisher.onNext(1, 2);
+        second.mappedPublisher.onNext(3, 4, 5);
         assertThat(subscriber.pollAllOnNext(), contains(1, 2, 3, 4, 5));
-        second.verifyCumulativeDemand(5);
+
+        // Complete second and verify first can still publish
+        second.mappedPublisher.onComplete();
+        first.mappedPublisher.onNext(6, 7, 8);
+        assertThat(subscriber.pollAllOnNext(), contains(6, 7, 8));
 
         first.mappedPublisher.onComplete();
-        verifyCumulativeDemand(upstreamSubscription, 3);
+        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+
+        verifyCumulativeDemand(upstreamSubscription, 4);
 
         // Emit a third item, and it should be given the max quota.
         publisher.onNext(3);
@@ -441,12 +370,7 @@ public class PublisherFlatMapMergeTest {
         publisher.onComplete();
         assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
 
-        second.mappedPublisher.onNext(6, 7);
-        third.mappedPublisher.onNext(8, 9, 10);
-        assertThat(subscriber.pollAllOnNext(), contains(6, 7, 8, 9, 10));
-
-        second.mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        // terminate the outstanding mapped publisher and verify the Publisher terminates
         third.mappedPublisher.onComplete();
         subscriber.awaitOnComplete();
     }
@@ -461,13 +385,17 @@ public class PublisherFlatMapMergeTest {
                 });
         toSource(publisher.flatMapMerge(Publisher::from, 2, 1)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
-        subscription.request(Long.MAX_VALUE);
 
+        subscription.request(Long.MAX_VALUE);
         verifyCumulativeDemand(upstreamSubscription, 2);
         publisher.onNext(1);
-        verifyCumulativeDemand(upstreamSubscription, 3);
+        publisher.onNext(2);
+
         subscription.request(Long.MAX_VALUE);
-        verifyCumulativeDemand(upstreamSubscription, 3);
+        verifyCumulativeDemand(upstreamSubscription, 4);
+        publisher.onNext(3);
+        publisher.onNext(4);
+        verifyCumulativeDemand(upstreamSubscription, 6);
     }
 
     @Test
@@ -530,19 +458,19 @@ public class PublisherFlatMapMergeTest {
         subscription.request(2);
         verifyCumulativeDemand(upstreamSubscription, 10);
 
-        publisher.onNext(1, 2);
+        publisher.onNext(1, 2, 3, 4, 5);
         assertThat(subscriber.pollAllOnNext(), contains(1, 2));
-        verifyCumulativeDemand(upstreamSubscription, 12);
 
-        subscription.request(2);
-        publisher.onNext(3, 4);
-        assertThat(subscriber.pollAllOnNext(), contains(3, 4));
-        verifyCumulativeDemand(upstreamSubscription, 14);
+        subscription.request(3);
+        publisher.onNext(6, 7, 8, 9, 10);
+        assertThat(subscriber.pollAllOnNext(), contains(3, 4, 5));
 
-        subscription.request(2);
-        publisher.onNext(5, 6);
-        assertThat(subscriber.pollAllOnNext(), contains(5, 6));
-        verifyCumulativeDemand(upstreamSubscription, 16);
+        subscription.request(7);
+        assertThat(subscriber.pollAllOnNext(), contains(6, 7, 8, 9, 10));
+
+        verifyCumulativeDemand(upstreamSubscription, 20);
+        publisher.onNext(11, 12, 13, 14, 15);
+        assertThat(subscriber.pollAllOnNext(), contains(11, 12));
     }
 
     @Test
@@ -594,7 +522,7 @@ public class PublisherFlatMapMergeTest {
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         final int maxRange = 1000000;
-        toSource(publisher.flatMapMerge(i -> Publisher.range(0, maxRange), 10, 1)).subscribe(
+        toSource(publisher.flatMapMerge(i -> range(0, maxRange), 10, 1)).subscribe(
                 new Subscriber<Integer>() {
                     @Nullable
                     private Subscription subscription;
@@ -717,7 +645,7 @@ public class PublisherFlatMapMergeTest {
     @Test
     public void concurrentMappedAndPublisherTermination() throws Exception {
         assert executor != null;
-        Single<List<Integer>> single = Publisher.range(0, 1000)
+        Single<List<Integer>> single = range(0, 1000)
                 .flatMapMerge(i -> executor.submit(() -> i).toPublisher(), 1024, 10)
                 .collect(ArrayList::new, (ints, i) -> {
                     ints.add(i);
@@ -730,25 +658,40 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentMappedDeliversAllData() throws InterruptedException {
+    public void concurrentMappedDeliveryOrderPreserved() throws InterruptedException {
         assert executor != null;
         final int upstreamItems = 10000;
         final int mappedItems = 5;
-        Publisher<Integer> publisher = Publisher.range(0, upstreamItems)
-                .flatMapMerge(i -> Publisher.range(0, mappedItems).publishAndSubscribeOn(executor), upstreamItems,
-                        mappedItems);
-
+        final TestCollectingPublisherSubscriber<IntPair> subscriber = new TestCollectingPublisherSubscriber<>();
+        Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
+                .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems, mappedItems);
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(upstreamItems * mappedItems);
+
+        // Wait until completion, and then verify that for each mapped source its elements are delivered in order
+        // despite concurrent emission from the mapped sources.
         subscriber.awaitOnComplete(false);
-        assertThat(subscriber.pollAllOnNext(), hasSize(upstreamItems * mappedItems));
+        List<IntPair> emissionList = subscriber.pollAllOnNext();
+        assertThat(emissionList, hasSize(upstreamItems * mappedItems));
+        Map<Integer, List<Integer>> emissionMap = new HashMap<>();
+        for (IntPair intPair : emissionList) {
+            List<Integer> innerList = emissionMap.computeIfAbsent(intPair.x, key -> new ArrayList<>(mappedItems));
+            // Publisher#range(..) emits in order, so if the previously emitted item for this mapped source is greater
+            // than or equal to we emitted out of order and should fail.
+            if (innerList.isEmpty() || innerList.get(innerList.size() - 1) < intPair.y) {
+                innerList.add(intPair.y);
+            } else {
+                throw new AssertionError("mapped element: " + intPair.x + " had out of order emissions. existing: " +
+                        innerList + " new: " + intPair.y);
+            }
+        }
     }
 
     @Test
     public void concurrentMappedErrorAndPublisherTermination() throws Exception {
         assert executor != null;
         AtomicReference<Throwable> error = new AtomicReference<>();
-        Single<List<Integer>> single = Publisher.range(0, 1000)
+        Single<List<Integer>> single = range(0, 1000)
                 .flatMapMergeDelayError(i -> executor.submit(() -> {
                     if (i % 2 == 0) {
                         return i;
@@ -842,5 +785,15 @@ public class PublisherFlatMapMergeTest {
             throws InterruptedException {
         testSubscription.awaitRequestN(totalRequestN);
         assertThat(testSubscription.requested(), is(totalRequestN));
+    }
+
+    private static final class IntPair {
+        final int x;
+        final int y;
+
+        private IntPair(final int x, final int y) {
+            this.x = x;
+            this.y = y;
+        }
     }
 }
