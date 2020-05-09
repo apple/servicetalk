@@ -18,13 +18,13 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
@@ -107,8 +107,10 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
@@ -637,11 +639,11 @@ public class H2PriorKnowledgeFeatureParityTest {
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming();
-        SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
+        Processor<Buffer, Buffer> requestBody = newProcessor();
         // We want to make a request, and intentionally not complete it. While the request is in process we invoke
         // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
         // transport is closed.
-        StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
+        StreamingHttpRequest request = client.post("/").payloadBody(fromSource(requestBody));
         StreamingHttpResponse response = client.request(request).toFuture().get();
 
         // Wait for the server the process the request.
@@ -668,7 +670,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         // We expect this to timeout, because we have not completed the outstanding request.
         assertFalse(onServerCloseLatch.await(300, MILLISECONDS));
 
-        requestBody.sendOnComplete();
+        requestBody.onComplete();
 
         HttpResponse fullResponse = response.toResponse().toFuture().get();
         assertEquals(0, fullResponse.payloadBody().readableBytes());
@@ -682,14 +684,14 @@ public class H2PriorKnowledgeFeatureParityTest {
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming();
         CountDownLatch onCloseLatch = new CountDownLatch(1);
-        SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
+        Processor<Buffer, Buffer> requestBody = newProcessor();
 
         client.onClose().subscribe(onCloseLatch::countDown);
 
         // We want to make a request, and intentionally not complete it. While the request is in process we invoke
         // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
         // transport is closed.
-        StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
+        StreamingHttpRequest request = client.post("/").payloadBody(fromSource(requestBody));
         StreamingHttpResponse response = client.request(request).toFuture().get();
 
         client.closeAsyncGracefully().subscribe();
@@ -697,7 +699,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         // We expect this to timeout, because we have not completed the outstanding request.
         assertFalse(onCloseLatch.await(300, MILLISECONDS));
 
-        requestBody.sendOnComplete();
+        requestBody.onComplete();
         response.payloadBody().ignoreElements().toFuture();
         onCloseLatch.await();
     }
@@ -708,12 +710,14 @@ public class H2PriorKnowledgeFeatureParityTest {
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming()) {
-            SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
-            StreamingHttpResponse response1 = client.request(client.post("/0").payloadBody(requestBody1))
+            Processor<Buffer, Buffer> requestBody1 = newProcessor();
+            StreamingHttpResponse response1 = client.request(client.post("/0")
+                    .payloadBody(fromSource(requestBody1)))
                     .toFuture().get();
 
-            SpScPublisherProcessor<Buffer> requestBody2 = new SpScPublisherProcessor<>(16);
-            StreamingHttpResponse response2 = client.request(client.post("/1").payloadBody(requestBody2))
+            Processor<Buffer, Buffer> requestBody2 = newProcessor();
+            StreamingHttpResponse response2 = client.request(client.post("/1")
+                    .payloadBody(fromSource(requestBody2)))
                     .toFuture().get();
 
             Iterator<Buffer> response1Payload = response1.payloadBody().toIterable().iterator();
@@ -721,19 +725,19 @@ public class H2PriorKnowledgeFeatureParityTest {
 
             fullDuplexModeWrite(client, requestBody1, "foo1", requestBody2, "bar1", response1Payload, response2Payload);
             fullDuplexModeWrite(client, requestBody1, "foo2", requestBody2, "bar2", response1Payload, response2Payload);
-            requestBody1.sendOnComplete();
-            requestBody2.sendOnComplete();
+            requestBody1.onComplete();
+            requestBody2.onComplete();
             assertFalse(response1Payload.hasNext());
             assertFalse(response2Payload.hasNext());
         }
     }
 
     private static void fullDuplexModeWrite(StreamingHttpClient client,
-                                            SpScPublisherProcessor<Buffer> requestBody1, String request1ToWrite,
-                                            SpScPublisherProcessor<Buffer> requestBody2, String request2ToWrite,
+                                            Processor<Buffer, Buffer> requestBody1, String request1ToWrite,
+                                            Processor<Buffer, Buffer> requestBody2, String request2ToWrite,
                                             Iterator<Buffer> response1Payload, Iterator<Buffer> response2Payload) {
-        requestBody1.sendOnNext(client.executionContext().bufferAllocator().fromAscii(request1ToWrite));
-        requestBody2.sendOnNext(client.executionContext().bufferAllocator().fromAscii(request2ToWrite));
+        requestBody1.onNext(client.executionContext().bufferAllocator().fromAscii(request1ToWrite));
+        requestBody2.onNext(client.executionContext().bufferAllocator().fromAscii(request2ToWrite));
 
         assertTrue(response1Payload.hasNext());
         Buffer next = response1Payload.next();
@@ -784,8 +788,8 @@ public class H2PriorKnowledgeFeatureParityTest {
                 .appendConnectionFilter(conn -> new TestConnectionFilter(conn, connectionQueue, maxConcurrentPubQueue))
                 .buildStreaming()) {
 
-            SpScPublisherProcessor<Buffer> requestPayload = new SpScPublisherProcessor<>(16);
-            client.request(client.post("/0").payloadBody(requestPayload)).toFuture().get();
+            Processor<Buffer, Buffer> requestPayload = newProcessor();
+            client.request(client.post("/0").payloadBody(fromSource(requestPayload))).toFuture().get();
 
             serverChannelLatch.await();
             Channel serverParentChannel = serverParentChannelRef.get();
@@ -809,14 +813,14 @@ public class H2PriorKnowledgeFeatureParityTest {
             serverSettingsAckLatch.await();
 
             // After this point we want to issue a new request and verify that client selects a new connection.
-            SpScPublisherProcessor<Buffer> requestPayload2 = new SpScPublisherProcessor<>(16);
-            client.request(client.post("/1").payloadBody(requestPayload2)).toFuture().get();
+            Processor<Buffer, Buffer> requestPayload2 = newProcessor();
+            client.request(client.post("/1").payloadBody(fromSource(requestPayload2))).toFuture().get();
 
             // We expect 2 connections to be created.
             assertNotSame(connectionQueue.take(), connectionQueue.take());
 
-            requestPayload.sendOnComplete();
-            requestPayload2.sendOnComplete();
+            requestPayload.onComplete();
+            requestPayload2.onComplete();
         }
     }
 
@@ -837,8 +841,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming()) {
-            SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
-            StreamingHttpRequest request = client.post("/").payloadBody(requestBody1);
+            Processor<Buffer, Buffer> requestBody1 = newProcessor();
+            StreamingHttpRequest request = client.post("/").payloadBody(fromSource(requestBody1));
             request.addHeader(EXPECT, CONTINUE);
             if (failExpectation) {
                 request.addHeader(EXPECT_FAIL_HEADER, "notused");
@@ -850,8 +854,8 @@ public class H2PriorKnowledgeFeatureParityTest {
             } else {
                 assertEquals(HttpResponseStatus.CONTINUE, response.status());
                 String payloadBody = "foo";
-                requestBody1.sendOnNext(client.executionContext().bufferAllocator().fromAscii(payloadBody));
-                requestBody1.sendOnComplete();
+                requestBody1.onNext(client.executionContext().bufferAllocator().fromAscii(payloadBody));
+                requestBody1.onComplete();
                 Iterator<Buffer> responseBody = response.payloadBody().toIterable().iterator();
                 assertTrue(responseBody.hasNext());
                 Buffer next = responseBody.next();
@@ -860,6 +864,10 @@ public class H2PriorKnowledgeFeatureParityTest {
                 assertFalse(responseBody.hasNext());
             }
         }
+    }
+
+    private static Processor<Buffer, Buffer> newProcessor() {
+        return newPublisherProcessor(16);
     }
 
     private InetSocketAddress bindH2Server(ChannelHandler childChannelHandler,
