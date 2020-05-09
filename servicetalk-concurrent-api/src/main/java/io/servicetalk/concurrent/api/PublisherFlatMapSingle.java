@@ -248,6 +248,24 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             return false;
         }
 
+        private void tryEmitItem(final Object item) {
+            if (tryAcquireLock(emittingUpdater, this)) { // fast path. no concurrency, avoid the queue and emit.
+                try {
+                    try {
+                        sendToTarget(item);
+                    } finally {
+                        doDrainPostProcessing(1);
+                    }
+                } finally {
+                    if (!releaseLock(emittingUpdater, this)) {
+                        drainPending();
+                    }
+                }
+            } else { // slow path. there is concurrency, so just go through the queue.
+                enqueueAndDrain(item);
+            }
+        }
+
         private void enqueueAndDrain(Object item) {
             if (!pending.offer(item)) {
                 enqueueAndDrainFailed(item);
@@ -256,7 +274,6 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         }
 
         private void drainPending() {
-            assert subscription != null;
             long drainCount = 0;
             Throwable delayedCause = null;
             boolean tryAcquire = true;
@@ -277,18 +294,23 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
 
             if (drainCount != 0) {
-                // We ignore overflow here because once we get to this extreme, we won't be able to account for more
-                // data anyways.
-                sourceEmittedUpdater.addAndGet(this, drainCount);
-                int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
-                        sourceEmittedUpdater, source.maxConcurrency, this);
-                if (actualSourceRequestN != 0) {
-                    subscription.request(actualSourceRequestN);
-                }
+                doDrainPostProcessing(drainCount);
             }
 
             if (delayedCause != null) {
                 throwException(delayedCause);
+            }
+        }
+
+        private void doDrainPostProcessing(final long drainCount) {
+            assert subscription != null;
+            // We ignore overflow here because once we get to this extreme, we won't be able to account for more
+            // data anyways.
+            sourceEmittedUpdater.addAndGet(this, drainCount);
+            final int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                    sourceEmittedUpdater, source.maxConcurrency, this);
+            if (actualSourceRequestN != 0) {
+                subscription.request(actualSourceRequestN);
             }
         }
 
@@ -363,7 +385,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 // First enqueue the result and then decrement active count. Since onComplete() checks for active count,
                 // if we decrement count before enqueuing, onComplete() may emit the terminal event without emitting
                 // the result.
-                enqueueAndDrain(wrapNull(result));
+                tryEmitItem(wrapNull(result));
                 if (onSingleTerminated()) {
                     enqueueAndDrain(complete());
                 }
@@ -394,7 +416,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                         }
                     } else {
                         // Queueing/draining may result in requestN more data.
-                        enqueueAndDrain(SINGLE_ERROR);
+                        tryEmitItem(SINGLE_ERROR);
                     }
                 }
             }
