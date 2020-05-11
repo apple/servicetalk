@@ -29,6 +29,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -212,15 +213,20 @@ public final class BufferStrategies {
                 } else if (cState instanceof Subscriber) {
                     if (stateUpdater.compareAndSet(this, cState, null)) {
                         Subscriber subscriber = (Subscriber) cState;
-                        subscriber.onComplete();
+                        safeOnComplete(subscriber);
                         return;
                     }
                 } else if (cState instanceof AccumulatorAndSubscriber) {
                     @SuppressWarnings("unchecked")
                     final AccumulatorAndSubscriber<T, B> accumulatorAndSubscriber =
                             (AccumulatorAndSubscriber<T, B>) cState;
-                    if (accumulatorAndSubscriber.accumulator != breachedAccumulator ||
-                            stateUpdater.compareAndSet(this, cState, null)) {
+                    if (accumulatorAndSubscriber.accumulator != breachedAccumulator) {
+                        // threshold breach happened after the subscriber completed.
+                        return;
+                    }
+
+                    if (stateUpdater.compareAndSet(this, cState, null)) {
+                        safeOnComplete(accumulatorAndSubscriber.subscriber);
                         return;
                     }
                 }
@@ -236,7 +242,7 @@ public final class BufferStrategies {
                 // of the associated Subscriber.
                 if (cState == THRESHOLD_BREACHED_BEFORE_SUBSCRIBE) {
                     if (stateUpdater.compareAndSet(this, cState, null)) {
-                        countSubscriber.onComplete();
+                        safeOnComplete(countSubscriber);
                         return;
                     }
                 } else if (cState instanceof Accumulator) {

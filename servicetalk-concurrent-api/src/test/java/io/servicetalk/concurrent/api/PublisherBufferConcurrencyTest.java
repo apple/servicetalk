@@ -49,7 +49,7 @@ public class PublisherBufferConcurrencyTest {
     private static final String THREAD_NAME_PREFIX = "buffer-concurrency-test";
     private static final Key<Integer> CTX_KEY = Key.newKey("foo");
 
-    //@Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule<Executor> executorRule = withNamePrefix(THREAD_NAME_PREFIX);
@@ -135,9 +135,12 @@ public class PublisherBufferConcurrencyTest {
         boundaries.onNext(new SummingAccumulator());
         waitForBoundary.countDown();
         waitForOnNextReturn.await();
+
+        boundaries.onNext(new SummingAccumulator()); // Last accumulator will be overwritten by add()
         assertThat("Unexpected result.", subscriber.takeItems(), contains(1));
 
         original.onComplete();
+        boundaries.onNext(new SummingAccumulator()); // Boundary has to complete for terminal to be emitted
         assertThat("Unexpected result.", subscriber.takeItems(), contains(0)); // empty accumulator
 
         TerminalNotification term = subscriber.takeTerminal();

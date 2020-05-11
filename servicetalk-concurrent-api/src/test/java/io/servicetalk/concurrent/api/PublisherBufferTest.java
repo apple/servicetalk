@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.hamcrest.Matcher;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -112,6 +113,24 @@ public class PublisherBufferTest {
     }
 
     @Test
+    public void itemCompletionCancelsBoundaries() {
+        verifyNoBuffersNoTerminal();
+        original.onComplete();
+        emitBoundary();
+        verifyBufferSubCompleted();
+        verifyCancelled(boundaries);
+    }
+
+    @Test
+    public void itemFailureCancelsBoundaries() {
+        verifyNoBuffersNoTerminal();
+        original.onError(DELIBERATE_EXCEPTION);
+        emitBoundary();
+        verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
+        verifyCancelled(boundaries);
+    }
+
+    @Test
     public void multipleBoundaries() {
         verifyNoBuffersNoTerminal();
         bufferSubscriber.request(2);
@@ -191,6 +210,7 @@ public class PublisherBufferTest {
         verifyCancelled(original);
     }
 
+    @Ignore("Accumulator will not emit boundary ATM")
     @Test
     public void accumulateEmitsBoundary() {
         bufferSubscriber.request(1);
