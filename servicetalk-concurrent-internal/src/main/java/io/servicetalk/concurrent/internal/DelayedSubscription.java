@@ -18,28 +18,26 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Long.MIN_VALUE;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
  * A {@link Subscription} which serves as a placeholder until the "real" {@link Subscription} is available.
  */
 public final class DelayedSubscription implements Subscription {
-    private static final AtomicReferenceFieldUpdater<DelayedSubscription, Subscription> currentUpdater =
-            newUpdater(DelayedSubscription.class, Subscription.class, "current");
+    private static final long SUBSCRIPTION_SETTING = MIN_VALUE;
+    private static final long SUBSCRIPTION_SET = MIN_VALUE + 1;
+    private static final long SUBSCRIPTION_CANCEL_PENDING = MIN_VALUE + 2;
+    private static final long GREATEST_CONTROL_VALUE = SUBSCRIPTION_CANCEL_PENDING;
     private static final AtomicLongFieldUpdater<DelayedSubscription> requestedUpdater =
-            AtomicLongFieldUpdater.newUpdater(DelayedSubscription.class, "requested");
+            newUpdater(DelayedSubscription.class, "requested");
 
-    @SuppressWarnings("unused")
     @Nullable
-    private volatile Subscription current;
-    @SuppressWarnings({"unused", "FieldCanBeLocal"})
+    private Subscription subscription;
     private volatile long requested;
 
     /**
@@ -49,53 +47,73 @@ public final class DelayedSubscription implements Subscription {
      * @param delayedSubscription The delayed {@link Subscription}.
      */
     public void delayedSubscription(Subscription delayedSubscription) {
-        // Temporarily wrap in a ConcurrentSubscription to prevent concurrent invocation between this thread and
-        // a thread which may be interacting with this class's Subscription API.
-        final Subscription concurrentSubscription = wrap(delayedSubscription);
-        if (!currentUpdater.compareAndSet(this, null, concurrentSubscription)) {
-            delayedSubscription.cancel();
-        } else {
-            tryDrainRequested(concurrentSubscription);
-
-            // Unwrap the concurrent subscription because there will be no more concurrency.
-            currentUpdater.compareAndSet(this, concurrentSubscription, delayedSubscription);
+        requireNonNull(delayedSubscription);
+        for (;;) {
+            final long prevRequested = requested;
+            if (prevRequested <= GREATEST_CONTROL_VALUE) {
+                delayedSubscription.cancel();
+                break;
+            } else if (requestedUpdater.compareAndSet(this, prevRequested, SUBSCRIPTION_SETTING)) {
+                if (prevRequested != 0) {
+                    delayedSubscription.request(prevRequested);
+                }
+                // Set the subscription before CAS to make it visible to the thread interacting with the Subscription.
+                // The Subscription thread won't use the state unless the CAS to SUBSCRIPTION_SET is successful, so
+                // there will be no concurrency introduced by this operation.
+                subscription = delayedSubscription;
+                if (requestedUpdater.compareAndSet(this, SUBSCRIPTION_SETTING, SUBSCRIPTION_SET)) {
+                    break;
+                }
+            }
         }
     }
 
     @Override
     public void request(long n) {
-        Subscription current = this.current;
-        if (current != null) {
-            current.request(n);
-        } else {
-            if (isRequestNValid(n)) {
-                requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
-            } else {
-                // Although 0 is invalid we use it to signify that we have drained the pending request count,
-                // so in this case we use MIN_VALUE so we can still pass through an invalid number only once.
-                requested = n == 0 ? MIN_VALUE : n;
-            }
-            current = this.current;
-            if (current != null) {
-                tryDrainRequested(current);
+        for (;;) {
+            final long prevRequested = requested;
+            if (prevRequested == SUBSCRIPTION_SET) {
+                assert subscription != null;
+                subscription.request(n);
+                break;
+            } else if (prevRequested == SUBSCRIPTION_SETTING) {
+                if (requestedUpdater.compareAndSet(this, SUBSCRIPTION_SETTING, addRequestN(0, n))) {
+                    break;
+                }
+            } else if (prevRequested < 0 ||
+                    requestedUpdater.compareAndSet(this, prevRequested, addRequestN(prevRequested, n))) {
+                // prevRequested < 0 covers the following cases:
+                //  SUBSCRIPTION_CANCEL_PENDING - delayedSubscription(..) is responsible for propagating cancel()
+                //  prior invalid request(n) - this value should be preserved
+                break;
             }
         }
     }
 
     @Override
     public void cancel() {
-        Subscription oldSubscription = currentUpdater.getAndSet(this, EMPTY_SUBSCRIPTION);
-        if (oldSubscription != null) {
-            oldSubscription.cancel();
+        for (;;) {
+            final long prevRequested = requested;
+            if (prevRequested == SUBSCRIPTION_SET) {
+                assert subscription != null;
+                subscription.cancel();
+                break;
+            } else if (prevRequested == SUBSCRIPTION_SETTING) {
+                if (requestedUpdater.compareAndSet(this, SUBSCRIPTION_SETTING, SUBSCRIPTION_CANCEL_PENDING)) {
+                    break;
+                }
+            } else if (prevRequested < 0 ||
+                    requestedUpdater.compareAndSet(this, prevRequested, SUBSCRIPTION_CANCEL_PENDING)) {
+                // prevRequested < 0 covers the following cases:
+                //  SUBSCRIPTION_CANCEL_PENDING - delayedSubscription(..) is responsible for propagating cancel()
+                //  prior invalid request(n) - this value should be preserved
+                break;
+            }
         }
     }
 
-    private void tryDrainRequested(Subscription current) {
-        long pendingRequested = requestedUpdater.getAndSet(this, 0);
-        // We also want to pass through invalid input to the current Subscription, so anything non-zero should
-        // go through.
-        if (pendingRequested != 0) {
-            current.request(pendingRequested);
-        }
+    private static long addRequestN(long prevRequested, long n) {
+        return n <= GREATEST_CONTROL_VALUE || n == 0 ? -1 :
+                n < 0 ? n : addWithOverflowProtection(prevRequested, n);
     }
 }
