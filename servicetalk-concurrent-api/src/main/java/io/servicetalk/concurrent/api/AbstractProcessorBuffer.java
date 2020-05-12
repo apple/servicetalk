@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 abstract class AbstractProcessorBuffer {
@@ -71,7 +71,7 @@ abstract class AbstractProcessorBuffer {
         if (nextItem == null) {
             return false;
         }
-        consumer.consumeItem(unwrapNull(nextItem));
+        consumer.consumeItem(unwrapNullUnchecked(nextItem));
         return true;
     }
 }

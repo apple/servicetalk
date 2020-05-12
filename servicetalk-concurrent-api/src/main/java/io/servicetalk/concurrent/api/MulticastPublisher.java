@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -188,7 +188,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                                 return;
                             }
 
-                            onNext0(unwrapNull(next));
+                            onNext0(unwrapNullUnchecked(next));
                         }
 
                         if (reentryQueue.peek() instanceof TerminalNotification) {

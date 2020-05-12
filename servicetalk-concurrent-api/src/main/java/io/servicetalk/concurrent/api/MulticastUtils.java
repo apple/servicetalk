@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_IDLE;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_ON_NEXT;
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -451,7 +451,7 @@ final class MulticastUtils {
                     // throw an exception due to the queue being full, but there should be at least 1 space remaining.
                     toDrain.decrementSize();
                     try {
-                        target.onNext(unwrapNull(next));
+                        target.onNext(unwrapNullUnchecked(next));
                     } catch (Throwable cause) {
                         nonTerminalErrorConsumer.accept(cause);
                         break;

@@ -33,7 +33,7 @@ final class SubscriberApiUtils {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    static <T> T unwrapNull(Object o) {
+    static <T> T unwrapNullUnchecked(Object o) {
         return o == NULL_TOKEN ? null : (T) o;
     }
 }

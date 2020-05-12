@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -254,7 +254,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 }
                 throw new RuntimeException(cause);
             }
-            return unwrapNull(signal);
+            return unwrapNullUnchecked(signal);
         }
     }
 }

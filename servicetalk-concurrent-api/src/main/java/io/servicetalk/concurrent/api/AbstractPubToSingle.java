@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNull;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 
 abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -129,7 +129,7 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
             if (terminal instanceof Throwable) {
                 subscriber.onError((Throwable) terminal);
             } else {
-                subscriber.onSuccess(unwrapNull(terminal));
+                subscriber.onSuccess(unwrapNullUnchecked(terminal));
             }
         }
     }
