@@ -27,6 +27,7 @@ import org.junit.rules.Timeout;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,6 +66,29 @@ public class PublisherBufferTest {
         bufferSubscriber.request(1); // get first boundary
         boundaries.onNext(new SumAccumulator(boundaries));
         assertThat("Unexpected boundary received.", bufferSubscriber.takeItems(), hasSize(0));
+    }
+
+    @Test
+    public void invalidBufferSizeHint() {
+        TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
+        toSource(Publisher.<Integer>empty()
+                .buffer(new BufferStrategy<Integer, Accumulator<Integer, Integer>, Integer>() {
+                    @Override
+                    public Publisher<Accumulator<Integer, Integer>> boundaries() {
+                        return never();
+                    }
+
+                    @Override
+                    public int bufferSizeHint() {
+                        return 0;
+                    }
+                })).subscribe(bufferSubscriber);
+        assertThat("Subscription not received for buffer subscriber.", bufferSubscriber.subscriptionReceived(),
+                is(true));
+        TerminalNotification term = bufferSubscriber.takeTerminal();
+        assertThat("Unexpected termination of buffer subscriber.", term, is(notNullValue()));
+        assertThat("Unexpected termination of buffer subscriber.", term.cause(),
+                instanceOf(IllegalArgumentException.class));
     }
 
     @Test

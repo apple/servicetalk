@@ -47,10 +47,32 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
     public Subscriber<? super T> apply(final Subscriber<? super B> subscriber) {
         final int bufferSizeHint = bufferStrategy.bufferSizeHint();
         if (bufferSizeHint <= 0) {
-            deliverErrorFromSource(subscriber,
-                    new IllegalArgumentException("bufferSizeHint: " + bufferSizeHint + " (expected > 0)"));
+            return new Subscriber<T>() {
+                @Override
+                public void onSubscribe(final Subscription subscription) {
+                    subscription.cancel();
+                    deliverErrorFromSource(subscriber,
+                            new IllegalArgumentException("bufferSizeHint: " + bufferSizeHint + " (expected > 0)"));
+                }
+
+                @Override
+                public void onNext(@Nullable final T t) {
+                    // Noop
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    // Noop
+                }
+
+                @Override
+                public void onComplete() {
+                    // Noop
+                }
+            };
+        } else {
+            return new ItemsSubscriber<>(bufferStrategy.boundaries(), subscriber, bufferSizeHint);
         }
-        return new ItemsSubscriber<>(bufferStrategy.boundaries(), subscriber, bufferSizeHint);
     }
 
     private static final class ItemsSubscriber<T, B> implements Subscriber<T> {
@@ -289,7 +311,7 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
                     try {
                         target.onNext(accumulator.finish());
                     } catch (Throwable t) {
-                        target.onError(t);
+                        safeOnError(target, t);
                         return;
                     }
                 }

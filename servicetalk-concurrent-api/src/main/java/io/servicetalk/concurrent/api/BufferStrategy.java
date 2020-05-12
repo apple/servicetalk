@@ -37,7 +37,7 @@ public interface BufferStrategy<T, BC extends BufferStrategy.Accumulator<T, B>, 
 
     /**
      * Returns a {@link Publisher} representing asynchronous buffer boundaries. This {@link Publisher} is expected to be
-     * an infinite {@link Publisher}. Hence, it should never terminates any {@link Subscriber} subscribed to it. Instead
+     * an infinite {@link Publisher}. Hence, it should never terminate any {@link Subscriber} subscribed to it. Instead
      * {@link Subscriber}s will always {@link Subscription#cancel() cancel} their {@link Subscription}. If this
      * expectation is violated, buffered items may be discarded.
      *
