@@ -32,7 +32,7 @@ public final class DelayedSubscription implements Subscription {
     private static final long SUBSCRIPTION_SETTING = MIN_VALUE;
     private static final long SUBSCRIPTION_SET = MIN_VALUE + 1;
     private static final long SUBSCRIPTION_CANCEL_PENDING = MIN_VALUE + 2;
-    private static final long INVALID_GREATEST_VALUE = SUBSCRIPTION_CANCEL_PENDING;
+    private static final long GREATEST_CONTROL_VALUE = SUBSCRIPTION_CANCEL_PENDING;
     private static final AtomicLongFieldUpdater<DelayedSubscription> requestedUpdater =
             newUpdater(DelayedSubscription.class, "requested");
 
@@ -50,7 +50,7 @@ public final class DelayedSubscription implements Subscription {
         requireNonNull(delayedSubscription);
         for (;;) {
             final long prevRequested = requested;
-            if (prevRequested <= INVALID_GREATEST_VALUE) {
+            if (prevRequested <= GREATEST_CONTROL_VALUE) {
                 delayedSubscription.cancel();
                 break;
             } else if (requestedUpdater.compareAndSet(this, prevRequested, SUBSCRIPTION_SETTING)) {
@@ -113,7 +113,7 @@ public final class DelayedSubscription implements Subscription {
     }
 
     private static long addRequestN(long prevRequested, long n) {
-        return n <= INVALID_GREATEST_VALUE || n == 0 ? -1 :
+        return n <= GREATEST_CONTROL_VALUE || n == 0 ? -1 :
                 n < 0 ? n : addWithOverflowProtection(prevRequested, n);
     }
 }
