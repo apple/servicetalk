@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
@@ -50,9 +51,9 @@ abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object
     public void add(@Nullable final T item) {
         if (bufferedUpdater.getAndAccumulate(this, 1,
                 (prev, next) -> prev == maxBuffer ? maxBuffer : (prev + next)) == maxBuffer) {
-            offerPastBufferSize(maskNull(item), signals);
+            offerPastBufferSize(wrapNull(item), signals);
         } else {
-            offerSignal(maskNull(item));
+            offerSignal(wrapNull(item));
         }
     }
 

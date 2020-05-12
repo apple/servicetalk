@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
@@ -338,12 +339,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 } else {
                     terminalNotification.terminate(target);
                 }
-            } else if (item == NULL_TOKEN) {
-                target.onNext(null);
             } else {
-                @SuppressWarnings("unchecked")
-                final R rItem = (R) item;
-                target.onNext(rItem);
+                target.onNext(unwrapNullUnchecked(item));
             }
         }
 
@@ -366,7 +363,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 // First enqueue the result and then decrement active count. Since onComplete() checks for active count,
                 // if we decrement count before enqueuing, onComplete() may emit the terminal event without emitting
                 // the result.
-                enqueueAndDrain(result == null ? NULL_TOKEN : result);
+                enqueueAndDrain(wrapNull(result));
                 if (onSingleTerminated()) {
                     enqueueAndDrain(complete());
                 }

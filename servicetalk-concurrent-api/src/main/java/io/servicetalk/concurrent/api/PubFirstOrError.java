@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.PublisherSource;
 import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
+
 final class PubFirstOrError<T> extends AbstractPubToSingle<T> {
 
     PubFirstOrError(Publisher<T> source) {

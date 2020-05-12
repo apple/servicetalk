@@ -15,13 +15,25 @@
  */
 package io.servicetalk.concurrent.api;
 
+import javax.annotation.Nullable;
+
 final class SubscriberApiUtils {
-    static final Object NULL_TOKEN = new Object();
+    private static final Object NULL_TOKEN = new Object();
     static final int SUBSCRIBER_STATE_IDLE = 0;
     static final int SUBSCRIBER_STATE_ON_NEXT = 1;
     static final int SUBSCRIBER_STATE_TERMINATED = 2;
 
     private SubscriberApiUtils() {
         // no instances
+    }
+
+    static Object wrapNull(@Nullable Object o) {
+        return o == null ? NULL_TOKEN : o;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    static <T> T unwrapNullUnchecked(Object o) {
+        return o == NULL_TOKEN ? null : (T) o;
     }
 }

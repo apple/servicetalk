@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 
@@ -36,7 +37,7 @@ final class DefaultBlockingProcessorSignalsHolder<T> extends AbstractProcessorBu
 
     @Override
     public void add(@Nullable final T item) throws InterruptedException {
-        signals.put(maskNull(item));
+        signals.put(wrapNull(item));
     }
 
     @Override

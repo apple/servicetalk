@@ -35,7 +35,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
-import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
@@ -142,7 +143,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
 
     private boolean offerNext(@Nullable Object o) {
         assert reentryQueue != null;
-        return reentryQueue.size() < maxQueueSize && reentryQueue.offer(o == null ? NULL_TOKEN : o);
+        return reentryQueue.size() < maxQueueSize && reentryQueue.offer(wrapNull(o));
     }
 
     private void offerTerminal(TerminalNotification notification) {
@@ -187,9 +188,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                                 return;
                             }
 
-                            @SuppressWarnings("unchecked")
-                            final T nextT = (T) (next == NULL_TOKEN ? null : next);
-                            onNext0(nextT);
+                            onNext0(unwrapNullUnchecked(next));
                         }
 
                         if (reentryQueue.peek() instanceof TerminalNotification) {

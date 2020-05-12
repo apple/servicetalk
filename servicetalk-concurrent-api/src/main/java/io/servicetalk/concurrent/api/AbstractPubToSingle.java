@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 
 abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -53,7 +54,6 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
 
     abstract static class AbstractPubToSingleSubscriber<T> implements PublisherSource.Subscriber<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPubToSingleSubscriber.class);
-        private static final Object NULL_VALUE = new Object();
         private static final byte STATE_WAITING_FOR_SUBSCRIBE = 0;
         /**
          * We have called {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
@@ -129,14 +129,8 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
             if (terminal instanceof Throwable) {
                 subscriber.onError((Throwable) terminal);
             } else {
-                @SuppressWarnings("unchecked")
-                final T t = terminal == NULL_VALUE ? null : (T) terminal;
-                subscriber.onSuccess(t);
+                subscriber.onSuccess(unwrapNullUnchecked(terminal));
             }
-        }
-
-        Object wrapNull(@Nullable T t) {
-            return t == null ? NULL_VALUE : t;
         }
     }
 }
