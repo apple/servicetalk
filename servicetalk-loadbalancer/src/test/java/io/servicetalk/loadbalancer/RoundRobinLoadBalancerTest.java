@@ -243,15 +243,6 @@ public class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    public void addressIsAddedTwice() {
-        assertThat(lb.activeAddresses(), is(empty()));
-        sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(1));
-        sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), hasSize(1));
-    }
-
-    @Test
     public void noServiceDiscoveryEvent() {
         selectConnectionListener.listen(lb.selectConnection(any()));
         selectConnectionListener.verifyFailure(NoAvailableHostException.class);

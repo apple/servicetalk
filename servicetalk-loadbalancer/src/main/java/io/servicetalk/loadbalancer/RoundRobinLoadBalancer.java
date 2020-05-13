@@ -150,29 +150,26 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         event);
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
-                            final List<Host<ResolvedAddress, C>> refreshedAddresses =
-                                    new ArrayList<Host<ResolvedAddress, C>>(currentAddresses);
                             final ResolvedAddress addr = requireNonNull(event.address());
-                            for (int i = 0; i < refreshedAddresses.size(); i++) {
-                                Host<ResolvedAddress, C> host = refreshedAddresses.get(i);
-                                if (host.address.equals(addr)) {
-                                    if (event.isAvailable()) {
-                                        LOGGER.debug("Address {} added but it already exists.", addr);
-                                        return currentAddresses;
-                                    } else {
-                                        refreshedAddresses.remove(i);
+                            final List<Host<ResolvedAddress, C>> refreshedAddresses;
+                            if (event.isAvailable()) {
+                                refreshedAddresses = new ArrayList<>(currentAddresses.size() + 1);
+                                refreshedAddresses.addAll(currentAddresses);
+                                refreshedAddresses.add(new Host<>(addr));
+                            } else if (currentAddresses.isEmpty()) {
+                                refreshedAddresses = currentAddresses;
+                            } else {
+                                refreshedAddresses = new ArrayList<>(currentAddresses.size() - 1);
+                                for (Host<ResolvedAddress, C> host :
+                                        (List<Host<ResolvedAddress, C>>) currentAddresses) {
+                                    if (host.address.equals(addr)) {
                                         host.markInactive();
-                                        return refreshedAddresses;
+                                    } else {
+                                        refreshedAddresses.add(host);
                                     }
                                 }
                             }
-                            if (event.isAvailable()) {
-                                refreshedAddresses.add(new Host<>(addr));
-                                return refreshedAddresses;
-                            } else {
-                                LOGGER.debug("Address {} removed but it does not exist.", addr);
-                                return currentAddresses;
-                            }
+                            return refreshedAddresses;
                         });
 
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
