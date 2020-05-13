@@ -77,6 +77,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -196,27 +197,27 @@ public class RoundRobinLoadBalancerTest {
         assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertThat(lb.activeAddresses(), is(empty()));
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-3"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty()))),
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-2"))).and(hasProperty("value", is(empty())))));
 
         sendServiceDiscoveryEvents(downEvent("address-2"));
@@ -227,11 +228,27 @@ public class RoundRobinLoadBalancerTest {
 
         // Let's make sure that an SD failure doesn't compromise LB's internal state
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
         serviceDiscoveryPublisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(lb.activeAddresses(), contains(
+        assertThat(lb.activeAddresses(), hasItems(
                 both(hasProperty("key", is("address-1"))).and(hasProperty("value", is(empty())))));
+    }
+
+    @Test
+    public void unknownAddressIsRemoved() {
+        assertThat(lb.activeAddresses(), is(empty()));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertThat(lb.activeAddresses(), is(empty()));
+    }
+
+    @Test
+    public void addressIsAddedTwice() {
+        assertThat(lb.activeAddresses(), is(empty()));
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertThat(lb.activeAddresses(), hasSize(1));
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertThat(lb.activeAddresses(), hasSize(1));
     }
 
     @Test
@@ -431,7 +448,7 @@ public class RoundRobinLoadBalancerTest {
 
     private RoundRobinLoadBalancer<String, TestLoadBalancedConnection> newTestLoadBalancer(
             final DelegatingConnectionFactory connectionFactory) {
-        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory, String::compareTo);
+        return new RoundRobinLoadBalancer<>(serviceDiscoveryPublisher, connectionFactory);
     }
 
     private LegacyTestSingle<TestLoadBalancedConnection> newUnrealizedConnectionSingle(final String address) {

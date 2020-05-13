@@ -40,14 +40,12 @@ import org.slf4j.LoggerFactory;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
@@ -60,10 +58,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
-import static java.util.Comparator.comparing;
-import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -129,18 +124,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      *
      * @param eventPublisher    provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
-     * @param comparator        used to compare addresses for lookup/iteration during the connection attempt phase.
      */
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                                  final Comparator<ResolvedAddress> comparator) {
+                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
-
-        final Comparator<Host<ResolvedAddress, C>> activeAddressComparator =
-                comparing(host -> host instanceof MutableAddressHost ?
-                        ((MutableAddressHost<ResolvedAddress, C>) host).mutableAddress : host.address, comparator);
 
         toSource(eventPublisher).subscribe(new Subscriber<ServiceDiscovererEvent<ResolvedAddress>>() {
 
@@ -161,26 +150,29 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         event);
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
-                            final List<Host<ResolvedAddress, C>> refreshedAddresses = new ArrayList<>(currentAddresses);
-                            final MutableAddressHost<ResolvedAddress, C> searchHost = new MutableAddressHost<>();
-
-                            searchHost.mutableAddress = event.address();
-                            // Binary search because any insertion is performed at the index returned by the search,
-                            // which is consistent with the ordering defined by the comparator
-                            final int i = binarySearch(refreshedAddresses, searchHost, activeAddressComparator);
-
-                            if (event.isAvailable()) {
-                                if (i < 0) {
-                                    refreshedAddresses.add(-i - 1, new Host<>(event.address()));
-                                }
-                            } else if (i >= 0) {
-                                Host<ResolvedAddress, C> removed = refreshedAddresses.remove(i);
-                                if (removed != null) {
-                                    removed.markInactive();
+                            final List<Host<ResolvedAddress, C>> refreshedAddresses =
+                                    new ArrayList<Host<ResolvedAddress, C>>(currentAddresses);
+                            final ResolvedAddress addr = requireNonNull(event.address());
+                            for (int i = 0; i < refreshedAddresses.size(); i++) {
+                                Host<ResolvedAddress, C> host = refreshedAddresses.get(i);
+                                if (host.address.equals(addr)) {
+                                    if (event.isAvailable()) {
+                                        LOGGER.debug("Address {} added but it already exists.", addr);
+                                        return currentAddresses;
+                                    } else {
+                                        refreshedAddresses.remove(i);
+                                        host.markInactive();
+                                        return refreshedAddresses;
+                                    }
                                 }
                             }
-
-                            return refreshedAddresses;
+                            if (event.isAvailable()) {
+                                refreshedAddresses.add(new Host<>(addr));
+                                return refreshedAddresses;
+                            } else {
+                                LOGGER.debug("Address {} removed but it does not exist.", addr);
+                                return currentAddresses;
+                            }
                         });
 
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
@@ -260,7 +252,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % activeHosts.size();
         final Host<ResolvedAddress, C> host = activeHosts.get(cursor);
         assert host != null : "Host can't be null.";
-        assert host.address != null : "Host address can't be null.";
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         // Try first to see if an existing connection can be used
@@ -348,9 +339,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public LoadBalancer<? extends C> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(eventPublisher,
-                    connectionFactory,
-                    comparingInt(Object::hashCode));
+            return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory);
         }
     }
 
@@ -369,17 +358,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         @SuppressWarnings("rawtypes")
         private static final List NO_CONNECTIONS = new ArrayList(0);
 
-        @Nullable
         final Addr address;
         @SuppressWarnings("unchecked")
         private volatile List<C> connections = NO_CONNECTIONS;
 
-        Host() {
-            address = null;
-        }
-
         Host(Addr address) {
-            this.address = address;
+            this.address = requireNonNull(address);
         }
 
         void markInactive() {
@@ -424,7 +408,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         // Used for testing only
         Entry<Addr, List<C>> asEntry() {
-            assert address != null;
             return new SimpleImmutableEntry<>(address, new ArrayList<>(connections));
         }
 
@@ -447,11 +430,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                     ", removed=" + (connections == INACTIVE) +
                     '}';
         }
-    }
-
-    private static final class MutableAddressHost<Addr, C extends ListenableAsyncCloseable> extends Host<Addr, C> {
-        @Nullable
-        Addr mutableAddress;
     }
 
     private static final class StacklessNoAvailableHostException extends NoAvailableHostException {
