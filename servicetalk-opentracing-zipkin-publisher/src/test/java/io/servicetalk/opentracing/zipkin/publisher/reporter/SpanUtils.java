@@ -28,7 +28,6 @@ final class SpanUtils {
     private static final long TIMESTAMP = 123456789L;
     private static final String TRACE_ID = "0000000000001234";
     private static final String SPAN_ID = "0000000000000002";
-    private static final String NAME = "test operation";
     private static final long DURATION = SECONDS.toMicros(1);
     private static final String STRING_KEY_TAG_NAME = "stringKey";
     private static final String STRING_KEY_TAG_VALUE = "string";
@@ -44,9 +43,9 @@ final class SpanUtils {
         // no instances
     }
 
-    static Span newSpan() {
+    static Span newSpan(final String name) {
         return Span.newBuilder()
-                .name(NAME)
+                .name(name)
                 .traceId(TRACE_ID)
                 .id(SPAN_ID)
                 .timestamp(TIMESTAMP)
@@ -62,8 +61,8 @@ final class SpanUtils {
                 .build();
     }
 
-    static void verifySpan(final Span span) {
-        assertEquals(NAME, span.name());
+    static void verifySpan(final Span span, final String expectedName) {
+        assertEquals(expectedName, span.name());
         assertEquals(TRACE_ID, span.traceId());
         assertEquals(SPAN_ID, span.id());
         assertEquals(TIMESTAMP, (long) span.timestamp());

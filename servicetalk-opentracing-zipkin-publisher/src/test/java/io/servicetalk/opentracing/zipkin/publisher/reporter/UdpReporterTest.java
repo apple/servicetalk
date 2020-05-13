@@ -45,6 +45,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.newSpan;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.verifySpan;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;
 
@@ -91,17 +92,17 @@ public class UdpReporterTest {
     private void testRoundTrip(Codec codec, SpanBytesDecoder decoder) throws Exception {
         try (TestReceiver receiver = new TestReceiver(decoder)) {
             try (UdpReporter reporter = buildReporter((InetSocketAddress) receiver.channel.localAddress(), codec)) {
-                reporter.report(newSpan());
+                reporter.report(newSpan("1"));
             }
 
             Span span = receiver.queue.take();
 
             assertNotNull(span);
-            verifySpan(span);
+            verifySpan(span, "1");
         }
     }
 
-    private UdpReporter buildReporter(InetSocketAddress remoteAddress, Codec codec) {
+    private static UdpReporter buildReporter(InetSocketAddress remoteAddress, Codec codec) {
         return new UdpReporter.Builder(remoteAddress)
                 .codec(codec)
                 .build();
@@ -135,7 +136,12 @@ public class UdpReporterTest {
 
         @Override
         public void close() {
-            channel.close();
+            try {
+                channel.close().sync().await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throwException(e);
+            }
         }
     }
 }

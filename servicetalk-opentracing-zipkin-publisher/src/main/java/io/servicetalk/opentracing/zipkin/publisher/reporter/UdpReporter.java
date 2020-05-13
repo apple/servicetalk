@@ -18,7 +18,6 @@ package io.servicetalk.opentracing.zipkin.publisher.reporter;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
@@ -60,14 +59,14 @@ import static java.util.Objects.requireNonNull;
  */
 public final class UdpReporter extends Component implements Reporter<Span>, AsyncCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(UdpReporter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UdpReporter.class);
 
     private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048; // 2Kib
     private static final MaxMessagesRecvByteBufAllocator DEFAULT_RECV_BUF_ALLOCATOR =
             new FixedRecvByteBufAllocator(DEFAULT_MAX_DATAGRAM_PACKET_SIZE);
 
     private final Channel channel;
-    private final ListenableAsyncCloseable closeable;
+    private final AsyncCloseable closeable;
 
     private UdpReporter(final Builder builder) {
         EventLoopGroup group = toEventLoopAwareNettyIoExecutor(
@@ -81,7 +80,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
             currentThread().interrupt(); // Reset the interrupted flag.
             throw new IllegalStateException("Failed to create UDP client");
         } catch (Exception e) {
-            logger.warn("Failed to create UDP client", e);
+            LOGGER.warn("Failed to create UDP client", e);
             throw e;
         }
         Executor executor = builder.executor != null ? builder.executor :

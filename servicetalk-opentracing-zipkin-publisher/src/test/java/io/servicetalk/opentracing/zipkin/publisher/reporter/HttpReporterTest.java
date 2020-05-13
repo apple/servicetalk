@@ -94,31 +94,34 @@ public class HttpReporterTest {
     @Test
     public void disableBatching() throws Exception {
         HttpReporter reporter = initReporter(Builder::disableSpanBatching);
-        reporter.report(newSpan());
+        reporter.report(newSpan("1"));
         List<Span> spans = verifyRequest(receivedRequests.take(), false);
         assertThat("Unexpected spans received.", spans, hasSize(1));
-        verifySpan(spans.get(0));
-        reporter.report(newSpan());
+        verifySpan(spans.get(0), "1");
+
+        reporter.report(newSpan("2"));
+        List<Span> spans2 = verifyRequest(receivedRequests.take(), false);
         assertThat("Unexpected spans received.", spans, hasSize(1));
-        verifySpan(spans.get(0));
+        verifySpan(spans2.get(0), "2");
     }
 
     @Test
     public void batching() throws Exception {
         HttpReporter reporter = initReporter(builder -> builder.batchSpans(2, ofMillis(200)));
-        reporter.report(newSpan());
-        reporter.report(newSpan());
+        reporter.report(newSpan("1"));
+        reporter.report(newSpan("2"));
         List<Span> spans = verifyRequest(receivedRequests.take(), true);
         assertThat("Unexpected spans received.", spans, hasSize(2));
-        verifySpan(spans.get(0));
-        verifySpan(spans.get(0));
+        verifySpan(spans.get(0), "1");
+        verifySpan(spans.get(1), "2");
     }
 
     @Test
     public void reportAfterClose() {
         HttpReporter reporter = initReporter(Builder::disableSpanBatching);
         reporter.close();
-        assertThrows("Report post close accepted.", IllegalStateException.class, () -> reporter.report(newSpan()));
+        assertThrows("Report post close accepted.", IllegalStateException.class,
+                () -> reporter.report(newSpan("1")));
     }
 
     private List<Span> verifyRequest(final HttpRequest request, final boolean multipleSpans) {

@@ -29,6 +29,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import zipkin2.CheckResult;
 import zipkin2.Component;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesEncoder;
@@ -37,6 +38,7 @@ import zipkin2.reporter.Reporter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -53,6 +55,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static zipkin2.CheckResult.OK;
+import static zipkin2.CheckResult.failed;
 
 /**
  * A {@link Span} {@link Reporter} that will publish to an HTTP endpoint with a configurable encoding {@link Codec}.
@@ -65,16 +69,93 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
     static final CharSequence PROTO_CONTENT_TYPE = newAsciiString("application/protobuf");
 
     private final PublisherSource.Processor<Span, Span> buffer;
-    private final AsyncCloseable closeable;
+    private final CompositeCloseable closeable;
 
     private volatile boolean closeInitiated;
 
     private HttpReporter(final Builder builder) {
-        final HttpClient client = builder.clientBuilder.build();
+        closeable = newCompositeCloseable();
+        final HttpClient client = closeable.append(builder.clientBuilder.build());
+        try {
+            buffer = initReporter(builder, client);
+        } catch (Throwable t) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                LOGGER.error("Failed to close the client.", e);
+            }
+            throw t;
+        }
+    }
+
+    @Override
+    public CheckResult check() {
+        return closeInitiated ? OK : failed(new IllegalStateException("Reporter is closed."));
+    }
+
+    @Override
+    public void report(final Span span) {
+        if (closeInitiated) {
+            throw new IllegalStateException("Span: " + span + " reported after reporter " + this + " is closed.");
+        }
+        buffer.onNext(span);
+    }
+
+    @Override
+    public void close() {
+        awaitTermination(closeable.closeAsync().toFuture());
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return closeable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
+    }
+
+    private PublisherSource.Processor<Span, Span> initReporter(final Builder builder, final HttpClient client) {
+        final PublisherSource.Processor<Span, Span> buffer;
         SpanBytesEncoder spanEncoder = builder.codec.spanBytesEncoder();
+        final BufferAllocator allocator = client.executionContext().bufferAllocator();
+        final Publisher<Buffer> spans;
+        if (builder.disableBatching) {
+            buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
+            spans = fromSource(buffer).map(span -> allocator.wrap(spanEncoder.encode(span)));
+        } else {
+            // As we send maxConcurrentReports number of parallel requests, each with roughly batchSizeHint number of
+            // spans, we hold a maximum of that many Spans in-memory that we can send in parallel to the collector.
+            buffer = newPublisherProcessorDropHeadOnOverflow(builder.batchSizeHint * builder.maxConcurrentReports);
+            spans = fromSource(buffer)
+                    .buffer(forCountOrTime(builder.batchSizeHint, builder.maxBatchDuration,
+                            () -> new ListAccumulator(builder.batchSizeHint), client.executionContext().executor()))
+                    .filter(accumulate -> !accumulate.isEmpty())
+                    .map(bufferedSpans -> allocator.wrap(spanEncoder.encodeList(bufferedSpans)));
+        }
+
+        final CompletableSource.Processor spansTerminated = newCompletableProcessor();
+        toSource(spans.flatMapCompletable(encodedSpansReporter(client, builder.codec), builder.maxConcurrentReports))
+                .subscribe(spansTerminated);
+
+        closeable.prepend(toAsyncCloseable(graceful -> {
+            closeInitiated = true;
+            try {
+                buffer.onComplete();
+            } catch (Throwable t) {
+                LOGGER.error("Failed to dispose request buffer. Ignoring.", t);
+            }
+            return graceful ? fromSource(spansTerminated) : completed();
+        }));
+
+        return buffer;
+    }
+
+    private static Function<Buffer, Completable> encodedSpansReporter(final HttpClient client, final Codec codec) {
         final String path;
         final CharSequence contentType;
-        switch (builder.codec) {
+        switch (codec) {
             case JSON_V1:
                 path = V1_PATH;
                 contentType = APPLICATION_JSON;
@@ -92,43 +173,10 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                 contentType = PROTO_CONTENT_TYPE;
                 break;
             default:
-                throw new IllegalArgumentException("Unknown codec: " + builder.codec);
+                throw new IllegalArgumentException("Unknown codec: " + codec);
         }
-        final BufferAllocator allocator = client.executionContext().bufferAllocator();
-        final Publisher<Buffer> spans;
-        if (builder.disableBatching) {
-            buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
-            spans = fromSource(buffer).map(span -> allocator.wrap(spanEncoder.encode(span)));
-        } else {
-            buffer = newPublisherProcessorDropHeadOnOverflow(builder.batchSizeHint * builder.maxConcurrentReports);
-            spans = fromSource(buffer)
-                    .buffer(forCountOrTime(builder.batchSizeHint, builder.maxBatchDuration,
-                            () -> new ListAccumulator(builder.batchSizeHint), client.executionContext().executor()))
-                    .filter(accumulate -> !accumulate.isEmpty())
-                    .map(bufferedSpans -> allocator.wrap(spanEncoder.encodeList(bufferedSpans)));
-        }
-
-        final CompletableSource.Processor spansTerminated = newCompletableProcessor();
-        toSource(spans.flatMapCompletable(encodedSpans -> reportSpans(client, encodedSpans, path, contentType),
-                builder.maxConcurrentReports)).subscribe(spansTerminated);
-
-        CompositeCloseable closeable = newCompositeCloseable();
-        closeable.append(toAsyncCloseable(graceful -> {
-            closeInitiated = true;
-            try {
-                buffer.onComplete();
-            } catch (Throwable t) {
-                LOGGER.error("Failed to dispose request buffer. Ignoring.", t);
-            }
-            return graceful ? fromSource(spansTerminated) : completed();
-        }));
-        closeable.append(client);
-        this.closeable = closeable;
-    }
-
-    private Completable reportSpans(final HttpClient client, final Buffer encodedSpans, final String path,
-                                    final CharSequence contentType) {
-        return client.request(client.post(path).addHeader(CONTENT_TYPE, contentType).payloadBody(encodedSpans))
+        return encodedSpans -> client.request(
+                client.post(path).addHeader(CONTENT_TYPE, contentType).payloadBody(encodedSpans))
                 .ignoreElement()
                 .onErrorResume(cause -> {
                     LOGGER.error("Failed to send a span, ignoring.", cause);
@@ -167,7 +215,17 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
             return this;
         }
 
+        /**
+         * Sets the maximum number of concurrent requests that will be made to the zipkin collector at any time.
+         *
+         * @param maxConcurrentReports maximum number of concurrent requests that will be made to the zipkin collector
+         * at any time.
+         * @return {@code this}.
+         */
         public Builder maxConcurrentReports(final int maxConcurrentReports) {
+            if (maxConcurrentReports <= 0) {
+                throw new IllegalArgumentException("maxConcurrentReports: " + maxConcurrentReports + " (expected > 0)");
+            }
             this.maxConcurrentReports = maxConcurrentReports;
             return this;
         }
@@ -207,29 +265,6 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         public HttpReporter build() {
             return new HttpReporter(this);
         }
-    }
-
-    @Override
-    public void report(final Span span) {
-        if (closeInitiated) {
-            throw new IllegalStateException("Span: " + span + " reported after reporter " + this + " is closed.");
-        }
-        buffer.onNext(span);
-    }
-
-    @Override
-    public void close() {
-        awaitTermination(closeable.closeAsync().toFuture());
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return closeable.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return closeable.closeAsyncGracefully();
     }
 
     private static final class ListAccumulator implements Accumulator<Span, List<Span>> {
