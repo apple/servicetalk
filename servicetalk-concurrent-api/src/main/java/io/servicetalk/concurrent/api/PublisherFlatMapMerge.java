@@ -110,7 +110,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private volatile int activeMappedSources;
         private volatile long pendingDemand;
 
-        // protected by emitting lock, or only accessed in side the Subscriber thread
+        // protected by emitting lock, or only accessed inside the Subscriber thread
         private boolean targetTerminated;
         private int upstreamDemand;
         @Nullable
@@ -126,7 +126,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             this.target = target;
             // Start with a small capacity as maxConcurrency can be large.
             signals = newUnboundedMpscQueue(min(2, source.maxConcurrency * source.maxMappedDemand));
-            subscribers = newSetFromMap(new ConcurrentHashMap<>());
+            subscribers = newSetFromMap(new ConcurrentHashMap<>(min(16, source.maxConcurrency)));
         }
 
         @Override
