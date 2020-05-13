@@ -424,25 +424,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         @Override
-        public boolean equals(final Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            final Host<?, ?> host = (Host<?, ?>) o;
-
-            return address.equals(host.address);
-        }
-
-        @Override
-        public int hashCode() {
-            return address.hashCode();
-        }
-
-        @Override
         public String toString() {
             return "Host{" +
                     "address=" + address +
