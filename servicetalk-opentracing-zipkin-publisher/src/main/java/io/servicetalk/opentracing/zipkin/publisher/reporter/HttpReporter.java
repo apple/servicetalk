@@ -95,7 +95,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                 throw new IllegalArgumentException("Unknown codec: " + builder.codec);
         }
         final BufferAllocator allocator = client.executionContext().bufferAllocator();
-        Publisher<Buffer> spans;
+        final Publisher<Buffer> spans;
         if (builder.disableBatching) {
             buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
             spans = fromSource(buffer).map(span -> allocator.wrap(spanEncoder.encode(span)));

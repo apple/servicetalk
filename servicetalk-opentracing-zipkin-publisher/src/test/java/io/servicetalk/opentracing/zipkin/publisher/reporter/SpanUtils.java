@@ -24,42 +24,58 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 final class SpanUtils {
+
+    private static final long TIMESTAMP = 123456789L;
+    private static final String TRACE_ID = "0000000000001234";
+    private static final String SPAN_ID = "0000000000000002";
+    private static final String NAME = "test operation";
+    private static final long DURATION = SECONDS.toMicros(1);
+    private static final String STRING_KEY_TAG_NAME = "stringKey";
+    private static final String STRING_KEY_TAG_VALUE = "string";
+    private static final String BOOL_KEY_TAG_NAME = "boolKey";
+    private static final String SHORT_KEY_TAG_NAME = "shortKey";
+    private static final String INT_KEY_TAG_NAME = "intKey";
+    private static final String LONG_KEY_TAG_NAME = "longKey";
+    private static final String FLOAT_KEY_TAG_NAME = "floatKey";
+    private static final String DOUBLE_KEY_TAG_NAME = "doubleKey";
+    private static final String ANNOTATION_VAL = "some event happened";
+
     private SpanUtils() {
         // no instances
     }
 
     static Span newSpan() {
         return Span.newBuilder()
-                .name("test operation")
-                .traceId("1234")
-                .id(2)
-                .timestamp(123456789L)
-                .duration(SECONDS.toMicros(1))
-                .putTag("stringKey", "string")
-                .putTag("boolKey", String.valueOf(true))
-                .putTag("shortKey", String.valueOf(Short.MAX_VALUE))
-                .putTag("intKey", String.valueOf(Integer.MAX_VALUE))
-                .putTag("longKey", String.valueOf(Long.MAX_VALUE))
-                .putTag("floatKey", String.valueOf(Float.MAX_VALUE))
-                .putTag("doubleKey", String.valueOf(Double.MAX_VALUE))
-                .addAnnotation(System.currentTimeMillis() * 1000, "some event happened")
+                .name(NAME)
+                .traceId(TRACE_ID)
+                .id(SPAN_ID)
+                .timestamp(TIMESTAMP)
+                .duration(DURATION)
+                .putTag(STRING_KEY_TAG_NAME, STRING_KEY_TAG_VALUE)
+                .putTag(BOOL_KEY_TAG_NAME, String.valueOf(true))
+                .putTag(SHORT_KEY_TAG_NAME, String.valueOf(Short.MAX_VALUE))
+                .putTag(INT_KEY_TAG_NAME, String.valueOf(Integer.MAX_VALUE))
+                .putTag(LONG_KEY_TAG_NAME, String.valueOf(Long.MAX_VALUE))
+                .putTag(FLOAT_KEY_TAG_NAME, String.valueOf(Float.MAX_VALUE))
+                .putTag(DOUBLE_KEY_TAG_NAME, String.valueOf(Double.MAX_VALUE))
+                .addAnnotation(System.currentTimeMillis() * 1000, ANNOTATION_VAL)
                 .build();
     }
 
     static void verifySpan(final Span span) {
-        assertEquals("test operation", span.name());
-        assertEquals("0000000000001234", span.traceId());
-        assertEquals("0000000000000002", span.id());
-        assertEquals(123456789L, (long) span.timestamp());
-        assertEquals(1000 * 1000, (long) span.duration());
+        assertEquals(NAME, span.name());
+        assertEquals(TRACE_ID, span.traceId());
+        assertEquals(SPAN_ID, span.id());
+        assertEquals(TIMESTAMP, (long) span.timestamp());
+        assertEquals(DURATION, (long) span.duration());
         Map<String, String> tags = span.tags();
-        assertEquals("string", tags.get("stringKey"));
-        assertEquals(Boolean.TRUE.toString(), tags.get("boolKey"));
-        assertEquals(String.valueOf(Short.MAX_VALUE), tags.get("shortKey"));
-        assertEquals(String.valueOf(Integer.MAX_VALUE), tags.get("intKey"));
-        assertEquals(String.valueOf(Long.MAX_VALUE), tags.get("longKey"));
-        assertEquals(String.valueOf(Float.MAX_VALUE), tags.get("floatKey"));
-        assertEquals(String.valueOf(Double.MAX_VALUE), tags.get("doubleKey"));
-        assertTrue(span.annotations().stream().anyMatch(a -> a.value().equals("some event happened")));
+        assertEquals(STRING_KEY_TAG_VALUE, tags.get(STRING_KEY_TAG_NAME));
+        assertEquals(Boolean.TRUE.toString(), tags.get(BOOL_KEY_TAG_NAME));
+        assertEquals(String.valueOf(Short.MAX_VALUE), tags.get(SHORT_KEY_TAG_NAME));
+        assertEquals(String.valueOf(Integer.MAX_VALUE), tags.get(INT_KEY_TAG_NAME));
+        assertEquals(String.valueOf(Long.MAX_VALUE), tags.get(LONG_KEY_TAG_NAME));
+        assertEquals(String.valueOf(Float.MAX_VALUE), tags.get(FLOAT_KEY_TAG_NAME));
+        assertEquals(String.valueOf(Double.MAX_VALUE), tags.get(DOUBLE_KEY_TAG_NAME));
+        assertTrue(span.annotations().stream().anyMatch(a -> a.value().equals(ANNOTATION_VAL)));
     }
 }
