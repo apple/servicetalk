@@ -173,12 +173,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                     for (int x = i + 1; x < oldHostsTyped.size(); ++x) {
                                         newHosts.add(oldHostsTyped.get(x));
                                     }
-                                    break;
+                                    return newHosts.isEmpty() ? emptyList() : newHosts;
                                 } else {
                                     newHosts.add(host);
                                 }
                             }
-                            return newHosts.isEmpty() ? emptyList() : newHosts;
+                            return newHosts;
                         }
                     });
 
