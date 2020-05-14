@@ -144,28 +144,29 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 discoveryCancellable.nextCancellable(s);
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public void onNext(final ServiceDiscovererEvent<ResolvedAddress> event) {
                 LOGGER.debug("Load balancer {}, received new ServiceDiscoverer event {}.", RoundRobinLoadBalancer.this,
                         event);
+                @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                         activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
                             final ResolvedAddress addr = requireNonNull(event.address());
+                            @SuppressWarnings("unchecked")
+                            final List<Host<ResolvedAddress, C>> oldHostsTyped =
+                                    (List<Host<ResolvedAddress, C>>) oldHosts;
                             if (event.isAvailable()) {
                                 if (oldHosts.isEmpty()) {
                                     return singletonList(new Host<>(addr));
                                 }
                                 final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() + 1);
-                                newHosts.addAll(oldHosts);
+                                newHosts.addAll(oldHostsTyped);
                                 newHosts.add(new Host<>(addr));
                                 return newHosts;
                             } else if (oldHosts.isEmpty()) {
                                 return emptyList();
                             } else {
                                 final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() - 1);
-                                final List<Host<ResolvedAddress, C>> oldHostsTyped =
-                                        (List<Host<ResolvedAddress, C>>) oldHosts;
                                 int i = 0;
                                 for (; i < oldHostsTyped.size(); ++i) {
                                     final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
