@@ -249,6 +249,11 @@ public class RoundRobinLoadBalancerTest {
         assertThat(lb.activeAddresses(), hasSize(1));
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertThat(lb.activeAddresses(), hasSize(2));
+
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertThat(lb.activeAddresses(), hasSize(1));
+        sendServiceDiscoveryEvents(downEvent("address-1"));
+        assertThat(lb.activeAddresses(), hasSize(0));
     }
 
     @Test
