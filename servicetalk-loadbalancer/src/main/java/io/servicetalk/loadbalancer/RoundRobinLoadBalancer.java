@@ -157,7 +157,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 refreshedAddresses.addAll(currentAddresses);
                                 refreshedAddresses.add(new Host<>(addr));
                             } else if (currentAddresses.isEmpty()) {
-                                refreshedAddresses = currentAddresses;
+                                refreshedAddresses = emptyList();
                             } else {
                                 refreshedAddresses = new ArrayList<>(currentAddresses.size() - 1);
                                 for (Host<ResolvedAddress, C> host :
