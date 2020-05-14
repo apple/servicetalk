@@ -18,7 +18,6 @@ package io.servicetalk.opentracing.zipkin.publisher.reporter;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import zipkin2.Component;
 import zipkin2.Span;
-import zipkin2.codec.SpanBytesEncoder;
 import zipkin2.reporter.Reporter;
 
 import java.net.InetSocketAddress;
@@ -61,14 +59,14 @@ import static java.util.Objects.requireNonNull;
  */
 public final class UdpReporter extends Component implements Reporter<Span>, AsyncCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(UdpReporter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UdpReporter.class);
 
     private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048; // 2Kib
     private static final MaxMessagesRecvByteBufAllocator DEFAULT_RECV_BUF_ALLOCATOR =
             new FixedRecvByteBufAllocator(DEFAULT_MAX_DATAGRAM_PACKET_SIZE);
 
     private final Channel channel;
-    private final ListenableAsyncCloseable closeable;
+    private final AsyncCloseable closeable;
 
     private UdpReporter(final Builder builder) {
         EventLoopGroup group = toEventLoopAwareNettyIoExecutor(
@@ -82,26 +80,12 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
             currentThread().interrupt(); // Reset the interrupted flag.
             throw new IllegalStateException("Failed to create UDP client");
         } catch (Exception e) {
-            logger.warn("Failed to create UDP client", e);
+            LOGGER.warn("Failed to create UDP client", e);
             throw e;
         }
         Executor executor = builder.executor != null ? builder.executor :
                 globalExecutionContext().executor();
         closeable = new NettyChannelListenableAsyncCloseable(channel, executor);
-    }
-
-    /**
-     * The serialization format for the zipkin write format data.
-     */
-    public enum Codec {
-        JSON_V1(SpanBytesEncoder.JSON_V1), JSON_V2(SpanBytesEncoder.JSON_V2),
-        THRIFT(SpanBytesEncoder.THRIFT), PROTO3(SpanBytesEncoder.PROTO3);
-
-        final SpanBytesEncoder encoder;
-
-        Codec(SpanBytesEncoder encoder) {
-            this.encoder = encoder;
-        }
     }
 
     /**
@@ -127,7 +111,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         }
 
         /**
-         * Sets the {@link UdpReporter.Codec} to encode the Spans with.
+         * Sets the {@link Codec} to encode the Spans with.
          *
          * @param codec the codec to use for this span.
          * @return {@code this}
@@ -204,7 +188,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                             @Override
                             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
                                 if (msg instanceof Span) {
-                                    byte[] bytes = codec.encoder.encode((Span) msg);
+                                    byte[] bytes = codec.spanBytesEncoder().encode((Span) msg);
                                     ByteBuf buf = ctx.alloc().buffer(bytes.length).writeBytes(bytes);
                                     ctx.write(new DatagramPacket(buf, (InetSocketAddress) collectorAddress), promise);
                                 } else {
@@ -216,11 +200,6 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                 });
     }
 
-    /**
-     * Non-blocking report method.
-     *
-     * @param span the span to report
-     */
     @Override
     public void report(final Span span) {
         if (!channel.isActive()) {
@@ -229,29 +208,16 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         channel.writeAndFlush(span);
     }
 
-    /**
-     * Blocking close method delegates to {@link #closeAsync()}).
-     */
     @Override
     public void close() {
         awaitTermination(closeable.closeAsync().toFuture());
     }
 
-    /**
-     * Closes this {@link UdpReporter} and all resources within.
-     *
-     * @return a {@link Completable} that is completed when close is done
-     */
     @Override
     public Completable closeAsync() {
         return closeable.closeAsync();
     }
 
-    /**
-     * Gracefully cleans up and closes this {@link UdpReporter} and all resources within.
-     *
-     * @return a {@link Completable} that is completed when close is done
-     */
     @Override
     public Completable closeAsyncGracefully() {
         return closeable.closeAsyncGracefully();
