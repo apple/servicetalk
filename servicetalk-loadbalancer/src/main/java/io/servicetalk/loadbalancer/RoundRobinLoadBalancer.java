@@ -150,40 +150,39 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                         event);
                 @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> activeAddresses =
-                        activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
-                            final ResolvedAddress addr = requireNonNull(event.address());
-                            @SuppressWarnings("unchecked")
-                            final List<Host<ResolvedAddress, C>> oldHostsTyped =
-                                    (List<Host<ResolvedAddress, C>>) oldHosts;
-                            if (event.isAvailable()) {
-                                if (oldHosts.isEmpty()) {
-                                    return singletonList(new Host<>(addr));
-                                }
-                                final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() + 1);
-                                newHosts.addAll(oldHostsTyped);
-                                newHosts.add(new Host<>(addr));
-                                return newHosts;
-                            } else if (oldHosts.isEmpty()) {
-                                return emptyList();
-                            } else {
-                                final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() - 1);
-                                int i = 0;
-                                for (; i < oldHostsTyped.size(); ++i) {
-                                    final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
-                                    if (host.address.equals(addr)) {
-                                        host.markInactive();
-                                        ++i;
-                                        break;
-                                    } else {
-                                        newHosts.add(host);
-                                    }
-                                }
-                                for (; i < oldHostsTyped.size(); ++i) {
-                                    newHosts.add(oldHostsTyped.get(i));
-                                }
-                                return newHosts.isEmpty() ? emptyList() : newHosts;
+                    activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
+                        final ResolvedAddress addr = requireNonNull(event.address());
+                        @SuppressWarnings("unchecked")
+                        final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
+                        if (event.isAvailable()) {
+                            if (oldHostsTyped.isEmpty()) {
+                                return singletonList(new Host<>(addr));
                             }
-                        });
+                            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() + 1);
+                            newHosts.addAll(oldHostsTyped);
+                            newHosts.add(new Host<>(addr));
+                            return newHosts;
+                        } else if (oldHostsTyped.isEmpty()) {
+                            return emptyList();
+                        } else {
+                            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
+                            int i = 0;
+                            for (; i < oldHostsTyped.size(); ++i) {
+                                final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
+                                if (host.address.equals(addr)) {
+                                    host.markInactive();
+                                    ++i;
+                                    break;
+                                } else {
+                                    newHosts.add(host);
+                                }
+                            }
+                            for (; i < oldHostsTyped.size(); ++i) {
+                                newHosts.add(oldHostsTyped.get(i));
+                            }
+                            return newHosts.isEmpty() ? emptyList() : newHosts;
+                        }
+                    });
 
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
                         activeAddresses.size(), activeAddresses);
