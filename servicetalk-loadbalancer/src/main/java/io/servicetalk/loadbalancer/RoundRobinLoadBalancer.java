@@ -166,19 +166,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             return emptyList();
                         } else {
                             final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
-                            int i = 0;
-                            for (; i < oldHostsTyped.size(); ++i) {
+                            for (int i = 0; i < oldHostsTyped.size(); ++i) {
                                 final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
                                 if (host.address.equals(addr)) {
                                     host.markInactive();
-                                    ++i;
+                                    for (int x = i + 1; x < oldHostsTyped.size(); ++x) {
+                                        newHosts.add(oldHostsTyped.get(x));
+                                    }
                                     break;
                                 } else {
                                     newHosts.add(host);
                                 }
-                            }
-                            for (; i < oldHostsTyped.size(); ++i) {
-                                newHosts.add(oldHostsTyped.get(i));
                             }
                             return newHosts.isEmpty() ? emptyList() : newHosts;
                         }
