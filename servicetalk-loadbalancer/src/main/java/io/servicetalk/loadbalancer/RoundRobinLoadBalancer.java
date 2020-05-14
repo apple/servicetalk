@@ -59,6 +59,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -143,37 +144,43 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 discoveryCancellable.nextCancellable(s);
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public void onNext(final ServiceDiscovererEvent<ResolvedAddress> event) {
                 LOGGER.debug("Load balancer {}, received new ServiceDiscoverer event {}.", RoundRobinLoadBalancer.this,
                         event);
+                @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> activeAddresses =
-                        activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
-                            final List<Host<ResolvedAddress, C>> refreshedAddresses =
-                                    new ArrayList<Host<ResolvedAddress, C>>(currentAddresses);
-                            final ResolvedAddress addr = requireNonNull(event.address());
-                            for (int i = 0; i < refreshedAddresses.size(); i++) {
-                                Host<ResolvedAddress, C> host = refreshedAddresses.get(i);
+                    activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
+                        final ResolvedAddress addr = requireNonNull(event.address());
+                        @SuppressWarnings("unchecked")
+                        final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
+                        if (event.isAvailable()) {
+                            if (oldHostsTyped.isEmpty()) {
+                                return singletonList(new Host<>(addr));
+                            }
+                            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() + 1);
+                            newHosts.addAll(oldHostsTyped);
+                            newHosts.add(new Host<>(addr));
+                            return newHosts;
+                        } else if (oldHostsTyped.isEmpty()) {
+                            return emptyList();
+                        } else {
+                            final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHostsTyped.size() - 1);
+                            for (int i = 0; i < oldHostsTyped.size(); ++i) {
+                                final Host<ResolvedAddress, C> host = oldHostsTyped.get(i);
                                 if (host.address.equals(addr)) {
-                                    if (event.isAvailable()) {
-                                        LOGGER.debug("Address {} added but it already exists.", addr);
-                                        return currentAddresses;
-                                    } else {
-                                        refreshedAddresses.remove(i);
-                                        host.markInactive();
-                                        return refreshedAddresses;
+                                    host.markInactive();
+                                    for (int x = i + 1; x < oldHostsTyped.size(); ++x) {
+                                        newHosts.add(oldHostsTyped.get(x));
                                     }
+                                    return newHosts.isEmpty() ? emptyList() : newHosts;
+                                } else {
+                                    newHosts.add(host);
                                 }
                             }
-                            if (event.isAvailable()) {
-                                refreshedAddresses.add(new Host<>(addr));
-                                return refreshedAddresses;
-                            } else {
-                                LOGGER.debug("Address {} removed but it does not exist.", addr);
-                                return currentAddresses;
-                            }
-                        });
+                            return newHosts;
+                        }
+                    });
 
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
                         activeAddresses.size(), activeAddresses);
