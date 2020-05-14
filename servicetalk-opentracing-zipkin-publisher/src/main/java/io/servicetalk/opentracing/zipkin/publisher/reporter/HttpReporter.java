@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static zipkin2.CheckResult.OK;
@@ -90,7 +92,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
 
     @Override
     public CheckResult check() {
-        return closeInitiated ? OK : failed(new IllegalStateException("Reporter is closed."));
+        return closeInitiated ? failed(new IllegalStateException("Reporter is closed.")) : OK;
     }
 
     @Override
@@ -177,6 +179,13 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         }
         return encodedSpans -> client.request(
                 client.post(path).addHeader(CONTENT_TYPE, contentType).payloadBody(encodedSpans))
+                .beforeOnSuccess(response -> {
+                    HttpResponseStatus status = response.status();
+                    if (status.statusClass() != SUCCESSFUL_2XX) {
+                        LOGGER.info("Unexpected response from the collector. Response headers: {}",
+                                response.toString((__, headerValue) -> headerValue));
+                    }
+                })
                 .ignoreElement()
                 .onErrorResume(cause -> {
                     LOGGER.error("Failed to send a span, ignoring.", cause);
