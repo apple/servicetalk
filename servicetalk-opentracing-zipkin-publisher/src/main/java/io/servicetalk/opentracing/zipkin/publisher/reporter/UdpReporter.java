@@ -38,6 +38,7 @@ import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
+import zipkin2.CheckResult;
 import zipkin2.Component;
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
@@ -53,6 +54,8 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
+import static zipkin2.CheckResult.OK;
+import static zipkin2.CheckResult.failed;
 
 /**
  * A {@link Span} {@link Reporter} that will publish to a UDP listener with a configurable encoding {@link Codec}.
@@ -198,6 +201,11 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                         });
                     }
                 });
+    }
+
+    @Override
+    public CheckResult check() {
+        return channel.isActive() ? OK : failed(new IllegalStateException("Reporter is closed."));
     }
 
     @Override
