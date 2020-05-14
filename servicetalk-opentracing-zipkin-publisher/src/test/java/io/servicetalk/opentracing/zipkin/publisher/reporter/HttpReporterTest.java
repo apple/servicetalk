@@ -58,6 +58,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThrows;
 import static zipkin2.CheckResult.OK;
@@ -128,8 +129,9 @@ public class HttpReporterTest {
     @Test
     public void reportAfterClose() {
         HttpReporter reporter = initReporter(Builder::disableSpanBatching);
+        assertThat("Unexpected check state.", reporter.check(), is(OK));
         reporter.close();
-        assertThat("Unexpected check state.", reporter.check(), not(OK));
+        assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
         assertThrows("Report post close accepted.", IllegalStateException.class,
                 () -> reporter.report(newSpan("1")));
     }

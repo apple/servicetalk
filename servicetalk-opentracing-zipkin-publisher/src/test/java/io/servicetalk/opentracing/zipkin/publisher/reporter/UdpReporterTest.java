@@ -47,7 +47,12 @@ import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.ver
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static zipkin2.CheckResult.OK;
 
 public class UdpReporterTest {
     private static final int DEFAULT_MAX_DATAGRAM_PACKET_SIZE = 2048;
@@ -99,6 +104,18 @@ public class UdpReporterTest {
 
             assertNotNull(span);
             verifySpan(span, "1");
+        }
+    }
+
+    @Test
+    public void reportAfterClose() throws Exception {
+        try (TestReceiver receiver = new TestReceiver(SpanBytesDecoder.JSON_V2)) {
+            UdpReporter reporter = buildReporter((InetSocketAddress) receiver.channel.localAddress(), Codec.JSON_V2);
+            assertThat("Unexpected check state.", reporter.check(), is(OK));
+            reporter.close();
+            assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
+            assertThrows("Report post close accepted.", RuntimeException.class,
+                    () -> reporter.report(newSpan("1")));
         }
     }
 
