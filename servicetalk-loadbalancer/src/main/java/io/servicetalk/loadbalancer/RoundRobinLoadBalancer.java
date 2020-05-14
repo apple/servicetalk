@@ -59,6 +59,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -149,27 +150,29 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 LOGGER.debug("Load balancer {}, received new ServiceDiscoverer event {}.", RoundRobinLoadBalancer.this,
                         event);
                 final List<Host<ResolvedAddress, C>> activeAddresses =
-                        activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, currentAddresses -> {
+                        activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
                             final ResolvedAddress addr = requireNonNull(event.address());
-                            final List<Host<ResolvedAddress, C>> refreshedAddresses;
                             if (event.isAvailable()) {
-                                refreshedAddresses = new ArrayList<>(currentAddresses.size() + 1);
-                                refreshedAddresses.addAll(currentAddresses);
-                                refreshedAddresses.add(new Host<>(addr));
-                            } else if (currentAddresses.isEmpty()) {
-                                refreshedAddresses = emptyList();
+                                if (oldHosts.isEmpty()) {
+                                    return singletonList(new Host<>(addr));
+                                }
+                                final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() + 1);
+                                newHosts.addAll(oldHosts);
+                                newHosts.add(new Host<>(addr));
+                                return newHosts;
+                            } else if (oldHosts.isEmpty()) {
+                                return emptyList();
                             } else {
-                                refreshedAddresses = new ArrayList<>(currentAddresses.size() - 1);
-                                for (Host<ResolvedAddress, C> host :
-                                        (List<Host<ResolvedAddress, C>>) currentAddresses) {
+                                final List<Host<ResolvedAddress, C>> newHosts = new ArrayList<>(oldHosts.size() - 1);
+                                for (Host<ResolvedAddress, C> host : (List<Host<ResolvedAddress, C>>) oldHosts) {
                                     if (host.address.equals(addr)) {
                                         host.markInactive();
                                     } else {
-                                        refreshedAddresses.add(host);
+                                        newHosts.add(host);
                                     }
                                 }
+                                return newHosts.isEmpty() ? emptyList() : newHosts;
                             }
-                            return refreshedAddresses;
                         });
 
                 LOGGER.debug("Load balancer {} now using {} addresses: {}", RoundRobinLoadBalancer.this,
