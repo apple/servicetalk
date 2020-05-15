@@ -39,12 +39,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -85,6 +85,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
+    private static final List<?> CLOSED_LIST = new ArrayList<>(0);
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
@@ -110,7 +111,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      */
     private static final float SEARCH_FACTOR = 0.75f;
 
-    private volatile boolean closed;
     @SuppressWarnings("unused")
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> activeHosts = emptyList();
@@ -151,6 +151,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 @SuppressWarnings("unchecked")
                 final List<Host<ResolvedAddress, C>> activeAddresses =
                     activeHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, oldHosts -> {
+                        if (oldHosts == CLOSED_LIST) {
+                            return CLOSED_LIST;
+                        }
                         final ResolvedAddress addr = requireNonNull(event.address());
                         @SuppressWarnings("unchecked")
                         final List<Host<ResolvedAddress, C>> oldHostsTyped = (List<Host<ResolvedAddress, C>>) oldHosts;
@@ -212,12 +215,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         });
         asyncCloseable = toAsyncCloseable(graceful -> {
-            closed = true;
+            @SuppressWarnings("unchecked")
+            List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater.getAndSet(this, CLOSED_LIST);
             discoveryCancellable.cancel();
             eventStreamProcessor.onComplete();
-            @SuppressWarnings("unchecked")
-            List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater
-                    .getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
             CompositeCloseable cc = newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory);
             return graceful ? cc.closeAsyncGracefully() : cc.closeAsync();
         });
@@ -245,14 +246,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private Single<C> selectConnection0(Predicate<C> selector) {
-        if (closed) {
-            return failed(new IllegalStateException("LoadBalancer has closed"));
-        }
-
         final List<Host<ResolvedAddress, C>> activeHosts = this.activeHosts;
         if (activeHosts.isEmpty()) {
-            // This is the case when SD has emitted some items but none of the hosts are active.
-            return failed(StacklessNoAvailableHostException.newInstance(
+            return activeHosts == CLOSED_LIST ? failedLBClosed() :
+                // This is the case when SD has emitted some items but none of the hosts are active.
+                failed(StacklessNoAvailableHostException.newInstance(
                     "No hosts are available to connect.", RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
@@ -286,35 +284,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 "Newly created connection " + newCnx + " rejected by the selection filter.")));
                     }
                     if (host.addConnection(newCnx)) {
-                        // If the LB has closed, we attempt to remove the connection, if the removal succeeds, close it.
-                        // If we can't remove it, it means it's been removed concurrently and we assume that whoever
-                        // removed it also closed it or that it has been removed as a consequence of closing.
-                        boolean needClose = false;
-                        if (closed) {
-                            List<C> existing = connections;
-                            for (;;) {
-                                if (existing == Host.INACTIVE) {
-                                    break;
-                                }
-                                ArrayList<C> connectionRemoved = new ArrayList<>(existing);
-                                if (!connectionRemoved.remove(newCnx)) {
-                                    break;
-                                }
-                                if (Host.connectionsUpdater.compareAndSet(host, existing, connectionRemoved)) {
-                                    needClose = true;
-                                    break;
-                                }
-                                existing = connections;
-                            }
-
-                            final Single<C> lbClosed = failed(new IllegalStateException("LoadBalancer has closed"));
-                            return needClose ? newCnx.closeAsync().concat(lbClosed) : lbClosed;
-                        }
                         return succeeded(newCnx);
                     }
-                    return newCnx.closeAsync().concat(failed(new ConnectionRejectedException(
-                            "Failed to add newly created connection for host: " + host.address + ", host inactive? " +
-                                    (host.connections == Host.INACTIVE))));
+                    return newCnx.closeAsync().concat(this.activeHosts == CLOSED_LIST ? failedLBClosed() :
+                            failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
+                                    host.address + ", host inactive? " + host.isInactive())));
                 });
     }
 
@@ -360,14 +334,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
 
-        @SuppressWarnings("rawtypes")
-        static final List INACTIVE = emptyList();
-        @SuppressWarnings("rawtypes")
-        private static final List NO_CONNECTIONS = new ArrayList(0);
-
         final Addr address;
-        @SuppressWarnings("unchecked")
-        private volatile List<C> connections = NO_CONNECTIONS;
+        private volatile List<C> connections = emptyList();
 
         Host(Addr address) {
             this.address = requireNonNull(address);
@@ -375,17 +343,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         void markInactive() {
             @SuppressWarnings("unchecked")
-            List<C> toRemove = connectionsUpdater.getAndSet(this, INACTIVE);
+            final List<C> toRemove = connectionsUpdater.getAndSet(this, CLOSED_LIST);
             for (C conn : toRemove) {
                 conn.closeAsyncGracefully().subscribe();
             }
         }
 
-        boolean addConnection(C connection) {
+        boolean isInactive() {
+            return connections == CLOSED_LIST;
+        }
 
+        boolean addConnection(C connection) {
             for (;;) {
                 List<C> existing = this.connections;
-                if (existing == INACTIVE) {
+                if (existing == CLOSED_LIST) {
                     return false;
                 }
                 ArrayList<C> connectionAdded = new ArrayList<>(existing);
@@ -397,9 +368,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
             // Instrument the new connection so we prune it on close
             connection.onClose().beforeFinally(() -> {
-                List<C> existing = connections;
                 for (;;) {
-                    if (existing == INACTIVE) {
+                    final List<C> existing = connections;
+                    if (existing == CLOSED_LIST) {
                         break;
                     }
                     ArrayList<C> connectionRemoved = new ArrayList<>(existing);
@@ -407,7 +378,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                             connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
                         break;
                     }
-                    existing = connections;
                 }
             }).subscribe();
             return true;
@@ -420,21 +390,25 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @Override
         public Completable closeAsync() {
-            return mergeAllDelayError(connections.stream()
-                    .map(AsyncCloseable::closeAsync)::iterator);
+            return doClose(AsyncCloseable::closeAsync);
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            return mergeAllDelayError(connections.stream()
-                    .map(AsyncCloseable::closeAsyncGracefully)::iterator);
+            return doClose(AsyncCloseable::closeAsyncGracefully);
+        }
+
+        @SuppressWarnings("unchecked")
+        private Completable doClose(final Function<? super C, Completable> closeFunction) {
+            return defer(() -> succeeded((List<C>) connectionsUpdater.getAndSet(this, CLOSED_LIST)))
+                    .flatMapCompletable(list -> mergeAllDelayError(list.stream().map(closeFunction)::iterator));
         }
 
         @Override
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + (connections == INACTIVE) +
+                    ", removed=" + (connections == CLOSED_LIST) +
                     '}';
         }
     }
@@ -452,5 +426,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
             return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
         }
+    }
+
+    private static <T> Single<T> failedLBClosed() {
+        return failed(new IllegalStateException("LoadBalancer has closed"));
     }
 }
