@@ -32,7 +32,7 @@ public class CompositeExceptionTest {
         e.add(suppressed1);
         DeliberateException suppressed2 = new DeliberateException();
         e.add(suppressed2);
-        e.finishAndThrow();
+        e.transferPendingToSuppressed();
         verifyOriginalAndSuppressedCauses(e, DELIBERATE_EXCEPTION, suppressed1);
         verifyOriginalAndSuppressedCauses(e, DELIBERATE_EXCEPTION, suppressed2);
     }

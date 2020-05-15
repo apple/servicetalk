@@ -23,7 +23,7 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link RuntimeException} that allows to add {@link Throwable} instances at a lower cost than
- * {@link #addSuppressed(Throwable)}. {@link #finishAndThrow()} will add all pending {@link Throwable}s as
+ * {@link #addSuppressed(Throwable)}. {@link #transferPendingToSuppressed()} will add all pending {@link Throwable}s as
  * {@link #addSuppressed(Throwable)}.
  */
 final class CompositeException extends RuntimeException {
@@ -41,7 +41,7 @@ final class CompositeException extends RuntimeException {
 
     /**
      * Add a {@link Throwable} to be added as {@link #addSuppressed(Throwable)} on the next call to
-     * {@link #finishAndThrow()}.
+     * {@link #transferPendingToSuppressed()}.
      *
      * @param toAdd {@link Throwable} to finally add as {@link #addSuppressed(Throwable)}.
      */
@@ -59,7 +59,7 @@ final class CompositeException extends RuntimeException {
      * <p>
      * It is assumed that {@link #add(Throwable)} won't be called after this method.
      */
-    void finishAndThrow() {
+    void transferPendingToSuppressed() {
         Throwable delayedCause = null;
         Throwable next;
         while ((next = suppressed.poll()) != null) {
