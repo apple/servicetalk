@@ -398,7 +398,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             targetTerminated = true;
             CompositeException de = this.delayedError;
             if (de != null) {
-                de.finishAndThrow();
+                de.transferPendingToSuppressed();
                 if (terminalNotification.cause() == de) {
                     terminalNotification.terminate(target);
                 } else {
