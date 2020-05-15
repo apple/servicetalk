@@ -39,7 +39,7 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
                 contextProvider);
     }
 
-    private static final class ConcatSubscriber<T> extends CancellableThenSubscription
+    private static final class ConcatSubscriber<T> extends DelayedCancellableThenSubscription
             implements CompletableSource.Subscriber, PublisherSource.Subscriber<T> {
 
         private final Subscriber<? super T> target;
@@ -53,7 +53,7 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            setCancellable(cancellable);
+            delayedCancellable(cancellable);
             target.onSubscribe(this);
         }
 
@@ -69,7 +69,7 @@ final class CompletableConcatWithPublisher<T> extends AbstractNoHandleSubscribeP
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            setSubscription(subscription);
+            delayedSubscription(subscription);
         }
 
         @Override

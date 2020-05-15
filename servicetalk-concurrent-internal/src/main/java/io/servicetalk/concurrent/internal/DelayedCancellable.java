@@ -52,4 +52,12 @@ public class DelayedCancellable implements Cancellable {
             oldCancellable.cancel();
         }
     }
+
+    /**
+     * Dereference the internal {@link Cancellable} and prevent future calls to
+     * {@link #delayedCancellable(Cancellable)}.
+     */
+    protected final void disableCancellable() {
+        current = IGNORE_CANCEL;
+    }
 }
