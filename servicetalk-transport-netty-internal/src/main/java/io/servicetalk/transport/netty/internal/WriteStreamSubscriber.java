@@ -26,12 +26,17 @@ import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -67,6 +72,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
+    private static final Object WRITE_BOUNDARY = new Object();
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
@@ -259,9 +265,59 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         private byte state;
         @Nullable
         private Throwable failureCause;
+        /**
+         * This deque contains all added listeners within {@link #WRITE_BOUNDARY write boundaries}.
+         * <pre>
+         *     {@link #WRITE_BOUNDARY}, listener1, listener2, {@link #WRITE_BOUNDARY}, listener3 ...
+         * </pre>
+         * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
+         */
+        private final Deque<Object> listenersOnWriteBoundaries = new LinkedList<>();
 
         AllWritesPromise(final Channel channel) {
             super(channel);
+        }
+
+        @Override
+        public ChannelPromise addListener(final GenericFutureListener<? extends Future<? super Void>> listener) {
+            assert channel.eventLoop().inEventLoop();
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                return this;
+            }
+            listenersOnWriteBoundaries.addLast(listener);
+            return this;
+        }
+
+        @SafeVarargs
+        @Override
+        public final ChannelPromise addListeners(
+                final GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            assert channel.eventLoop().inEventLoop();
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                return this;
+            }
+            for (GenericFutureListener<? extends Future<? super Void>> listener : listeners) {
+                listenersOnWriteBoundaries.addLast(listener);
+            }
+            return this;
+        }
+
+        @Override
+        public ChannelPromise removeListener(final GenericFutureListener<? extends Future<? super Void>> listener) {
+            assert channel.eventLoop().inEventLoop();
+            listenersOnWriteBoundaries.removeFirstOccurrence(listener);
+            return this;
+        }
+
+        @SafeVarargs
+        @Override
+        public final ChannelPromise removeListeners(
+                final GenericFutureListener<? extends Future<? super Void>>... listeners) {
+            assert channel.eventLoop().inEventLoop();
+            for (GenericFutureListener<? extends Future<? super Void>> listener : listeners) {
+                listenersOnWriteBoundaries.removeFirstOccurrence(listener);
+            }
+            return this;
         }
 
         boolean isWritable() {
@@ -275,6 +331,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 written = true;
             }
             activeWrites++;
+            listenersOnWriteBoundaries.addLast(WRITE_BOUNDARY);
             channel.write(msg, this);
         }
 
@@ -362,6 +419,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     return true;
                 }
                 return super.trySuccess(null);
+            } else {
+                notifyListenersTillNextWrite(failureCause);
             }
             return nettySharedPromiseTryStatus();
         }
@@ -398,6 +457,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
+            notifyAllListeners(cause);
             if (cause == null) {
                 try {
                     subscriber.onComplete();
@@ -417,6 +477,39 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     // Close channel on error.
                     channel.close();
                 }
+            }
+        }
+
+        private void notifyAllListeners(@Nullable Throwable cause) {
+            final ChannelFuture future = cause == null ? channel.newSucceededFuture() : channel.newFailedFuture(cause);
+            while (!listenersOnWriteBoundaries.isEmpty()) {
+                Object mayBeListener = listenersOnWriteBoundaries.removeFirst();
+                if (mayBeListener != WRITE_BOUNDARY) {
+                    notifyListener(future, mayBeListener);
+                }
+            }
+        }
+
+        private void notifyListenersTillNextWrite(@Nullable Throwable cause) {
+            assert !listenersOnWriteBoundaries.isEmpty();
+            Object shdBeWriteBoundary = listenersOnWriteBoundaries.removeFirst();
+            if (shdBeWriteBoundary != WRITE_BOUNDARY) {
+                return;
+            }
+            final ChannelFuture future = cause == null ? channel.newSucceededFuture() : channel.newFailedFuture(cause);
+            while (!listenersOnWriteBoundaries.isEmpty() && listenersOnWriteBoundaries.peekFirst() != WRITE_BOUNDARY) {
+                Object shdBeListener = listenersOnWriteBoundaries.removeFirst();
+                notifyListener(future, shdBeListener);
+            }
+        }
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private void notifyListener(final ChannelFuture future, final Object shdBeListener) {
+            GenericFutureListener listener = (GenericFutureListener) shdBeListener;
+            try {
+                listener.operationComplete(future);
+            } catch (Throwable t) {
+                LOGGER.error("Failed to notify listener {}", listener, t);
             }
         }
 
