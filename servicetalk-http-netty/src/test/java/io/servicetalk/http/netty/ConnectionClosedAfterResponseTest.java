@@ -41,6 +41,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,11 +65,12 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
 
 public class ConnectionClosedAfterResponseTest {
 
     @Rule
-    private final Timeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final ServerSocketChannel server;
     private final BlockingHttpClient client;
@@ -162,7 +164,7 @@ public class ConnectionClosedAfterResponseTest {
      * Some old servers may close the connection right after sending meta-data if the payload body is empty.
      */
     @Test
-    public void testChunkedWithoutLastChunk() throws Exception {
+    public void testChunkedWithoutBody() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -178,6 +180,45 @@ public class ConnectionClosedAfterResponseTest {
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
         assertThat(response.payloadBody().readableBytes(), is(0));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void testChunkedWithoutChunkData() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "5\r\n" +
+                // no chunk data of size 5 (e.g. "hello\r\n") and no last-chunk: 0\r\n
+                "\r\n");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void testChunkedWithoutLastChunk() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "5\r\n" +
+                "hello\r\n" +
+                // no last-chunk: 0\r\n
+                "\r\n");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        assertThrows(ClosedChannelException.class, () -> connection.request(request));
         connectionClosedLatch.await();
     }
 
