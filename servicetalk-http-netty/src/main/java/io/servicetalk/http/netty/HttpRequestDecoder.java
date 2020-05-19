@@ -68,6 +68,11 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     }
 
     @Override
+    protected boolean allowChunkedWithoutBody() {
+        return false;
+    }
+
+    @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
         buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
     }

@@ -57,23 +57,30 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final boolean allowChunkedWithoutBody;
 
     HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, int maxStartLineLength, int maxHeaderFieldLength) {
         this(methodQueue, alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
-                        final CloseHandler closeHandler) {
+                        final boolean allowChunkedWithoutBody, final CloseHandler closeHandler) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.allowChunkedWithoutBody = allowChunkedWithoutBody;
     }
 
     @Override
     protected boolean isDecodingRequest() {
         return false;
+    }
+
+    @Override
+    protected boolean allowChunkedWithoutBody() {
+        return allowChunkedWithoutBody;
     }
 
     @Override

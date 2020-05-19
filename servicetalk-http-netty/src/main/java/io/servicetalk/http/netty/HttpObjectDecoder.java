@@ -63,12 +63,14 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -183,6 +185,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * @return {@code true} if requests are being decoded.
      */
     protected abstract boolean isDecodingRequest();
+
+    protected abstract boolean allowChunkedWithoutBody();
 
     /**
      * When the initial line is expected, and a buffer is received which does not contain a CRLF that terminates the
@@ -448,12 +452,16 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // Handle the last unfinished message.
         if (message != null) {
             boolean chunked = isTransferEncodingChunked(message.headers());
-            if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
-                // End of connection.
-                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
-                closeHandler.protocolPayloadEndInbound(ctx);
-                resetNow();
-                return;
+            if (!in.isReadable()) {
+                if ((currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
+                        (currentState == State.READ_CHUNK_SIZE && chunked && !isDecodingRequest() &&
+                                allowChunkedWithoutBody() && message.headers().contains(CONNECTION, CLOSE))) {
+                    // End of connection.
+                    ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
+                    closeHandler.protocolPayloadEndInbound(ctx);
+                    resetNow();
+                    return;
+                }
             }
 
             if (currentState == State.READ_HEADER) {
