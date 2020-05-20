@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
-    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXTENSION = new H1SpecExceptionsBuilder().build();
+    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXTENSIONS = new H1SpecExceptionsBuilder().build();
 
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
@@ -37,7 +37,7 @@ public final class H1ProtocolConfigBuilder {
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
-    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXTENSION;
+    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXTENSIONS;
 
     H1ProtocolConfigBuilder() {
     }
