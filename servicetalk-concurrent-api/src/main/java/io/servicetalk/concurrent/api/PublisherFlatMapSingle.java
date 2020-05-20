@@ -251,11 +251,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private void tryEmitItem(final Object item) {
             if (tryAcquireLock(emittingUpdater, this)) { // fast path. no concurrency, avoid the queue and emit.
                 try {
-                    try {
-                        sendToTarget(item);
-                    } finally {
-                        doDrainPostProcessing(1);
-                    }
+                    sendToTarget(item);
+                    doDrainPostProcessing(1);
                 } finally {
                     if (!releaseLock(emittingUpdater, this)) {
                         drainPending();
@@ -293,12 +290,12 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 }
             }
 
-            if (drainCount != 0) {
-                doDrainPostProcessing(drainCount);
-            }
-
             if (delayedCause != null) {
                 throwException(delayedCause);
+            }
+
+            if (drainCount != 0) {
+                doDrainPostProcessing(drainCount);
             }
         }
 
