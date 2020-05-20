@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
@@ -37,9 +38,12 @@ import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.spi.Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
@@ -49,12 +53,15 @@ import javax.ws.rs.core.SecurityContext;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
@@ -161,11 +168,18 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final DelayedCancellable delayedCancellable = new DelayedCancellable();
-                subscriber.onSubscribe(delayedCancellable);
+                DuplicateTerminateDetectorSingle<? super StreamingHttpResponse> dupSub =
+                        new DuplicateTerminateDetectorSingle<>(subscriber);
                 try {
-                    handle0(serviceCtx, req, factory, subscriber, delayedCancellable);
+                    dupSub.onSubscribe(delayedCancellable);
+                } catch (Throwable cause) {
+                    handleExceptionFromOnSubscribe(dupSub, cause);
+                    return;
+                }
+                try {
+                    handle0(serviceCtx, req, factory, dupSub, delayedCancellable);
                 } catch (final Throwable t) {
-                    subscriber.onError(t);
+                    safeOnError(dupSub, t);
                 }
             }
         };
@@ -221,5 +235,41 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         delayedCancellable.delayedCancellable(responseWriter::dispose);
 
         applicationHandler.handle(containerRequest);
+    }
+
+    private static final class DuplicateTerminateDetectorSingle<T> implements Subscriber<T> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateTerminateDetectorSingle.class);
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<DuplicateTerminateDetectorSingle> doneUpdater =
+                newUpdater(DuplicateTerminateDetectorSingle.class, "done");
+        private final Subscriber<T> delegate;
+        private volatile int done;
+
+        private DuplicateTerminateDetectorSingle(final Subscriber<T> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            delegate.onSubscribe(cancellable);
+        }
+
+        @Override
+        public void onSuccess(@Nullable final T result) {
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                delegate.onSuccess(result);
+            } else {
+                LOGGER.error("duplicate termination in onSuccess {} {}", result, delegate);
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                delegate.onError(t);
+            } else {
+                LOGGER.error("duplicate termination in onError {}", delegate, t);
+            }
+        }
     }
 }
