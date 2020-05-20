@@ -72,7 +72,8 @@ import static java.util.Objects.requireNonNull;
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
-    private static final Object WRITE_BOUNDARY = new Object();
+    @SuppressWarnings("rawtypes")
+    private static final GenericFutureListener WRITE_BOUNDARY = future -> { };
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
@@ -272,7 +273,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * </pre>
          * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
          */
-        private final Deque<Object> listenersOnWriteBoundaries = new ArrayDeque<>();
+        private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>();
 
         AllWritesPromise(final Channel channel) {
             super(channel);
@@ -482,24 +483,21 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void notifyAllListeners(@Nullable Throwable cause) {
             final ChannelFuture future = cause == null ? channel.newSucceededFuture() : channel.newFailedFuture(cause);
-            Object mayBeListener;
+            GenericFutureListener<?> mayBeListener;
             while ((mayBeListener = listenersOnWriteBoundaries.pollFirst()) != null) {
                 if (mayBeListener != WRITE_BOUNDARY) {
-                    GenericFutureListener<?> listener = (GenericFutureListener<?>) mayBeListener;
-                    notifyListener(eventLoop, future, listener);
+                    notifyListener(eventLoop, future, mayBeListener);
                 }
             }
         }
 
         private void notifyListenersTillNextWrite(@Nullable Throwable cause) {
-            assert !listenersOnWriteBoundaries.isEmpty();
-            Object shdBeWriteBoundary = listenersOnWriteBoundaries.removeFirst();
+            Object shdBeWriteBoundary = listenersOnWriteBoundaries.pollFirst();
             assert shdBeWriteBoundary == WRITE_BOUNDARY;
 
             final ChannelFuture future = cause == null ? channel.newSucceededFuture() : channel.newFailedFuture(cause);
             while (!listenersOnWriteBoundaries.isEmpty() && listenersOnWriteBoundaries.peekFirst() != WRITE_BOUNDARY) {
-                GenericFutureListener<?> listener = (GenericFutureListener<?>) listenersOnWriteBoundaries.removeFirst();
-                notifyListener(eventLoop, future, listener);
+                notifyListener(eventLoop, future, listenersOnWriteBoundaries.removeFirst());
             }
         }
 
