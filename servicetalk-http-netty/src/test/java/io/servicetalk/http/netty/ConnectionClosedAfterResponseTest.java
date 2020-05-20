@@ -111,7 +111,7 @@ public class ConnectionClosedAfterResponseTest {
                 .syncUninterruptibly().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
-                .protocols(h1().specExceptions(new H1SpecExceptionsBuilder().allowChunkedResponseWithoutBody().build())
+                .protocols(h1().specExceptions(new H1SpecExceptions.Builder().allowChunkedResponseWithoutBody().build())
                         .build())
                 .buildBlocking();
     }

@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
-    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptionsBuilder().build();
+    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
 
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;

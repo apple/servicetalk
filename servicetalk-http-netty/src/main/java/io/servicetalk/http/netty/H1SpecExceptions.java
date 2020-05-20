@@ -18,7 +18,13 @@ package io.servicetalk.http.netty;
 /**
  * Additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.
  */
-public interface H1SpecExceptions {
+public final class H1SpecExceptions {
+
+    private final boolean allowChunkedResponseWithoutBody;
+
+    H1SpecExceptions(final boolean allowChunkedResponseWithoutBody) {
+        this.allowChunkedResponseWithoutBody = allowChunkedResponseWithoutBody;
+    }
 
     /**
      * Defines if an HTTP/1.1 response with <a href="https://tools.ietf.org/html/rfc7230#section-6.1">
@@ -40,5 +46,45 @@ public interface H1SpecExceptions {
      * @return {@code true} if response decoder should complete responses without
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> when server closes the connection.
      */
-    boolean allowChunkedResponseWithoutBody();
+    public boolean allowChunkedResponseWithoutBody() {
+        return allowChunkedResponseWithoutBody;
+    }
+
+    public static final class Builder {
+
+        private boolean allowChunkedResponseWithoutBody;
+
+        /**
+         * Defines if an HTTP/1.1 response with <a href="https://tools.ietf.org/html/rfc7230#section-6.1">
+         * Connection: close</a> and <a href="https://tools.ietf.org/html/rfc7230#section-3.3.1">
+         * Transfer-Encoding: chunked</a> headers that does not start reading the
+         * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> before server closes the connection
+         * should be considered as a legit response.
+         * <p>
+         * While this use-case is not supported by <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230</a>,
+         * some older server implementations may use connection closure as an indicator of message completion even if
+         * {@code Transfer-Encoding: chunked} header is present:
+         * <pre>{@code
+         *     HTTP/1.1 200 OK
+         *     Content-Type: text/plain
+         *     Transfer-Encoding: chunked
+         *     Connection: close
+         * }</pre>
+         *
+         * @return {@code this}
+         */
+        public Builder allowChunkedResponseWithoutBody() {
+            this.allowChunkedResponseWithoutBody = true;
+            return this;
+        }
+
+        /**
+         * Builds {@link H1SpecExceptions}.
+         *
+         * @return a new {@link H1SpecExceptions}
+         */
+        public H1SpecExceptions build() {
+            return new H1SpecExceptions(allowChunkedResponseWithoutBody);
+        }
+    }
 }
