@@ -32,6 +32,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
@@ -123,7 +124,22 @@ public class ConnectionClosedAfterResponseTest {
     }
 
     @Test
-    public void testWithoutPayload() throws Exception {
+    public void notAllHeadersReceived() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n");   // no final CRLF after headers
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        assertThrows(PrematureChannelClosureException.class, () -> connection.request(request));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void noPayloadNoMessageLengthHeader() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Connection: close\r\n" + "\r\n");
 
@@ -140,10 +156,9 @@ public class ConnectionClosedAfterResponseTest {
     }
 
     @Test
-    public void testWithPayload() throws Exception {
+    public void payloadWithoutMessageLengthHeader() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
-                "Content-length: 5\r\n" +
                 "Connection: close\r\n" + "\r\n" +
                 "hello");
 
@@ -155,8 +170,65 @@ public class ConnectionClosedAfterResponseTest {
         HttpResponse response = connection.request(request);
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
-        assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo("5"));
         assertThat(response.payloadBody().toString(US_ASCII), equalTo("hello"));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void noPayloadWithContentLength() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" + "\r\n");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        HttpResponse response = connection.request(request);
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo("0"));
+        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
+        assertThat(response.payloadBody().readableBytes(), is(0));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void payloadWithContentLength() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 5\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "hello");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        HttpResponse response = connection.request(request);
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo("5"));
+        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
+        assertThat(response.payloadBody().toString(US_ASCII), equalTo("hello"));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void truncatedPayloadWithContentLength() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 5\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "he");   // not the whole payload body
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        assertThrows(ClosedChannelException.class, () -> connection.request(request));
         connectionClosedLatch.await();
     }
 
@@ -164,7 +236,7 @@ public class ConnectionClosedAfterResponseTest {
      * Some old servers may close the connection right after sending meta-data if the payload body is empty.
      */
     @Test
-    public void testChunkedWithoutBody() throws Exception {
+    public void chunkedWithoutBody() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -184,7 +256,68 @@ public class ConnectionClosedAfterResponseTest {
     }
 
     @Test
-    public void testChunkedWithoutChunkData() throws Exception {
+    public void chunkedWithEmptyPayload() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "0\r\n" + "\r\n");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        HttpResponse response = connection.request(request);
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
+        assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
+        assertThat(response.payloadBody().readableBytes(), is(0));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void chunkedWithPayload() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "5\r\n" +
+                "hello\r\n" +
+                "0\r\n" + "\r\n");
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        HttpResponse response = connection.request(request);
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
+        assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
+        assertThat(response.payloadBody().toString(US_ASCII), equalTo("hello"));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void chunkedWithSomeBytesAfterHeaders() throws Exception {
+        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Connection: close\r\n" + "\r\n" +
+                "5");   // can be a chunk-size, but impossible to interpret it correctly
+
+        HttpRequest request = client.get("/");
+        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
+        // Wait until a server closes the connection:
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
+
+        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        connectionClosedLatch.await();
+    }
+
+    @Test
+    public void chunkedWithoutChunkData() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -203,7 +336,7 @@ public class ConnectionClosedAfterResponseTest {
     }
 
     @Test
-    public void testChunkedWithoutLastChunk() throws Exception {
+    public void chunkedWithoutLastChunk() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -223,46 +356,21 @@ public class ConnectionClosedAfterResponseTest {
     }
 
     @Test
-    public void testChunkedWithEmptyPayload() throws Exception {
-        encodedResponse.set("HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "Connection: close\r\n" + "\r\n" +
-                "0\r\n" + "\r\n");
-
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
-        assertThat(response.status(), is(OK));
-        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
-        assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
-        assertThat(response.payloadBody().readableBytes(), is(0));
-        connectionClosedLatch.await();
-    }
-
-    @Test
-    public void testChunkedWithPayload() throws Exception {
+    public void chunkedWithoutFinalCRLF() throws Exception {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/plain\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n" + "\r\n" +
                 "5\r\n" +
                 "hello\r\n" +
-                "0\r\n" + "\r\n");
+                "0\r\n");   // no final CRLF
 
         HttpRequest request = client.get("/");
         ReservedBlockingHttpConnection connection = client.reserveConnection(request);
         // Wait until a server closes the connection:
         connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
 
-        HttpResponse response = connection.request(request);
-        assertThat(response.status(), is(OK));
-        assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
-        assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
-        assertThat(response.payloadBody().toString(US_ASCII), equalTo("hello"));
+        assertThrows(ClosedChannelException.class, () -> connection.request(request));
         connectionClosedLatch.await();
     }
 }
