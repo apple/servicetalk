@@ -452,16 +452,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // Handle the last unfinished message.
         if (message != null) {
             boolean chunked = isTransferEncodingChunked(message.headers());
-            if (!in.isReadable()) {
-                if ((currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
-                        (currentState == State.READ_CHUNK_SIZE && chunked && !isDecodingRequest() &&
-                                allowChunkedWithoutBody() && message.headers().contains(CONNECTION, CLOSE))) {
-                    // End of connection.
-                    ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
-                    closeHandler.protocolPayloadEndInbound(ctx);
-                    resetNow();
-                    return;
-                }
+            if (!in.isReadable() && (
+                    (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
+                    (currentState == State.READ_CHUNK_SIZE && chunked && !isDecodingRequest() &&
+                            allowChunkedWithoutBody() && message.headers().contains(CONNECTION, CLOSE)))) {
+                // End of connection.
+                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
+                closeHandler.protocolPayloadEndInbound(ctx);
+                resetNow();
+                return;
             }
 
             if (currentState == State.READ_HEADER) {
