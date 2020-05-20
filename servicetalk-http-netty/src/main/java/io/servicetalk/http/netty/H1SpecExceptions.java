@@ -16,8 +16,7 @@
 package io.servicetalk.http.netty;
 
 /**
- * Additional extensions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification that help to
- * relax constrains for backward compatibility with older systems.
+ * Additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.
  */
 public interface H1SpecExceptions {
 

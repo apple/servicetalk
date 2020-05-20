@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
-    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXTENSIONS = new H1SpecExceptionsBuilder().build();
+    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptionsBuilder().build();
 
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
@@ -37,7 +37,7 @@ public final class H1ProtocolConfigBuilder {
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
-    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXTENSIONS;
+    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXCEPTIONS;
 
     H1ProtocolConfigBuilder() {
     }
@@ -134,11 +134,9 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets additional extensions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification that help
-     * to relax constrains for backward compatibility with older systems.
+     * Sets additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.
      *
-     * @param specExceptions extensions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification
-     * that help to relax constrains for backward compatibility with older systems
+     * @param specExceptions exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification
      * @return {@code this}
      */
     public H1ProtocolConfigBuilder specExceptions(final H1SpecExceptions specExceptions) {
