@@ -35,9 +35,11 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * The {@link Subscription} methods can be invoked at any time.
  */
 class DelayedCancellableThenSubscription implements Subscription {
-    private final DelayedSubscription delayedSubscription = new DelayedSubscription();
+    private static final Cancellable CANCELLED = () -> { };
     private static final AtomicReferenceFieldUpdater<DelayedCancellableThenSubscription, Cancellable> currentUpdater =
             newUpdater(DelayedCancellableThenSubscription.class, Cancellable.class, "current");
+
+    private final DelayedSubscription delayedSubscription = new DelayedSubscription();
     @Nullable
     private volatile Cancellable current;
 
@@ -48,13 +50,9 @@ class DelayedCancellableThenSubscription implements Subscription {
 
     @Override
     public void cancel() {
-        try {
-            Cancellable oldCancellable = currentUpdater.getAndSet(this, IGNORE_CANCEL);
-            if (oldCancellable != null) {
-                oldCancellable.cancel();
-            }
-        } finally {
-            delayedSubscription.cancel();
+        Cancellable oldCancellable = currentUpdater.getAndSet(this, CANCELLED);
+        if (oldCancellable != null) {
+            oldCancellable.cancel();
         }
     }
 
@@ -65,11 +63,11 @@ class DelayedCancellableThenSubscription implements Subscription {
     }
 
     final void delayedSubscription(Subscription subscription) {
-        // The operation corresponding to the first cancellable is considered done, so we dereference the Cancellable.
-        // Best effort is OK as subsequent calls to cancel should be NOOPs [1][2].
-        // [1] https://github.com/reactive-streams/reactive-streams-jvm#2.4
-        // [2] https://github.com/reactive-streams/reactive-streams-jvm#3.7
-        current = IGNORE_CANCEL;
-        delayedSubscription.delayedSubscription(subscription);
+        if (currentUpdater.getAndAccumulate(this, delayedSubscription,
+                (prev, next) -> prev == CANCELLED ? CANCELLED : next) == CANCELLED) {
+            subscription.cancel();
+        } else {
+            delayedSubscription.delayedSubscription(subscription);
+        }
     }
 }
