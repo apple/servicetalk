@@ -36,6 +36,7 @@ import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,7 +89,7 @@ public class ConnectionClosedAfterResponseTest {
         bs.channel(serverChannel(loop, InetSocketAddress.class));
         bs.childHandler(new ChannelInitializer() {
             @Override
-            protected void initChannel(final Channel ch) {
+            protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new HttpRequestDecoder());
                 ch.pipeline().addLast(new HttpObjectAggregator(MAX_VALUE));
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
@@ -98,7 +99,7 @@ public class ConnectionClosedAfterResponseTest {
                             ctx.writeAndFlush(ByteBufUtil.writeAscii(ctx.alloc(), encodedResponse.get()))
                                     .addListener(ChannelFutureListener.CLOSE);
                         }
-                        ctx.fireChannelRead(msg);
+                        ReferenceCountUtil.release(msg);
                     }
                 });
             }
