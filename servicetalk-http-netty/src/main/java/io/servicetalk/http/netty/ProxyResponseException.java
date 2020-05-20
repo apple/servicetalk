@@ -16,11 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.transport.api.RetryableException;
+
+import java.io.IOException;
 
 /**
  * A proxy response exception, that indicates an unexpected response status from a proxy.
  */
-public final class ProxyResponseException extends RuntimeException {
+public final class ProxyResponseException extends IOException implements RetryableException {
     private final HttpResponseStatus status;
 
     ProxyResponseException(final String message, final HttpResponseStatus status) {
