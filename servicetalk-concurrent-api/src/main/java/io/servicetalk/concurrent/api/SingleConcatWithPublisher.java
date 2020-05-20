@@ -43,7 +43,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                 contextProvider);
     }
 
-    private static final class ConcatSubscriber<T> extends CancellableThenSubscription
+    private static final class ConcatSubscriber<T> extends DelayedCancellableThenSubscription
             implements SingleSource.Subscriber<T>, Subscriber<T> {
         private static final Object INITIAL = new Object();
         private static final Object REQUESTED = new Object();
@@ -76,7 +76,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            setCancellable(cancellable);
+            delayedCancellable(cancellable);
             target.onSubscribe(this);
         }
 
@@ -100,7 +100,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            setSubscription(subscription);
+            delayedSubscription(subscription);
         }
 
         @Override

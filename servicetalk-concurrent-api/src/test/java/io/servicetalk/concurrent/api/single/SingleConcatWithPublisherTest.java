@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -99,7 +100,7 @@ public class SingleConcatWithPublisherTest {
         subscriber.request(invalidN);
         source.onSuccess(1);
         next.onSubscribe(subscription);
-        assertThat("Unexpected requestN amount", subscription.requested(), is(invalidN));
+        assertThat("Unexpected requestN amount", subscription.requested(), lessThanOrEqualTo(0L));
     }
 
     @Test
@@ -126,8 +127,7 @@ public class SingleConcatWithPublisherTest {
         subscriber.request(-10);
         source.onSuccess(1);
         next.onSubscribe(subscription);
-        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
-                is(false));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requested(), lessThanOrEqualTo(0L));
     }
 
     @Test

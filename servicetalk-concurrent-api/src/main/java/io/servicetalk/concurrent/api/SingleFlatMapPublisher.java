@@ -45,7 +45,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class SubscriberImpl<T, R> extends CancellableThenSubscription
+    private static final class SubscriberImpl<T, R> extends DelayedCancellableThenSubscription
             implements SingleSource.Subscriber<T>, Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
@@ -66,13 +66,13 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            setCancellable(cancellable);
+            delayedCancellable(cancellable);
             subscriber.onSubscribe(this);
         }
 
         @Override
         public void onSubscribe(Subscription s) {
-            setSubscription(s);
+            delayedSubscription(s);
         }
 
         @Override
