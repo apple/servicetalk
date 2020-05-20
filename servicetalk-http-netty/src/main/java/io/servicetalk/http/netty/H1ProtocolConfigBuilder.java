@@ -29,13 +29,15 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
+    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXTENSION = new H1SpecExceptionsBuilder().build();
+
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
-    private boolean allowChunkedResponseWithoutBody;
+    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXTENSION;
 
     H1ProtocolConfigBuilder() {
     }
@@ -132,26 +134,15 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Defines if an HTTP/1.1 response with <a href="https://tools.ietf.org/html/rfc7230#section-6.1">
-     * Connection: close</a> and <a href="https://tools.ietf.org/html/rfc7230#section-3.3.1">
-     * Transfer-Encoding: chunked</a> headers that does not start reading the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> before server closes the connection
-     * should be considered as a legit response.
-     * <p>
-     * While this use-case is not supported by <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230</a>,
-     * some older server implementations may use connection closure as an indicator of message completion even if
-     * {@code Transfer-Encoding: chunked} header is present:
-     * <pre>{@code
-     *     HTTP/1.1 200 OK
-     *     Content-Type: text/plain
-     *     Transfer-Encoding: chunked
-     *     Connection: close
-     * }</pre>
+     * Sets additional extensions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification that help
+     * to relax constrains for backward compatibility with older systems.
      *
+     * @param specExceptions extensions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification
+     * that help to relax constrains for backward compatibility with older systems
      * @return {@code this}
      */
-    public H1ProtocolConfigBuilder allowChunkedResponseWithoutBody() {
-        this.allowChunkedResponseWithoutBody = true;
+    public H1ProtocolConfigBuilder specExceptions(final H1SpecExceptions specExceptions) {
+        this.specExceptions = requireNonNull(specExceptions);
         return this;
     }
 
@@ -162,8 +153,7 @@ public final class H1ProtocolConfigBuilder {
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate,
-                allowChunkedResponseWithoutBody);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -174,19 +164,19 @@ public final class H1ProtocolConfigBuilder {
         private final int maxHeaderFieldLength;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
-        private final boolean allowChunkedResponseWithoutBody;
+        private final H1SpecExceptions specExceptions;
 
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
-                                final boolean allowChunkedResponseWithoutBody) {
+                                final H1SpecExceptions specExceptions) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
             this.maxHeaderFieldLength = maxHeaderFieldLength;
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
-            this.allowChunkedResponseWithoutBody = allowChunkedResponseWithoutBody;
+            this.specExceptions = specExceptions;
         }
 
         @Override
@@ -220,8 +210,8 @@ public final class H1ProtocolConfigBuilder {
         }
 
         @Override
-        public boolean allowChunkedResponseWithoutBody() {
-            return allowChunkedResponseWithoutBody;
+        public H1SpecExceptions specExceptions() {
+            return specExceptions;
         }
     }
 }
