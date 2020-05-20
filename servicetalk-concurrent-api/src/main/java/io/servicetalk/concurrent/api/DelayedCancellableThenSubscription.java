@@ -17,8 +17,13 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
+
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * An implementation of {@link Subscription} that starts as a {@link Cancellable} but then is replaced with an actual
@@ -29,8 +34,12 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
  * </ul>
  * The {@link Subscription} methods can be invoked at any time.
  */
-class DelayedCancellableThenSubscription extends DelayedCancellable implements Subscription {
+class DelayedCancellableThenSubscription implements Subscription {
     private final DelayedSubscription delayedSubscription = new DelayedSubscription();
+    private static final AtomicReferenceFieldUpdater<DelayedCancellableThenSubscription, Cancellable> currentUpdater =
+            newUpdater(DelayedCancellableThenSubscription.class, Cancellable.class, "current");
+    @Nullable
+    private volatile Cancellable current;
 
     @Override
     public void request(final long n) {
@@ -40,9 +49,18 @@ class DelayedCancellableThenSubscription extends DelayedCancellable implements S
     @Override
     public void cancel() {
         try {
-            super.cancel();
+            Cancellable oldCancellable = currentUpdater.getAndSet(this, IGNORE_CANCEL);
+            if (oldCancellable != null) {
+                oldCancellable.cancel();
+            }
         } finally {
             delayedSubscription.cancel();
+        }
+    }
+
+    final void delayedCancellable(Cancellable delayedCancellable) {
+        if (!currentUpdater.compareAndSet(this, null, requireNonNull(delayedCancellable))) {
+            delayedCancellable.cancel();
         }
     }
 
@@ -51,7 +69,7 @@ class DelayedCancellableThenSubscription extends DelayedCancellable implements S
         // Best effort is OK as subsequent calls to cancel should be NOOPs [1][2].
         // [1] https://github.com/reactive-streams/reactive-streams-jvm#2.4
         // [2] https://github.com/reactive-streams/reactive-streams-jvm#3.7
-        disableCancellable();
+        current = IGNORE_CANCEL;
         delayedSubscription.delayedSubscription(subscription);
     }
 }
