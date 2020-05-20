@@ -63,14 +63,12 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
-import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
-import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -128,6 +126,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
+    private final boolean allowPrematureClosureBeforePayloadBody;
     @Nullable
     private T message;
     @Nullable
@@ -160,7 +159,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     protected HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
-                                final CloseHandler closeHandler) {
+                                final boolean allowPrematureClosureBeforePayloadBody, final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = closeHandler;
         if (maxStartLineLength <= 0) {
@@ -172,6 +171,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.headersFactory = requireNonNull(headersFactory);
         this.maxStartLineLength = maxStartLineLength;
         this.maxHeaderFieldLength = maxHeaderFieldLength;
+        this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -185,8 +185,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * @return {@code true} if requests are being decoded.
      */
     protected abstract boolean isDecodingRequest();
-
-    protected abstract boolean allowChunkedWithoutBody();
 
     /**
      * When the initial line is expected, and a buffer is received which does not contain a CRLF that terminates the
@@ -454,8 +452,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             boolean chunked = isTransferEncodingChunked(message.headers());
             if (!in.isReadable() && (
                     (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
-                    (currentState == State.READ_CHUNK_SIZE && chunked && !isDecodingRequest() &&
-                            allowChunkedWithoutBody() && message.headers().contains(CONNECTION, CLOSE)))) {
+                    (currentState == State.READ_CHUNK_SIZE && chunked && allowPrematureClosureBeforePayloadBody))) {
                 // End of connection.
                 ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);

@@ -20,61 +20,35 @@ package io.servicetalk.http.netty;
  */
 public final class H1SpecExceptions {
 
-    private final boolean allowChunkedResponseWithoutBody;
+    private final boolean allowPrematureClosureBeforePayloadBody;
 
-    H1SpecExceptions(final boolean allowChunkedResponseWithoutBody) {
-        this.allowChunkedResponseWithoutBody = allowChunkedResponseWithoutBody;
+    H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody) {
+        this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
     }
 
     /**
-     * Defines if an HTTP/1.1 response with <a href="https://tools.ietf.org/html/rfc7230#section-6.1">
-     * Connection: close</a> and <a href="https://tools.ietf.org/html/rfc7230#section-3.3.1">
-     * Transfer-Encoding: chunked</a> headers that does not start reading the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> before server closes the connection
-     * should be considered as a legit response.
-     * <p>
-     * While this use-case is not supported by <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230</a>,
-     * some older server implementations may use connection closure as an indicator of message completion even if
-     * {@code Transfer-Encoding: chunked} header is present:
-     * <pre>{@code
-     *     HTTP/1.1 200 OK
-     *     Content-Type: text/plain
-     *     Transfer-Encoding: chunked
-     *     Connection: close
-     * }</pre>
+     * Allows interpreting a premature connection closures as the end of HTTP/1.1 messages if a receiver has not started
+     * to read the payload body yet.
      *
-     * @return {@code true} if response decoder should complete responses without
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> when server closes the connection.
+     * @return {@code true} if a premature connection closures before reading the payload body should be considered as
+     * the end of HTTP/1.1 messages
      */
-    public boolean allowChunkedResponseWithoutBody() {
-        return allowChunkedResponseWithoutBody;
+    public boolean allowPrematureClosureBeforePayloadBody() {
+        return allowPrematureClosureBeforePayloadBody;
     }
 
     public static final class Builder {
 
-        private boolean allowChunkedResponseWithoutBody;
+        private boolean allowPrematureClosureBeforePayloadBody;
 
         /**
-         * Defines if an HTTP/1.1 response with <a href="https://tools.ietf.org/html/rfc7230#section-6.1">
-         * Connection: close</a> and <a href="https://tools.ietf.org/html/rfc7230#section-3.3.1">
-         * Transfer-Encoding: chunked</a> headers that does not start reading the
-         * <a href="https://tools.ietf.org/html/rfc7230#section-4.1">chunked-body</a> before server closes the connection
-         * should be considered as a legit response.
-         * <p>
-         * While this use-case is not supported by <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230</a>,
-         * some older server implementations may use connection closure as an indicator of message completion even if
-         * {@code Transfer-Encoding: chunked} header is present:
-         * <pre>{@code
-         *     HTTP/1.1 200 OK
-         *     Content-Type: text/plain
-         *     Transfer-Encoding: chunked
-         *     Connection: close
-         * }</pre>
+         * Allows interpreting a premature connection closures as the end of HTTP/1.1 messages if a receiver has not
+         * started to read the payload body yet.
          *
          * @return {@code this}
          */
-        public Builder allowChunkedResponseWithoutBody() {
-            this.allowChunkedResponseWithoutBody = true;
+        public Builder allowPrematureClosureBeforePayloadBody() {
+            this.allowPrematureClosureBeforePayloadBody = true;
             return this;
         }
 
@@ -84,7 +58,7 @@ public final class H1SpecExceptions {
          * @return a new {@link H1SpecExceptions}
          */
         public H1SpecExceptions build() {
-            return new H1SpecExceptions(allowChunkedResponseWithoutBody);
+            return new H1SpecExceptions(allowPrematureClosureBeforePayloadBody);
         }
     }
 }

@@ -69,7 +69,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
 
-public class ConnectionClosedAfterResponseTest {
+public class PrematureClosureBeforeResponsePayloadBodyTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -79,7 +79,7 @@ public class ConnectionClosedAfterResponseTest {
     private final AtomicReference<CharSequence> encodedResponse = new AtomicReference<>();
     private final CountDownLatch connectionClosedLatch = new CountDownLatch(1);
 
-    public ConnectionClosedAfterResponseTest() {
+    public PrematureClosureBeforeResponsePayloadBodyTest() {
         EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                 toEventLoopAwareNettyIoExecutor(globalExecutionContext().ioExecutor());
         EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
@@ -111,7 +111,8 @@ public class ConnectionClosedAfterResponseTest {
                 .syncUninterruptibly().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
-                .protocols(h1().specExceptions(new H1SpecExceptions.Builder().allowChunkedResponseWithoutBody().build())
+                .protocols(h1()
+                        .specExceptions(new H1SpecExceptions.Builder().allowPrematureClosureBeforePayloadBody().build())
                         .build())
                 .buildBlocking();
     }
