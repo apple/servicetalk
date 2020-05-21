@@ -20,7 +20,6 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanBuilder;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 
-import io.opentracing.References;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.tag.Tags;
@@ -33,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.opentracing.References.CHILD_OF;
+import static io.opentracing.References.FOLLOWS_FROM;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
@@ -52,13 +53,13 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
 
     @Override
     public final InMemorySpanBuilder asChildOf(SpanContext parent) {
-        addReference(References.CHILD_OF, parent);
+        addReference(CHILD_OF, parent);
         return this;
     }
 
     @Override
     public final InMemorySpanBuilder asChildOf(Span parent) {
-        addReference(References.CHILD_OF, parent.context());
+        addReference(CHILD_OF, parent.context());
         return this;
     }
 
@@ -106,8 +107,8 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     protected final InMemorySpanContext parent() {
         // Use old-style for loop to save a bit of garbage creation
         for (int i = 0; i < references.size(); i++) {
-            InMemoryReference reference = references.get(i);
-            if (References.CHILD_OF.equals(reference.type())) {
+            final InMemoryReference reference = references.get(i);
+            if (CHILD_OF.equals(reference.type()) || FOLLOWS_FROM.equals(reference.type())) {
                 return reference.referredTo();
             }
         }
