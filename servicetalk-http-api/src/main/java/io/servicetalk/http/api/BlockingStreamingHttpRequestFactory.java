@@ -22,6 +22,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 
 /**
@@ -52,6 +53,15 @@ public interface BlockingStreamingHttpRequestFactory {
      */
     default BlockingStreamingHttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethod#PUT} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethod#PUT} request.
+     */
+    default BlockingStreamingHttpRequest put(String requestTarget) {
+        return newRequest(PUT, requestTarget);
     }
 
     /**
