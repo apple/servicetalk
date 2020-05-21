@@ -126,6 +126,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
+    private final boolean allowPrematureClosureBeforePayloadBody;
     @Nullable
     private T message;
     @Nullable
@@ -158,7 +159,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     protected HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
-                                final CloseHandler closeHandler) {
+                                final boolean allowPrematureClosureBeforePayloadBody, final CloseHandler closeHandler) {
         super(alloc);
         this.closeHandler = closeHandler;
         if (maxStartLineLength <= 0) {
@@ -170,6 +171,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         this.headersFactory = requireNonNull(headersFactory);
         this.maxStartLineLength = maxStartLineLength;
         this.maxHeaderFieldLength = maxHeaderFieldLength;
+        this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -448,7 +450,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // Handle the last unfinished message.
         if (message != null) {
             boolean chunked = isTransferEncodingChunked(message.headers());
-            if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
+            if (!in.isReadable() && (
+                    (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !chunked) ||
+                    (currentState == State.READ_CHUNK_SIZE && chunked && allowPrematureClosureBeforePayloadBody))) {
                 // End of connection.
                 ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);

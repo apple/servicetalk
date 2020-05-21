@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,15 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H1ProtocolConfigBuilder {
 
+    private static final H1SpecExceptions DEFAULT_H1_SPEC_EXCEPTIONS = new H1SpecExceptions.Builder().build();
+
     private int maxPipelinedRequests = 1;
     private int maxStartLineLength = 4096;
     private int maxHeaderFieldLength = 8192;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
+    private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXCEPTIONS;
 
     H1ProtocolConfigBuilder() {
     }
@@ -131,13 +134,24 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
+     * Sets additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.
+     *
+     * @param specExceptions exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification
+     * @return {@code this}
+     */
+    public H1ProtocolConfigBuilder specExceptions(final H1SpecExceptions specExceptions) {
+        this.specExceptions = requireNonNull(specExceptions);
+        return this;
+    }
+
+    /**
      * Builds {@link H1ProtocolConfig}.
      *
      * @return a new {@link H1ProtocolConfig}
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -148,16 +162,19 @@ public final class H1ProtocolConfigBuilder {
         private final int maxHeaderFieldLength;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
+        private final H1SpecExceptions specExceptions;
 
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
-                                final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate) {
+                                final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
+                                final H1SpecExceptions specExceptions) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
             this.maxHeaderFieldLength = maxHeaderFieldLength;
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
+            this.specExceptions = specExceptions;
         }
 
         @Override
@@ -188,6 +205,11 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public int trailersEncodedSizeEstimate() {
             return trailersEncodedSizeEstimate;
+        }
+
+        @Override
+        public H1SpecExceptions specExceptions() {
+            return specExceptions;
         }
     }
 }

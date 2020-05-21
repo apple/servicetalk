@@ -52,13 +52,15 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
                        final HttpHeadersFactory headersFactory, final int maxStartLineLength,
                        final int maxHeaderFieldLength) {
         this(methodQueue, alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     HttpRequestDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
                        final HttpHeadersFactory headersFactory, final int maxStartLineLength,
-                       final int maxHeaderFieldLength, final CloseHandler closeHandler) {
-        super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, closeHandler);
+                       final int maxHeaderFieldLength, final boolean allowPrematureClosureBeforePayloadBody,
+                       final CloseHandler closeHandler) {
+        super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
+                closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,4 +87,11 @@ public interface H1ProtocolConfig extends HttpProtocolConfig {
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a>
      */
     int trailersEncodedSizeEstimate();
+
+    /**
+     * Additional exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification.
+     *
+     * @return exceptions for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> specification
+     */
+    H1SpecExceptions specExceptions();
 }
