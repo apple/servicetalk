@@ -22,28 +22,31 @@ public final class H1SpecExceptions {
 
     private final boolean allowPrematureClosureBeforePayloadBody;
 
-    H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody) {
+    private H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody) {
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
     }
 
     /**
-     * Allows interpreting a premature connection closures as the end of HTTP/1.1 messages if a receiver has not started
-     * to read the payload body yet.
+     * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any part
+     * of the payload body before the connection closure.
      *
-     * @return {@code true} if a premature connection closures before reading the payload body should be considered as
-     * the end of HTTP/1.1 messages
+     * @return {@code true} if the receiver should interpret connection closures as the end of HTTP/1.1 messages if it
+     * did not receive any part of the payload body before the connection closure
      */
     public boolean allowPrematureClosureBeforePayloadBody() {
         return allowPrematureClosureBeforePayloadBody;
     }
 
+    /**
+     * Builder for {@link H1SpecExceptions}.
+     */
     public static final class Builder {
 
         private boolean allowPrematureClosureBeforePayloadBody;
 
         /**
-         * Allows interpreting a premature connection closures as the end of HTTP/1.1 messages if a receiver has not
-         * started to read the payload body yet.
+         * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
+         * part of the payload body before the connection closure.
          *
          * @return {@code this}
          */
