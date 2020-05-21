@@ -19,17 +19,21 @@ import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,9 +43,12 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_P
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class WriteStreamSubscriberFutureListenersTest {
     @Rule
@@ -149,6 +156,32 @@ public class WriteStreamSubscriberFutureListenersTest {
         channel.flush();
         verifyListenerInvokedWithFailure(listener1);
         verifyListenerInvokedWithFailure(listener2);
+    }
+
+    @Test
+    public void synchronousCompleteWrite() throws Exception {
+        Channel mockChannel = mock(Channel.class);
+        EventLoop mockEventLoop = mock(EventLoop.class);
+        when(mockEventLoop.inEventLoop()).thenReturn(true);
+        when(mockChannel.eventLoop()).thenReturn(mockEventLoop);
+        when(mockChannel.newSucceededFuture()).thenReturn(channel.newSucceededFuture());
+        doAnswer((Answer<Void>) invocation -> {
+            ReferenceCountUtil.release(invocation.getArgument(0));
+            ChannelFutureListener listener = mock(ChannelFutureListener.class);
+            listeners.add(listener);
+            ChannelPromise promise = invocation.getArgument(1);
+            promise.addListener(listener);
+            promise.setSuccess();
+            return null;
+        }).when(mockChannel).write(any(), any());
+        WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
+        TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
+        WriteStreamSubscriber subscriber = new WriteStreamSubscriber(mockChannel, estimator, completableSubscriber,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+        subscriber.onNext(1);
+        verifyListenerInvokedWithSuccess(listeners.take());
+        subscriber.onNext(2);
+        verifyListenerInvokedWithSuccess(listeners.take());
     }
 
     private ChannelFutureListener doWrite() throws InterruptedException {

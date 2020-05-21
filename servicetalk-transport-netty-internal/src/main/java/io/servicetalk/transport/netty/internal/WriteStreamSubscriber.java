@@ -497,7 +497,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
             final ChannelFuture future = cause == null ? channel.newSucceededFuture() : channel.newFailedFuture(cause);
             while (!listenersOnWriteBoundaries.isEmpty() && listenersOnWriteBoundaries.peekFirst() != WRITE_BOUNDARY) {
-                notifyListener(eventLoop, future, listenersOnWriteBoundaries.removeFirst());
+                notifyListener(eventLoop, future, listenersOnWriteBoundaries.pollFirst());
             }
         }
 
