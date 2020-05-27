@@ -55,6 +55,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -140,7 +141,7 @@ public class LoadBalancerReadyHttpClientTest {
 
     private void verifyOnInitializedFailedFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
-        verifyFailsAction(action, loadBalancerPublisher::onError, UNKNOWN_HOST_EXCEPTION);
+        verifyFailsAction(action, loadBalancerPublisher::onError, DELIBERATE_EXCEPTION);
     }
 
     private void verifyOnServiceDiscovererErrorFailsAction(
