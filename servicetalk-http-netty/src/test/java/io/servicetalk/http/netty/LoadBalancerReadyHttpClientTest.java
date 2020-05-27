@@ -15,10 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
-import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -46,8 +43,10 @@ import org.junit.rules.Timeout;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -56,27 +55,26 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_REA
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
-    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
+            new UnknownHostException("deliberate exception");
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            allocator, INSTANCE, HTTP_1_1);
+            DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
+    private final TestPublisher<Throwable> discoveryErrors = new TestPublisher<>();
 
     @Mock
     private HttpExecutionContext mockExecutionCtx;
@@ -130,12 +128,30 @@ public class LoadBalancerReadyHttpClientTest {
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
+    @Test
+    public void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
+        verifyOnServiceDiscovererErrorFailsAction(filter -> filter.request(filter.get("/noop")));
+    }
+
+    @Test
+    public void serviceDiscovererAlsoFailsReserve() throws InterruptedException {
+        verifyOnServiceDiscovererErrorFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
+    }
+
     private void verifyOnInitializedFailedFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
-        TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
+        verifyFailsAction(action, loadBalancerPublisher::onError, UNKNOWN_HOST_EXCEPTION);
+    }
 
+    private void verifyOnServiceDiscovererErrorFailsAction(
+            Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
+        verifyFailsAction(action, discoveryErrors::onNext, UNKNOWN_HOST_EXCEPTION);
+    }
+
+    private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action,
+                                   Consumer<Throwable> errorConsumer, Throwable error) throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher).append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher, discoveryErrors).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -150,24 +166,16 @@ public class LoadBalancerReadyHttpClientTest {
         assertThat(latch.await(100, MILLISECONDS), is(false));
 
         // When a failure occurs that should also fail the action!
-        loadBalancerPublisher.onError(DELIBERATE_EXCEPTION);
+        errorConsumer.accept(error);
         latch.await();
-        assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
-    }
-
-    private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
-            final TestPublisher<Object> loadBalancerPublisher) {
-        @SuppressWarnings("unchecked")
-        LoadBalancer<LoadBalancedConnection> lb = mock(LoadBalancer.class);
-        when(lb.eventStream()).thenReturn(loadBalancerPublisher);
-        return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build().forLoadbalancer(lb));
+        assertThat(causeRef.get(), is(error));
     }
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher).append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher, discoveryErrors).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(client).subscribe(resp -> latch.countDown());
@@ -177,6 +185,12 @@ public class LoadBalancerReadyHttpClientTest {
 
         loadBalancerPublisher.onNext(LOAD_BALANCER_READY_EVENT);
         latch.await();
+    }
+
+    private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(TestPublisher<Object> loadBalancerPublisher,
+                                                                            TestPublisher<Throwable> discoveryErrors) {
+        return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
+                .forClient(loadBalancerPublisher, discoveryErrors));
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

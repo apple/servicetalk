@@ -701,7 +701,6 @@ public class DefaultDnsClientTest {
     private DefaultDnsServiceDiscovererBuilder clientBuilderWithoutRetry() {
         return new DefaultDnsServiceDiscovererBuilder()
                 .ioExecutor(nettyIoExecutor)
-                .noRetriesOnDnsFailures()
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(

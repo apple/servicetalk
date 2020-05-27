@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -32,15 +33,16 @@ public interface AutoRetryStrategyProvider {
     /**
      * An {@link AutoRetryStrategyProvider} that disables automatic retries;
      */
-    AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = __ -> (___, cause) -> failed(cause);
+    AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = (lbEventStream, sdErrorStream) -> (___, cause) -> failed(cause);
 
     /**
      * Create a new {@link AutoRetryStrategy} instance using the passed {@link LoadBalancer}.
      *
-     * @param loadBalancer {@link LoadBalancer} to use.
+     * @param lbEventStream a stream of events from {@link LoadBalancer#eventStream() LoadBalancer}
+     * @param sdErrorStream a stream of errors from {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}
      * @return New {@link AutoRetryStrategy} instance.
      */
-    AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer);
+    AutoRetryStrategy forClient(Publisher<Object> lbEventStream, Publisher<Throwable> sdErrorStream);
 
     /**
      * A strategy to use for automatic retries.  Automatic retries are done by

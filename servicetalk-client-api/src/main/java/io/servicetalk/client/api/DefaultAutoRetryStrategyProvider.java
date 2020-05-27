@@ -17,6 +17,7 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.RetryableException;
 
 import javax.annotation.Nullable;
@@ -33,21 +34,26 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategyProvider {
     private final int maxRetryCount;
     private final boolean waitForLb;
+    private final boolean ignoreSdErrors;
     private final boolean retryAllRetryableExceptions;
 
     private DefaultAutoRetryStrategyProvider(final int maxRetryCount, final boolean waitForLb,
+                                             final boolean ignoreSdErrors,
                                              final boolean retryAllRetryableExceptions) {
         this.maxRetryCount = maxRetryCount;
         this.waitForLb = waitForLb;
+        this.ignoreSdErrors = ignoreSdErrors;
         this.retryAllRetryableExceptions = retryAllRetryableExceptions;
     }
 
     @Override
-    public AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer) {
+    public AutoRetryStrategy forClient(final Publisher<Object> lbEventStream,
+                                       final Publisher<Throwable> sdErrorStream) {
         if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }
-        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions, loadBalancer);
+        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, ignoreSdErrors, retryAllRetryableExceptions,
+                lbEventStream, sdErrorStream);
     }
 
     /**
@@ -55,6 +61,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
      */
     public static final class Builder {
         private boolean waitForLb = true;
+        private boolean ignoreSdErrors;
         private boolean retryAllRetryableExceptions = true;
         private int maxRetries = 4;
 
@@ -67,6 +74,19 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          */
         public Builder disableWaitForLoadBalancer() {
             waitForLb = false;
+            return this;
+        }
+
+        /**
+         * By default, automatic retries waits for the associated {@link LoadBalancer} to be ready or
+         * {@link ServiceDiscoverer} to emit an error before triggering a retry for requests. This method allows a retry
+         * strategy to ignore errors from {@link ServiceDiscoverer} and wait for {@link LoadBalancer} forever.
+         *
+         * @return {@code this}.
+         * @see #disableWaitForLoadBalancer()
+         */
+        public Builder ignoreSdErrors() {
+            ignoreSdErrors = true;
             return this;
         }
 
@@ -104,30 +124,42 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          * @return A new {@link AutoRetryStrategyProvider}.
          */
         public AutoRetryStrategyProvider build() {
-            return new DefaultAutoRetryStrategyProvider(maxRetries, waitForLb, retryAllRetryableExceptions);
+            return new DefaultAutoRetryStrategyProvider(maxRetries, waitForLb, ignoreSdErrors,
+                    retryAllRetryableExceptions);
         }
     }
 
     private static final class DefaultAutoRetryStrategy implements AutoRetryStrategy {
         @Nullable
         private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
+        @Nullable
+        private final ServiceDiscovererErrorSubscriber serviceDiscovererErrorSubscriber;
         private final AsyncCloseable closeAsync;
         private final int maxRetryCount;
         private final boolean retryAllRetryableExceptions;
 
-        DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb,
-                                 final boolean retryAllRetryableExceptions, final LoadBalancer<?> loadBalancer) {
+        DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb, final boolean ignoreSdErrors,
+                                 final boolean retryAllRetryableExceptions,
+                                 final Publisher<Object> lbEventStream, final Publisher<Throwable> sdErrorStream) {
             this.maxRetryCount = maxRetryCount;
             this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             if (waitForLb) {
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
+                serviceDiscovererErrorSubscriber = ignoreSdErrors ? null : new ServiceDiscovererErrorSubscriber();
                 closeAsync = toAsyncCloseable(__ -> {
                     loadBalancerReadySubscriber.cancel();
+                    if (serviceDiscovererErrorSubscriber != null) {
+                        serviceDiscovererErrorSubscriber.cancel();
+                    }
                     return completed();
                 });
-                toSource(loadBalancer.eventStream()).subscribe(loadBalancerReadySubscriber);
+                toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
+                if (serviceDiscovererErrorSubscriber != null) {
+                    toSource(sdErrorStream).subscribe(serviceDiscovererErrorSubscriber);
+                }
             } else {
                 loadBalancerReadySubscriber = null;
+                serviceDiscovererErrorSubscriber = null;
                 closeAsync = emptyAsyncCloseable();
             }
         }
@@ -138,7 +170,11 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
                 return failed(cause);
             }
             if (loadBalancerReadySubscriber != null && cause instanceof NoAvailableHostException) {
-                return loadBalancerReadySubscriber.onHostsAvailable();
+                final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                if (serviceDiscovererErrorSubscriber == null) {
+                    return onHostsAvailable;
+                }
+                return onHostsAvailable.ambWith(serviceDiscovererErrorSubscriber.onSdError());
             }
             if (retryAllRetryableExceptions && cause instanceof RetryableException) {
                 return completed();

@@ -28,7 +28,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -66,6 +65,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -77,7 +77,7 @@ public class MultiAddressUrlHttpClientTest {
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
     @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
@@ -176,7 +176,6 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test(expected = ExecutionException.class)
-    @Ignore("LoadBalancerReadySubscriber will never complete for a wrong host") // FIXME: remove @Ignore annotation
     public void requestWithAbsoluteFormRequestTargetWithInvalidHost() throws Exception {
         StreamingHttpRequest request = client.get(
                 format("http://invalid.:%d/200?param=value#tag", serverPort));

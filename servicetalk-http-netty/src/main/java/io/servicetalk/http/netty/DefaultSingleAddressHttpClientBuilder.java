@@ -24,10 +24,12 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -52,6 +54,7 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.net.UnknownHostException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -59,12 +62,18 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static java.lang.Integer.MAX_VALUE;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -219,6 +228,33 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     proxyAddress != null ? proxyAddress : builder.address);
         }
 
+        Publisher<? extends ServiceDiscovererEvent<R>> discover(
+                PublisherSource.Processor<Throwable, Throwable> processor) {
+            assert builder.address != null : "Attempted to buildStreaming with an unknown address";
+            return builder.serviceDiscoverer.discover(
+                    proxyAddress != null ? proxyAddress : builder.address)
+                    .retryWhen(retryWithConstantBackoffAndJitter(MAX_VALUE, t -> {
+                        processor.onNext(t);
+                        return t instanceof UnknownHostException;
+                    }, ofSeconds(60), immediate()))
+                    .whenFinally(new TerminalSignalConsumer() {
+                        @Override
+                        public void onComplete() {
+                            processor.onComplete();
+                        }
+
+                        @Override
+                        public void onError(final Throwable throwable) {
+                            processor.onError(throwable);
+                        }
+
+                        @Override
+                        public void cancel() {
+                            // noop
+                        }
+                    });
+        }
+
         StreamingHttpClient build() {
             return buildStreaming(this);
         }
@@ -239,7 +275,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover();
+            final PublisherSource.Processor<Throwable, Throwable> sdErrorStream =
+                    newPublisherProcessorDropHeadOnOverflow(32);
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover(sdErrorStream);
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
@@ -293,7 +331,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
-                lbClient = new AutoRetryFilter(lbClient, ctx.builder.autoRetry.forLoadbalancer(lb));
+                lbClient = new AutoRetryFilter(lbClient,
+                        ctx.builder.autoRetry.forClient(lb.eventStream(), fromSource(sdErrorStream)));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,

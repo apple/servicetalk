@@ -17,7 +17,6 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -52,7 +51,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
-    private boolean applyRetryFilter = true;
+    private boolean applyRetryFilter;
     private int minTTLSeconds = 10;
     @Nullable
     private DnsClientFilterFactory filterFactory;
@@ -156,12 +155,13 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Do not perform retries if DNS lookup fails. Instead, terminate the {@link Publisher} with the error.
+     * Perform retries if DNS lookup fails instead of terminating the
+     * {@link ServiceDiscoverer#discover(Object) discovery} with an error.
      *
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder noRetriesOnDnsFailures() {
-        this.applyRetryFilter = false;
+    public DefaultDnsServiceDiscovererBuilder retryOnDnsFailures() {
+        this.applyRetryFilter = true;
         return this;
     }
 
