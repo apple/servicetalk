@@ -86,6 +86,8 @@ final class ServiceDiscovererErrorSubscriber extends DelayedCancellable implemen
     }
 
     private static final class StacklessIllegalStateException extends IllegalStateException {
+        private static final long serialVersionUID = -2109104925163421637L;
+
         private StacklessIllegalStateException(final String message) {
             super(message);
         }
