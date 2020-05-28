@@ -20,9 +20,12 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
+import org.glassfish.jersey.internal.InternalProperties;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
@@ -46,6 +49,14 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
                     SingleJsonResources.class,
                     PublisherJsonResources.class
             ));
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            Map<String, Object> properties = super.getProperties();
+            Map<String, Object> newProperties = new HashMap<>(properties);
+            newProperties.put(InternalProperties.JSON_FEATURE, "ServiceTalkJacksonSerializerFeature");
+            return newProperties;
         }
     }
 
