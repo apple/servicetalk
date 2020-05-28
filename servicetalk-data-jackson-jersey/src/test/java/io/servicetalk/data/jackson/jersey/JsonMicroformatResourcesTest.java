@@ -18,8 +18,11 @@ package io.servicetalk.data.jackson.jersey;
 import io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
+import org.glassfish.jersey.internal.InternalProperties;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
@@ -42,6 +45,14 @@ public class JsonMicroformatResourcesTest extends AbstractJerseyStreamingHttpSer
         @Override
         public Set<Class<?>> getClasses() {
             return singleton(JsonMicroformatResources.class);
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            Map<String, Object> properties = super.getProperties();
+            Map<String, Object> newProperties = new HashMap<>(properties);
+            newProperties.put(InternalProperties.JSON_FEATURE, "ServiceTalkJacksonSerializerFeature");
+            return newProperties;
         }
     }
 

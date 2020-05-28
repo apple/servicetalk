@@ -19,8 +19,11 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.glassfish.jersey.internal.InternalProperties;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
@@ -46,6 +49,14 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
         @Override
         public Set<Object> getSingletons() {
             return singleton(contextResolverFor(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            Map<String, Object> properties = super.getProperties();
+            Map<String, Object> newProperties = new HashMap<>(properties);
+            newProperties.put(InternalProperties.JSON_FEATURE, "ServiceTalkJacksonSerializerFeature");
+            return newProperties;
         }
     }
 
