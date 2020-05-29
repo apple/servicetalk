@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 
+import java.nio.BufferOverflowException;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -422,8 +423,10 @@ final class HttpDataSourceTransformations {
                         Buffer oldBuffer = pair.payload;
                         pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
                     }
-                } catch (Exception e) {
-                    throw new AggregationException("Cannot aggregate payload body", e);
+                } catch (IllegalArgumentException cause) {
+                    BufferOverflowException ex = new BufferOverflowException();
+                    ex.initCause(cause);
+                    throw ex;
                 }
             } else if (nextItem instanceof HttpHeaders) {
                 pair.trailers = (HttpHeaders) nextItem;
@@ -436,13 +439,5 @@ final class HttpDataSourceTransformations {
                 pair.payload = allocator.newBuffer(0, false);
             }
         });
-    }
-
-    private static final class AggregationException extends IllegalStateException {
-        private static final long serialVersionUID = 1460581701241013343L;
-
-        AggregationException(final String message, final Throwable cause) {
-            super(message, cause);
-        }
     }
 }
