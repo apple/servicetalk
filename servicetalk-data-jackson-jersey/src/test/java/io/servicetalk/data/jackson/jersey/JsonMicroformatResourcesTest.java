@@ -20,9 +20,11 @@ import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.APPLICATION_VND_INPUT_JSON;
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.APPLICATION_VND_OUTPUT_JSON;
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.PATH;
@@ -31,7 +33,9 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
 public class JsonMicroformatResourcesTest extends AbstractJerseyStreamingHttpServiceTest {
     public JsonMicroformatResourcesTest(final RouterApi api) {
@@ -42,6 +46,11 @@ public class JsonMicroformatResourcesTest extends AbstractJerseyStreamingHttpSer
         @Override
         public Set<Class<?>> getClasses() {
             return singleton(JsonMicroformatResources.class);
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            return singletonMap(JSON_FEATURE, ST_JSON_FEATURE);
         }
     }
 

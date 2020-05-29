@@ -21,16 +21,20 @@ import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
 import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor;
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
 public class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
     public CustomJacksonSerializationProviderTest(final RouterApi api) {
@@ -46,6 +50,11 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
         @Override
         public Set<Object> getSingletons() {
             return singleton(contextResolverFor(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            return singletonMap(JSON_FEATURE, ST_JSON_FEATURE);
         }
     }
 

@@ -23,6 +23,7 @@ import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -30,11 +31,14 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
 public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
     public FilterStreamingJsonTest(final RouterApi api) {
@@ -58,6 +62,11 @@ public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceT
                     SingleJsonResources.class,
                     PublisherJsonResources.class
             ));
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            return singletonMap(JSON_FEATURE, ST_JSON_FEATURE);
         }
     }
 
