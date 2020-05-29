@@ -49,6 +49,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
+import static java.net.InetSocketAddress.createUnresolved;
+
 /**
  * Utilities which are used for builders.
  */
@@ -159,7 +161,7 @@ public final class BuilderUtils {
         }
         if (address instanceof HostAndPort) {
             HostAndPort hostAndPort = (HostAndPort) address;
-            return new InetSocketAddress(hostAndPort.hostName(), hostAndPort.port());
+            return createUnresolved(hostAndPort.hostName(), hostAndPort.port());
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
     }
