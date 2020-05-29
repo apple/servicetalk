@@ -412,14 +412,18 @@ final class HttpDataSourceTransformations {
                                                                   BufferAllocator allocator) {
         return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
             if (nextItem instanceof Buffer) {
-                Buffer buffer = (Buffer) nextItem;
-                if (pair.payload == null) {
-                    pair.payload = buffer;
-                } else if (pair.payload instanceof CompositeBuffer) {
-                    ((CompositeBuffer) pair.payload).addBuffer(buffer);
-                } else {
-                    Buffer oldBuffer = pair.payload;
-                    pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
+                try {
+                    Buffer buffer = (Buffer) nextItem;
+                    if (pair.payload == null) {
+                        pair.payload = buffer;
+                    } else if (pair.payload instanceof CompositeBuffer) {
+                        ((CompositeBuffer) pair.payload).addBuffer(buffer);
+                    } else {
+                        Buffer oldBuffer = pair.payload;
+                        pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
+                    }
+                } catch (Exception e) {
+                    throw new AggregationException("Cannot aggregate payload body", e);
                 }
             } else if (nextItem instanceof HttpHeaders) {
                 pair.trailers = (HttpHeaders) nextItem;
@@ -432,5 +436,13 @@ final class HttpDataSourceTransformations {
                 pair.payload = allocator.newBuffer(0, false);
             }
         });
+    }
+
+    private static final class AggregationException extends IllegalStateException {
+        private static final long serialVersionUID = 1460581701241013343L;
+
+        AggregationException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
     }
 }
