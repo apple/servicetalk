@@ -19,21 +19,22 @@ import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.glassfish.jersey.internal.InternalProperties;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
 import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor;
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonMap;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
 public class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
     public CustomJacksonSerializationProviderTest(final RouterApi api) {
@@ -53,10 +54,7 @@ public class CustomJacksonSerializationProviderTest extends AbstractJerseyStream
 
         @Override
         public Map<String, Object> getProperties() {
-            Map<String, Object> properties = super.getProperties();
-            Map<String, Object> newProperties = new HashMap<>(properties);
-            newProperties.put(InternalProperties.JSON_FEATURE, "ServiceTalkJacksonSerializerFeature");
-            return newProperties;
+            return singletonMap(JSON_FEATURE, ST_JSON_FEATURE);
         }
     }
 

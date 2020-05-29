@@ -39,7 +39,7 @@ public final class ServiceTalkJacksonSerializerFeature implements Feature {
     // Only one JSON Feature can be registered per Jersey ApplicationHandler, so using simple name will not be a
     // cause of conflict even if several different shaded versions of ServiceTalk are in use, as each of them will
     // be registered to a different ApplicationHandler.
-    private static final String ST_JSON_FEATURE = ServiceTalkJacksonSerializerFeature.class.getSimpleName();
+    static final String ST_JSON_FEATURE = ServiceTalkJacksonSerializerFeature.class.getSimpleName();
 
     @Override
     public boolean configure(final FeatureContext context) {
