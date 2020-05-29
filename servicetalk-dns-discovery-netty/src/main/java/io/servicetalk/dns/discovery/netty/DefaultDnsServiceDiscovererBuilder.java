@@ -51,7 +51,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
-    private boolean applyRetryFilter;
     private int minTTLSeconds = 10;
     @Nullable
     private DnsClientFilterFactory filterFactory;
@@ -155,17 +154,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Perform retries if DNS lookup fails instead of terminating the
-     * {@link ServiceDiscoverer#discover(Object) discovery} with an error.
-     *
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder retryOnDnsFailures() {
-        this.applyRetryFilter = true;
-        return this;
-    }
-
-    /**
      * Append the filter to the chain of filters used to decorate the {@link ServiceDiscoverer} created by this
      * builder.
      * <p>
@@ -233,16 +221,11 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return a new instance of {@link DnsClient}.
      */
     DnsClient build() {
-        DnsClient rawClient = new DefaultDnsClient(
+        final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider);
-        DnsClientFilterFactory rawFilterFactory = filterFactory;
-        if (applyRetryFilter) {
-            DnsClientFilterFactory retryFilterFactory = new RetryingDnsClientFilter();
-            rawFilterFactory = rawFilterFactory == null ? retryFilterFactory :
-                    retryFilterFactory.append(rawFilterFactory);
-        }
+        final DnsClientFilterFactory rawFilterFactory = filterFactory;
         return rawFilterFactory == null ? rawClient : rawFilterFactory.create(rawClient);
     }
 }
