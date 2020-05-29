@@ -191,7 +191,7 @@ public class LoadBalancerReadyHttpClientTest {
     private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(TestPublisher<Object> loadBalancerPublisher,
                                                                             TestPublisher<Throwable> discoveryErrors) {
         return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
-                .forClient(loadBalancerPublisher, discoveryErrors));
+                .newStrategy(loadBalancerPublisher, discoveryErrors));
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

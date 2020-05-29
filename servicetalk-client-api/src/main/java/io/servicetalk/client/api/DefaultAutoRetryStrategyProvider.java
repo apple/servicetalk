@@ -47,8 +47,8 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
     }
 
     @Override
-    public AutoRetryStrategy forClient(final Publisher<Object> lbEventStream,
-                                       final Publisher<Throwable> sdErrorStream) {
+    public AutoRetryStrategy newStrategy(final Publisher<Object> lbEventStream,
+                                         final Publisher<Throwable> sdErrorStream) {
         if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }

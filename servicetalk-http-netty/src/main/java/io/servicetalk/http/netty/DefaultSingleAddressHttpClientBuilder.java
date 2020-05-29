@@ -332,7 +332,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
                 lbClient = new AutoRetryFilter(lbClient,
-                        ctx.builder.autoRetry.forClient(lb.eventStream(), fromSource(sdErrorStream)));
+                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), fromSource(sdErrorStream)));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,

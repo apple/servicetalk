@@ -36,13 +36,13 @@ public interface AutoRetryStrategyProvider {
     AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = (lbEventStream, sdErrorStream) -> (___, cause) -> failed(cause);
 
     /**
-     * Create a new {@link AutoRetryStrategy} instance using the passed {@link LoadBalancer}.
+     * Creates a new {@link AutoRetryStrategy} instance using the passed {@link LoadBalancer}.
      *
      * @param lbEventStream a stream of events from {@link LoadBalancer#eventStream() LoadBalancer}
      * @param sdErrorStream a stream of errors from {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}
      * @return New {@link AutoRetryStrategy} instance.
      */
-    AutoRetryStrategy forClient(Publisher<Object> lbEventStream, Publisher<Throwable> sdErrorStream);
+    AutoRetryStrategy newStrategy(Publisher<Object> lbEventStream, Publisher<Throwable> sdErrorStream);
 
     /**
      * A strategy to use for automatic retries.  Automatic retries are done by

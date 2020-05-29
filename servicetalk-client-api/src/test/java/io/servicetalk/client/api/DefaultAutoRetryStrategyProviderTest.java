@@ -190,6 +190,6 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     private AutoRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
         AutoRetryStrategyProvider provider = updater.apply(new Builder()).build();
-        return provider.forClient(lbEvents, sdErrors);
+        return provider.newStrategy(lbEvents, sdErrors);
     }
 }
