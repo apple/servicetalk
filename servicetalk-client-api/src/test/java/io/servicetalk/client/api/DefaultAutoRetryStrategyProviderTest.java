@@ -148,7 +148,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void ignoreSdErrorsForNoAvailableHost() {
-        AutoRetryStrategy strategy = newStrategy(Builder::ignoreSdErrors);
+        AutoRetryStrategy strategy = newStrategy(Builder::ignoreServiceDiscovererErrors);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected subscribe for SD errors.", sdErrors.isSubscribed(), is(false));

@@ -85,7 +85,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          * @return {@code this}.
          * @see #disableWaitForLoadBalancer()
          */
-        public Builder ignoreSdErrors() {
+        public Builder ignoreServiceDiscovererErrors() {
             ignoreSdErrors = true;
             return this;
         }
