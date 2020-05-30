@@ -30,6 +30,7 @@ import static org.hamcrest.Matchers.is;
 public class BuilderUtilsTest {
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv4() {
         InetSocketAddress address = toInetSocketAddress(HostAndPort.of("192.168.1.1", 8080));
         assertThat(address.isUnresolved(), is(false));
@@ -38,6 +39,7 @@ public class BuilderUtilsTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv6() {
         InetSocketAddress address = toInetSocketAddress(HostAndPort.of("2001:db8:0:0:0:0:0:abcd", 8080));
         assertThat(address.isUnresolved(), is(false));
