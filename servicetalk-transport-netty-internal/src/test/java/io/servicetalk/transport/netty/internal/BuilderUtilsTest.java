@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.HostAndPort;
 
+import io.netty.util.NetUtil;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -32,18 +33,20 @@ public class BuilderUtilsTest {
     @Test
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv4() {
-        InetSocketAddress address = toInetSocketAddress(HostAndPort.of("192.168.1.1", 8080));
+        final String localhostIp4Address = NetUtil.LOCALHOST4.getHostAddress();
+        InetSocketAddress address = toInetSocketAddress(HostAndPort.of(localhostIp4Address, 8080));
         assertThat(address.isUnresolved(), is(false));
-        assertThat(address.getHostString(), equalTo("192.168.1.1"));
+        assertThat(address.getHostString(), equalTo(localhostIp4Address));
         assertThat(address.getPort(), is(8080));
     }
 
     @Test
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv6() {
-        InetSocketAddress address = toInetSocketAddress(HostAndPort.of("2001:db8:0:0:0:0:0:abcd", 8080));
+        final String localhostIp6Address = NetUtil.LOCALHOST6.getHostAddress();
+        InetSocketAddress address = toInetSocketAddress(HostAndPort.of(localhostIp6Address, 8080));
         assertThat(address.isUnresolved(), is(false));
-        assertThat(address.getHostString(), equalTo("2001:db8:0:0:0:0:0:abcd"));
+        assertThat(address.getHostString(), equalTo(localhostIp6Address));
         assertThat(address.getPort(), is(8080));
     }
 
