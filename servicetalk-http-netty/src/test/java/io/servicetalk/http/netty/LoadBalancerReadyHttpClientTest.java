@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -75,7 +76,7 @@ public class LoadBalancerReadyHttpClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
-    private final TestPublisher<Throwable> discoveryErrors = new TestPublisher<>();
+    private final TestCompletable sdStatusCompletable = new TestCompletable();
 
     @Mock
     private HttpExecutionContext mockExecutionCtx;
@@ -146,13 +147,13 @@ public class LoadBalancerReadyHttpClientTest {
 
     private void verifyOnServiceDiscovererErrorFailsAction(
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
-        verifyFailsAction(action, discoveryErrors::onNext, UNKNOWN_HOST_EXCEPTION);
+        verifyFailsAction(action, sdStatusCompletable::onError, UNKNOWN_HOST_EXCEPTION);
     }
 
     private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action,
                                    Consumer<Throwable> errorConsumer, Throwable error) throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, discoveryErrors).append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -176,7 +177,7 @@ public class LoadBalancerReadyHttpClientTest {
             throws InterruptedException {
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                newAutomaticRetryFilterFactory(loadBalancerPublisher, discoveryErrors).append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(client).subscribe(resp -> latch.countDown());
@@ -189,9 +190,9 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(TestPublisher<Object> loadBalancerPublisher,
-                                                                            TestPublisher<Throwable> discoveryErrors) {
+                                                                            TestCompletable sdStatusCompletable) {
         return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
-                .newStrategy(loadBalancerPublisher, discoveryErrors));
+                .newStrategy(loadBalancerPublisher, sdStatusCompletable));
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

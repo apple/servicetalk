@@ -24,7 +24,8 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -55,6 +56,7 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -63,11 +65,10 @@ import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_R
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
@@ -233,24 +234,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     proxyAddress != null ? proxyAddress : builder.address);
         }
 
-        Publisher<? extends ServiceDiscovererEvent<R>> discover(
-                PublisherSource.Processor<Throwable, Throwable> processor) {
+        Publisher<? extends ServiceDiscovererEvent<R>> discover(final SdStatusCompletable sdStatus) {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
             final BiIntFunction<Throwable, ? extends Completable> retryWhen = builder.serviceDiscovererRetryStrategy;
             return builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address)
                     .retryWhen((i, t) -> {
-                        processor.onNext(t);
+                        sdStatus.nextError(t);
                         return retryWhen.apply(i, t);
                     })
                     .whenFinally(new TerminalSignalConsumer() {
                         @Override
                         public void onComplete() {
-                            processor.onComplete();
+                            sdStatus.onComplete();
                         }
 
                         @Override
                         public void onError(final Throwable throwable) {
-                            processor.onError(throwable);
+                            sdStatus.onError(throwable);
                         }
 
                         @Override
@@ -280,9 +280,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final PublisherSource.Processor<Throwable, Throwable> sdErrorStream =
-                    newPublisherProcessorDropHeadOnOverflow(32);
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover(sdErrorStream);
+            final SdStatusCompletable sdStatus = new SdStatusCompletable();
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover(sdStatus);
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
@@ -337,7 +336,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
                 lbClient = new AutoRetryFilter(lbClient,
-                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), fromSource(sdErrorStream)));
+                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), sdStatus));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
@@ -601,6 +600,54 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+    }
+
+    private static final class SdStatusCompletable extends Completable implements CompletableSource.Processor {
+        private static final AtomicReferenceFieldUpdater<SdStatusCompletable, CompletableSource.Processor>
+                currentProcessorUpdater = AtomicReferenceFieldUpdater.newUpdater(SdStatusCompletable.class,
+                CompletableSource.Processor.class, "currentProcessor");
+        @Nullable
+        private volatile CompletableSource.Processor currentProcessor;
+
+        @Override
+        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+            CompletableSource.Processor currentProcessor = currentProcessorUpdater.updateAndGet(this,
+                    p -> p != null ? p : newCompletableProcessor());
+            currentProcessor.subscribe(subscriber);
+        }
+
+        @Override
+        public void subscribe(final Subscriber subscriber) {
+            subscribeInternal(subscriber);
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            // no op, we never cancel as Subscribers and subscribes are decoupled.
+        }
+
+        @Override
+        public void onComplete() {
+            CompletableSource.Processor currentProcessor = this.currentProcessor;
+            if (currentProcessor != null) {
+                currentProcessor.onComplete();
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            CompletableSource.Processor currentProcessor = this.currentProcessor;
+            if (currentProcessor != null) {
+                currentProcessor.onError(t);
+            }
+        }
+
+        void nextError(final Throwable t) {
+            CompletableSource.Processor currentProcessor = currentProcessorUpdater.getAndSet(this, null);
+            if (currentProcessor != null) {
+                currentProcessor.onError(t);
+            }
         }
     }
 }

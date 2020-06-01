@@ -18,6 +18,7 @@ package io.servicetalk.client.api;
 import io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -32,7 +33,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -47,12 +47,12 @@ public class DefaultAutoRetryStrategyProviderTest {
             new UnknownHostException("deliberate exception");
 
     private final TestPublisher<Object> lbEvents;
-    private final TestPublisher<Throwable> sdErrors;
+    private final TestCompletable sdStatus;
     private final TestCompletableSubscriber retrySubscriber;
 
     public DefaultAutoRetryStrategyProviderTest() {
         lbEvents = new TestPublisher<>();
-        sdErrors = new TestPublisher<>();
+        sdStatus = new TestCompletable();
         retrySubscriber = new TestCompletableSubscriber();
     }
 
@@ -88,7 +88,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
-        sdErrors.onNext(UNKNOWN_HOST_EXCEPTION);
+        sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
 
@@ -133,7 +133,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        sdErrors.onNext(UNKNOWN_HOST_EXCEPTION);
+        sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
 
@@ -142,7 +142,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        sdErrors.onError(DELIBERATE_EXCEPTION);
+        sdStatus.onError(DELIBERATE_EXCEPTION);
         verifyRetryResultError(DELIBERATE_EXCEPTION);
     }
 
@@ -151,7 +151,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(Builder::ignoreServiceDiscovererErrors);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat("Unexpected subscribe for SD errors.", sdErrors.isSubscribed(), is(false));
+        assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
         assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
@@ -160,12 +160,11 @@ public class DefaultAutoRetryStrategyProviderTest {
     @Test
     public void defaultForNoAvailableHostWhenServiceDiscovererTerminated() {
         AutoRetryStrategy strategy = newStrategy(identity());
-        sdErrors.onComplete();
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        TerminalNotification terminal = retrySubscriber.takeTerminal();
-        assertThat("Unexpected terminal.", terminal, is(notNullValue()));
-        assertThat("Unexpected terminal.", terminal.cause(), is(instanceOf(IllegalStateException.class)));
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        sdStatus.onComplete();
+        verifyRetryResultCompleted();
     }
 
     @Test
@@ -190,6 +189,6 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     private AutoRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
         AutoRetryStrategyProvider provider = updater.apply(new Builder()).build();
-        return provider.newStrategy(lbEvents, sdErrors);
+        return provider.newStrategy(lbEvents, sdStatus);
     }
 }

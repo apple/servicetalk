@@ -47,13 +47,12 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
     }
 
     @Override
-    public AutoRetryStrategy newStrategy(final Publisher<Object> lbEventStream,
-                                         final Publisher<Throwable> sdErrorStream) {
+    public AutoRetryStrategy newStrategy(final Publisher<Object> lbEventStream, final Completable sdStatus) {
         if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }
-        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, ignoreSdErrors, retryAllRetryableExceptions,
-                lbEventStream, sdErrorStream);
+        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions,
+                lbEventStream, ignoreSdErrors ? null : sdStatus);
     }
 
     /**
@@ -133,33 +132,26 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         @Nullable
         private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
         @Nullable
-        private final ServiceDiscovererErrorSubscriber serviceDiscovererErrorSubscriber;
+        private final Completable sdStatus;
         private final AsyncCloseable closeAsync;
         private final int maxRetryCount;
         private final boolean retryAllRetryableExceptions;
 
-        DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb, final boolean ignoreSdErrors,
+        DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb,
                                  final boolean retryAllRetryableExceptions,
-                                 final Publisher<Object> lbEventStream, final Publisher<Throwable> sdErrorStream) {
+                                 final Publisher<Object> lbEventStream, @Nullable final Completable sdStatus) {
             this.maxRetryCount = maxRetryCount;
+            this.sdStatus = sdStatus;
             this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             if (waitForLb) {
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
-                serviceDiscovererErrorSubscriber = ignoreSdErrors ? null : new ServiceDiscovererErrorSubscriber();
                 closeAsync = toAsyncCloseable(__ -> {
                     loadBalancerReadySubscriber.cancel();
-                    if (serviceDiscovererErrorSubscriber != null) {
-                        serviceDiscovererErrorSubscriber.cancel();
-                    }
                     return completed();
                 });
                 toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
-                if (serviceDiscovererErrorSubscriber != null) {
-                    toSource(sdErrorStream).subscribe(serviceDiscovererErrorSubscriber);
-                }
             } else {
                 loadBalancerReadySubscriber = null;
-                serviceDiscovererErrorSubscriber = null;
                 closeAsync = emptyAsyncCloseable();
             }
         }
@@ -171,10 +163,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
             }
             if (loadBalancerReadySubscriber != null && cause instanceof NoAvailableHostException) {
                 final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
-                if (serviceDiscovererErrorSubscriber == null) {
-                    return onHostsAvailable;
-                }
-                return onHostsAvailable.ambWith(serviceDiscovererErrorSubscriber.onSdError());
+                return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
             }
             if (retryAllRetryableExceptions && cause instanceof RetryableException) {
                 return completed();
