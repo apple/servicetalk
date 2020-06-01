@@ -65,7 +65,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         private int maxRetries = 4;
 
         /**
-         * By default, automatic retries waits for the associated {@link LoadBalancer} to be ready before triggering a
+         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready before triggering a
          * retry for requests. This behavior may add latency to requests till the time the load balancer is ready
          * instead of failing fast. This method disables the default behavior.
          *
@@ -77,7 +77,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         }
 
         /**
-         * By default, automatic retries waits for the associated {@link LoadBalancer} to be ready or
+         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready or
          * {@link ServiceDiscoverer} to emit an error before triggering a retry for requests. This method allows a retry
          * strategy to ignore errors from {@link ServiceDiscoverer} and wait for {@link LoadBalancer} forever.
          *

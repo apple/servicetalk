@@ -612,7 +612,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         @Override
         protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-            CompletableSource.Processor currentProcessor = currentProcessorUpdater.updateAndGet(this,
+            final CompletableSource.Processor currentProcessor = currentProcessorUpdater.updateAndGet(this,
                     p -> p != null ? p : newCompletableProcessor());
             currentProcessor.subscribe(subscriber);
         }
@@ -629,7 +629,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         @Override
         public void onComplete() {
-            CompletableSource.Processor currentProcessor = this.currentProcessor;
+            final CompletableSource.Processor currentProcessor = this.currentProcessor;
             if (currentProcessor != null) {
                 currentProcessor.onComplete();
             }
@@ -637,14 +637,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         @Override
         public void onError(final Throwable t) {
-            CompletableSource.Processor currentProcessor = this.currentProcessor;
+            final CompletableSource.Processor currentProcessor = this.currentProcessor;
             if (currentProcessor != null) {
                 currentProcessor.onError(t);
             }
         }
 
         void nextError(final Throwable t) {
-            CompletableSource.Processor currentProcessor = currentProcessorUpdater.getAndSet(this, null);
+            final CompletableSource.Processor currentProcessor = currentProcessorUpdater.getAndSet(this, null);
             if (currentProcessor != null) {
                 currentProcessor.onError(t);
             }

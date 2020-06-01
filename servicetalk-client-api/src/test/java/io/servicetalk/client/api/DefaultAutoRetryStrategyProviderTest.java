@@ -133,6 +133,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
         sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
@@ -142,6 +143,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
         sdStatus.onError(DELIBERATE_EXCEPTION);
         verifyRetryResultError(DELIBERATE_EXCEPTION);
     }
