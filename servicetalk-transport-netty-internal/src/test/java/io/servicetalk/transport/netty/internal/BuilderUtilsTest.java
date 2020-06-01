@@ -23,7 +23,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-import static io.servicetalk.transport.netty.internal.BuilderUtils.toInetSocketAddress;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -34,7 +34,7 @@ public class BuilderUtilsTest {
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv4() {
         final String localhostIp4Address = NetUtil.LOCALHOST4.getHostAddress();
-        InetSocketAddress address = toInetSocketAddress(HostAndPort.of(localhostIp4Address, 8080));
+        InetSocketAddress address = toResolvedInetSocketAddress(HostAndPort.of(localhostIp4Address, 8080));
         assertThat(address.isUnresolved(), is(false));
         assertThat(address.getHostString(), equalTo(localhostIp4Address));
         assertThat(address.getPort(), is(8080));
@@ -44,7 +44,7 @@ public class BuilderUtilsTest {
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void toInetSocketAddressFromIPv6() {
         final String localhostIp6Address = NetUtil.LOCALHOST6.getHostAddress();
-        InetSocketAddress address = toInetSocketAddress(HostAndPort.of(localhostIp6Address, 8080));
+        InetSocketAddress address = toResolvedInetSocketAddress(HostAndPort.of(localhostIp6Address, 8080));
         assertThat(address.isUnresolved(), is(false));
         assertThat(address.getHostString(), equalTo(localhostIp6Address));
         assertThat(address.getPort(), is(8080));
@@ -52,6 +52,6 @@ public class BuilderUtilsTest {
 
     @Test(expected = UnknownHostException.class)
     public void toInetSocketAddressFromUnresolved() {
-        toInetSocketAddress(HostAndPort.of("unresolved-hostname", 8080));
+        toResolvedInetSocketAddress(HostAndPort.of("unresolved-hostname", 8080));
     }
 }

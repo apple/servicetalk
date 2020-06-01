@@ -163,7 +163,7 @@ public final class BuilderUtils {
             return (SocketAddress) address;
         }
         if (address instanceof HostAndPort) {
-            return toInetSocketAddress((HostAndPort) address);
+            return toResolvedInetSocketAddress((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
     }
@@ -174,7 +174,7 @@ public final class BuilderUtils {
      * @param resolvedAddress the resolved address to convert.
      * @return {@link InetSocketAddress} from the passed resolved {@link HostAndPort}.
      */
-    public static InetSocketAddress toInetSocketAddress(final HostAndPort resolvedAddress) {
+    public static InetSocketAddress toResolvedInetSocketAddress(final HostAndPort resolvedAddress) {
         try {
             return new InetSocketAddress(getByAddress(createByteArrayFromIpAddressString(
                     resolvedAddress.hostName())), resolvedAddress.port());
