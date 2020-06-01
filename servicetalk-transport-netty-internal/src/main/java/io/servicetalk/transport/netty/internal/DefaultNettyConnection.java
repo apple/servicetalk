@@ -43,6 +43,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -528,7 +530,18 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            connection.nettyChannelPublisher.exceptionCaught(cause);
+            connection.nettyChannelPublisher.exceptionCaught(unwrapThrowable(cause));
+        }
+
+        /**
+         * Unwraps certain types of netty exceptions to directly expose its cause to improve debuggability.
+         */
+        private static Throwable unwrapThrowable(final Throwable t) {
+            final Throwable cause = t.getCause();
+            if (t instanceof DecoderException && cause instanceof SSLException) {
+                return cause;
+            }
+            return t;
         }
 
         @Override
