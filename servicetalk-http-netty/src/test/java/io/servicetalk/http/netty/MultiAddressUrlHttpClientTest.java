@@ -32,6 +32,7 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -43,7 +44,9 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -70,8 +73,10 @@ import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIME
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -84,7 +89,7 @@ public class MultiAddressUrlHttpClientTest {
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
-    // @Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private static CompositeCloseable afterClassCloseables;
@@ -102,6 +107,8 @@ public class MultiAddressUrlHttpClientTest {
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
                 .serviceDiscoverer(sdThatSupportsInvalidHostname())
+                .retryServiceDiscoveryErrors(retryWithConstantBackoff(MAX_VALUE, t -> t instanceof UnknownHostException,
+                        ofMillis(50), immediate()))
                 .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .buildStreaming());
 
@@ -146,11 +153,13 @@ public class MultiAddressUrlHttpClientTest {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
-                if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
-                    return failed(new UnknownHostException(
-                            "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
-                }
-                return globalDnsServiceDiscoverer().discover(hostAndPort);
+                return defer(() -> {
+                    if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
+                        return Publisher.failed(new UnknownHostException(
+                                "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
+                    }
+                    return globalDnsServiceDiscoverer().discover(hostAndPort);
+                });
             }
 
             @Override
