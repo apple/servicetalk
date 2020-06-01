@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 
+import java.nio.BufferOverflowException;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -412,14 +413,20 @@ final class HttpDataSourceTransformations {
                                                                   BufferAllocator allocator) {
         return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
             if (nextItem instanceof Buffer) {
-                Buffer buffer = (Buffer) nextItem;
-                if (pair.payload == null) {
-                    pair.payload = buffer;
-                } else if (pair.payload instanceof CompositeBuffer) {
-                    ((CompositeBuffer) pair.payload).addBuffer(buffer);
-                } else {
-                    Buffer oldBuffer = pair.payload;
-                    pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
+                try {
+                    Buffer buffer = (Buffer) nextItem;
+                    if (pair.payload == null) {
+                        pair.payload = buffer;
+                    } else if (pair.payload instanceof CompositeBuffer) {
+                        ((CompositeBuffer) pair.payload).addBuffer(buffer);
+                    } else {
+                        Buffer oldBuffer = pair.payload;
+                        pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
+                    }
+                } catch (IllegalArgumentException cause) {
+                    BufferOverflowException ex = new BufferOverflowException();
+                    ex.initCause(cause);
+                    throw ex;
                 }
             } else if (nextItem instanceof HttpHeaders) {
                 pair.trailers = (HttpHeaders) nextItem;
