@@ -51,7 +51,6 @@ import java.net.UnknownHostException;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.net.InetAddress.getByAddress;
 
 /**
@@ -179,8 +178,8 @@ public final class BuilderUtils {
             return new InetSocketAddress(getByAddress(createByteArrayFromIpAddressString(
                     resolvedAddress.hostName())), resolvedAddress.port());
         } catch (UnknownHostException e) {
-            return throwException(new UnknownHostException("Invalid resolved address: " + resolvedAddress.hostName() +
-                    ", expected IP-address."));
+            throw new IllegalArgumentException("Invalid resolved address: " + resolvedAddress.hostName() +
+                    ", expected IP-address.", e);
         }
     }
 
