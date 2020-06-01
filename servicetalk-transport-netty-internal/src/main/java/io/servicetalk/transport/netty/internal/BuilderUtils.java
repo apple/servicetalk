@@ -47,7 +47,11 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import javax.annotation.Nullable;
+
+import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
+import static java.net.InetAddress.getByAddress;
 
 /**
  * Utilities which are used for builders.
@@ -158,10 +162,25 @@ public final class BuilderUtils {
             return (SocketAddress) address;
         }
         if (address instanceof HostAndPort) {
-            HostAndPort hostAndPort = (HostAndPort) address;
-            return new InetSocketAddress(hostAndPort.hostName(), hostAndPort.port());
+            return toResolvedInetSocketAddress((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported address: " + address);
+    }
+
+    /**
+     * Converts {@link HostAndPort} that contains a resolved address into {@link InetSocketAddress}.
+     *
+     * @param resolvedAddress the resolved address to convert.
+     * @return {@link InetSocketAddress} from the passed resolved {@link HostAndPort}.
+     */
+    public static InetSocketAddress toResolvedInetSocketAddress(final HostAndPort resolvedAddress) {
+        try {
+            return new InetSocketAddress(getByAddress(createByteArrayFromIpAddressString(
+                    resolvedAddress.hostName())), resolvedAddress.port());
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Invalid resolved address: " + resolvedAddress.hostName() +
+                    ", expected IP-address.", e);
+        }
     }
 
     /**
