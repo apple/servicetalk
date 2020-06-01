@@ -29,6 +29,7 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -289,6 +290,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     public PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
         builderTemplate.serviceDiscoverer(serviceDiscoverer);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        builderTemplate.retryServiceDiscoveryErrors(retryStrategy);
         return this;
     }
 

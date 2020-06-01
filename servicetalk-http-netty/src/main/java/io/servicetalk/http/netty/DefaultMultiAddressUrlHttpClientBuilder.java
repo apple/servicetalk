@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -442,6 +443,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final ServiceDiscoverer<HostAndPort, InetSocketAddress,
                     ? extends ServiceDiscovererEvent<InetSocketAddress>> sd) {
         builderTemplate.serviceDiscoverer(sd);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        builderTemplate.retryServiceDiscoveryErrors(retryStrategy);
         return this;
     }
 

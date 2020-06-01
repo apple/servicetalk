@@ -22,7 +22,9 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
@@ -172,6 +174,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
      * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link StreamingHttpClient}s will be closed and
@@ -180,6 +183,16 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      */
     public abstract HttpClientBuilder<U, R, SDE> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+
+    /**
+     * Sets a retry strategy for errors emitted by {@link ServiceDiscoverer#discover(Object) discovery publisher}.
+     *
+     * @param retryStrategy a retry strategy for retrying errors emitted by
+     * {@link ServiceDiscoverer#discover(Object) discovery publisher}
+     * @return {@code this}.
+     */
+    public abstract HttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
 
     /**
      * Sets a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.

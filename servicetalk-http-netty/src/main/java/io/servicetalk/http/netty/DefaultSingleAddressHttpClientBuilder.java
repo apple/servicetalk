@@ -25,6 +25,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -54,7 +55,6 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.net.UnknownHostException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -86,6 +86,9 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
+    private static final BiIntFunction<Throwable, ? extends Completable> DEFAULT_SD_RETRY_STRATEGY =
+            retryWithConstantBackoffAndJitter(MAX_VALUE, t -> true, ofSeconds(60), immediate());
+
     @Nullable
     private final U address;
     @Nullable
@@ -95,6 +98,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy = DEFAULT_SD_RETRY_STRATEGY;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
@@ -140,12 +144,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
-        this.proxyAddress = from.proxyAddress;
+        proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         influencerChainBuilder = from.influencerChainBuilder.copy();
-        this.loadBalancerFactory = from.loadBalancerFactory;
-        this.serviceDiscoverer = from.serviceDiscoverer;
+        loadBalancerFactory = from.loadBalancerFactory;
+        serviceDiscoverer = from.serviceDiscoverer;
+        serviceDiscovererRetryStrategy = from.serviceDiscovererRetryStrategy;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
         hostToCharSequenceFunction = from.hostToCharSequenceFunction;
@@ -231,12 +236,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         Publisher<? extends ServiceDiscovererEvent<R>> discover(
                 PublisherSource.Processor<Throwable, Throwable> processor) {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return builder.serviceDiscoverer.discover(
-                    proxyAddress != null ? proxyAddress : builder.address)
-                    .retryWhen(retryWithConstantBackoffAndJitter(MAX_VALUE, t -> {
+            final BiIntFunction<Throwable, ? extends Completable> retryWhen = builder.serviceDiscovererRetryStrategy;
+            return builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address)
+                    .retryWhen((i, t) -> {
                         processor.onNext(t);
-                        return t instanceof UnknownHostException;
-                    }, ofSeconds(60), immediate()))
+                        return retryWhen.apply(i, t);
+                    })
                     .whenFinally(new TerminalSignalConsumer() {
                         @Override
                         public void onComplete() {
@@ -477,6 +482,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        return this;
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
         return this;
     }
 

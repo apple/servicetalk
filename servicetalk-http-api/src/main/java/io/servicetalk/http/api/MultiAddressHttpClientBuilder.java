@@ -20,6 +20,8 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -93,6 +95,10 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
 
     @Override
     public abstract
