@@ -82,6 +82,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThrows;
 
 public class MultiAddressUrlHttpClientTest {
 
@@ -218,11 +219,19 @@ public class MultiAddressUrlHttpClientTest {
         requestAndValidate(request, BAD_REQUEST, "/");
     }
 
-    @Test(expected = ExecutionException.class)
-    public void requestWithAbsoluteFormRequestTargetWithInvalidHost() throws Exception {
-        StreamingHttpRequest request = client.get(
-                format("http://%s:%d/200?param=value#tag", INVALID_HOSTNAME, serverPort));
-        client.request(request).toFuture().get();
+    @Test
+    public void requestWithAbsoluteFormRequestTargetWithInvalidHost() {
+        // Verify it fails multiple times:
+        requestWithInvalidHost();
+        requestWithInvalidHost();
+    }
+
+    private void requestWithInvalidHost() {
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> {
+            client.request(client.get(format("http://%s:%d/200?param=value#tag", INVALID_HOSTNAME, serverPort)))
+                    .toFuture().get();
+        });
+        assertThat(ee.getCause(), is(instanceOf(UnknownHostException.class)));
     }
 
     @Test(expected = ExecutionException.class)
