@@ -17,6 +17,8 @@ package io.servicetalk.transport.netty.internal;
 
 import io.netty.channel.FileRegion;
 
+import java.nio.ByteBuffer;
+
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static java.util.Objects.requireNonNull;
@@ -47,10 +49,9 @@ abstract class OverlappingCapacityAwareEstimator implements WriteDemandEstimator
             outstandingRequested--;
         }
         long size = sizeEstimator.estimateSize(written, writeBufferCapacityBeforeWrite, writeBufferCapacityAfterWrite);
-        if (size <= 0) {
-            return;
+        if (size > 0) {
+            recordSize(written, size);
         }
-        recordSize(written, size);
     }
 
     @Override
@@ -81,7 +82,7 @@ abstract class OverlappingCapacityAwareEstimator implements WriteDemandEstimator
      * An object size estimator based on write buffer capacity before and after an item write.
      */
     @FunctionalInterface
-    public interface SizeEstimator {
+    interface SizeEstimator {
 
         /**
          * Given the write buffer capacity before an after the write of an item, estimate the size of the item.

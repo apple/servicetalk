@@ -29,6 +29,6 @@ public final class WriteDemandEstimators {
      * @return A new instance of a default implementation of {@link WriteDemandEstimator}.
      */
     public static WriteDemandEstimator newDefaultEstimator() {
-        return new MaxSizeBasedWriteDemandEstimator();
+        return new EWMAWriteDemandEstimator();
     }
 }
