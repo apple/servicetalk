@@ -17,10 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.netty.channel.FileRegion;
 
-import java.nio.ByteBuffer;
-
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -33,10 +30,6 @@ abstract class OverlappingCapacityAwareEstimator implements WriteDemandEstimator
     private final SizeEstimator sizeEstimator;
     private long lastSeenCapacity;
     private long outstandingRequested;
-
-    protected OverlappingCapacityAwareEstimator() {
-        this(defaultEstimator());
-    }
 
     protected OverlappingCapacityAwareEstimator(SizeEstimator sizeEstimator) {
         this.sizeEstimator = requireNonNull(sizeEstimator);
