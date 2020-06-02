@@ -28,11 +28,7 @@ final class EWMAWriteDemandEstimator extends OverlappingCapacityAwareEstimator {
     }
 
     EWMAWriteDemandEstimator(long sizeAccumulator) {
-        this(sizeAccumulator, defaultEstimator());
-    }
-
-    private EWMAWriteDemandEstimator(long sizeAccumulator, SizeEstimator sizeEstimator) {
-        super(sizeEstimator);
+        super(defaultEstimator());
         if (sizeAccumulator <= 0) {
             throw new IllegalArgumentException("sizeAccumulator: " + sizeAccumulator + " (expected >0)");
         }
