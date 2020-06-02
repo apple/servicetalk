@@ -21,7 +21,6 @@ dependencies {
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-transport-api")
   api project(":servicetalk-http-api")
-  api "io.zipkin.zipkin2:zipkin:$zipkinVersion"
   api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
 
   implementation project(":servicetalk-annotations")
