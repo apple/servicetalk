@@ -44,7 +44,6 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -148,13 +147,11 @@ public class MultiAddressUrlHttpClientTest {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
-                return defer(() -> {
-                    if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
-                        return Publisher.failed(new UnknownHostException(
-                                "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
-                    }
-                    return globalDnsServiceDiscoverer().discover(hostAndPort);
-                });
+                if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
+                    return Publisher.failed(new UnknownHostException(
+                            "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
+                }
+                return globalDnsServiceDiscoverer().discover(hostAndPort);
             }
 
             @Override

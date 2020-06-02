@@ -55,7 +55,6 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -75,7 +74,6 @@ import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsS
 import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided address.
@@ -589,11 +587,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private static final class SdStatusCompletable extends Completable {
-        private static final AtomicReferenceFieldUpdater<SdStatusCompletable, CompletableSource.Processor>
-                processorUpdater = newUpdater(SdStatusCompletable.class, CompletableSource.Processor.class,
-                "processor");
         private volatile CompletableSource.Processor processor = newCompletableProcessor();
-        private boolean seenError;
+        private boolean seenError;  //  this is only accessed from nextError and resetError which are not concurrent
 
         @Override
         protected void handleSubscribe(final Subscriber subscriber) {
@@ -601,11 +596,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         void nextError(final Throwable t) {
+            seenError = true;
+            final CompletableSource.Processor oldProcessor = processor;
+            oldProcessor.onError(t);
             final CompletableSource.Processor newProcessor = newCompletableProcessor();
             newProcessor.onError(t);
-            final CompletableSource.Processor oldProcessor = processorUpdater.getAndSet(this, newProcessor);
-            oldProcessor.onError(t);
-            seenError = true;
+            processor = newProcessor;
         }
 
         void resetError() {

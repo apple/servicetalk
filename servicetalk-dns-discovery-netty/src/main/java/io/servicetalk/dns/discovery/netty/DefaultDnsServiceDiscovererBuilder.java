@@ -225,7 +225,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider);
-        final DnsClientFilterFactory rawFilterFactory = filterFactory;
-        return rawFilterFactory == null ? rawClient : rawFilterFactory.create(rawClient);
+        return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }
