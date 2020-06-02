@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 /**
  * A provider for {@link AutoRetryStrategy}.
  */
+@FunctionalInterface
 public interface AutoRetryStrategyProvider {
 
     /**
