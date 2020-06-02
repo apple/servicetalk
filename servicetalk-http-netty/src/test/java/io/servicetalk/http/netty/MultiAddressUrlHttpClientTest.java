@@ -44,9 +44,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -73,10 +71,8 @@ import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIME
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
-import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -108,8 +104,6 @@ public class MultiAddressUrlHttpClientTest {
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
                 .serviceDiscoverer(sdThatSupportsInvalidHostname())
-                .retryServiceDiscoveryErrors(retryWithConstantBackoff(MAX_VALUE, t -> t instanceof UnknownHostException,
-                        ofMillis(50), immediate()))
                 .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .buildStreaming());
 

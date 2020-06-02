@@ -39,9 +39,7 @@ public interface AutoRetryStrategyProvider {
      * Creates a new {@link AutoRetryStrategy} instance.
      *
      * @param lbEventStream a stream of events from {@link LoadBalancer#eventStream() LoadBalancer}
-     * @param sdStatus a {@link Completable} that reports current {@link ServiceDiscoverer} status. It fails when
-     * {@link ServiceDiscoverer#discover(Object) discovery publisher} emits an error or completes when the publisher
-     * terminates.
+     * @param sdStatus a {@link Completable} that reports {@link ServiceDiscoverer} status
      * @return New {@link AutoRetryStrategy} instance.
      */
     AutoRetryStrategy newStrategy(Publisher<Object> lbEventStream, Completable sdStatus);

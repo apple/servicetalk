@@ -77,12 +77,10 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         }
 
         /**
-         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready or
-         * {@link ServiceDiscoverer} to emit an error before triggering a retry for requests. This method allows a retry
-         * strategy to ignore errors from {@link ServiceDiscoverer} and wait for {@link LoadBalancer} forever.
+         * By default, {@link AutoRetryStrategy auto-retry strategies} fail a request if the last signal from the
+         * associated {@link ServiceDiscoverer} was an error. This method disables that behavior.
          *
          * @return {@code this}.
-         * @see #disableWaitForLoadBalancer()
          */
         public Builder ignoreServiceDiscovererErrors() {
             ignoreSdErrors = true;

@@ -24,14 +24,13 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -76,6 +75,7 @@ import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsS
 import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided address.
@@ -241,23 +241,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     .retryWhen((i, t) -> {
                         sdStatus.nextError(t);
                         return retryWhen.apply(i, t);
-                    })
-                    .whenFinally(new TerminalSignalConsumer() {
-                        @Override
-                        public void onComplete() {
-                            sdStatus.onComplete();
-                        }
-
-                        @Override
-                        public void onError(final Throwable throwable) {
-                            sdStatus.onError(throwable);
-                        }
-
-                        @Override
-                        public void cancel() {
-                            // noop
-                        }
-                    });
+                    }).whenOnNext(__ -> sdStatus.resetError());
+            // We do not complete sdStatus to let LB decide when to retry if SD completes.
         }
 
         StreamingHttpClient build() {
@@ -603,50 +588,30 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
-    private static final class SdStatusCompletable extends Completable implements CompletableSource.Processor {
+    private static final class SdStatusCompletable extends Completable {
         private static final AtomicReferenceFieldUpdater<SdStatusCompletable, CompletableSource.Processor>
-                currentProcessorUpdater = AtomicReferenceFieldUpdater.newUpdater(SdStatusCompletable.class,
-                CompletableSource.Processor.class, "currentProcessor");
-        @Nullable
-        private volatile CompletableSource.Processor currentProcessor;
+                processorUpdater = newUpdater(SdStatusCompletable.class, CompletableSource.Processor.class,
+                "processor");
+        private volatile CompletableSource.Processor processor = newCompletableProcessor();
+        private boolean seenError;
 
         @Override
-        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-            final CompletableSource.Processor currentProcessor = currentProcessorUpdater.updateAndGet(this,
-                    p -> p != null ? p : newCompletableProcessor());
-            currentProcessor.subscribe(subscriber);
-        }
-
-        @Override
-        public void subscribe(final Subscriber subscriber) {
-            subscribeInternal(subscriber);
-        }
-
-        @Override
-        public void onSubscribe(final Cancellable cancellable) {
-            // no op, we never cancel as Subscribers and subscribes are decoupled.
-        }
-
-        @Override
-        public void onComplete() {
-            final CompletableSource.Processor currentProcessor = this.currentProcessor;
-            if (currentProcessor != null) {
-                currentProcessor.onComplete();
-            }
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            final CompletableSource.Processor currentProcessor = this.currentProcessor;
-            if (currentProcessor != null) {
-                currentProcessor.onError(t);
-            }
+        protected void handleSubscribe(final Subscriber subscriber) {
+            processor.subscribe(subscriber);
         }
 
         void nextError(final Throwable t) {
-            final CompletableSource.Processor currentProcessor = currentProcessorUpdater.getAndSet(this, null);
-            if (currentProcessor != null) {
-                currentProcessor.onError(t);
+            final CompletableSource.Processor newProcessor = newCompletableProcessor();
+            newProcessor.onError(t);
+            final CompletableSource.Processor oldProcessor = processorUpdater.getAndSet(this, newProcessor);
+            oldProcessor.onError(t);
+            seenError = true;
+        }
+
+        void resetError() {
+            if (seenError) {
+                processor = newCompletableProcessor();
+                seenError = false;
             }
         }
     }
