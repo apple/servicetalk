@@ -537,8 +537,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
          * Unwraps certain types of netty exceptions to directly expose its cause to improve debuggability.
          */
         private static Throwable unwrapThrowable(final Throwable t) {
-            final Throwable cause = t.getCause();
-            if (t instanceof DecoderException && cause instanceof SSLException) {
+            final Throwable cause;
+            if (t instanceof DecoderException && (cause = t.getCause()) instanceof SSLException) {
                 return cause;
             }
             return t;
