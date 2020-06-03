@@ -19,6 +19,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -35,7 +37,6 @@ import org.junit.rules.Timeout;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
@@ -54,7 +55,7 @@ import static io.servicetalk.dns.discovery.netty.TestRecordStore.createRecord;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -101,32 +102,18 @@ public class DefaultDnsClientTest {
 
     @Test
     public void unknownHostDiscover() throws Exception {
-        CountDownLatch retryLatch = new CountDownLatch(2);
-        DnsClient filteredClient =
-                clientBuilderWithoutRetry()
-                        .appendFilter(new RetryingDnsClientFilter((retryCount, cause) -> {
-                            retryLatch.countDown();
-                            return retryCount == 1 && cause instanceof UnknownHostException ?
-                                    globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : failed(cause);
-                        })).build();
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("unknown.com");
+        final CountDownLatch latch = new CountDownLatch(1);
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        toSource(publisher).subscribe(subscriber);
 
-        try {
-            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = filteredClient.dnsQuery("unknown.com");
-            final CountDownLatch latch = new CountDownLatch(1);
-            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            toSource(publisher).subscribe(subscriber);
-
-            retryLatch.await();
-            latch.await();
-            assertThat("Unexpected exception during DNS lookup.",
-                    throwableRef.get(), instanceOf(UnknownHostException.class));
-            assertThat(subscriber.activeCount(), equalTo(0));
-            assertThat(subscriber.inactiveCount(), equalTo(0));
-        } finally {
-            filteredClient.closeAsync().toFuture().get();
-        }
+        latch.await();
+        assertThat("Unexpected exception during DNS lookup.",
+                throwableRef.get(), instanceOf(UnknownHostException.class));
+        assertThat(subscriber.activeCount(), equalTo(0));
+        assertThat(subscriber.inactiveCount(), equalTo(0));
     }
 
     @Test
@@ -488,7 +475,8 @@ public class DefaultDnsClientTest {
         toSource(publisher).subscribe(subscriber);
 
         latch.await();
-        assertNull(throwableRef.get());
+        assertThat("Unexpected exception during DNS lookup.",
+                throwableRef.get(), instanceOf(UnknownHostException.class));
         assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
         assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
     }
@@ -497,7 +485,7 @@ public class DefaultDnsClientTest {
     public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp());
 
-        DnsClient customClient = clientBuilderWithoutRetry().invalidateHostsOnDnsFailure(__ -> false).build();
+        DnsClient customClient = dnsClientBuilder().invalidateHostsOnDnsFailure(__ -> false).build();
         try {
             final int expectedActiveCount = 1;
             final int expectedInactiveCount = 0;
@@ -523,25 +511,30 @@ public class DefaultDnsClientTest {
     public void repeatDiscoverNxDomainAndRecover() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp());
 
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 1;
+        DnsClient customClient = clientBuilderWithRetry().build();
+        try {
+            final int expectedActiveCount = 1;
+            final int expectedInactiveCount = 1;
 
-        CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
-        toSource(publisher.beforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
+            CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+            CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
+            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = customClient.dnsQuery("apple.com");
+            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                    new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
+            toSource(publisher.beforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
 
-        latch1.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+            latch1.await();
+            assertNull(throwableRef.get());
+            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
 
-        recordStore.defaultResponse("apple.com", A, nextIp());
-        latch2.await();
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount + 1));
+            recordStore.defaultResponse("apple.com", A, nextIp());
+            latch2.await();
+            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount + 1));
+        } finally {
+            customClient.closeAsync().toFuture().get();
+        }
     }
 
     @Test
@@ -559,8 +552,8 @@ public class DefaultDnsClientTest {
         });
 
         DnsClient filteredClient =
-                dnsClientBuilder()
-                        .queryTimeout(Duration.ofMillis(100))
+                clientBuilderWithRetry()
+                        .queryTimeout(ofMillis(100))
                         .appendFilter(client -> new DnsClientFilter(client) {
                             @Override
                             public Publisher<ServiceDiscovererEvent<InetAddress>> dnsQuery(final String s) {
@@ -674,7 +667,7 @@ public class DefaultDnsClientTest {
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
         recordStore.defaultResponse("apple.com", A, nextIp());
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
-        DnsClient noRetryClient = clientBuilderWithoutRetry().build();
+        DnsClient noRetryClient = dnsClientBuilder().build();
         Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
 
         try {
@@ -698,10 +691,9 @@ public class DefaultDnsClientTest {
         }
     }
 
-    private DefaultDnsServiceDiscovererBuilder clientBuilderWithoutRetry() {
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
         return new DefaultDnsServiceDiscovererBuilder()
                 .ioExecutor(nettyIoExecutor)
-                .noRetriesOnDnsFailures()
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
@@ -710,9 +702,20 @@ public class DefaultDnsClientTest {
                 .minTTL(1);
     }
 
-    private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
-        return clientBuilderWithoutRetry().appendFilter(new RetryingDnsClientFilter((i, t) ->
-                        globalExecutionContext().executor().timer(Duration.ofSeconds(1))));
+    private DefaultDnsServiceDiscovererBuilder clientBuilderWithRetry() {
+        final BiIntFunction<Throwable, ? extends Completable> retryStrategy = (i, t) -> immediate().timer(ofMillis(50));
+        return dnsClientBuilder()
+                .appendFilter(client -> new DnsClientFilter(client) {
+                    @Override
+                    public Publisher<ServiceDiscovererEvent<InetAddress>> dnsQuery(final String hostName) {
+                        return super.dnsQuery(hostName).retryWhen(retryStrategy);
+                    }
+
+                    @Override
+                    public Publisher<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(final String serviceName) {
+                        return super.dnsSrvQuery(serviceName).retryWhen(retryStrategy);
+                    }
+                });
     }
 
     private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {

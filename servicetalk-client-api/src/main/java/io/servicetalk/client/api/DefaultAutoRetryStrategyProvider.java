@@ -17,6 +17,7 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.RetryableException;
 
 import javax.annotation.Nullable;
@@ -33,21 +34,25 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategyProvider {
     private final int maxRetryCount;
     private final boolean waitForLb;
+    private final boolean ignoreSdErrors;
     private final boolean retryAllRetryableExceptions;
 
     private DefaultAutoRetryStrategyProvider(final int maxRetryCount, final boolean waitForLb,
+                                             final boolean ignoreSdErrors,
                                              final boolean retryAllRetryableExceptions) {
         this.maxRetryCount = maxRetryCount;
         this.waitForLb = waitForLb;
+        this.ignoreSdErrors = ignoreSdErrors;
         this.retryAllRetryableExceptions = retryAllRetryableExceptions;
     }
 
     @Override
-    public AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer) {
+    public AutoRetryStrategy newStrategy(final Publisher<Object> lbEventStream, final Completable sdStatus) {
         if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }
-        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions, loadBalancer);
+        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions,
+                lbEventStream, ignoreSdErrors ? null : sdStatus);
     }
 
     /**
@@ -55,11 +60,12 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
      */
     public static final class Builder {
         private boolean waitForLb = true;
+        private boolean ignoreSdErrors;
         private boolean retryAllRetryableExceptions = true;
         private int maxRetries = 4;
 
         /**
-         * By default, automatic retries waits for the associated {@link LoadBalancer} to be ready before triggering a
+         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready before triggering a
          * retry for requests. This behavior may add latency to requests till the time the load balancer is ready
          * instead of failing fast. This method disables the default behavior.
          *
@@ -67,6 +73,17 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          */
         public Builder disableWaitForLoadBalancer() {
             waitForLb = false;
+            return this;
+        }
+
+        /**
+         * By default, {@link AutoRetryStrategy auto-retry strategies} fail a request if the last signal from the
+         * associated {@link ServiceDiscoverer} was an error. This method disables that behavior.
+         *
+         * @return {@code this}.
+         */
+        public Builder ignoreServiceDiscovererErrors() {
+            ignoreSdErrors = true;
             return this;
         }
 
@@ -104,20 +121,25 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
          * @return A new {@link AutoRetryStrategyProvider}.
          */
         public AutoRetryStrategyProvider build() {
-            return new DefaultAutoRetryStrategyProvider(maxRetries, waitForLb, retryAllRetryableExceptions);
+            return new DefaultAutoRetryStrategyProvider(maxRetries, waitForLb, ignoreSdErrors,
+                    retryAllRetryableExceptions);
         }
     }
 
     private static final class DefaultAutoRetryStrategy implements AutoRetryStrategy {
         @Nullable
         private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
+        @Nullable
+        private final Completable sdStatus;
         private final AsyncCloseable closeAsync;
         private final int maxRetryCount;
         private final boolean retryAllRetryableExceptions;
 
         DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb,
-                                 final boolean retryAllRetryableExceptions, final LoadBalancer<?> loadBalancer) {
+                                 final boolean retryAllRetryableExceptions,
+                                 final Publisher<Object> lbEventStream, @Nullable final Completable sdStatus) {
             this.maxRetryCount = maxRetryCount;
+            this.sdStatus = sdStatus;
             this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             if (waitForLb) {
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
@@ -125,7 +147,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
                     loadBalancerReadySubscriber.cancel();
                     return completed();
                 });
-                toSource(loadBalancer.eventStream()).subscribe(loadBalancerReadySubscriber);
+                toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
             } else {
                 loadBalancerReadySubscriber = null;
                 closeAsync = emptyAsyncCloseable();
@@ -138,7 +160,8 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
                 return failed(cause);
             }
             if (loadBalancerReadySubscriber != null && cause instanceof NoAvailableHostException) {
-                return loadBalancerReadySubscriber.onHostsAvailable();
+                final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
             }
             if (retryAllRetryableExceptions && cause instanceof RetryableException) {
                 return completed();

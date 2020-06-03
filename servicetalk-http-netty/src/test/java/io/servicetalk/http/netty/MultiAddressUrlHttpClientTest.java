@@ -15,7 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -28,16 +32,18 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -59,6 +65,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -66,13 +73,15 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 
 public class MultiAddressUrlHttpClientTest {
 
+    private static final String INVALID_HOSTNAME = "invalid.";
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
@@ -93,6 +102,7 @@ public class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
+                .serviceDiscoverer(sdThatSupportsInvalidHostname())
                 .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .buildStreaming());
 
@@ -132,6 +142,30 @@ public class MultiAddressUrlHttpClientTest {
         afterClassCloseables.close();
     }
 
+    private static ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+    sdThatSupportsInvalidHostname() {
+        return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
+            @Override
+            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
+                if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
+                    return Publisher.failed(new UnknownHostException(
+                            "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));
+                }
+                return globalDnsServiceDiscoverer().discover(hostAndPort);
+            }
+
+            @Override
+            public Completable onClose() {
+                return completed();
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return completed();
+            }
+        };
+    }
+
     @Test
     public void requestWithRelativeFormRequestTarget() {
         StreamingHttpRequest request = client.get("/200?param=value");
@@ -159,7 +193,8 @@ public class MultiAddressUrlHttpClientTest {
     @Test
     public void requestWithAbsoluteFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
-        request.headers().set(HOST, "invalid.:8080");    // value in the HOST header should be ignored
+        // value in the HOST header should be ignored:
+        request.headers().set(HOST, format("%s:%d", INVALID_HOSTNAME, 8080));
         requestAndValidate(request, OK, "/200?param=value#tag");
     }
 
@@ -175,12 +210,19 @@ public class MultiAddressUrlHttpClientTest {
         requestAndValidate(request, BAD_REQUEST, "/");
     }
 
-    @Test(expected = ExecutionException.class)
-    @Ignore("LoadBalancerReadySubscriber will never complete for a wrong host") // FIXME: remove @Ignore annotation
-    public void requestWithAbsoluteFormRequestTargetWithInvalidHost() throws Exception {
-        StreamingHttpRequest request = client.get(
-                format("http://invalid.:%d/200?param=value#tag", serverPort));
-        client.request(request).toFuture().get();
+    @Test
+    public void requestWithAbsoluteFormRequestTargetWithInvalidHost() {
+        // Verify it fails multiple times:
+        requestWithInvalidHost();
+        requestWithInvalidHost();
+    }
+
+    private void requestWithInvalidHost() {
+        ExecutionException ee = assertThrows(ExecutionException.class, () -> {
+            client.request(client.get(format("http://%s:%d/200?param=value#tag", INVALID_HOSTNAME, serverPort)))
+                    .toFuture().get();
+        });
+        assertThat(ee.getCause(), is(instanceOf(UnknownHostException.class)));
     }
 
     @Test(expected = ExecutionException.class)

@@ -24,6 +24,8 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -87,6 +89,10 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(

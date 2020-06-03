@@ -18,12 +18,14 @@ package io.servicetalk.client.api;
 import io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Test;
 
+import java.net.UnknownHostException;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
@@ -35,32 +37,29 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class DefaultAutoRetryStrategyProviderTest {
     private static final RetryableConnectException RETRYABLE_EXCEPTION =
             new RetryableConnectException("deliberate exception");
     private static final NoAvailableHostException NO_AVAILABLE_HOST =
             new NoAvailableHostException("deliberate exception");
+    private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
+            new UnknownHostException("deliberate exception");
 
-    private final LoadBalancer<LoadBalancedConnection> lb;
     private final TestPublisher<Object> lbEvents;
+    private final TestCompletable sdStatus;
     private final TestCompletableSubscriber retrySubscriber;
 
     public DefaultAutoRetryStrategyProviderTest() {
-        @SuppressWarnings("unchecked")
-        LoadBalancer<LoadBalancedConnection> lb = mock(LoadBalancer.class);
-        this.lb = lb;
         lbEvents = new TestPublisher<>();
-        when(lb.eventStream()).thenReturn(lbEvents);
+        sdStatus = new TestCompletable();
         retrySubscriber = new TestCompletableSubscriber();
     }
 
     @Test
     public void disableWaitForLb() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableWaitForLoadBalancer);
-        Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
     }
@@ -74,13 +73,23 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
-    public void disableRetryAllRetryableExWithNoAvailableHosts() {
+    public void disableRetryAllRetryableExWithNoAvailableHost() {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
+    }
+
+    @Test
+    public void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
+        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
+        verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
 
     @Test
@@ -120,6 +129,47 @@ public class DefaultAutoRetryStrategyProviderTest {
     }
 
     @Test
+    public void defaultForNoAvailableHostOnUnknownHostException() {
+        AutoRetryStrategy strategy = newStrategy(identity());
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
+        verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
+    }
+
+    @Test
+    public void defaultForNoAvailableHostOnServiceDiscovererError() {
+        AutoRetryStrategy strategy = newStrategy(identity());
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        sdStatus.onError(DELIBERATE_EXCEPTION);
+        verifyRetryResultError(DELIBERATE_EXCEPTION);
+    }
+
+    @Test
+    public void ignoreSdErrorsForNoAvailableHost() {
+        AutoRetryStrategy strategy = newStrategy(Builder::ignoreServiceDiscovererErrors);
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
+        verifyRetryResultCompleted();
+    }
+
+    @Test
+    public void defaultForNoAvailableHostWhenServiceDiscovererTerminated() {
+        AutoRetryStrategy strategy = newStrategy(identity());
+        Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
+        toSource(retry).subscribe(retrySubscriber);
+        assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
+        sdStatus.onComplete();
+        verifyRetryResultCompleted();
+    }
+
+    @Test
     public void maxRetriesAreHonored() {
         AutoRetryStrategy strategy = newStrategy(builder -> builder.maxRetries(1));
         Completable retry = strategy.apply(2, RETRYABLE_EXCEPTION);
@@ -141,6 +191,6 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     private AutoRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
         AutoRetryStrategyProvider provider = updater.apply(new Builder()).build();
-        return provider.forLoadbalancer(lb);
+        return provider.newStrategy(lbEvents, sdStatus);
     }
 }

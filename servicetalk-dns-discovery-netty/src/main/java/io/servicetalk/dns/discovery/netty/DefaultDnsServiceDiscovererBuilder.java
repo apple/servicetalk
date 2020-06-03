@@ -17,7 +17,6 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -52,7 +51,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private IoExecutor ioExecutor;
     @Nullable
     private Duration queryTimeout;
-    private boolean applyRetryFilter = true;
     private int minTTLSeconds = 10;
     @Nullable
     private DnsClientFilterFactory filterFactory;
@@ -156,16 +154,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Do not perform retries if DNS lookup fails. Instead, terminate the {@link Publisher} with the error.
-     *
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder noRetriesOnDnsFailures() {
-        this.applyRetryFilter = false;
-        return this;
-    }
-
-    /**
      * Append the filter to the chain of filters used to decorate the {@link ServiceDiscoverer} created by this
      * builder.
      * <p>
@@ -233,16 +221,10 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return a new instance of {@link DnsClient}.
      */
     DnsClient build() {
-        DnsClient rawClient = new DefaultDnsClient(
+        final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider);
-        DnsClientFilterFactory rawFilterFactory = filterFactory;
-        if (applyRetryFilter) {
-            DnsClientFilterFactory retryFilterFactory = new RetryingDnsClientFilter();
-            rawFilterFactory = rawFilterFactory == null ? retryFilterFactory :
-                    retryFilterFactory.append(rawFilterFactory);
-        }
-        return rawFilterFactory == null ? rawClient : rawFilterFactory.create(rawClient);
+        return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

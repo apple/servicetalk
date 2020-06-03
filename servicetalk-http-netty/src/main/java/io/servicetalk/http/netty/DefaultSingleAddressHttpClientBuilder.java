@@ -24,6 +24,9 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -59,12 +62,17 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static java.lang.Integer.MAX_VALUE;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -77,6 +85,9 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
+    private static final BiIntFunction<Throwable, ? extends Completable> DEFAULT_SD_RETRY_STRATEGY =
+            retryWithConstantBackoffAndJitter(MAX_VALUE, t -> true, ofSeconds(60), immediate());
+
     @Nullable
     private final U address;
     @Nullable
@@ -86,6 +97,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy = DEFAULT_SD_RETRY_STRATEGY;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
@@ -131,12 +143,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
-        this.proxyAddress = from.proxyAddress;
+        proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         influencerChainBuilder = from.influencerChainBuilder.copy();
-        this.loadBalancerFactory = from.loadBalancerFactory;
-        this.serviceDiscoverer = from.serviceDiscoverer;
+        loadBalancerFactory = from.loadBalancerFactory;
+        serviceDiscoverer = from.serviceDiscoverer;
+        serviceDiscovererRetryStrategy = from.serviceDiscovererRetryStrategy;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
         hostToCharSequenceFunction = from.hostToCharSequenceFunction;
@@ -219,6 +232,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     proxyAddress != null ? proxyAddress : builder.address);
         }
 
+        Publisher<? extends ServiceDiscovererEvent<R>> discover(final SdStatusCompletable sdStatus) {
+            assert builder.address != null : "Attempted to buildStreaming with an unknown address";
+            final BiIntFunction<Throwable, ? extends Completable> retryWhen = builder.serviceDiscovererRetryStrategy;
+            return builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address)
+                    .retryWhen((i, t) -> {
+                        sdStatus.nextError(t);
+                        return retryWhen.apply(i, t);
+                    }).whenOnNext(__ -> sdStatus.resetError());
+            // We do not complete sdStatus to let LB decide when to retry if SD completes.
+        }
+
         StreamingHttpClient build() {
             return buildStreaming(this);
         }
@@ -239,7 +263,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover();
+            final SdStatusCompletable sdStatus = new SdStatusCompletable();
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover(sdStatus);
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
@@ -293,7 +318,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
-                lbClient = new AutoRetryFilter(lbClient, ctx.builder.autoRetry.forLoadbalancer(lb));
+                lbClient = new AutoRetryFilter(lbClient,
+                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), sdStatus));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
@@ -442,6 +468,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+        this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
+        return this;
+    }
+
+    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final HttpLoadBalancerFactory<R> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
@@ -550,6 +583,32 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+    }
+
+    private static final class SdStatusCompletable extends Completable {
+        private volatile CompletableSource.Processor processor = newCompletableProcessor();
+        private boolean seenError;  //  this is only accessed from nextError and resetError which are not concurrent
+
+        @Override
+        protected void handleSubscribe(final Subscriber subscriber) {
+            processor.subscribe(subscriber);
+        }
+
+        void nextError(final Throwable t) {
+            seenError = true;
+            final CompletableSource.Processor oldProcessor = processor;
+            oldProcessor.onError(t);
+            final CompletableSource.Processor newProcessor = newCompletableProcessor();
+            newProcessor.onError(t);
+            processor = newProcessor;
+        }
+
+        void resetError() {
+            if (seenError) {
+                processor = newCompletableProcessor();
+                seenError = false;
+            }
         }
     }
 }

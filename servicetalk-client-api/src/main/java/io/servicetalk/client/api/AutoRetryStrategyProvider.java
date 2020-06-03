@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -27,20 +28,23 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 /**
  * A provider for {@link AutoRetryStrategy}.
  */
+@FunctionalInterface
 public interface AutoRetryStrategyProvider {
 
     /**
      * An {@link AutoRetryStrategyProvider} that disables automatic retries;
      */
-    AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = __ -> (___, cause) -> failed(cause);
+    AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = (lbEventStream, sdErrorStream) -> (___, cause) -> failed(cause);
 
     /**
-     * Create a new {@link AutoRetryStrategy} instance using the passed {@link LoadBalancer}.
+     * Creates a new {@link AutoRetryStrategy} instance.
      *
-     * @param loadBalancer {@link LoadBalancer} to use.
+     * @param lbEventStream a stream of events from {@link LoadBalancer#eventStream() LoadBalancer}
+     * @param sdStatus a {@link Completable} that will terminate with an error when the corresponding
+     * {@link ServiceDiscoverer#discover(Object)} emits an error
      * @return New {@link AutoRetryStrategy} instance.
      */
-    AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer);
+    AutoRetryStrategy newStrategy(Publisher<Object> lbEventStream, Completable sdStatus);
 
     /**
      * A strategy to use for automatic retries.  Automatic retries are done by
