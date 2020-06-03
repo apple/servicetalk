@@ -20,9 +20,11 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
+import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -157,7 +159,7 @@ public class OverlappingCapacityAwareEstimatorTest {
 
     private static OverlappingCapacityAwareEstimator newSupplier(LongSupplier demandEstimator) {
         OverlappingCapacityAwareEstimator mock = mock(OverlappingCapacityAwareEstimator.class,
-                withSettings().useConstructor());
+                withSettings().useConstructor(defaultEstimator()).defaultAnswer(CALLS_REAL_METHODS));
         when(mock.getRequestNForCapacity(anyLong())).thenAnswer(invocation -> demandEstimator.getAsLong());
         return mock;
     }
