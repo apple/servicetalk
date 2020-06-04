@@ -37,5 +37,5 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
-  testRuntime project(":servicetalk-test-resources")
+  testRuntimeOnly project(":servicetalk-test-resources")
 }

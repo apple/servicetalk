@@ -39,7 +39,7 @@ dependencies {
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
-  testRuntime "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
+  testRuntimeOnly "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))

@@ -54,7 +54,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
 
       checkstyle {
         toolVersion = CHECKSTYLE_VERSION
-        configDir = file("$buildDir/checkstyle")
+        getConfigDirectory().set file("$buildDir/checkstyle")
       }
 
       // Overwrite the default set of file for Checkstyle analysis from only java files to all files of the source set
