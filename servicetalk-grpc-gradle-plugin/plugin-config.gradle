@@ -19,9 +19,9 @@ Properties props = new Properties()
 props.load(new FileInputStream("$project.projectDir/../gradle.properties"))
 
 dependencies {
-  compile gradleApi()
-  compile localGroovy()
-  compile "com.google.protobuf:protobuf-gradle-plugin:$props.protobufGradlePluginVersion"
+  implementation gradleApi()
+  implementation localGroovy()
+  implementation "com.google.protobuf:protobuf-gradle-plugin:$props.protobufGradlePluginVersion"
 }
 
 gradlePlugin {

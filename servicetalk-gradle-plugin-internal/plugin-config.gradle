@@ -19,10 +19,10 @@ Properties props = new Properties()
 props.load(new FileInputStream("$project.projectDir/../gradle.properties"))
 
 dependencies {
-  compile gradleApi()
-  compile localGroovy()
-  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:$props.bintrayPluginVersion"
-  compile "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
+  implementation gradleApi()
+  implementation localGroovy()
+  implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:$props.bintrayPluginVersion"
+  implementation "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
 }
 
 gradlePlugin {

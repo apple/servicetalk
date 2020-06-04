@@ -45,7 +45,7 @@ jar {
 }
 
 shadowJar {
-  baseName = project.name + "-all"
+  archiveBaseName = project.name + "-all"
   classifier = ''
 }
 
