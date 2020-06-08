@@ -399,7 +399,13 @@ final class DefaultDnsClient implements DnsClient {
     private abstract class AbstractDnsPublisher<T>
             extends SubscribablePublisher<Iterable<ServiceDiscovererEvent<T>>> {
 
+        /**
+         * Name of the DNS record to query.
+         */
         protected final String name;
+        /**
+         * A {@link DnsDiscoveryObserver} for this publisher that provides visibility into individual DNS resolutions.
+         */
         @Nullable
         protected final DnsDiscoveryObserver discoveryObserver;
         @Nullable
@@ -410,6 +416,12 @@ final class DefaultDnsClient implements DnsClient {
             this.discoveryObserver = discoveryObserver;
         }
 
+        /**
+         * Creates a new {@link Subscription} for this {@link Publisher}.
+         *
+         * @param subscriber {@link Subscriber} for a new {@link Subscription}
+         * @return a new {@link Subscription} for this {@link Publisher}
+         */
         protected abstract AbstractDnsSubscription newSubscription(
                 Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber);
 
@@ -482,8 +494,18 @@ final class DefaultDnsClient implements DnsClient {
                 ttlNanos = -1;
             }
 
+            /**
+             * Performs DNS query.
+             *
+             * @return a {@link Future} that will be notified when {@link DnsAnswer} is available
+             */
             protected abstract Future<DnsAnswer<T>> doDnsQuery();
 
+            /**
+             * Returns a {@link Comparator} for the resolved address type.
+             *
+             * @return a {@link Comparator} for the resolved address type
+             */
             protected abstract Comparator<T> comparator();
 
             @Override
