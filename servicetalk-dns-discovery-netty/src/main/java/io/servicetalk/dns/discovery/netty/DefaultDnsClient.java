@@ -708,6 +708,7 @@ final class DefaultDnsClient implements DnsClient {
                 try {
                     resolutionObserver.resolutionFailed(cause);
                 } catch (Throwable unexpected) {
+                    unexpected.addSuppressed(cause);
                     LOGGER.warn("Unexpected exception from {} while reporting DNS resolution failure",
                             resolutionObserver, unexpected);
                 }
