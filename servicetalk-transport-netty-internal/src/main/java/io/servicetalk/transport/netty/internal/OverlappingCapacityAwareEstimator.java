@@ -79,7 +79,7 @@ abstract class OverlappingCapacityAwareEstimator implements WriteDemandEstimator
 
         /**
          * Given the write buffer capacity before an after the write of an item, estimate the size of the item.
-         *<p>
+         * <p>
          * Write buffer capacity may not correctly reflect size of the object written.
          * Hence capacity before may not necessarily be more than capacity after write.
          *

@@ -242,10 +242,12 @@
     <module name="InvalidJavadocPosition"/>
     <module name="JavadocBlockTagLocation"/>
     <module name="JavadocContentLocationCheck"/>
+    <module name="JavadocMissingWhitespaceAfterAsterisk"/>
 
     <!-- Miscellaneous -->
     <module name="ArrayTypeStyle"/>
     <module name="CommentsIndentation"/>
+    <module name="NoCodeInFile"/>
     <module name="OuterTypeFilename"/>
     <module name="UncommentedMain"/>
     <module name="UpperEll"/>
@@ -293,6 +295,7 @@
     <module name="StringLiteralEquality"/>
     <module name="SuperClone"/>
     <module name="SuperFinalize"/>
+    <module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
     <module name="UnnecessarySemicolonInEnumeration"/>
     <module name="UnnecessarySemicolonInTryWithResources"/>
 
