@@ -30,7 +30,7 @@ import io.servicetalk.concurrent.api.Publisher;
 public interface WriteDemandEstimator {
     /**
      * Callback whenever an item is written on the connection.
-     *<p>
+     * <p>
      * Write buffer capacity may not correctly reflect size of the object written.
      * Hence capacity before may not necessarily be more than capacity after write.
      *
@@ -43,7 +43,7 @@ public interface WriteDemandEstimator {
     /**
      * Given the current capacity of the write buffer, supply how many items to request next from the associated
      * {@link PublisherSource.Subscription}.
-     *<p>
+     * <p>
      * This method is invoked every time there could be a need to request more items from the write
      * {@link Publisher}.
      * This means that the supplied {@code writeBufferCapacityInBytes} may include the capacity for which we have
