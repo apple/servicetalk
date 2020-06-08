@@ -45,6 +45,7 @@ public final class ServiceDiscovererUtils {
      * @param newActiveAddresses The new list of active addresses.<b>This list must be modifiable</b> as it will be
      * sorted with {@link List#sort(Comparator)}.
      * @param comparator A comparator for the addresses and to use for binary searches.
+     * @param reporter A reporter for the numbers of available and unavailable events.
      * @param <T> The type of address.
      * @return A list of {@link ServiceDiscovererEvent}s which represents the changes between
      * {@code currentActiveAddresses} and {@code newActiveAddresses}, or {@code null} if there are no changes.
@@ -52,14 +53,34 @@ public final class ServiceDiscovererUtils {
     @Nullable
     public static <T> List<ServiceDiscovererEvent<T>> calculateDifference(List<? extends T> currentActiveAddresses,
                                                                           List<? extends T> newActiveAddresses,
-                                                                          Comparator<T> comparator) {
+                                                                          Comparator<T> comparator,
+                                                                          @Nullable TwoIntsConsumer reporter) {
         // First sort the newAddresses so we can use binary search.
         newActiveAddresses.sort(comparator);
 
+        // Calculate additions (in newAddresses, not in activeAddresses).
+        List<ServiceDiscovererEvent<T>> availableEvents =
+                relativeComplement(true, currentActiveAddresses, newActiveAddresses, comparator, null);
         // Calculate removals (in activeAddresses, not in newAddresses).
-        return relativeComplement(false, newActiveAddresses, currentActiveAddresses, comparator,
-                // Calculate additions (in newAddresses, not in activeAddresses).
-                relativeComplement(true, currentActiveAddresses, newActiveAddresses, comparator, null));
+        List<ServiceDiscovererEvent<T>> allEvents =
+                relativeComplement(false, newActiveAddresses, currentActiveAddresses, comparator, availableEvents);
+
+        reportEvents(reporter, allEvents, availableEvents);
+        return allEvents;
+    }
+
+    private static <T> void reportEvents(@Nullable final TwoIntsConsumer reporter,
+                                         @Nullable final List<ServiceDiscovererEvent<T>> allEvents,
+                                         @Nullable final List<ServiceDiscovererEvent<T>> availableEvents) {
+        if (reporter == null) {
+            return;
+        }
+        if (allEvents == null) {
+            reporter.accept(0, 0);
+            return;
+        }
+        final int available = availableEvents == null ? 0 : availableEvents.size();
+        reporter.accept(available, allEvents.size() - available);
     }
 
     /**
@@ -111,5 +132,20 @@ public final class ServiceDiscovererUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * Represents an operation that accepts two {@code int}-valued arguments and returns no result.
+     */
+    @FunctionalInterface
+    public interface TwoIntsConsumer {
+
+        /**
+         * Performs this operation on the given arguments.
+         *
+         * @param first the first {@code int}}-valued argument
+         * @param second the second {@code int}}-valued argument
+         */
+        void accept(int first, int second);
     }
 }

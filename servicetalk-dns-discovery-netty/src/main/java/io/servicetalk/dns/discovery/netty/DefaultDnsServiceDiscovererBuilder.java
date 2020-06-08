@@ -34,8 +34,8 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builder for DNS {@link ServiceDiscoverer} which will attempt to resolve {@code A}, {@code AAAA}, {@code CNAME}, and
- * {@code SRV} type queries.
+ * Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> {@link ServiceDiscoverer} which will attempt to
+ * resolve {@code A}, {@code AAAA}, {@code CNAME}, and  {@code SRV} type queries.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
@@ -54,6 +54,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private int minTTLSeconds = 10;
     @Nullable
     private DnsClientFilterFactory filterFactory;
+    @Nullable
+    private DnsServiceDiscovererObserver observer;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -190,6 +192,19 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
+     * Sets a {@link DnsServiceDiscovererObserver} that provides visibility into
+     * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder.
+     *
+     * @param observer a {@link DnsServiceDiscovererObserver} that provides visibility into
+     * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder observer(final DnsServiceDiscovererObserver observer) {
+        this.observer = requireNonNull(observer);
+        return this;
+    }
+
+    /**
      * Build a new {@link ServiceDiscoverer} which queries
      * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
      * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
@@ -224,7 +239,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
-                dnsServerAddressStreamProvider);
+                dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }
