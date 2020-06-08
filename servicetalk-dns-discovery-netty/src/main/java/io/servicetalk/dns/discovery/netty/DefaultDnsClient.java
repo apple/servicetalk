@@ -157,7 +157,7 @@ final class DefaultDnsClient implements DnsClient {
 
     @Nullable
     private DnsDiscoveryObserver newDiscoveryObserver(final String address) {
-        return observer != null ? observer.newDiscovery(address) : null;
+        return observer != null ? observer.onNewDiscovery(address) : null;
     }
 
     @Override
@@ -184,8 +184,8 @@ final class DefaultDnsClient implements DnsClient {
                     if (prevAPublisher != null) {
                         return failed(new IllegalStateException("Only 1 A* record per SRV record is supported. " +
                                 srvEvent.address() + " corresponding to SRV name " + serviceName +
-                                " had a pre-existing A* record:" + prevAPublisher.name() +
-                                " when new A* record arrived: " + aPublisher.name()));
+                                " had a pre-existing A* record:" + prevAPublisher.name +
+                                " when new A* record arrived: " + aPublisher.name));
                     }
 
                     return srvARecordPubToSingle(aPublisher, srvEvent, serviceName);
@@ -255,18 +255,17 @@ final class DefaultDnsClient implements DnsClient {
 
         @Override
         public String toString() {
-            return "SRV lookups for " + name();
+            return "SRV lookups for " + name;
         }
 
         @Override
         protected AbstractDnsSubscription newSubscription(
-                final Subscriber<? super Iterable<ServiceDiscovererEvent<HostAndPort>>> subscriber,
-                @Nullable final DnsDiscoveryObserver discoveryObserver) {
-            return new AbstractDnsSubscription(true, subscriber, discoveryObserver) {
+                final Subscriber<? super Iterable<ServiceDiscovererEvent<HostAndPort>>> subscriber) {
+            return new AbstractDnsSubscription(true, subscriber) {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery() {
                     Promise<DnsAnswer<HostAndPort>> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-                    resolver.resolveAll(new DefaultDnsQuestion(name(), SRV))
+                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
@@ -334,19 +333,18 @@ final class DefaultDnsClient implements DnsClient {
 
         @Override
         public String toString() {
-            return "A* lookups for " + name();
+            return "A* lookups for " + name;
         }
 
         @Override
         protected AbstractDnsSubscription newSubscription(
-                final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber,
-                @Nullable final DnsDiscoveryObserver discoveryObserver) {
-            return new AbstractDnsSubscription(cancelClearsSubscription, subscriber, discoveryObserver) {
+                final Subscriber<? super Iterable<ServiceDiscovererEvent<InetAddress>>> subscriber) {
+            return new AbstractDnsSubscription(cancelClearsSubscription, subscriber) {
                 @Override
                 protected Future<DnsAnswer<InetAddress>> doDnsQuery() {
-                    ttlCache.prepareForResolution(name());
+                    ttlCache.prepareForResolution(name);
                     Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = ImmediateEventExecutor.INSTANCE.newPromise();
-                    resolver.resolveAll(name()).addListener(completedFuture -> {
+                    resolver.resolveAll(name).addListener(completedFuture -> {
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
                             dnsAnswerPromise.setFailure(cause);
@@ -355,7 +353,7 @@ final class DefaultDnsClient implements DnsClient {
                             try {
                                 @SuppressWarnings("unchecked")
                                 final List<InetAddress> addresses = (List<InetAddress>) completedFuture.getNow();
-                                dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name())));
+                                dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name)));
                             } catch (Throwable cause2) {
                                 dnsAnswerPromise.setFailure(cause2);
                                 return;
@@ -398,9 +396,9 @@ final class DefaultDnsClient implements DnsClient {
     private abstract class AbstractDnsPublisher<T>
             extends SubscribablePublisher<Iterable<ServiceDiscovererEvent<T>>> {
 
-        private final String name;
+        protected final String name;
         @Nullable
-        private final DnsDiscoveryObserver discoveryObserver;
+        protected final DnsDiscoveryObserver discoveryObserver;
         @Nullable
         private AbstractDnsSubscription subscription;
 
@@ -410,12 +408,7 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         protected abstract AbstractDnsSubscription newSubscription(
-                Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber,
-                @Nullable DnsDiscoveryObserver discoveryObserver);
-
-        protected final String name() {
-            return name;
-        }
+                Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber);
 
         @Override
         protected final void handleSubscribe(
@@ -437,7 +430,7 @@ final class DefaultDnsClient implements DnsClient {
                 deliverErrorFromSource(subscriber, new ClosedServiceDiscovererException(DefaultDnsClient.this +
                                 " has been closed!"));
             } else {
-                subscription = newSubscription(subscriber, discoveryObserver);
+                subscription = newSubscription(subscriber);
                 try {
                     subscriber.onSubscribe(subscription);
                 } catch (Throwable cause) {
@@ -464,8 +457,6 @@ final class DefaultDnsClient implements DnsClient {
 
         abstract class AbstractDnsSubscription implements Subscription {
             private final Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber;
-            @Nullable
-            private final DnsDiscoveryObserver discoveryObserver;
             /**
              * A record resolution for SRV uses flatMapSingle and firstOnOrError which will cancel inline with the
              * first onNext signal. However when we encounter a SRV in-active event we need to manually generate a A*
@@ -481,11 +472,9 @@ final class DefaultDnsClient implements DnsClient {
             private long ttlNanos;
 
             AbstractDnsSubscription(final boolean cancelClearsSubscription,
-                                    final Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber,
-                                    @Nullable final DnsDiscoveryObserver discoveryObserver) {
+                                    final Subscriber<? super Iterable<ServiceDiscovererEvent<T>>> subscriber) {
                 this.cancelClearsSubscription = cancelClearsSubscription;
                 this.subscriber = subscriber;
-                this.discoveryObserver = discoveryObserver;
                 activeAddresses = emptyList();
                 ttlNanos = -1;
             }
@@ -551,7 +540,7 @@ final class DefaultDnsClient implements DnsClient {
                     final DnsResolutionObserver resolutionObserver;
                     if (discoveryObserver != null) {
                         try {
-                            resolutionObserver = discoveryObserver.newResolution(name());
+                            resolutionObserver = discoveryObserver.onNewResolution(name);
                         } catch (Throwable t) {
                             handleTerminalError0(t);
                             return;
@@ -706,9 +695,9 @@ final class DefaultDnsClient implements DnsClient {
                 if (events == null) {
                     result = new DefaultResolutionResult(dnsAnswer.answer().size(), ttl, 0, 0);
                 } else {
-                    final int becameActive = (int) events.stream().filter(ServiceDiscovererEvent::isAvailable).count();
-                    result = new DefaultResolutionResult(dnsAnswer.answer().size(), ttl, becameActive,
-                            events.size() - becameActive);
+                    final int available = (int) events.stream().filter(ServiceDiscovererEvent::isAvailable).count();
+                    result = new DefaultResolutionResult(dnsAnswer.answer().size(), ttl, available,
+                            events.size() - available);
                 }
                 try {
                     resolutionObserver.resolutionCompleted(result);

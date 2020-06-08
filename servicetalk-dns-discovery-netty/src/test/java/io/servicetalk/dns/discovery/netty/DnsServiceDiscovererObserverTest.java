@@ -82,9 +82,9 @@ public class DnsServiceDiscovererObserverTest {
         }
     }
 
-    private DnsClient dnsClient(DnsServiceDiscovererObserver observerFactory) {
+    private DnsClient dnsClient(DnsServiceDiscovererObserver observer) {
         return toClose.append(new DefaultDnsServiceDiscovererBuilder()
-                .observer(observerFactory)
+                .observer(observer)
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
@@ -197,15 +197,15 @@ public class DnsServiceDiscovererObserverTest {
         });
 
         Publisher<?> publisher = client.dnsQuery(HOST_NAME);
-        assertThat("Unexpected calls to resolutionComplete", results, hasSize(0));
+        assertThat("Unexpected calls to resolutionCompleted", results, hasSize(0));
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        assertThat("Unexpected number of calls to resolutionComplete", results, hasSize(1));
+        assertThat("Unexpected number of calls to resolutionCompleted", results, hasSize(1));
         ResolutionResult result = results.get(0);
         assertThat(result.resolvedRecords(), is(2));
         assertThat(result.ttl(), is(DEFAULT_TTL));
-        assertThat(result.becameActive(), is(2));
-        assertThat(result.becameInactive(), is(0));
+        assertThat(result.available(), is(2));
+        assertThat(result.unavailable(), is(0));
     }
 
     @Test
@@ -219,22 +219,22 @@ public class DnsServiceDiscovererObserverTest {
         });
 
         Publisher<?> publisher = client.dnsSrvQuery(SERVICE_NAME);
-        assertThat("Unexpected calls to resolutionComplete", results.entrySet(), hasSize(0));
+        assertThat("Unexpected calls to resolutionCompleted", results.entrySet(), hasSize(0));
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        assertThat("Unexpected number of calls to resolutionComplete", results.entrySet(), hasSize(2));
+        assertThat("Unexpected number of calls to resolutionCompleted", results.entrySet(), hasSize(2));
 
         ResolutionResult srvResult = results.get(SERVICE_NAME);
         assertThat(srvResult.resolvedRecords(), is(1));
         assertThat(srvResult.ttl(), is(DEFAULT_TTL));
-        assertThat(srvResult.becameActive(), is(1));
-        assertThat(srvResult.becameInactive(), is(0));
+        assertThat(srvResult.available(), is(1));
+        assertThat(srvResult.unavailable(), is(0));
 
         ResolutionResult dnsResult = results.get(HOST_NAME + '.');
         assertThat(dnsResult.resolvedRecords(), is(2));
         assertThat(dnsResult.ttl(), is(DEFAULT_TTL));
-        assertThat(dnsResult.becameActive(), is(2));
-        assertThat(dnsResult.becameInactive(), is(0));
+        assertThat(dnsResult.available(), is(2));
+        assertThat(dnsResult.unavailable(), is(0));
     }
 
     private static final class NoopDnsDiscoveryObserver implements DnsDiscoveryObserver {
@@ -245,7 +245,7 @@ public class DnsServiceDiscovererObserverTest {
         }
 
         @Override
-        public DnsResolutionObserver newResolution(final String name) {
+        public DnsResolutionObserver onNewResolution(final String name) {
             return NoopDnsResolutionObserver.INSTANCE;
         }
     }

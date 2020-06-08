@@ -21,17 +21,18 @@ final class DefaultResolutionResult implements ResolutionResult {
 
     private final int resolvedRecords;
     private final int ttl;
-    private final int becameActive;
-    private final int becameInactive;
+    private final int available;
+    private final int unavailable;
 
     DefaultResolutionResult(final int resolvedRecords, final int ttl,
-                            final int becameActive, final int becameInactive) {
+                            final int available, final int unavailable) {
         this.resolvedRecords = resolvedRecords;
         this.ttl = ttl;
-        this.becameActive = becameActive;
-        this.becameInactive = becameInactive;
+        this.available = available;
+        this.unavailable = unavailable;
     }
 
+    @Override
     public int resolvedRecords() {
         return resolvedRecords;
     }
@@ -42,13 +43,13 @@ final class DefaultResolutionResult implements ResolutionResult {
     }
 
     @Override
-    public int becameActive() {
-        return becameActive;
+    public int available() {
+        return available;
     }
 
     @Override
-    public int becameInactive() {
-        return becameInactive;
+    public int unavailable() {
+        return unavailable;
     }
 
     @Override
@@ -56,8 +57,8 @@ final class DefaultResolutionResult implements ResolutionResult {
         return "DefaultResolutionResult{" +
                 "resolvedRecords=" + resolvedRecords +
                 ", ttl=" + ttl +
-                ", becameActive=" + becameActive +
-                ", becameInactive=" + becameInactive +
+                ", available=" + available +
+                ", unavailable=" + unavailable +
                 '}';
     }
 }

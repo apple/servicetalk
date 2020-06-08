@@ -55,7 +55,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private DnsClientFilterFactory filterFactory;
     @Nullable
-    private DnsServiceDiscovererObserver observerFactory;
+    private DnsServiceDiscovererObserver observer;
 
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
@@ -192,15 +192,15 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Sets an observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
-     * {@link ServiceDiscoverer} built by this builder.
+     * Sets a {@link DnsServiceDiscovererObserver} that provides visibility into
+     * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder.
      *
      * @param observer a {@link DnsServiceDiscovererObserver} that provides visibility into
      * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder observer(final DnsServiceDiscovererObserver observer) {
-        this.observerFactory = requireNonNull(observer);
+        this.observer = requireNonNull(observer);
         return this;
     }
 
@@ -239,7 +239,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
                 invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
-                dnsServerAddressStreamProvider, observerFactory);
+                dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

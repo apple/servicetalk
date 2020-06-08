@@ -31,7 +31,7 @@ public interface DnsServiceDiscovererObserver {
      * @return {@link DnsDiscoveryObserver} that provides visibility into individual DNS resolutions behind the
      * associated discovery
      */
-    DnsDiscoveryObserver newDiscovery(String name);
+    DnsDiscoveryObserver onNewDiscovery(String name);
 
     /**
      * An observer that provides visibility into individual DNS resolutions.
@@ -45,7 +45,7 @@ public interface DnsServiceDiscovererObserver {
          * be queried
          * @return {@link DnsResolutionObserver} that provides visibility into results of the current DNS resolution
          */
-        DnsResolutionObserver newResolution(String name);
+        DnsResolutionObserver onNewResolution(String name);
 
         /**
          * An observer that provides visibility into DNS resolution results.
@@ -86,18 +86,18 @@ public interface DnsServiceDiscovererObserver {
                 int ttl();
 
                 /**
-                 * Number of records that became {@link ServiceDiscovererEvent#isAvailable() active}.
+                 * Number of records that are {@link ServiceDiscovererEvent#isAvailable() available}.
                  *
-                 * @return the number of records that became {@link ServiceDiscovererEvent#isAvailable() active}
+                 * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() available}
                  */
-                int becameActive();
+                int available();
 
                 /**
-                 * Number of records that became {@link ServiceDiscovererEvent#isAvailable() inactive}.
+                 * Number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}.
                  *
-                 * @return the number of records that became {@link ServiceDiscovererEvent#isAvailable() inactive}
+                 * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}
                  */
-                int becameInactive();
+                int unavailable();
             }
         }
     }
