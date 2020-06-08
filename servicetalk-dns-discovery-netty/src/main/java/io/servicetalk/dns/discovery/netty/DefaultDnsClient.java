@@ -157,7 +157,16 @@ final class DefaultDnsClient implements DnsClient {
 
     @Nullable
     private DnsDiscoveryObserver newDiscoveryObserver(final String address) {
-        return observer != null ? observer.onNewDiscovery(address) : null;
+        if (observer == null) {
+            return null;
+        }
+        try {
+            return observer.onNewDiscovery(address);
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting new DNS discovery for {}",
+                    observer, address, unexpected);
+            return null;
+        }
     }
 
     @Override
@@ -537,17 +546,7 @@ final class DefaultDnsClient implements DnsClient {
                     handleTerminalError0(new ClosedServiceDiscovererException(DefaultDnsClient.this +
                             " has been closed!"));
                 } else {
-                    final DnsResolutionObserver resolutionObserver;
-                    if (discoveryObserver != null) {
-                        try {
-                            resolutionObserver = discoveryObserver.onNewResolution(name);
-                        } catch (Throwable t) {
-                            handleTerminalError0(t);
-                            return;
-                        }
-                    } else {
-                        resolutionObserver = null;
-                    }
+                    final DnsResolutionObserver resolutionObserver = newResolutionObserver();
                     LOGGER.trace("DnsClient {}, querying DNS for {}", DefaultDnsClient.this, AbstractDnsPublisher.this);
                     final Future<DnsAnswer<T>> addressFuture = doDnsQuery();
                     cancellableForQuery = () -> addressFuture.cancel(true);
@@ -557,6 +556,21 @@ final class DefaultDnsClient implements DnsClient {
                         addressFuture.addListener((FutureListener<DnsAnswer<T>>) f ->
                                 handleResolveDone0(f, resolutionObserver));
                     }
+                }
+            }
+
+            @Nullable
+            private DnsResolutionObserver newResolutionObserver() {
+                final DnsDiscoveryObserver discoveryObserver = AbstractDnsPublisher.this.discoveryObserver;
+                if (discoveryObserver == null) {
+                    return null;
+                }
+                try {
+                    return discoveryObserver.onNewResolution(name);
+                } catch (Throwable unexpected) {
+                    LOGGER.warn("Unexpected exception from {} while reporting new DNS resolution for: {}",
+                            observer, name, unexpected);
+                    return null;
                 }
             }
 
