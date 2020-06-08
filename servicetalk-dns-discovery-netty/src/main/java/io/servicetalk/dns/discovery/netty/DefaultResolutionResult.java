@@ -15,7 +15,7 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver.DnsResolutionObserver.ResolutionResult;
+import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
 
 final class DefaultResolutionResult implements ResolutionResult {
 

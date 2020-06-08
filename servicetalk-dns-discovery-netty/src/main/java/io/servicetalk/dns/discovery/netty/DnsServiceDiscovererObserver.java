@@ -46,59 +46,59 @@ public interface DnsServiceDiscovererObserver {
          * @return {@link DnsResolutionObserver} that provides visibility into results of the current DNS resolution
          */
         DnsResolutionObserver onNewResolution(String name);
+    }
+
+    /**
+     * An observer that provides visibility into DNS resolution results.
+     */
+    interface DnsResolutionObserver {
 
         /**
-         * An observer that provides visibility into DNS resolution results.
+         * Notifies that the current DNS resolution failed.
+         *
+         * @param cause {@link Throwable} as a cause for the failure
          */
-        interface DnsResolutionObserver {
+        void resolutionFailed(Throwable cause);
 
-            /**
-             * Notifies that the current DNS resolution failed.
-             *
-             * @param cause {@link Throwable} as a cause for the failure
-             */
-            void resolutionFailed(Throwable cause);
+        /**
+         * Notifies that the current DNS resolution completed successfully.
+         *
+         * @param result the {@link ResolutionResult}
+         */
+        void resolutionCompleted(ResolutionResult result);
+    }
 
-            /**
-             * Notifies that the current DNS resolution completed successfully.
-             *
-             * @param result the {@link ResolutionResult}
-             */
-            void resolutionCompleted(ResolutionResult result);
+    /**
+     * Results of the current DNS resolution.
+     */
+    interface ResolutionResult {
 
-            /**
-             * Results of the current DNS resolution.
-             */
-            interface ResolutionResult {
+        /**
+         * Number of resolved DNS records.
+         *
+         * @return the number of resolved DNS records
+         */
+        int resolvedRecords();
 
-                /**
-                 * Number of resolved DNS records.
-                 *
-                 * @return the number of resolved DNS records
-                 */
-                int resolvedRecords();
+        /**
+         * Minimum Time To Live (TTL) of the resolved DNS records in seconds.
+         *
+         * @return the minimum Time To Live (TTL) of the resolved DNS records in seconds
+         */
+        int ttl();
 
-                /**
-                 * Minimum Time To Live (TTL) of the resolved DNS records in seconds.
-                 *
-                 * @return the minimum Time To Live (TTL) of the resolved DNS records in seconds
-                 */
-                int ttl();
+        /**
+         * Number of records that are {@link ServiceDiscovererEvent#isAvailable() available}.
+         *
+         * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() available}
+         */
+        int nAvailable();
 
-                /**
-                 * Number of records that are {@link ServiceDiscovererEvent#isAvailable() available}.
-                 *
-                 * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() available}
-                 */
-                int nAvailable();
-
-                /**
-                 * Number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}.
-                 *
-                 * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}
-                 */
-                int nUnavailable();
-            }
-        }
+        /**
+         * Number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}.
+         *
+         * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}
+         */
+        int nUnavailable();
     }
 }

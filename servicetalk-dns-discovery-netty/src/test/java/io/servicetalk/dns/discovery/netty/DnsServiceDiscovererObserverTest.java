@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver.DnsResolutionObserver;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver.DnsResolutionObserver.ResolutionResult;
+import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsResolutionObserver;
+import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult;
 
 import org.junit.After;
 import org.junit.Before;
