@@ -90,14 +90,14 @@ public interface DnsServiceDiscovererObserver {
                  *
                  * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() available}
                  */
-                int available();
+                int nAvailable();
 
                 /**
                  * Number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}.
                  *
                  * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}
                  */
-                int unavailable();
+                int nUnavailable();
             }
         }
     }

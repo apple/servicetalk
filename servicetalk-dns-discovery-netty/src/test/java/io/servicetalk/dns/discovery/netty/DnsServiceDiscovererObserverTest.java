@@ -213,8 +213,8 @@ public class DnsServiceDiscovererObserverTest {
         ResolutionResult result = results.get(0);
         assertThat(result.resolvedRecords(), is(2));
         assertThat(result.ttl(), is(DEFAULT_TTL));
-        assertThat(result.available(), is(2));
-        assertThat(result.unavailable(), is(0));
+        assertThat(result.nAvailable(), is(2));
+        assertThat(result.nUnavailable(), is(0));
     }
 
     @Test
@@ -236,14 +236,14 @@ public class DnsServiceDiscovererObserverTest {
         ResolutionResult srvResult = results.get(SERVICE_NAME);
         assertThat(srvResult.resolvedRecords(), is(1));
         assertThat(srvResult.ttl(), is(DEFAULT_TTL));
-        assertThat(srvResult.available(), is(1));
-        assertThat(srvResult.unavailable(), is(0));
+        assertThat(srvResult.nAvailable(), is(1));
+        assertThat(srvResult.nUnavailable(), is(0));
 
         ResolutionResult dnsResult = results.get(HOST_NAME + '.');
         assertThat(dnsResult.resolvedRecords(), is(2));
         assertThat(dnsResult.ttl(), is(DEFAULT_TTL));
-        assertThat(dnsResult.available(), is(2));
-        assertThat(dnsResult.unavailable(), is(0));
+        assertThat(dnsResult.nAvailable(), is(2));
+        assertThat(dnsResult.nUnavailable(), is(0));
     }
 
     @Test

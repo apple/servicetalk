@@ -649,8 +649,8 @@ final class DefaultDnsClient implements DnsClient {
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
                     final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), resolutionObserver == null ? null : (available, unavailable) ->
-                                    reportResolutionResult(resolutionObserver, dnsAnswer, available, unavailable));
+                            comparator(), resolutionObserver == null ? null : (nAvailable, nUnavailable) ->
+                                    reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nUnavailable));
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (events != null) {
                         activeAddresses = addresses;
@@ -693,9 +693,9 @@ final class DefaultDnsClient implements DnsClient {
 
             private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
                                                 final DnsAnswer<T> dnsAnswer,
-                                                final int available, final int unavailable) {
+                                                final int nAvailable, final int nUnavailable) {
                 final ResolutionResult result = new DefaultResolutionResult(dnsAnswer.answer().size(),
-                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), available, unavailable);
+                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), nAvailable, nUnavailable);
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {
