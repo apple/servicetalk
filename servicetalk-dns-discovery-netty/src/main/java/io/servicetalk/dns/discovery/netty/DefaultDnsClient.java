@@ -17,7 +17,6 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.api.internal.ServiceDiscovererUtils;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -65,6 +64,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
 import static io.netty.handler.codec.dns.DnsRecordType.SRV;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.defer;
@@ -320,12 +320,9 @@ final class DefaultDnsClient implements DnsClient {
                     return promise;
                 }
 
-                @Nullable
                 @Override
-                protected List<ServiceDiscovererEvent<HostAndPort>> calculateDifference(
-                        final List<HostAndPort> previousList, final List<HostAndPort> newList) {
-                    return ServiceDiscovererUtils.calculateDifference(
-                            previousList, newList, HOST_AND_PORT_COMPARATOR);
+                protected Comparator<HostAndPort> comparator() {
+                    return HOST_AND_PORT_COMPARATOR;
                 }
             };
         }
@@ -373,12 +370,9 @@ final class DefaultDnsClient implements DnsClient {
                     return dnsAnswerPromise;
                 }
 
-                @Nullable
                 @Override
-                protected List<ServiceDiscovererEvent<InetAddress>> calculateDifference(
-                        final List<InetAddress> previousList, final List<InetAddress> newList) {
-                    return ServiceDiscovererUtils.calculateDifference(
-                            previousList, newList, INET_ADDRESS_COMPARATOR);
+                protected Comparator<InetAddress> comparator() {
+                    return INET_ADDRESS_COMPARATOR;
                 }
             };
         }
@@ -490,9 +484,7 @@ final class DefaultDnsClient implements DnsClient {
 
             protected abstract Future<DnsAnswer<T>> doDnsQuery();
 
-            @Nullable
-            protected abstract List<ServiceDiscovererEvent<T>>
-                    calculateDifference(List<T> previousList, List<T> newList);
+            protected abstract Comparator<T> comparator();
 
             @Override
             public final void request(final long n) {
@@ -656,8 +648,9 @@ final class DefaultDnsClient implements DnsClient {
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
-                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses);
-                    reportResolutionResult(resolutionObserver, dnsAnswer, events);
+                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
+                            comparator(), resolutionObserver == null ? null : (available, unavailable) ->
+                                    reportResolutionResult(resolutionObserver, dnsAnswer, available, unavailable));
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (events != null) {
                         activeAddresses = addresses;
@@ -698,21 +691,11 @@ final class DefaultDnsClient implements DnsClient {
                 }
             }
 
-            private void reportResolutionResult(@Nullable final DnsResolutionObserver resolutionObserver,
+            private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
                                                 final DnsAnswer<T> dnsAnswer,
-                                                @Nullable final List<ServiceDiscovererEvent<T>> events) {
-                if (resolutionObserver == null) {
-                    return;
-                }
-                final ResolutionResult result;
-                final int ttl = (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos());
-                if (events == null) {
-                    result = new DefaultResolutionResult(dnsAnswer.answer().size(), ttl, 0, 0);
-                } else {
-                    final int available = (int) events.stream().filter(ServiceDiscovererEvent::isAvailable).count();
-                    result = new DefaultResolutionResult(dnsAnswer.answer().size(), ttl, available,
-                            events.size() - available);
-                }
+                                                final int available, final int unavailable) {
+                final ResolutionResult result = new DefaultResolutionResult(dnsAnswer.answer().size(),
+                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), available, unavailable);
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {
