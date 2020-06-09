@@ -103,16 +103,17 @@ final class MulticastUtils {
                     () -> requested - sourceEmitted, terminalNotification -> { }, this::cancelSourceFromSource,
                     this::drainPendingHandleEmitted, this);
             if (drainCount > 0) {
-                updateRequestN(drainCount);
+                updateRequestN();
             }
         }
 
         final void drainPendingFromExternal(SpscQueue<T> subscriberQueue, Subscriber<? super T> groupSinkTarget) {
             // When draining from external source we should always call updateRequestN, because we have increased the
             // requestedUpdater.
-            updateRequestN(drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater,
+            drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater,
                     () -> requested - sourceEmitted, terminalNotification -> { }, this::cancelSourceFromExternal,
-                    this::drainPendingHandleEmitted, this));
+                    this::drainPendingHandleEmitted, this);
+            updateRequestN();
         }
 
         private void drainPendingHandleEmitted(int onNextCount) {
@@ -200,7 +201,7 @@ final class MulticastUtils {
                         // This may deliver more data. It must be called after data is delivered to ensure ordering is
                         // preserved. Re-entry is OK because the lock will fail to be acquired, and the item will be
                         // added to the queue and processed below.
-                        updateRequestN(1);
+                        updateRequestN();
                     } catch (Throwable cause) {
                         cancelSourceFromSource(true, new IllegalStateException(
                                         "Unexpected exception thrown from onNext for identifier " + queueIdentifier(),
@@ -289,13 +290,12 @@ final class MulticastUtils {
 
         /**
          * Update the requestN count after {@code drainedCount} have been delivered to the {@link #target}.
-         * @param drainedCount the number of elements that have been delivered to {@link #target}.
          */
-        private void updateRequestN(long drainedCount) {
+        private void updateRequestN() {
             int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                     sourceEmittedUpdater, maxQueueSize, this);
-            if (actualSourceRequestN > drainedCount) {
-                requestFromSource(actualSourceRequestN - (int) drainedCount);
+            if (actualSourceRequestN > 0) {
+                requestFromSource(actualSourceRequestN);
             }
         }
 
@@ -328,7 +328,7 @@ final class MulticastUtils {
             if (subscriberQueue != null && (target = this.target) != null) {
                 drainPendingFromExternal(subscriberQueue, target);
             } else {
-                updateRequestN(0);
+                updateRequestN();
             }
         }
     }

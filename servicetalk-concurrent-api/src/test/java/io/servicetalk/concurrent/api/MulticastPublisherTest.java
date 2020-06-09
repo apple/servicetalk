@@ -33,20 +33,20 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -113,14 +113,14 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber1.subscriptionReceived());
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
+        assertThat(subscriber2.subscriptionReceived(), is(true));
 
         subscriber1.request(2);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1, 2);
         assertThat(subscriber1.takeItems(), contains(1, 2));
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber2.subscriptionReceived(), is(true));
         assertThat(subscriber2.takeItems(), hasSize(0));
         assertThat(subscriber2.takeTerminal(), nullValue());
     }
@@ -134,7 +134,7 @@ public class MulticastPublisherTest {
 
         toSource(multicast).subscribe(subscriber1);
         toSource(multicast).subscribe(subscriber2);
-        assertTrue(subscriber1.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
         source.onSubscribe(subscription);
 
         subscriber1.request(2);
@@ -161,7 +161,7 @@ public class MulticastPublisherTest {
         subscribers[expectedSubscribersMinus1] = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            assertTrue(subscribers[i].subscriptionReceived());
+            assertThat(subscribers[i].subscriptionReceived(), is(true));
         }
 
         source.onSubscribe(subscription);
@@ -177,9 +177,9 @@ public class MulticastPublisherTest {
             }
 
             doneLatch.await();
-            assertNull(throwableRef.get());
+            assertThat(throwableRef.get(), is(nullValue()));
             assertThat(subscription.requested(), is((long) expectedSubscribers));
-            assertFalse(subscription.isCancelled());
+            assertThat(subscription.isCancelled(), is(false));
         } finally {
             executorService.shutdown();
         }
@@ -201,7 +201,7 @@ public class MulticastPublisherTest {
         subscribers[expectedSubscribersMinus1] = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscribers[expectedSubscribersMinus1]);
         for (int i = 0; i < expectedSubscribersMinus1; ++i) {
-            assertTrue(subscribers[i].subscriptionReceived());
+            assertThat(subscribers[i].subscriptionReceived(), is(true));
         }
 
         source.onSubscribe(subscription);
@@ -224,7 +224,7 @@ public class MulticastPublisherTest {
             }
 
             doneLatch.await();
-            assertNull(throwableRef.get());
+            assertThat(throwableRef.get(), is(nullValue()));
             List<Integer> expectedItems = new ArrayList<>(expectedSubscribers);
             for (int x = 0; x < expectedSubscribers; ++x) {
                 expectedItems.add(x);
@@ -233,13 +233,13 @@ public class MulticastPublisherTest {
                 final Integer[] expectedSubset = expectedItems.subList(0, i).toArray(new Integer[0]);
                 List<Integer> actual = subscribers[i].takeItems().subList(0, i);
                 if (expectedSubset.length == 0) {
-                    assertTrue(actual.isEmpty());
+                    assertThat(actual.isEmpty(), is(true));
                 } else {
                     assertThat(actual, contains(expectedSubset));
                 }
             }
             assertThat(subscription.requested(), is((long) expectedSubscribers));
-            assertFalse(subscription.isCancelled());
+            assertThat(subscription.isCancelled(), is(false));
         } finally {
             executorService.shutdown();
         }
@@ -265,8 +265,8 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber1.subscriptionReceived());
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
+        assertThat(subscriber2.subscriptionReceived(), is(true));
 
         subscriber1.request(1);
         subscriber2.request(1);
@@ -294,8 +294,8 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber1.subscriptionReceived());
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
+        assertThat(subscriber2.subscriptionReceived(), is(true));
 
         if (firstIsReentry) {
             subscriber1.request(2);
@@ -331,8 +331,8 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber1.subscriptionReceived());
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
+        assertThat(subscriber2.subscriptionReceived(), is(true));
 
         subscriber1.request(3);
         subscriber2.request(1);
@@ -360,16 +360,34 @@ public class MulticastPublisherTest {
 
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber1.subscriptionReceived());
-        assertTrue(subscriber2.subscriptionReceived());
+        assertThat(subscriber1.subscriptionReceived(), is(true));
+        assertThat(subscriber2.subscriptionReceived(), is(true));
 
         subscriber1.request(Long.MAX_VALUE);
         subscriber2.request(1);
         assertThat(subscription.requested(), is((long) maxQueueSize));
         source.onNext(1, 2, 3);
-        assertThat(subscription.requested(), is((long) maxQueueSize));
+        assertThat(subscription.requested(), is((long) maxQueueSize + 3));
         assertThat(subscriber1.takeItems(), contains(1, 2, 3));
         assertThat(subscriber2.takeItems(), contains(1));
+    }
+
+    @Test
+    public void longMaxForAllSubs() throws Exception {
+        Publisher<Integer> original = range(1, 10);
+        ArrayList<Integer> items = original.collect((Supplier<ArrayList<Integer>>) ArrayList::new, (list, integer) -> {
+            list.add(integer);
+            return list;
+        }).toFuture().get();
+
+        Publisher<Integer> multi = original.multicastToExactly(2, 5);
+        List<Integer> first = new ArrayList<>();
+        List<Integer> second = new ArrayList<>();
+        multi.forEach(first::add);
+        multi.forEach(second::add);
+
+        assertThat(first, contains(items.toArray()));
+        assertThat(second, equalTo(first));
     }
 
     private static Runnable requestIRunnable(TestPublisherSubscriber<Integer>[] subscribers,
