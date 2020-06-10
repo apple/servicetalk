@@ -18,6 +18,8 @@ package io.servicetalk.log4j2.mdc.utils;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +32,22 @@ import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap.getStorage;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 public class ServiceTalkThreadContextMapTest {
     private static final Logger logger = LoggerFactory.getLogger(ServiceTalkThreadContextMapTest.class);
+
+    @Before
+    public void verifyMDCSetup() {
+        assumeThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
+    }
 
     @Test
     public void testSimpleExecution() {

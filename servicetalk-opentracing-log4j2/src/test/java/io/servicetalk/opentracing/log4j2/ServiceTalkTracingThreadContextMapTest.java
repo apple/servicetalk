@@ -25,11 +25,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class ServiceTalkTracingThreadContextMapTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTalkTracingThreadContextMapTest.class);
@@ -42,6 +44,12 @@ public class ServiceTalkTracingThreadContextMapTest {
     @After
     public void tearDown() {
         LoggerStringWriter.remove();
+    }
+
+    @Test
+    public void testNullValues() {
+        MDC.put("foo", null);
+        assertNull(MDC.get("foo"));
     }
 
     @Test
