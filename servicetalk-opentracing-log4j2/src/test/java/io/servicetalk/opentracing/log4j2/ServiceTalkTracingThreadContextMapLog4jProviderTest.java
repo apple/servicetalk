@@ -17,14 +17,22 @@ package io.servicetalk.opentracing.log4j2;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.Test;
+import org.slf4j.MDC;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 
 public class ServiceTalkTracingThreadContextMapLog4jProviderTest {
     @Test
     public void testProviderLoadsClass() {
         assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkTracingThreadContextMap.class)));
+    }
+
+    @Test
+    public void testNullValues() {
+        MDC.put("foo", null);
+        assertNull(MDC.get("foo"));
     }
 }

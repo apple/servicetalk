@@ -22,11 +22,10 @@ import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
 import org.apache.logging.log4j.ThreadContext;
-import org.apache.logging.log4j.util.BiConsumer;
-import org.apache.logging.log4j.util.ReadOnlyStringMap;
+import org.apache.logging.log4j.core.impl.JdkMapAdapterStringMap;
 import org.apache.logging.log4j.util.StringMap;
-import org.apache.logging.log4j.util.TriConsumer;
 
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -89,41 +88,24 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
         return containsTracingKey(key) || super.containsKey(key);
     }
 
-    private static boolean containsTracingKey(String key) {
-        if (TRACE_ID_KEY.equals(key) || SPAN_ID_KEY.equals(key) || PARENT_SPAN_ID_KEY.equals(key)) {
-            InMemoryScope scope = SCOPE_MANAGER.active();
-            return scope != null;
-        }
-        return false;
-    }
-
     @Override
-    protected Map<String, String> getCopy(Map<String, String> storage) {
-        return getCopy(storage, SCOPE_MANAGER.active());
-    }
-
-    private Map<String, String> getCopy(Map<String, String> storage, @Nullable InMemoryScope scope) {
+    public Map<String, String> getCopy() {
+        Map<String, String> copy = super.getCopy();
+        InMemoryScope scope = SCOPE_MANAGER.active();
         if (scope != null) {
             InMemorySpan span = scope.span();
-            storage.put(TRACE_ID_KEY, span.traceIdHex());
-            storage.put(SPAN_ID_KEY, span.spanIdHex());
-            storage.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
+            copy.put(TRACE_ID_KEY, span.traceIdHex());
+            copy.put(SPAN_ID_KEY, span.spanIdHex());
+            copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
         }
-        return super.getCopy(storage);
+        return copy;
     }
 
     @Nullable
     @Override
-    protected Map<String, String> getImmutableMapOrNull(Map<String, String> storage) {
-        InMemoryScope scope = SCOPE_MANAGER.active();
-        if (storage.isEmpty() && scope == null) {
-            return null;
-        }
-        // We use a ConcurrentMap for the storage. So we make a best effort check to avoid a copy first, but it is
-        // possible that the map was modified after this check. Then we make a copy and check if the copy is actually
-        // empty before returning the unmodifiable map.
-        final Map<String, String> copy = getCopy(storage, scope);
-        return copy.isEmpty() ? null : unmodifiableMap(copy);
+    public Map<String, String> getImmutableMapOrNull() {
+        Map<String, String> copy = getCopyOrNull();
+        return copy == null ? null : unmodifiableMap(copy);
     }
 
     @Override
@@ -132,116 +114,34 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
     }
 
     @Override
-    protected StringMap getReadOnlyContextData(Map<String, String> storage) {
-        return new StringMap() {
-            private static final long serialVersionUID = 6255838338202729246L;
+    public StringMap getReadOnlyContextData() {
+        StringMap map = new JdkMapAdapterStringMap(getCopy());
+        map.freeze();
+        return map;
+    }
 
-            @Override
-            public void clear() {
-                throw new UnsupportedOperationException();
-            }
+    @Override
+    @Nullable
+    protected Map<String, String> getCopyOrNull() {
+        InMemoryScope scope = SCOPE_MANAGER.active();
+        Map<String, String> copy = super.getCopyOrNull();
+        if (copy == null && scope == null) {
+            return null;
+        }
+        if (copy == null) {
+            copy = new HashMap<>(4);
+        }
+        if (scope != null) {
+            InMemorySpan span = scope.span();
+            copy.put(TRACE_ID_KEY, span.traceIdHex());
+            copy.put(SPAN_ID_KEY, span.spanIdHex());
+            copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
+        }
+        return copy;
+    }
 
-            @Override
-            public void freeze() {
-            }
-
-            @Override
-            public boolean isFrozen() {
-                return true;
-            }
-
-            @Override
-            public void putAll(ReadOnlyStringMap source) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void putValue(String key, Object value) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void remove(String key) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Map<String, String> toMap() {
-                return getCopy(storage, SCOPE_MANAGER.active());
-            }
-
-            @Override
-            public boolean containsKey(String key) {
-                return containsTracingKey(key) || storage.containsKey(key);
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public <V> void forEach(BiConsumer<String, ? super V> action) {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                if (scope != null) {
-                    InMemorySpan span = scope.span();
-                    action.accept(TRACE_ID_KEY, (V) span.traceIdHex());
-                    action.accept(SPAN_ID_KEY, (V) span.spanIdHex());
-                    action.accept(PARENT_SPAN_ID_KEY, (V) span.nonnullParentSpanIdHex());
-                }
-                storage.forEach((key, value) -> action.accept(key, (V) value));
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public <V, S> void forEach(TriConsumer<String, ? super V, S> action, S state) {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                if (scope != null) {
-                    InMemorySpan span = scope.span();
-                    action.accept(TRACE_ID_KEY, (V) span.traceIdHex(), state);
-                    action.accept(SPAN_ID_KEY, (V) span.spanIdHex(), state);
-                    action.accept(PARENT_SPAN_ID_KEY, (V) span.nonnullParentSpanIdHex(), state);
-                }
-                storage.forEach((key, value) -> action.accept(key, (V) value, state));
-            }
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public <V> V getValue(String key) {
-                switch (key) {
-                    case TRACE_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
-                        if (scope != null) {
-                            return (V) scope.span().traceIdHex();
-                        }
-                        break;
-                    }
-                    case SPAN_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
-                        if (scope != null) {
-                            return (V) scope.span().spanIdHex();
-                        }
-                        break;
-                    }
-                    case PARENT_SPAN_ID_KEY: {
-                        InMemoryScope scope = SCOPE_MANAGER.active();
-                        if (scope != null) {
-                            return (V) scope.span().nonnullParentSpanIdHex();
-                        }
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                return (V) storage.get(key);
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return storage.isEmpty() && SCOPE_MANAGER.active() == null;
-            }
-
-            @Override
-            public int size() {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                return scope != null ? storage.size() + 3 : storage.size();
-            }
-        };
+    private static boolean containsTracingKey(String key) {
+        return (TRACE_ID_KEY.equals(key) || SPAN_ID_KEY.equals(key) || PARENT_SPAN_ID_KEY.equals(key)) &&
+                SCOPE_MANAGER.active() != null; // defer SCOPE_MANAGER.active() because it may access a thread local
     }
 }
