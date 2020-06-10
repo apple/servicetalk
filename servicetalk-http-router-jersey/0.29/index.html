@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>JAX-RS Router (Jersey) :: ServiceTalk Docs</title>
+    <meta name="generator" content="Antora 2.0.0">
+    <link rel="stylesheet" href="../../_/css/site.css">
+<meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
+<meta name="keywords" content="servicetalk, java, reactive, reactive-streams, microservices, framework, http, http2, rpc, grpc, netty">
+<link rel="stylesheet" href="../../_/css/site-extra.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-151504011-1"></script>
+<script>function gtag(){dataLayer.push(arguments)};window.dataLayer=window.dataLayer||[];gtag('js',new Date());gtag('config','UA-151504011-1')</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="navbar-item">
+        <a href="https://github.com/apple/servicetalk">ServiceTalk</a>
+        <span class="separator">//</span>
+        <a href="../..">Docs</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="main-wrapper">
+    <div class="navigation-container"
+      data-component="servicetalk-http-router-jersey" data-version="0.29">
+    <aside class="navigation">
+        <div class="panels">
+            <div class="navigation-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html">JAX-RS Router (Jersey)</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concepts</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk/0.29/programming-paradigms.html">Programming Paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk/0.29/blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk/0.29/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk/0.29/async-context.html">Async context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.29/performance.html">Performance</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Examples</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html#Serialization">Serialization</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html#JAXRS">JAX-RS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html#MetaData">MetaData</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/index.html#HTTP2">HTTP/2</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/http/service-composition.html">Service Composition</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-examples/0.29/grpc/index.html">gRPC</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/grpc/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.29/grpc/index.html#route-guide">Route Guide</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concurrent API</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.29/asynchronous-primitives.html">Asynchronous primitives</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.29/blocking-safe-by-default.html">Blocking safe by default</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.29/blocking-implementation.html">Implementation details</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.29/async-context.html">Async Context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-http-api/0.29/index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.29/programming-paradigms.html">Programming paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.29/blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.29/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="index.html">JAX-RS Router (Jersey)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-http-security-jersey/0.29/index.html">Security</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-data-jackson-jersey/0.29/index.html">JSON (Jackson)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-grpc-api/0.29/index.html">gRPC</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-loadbalancer/0.29/index.html">Load Balancing</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-client-api/0.29/service-discovery.html">Service Discovery</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.29/javadoc/index.html">Javadoc</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk/0.29/contributing.html">Contributing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+            <div class="navigation-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">JAX-RS Router (Jersey)</span>
+    <span class="version">0.29</span>
+  </div>
+  <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.25/index.html">0.25</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Concurrent API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Examples</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">gRPC</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">HTTP</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component is-current">
+      <span class="title">JAX-RS Router (Jersey)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version is-current">
+          <a href="index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JSON (Jackson)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Load balancing</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Security</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">ServiceTalk</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+        </div>
+    </aside>
+</div>
+    <main class="main">
+        <div class="toolbar" role="navigation">
+  <button class="navigation-toggle"></button>
+  <a href="../../servicetalk/SNAPSHOT/index.html" class="home-link"></a>
+<nav class="crumbs" aria-label="breadcrumbs">
+        <ul>
+                    <li class="crumb"><a href="index.html">JAX-RS Router (Jersey)</a></li>
+                <li class="crumb"><a href="../../servicetalk-http-api/0.29/index.html">HTTP</a></li>
+                <li class="crumb"><a href="index.html">JAX-RS Router (Jersey)</a></li>
+        </ul>
+</nav>
+<div class="page-versions">
+  <button class="versions-menu-toggle" title="Show other versions of page">0.29</button>
+  <div class="versions-menu">
+    <a class="version" href="../SNAPSHOT/index.html">SNAPSHOT</a>
+    <a class="version is-current" href="index.html">0.29</a>
+    <a class="version" href="../0.28/index.html">0.28</a>
+    <a class="version" href="../0.27/index.html">0.27</a>
+    <a class="version" href="../0.26/index.html">0.26</a>
+    <a class="version" href="../0.25/index.html">0.25</a>
+    <a class="version" href="../0.24/index.html">0.24</a>
+    <a class="version" href="../0.23/index.html">0.23</a>
+    <a class="version" href="../0.22/index.html">0.22</a>
+    <a class="version" href="../0.21/index.html">0.21</a>
+    <a class="version" href="../0.20/index.html">0.20</a>
+    <a class="version" href="../0.19/index.html">0.19</a>
+  </div>
+</div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/blob/0.29.0/servicetalk-http-router-jersey/docs/modules/ROOT/pages/index.adoc">Edit this Page</a></div>
+</div>
+        <article class="doc">
+<h1>JAX-RS Router (Jersey)</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>ServiceTalk offers JAX-RS support via its Jersey HTTP router module.
+This module gives access to all JAX-RS features and also to a set of
+ServiceTalk specific extensions. This document details these features
+and also delves deeper into the implementation.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="features"><a class="anchor" href="#features"></a><a class="link" href="#features">Features</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In its simplest form, starting a ServiceTalk server with the Jersey
+router amounts to:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
+    .awaitShutdown()</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where <code>jaxrsApplication</code> is any implementation of
+<code>javax.ws.rs.core.Application</code>, including sub-classes of
+<code>org.glassfish.jersey.server.ResourceConfig</code> if the intention is to use
+Jersey-specific features.</p>
+</div>
+<div class="sect2">
+<h3 id="standard-resources"><a class="anchor" href="#standard-resources"></a><a class="link" href="#standard-resources">Standard Resources</a></h3>
+<div class="paragraph">
+<p>The Jersey Router allows ServiceTalk to support a variety of JAX-RS features,
+which we detail in this section.</p>
+</div>
+<div class="paragraph">
+<p>As expected, standard JAX-RS-annotated resource classes and methods can be used,
+like the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Path("greetings")
+public class HelloWorldJaxRsResource {
+    @GET
+    @Path("hello")
+    @Produces(TEXT_PLAIN)
+    public String hello(@DefaultValue("world") @QueryParam("who") final String who) {
+        return "hello " + who;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Any off-the-shelf entity provider can be used immediately. For example
+the following code works as expected if a JSON media type provider (like
+Jersey’s <code>jersey-media-json-jackson</code>) is on the classpath:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@POST
+@Path("hello")
+@Consumes(APPLICATION_JSON)
+@Produces(APPLICATION_JSON)
+public Map&lt;String, String&gt; hello(final Map&lt;String, String&gt; salutation) {
+    return singletonMap("hello", salutation.getOrDefault("who", "world"));
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Asynchronous processing with <code>CompletionStage</code> and the older model based
+on <code>AsyncResponse</code> are both supported. Here is an example with
+<code>CompletionStage</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Consumes(APPLICATION_JSON)
+@Produces(APPLICATION_JSON)
+@Path("hello")
+@POST
+public CompletionStage&lt;Map&lt;String, String&gt;&gt; hello(final Map&lt;String, String&gt; salutation) {
+    return completedFuture(singletonMap("hello", salutation.getOrDefault("who", "world")));
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Server-Sent Events are also fully supported.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="servicetalk-aware-resources"><a class="anchor" href="#servicetalk-aware-resources"></a><a class="link" href="#servicetalk-aware-resources">ServiceTalk Aware Resources</a></h3>
+<div class="paragraph">
+<p>In addition to standard JAX-RS, the Jersey router
+also allows users to take full advantage of ServiceTalk asynchronous primitives.</p>
+</div>
+<div class="paragraph">
+<p>Indeed, the router supports a few ServiceTalk-specific features whose
+usage is optional, but that can be interesting for users who want to use
+Reactive Streams concepts in their resources or want to deal with
+ServiceTalk types like <code>Buffer</code>.</p>
+</div>
+<div class="paragraph">
+<p>By default, Jersey supports <code>byte[]</code> request/response entities.
+ServiceTalk uses a higher level abstraction called <code>Buffer</code> and the
+router lets you use it in your resources. Doing so has the main
+advantage of completely bypassing the <a href="#io-adapt">Input/OutputStream Adaptation</a> layer used internally
+between ServiceTalk streams and the blocking <code>Input/OutputStream</code> that
+are used pervasively in Jersey.</p>
+</div>
+<div class="paragraph">
+<p>To be more specific, ServiceTalk allows
+consuming and producing the following entities (in addition to standard
+JAX-RS entities):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Buffer</code> — the aggregated request or response body,</p>
+</li>
+<li>
+<p><code>Single&lt;Buffer&gt;</code> — the aggregated request or response body as an async
+source,</p>
+</li>
+<li>
+<p><code>Publisher&lt;Buffer&gt;</code> — the request or response body as an async stream
+of `Buffer`s.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+Using <code>Buffer</code> and async payloads will prevent off-the-shelf
+payload-aware <a href="#filter-inter">Filters and Interceptors</a> from working properly.
+Moreover, such payloads can not currently be used with Server-Sent Events (SSE).
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at some examples.
+The first one is a rewrite of the previous <code>hello</code> example but,
+this time, returning <code>Buffer</code> instead of <code>String</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@GET
+@Path("hello")
+@Produces(TEXT_PLAIN)
+public Buffer hello(@DefaultValue("world") @QueryParam("who") final String who) {
+    return DEFAULT_ALLOCATOR.fromUtf8("hello " + who);
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Real benefits come when using async sources in and out, as shown here:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@POST
+@Path("hello")
+@Consumes(TEXT_PLAIN)
+@Produces(TEXT_PLAIN)
+public Single&lt;Buffer&gt; hello(final Single&lt;Buffer&gt; who,
+                            @Context final ConnectionContext ctx) {
+    final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+    return who.map(b -&gt; allocator.newCompositeBuffer()
+            .addBuffer(allocator.fromAscii("hello, "))
+            .addBuffer(b)
+            .addBuffer(allocator.fromAscii("!")));
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The advantage of this approach is that the resource method only takes
+care of assembling the response as an execution chain: ServiceTalk is
+fully in charge of executing it. This enables advanced features like
+executing on the I/O executor for non-blocking scenarios (discussed
+later in the <a href="#execution-strategies">Execution Strategies</a> section).</p>
+</div>
+<div class="paragraph">
+<p>Notice how the example above receives a <code>ConnectionContext</code> instance via
+a <code>@Context</code>-annotated method parameter. This is one of the two
+ServiceTalk-specific context objects that you can receive via <code>@Context</code>
+injection (on top of all the standard JAX-RS ones like <code>HttpHeaders</code>,
+<code>UriInfo</code> or <code>SecurityContext</code>):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ConnectionContext</code> — gives access to connection meta information,
+executors and allocator,</p>
+</li>
+<li>
+<p><code>StreamingHttpRequest</code> — the ServiceTalk-specific representation of
+the in-flight HTTP request.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+The <code>@Context</code>-provided objects are only available to the same thread
+that has called the resource method. This is why the <code>allocator</code> is
+dereferenced and stored in a variable before behind used in the async
+execution chain in the above example.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+ServiceTalk does not yet have a compatibility layer for Servlet,
+thus objects like <code>ServletConfig</code> or <code>HttpServletRequest</code> are not available
+via <code>@Context</code> injection.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Assembling complete responses in a single <code>Buffer</code> is not practical for large payloads.
+This is when streaming the response with a <code>Publisher</code> comes handy,
+as shown in the following examples that produces a streaming response of `Buffer`s:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@GET
+@Path("hello")
+@Produces(TEXT_PLAIN)
+public Response hello(@DefaultValue("world") @QueryParam("who") final String who,
+                      @Context final ConnectionContext ctx) {
+    final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+    return Response.accepted(
+            // Wrap content Publisher to capture its generic type (i.e. Buffer)
+            // so it is handled correctly
+            new GenericEntity&lt;Publisher&lt;Buffer&gt;&gt;(
+                Publisher.from(allocator.fromUtf8("hello "),
+                               allocator.fromUtf8(who))) {}
+    ).build();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that in this example how the standard <code>Response</code> and
+<code>GenericEntity</code> helpers can be used as with any vanilla JAX-RS resource.</p>
+</div>
+<div class="sect3">
+<h4 id="completionstage-alternative"><a class="anchor" href="#completionstage-alternative"></a><a class="link" href="#completionstage-alternative">CompletionStage Alternative</a></h4>
+<div class="paragraph">
+<p>It is also possible to use ServiceTalk&#8217;s primitives in lieu of <code>CompletionStage</code>,
+allowing users to use consistent semantics and behavior across their async code.
+As an example, the following illustrates how <code>Completable</code> can be used in place of
+<code>CompletionStage&lt;Void&gt;</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@POST
+@Path("start")
+public Completable start(@QueryParam("id") final String id) {
+    // Do something with id
+    return Completable.completed();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Similarly, this example shows that <code>Single&lt;String&gt;</code> can replace
+<code>CompletionStage&lt;String&gt;</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@GET
+@Path("hello")
+@Produces(TEXT_PLAIN)
+public Single&lt;String&gt; hello(@DefaultValue("world") @QueryParam("who") final String who) {
+    return Single.succeeded("hello " + who);
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="servicetalk-json-provider"><a class="anchor" href="#servicetalk-json-provider"></a><a class="link" href="#servicetalk-json-provider">ServiceTalk JSON Provider</a></h3>
+<div class="paragraph">
+<p>ServiceTalk provides a JSON Provider (<code>servicetalk-data-jackson-jersey</code>)
+that can be used as a drop-in
+replacement for Jersey’s <code>jersey-media-json-jackson</code>. It is based on
+Jackson’s non-blocking JSON parser and completely bypasses the blocking
+<a href="#io-adapt">Input/OutputStream Adaptation</a> layer that’s otherwise used with
+standard JAX-RS media-type providers. This can yield performance
+benefits when dealing with large body entities and also enables fully
+non-blocking routes.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows what this provider enables:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@POST
+@Path("single-hello")
+@Consumes(APPLICATION_JSON)
+@Produces(APPLICATION_JSON)
+public Single&lt;Map&lt;String, String&gt;&gt; singleHello(final Single&lt;Map&lt;String, String&gt;&gt; salutation) {
+    return salutation.map(m -&gt; singletonMap("single hello", m.getOrDefault("who", "world")));
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Jackson-serializable POJOs could be used in place of the <code>Map</code>s used in
+this example.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+ServiceTalk’s JSON provider doesn’t support JAXB annotations nor
+JSONP. Use Jersey’s <code>jersey-media-json-jackson</code> in case you need these
+features
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The Jackson <code>ObjectMapper</code> used behind the scene can be configured via a
+JAX-RS <code>ContextResolver</code> of type
+<code>ContextResolver&lt;JacksonSerializationProvider&gt;</code> that needs to be
+provided with the application. The <code>ServiceTalkJacksonSerializerFeature</code>
+class has helper methods for building such <code>ContextResolver</code> instances.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Because Jackson is used behind the scene for serialization and
+deserialization, it is possible to use its annotations (for example
+<code>@JsonProperty</code>).
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="filter-inter"><a class="anchor" href="#filter-inter"></a><a class="link" href="#filter-inter">Filters and Interceptors</a></h3>
+<div class="paragraph">
+<p>Standard JAX-RS filters and interceptors can be used with ServiceTalk.</p>
+</div>
+<div class="paragraph">
+<p>JAX-RS request filters and interceptors can only access the entity as an
+<code>InputStream</code>, which can be suboptimal if the intention is to avoid
+blocking I/O. If that is the case, consider using a ServiceTalk filter
+on front of the Jersey router.</p>
+</div>
+<div class="paragraph">
+<p>Conversely, response entities are accessible to JAX-RS filters and
+interceptors, so it is possible to write filters that alter contents in
+a non-blocking fashion, as demonstrated here:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Override
+public void filter(final ContainerRequestContext requestCtx, final ContainerResponseContext responseCtx) {
+    final Publisher&lt;Buffer&gt; modifiedContent =
+            ((Publisher&lt;Buffer&gt;) responseCtx.getEntity()).map(b -&gt; modifyBuffer(b));
+    responseCtx.setEntity(new GenericEntity&lt;Publisher&lt;Buffer&gt;&gt;(modifiedContent) {});
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example, it is assumed that the response entity is a
+<code>Publisher&lt;Buffer&gt;</code>: the <code>Buffer</code> it emits are altered via calls to the
+<code>modifyBuffer</code> function (omitted for brevity).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="security"><a class="anchor" href="#security"></a><a class="link" href="#security">Security</a></h3>
+<div class="paragraph">
+<p>By default, the Jersey router establishes an unauthenticated security
+context for all requests. Standard JAX-RS filters can be used to
+override this and set authenticated security contexts where appropriate.
+The following is an example of such filter, which could be used either
+globally, per resource class or method, using standard JAX-RS mapping
+techniques:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Provider
+@Priority(AUTHENTICATION)
+public static class CustomSecurityFilter implements ContainerRequestFilter {
+    @Override
+    public void filter(final ContainerRequestContext requestCtx) {
+        requestCtx.setSecurityContext(new CustomSecurityContext(requestCtx));
+    }
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+ServiceTalk provides security filters that can be used with Basic authenticated requests.
+Refer to <a href="../../servicetalk-http-security-jersey/0.29/index.html#auth-basic" class="page">Basic Auth for Jersey Router</a> for more information.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="exception-mappers"><a class="anchor" href="#exception-mappers"></a><a class="link" href="#exception-mappers">Exception Mappers</a></h3>
+<div class="paragraph">
+<p>Standard JAX-RS exception mappers can be used with ServiceTalk. On top
+of this, it is possible to use ServiceTalk-specific response entities as
+error payloads, as shown here:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public static class ServiceTalkAwareExceptionMapper implements ExceptionMapper&lt;Throwable&gt; {
+    @Context
+    private ConnectionContext ctx;
+
+    @Override
+    public Response toResponse(final Throwable t) {
+        final Buffer buf = ctx.executionContext().bufferAllocator().fromAscii(exception.getClass().getName());
+        return status(555)
+                .header(CONTENT_TYPE, TEXT_PLAIN)
+                .header(CONTENT_LENGTH, buf.readableBytes())
+                .entity(new GenericEntity&lt;Single&lt;Buffer&gt;&gt;(success(buf)) {})
+                .build();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="injection-management"><a class="anchor" href="#injection-management"></a><a class="link" href="#injection-management">Injection Management</a></h3>
+<div class="paragraph">
+<p>By default the Jersey router doesn’t transitively bring a particular
+Jersey Injection Manager dependency, it is up to the user to pick one of
+the available implementations by adding the relevant dependency to the
+application classpath.</p>
+</div>
+<div class="paragraph">
+<p>Jersey provides two implementations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>jersey-hk2</code> — based on HK2, this is the most likely implementation
+that will be used with ServiceTalk,</p>
+</li>
+<li>
+<p><code>jersey-inject-cdi2-se</code> - relying CDI, this is to be used when running
+ServiceTalk in a Java EE application container.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="servicetalk-features"><a class="anchor" href="#servicetalk-features"></a><a class="link" href="#servicetalk-features">ServiceTalk Features</a></h3>
+<div class="paragraph">
+<p>The ServiceTalk JAX-RS <code>Feature</code> that enables the router functionalities
+is automatically registered with Jersey using its
+<a href="https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest/deployment.html#deployment.autodiscoverable">auto-discoverable features</a>.</p>
+</div>
+<div class="paragraph">
+<p>If this router is used in a context where Jersey’s auto-discovery has
+been disabled, users must manually register
+<code>io.servicetalk.http.router.jersey.ServiceTalkFeature</code> with the JAX-RS
+<code>FeatureContext</code>. Note that if the ServiceTalk JSON provider is used,
+its feature would have to be registered too:
+<code>io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature</code></p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="advanced-features"><a class="anchor" href="#advanced-features"></a><a class="link" href="#advanced-features">Advanced Features</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="service-composability"><a class="anchor" href="#service-composability"></a><a class="link" href="#service-composability">Service Composability</a></h3>
+<div class="paragraph">
+<p><code>HttpJerseyRouterBuilder</code> builds a standard ServiceTalk HTTP service
+so it can be composed with any other ServiceTalk services or filters.</p>
+</div>
+<div class="paragraph">
+<p>The following example illustrates this be showing how a service built
+with <code>HttpJerseyRouterBuilder</code> can be seamlessly used alongside another
+regular ServiceTalk HTTP service, inside a single predicate based router:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">ServerContext serverContext = HttpServers.forPort(8080)
+        .listenStreamingAndAwait(
+                new HttpPredicateRouterBuilder()
+                        .whenPathStartsWith("/healthcheck")
+                        .thenRouteTo(healthService)
+                        .whenPathStartsWith("/api")
+                        .thenRouteTo(new HttpJerseyRouterBuilder().build(jaxRsApplication))
+                        .buildStreaming()
+        );</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="execution-strategies"><a class="anchor" href="#execution-strategies"></a><a class="link" href="#execution-strategies">Execution Strategies</a></h3>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+It is important to have a good understanding of ServiceTalk&#8217;s threading model
+before considering tuning execution strategies.
+Refer to ServiceTalk&#8217;s <a href="../../servicetalk/0.29/index.html" class="page">main documentation</a>
+to learn more about it.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default, the Jersey router uses ServiceTalk’s global executor to
+handles requests, making it safe by default to use blocking code, either
+directly in user code or indirectly in third-party libraries and
+intermediaries like filters, interceptors and media-type providers.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to use a specific executor for all requests handled by
+the Jersey router, as demonstrated here:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+    .executionStrategy(HttpExecutionStrategies.defaultStrategy(executor))
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
+    .awaitShutdown();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where <code>executor</code> is the executor to use at the router level.</p>
+</div>
+<div class="paragraph">
+<p>It is also possible to configure execution strategies in a finer grained
+manner, either at resource class or resource method level, using the
+<code>@RouteExecutionStrategy</code> annotation. For example, the following applies
+the execution strategy <code>exec-1</code> to a specific resource method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@RouteExecutionStrategy(id = "exec-1")
+@POST
+@Path("/do-work")
+public void doWork() {
+    // Work happens here
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now the question is where does the Jersey router find its execution
+strategies? The answer is in this <code>HttpJerseyRouterBuilder</code> method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">routeExecutionStrategyFactory(Function&lt;String, HttpExecutionStrategy&gt; routeStrategyFactory)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This allows you to provide a lambda that the router will use to resolve
+execution strategy IDs used in <code>@RouteExecutionStrategy</code> annotations
+(<code>map::get</code> can conveniently be used if you store your strategy mappings
+in a <code>Map</code>).</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The router ensures it can resolve all execution strategy
+IDs at startup time.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>By default ServiceTalk is "safe to block", which means that it takes
+care of ensuring that the application code doesn’t execute on the I/O
+threads (which shouldn’t be blocked). This applies to the Jersey router
+too: resources, filters, interceptors can perform blocking operations,
+like for example interacting with <code>java.io</code> streams, in a safe manner.
+This safety has a cost though: different executors are used at different
+levels, thread hops may occur while a request is in flight, etc…
+ServiceTalk gives advanced users the possibility to bypass this safety
+net and execute application code fully or partially on the I/O executor.</p>
+</div>
+<div class="paragraph">
+<p>Before exploring this in details, let’s take a look at an example that
+completely runs on I/O threads. The following snippet shows the server
+bootstrap code and followed by one JAX-RS resource method:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+    .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
+    .awaitShutdown();
+
+@NoOffloadsRouteExecutionStrategy
+@Path("greetings")
+public class HelloWorldJaxRsResource {
+    @GET
+    @Path("hello")
+    @Produces(TEXT_PLAIN)
+    public String hello(@DefaultValue("world") @QueryParam("who") final String who) {
+        return "hello " + who;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice how <code>HttpExecutionStrategies.noOffloadsStrategy()</code> and
+<code>@NoOffloadsRouteExecutionStrategy</code> are used conjointly to ensure that
+offloading will be completely disabled and that the requests will be fully handled on I/O threads.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Disabling offloading should only be done when it is certain that no blocking code will be invoked.
+Request handling in Jersey follows a complicated and dynamic path, so unexpected blocking can occur in non-user code.
+Be sure to thoroughly test the routes for which you intend to disable offloading.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+It is currently not possible to disable offloading if any JAX-RS resource uses <code>@Suspended AsyncResponse</code>,
+<code>CompletionStage</code> responses or Server-Sent Events. A workaround for this consists in using the Predicate router
+to selectively offload such resources, as shown in this
+<a href="https://github.com/apple/servicetalk/blob/0.29.0/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>These different options combined together yield different effects at
+different level of the application code. The following table details
+what to expect when using them.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">Route<br>
+Default</th>
+<th class="tableblock halign-left valign-top">Route<br>
+Executor</th>
+<th class="tableblock halign-left valign-top">Route<br>
+No Offloads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Router<br>
+Default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Global<br>
+C: Global<br>
+S: Global</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Route<br>
+C: Route<br>
+S: Route</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Route<br>
+C: Route<br>
+S: Global</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Router<br>
+Executor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Router<br>
+C: Router<br>
+S: Router</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Route<br>
+C: Route<br>
+S: Route</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Route<br>
+C: Route<br>
+S: Global</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Router<br>
+No Offloads</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Global<br>
+C: Global<br>
+S: Global</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Route<br>
+C: Route<br>
+S: Route</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">M: Server I/O<br>
+C: Server I/O<br>
+S: Server I/O</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Where:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Route</code> means either a resource class or resource method (where both
+<code>@RouteExecutionStrategy</code> and <code>@NoOffloadsRouteExecutionStrategy</code> can be
+used),</p>
+</li>
+<li>
+<p><code>Router</code> is the Jersey router,</p>
+</li>
+<li>
+<p><code>Global</code> refers to ServiceTalk’s <code>GlobalExecutionContext</code> (which
+provides among other things global I/O and standard executors),</p>
+</li>
+<li>
+<p><code>Server I/O</code> refers to the I/O executor configured on the HTTP server
+(which is the global I/O executor by default),</p>
+</li>
+<li>
+<p><code>M</code> stands for the executor used to call the resource <code>Method</code>,</p>
+</li>
+<li>
+<p><code>C</code> for the one provided via <code>@Context ConnectionContext</code>,</p>
+</li>
+<li>
+<p><code>S</code> refers to the executor used for stream events.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Users must exercise caution if they decide to execute on the I/O threads
+and must make sure they understand the caveats of doing so. Resources
+that only serve responses from memory or that interact with remote
+services via ServiceTalk are good potential candidates.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+Be aware that route level execution strategy are applied after the
+JAX-RS filter chain has executed. If any of these JAX-RS filters perform
+blocking operations (for example blocking I/O) you must make sure that
+the Jersey router itself is not configured to use I/O threads, thus
+limiting the potential to run on I/O threads only to stream events
+(<code>Router Default/Executor</code> and <code>Route No Offloads</code> in the above table).
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="implementation"><a class="anchor" href="#implementation"></a><a class="link" href="#implementation">Implementation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section details the design and implementation decisions taken for
+the Jersey router. It is intended for contributors and advanced users
+interested to know what’s under the hood.</p>
+</div>
+<div class="paragraph">
+<p>The following diagram gives a lay of the land for request/response flows in
+the router, with a short description of the salient operations performed by
+ServiceTalk at the different spots in the flow.</p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="_images/st2-jersey-flow.png" alt="st2 jersey flow"></span></p>
+</div>
+<div class="paragraph">
+<p>The upcoming sections expand more on some of the concepts depicted in this diagram.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+As Jersey’s and ServiceTalk’s Jersey router codebases evolve, we expect
+some of the drawbacks listed hereafter to progressively disappear.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="io-adapt"><a class="anchor" href="#io-adapt"></a><a class="link" href="#io-adapt">Input/OutputStream Adaptation</a></h3>
+<div class="paragraph">
+<p>JAX-RS 2.1 depends heavily on <code>java.io.Input/OutputStream</code> for consuming
+request and producing response entity contents. The Jersey router uses
+ServiceTalk’s provided adapters to convert between its non-blocking
+sources and these blocking streams. This adaptation is what allows using
+all the Jersey-provided and third party media-type providers to work out
+of the box.</p>
+</div>
+<div class="paragraph">
+<p>For request payloads, the Jersey router uses a special <code>InputStream</code>
+(namely <code>BufferPublisherInputStream</code>), which allows accessing the
+underlying <code>Publisher&lt;Buffer&gt;</code> for scenarios when the <code>InputStream</code>
+needs not be accessed.</p>
+</div>
+<div class="paragraph">
+<p>For response payloads, the implementation is slightly more involved but
+in essence provides the same bypass capacity when <code>OutputStream</code>-writing
+isn&#8217;t required (users can look at `DefaultContainerResponseWriter&#8217;s source
+code for more information).</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+At this writing, all byte arrays written via the
+<code>java.io.OutputStream</code> adaptation layer have to be copied because of the
+way Jersey internally reuses buffers.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This adaptation is automatically bypassed when a resource method
+consumes or produces an entity type that can be directly handled by
+ServiceTalk, like for example <code>Single&lt;Buffer&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p>There are subtle edge cases where filters or interceptors can affect
+this adaptation mechanism by replacing the entity body created by the
+router at the start of the request handling chain. Mitigation is in
+place to circumvent these issues: readers are invited to turn to the
+JavaDoc of <code>io.servicetalk.http.router.jersey.internal.SourceWrappers</code>
+for the gory details.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="endpoint-swapping"><a class="anchor" href="#endpoint-swapping"></a><a class="link" href="#endpoint-swapping">Endpoint Swapping</a></h3>
+<div class="paragraph">
+<p>While most features of the Jersey router are implemented via JAX-RS
+constructs, some advanced features, like the ones listed here, needed to
+be wired deep in the insides of the Jersey handling chain:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Single</code> and <code>Completable</code> response entity types (as alternative to
+<code>CompletionStage</code>),</p>
+</li>
+<li>
+<p>per-route execution strategies.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This "deep wiring" is done by replacing the <code>Endpoint</code> that Jersey
+uses to invoke user code right at the end of its internal request
+process chain, with a custom <code>Endpoint</code> that wraps the original and
+intercepts the execution when one of the two above scenarios is in use.</p>
+</div>
+<div class="paragraph">
+<p>This interception is achieved by using the suspend/resume mechanism that
+is normally used for JAX-RS async responses, which is why AsyncResponse
+and Server-Sent Events can’t be used with these advanced features (it’s
+also why <code>CompletionStage</code> can’t be used with per-route execution
+strategies).</p>
+</div>
+<div class="paragraph">
+<p>The replacement of the original <code>Endpoint</code> is done via a JAX-RS filter
+whose priority is the lowest possible (<code>Integer.MAX_VALUE</code> because the
+lower the number, the higher priority) so it executes at the end of the
+filter chain.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+A corollary of this approach is that this mechanism could fail in
+case other "lowest possible" filters are in use.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For response filters to work properly, the original <code>Endpoint</code> has to be
+swapped back into placed after the resource method has been invoked.
+This is because, although the router replacement endpoint implements
+Jersey’s <code>Endpoint</code> and <code>ResourceInfo</code> interface, Jersey’s
+infrastructure perform instance checks against <code>ResourceMethodInvoker</code>
+(its own <code>Endpoint</code> implementation) in the logic that applies response
+filters. This unfortunately leaves no option other than restoring the
+original <code>ResourceMethodInvoker</code> after ServiceTalk’s endpoint has served
+its purpose.</p>
+</div>
+</div>
+</div>
+</div>
+</article>
+    </main>
+</div>
+<footer class="footer">
+  <p></p>
+</footer>
+<script src="../../_/js/site.js"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
