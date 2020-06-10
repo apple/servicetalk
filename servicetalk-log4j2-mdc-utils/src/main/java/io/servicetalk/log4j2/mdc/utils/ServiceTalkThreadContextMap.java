@@ -39,8 +39,8 @@ import static java.util.Collections.unmodifiableMap;
  */
 public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, CleanableThreadContextMap {
     private static final Key<Map<String, String>> key = Key.newKey("log4j2Mdc");
-    @SuppressWarnings("RedundantStringConstructorCall")
-    private static final String NULL_STRING = new String("");
+    @SuppressWarnings("IllegalInstantiationOfString")
+    private static final String NULL_STRING = "";
 
     @Override
     public final void put(String key, String value) {
