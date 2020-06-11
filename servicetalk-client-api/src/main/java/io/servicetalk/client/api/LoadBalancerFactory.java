@@ -33,9 +33,10 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
      * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
+     * @param <T> Type of connections created by the passed {@link ConnectionFactory}.
      * @return a new {@link LoadBalancer}.
      */
-    LoadBalancer<? extends C> newLoadBalancer(
+    <T extends C> LoadBalancer<T> newLoadBalancer(
             Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory);
+            ConnectionFactory<ResolvedAddress, T> connectionFactory);
 }

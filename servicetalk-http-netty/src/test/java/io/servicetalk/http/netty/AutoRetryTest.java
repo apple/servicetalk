@@ -119,9 +119,9 @@ public class AutoRetryTest {
                 newRoundRobinFactory();
 
         @Override
-        public LoadBalancer<? extends C> newLoadBalancer(
+        public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                final ConnectionFactory<InetSocketAddress, ? extends C> connectionFactory) {
+                final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return new InspectingLoadBalancer<>(rr.newLoadBalancer(eventPublisher, connectionFactory));
         }
     }

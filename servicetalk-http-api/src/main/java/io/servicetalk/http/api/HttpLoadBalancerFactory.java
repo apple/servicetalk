@@ -30,9 +30,9 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
         extends LoadBalancerFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
 
     @Override
-    LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
+    <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
             Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            ConnectionFactory<ResolvedAddress, ? extends FilterableStreamingHttpLoadBalancedConnection> cf);
+            ConnectionFactory<ResolvedAddress, T> cf);
 
     /**
      * Converts the passed {@link FilterableStreamingHttpConnection} to a

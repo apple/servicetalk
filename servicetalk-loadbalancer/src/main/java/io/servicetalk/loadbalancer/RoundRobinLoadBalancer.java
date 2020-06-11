@@ -317,9 +317,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             implements LoadBalancerFactory<ResolvedAddress, C> {
 
         @Override
-        public LoadBalancer<? extends C> newLoadBalancer(
+        public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory) {
+                final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
             return new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory);
         }
     }
