@@ -607,10 +607,9 @@ public class ClientEffectiveStrategyTest {
     private static class LoadBalancerFactoryImpl
             implements LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> {
         @Override
-        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection>
+        public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T>
         newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                        final ConnectionFactory<InetSocketAddress,
-                                ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+                        final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return RoundRobinLoadBalancer.<InetSocketAddress,
                     FilterableStreamingHttpLoadBalancedConnection>newRoundRobinFactory()
                     .newLoadBalancer(eventPublisher, connectionFactory);

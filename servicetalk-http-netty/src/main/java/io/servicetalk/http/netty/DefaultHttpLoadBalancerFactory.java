@@ -59,9 +59,9 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     }
 
     @Override
-    public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
+    public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
             final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-            final ConnectionFactory<ResolvedAddress, ? extends FilterableStreamingHttpLoadBalancedConnection> cf) {
+            final ConnectionFactory<ResolvedAddress, T> cf) {
         return rawFactory.newLoadBalancer(eventPublisher, cf);
     }
 

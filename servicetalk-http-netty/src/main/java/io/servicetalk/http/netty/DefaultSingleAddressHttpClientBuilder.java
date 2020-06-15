@@ -298,10 +298,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
 
-            @SuppressWarnings("unchecked")
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
-                    (LoadBalancer<LoadBalancedStreamingHttpConnection>) closeOnException.prepend(
-                            ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents,
+                            connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
