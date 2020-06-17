@@ -106,13 +106,25 @@ public final class SubscriberUtils {
             if (requested == sourceRequested) {
                 return 0;
             }
-
-            // emitted ...[outstanding]... sourceRequested ...[delta]... requested
-            final long outstanding = sourceRequested - emittedUpdater.get(owner);
-            final long delta = requested - sourceRequested;
-            final int toRequest = (int) min(limit - outstanding, delta);
-            if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
-                return toRequest;
+            final long emitted = emittedUpdater.get(owner);
+            // Connected sources (like each Publisher in a group-by) may buffer data before requesting as the peer
+            // source could have requested the data. In such cases, the source would drain and then call this method
+            // leading to emitted > sourceRequested
+            if (emitted > sourceRequested) {
+                // sourceRequested ... emitted ...[delta]... requested
+                final long delta = requested - emitted;
+                final int toRequest = (int) min(limit, delta);
+                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, emitted + toRequest)) {
+                    return toRequest;
+                }
+            } else {
+                // emitted ...[outstanding]... sourceRequested ...[delta]... requested
+                final long outstanding = sourceRequested - emitted;
+                final long delta = requested - sourceRequested;
+                final int toRequest = (int) min(limit - outstanding, delta);
+                if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
+                    return toRequest;
+                }
             }
         }
     }
