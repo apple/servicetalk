@@ -15,14 +15,10 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
-import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
 import org.gradle.api.plugins.quality.Checkstyle
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.api.publish.maven.internal.artifact.FileBasedMavenArtifact
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addBuildContextExtensions
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.appendNodes
@@ -44,7 +40,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
 
     if (publishesArtifacts) {
       applyMavenPublishPlugin project // Sign & Publish to Maven Central
-      //      applyBintrayPlugin project // Publish to Bintray, depends on applyMavenPublishPlugin
     }
   }
 
@@ -133,53 +128,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   private static void applyMavenPublishPlugin(Project project) {
     project.configure(project) {
       pluginManager.apply("maven-publish")
-    }
-  }
-
-  private static void applyBintrayPlugin(Project project) {
-    project.configure(project) {
-      pluginManager.apply("com.jfrog.bintray")
-
-      // bintray publishing information
-      def bintrayUser = System.getenv("BINTRAY_USER")
-      def bintrayKey = System.getenv("BINTRAY_KEY")
-      if (bintrayUser && bintrayKey) {
-        bintray {
-          user = bintrayUser
-          key = bintrayKey
-          publications = ["mavenJava"]
-
-          pkg {
-            userOrg = "servicetalk"
-            repo = "servicetalk"
-            name = project.name
-            licenses = ["Apache-2.0"]
-            vcsUrl = "https://github.com/apple/servicetalk.git"
-          }
-          override = true
-          publish = true
-        }
-
-        // Temporary workaround for https://github.com/bintray/gradle-bintray-plugin/issues/229
-        PublishingExtension publishing = project.extensions.getByType(PublishingExtension)
-        project.tasks.withType(BintrayUploadTask) {
-          doFirst {
-            publishing.publications.withType(MavenPublication).each { publication ->
-              File moduleFile = project.buildDir.toPath()
-                  .resolve("publications/${publication.name}/module.json").toFile()
-
-              if (moduleFile.exists()) {
-                publication.artifact(new FileBasedMavenArtifact(moduleFile) {
-                  @Override
-                  protected String getDefaultExtension() {
-                    return "module"
-                  }
-                })
-              }
-            }
-          }
-        }
-      }
     }
   }
 }
