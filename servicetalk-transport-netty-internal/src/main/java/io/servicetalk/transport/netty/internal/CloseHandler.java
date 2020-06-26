@@ -355,4 +355,15 @@ public abstract class CloseHandler {
             // No instances.
         }
     }
+
+    /**
+     * Netty UserEvent to indicate the output channel is closing.
+     */
+    static final class ChannelOutputClosingEvent {
+        static final ChannelOutputClosingEvent INSTANCE = new ChannelOutputClosingEvent();
+
+        private ChannelOutputClosingEvent() {
+            // No instances.
+        }
+    }
 }

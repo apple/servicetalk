@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.netty.internal.CloseHandler.ChannelOutputClosingEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
@@ -408,7 +409,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
-            if (!channel().isActive()) {
+            // It is also possible that Channel is in closing state, so we need to prevent sending more requests.
+            if (!channel().isActive() || closeReason != null) {
                 newChannelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "failIfWriteActive(...)"));
                 return false;
@@ -447,7 +449,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         void channelWritable();
 
         /**
-         * Notification that the channel's outbound side has been closed and will no longer accept writes.s
+         * Notification that the channel's outbound side has been closed and will no longer accept writes.
          * <p>
          * Always called from the event loop thread.
          */
@@ -560,10 +562,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
                 connection.channelOutboundListener.channelOutboundClosed();
+            } else if (evt == ChannelOutputClosingEvent.INSTANCE) {
+                connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "userEventTriggered(ChannelOutputClosingEvent)"));
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
-                        DefaultNettyConnection.class, "userEventTriggered(...)"));
+                        DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting
                 connection.closeHandler.channelClosedInbound(ctx);
