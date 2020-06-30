@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.netty.internal.CloseHandler.ChannelOutputClosingEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.bootstrap.Bootstrap;
@@ -84,7 +83,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.US
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.CE;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.FC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IC;
@@ -155,7 +153,6 @@ public class RequestResponseCloseHandlerTest {
         private AtomicBoolean inputShutdown = new AtomicBoolean();
         private AtomicBoolean outputShutdown = new AtomicBoolean();
         private SocketChannelConfig scc;
-        private ChannelPipeline pipeline;
 
         public Scenarios(final Mode mode, final List<Events> events, final ExpectEvent expectEvent,
                          final String desc, final String location) {
@@ -178,7 +175,6 @@ public class RequestResponseCloseHandlerTest {
             SR,         // validate Socket TCP RST -> SO_LINGER=0
             UC,         // emit User Closing
             IH, OH, FC, // validate Input/Output Half-close, Full-Close
-            CE,         // emit ChannelOutputClosingEvent
         }
 
         protected enum ExpectEvent {
@@ -208,7 +204,7 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, OE, OB, OC, OE, IB, IE, IB, IE, FC), PCO, "pipelined, closing outbound"},
                     {C, e(OB, OE, OB, OC, IB, OE, IE, IB, IE, FC), PCO, "pipelined, full dup, closing outbound"},
                     {C, e(OB, IB, IC, OE, IE, FC), PCI, "full dup, closing inbound"},
-                    {C, e(OB, OE, IB, OB, IC, CE, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
+                    {C, e(OB, OE, IB, OB, IC, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
                     {C, e(OB, IB, OE, IC, IE, FC), PCI, "pipelined, closing inbound"},
                     {C, e(OB, IB, IC, IE, OE, FC), PCI, "pipelined, full dup, closing inbound"},
                     {C, e(OB, OE, IB, IC, IE, FC), PCI, "sequential, closing inbound"},
@@ -222,7 +218,7 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, OE, IS, FC), CCI, "abrupt input close after complete write, resp abort"},
                     {C, e(IS, FC), CCI, "idle, inbound closed"},
                     {C, e(OB, IS, SR, FC), CCI, "req abort, inbound closed"},
-                    {C, e(OB, IB, OE, OB, IC, CE, IE, FC), PCI, "pipelined req abort after inbound close"},
+                    {C, e(OB, IB, OE, OB, IC, IE, FC), PCI, "pipelined req abort after inbound close"},
                     {C, e(OB, IB, OE, IS, FC), CCI, "req complete, resp abort, inbound closed"},
                     {C, e(OB, IB, IE, IS, OE, FC), CCI, "continue write read completed, inbound closed"},
                     {C, e(OS, FC), CCO, "idle, outbound closed"},
@@ -312,7 +308,7 @@ public class RequestResponseCloseHandlerTest {
             when(channel.eventLoop()).thenReturn(loop);
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.isAllowHalfClosure()).thenReturn(true);
-            pipeline = mock(ChannelPipeline.class);
+            ChannelPipeline pipeline = mock(ChannelPipeline.class);
             when(channel.pipeline()).thenReturn(pipeline);
 
             when(channel.isOutputShutdown()).then(__ -> outputShutdown.get());
@@ -365,7 +361,7 @@ public class RequestResponseCloseHandlerTest {
         public void simulate() {
             LOGGER.debug("Test.Params: ({})", location); // Intellij jump to parameter format, don't change!
             LOGGER.debug("[{}] {} - {} = {}", desc, mode, events, expectEvent);
-            InOrder order = inOrder(h, channel, scc, pipeline);
+            InOrder order = inOrder(h, channel, scc);
             verify(h).registerEventHandler(eq(channel), any());
             for (Events event : events) {
                 LOGGER.debug("{}", event);
@@ -424,9 +420,6 @@ public class RequestResponseCloseHandlerTest {
                     case FC:
                         order.verify(channel).close();
                         break;
-                    case CE:
-                        order.verify(pipeline).fireUserEventTriggered(ChannelOutputClosingEvent.INSTANCE);
-                        break;
                     default:
                         throw new IllegalArgumentException("Unknown: " + event);
                 }
@@ -471,9 +464,6 @@ public class RequestResponseCloseHandlerTest {
                             break;
                         case OH:
                             verify(channel, never()).shutdownOutput();
-                            break;
-                        case CE:
-                            verify(pipeline, never()).fireUserEventTriggered(ChannelOutputClosingEvent.INSTANCE);
                             break;
                         default:
                             throw new IllegalArgumentException("Unknown: " + c);

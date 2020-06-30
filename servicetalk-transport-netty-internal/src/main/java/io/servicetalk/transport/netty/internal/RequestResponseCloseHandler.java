@@ -254,9 +254,12 @@ class RequestResponseCloseHandler extends CloseHandler {
         } else if (isClient) {
             if (evt == PROTOCOL_CLOSING_INBOUND) {
                 if (pending != 0) {
-                    // Abort the current and all following pipelined requests
+                    // Protocol inbound closing for a client is when a response is read, which decrements the pending
+                    // count before reading the inbound closure signal. This means if pending > 0 there are more
+                    // requests pending responses but the peer has signalled close. We need to abort write for pending
+                    // requests:
                     if (has(state, WRITE)) {
-                        channel.pipeline().fireUserEventTriggered(ChannelOutputClosingEvent.INSTANCE);
+                        channel.pipeline().fireUserEventTriggered(AbortWritesEvent.INSTANCE);
                         state = unset(state, WRITE);
                     }
                     pending = 0;

@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -136,7 +137,6 @@ public class ConnectionCloseHeaderHandlingTest {
 
     @Test
     public void serverCloseTwoPipelinedRequestsSentBeforeFirstResponse() throws Exception {
-        sendResponse.countDown();
         AtomicReference<StreamingHttpResponse> firstResponse = new AtomicReference<>();
         AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
         CountDownLatch secondResponseReceived = new CountDownLatch(1);
@@ -152,6 +152,39 @@ public class ConnectionCloseHeaderHandlingTest {
                 .whenFinally(secondResponseReceived::countDown)
                 .subscribe(second -> { });
         requestReceived.await();
+        sendResponse.countDown();
+        responseReceived.await();
+
+        StreamingHttpResponse response = firstResponse.get();
+        assertResponse(response);
+        assertResponsePayloadBody(response);
+
+        connectionClosed.await();
+        secondResponseReceived.await();
+        assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
+        assertClosedChannelException("/third");
+    }
+
+    @Test
+    public void serverCloseSecondPipelinedRequestWriteAborted() throws Exception {
+        AtomicReference<StreamingHttpResponse> firstResponse = new AtomicReference<>();
+        AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
+        CountDownLatch secondResponseReceived = new CountDownLatch(1);
+
+        connection.request(connection.get("/first")
+                .addHeader(CONTENT_LENGTH, ZERO)).subscribe(first -> {
+            firstResponse.set(first);
+            responseReceived.countDown();
+        });
+        String content = "request_content";
+        connection.request(connection.get("/second")
+                .addHeader(CONTENT_LENGTH, valueOf(content.length()))
+                .payloadBody(from(content).concat(never()), textSerializer()))
+                .whenOnError(secondRequestError::set)
+                .whenFinally(secondResponseReceived::countDown)
+                .subscribe(second -> { });
+        requestReceived.await();
+        sendResponse.countDown();
         responseReceived.await();
 
         StreamingHttpResponse response = firstResponse.get();
