@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
+import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -76,7 +77,7 @@ public class ClientClosureRaceTest {
     @Before
     public void startServer() throws Exception {
         assert executor != null;
-        serverSocket = new ServerSocket(0);
+        serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
 
         executor.submit(() -> {
             while (!executor.isShutdown()) {

@@ -240,13 +240,11 @@ class RequestResponseCloseHandler extends CloseHandler {
         if (idle(pending, state)) {
             // close when all pending requests drained
             closeChannel(channel, evt);
-        } else if (isClient && evt == PROTOCOL_CLOSING_OUTBOUND) {
-            // deferred half close after current request is done
-            clientHalfCloseOutbound(channel);
         } else if (!isClient && evt == PROTOCOL_CLOSING_INBOUND) {
             // deferred half close after current request is done
             serverHalfCloseInbound(channel);
         }
+        // do not perform half-closure on the client to prevent a server from premature connection closure
     }
 
     // Eagerly close on a closing event rather than deferring
@@ -255,15 +253,17 @@ class RequestResponseCloseHandler extends CloseHandler {
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == PROTOCOL_CLOSING_INBOUND) {
-                if (pending != 0 || !has(state, WRITE)) {
-                    // eagerly close the outbound channel unless we are still writing the current request
+                if (pending != 0) {
+                    // Protocol inbound closing for a client is when a response is read, which decrements the pending
+                    // count before reading the inbound closure signal. This means if pending > 0 there are more
+                    // requests pending responses but the peer has signalled close. We need to abort write for pending
+                    // requests:
                     if (has(state, WRITE)) {
-                        setSocketResetOnClose(channel);
+                        channel.pipeline().fireUserEventTriggered(AbortWritesEvent.INSTANCE);
+                        state = unset(state, WRITE);
                     }
-                    clientHalfCloseOutbound(channel);
+                    pending = 0;
                 }
-                // discards extra pending requests when closing, ensures an eventual "idle" state
-                pending = 0;
             } else if (!has(state, WRITE)) { // only USER_CLOSING - Don't abort any request
                 clientHalfCloseOutbound(channel);
             }

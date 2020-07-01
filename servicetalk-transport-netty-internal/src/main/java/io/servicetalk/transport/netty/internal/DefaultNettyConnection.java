@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
@@ -108,7 +109,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * Always accessed from the event loop, doesn't require synchronization.
      */
     @Nullable
-    private CloseEvent closeReason;
+    private volatile CloseEvent closeReason;
     /**
      * This doesn't need to be volatile because this object is only accessed in the following scenarios:
      * <ul>
@@ -408,9 +409,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
-            if (!channel().isActive()) {
-                newChannelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
-                        DefaultNettyConnection.class, "failIfWriteActive(...)"));
+            // It is also possible that Channel is in closing state, we should abort new writes if a closeReason was
+            // observed:
+            CloseEvent closeReason = null;
+            if (!channel().isActive() || (closeReason = this.closeReason) != null) {
+                final StacklessClosedChannelException e = StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "failIfWriteActive(...)");
+                newChannelOutboundListener.channelClosed(closeReason == null ? e : closeReason.wrapError(e, channel()));
                 return false;
             }
             return true;
@@ -447,7 +452,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         void channelWritable();
 
         /**
-         * Notification that the channel's outbound side has been closed and will no longer accept writes.s
+         * Notification that the channel's outbound side has been closed and will no longer accept writes.
          * <p>
          * Always called from the event loop thread.
          */
@@ -560,10 +565,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
                 connection.channelOutboundListener.channelOutboundClosed();
+            } else if (evt == AbortWritesEvent.INSTANCE) {
+                connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "userEventTriggered(AbortWritesEvent)"));
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
-                        DefaultNettyConnection.class, "userEventTriggered(...)"));
+                        DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting
                 connection.closeHandler.channelClosedInbound(ctx);

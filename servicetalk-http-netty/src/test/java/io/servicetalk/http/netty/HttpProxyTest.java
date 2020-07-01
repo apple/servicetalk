@@ -16,34 +16,48 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class HttpProxyTest {
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    private int proxyPort;
-    private int serverPort;
-    private HttpClient client;
+    @Nullable
+    private HttpClient proxyClient;
+    @Nullable
+    private ServerContext proxyContext;
+    @Nullable
+    private HostAndPort proxyAddress;
+    @Nullable
+    private ServerContext serverContext;
+    @Nullable
+    private HostAndPort serverAddress;
+    @Nullable
+    private BlockingHttpClient client;
     private final AtomicInteger proxyRequestCount = new AtomicInteger();
 
     @Before
@@ -53,33 +67,43 @@ public class HttpProxyTest {
         createClient();
     }
 
+    @After
+    public void tearDown() throws Exception {
+        safeClose(client);
+        safeClose(proxyClient);
+        safeClose(proxyContext);
+        safeClose(serverContext);
+    }
+
     public void startProxy() throws Exception {
-        final HttpClient proxyClient = HttpClients.forMultiAddressUrl().build();
-        final ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        proxyClient = HttpClients.forMultiAddressUrl().build();
+        proxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     proxyRequestCount.incrementAndGet();
                     return proxyClient.request(request);
                 });
-        proxyPort = serverHostAndPort(serverContext).port();
+        proxyAddress = serverHostAndPort(proxyContext);
     }
 
     public void startServer() throws Exception {
-        final ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        serverContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
-        serverPort = serverHostAndPort(serverContext).port();
+        serverAddress = serverHostAndPort(serverContext);
     }
 
     public void createClient() {
-        client = HttpClients.forSingleAddressViaProxy("localhost", serverPort, "localhost", proxyPort)
-                .build();
+        assert serverAddress != null && proxyAddress != null;
+        client = HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
+                .buildBlocking();
     }
 
     @Test
     public void testRequest() throws Exception {
-        final HttpResponse httpResponse = client.request(client.get("/path")).toFuture().get();
+        assert client != null;
+        final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));
-        assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: localhost:" + serverPort));
+        assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
     }
 }

@@ -355,4 +355,15 @@ public abstract class CloseHandler {
             // No instances.
         }
     }
+
+    /**
+     * Netty UserEvent to indicate the output writes should be aborted because the channel is closing.
+     */
+    static final class AbortWritesEvent {
+        static final AbortWritesEvent INSTANCE = new AbortWritesEvent();
+
+        private AbortWritesEvent() {
+            // No instances.
+        }
+    }
 }

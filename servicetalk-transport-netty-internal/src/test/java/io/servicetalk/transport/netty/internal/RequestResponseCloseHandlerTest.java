@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.epoll.Epoll;
@@ -91,7 +92,6 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OE;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OH;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OS;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.SR;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.UC;
@@ -200,17 +200,17 @@ public class RequestResponseCloseHandlerTest {
                     // {Mode, Events, ExpectedEvent, Desc} - IGNORE disables test-case, keep contiguous on single line
                     {C, e(OB, OE, IB, IE), NIL, "sequential, no close"},
                     {C, e(OB, OE, IB, OB, OE, IE, IB, IE), NIL, "pipelined, no close"},
-                    {C, e(OB, OC, OE, OH, IB, IE, FC), PCO, "sequential, closing outbound"},
-                    {C, e(OB, OE, OB, OC, OE, OH, IB, IE, IB, IE, FC), PCO, "pipelined, closing outbound"},
-                    {C, e(OB, OE, OB, OC, IB, OE, OH, IE, IB, IE, FC), PCO, "pipelined, full dup, closing outbound"},
-                    {C, e(OB, IB, IC, OE, OH, IE, FC), PCI, "full dup, closing inbound"},
-                    {C, e(OB, OE, IB, OB, IC, SR, OH, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
-                    {C, e(OB, IB, OE, IC, OH, IE, FC), PCI, "pipelined, closing inbound"},
+                    {C, e(OB, OC, OE, IB, IE, FC), PCO, "sequential, closing outbound"},
+                    {C, e(OB, OE, OB, OC, OE, IB, IE, IB, IE, FC), PCO, "pipelined, closing outbound"},
+                    {C, e(OB, OE, OB, OC, IB, OE, IE, IB, IE, FC), PCO, "pipelined, full dup, closing outbound"},
+                    {C, e(OB, IB, IC, OE, IE, FC), PCI, "full dup, closing inbound"},
+                    {C, e(OB, OE, IB, OB, IC, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
+                    {C, e(OB, IB, OE, IC, IE, FC), PCI, "pipelined, closing inbound"},
                     {C, e(OB, IB, IC, IE, OE, FC), PCI, "pipelined, full dup, closing inbound"},
-                    {C, e(OB, OE, IB, IC, OH, IE, FC), PCI, "sequential, closing inbound"},
-                    {C, e(OB, UC, OE, OH, IB, IE, FC), UCO, "sequential, user close"},
-                    {C, e(OB, IB, OE, OB, UC, OE, OH, IE, IB, IE, FC), UCO, "pipelined req graceful close"},
-                    {C, e(OB, IB, UC, OE, OH, IE, FC), UCO, "interleaved, user close"},
+                    {C, e(OB, OE, IB, IC, IE, FC), PCI, "sequential, closing inbound"},
+                    {C, e(OB, UC, OE, IB, IE, FC), UCO, "sequential, user close"},
+                    {C, e(OB, IB, OE, OB, UC, OE, IE, IB, IE, FC), UCO, "pipelined req graceful close"},
+                    {C, e(OB, IB, UC, OE, IE, FC), UCO, "interleaved, user close"},
                     {C, e(OB, OE, IB, IE, UC, FC), UCO, "sequential, idle, user close"},
                     {C, e(OB, IB, OE, IE, UC, FC), UCO, "interleaved, idle, user close"},
                     {C, e(OB, IB, IE, OE, UC, FC), UCO, "interleaved full dup, idle, user close"},
@@ -218,7 +218,7 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, OE, IS, FC), CCI, "abrupt input close after complete write, resp abort"},
                     {C, e(IS, FC), CCI, "idle, inbound closed"},
                     {C, e(OB, IS, SR, FC), CCI, "req abort, inbound closed"},
-                    {C, e(OB, IB, OE, OB, IC, SR, OH, IE, FC), PCI, "pipelined req abort after inbound close "},
+                    {C, e(OB, IB, OE, OB, IC, IE, FC), PCI, "pipelined req abort after inbound close"},
                     {C, e(OB, IB, OE, IS, FC), CCI, "req complete, resp abort, inbound closed"},
                     {C, e(OB, IB, IE, IS, OE, FC), CCI, "continue write read completed, inbound closed"},
                     {C, e(OS, FC), CCO, "idle, outbound closed"},
@@ -308,6 +308,8 @@ public class RequestResponseCloseHandlerTest {
             when(channel.eventLoop()).thenReturn(loop);
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.isAllowHalfClosure()).thenReturn(true);
+            ChannelPipeline pipeline = mock(ChannelPipeline.class);
+            when(channel.pipeline()).thenReturn(pipeline);
 
             when(channel.isOutputShutdown()).then(__ -> outputShutdown.get());
             when(channel.isInputShutdown()).then(__ -> inputShutdown.get());
@@ -337,7 +339,7 @@ public class RequestResponseCloseHandlerTest {
                 }
                 return scc;
             });
-            h = (RequestResponseCloseHandler) spy(mode == Mode.C ? forPipelinedRequestResponse(true, channel.config()) :
+            h = (RequestResponseCloseHandler) spy(mode == C ? forPipelinedRequestResponse(true, channel.config()) :
                     forPipelinedRequestResponse(false, channel.config()));
             h.registerEventHandler(channel, e -> {
                 if (observedEvent == null) {
@@ -427,7 +429,7 @@ public class RequestResponseCloseHandlerTest {
                 if (!events.contains(c)) {
                     switch (c) {
                         case IB:
-                           verify(h, never()).protocolPayloadBeginInbound(ctx);
+                            verify(h, never()).protocolPayloadBeginInbound(ctx);
                             break;
                         case IE:
                             verify(h, never()).protocolPayloadEndInbound(ctx);
