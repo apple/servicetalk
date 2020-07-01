@@ -103,14 +103,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final Long idleTimeoutMs;
     private final Protocol protocol;
     private volatile ChannelOutboundListener channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
-    private volatile boolean abortWrites;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
      * <p>
      * Always accessed from the event loop, doesn't require synchronization.
      */
     @Nullable
-    private CloseEvent closeReason;
+    private volatile CloseEvent closeReason;
     /**
      * This doesn't need to be volatile because this object is only accessed in the following scenarios:
      * <ul>
@@ -151,7 +150,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
-                    abortWrites = true;
                     // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
                     onClosing.onComplete();
                     transportError.onSuccess(evt.wrapError(null, channel));
@@ -411,10 +409,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
-            // It is also possible that Channel is in closing state, so we should abort new writes:
-            if (!channel().isActive() || abortWrites) {
-                newChannelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
-                        DefaultNettyConnection.class, "failIfWriteActive(...)"));
+            // It is also possible that Channel is in closing state, we should abort new writes if a closeReason was
+            // observed:
+            CloseEvent closeReason = null;
+            if (!channel().isActive() || (closeReason = this.closeReason) != null) {
+                final StacklessClosedChannelException e = StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "failIfWriteActive(...)");
+                newChannelOutboundListener.channelClosed(closeReason == null ? e : closeReason.wrapError(e, channel()));
                 return false;
             }
             return true;
