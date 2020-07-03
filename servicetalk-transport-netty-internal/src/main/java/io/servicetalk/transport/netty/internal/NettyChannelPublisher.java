@@ -121,6 +121,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     }
 
     private void exceptionCaught0(Throwable throwable) {
+        TransportObserverUtils.assignConnectionError(channel, throwable);
         if (subscription == null || shouldBuffer()) {
             addPending(TerminalNotification.error(throwable));
             if (subscription != null) {

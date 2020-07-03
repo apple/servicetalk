@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.transport.api.ConnectionObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -33,6 +34,8 @@ import io.netty.util.AttributeKey;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -42,6 +45,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -68,14 +73,20 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     private final Completable onClose;
     @SuppressWarnings("unused")
     private volatile int state;
+    @Nullable
+    private final Supplier<ConnectionObserver> connectionObserverFactory;
 
     /**
      * New instance.
      *
      * @param offloadingExecutor {@link Executor} to use for offloading close signals.
+     * @param connectionObserverFactory a factory that creates a {@link ConnectionObserver} when a new {@link Channel}
+     * is added
      */
-    public ChannelSet(Executor offloadingExecutor) {
+    public ChannelSet(final Executor offloadingExecutor,
+                      @Nullable final Supplier<ConnectionObserver> connectionObserverFactory) {
         onClose = fromSource(onCloseProcessor).publishOn(offloadingExecutor);
+        this.connectionObserverFactory = connectionObserverFactory;
     }
 
     /**
@@ -87,14 +98,25 @@ public final class ChannelSet implements ListenableAsyncCloseable {
      */
     public boolean addIfAbsent(final Channel channel) {
         final boolean added = channelMap.putIfAbsent(channel.id(), channel) == null;
+        if (added) {
+            final ConnectionObserver observer = this.connectionObserverFactory != null ?
+                    this.connectionObserverFactory.get() : null;
+            if (observer != null) {
+                assignConnectionObserver(channel, observer);
+                channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                    Throwable t = connectionError(channel);
+                    if (t == null) {
+                        observer.connectionClosed();
+                    } else {
+                        observer.connectionClosed(t);
+                    }
+                });
+            }
 
-        if (state != OPEN) {
-            if (added) {
-                channelMap.remove(channel.id(), channel);
+            channel.closeFuture().addListener(remover);
+            if (state != OPEN) {
                 channel.close();
             }
-        } else if (added) {
-            channel.closeFuture().addListener(remover);
         }
 
         return added;

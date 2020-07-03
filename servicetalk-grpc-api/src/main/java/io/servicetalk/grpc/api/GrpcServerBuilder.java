@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -114,6 +115,14 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder enableWireLogging(String loggerName);
+
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not

@@ -44,7 +44,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     private final FlushStrategy flushStrategy;
     @Nullable
     private final WireLoggingInitializer wireLoggingInitializer;
-    private boolean alpnConfigured;
+    private final boolean alpnConfigured;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from,
                                         final boolean alpnConfigured) {
