@@ -46,7 +46,6 @@ import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -103,14 +102,6 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     this.connectionObserverFactory.get() : null;
             if (observer != null) {
                 assignConnectionObserver(channel, observer);
-                channel.closeFuture().addListener((ChannelFutureListener) future -> {
-                    Throwable t = connectionError(channel);
-                    if (t == null) {
-                        observer.connectionClosed();
-                    } else {
-                        observer.connectionClosed(t);
-                    }
-                });
             }
 
             channel.closeFuture().addListener(remover);

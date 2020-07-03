@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -56,6 +57,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -93,7 +95,8 @@ public final class TcpConnector {
                 ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory);
                 try {
                     Future<?> connectFuture = connect0(localAddress, resolvedRemoteAddress, config, autoRead,
-                            executionContext, connectHandler);
+                            executionContext, connectHandler,
+                            config.transportObserver() != null ? config.transportObserver().onNewConnection() : null);
                     connectHandler.connectFuture(connectFuture);
                     connectFuture.addListener(f -> {
                         Throwable cause = f.cause();
@@ -119,13 +122,14 @@ public final class TcpConnector {
 
     private static Future<?> connect0(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
                                       ReadOnlyTcpClientConfig config, boolean autoRead,
-                                      ExecutionContext executionContext,
-                                      Consumer<? super Channel> subscriber) {
+                                      ExecutionContext executionContext, Consumer<? super Channel> subscriber,
+                                      @Nullable ConnectionObserver observer) {
         // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added
         // to the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.
         ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
+                assignConnectionObserver(channel, observer);
                 subscriber.accept(channel);
             }
         };

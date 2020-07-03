@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -58,6 +59,9 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> transportObserver(TransportObserver transportObserver);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.handler.ssl.SslContext;
@@ -39,8 +38,6 @@ public final class ReadOnlyTcpServerConfig
     @Nullable
     private final DomainNameMapping<SslContext> mappings;
     private final int backlog;
-    @Nullable
-    private final TransportObserver transportObserver;
 
     /**
      * Copy constructor.
@@ -69,7 +66,6 @@ public final class ReadOnlyTcpServerConfig
             mappings = null;
         }
         backlog = from.backlog();
-        transportObserver = from.transportObserver();
     }
 
     @Nullable
@@ -95,15 +91,5 @@ public final class ReadOnlyTcpServerConfig
      */
     public int backlog() {
         return backlog;
-    }
-
-    /**
-     * Returns the {@link TransportObserver} if any for all channels.
-     *
-     * @return the {@link TransportObserver} if any
-     */
-    @Nullable
-    public TransportObserver transportObserver() {
-        return transportObserver;
     }
 }

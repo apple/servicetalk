@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
 
 import javax.annotation.Nullable;
@@ -43,8 +44,20 @@ public final class TransportObserverUtils {
      * @param channel a {@link Channel} to assign a {@link ConnectionObserver} to
      * @param observer a {@link ConnectionObserver}
      */
-    public static void assignConnectionObserver(final Channel channel, final ConnectionObserver observer) {
+    public static void assignConnectionObserver(final Channel channel, @Nullable final ConnectionObserver observer) {
+        if (observer == null) {
+            return;
+        }
         channel.attr(CONNECTION_OBSERVER).set(observer);
+        channel.closeFuture().addListener((ChannelFutureListener) future -> {
+            Throwable t = connectionError(channel);
+            if (t == null) {
+                observer.connectionClosed();
+            } else {
+                observer.connectionClosed(t);
+            }
+            channel.attr(CONNECTION_OBSERVER).set(null);
+        });
     }
 
     /**
@@ -77,7 +90,7 @@ public final class TransportObserverUtils {
      * @return {@link Throwable} associated with the passed {@link Channel}
      */
     @Nullable
-    public static Throwable connectionError(final Channel channel) {
+    private static Throwable connectionError(final Channel channel) {
         return channel.attr(CONNECTION_ERROR).getAndSet(null);
     }
 }

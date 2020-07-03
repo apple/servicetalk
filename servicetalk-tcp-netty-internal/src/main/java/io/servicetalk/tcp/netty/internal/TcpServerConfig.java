@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.util.NetUtil;
@@ -35,8 +34,6 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
     @Nullable
     private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
     private int backlog = NetUtil.SOMAXCONN;
-    @Nullable
-    private TransportObserver transportObserver;
 
     @Nullable
     Map<String, ReadOnlyServerSecurityConfig> sniConfigs() {
@@ -45,11 +42,6 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
 
     int backlog() {
         return backlog;
-    }
-
-    @Nullable
-    TransportObserver transportObserver() {
-        return transportObserver;
     }
 
     /**
@@ -84,15 +76,6 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
         }
         this.backlog = backlog;
         return this;
-    }
-
-    /**
-     * Sets a {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
-     */
-    public void transportObserver(final TransportObserver transportObserver) {
-        this.transportObserver = requireNonNull(transportObserver);
     }
 
     @Override

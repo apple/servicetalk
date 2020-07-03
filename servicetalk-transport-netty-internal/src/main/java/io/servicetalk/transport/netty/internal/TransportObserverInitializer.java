@@ -31,6 +31,12 @@ import static io.servicetalk.transport.netty.internal.TransportObserverUtils.con
  */
 public final class TransportObserverInitializer implements ChannelInitializer {
 
+    public static final ChannelInitializer TRANSPORT_OBSERVER_INITIALIZER = new TransportObserverInitializer();
+
+    private TransportObserverInitializer() {
+        // Singleton
+    }
+
     @Override
     public void init(final Channel channel) {
         final ConnectionObserver observer = connectionObserver(channel);

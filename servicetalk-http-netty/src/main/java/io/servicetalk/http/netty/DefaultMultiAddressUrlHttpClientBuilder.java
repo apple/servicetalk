@@ -52,6 +52,7 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -359,6 +360,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> transportObserver(
+            final TransportObserver transportObserver) {
+        builderTemplate.transportObserver(transportObserver);
         return this;
     }
 

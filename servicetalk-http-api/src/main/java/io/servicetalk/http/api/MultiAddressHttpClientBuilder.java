@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.BiConsumer;
@@ -61,6 +62,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> transportObserver(TransportObserver transportObserver);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
