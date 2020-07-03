@@ -26,13 +26,27 @@ import static org.mockito.Mockito.when;
 
 public class AbstractTransportObserverTest extends AbstractTcpServerTest {
 
+    protected final TransportObserver clientTransportObserver;
+    protected final ConnectionObserver clientConnectionObserver;
+
     protected final TransportObserver serverTransportObserver;
     protected final ConnectionObserver serverConnectionObserver;
 
     public AbstractTransportObserverTest() {
+        clientTransportObserver = mock(TransportObserver.class);
+        clientConnectionObserver = mock(ConnectionObserver.class);
+        when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+
         serverTransportObserver = mock(TransportObserver.class);
         serverConnectionObserver = mock(ConnectionObserver.class);
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
+    }
+
+    @Override
+    TcpClientConfig getTcpClientConfig() {
+        final TcpClientConfig config = super.getTcpClientConfig();
+        config.transportObserver(clientTransportObserver);
+        return config;
     }
 
     @Override

@@ -87,24 +87,26 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     @Test
     public void testConnectionClosed() throws Exception {
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
+        verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
-                connection.onClose().toFuture().get();
-                verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
                 break;
             case PIPELINE:
                 Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
                 connection.write(from(content.duplicate())).toFuture().get();
+                verify(clientConnectionObserver).dataWritten(content.readableBytes());
+                verify(clientConnectionObserver).flushed();
                 assertThrows(ExecutionException.class,
                         () -> connection.read().firstOrElse(() -> null).toFuture().get());
                 verify(serverConnectionObserver).dataRead(content.readableBytes());
-                connection.onClose().toFuture().get();
-                verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
+        connection.onClose().toFuture().get();
+        verify(clientConnectionObserver).connectionClosed();
+        verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(serverTransportObserver, serverConnectionObserver);
     }
 }

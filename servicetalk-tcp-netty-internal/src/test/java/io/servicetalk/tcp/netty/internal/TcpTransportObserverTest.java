@@ -34,27 +34,34 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
 
     @Test
     public void testConnectionObserverEvents() throws Exception {
-        AtomicReference<Buffer> response = new AtomicReference<>();
-        CountDownLatch responseLatch = new CountDownLatch(1);
-
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
+        verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
+
         Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
         connection.write(from(content.duplicate())).toFuture().get();
+        verify(clientConnectionObserver).dataWritten(content.readableBytes());
+        verify(clientConnectionObserver).flushed();
+
+        AtomicReference<Buffer> response = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
         connection.read().whenOnNext(buffer -> {
             response.set(buffer);
             responseLatch.countDown();
         }).ignoreElements().subscribe(); // Keep reading in background thread to prevent connection from closing
-
         responseLatch.await();
         assertThat("Unexpected response.", response.get(), equalTo(content));
+        verify(clientConnectionObserver).dataRead(content.readableBytes());
         verify(serverConnectionObserver).dataRead(content.readableBytes());
         verify(serverConnectionObserver).dataWritten(content.readableBytes());
         verify(serverConnectionObserver).flushed();
 
+        verify(clientConnectionObserver, never()).connectionClosed();
         verify(serverConnectionObserver, never()).connectionClosed();
         connection.closeAsync().toFuture().get();
+        verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed();
-        verifyNoMoreInteractions(serverTransportObserver, serverConnectionObserver);
+        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
+                serverTransportObserver, serverConnectionObserver);
     }
 }
