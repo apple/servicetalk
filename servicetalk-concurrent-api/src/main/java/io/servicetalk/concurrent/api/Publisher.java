@@ -189,8 +189,15 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Each element of this {@link Publisher} is mapped into a {@link Publisher} (potentially of a different type) and
-     * flatten all signals emitted from each mapped {@link Publisher} into the returned {@link Publisher}.
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapMerge(Function, int, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<List<R>>> futures = ...; // assume this is thread safe
@@ -219,8 +226,12 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Each element of this {@link Publisher} is mapped into a {@link Publisher} (potentially of a different type) and
-     * flatten all signals emitted from each mapped {@link Publisher} into the returned {@link Publisher}.
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<List<R>>> futures = ...; // assume this is thread safe
@@ -252,12 +263,20 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Each element of this {@link Publisher} is mapped into a {@link Publisher} (potentially of a different type) and
-     * flatten all signals emitted from each mapped {@link Publisher} into the returned {@link Publisher}.
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
      * This is the same as {@link #flatMapMerge(Function)} just that if any mapped {@link Publisher} returned by
      * {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately terminate. Instead,
      * it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and then terminate the
      * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapMergeDelayError(Function, int, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
      * <pre>{@code
      *     Executor e = ...;
      *     List<T> tResults = resultOfThisPublisher();
@@ -294,12 +313,17 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Each element of this {@link Publisher} is mapped into a {@link Publisher} (potentially of a different type) and
-     * flatten all signals emitted from each mapped {@link Publisher} into the returned {@link Publisher}.
-     * This is the same as {@link #flatMapMerge(Function, int, int)} just that if any mapped {@link Publisher}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and
-     * then terminate the returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This is the same as {@link #flatMapMerge(Function)} just that if any mapped {@link Publisher} returned by
+     * {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately terminate. Instead,
+     * it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and then terminate the
+     * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
      * <pre>{@code
      *     Executor e = ...;
      *     List<T> tResults = resultOfThisPublisher();
@@ -339,8 +363,9 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapMergeSingle(Function, int)}.
@@ -377,8 +402,9 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
@@ -415,8 +441,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
      * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
@@ -451,7 +480,7 @@ public abstract class Publisher<T> {
      *         return rResults;
      *     }
      *     createAndThrowACompositeException(errors);
-    * }</pre>
+     * }</pre>
      *
      * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
@@ -466,8 +495,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
      * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
@@ -516,10 +548,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated successfully or any one of
-     * them has terminated with a failure.
-     * If the returned {@link Completable} should wait for the termination of all remaining {@link Completable}s when
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If the returned {@link Completable} should wait for the termination of all mapped {@link Completable}s when
      * any one of them terminates with a failure, {@link #flatMapCompletableDelayError(Function)} should be used.
      * <p>
      * To control the amount of concurrent processing done by this operator see
@@ -555,10 +588,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated successfully or any one of
-     * them has terminated with a failure.
-     * If the returned {@link Completable} should wait for the termination of all remaining {@link Completable}s when
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If the returned {@link Completable} should wait for the termination of all mapped {@link Completable}s when
      * any one of them terminates with a failure, {@link #flatMapCompletableDelayError(Function)} should be used.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
@@ -592,12 +626,12 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated. If any {@link Completable}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Completable} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Completable}s to terminate and then
-     * terminate the returned {@link Completable} with all errors emitted by the {@link Completable}s produced by the
-     * {@code mapper}.
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If any mapped {@link Completable} terminates with an error the returned {@link Completable} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Completable}s to terminate.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapCompletableDelayError(Function, int)}.
@@ -638,12 +672,12 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated.If any {@link Completable}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Completable} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Completable}s to terminate and then
-     * terminate the returned {@link Completable} with all errors emitted by the {@link Completable}s produced by the
-     * {@code mapper}.
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If any mapped {@link Completable} terminates with an error the returned {@link Completable} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Completable}s to terminate.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:

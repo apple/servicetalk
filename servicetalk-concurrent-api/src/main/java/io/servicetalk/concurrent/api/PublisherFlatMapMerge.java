@@ -112,7 +112,6 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         // protected by emitting lock, or only accessed inside the Subscriber thread
         private boolean targetTerminated;
-        private int upstreamDemand;
         @Nullable
         private Subscription subscription;
 
@@ -156,8 +155,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             subscription = ConcurrentSubscription.wrap(s);
             target.onSubscribe(this);
 
-            upstreamDemand = source.maxConcurrency;
-            subscription.request(upstreamDemand);
+            subscription.request(source.maxConcurrency);
         }
 
         @Override
@@ -256,6 +254,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     if (subscriber.hasSignalsQueued() || (needsDemand(item) && !tryDecrementDemand())) {
                         subscriber.markSignalsQueued();
                         enqueueItem(item); // drain isn't necessary. when demand arrives a drain will be attempted.
+                    } else if (item == MAPPED_SOURCE_COMPLETE) {
+                        requestMoreFromUpstream(1);
                     } else {
                         final boolean demandConsumed = sendToTarget(item);
                         assert demandConsumed == needsDemand(item);
@@ -295,6 +295,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private void drainPending() {
             Throwable delayedCause = null;
             boolean tryAcquire = true;
+            int mappedSourcesCompleted = 0;
             while (tryAcquire && tryAcquireLock(emittingLockUpdater, this)) {
                 try {
                     final long prevPendingDemand = pendingDemandUpdater.getAndSet(this, 0);
@@ -308,7 +309,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     Object t;
                     while (emittedCount < prevPendingDemand && (t = signals.poll()) != null) {
                         try {
-                            if (sendToTarget(t)) {
+                            if (t == MAPPED_SOURCE_COMPLETE) {
+                                ++mappedSourcesCompleted;
+                            } else if (sendToTarget(t)) {
                                 ++emittedCount;
                             }
                         } catch (Throwable cause) {
@@ -323,7 +326,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                                 t = signals.peek();
                                 if (t == MAPPED_SOURCE_COMPLETE) {
                                     signals.poll();
-                                    tryRequestMoreFromUpstream();
+                                    ++mappedSourcesCompleted;
                                 } else if (t instanceof FlatMapPublisherSubscriber) {
                                     signals.poll();
                                     ((FlatMapPublisherSubscriber<?, ?>) t).replenishDemandAndClearSignalsQueued();
@@ -353,17 +356,19 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 }
             }
 
+            if (mappedSourcesCompleted != 0) {
+                requestMoreFromUpstream(mappedSourcesCompleted);
+            }
+
             if (delayedCause != null) {
                 throwException(delayedCause);
             }
         }
 
-        private void tryRequestMoreFromUpstream() {
-            if (--upstreamDemand == 0) { // heuristic to replenish demand when it is exhausted.
-                assert subscription != null;
-                upstreamDemand = source.maxConcurrency;
-                subscription.request(source.maxConcurrency);
-            }
+        private void requestMoreFromUpstream(int mappedSourcesCompleted) {
+            assert mappedSourcesCompleted > 0;
+            assert subscription != null;
+            subscription.request(mappedSourcesCompleted);
         }
 
         private static boolean needsDemand(Object item) {
@@ -372,11 +377,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private boolean sendToTarget(Object item) {
+            assert item != MAPPED_SOURCE_COMPLETE;
             if (targetTerminated) {
-                // No notifications past terminal/cancelled
-                return false;
-            } else if (item == MAPPED_SOURCE_COMPLETE) {
-                tryRequestMoreFromUpstream();
                 return false;
             } else if (item instanceof TerminalNotification) {
                 // Load the terminal notification in case an error happened after an onComplete and we override the

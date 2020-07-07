@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.PublisherSource.Subscription;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
@@ -715,6 +716,54 @@ public class PublisherFlatMapMergeTest {
             assertThat("Unexpected exception.", cause.getSuppressed().length,
                     equalTo(499/*everything but the first error is suppressed*/));
         }
+    }
+
+    @Test
+    public void mappedQuotaIsRenewedAfterSingleMappedPublisherCompletes() throws InterruptedException {
+        List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        toSource(publisher.flatMapMerge(i -> {
+            TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
+            mappedPublishers.add(pair);
+            return pair.mappedPublisher;
+        }, 2, 2)).subscribe(subscriber);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
+
+        publisher.onNext(1, 2);
+
+        assertThat(mappedPublishers, hasSize(2));
+        TestSubscriptionPublisherPair<Integer> first = mappedPublishers.get(0);
+        TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
+
+        first.doOnSubscribe(1);
+        first.verifyCumulativeDemand(2);
+        second.doOnSubscribe(2);
+        second.verifyCumulativeDemand(2);
+
+        // Delay the completion of the first mapped publisher, to verify that flatMap requests more upstream demand.
+        second.mappedPublisher.onNext(3, 4);
+        second.verifyCumulativeDemand(4);
+        assertThat(subscriber.pollAllOnNext(), contains(3, 4));
+
+        second.mappedPublisher.onComplete();
+        upstreamSubscription.awaitRequestN(3);
+
+        publisher.onNext(3);
+        TestSubscriptionPublisherPair<Integer> third = mappedPublishers.get(2);
+        third.doOnSubscribe(3);
+        third.verifyCumulativeDemand(2);
+
+        third.mappedPublisher.onComplete();
+        first.mappedPublisher.onComplete();
+        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+
+        publisher.onComplete();
+        subscriber.awaitOnComplete();
     }
 
     @Test
