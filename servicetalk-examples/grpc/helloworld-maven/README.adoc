@@ -1,0 +1,4 @@
+== ServiceTalk gRPC Maven Examples
+
+Example of how to use ServiceTalk's gRPC protoc plugin with Maven.
+Please see other examples for more detailed usage of ServiceTalk APIs.
