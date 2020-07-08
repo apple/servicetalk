@@ -16,6 +16,9 @@ build/
 /buildSrc/.gradle/
 .dist/
 
+# maven (examples)
+target/
+
 # Eclipse
 /bin/
 /.settings/
