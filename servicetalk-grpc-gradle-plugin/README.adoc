@@ -71,4 +71,4 @@ serviceTalkGrpc {
 
 === Maven Support
 We don't offer a maven plugin and instead integrate with the existing `protobuf-maven-plugin` as demonstrated in our
-link:{source-root}/servicetalk-examples/grpc/helloworld-maven[helloworld-maven example].
+link:{source-root}/servicetalk-examples/grpc/helloworld[helloworld example pom.xml].

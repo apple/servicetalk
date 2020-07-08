@@ -9,7 +9,8 @@
   <url>https://servicetalk.io</url>
 
   <properties>
-    <servicetalk.version>0.29.0</servicetalk.version>
+    <!-- servicetalk.version is updated automatically by release.sh during the ServiceTalk release process -->
+    <servicetalk.version>0.30.0</servicetalk.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <protoc.version>3.12.3</protoc.version>
     <os-mave-plugin.version>1.6.0</os-mave-plugin.version>
@@ -64,6 +65,11 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>io.servicetalk</groupId>
+      <artifactId>servicetalk-annotations</artifactId>
+      <version>${servicetalk.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.servicetalk</groupId>
       <artifactId>servicetalk-grpc-netty</artifactId>
