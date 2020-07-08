@@ -96,7 +96,8 @@ echo "Preparing repository for next development version $nextVersion"
 for file in $(find . -name pom.xml); do
   # update version to the previously released version because ServiceTalk uses gradle and project caches/build
   # configuration may not be the same as for maven, but release can always be pulled from maven central.
-  sed "s/<servicetalk\.version>.*<\/servicetalk\.version>/<servicetalk\.version>$version<\/servicetalk\.version>/" $file > pom.xml.tmp
+  sed "s/<servicetalk\.version>.*<\/servicetalk\.version>/<servicetalk\.version>$version<\/servicetalk\.version>/" \
+    $file > pom.xml.tmp
   mv pom.xml.tmp $file
 done
 
