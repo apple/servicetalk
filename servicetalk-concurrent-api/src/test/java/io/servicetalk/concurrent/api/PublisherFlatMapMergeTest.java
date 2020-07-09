@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.PublisherSource.Subscription;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
@@ -339,11 +338,11 @@ public class PublisherFlatMapMergeTest {
         assertThat(mappedPublishers, hasSize(2));
         TestSubscriptionPublisherPair<Integer> first = mappedPublishers.get(0);
         first.doOnSubscribe(1);
-        first.verifyCumulativeDemand(5);
+        first.mappedSubscription.awaitRequestN(5);
 
         TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
         second.doOnSubscribe(2);
-        second.verifyCumulativeDemand(5);
+        second.mappedSubscription.awaitRequestN(3);
 
         // Mixed emissions between the first two publishers
         first.mappedPublisher.onNext(1, 2);
@@ -365,7 +364,7 @@ public class PublisherFlatMapMergeTest {
         assertThat(mappedPublishers, hasSize(3));
         TestSubscriptionPublisherPair<Integer> third = mappedPublishers.get(2);
         third.doOnSubscribe(3);
-        third.verifyCumulativeDemand(5);
+        third.mappedSubscription.awaitRequestN(5);
 
         // terminate the Publisher, verify mapped items still emitted and termination delayed.
         publisher.onComplete();
@@ -586,9 +585,9 @@ public class PublisherFlatMapMergeTest {
         TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
 
         first.doOnSubscribe(1);
-        first.verifyCumulativeDemand(5);
+        first.mappedSubscription.awaitRequestN(3);
         second.doOnSubscribe(2);
-        second.verifyCumulativeDemand(5);
+        second.mappedSubscription.awaitRequestN(3);
 
         assert executorService != null;
         Future<?> firstEmitFuture = executorService.submit(() -> {
@@ -741,13 +740,13 @@ public class PublisherFlatMapMergeTest {
         TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
 
         first.doOnSubscribe(1);
-        first.verifyCumulativeDemand(2);
+        first.mappedSubscription.awaitRequestN(2);
         second.doOnSubscribe(2);
-        second.verifyCumulativeDemand(2);
+        second.mappedSubscription.awaitRequestN(2);
 
         // Delay the completion of the first mapped publisher, to verify that flatMap requests more upstream demand.
         second.mappedPublisher.onNext(3, 4);
-        second.verifyCumulativeDemand(4);
+        second.mappedSubscription.awaitRequestN(4);
         assertThat(subscriber.pollAllOnNext(), contains(3, 4));
 
         second.mappedPublisher.onComplete();
@@ -756,7 +755,7 @@ public class PublisherFlatMapMergeTest {
         publisher.onNext(3);
         TestSubscriptionPublisherPair<Integer> third = mappedPublishers.get(2);
         third.doOnSubscribe(3);
-        third.verifyCumulativeDemand(2);
+        third.mappedSubscription.awaitRequestN(2);
 
         third.mappedPublisher.onComplete();
         first.mappedPublisher.onComplete();
@@ -789,15 +788,15 @@ public class PublisherFlatMapMergeTest {
         TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
 
         first.doOnSubscribe(1);
-        first.verifyCumulativeDemand(2);
+        first.mappedSubscription.awaitRequestN(2);
         second.doOnSubscribe(2);
-        second.verifyCumulativeDemand(2);
+        second.mappedSubscription.awaitRequestN(2);
 
         first.mappedPublisher.onNext(1, 2);
-        first.verifyCumulativeDemand(4);
+        first.mappedSubscription.awaitRequestN(4);
 
         second.mappedPublisher.onNext(3, 4);
-        second.verifyCumulativeDemand(4);
+        second.mappedSubscription.awaitRequestN(4);
 
         assertThat(subscriber.pollAllOnNext(), contains(1, 2, 3, 4));
         first.mappedPublisher.onComplete();
@@ -823,10 +822,6 @@ public class PublisherFlatMapMergeTest {
             assertThat(item, is(expectedItem));
             assertThat(mappedSubscription.requested(), is(0L));
             mappedPublisher.onSubscribe(mappedSubscription);
-        }
-
-        private void verifyCumulativeDemand(long totalRequestN) throws InterruptedException {
-            PublisherFlatMapMergeTest.verifyCumulativeDemand(mappedSubscription, totalRequestN);
         }
     }
 

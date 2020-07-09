@@ -251,15 +251,15 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
-     * @param maxMappedDemandHint Hint for the maximum amount of {@link Subscription#request(long) demand} for
+     * @param minMappedDemandHint Hint for the minimum amount of {@link Subscription#request(long) demand} for
      * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper,
-                                               int maxConcurrency, int maxMappedDemandHint) {
-        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, maxMappedDemandHint, executor);
+                                               int maxConcurrency, int minMappedDemandHint) {
+        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, minMappedDemandHint, executor);
     }
 
     /**
@@ -351,15 +351,15 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
-     * @param maxMappedDemandHint Hint for the maximum amount of {@link Subscription#request(long) demand} for
+     * @param minMappedDemandHint Hint for the minimum amount of {@link Subscription#request(long) demand} for
      * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
-                                                         int maxConcurrency, int maxMappedDemandHint) {
-        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, maxMappedDemandHint, executor);
+                                                         int maxConcurrency, int minMappedDemandHint) {
+        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, minMappedDemandHint, executor);
     }
 
     /**

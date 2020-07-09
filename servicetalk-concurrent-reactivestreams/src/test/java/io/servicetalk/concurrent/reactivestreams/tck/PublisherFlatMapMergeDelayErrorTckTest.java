@@ -27,6 +27,6 @@ public class PublisherFlatMapMergeDelayErrorTckTest extends AbstractPublisherOpe
         // Some TCK tests (e.g. invalid request N) assume this synchronous completion won't happen so we limit the max
         // concurrency to be less than the total number of elements.
         final int maxConcurrency = max(1, elements - 1);
-        return publisher.flatMapMergeDelayError(Publisher::from, maxConcurrency, maxConcurrency);
+        return publisher.flatMapMergeDelayError(Publisher::from, maxConcurrency, 1);
     }
 }
