@@ -37,7 +37,7 @@ public final class RouteGuideResponseStreamingClient {
                     .setHi(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
                     .setLo(Point.newBuilder().setLatitude(789000).setLongitude(-789000).build())
                     .build())
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 
             responseProcessedLatch.await();

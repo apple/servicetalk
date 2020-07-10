@@ -32,7 +32,7 @@ public final class HelloWorldClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);
 
             responseProcessedLatch.await();
