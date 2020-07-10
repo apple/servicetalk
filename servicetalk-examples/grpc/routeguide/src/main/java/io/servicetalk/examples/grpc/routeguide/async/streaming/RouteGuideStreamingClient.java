@@ -43,7 +43,7 @@ public final class RouteGuideStreamingClient {
                     .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
                     .setMessage("Querying notes.")
                     .build()))
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 
             responseProcessedLatch.await();

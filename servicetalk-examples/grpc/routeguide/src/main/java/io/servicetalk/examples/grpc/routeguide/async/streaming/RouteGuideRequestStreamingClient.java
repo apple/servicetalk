@@ -36,7 +36,7 @@ public final class RouteGuideRequestStreamingClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.recordRoute(from(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build(),
                             Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()))
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);
 
             responseProcessedLatch.await();

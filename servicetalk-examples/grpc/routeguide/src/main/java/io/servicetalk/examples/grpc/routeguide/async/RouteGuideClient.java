@@ -33,7 +33,7 @@ public final class RouteGuideClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
             client.getFeature(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);
 
             responseProcessedLatch.await();

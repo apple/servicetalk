@@ -42,7 +42,7 @@ public final class PojoStreamingUrlClient {
                             serializer.serializerFor(CreatePojoRequest.class)))
                     .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
                     .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(PojoResponse.class)))
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 
             responseProcessedLatch.await();

@@ -38,7 +38,7 @@ public final class PojoClient {
 
             client.request(client.post("/pojos")
                     .payloadBody(new CreatePojoRequest("value"), serializer.serializerFor(CreatePojoRequest.class)))
-                    .whenFinally(responseProcessedLatch::countDown)
+                    .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(serializer.deserializerFor(PojoResponse.class)));
