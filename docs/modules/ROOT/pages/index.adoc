@@ -91,7 +91,7 @@ freedom to choose only the functionality they need, and also allows us to evolve
 == Why ServiceTalk?
 
 Over the past few years we have gained experience through Netty and ServiceTalk development. Deploying into production
-has also provided some invaluable user feedback and lessons which has influenced our roadmap along the way. In the
+has also provided some invaluable user feedback and lessons which have influenced our roadmap along the way. In the
 meanwhile, the industry also identified similar opportunities adding new frameworks on top of Netty.
 Despite the space being more crowded than when we first started, we believe that ServiceTalk provides unique value
 in this space.
