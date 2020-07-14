@@ -16,29 +16,28 @@
 package io.servicetalk.transport.api;
 
 /**
- * An observer interface that provides visibility into events associated with a single network connection.
+ * An observer interface that provides visibility into events associated with a network connection.
  */
 public interface ConnectionObserver {
 
     /**
-     * Notifies when the connection reads a chunk of data.
+     * Callback when {@code size} bytes are read from the connection.
      *
      * @param size size of the data chunk read
      */
-    void dataRead(int size);
+    void onDataRead(int size);
 
     /**
-     * Notifies when the connection writes a chunk of data.
+     * Callback when {@code size} bytes are written to the connection.
      *
      * @param size size of the data chunk written
      */
-    void dataWritten(int size);
+    void onDataWrite(int size);
 
     /**
-     * Notifies when flush operation is made on the connection. The flush operation will try to flush out all previous
-     * written messages that are pending.
+     * Callback when previously written data is flushed to the connection.
      */
-    void flushed();
+    void onFlush();
 
     /**
      * Notifies when the connection is closed due to an {@link Throwable error}.

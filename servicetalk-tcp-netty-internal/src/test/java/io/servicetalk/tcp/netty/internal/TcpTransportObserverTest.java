@@ -40,8 +40,8 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
 
         Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
         connection.write(from(content.duplicate())).toFuture().get();
-        verify(clientConnectionObserver).dataWritten(content.readableBytes());
-        verify(clientConnectionObserver).flushed();
+        verify(clientConnectionObserver).onDataWrite(content.readableBytes());
+        verify(clientConnectionObserver).onFlush();
 
         AtomicReference<Buffer> response = new AtomicReference<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -51,10 +51,10 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
         }).ignoreElements().subscribe(); // Keep reading in background thread to prevent connection from closing
         responseLatch.await();
         assertThat("Unexpected response.", response.get(), equalTo(content));
-        verify(clientConnectionObserver).dataRead(content.readableBytes());
-        verify(serverConnectionObserver).dataRead(content.readableBytes());
-        verify(serverConnectionObserver).dataWritten(content.readableBytes());
-        verify(serverConnectionObserver).flushed();
+        verify(clientConnectionObserver).onDataRead(content.readableBytes());
+        verify(serverConnectionObserver).onDataRead(content.readableBytes());
+        verify(serverConnectionObserver).onDataWrite(content.readableBytes());
+        verify(serverConnectionObserver).onFlush();
 
         verify(clientConnectionObserver, never()).connectionClosed();
         verify(serverConnectionObserver, never()).connectionClosed();

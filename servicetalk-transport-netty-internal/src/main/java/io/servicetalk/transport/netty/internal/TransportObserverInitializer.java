@@ -63,7 +63,7 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         }
 
         private void reportDataRead(final int size) {
-            observer.dataRead(size);
+            observer.onDataRead(size);
         }
 
         @Override
@@ -77,12 +77,12 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         }
 
         private void reportDataWritten(final int size) {
-            observer.dataWritten(size);
+            observer.onDataWrite(size);
         }
 
         @Override
         public void flush(final ChannelHandlerContext ctx) {
-            observer.flushed();
+            observer.onFlush();
             ctx.flush();
         }
     }

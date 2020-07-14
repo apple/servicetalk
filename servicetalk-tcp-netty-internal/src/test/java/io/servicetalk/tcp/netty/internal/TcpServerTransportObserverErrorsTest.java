@@ -95,11 +95,11 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
             case PIPELINE:
                 Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
                 connection.write(from(content.duplicate())).toFuture().get();
-                verify(clientConnectionObserver).dataWritten(content.readableBytes());
-                verify(clientConnectionObserver).flushed();
+                verify(clientConnectionObserver).onDataWrite(content.readableBytes());
+                verify(clientConnectionObserver).onFlush();
                 assertThrows(ExecutionException.class,
                         () -> connection.read().firstOrElse(() -> null).toFuture().get());
-                verify(serverConnectionObserver).dataRead(content.readableBytes());
+                verify(serverConnectionObserver).onDataRead(content.readableBytes());
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
