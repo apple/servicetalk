@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -24,25 +25,30 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
  */
 public final class TransportObserverInitializer implements ChannelInitializer {
 
-    public static final ChannelInitializer TRANSPORT_OBSERVER_INITIALIZER = new TransportObserverInitializer();
+    private final TransportObserver transportObserver;
 
-    private TransportObserverInitializer() {
-        // Singleton
+    /**
+     * Creates a new instance.
+     *
+     * @param transportObserver {@link TransportObserver} to initialize for the channel
+     */
+    public TransportObserverInitializer(final TransportObserver transportObserver) {
+        this.transportObserver = requireNonNull(transportObserver);
     }
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = connectionObserver(channel);
-        if (observer != null) {
-            channel.pipeline().addLast(new TransportObserverChannelHandler(observer));
-        }
+        final ConnectionObserver observer = requireNonNull(transportObserver.onNewConnection());
+        assignConnectionObserver(channel, observer);
+        channel.pipeline().addLast(new TransportObserverChannelHandler(observer));
     }
 
     private static final class TransportObserverChannelHandler extends ChannelDuplexHandler {

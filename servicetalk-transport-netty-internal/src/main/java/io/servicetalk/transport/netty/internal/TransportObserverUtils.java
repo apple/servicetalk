@@ -44,10 +44,7 @@ public final class TransportObserverUtils {
      * @param channel a {@link Channel} to assign a {@link ConnectionObserver} to
      * @param observer a {@link ConnectionObserver}
      */
-    public static void assignConnectionObserver(final Channel channel, @Nullable final ConnectionObserver observer) {
-        if (observer == null) {
-            return;
-        }
+    public static void assignConnectionObserver(final Channel channel, final ConnectionObserver observer) {
         channel.attr(CONNECTION_OBSERVER).set(observer);
         channel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = connectionError(channel);
@@ -61,34 +58,17 @@ public final class TransportObserverUtils {
     }
 
     /**
-     * Returns {@link ConnectionObserver} associated with the passed {@link Channel}.
-     *
-     * @param channel {@link Channel} that may have assigned {@link ConnectionObserver}
-     * @return {@link ConnectionObserver} associated with the passed {@link Channel}
-     */
-    @Nullable
-    public static ConnectionObserver connectionObserver(final Channel channel) {
-        return channel.attr(CONNECTION_OBSERVER).get();
-    }
-
-    /**
      * Assigns a {@link Throwable} to the passed {@link Channel}.
      *
      * @param channel a {@link Channel} to assign a {@link Throwable} to
      * @param error a {@link Throwable}
      */
     public static void assignConnectionError(final Channel channel, final Throwable error) {
-        if (connectionObserver(channel) != null) {
+        if (channel.attr(CONNECTION_OBSERVER).get() != null) {
             channel.attr(CONNECTION_ERROR).setIfAbsent(error);
         }
     }
 
-    /**
-     * Returns {@link Throwable} associated with the passed {@link Channel}.
-     *
-     * @param channel {@link Channel} that may have assigned {@link Throwable}
-     * @return {@link Throwable} associated with the passed {@link Channel}
-     */
     @Nullable
     private static Throwable connectionError(final Channel channel) {
         return channel.attr(CONNECTION_ERROR).getAndSet(null);

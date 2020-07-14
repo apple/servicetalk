@@ -21,7 +21,6 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -52,7 +51,6 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddres
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -94,7 +92,6 @@ public final class TcpServerBinder {
         ServerBootstrap bs = new ServerBootstrap();
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
-        final TransportObserver transportObserver = config.transportObserver();
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
@@ -108,14 +105,8 @@ public final class TcpServerBinder {
                         ((ReferenceCounted) msg).release();
                     }
                 }
-                if (msg instanceof Channel) {
-                    Channel channel = (Channel) msg;
-                    if (channelSet.addIfAbsent(channel)) {
-                        assignConnectionObserver(channel, transportObserver == null ? null :
-                                transportObserver.onNewConnection());
-                    } else {
-                        LOGGER.warn("Channel ({}) not added to ChannelSet", channel);
-                    }
+                if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
+                    LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
                 }
                 ctx.fireChannelRead(msg);
             }

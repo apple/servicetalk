@@ -32,6 +32,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
@@ -121,7 +122,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     }
 
     private void exceptionCaught0(Throwable throwable) {
-        TransportObserverUtils.assignConnectionError(channel, throwable);
+        assignConnectionError(channel, throwable);
         if (subscription == null || shouldBuffer()) {
             addPending(TerminalNotification.error(throwable));
             if (subscription != null) {
