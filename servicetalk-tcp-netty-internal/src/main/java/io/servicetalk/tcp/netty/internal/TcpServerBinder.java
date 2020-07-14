@@ -52,6 +52,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddres
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -93,9 +94,8 @@ public final class TcpServerBinder {
         ServerBootstrap bs = new ServerBootstrap();
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
-        final TransportObserver observer = config.transportObserver();
-        ChannelSet channelSet = new ChannelSet(executionContext.executor(),
-                observer != null ? observer::onNewConnection : null);
+        final TransportObserver transportObserver = config.transportObserver();
+        ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -108,8 +108,14 @@ public final class TcpServerBinder {
                         ((ReferenceCounted) msg).release();
                     }
                 }
-                if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
-                    LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
+                if (msg instanceof Channel) {
+                    Channel channel = (Channel) msg;
+                    if (channelSet.addIfAbsent(channel)) {
+                        assignConnectionObserver(channel, transportObserver == null ? null :
+                                transportObserver.onNewConnection());
+                    } else {
+                        LOGGER.warn("Channel ({}) not added to ChannelSet", channel);
+                    }
                 }
                 ctx.fireChannelRead(msg);
             }

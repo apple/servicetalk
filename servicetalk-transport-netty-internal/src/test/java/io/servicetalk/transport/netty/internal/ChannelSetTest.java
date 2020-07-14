@@ -74,7 +74,7 @@ public class ChannelSetTest {
     private Attribute<AsyncCloseable> mockClosableAttribute;
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
-    private final ChannelSet fixture = new ChannelSet(immediate(), null);
+    private final ChannelSet fixture = new ChannelSet(immediate());
     private final Processor closeAsyncGracefullyCompletable = newCompletableProcessor();
     private final Processor closeAsyncCompletable = newCompletableProcessor();
     private GenericFutureListener<ChannelFuture> listener;
