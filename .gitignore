@@ -26,6 +26,15 @@ target/
 /.classpath
 /build/
 
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+#VS Code
+.vscode/
+
 # Mac
 .DS_Store
 
@@ -47,3 +56,9 @@ jenkins/
 # Temp files for scripts/update-copyright.sh
 /update-copyright-modified-files
 /update-copyright-temp
+
+
+
+
+
+
