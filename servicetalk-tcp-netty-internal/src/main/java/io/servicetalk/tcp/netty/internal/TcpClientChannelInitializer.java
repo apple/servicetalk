@@ -19,6 +19,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
+import io.servicetalk.transport.netty.internal.TransportObserverInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
@@ -49,6 +50,10 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      */
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
+
+        if (config.transportObserver() != null) {
+            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver()));
+        }
 
         if (config.idleTimeoutMs() != null) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));

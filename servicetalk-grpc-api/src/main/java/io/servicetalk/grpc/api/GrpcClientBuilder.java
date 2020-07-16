@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
@@ -63,6 +64,9 @@ public abstract class GrpcClientBuilder<U, R>
 
     @Override
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> transportObserver(TransportObserver transportObserver);
 
     @Override
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);

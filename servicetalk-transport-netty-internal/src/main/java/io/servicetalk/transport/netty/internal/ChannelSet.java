@@ -92,6 +92,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             if (added) {
                 channelMap.remove(channel.id(), channel);
                 channel.close();
+                return false;
             }
         } else if (added) {
             channel.closeFuture().addListener(remover);

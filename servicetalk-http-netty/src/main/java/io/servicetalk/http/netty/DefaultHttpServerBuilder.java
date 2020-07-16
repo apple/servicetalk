@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -78,6 +79,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder enableWireLogging(final String loggerName) {
         config.tcpConfig().enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
+        config.tcpConfig().transportObserver(transportObserver);
         return this;
     }
 

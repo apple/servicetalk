@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.event.Level;
 
@@ -121,6 +122,14 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     public abstract HttpServerBuilder enableWireLogging(String loggerName);
+
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
