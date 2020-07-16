@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
@@ -87,6 +88,12 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName) {
         httpServerBuilder.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder transportObserver(final TransportObserver transportObserver) {
+        httpServerBuilder.transportObserver(transportObserver);
         return this;
     }
 

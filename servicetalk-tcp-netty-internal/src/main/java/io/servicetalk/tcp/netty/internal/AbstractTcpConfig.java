@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
@@ -49,6 +50,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     private String wireLoggerName;
     @Nullable
+    private TransportObserver transportObserver;
+    @Nullable
     private SecurityConfig securityConfig;
 
     protected AbstractTcpConfig() {
@@ -59,6 +62,7 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
         wireLoggerName = from.wireLoggerName;
+        transportObserver = from.transportObserver;
         securityConfig = from.securityConfig;
     }
 
@@ -80,6 +84,11 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     final String wireLoggerName() {
         return wireLoggerName;
+    }
+
+    @Nullable
+    final TransportObserver transportObserver() {
+        return transportObserver;
     }
 
     @Nullable
@@ -126,6 +135,15 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
      */
     public final void enableWireLogging(final String loggerName) {
         wireLoggerName = requireNonNull(loggerName);
+    }
+
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     */
+    public final void transportObserver(final TransportObserver transportObserver) {
+        this.transportObserver = requireNonNull(transportObserver);
     }
 
     /**

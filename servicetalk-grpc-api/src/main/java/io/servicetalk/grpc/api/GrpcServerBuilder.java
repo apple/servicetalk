@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +119,14 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder enableWireLogging(String loggerName);
+
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
