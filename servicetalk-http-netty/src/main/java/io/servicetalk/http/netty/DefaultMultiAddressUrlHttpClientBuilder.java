@@ -52,6 +52,7 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -97,6 +98,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
     private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
+    @Nullable
+    private Function<HostAndPort, TransportObserver> transportObserverFactory;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -110,7 +113,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, transportObserverFactory);
 
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
 
@@ -227,17 +230,21 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
-        private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
+        private final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
+        @Nullable
+        private final Function<HostAndPort, TransportObserver> transportObserverFactory;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
+                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction,
+                @Nullable final Function<HostAndPort, TransportObserver> transportObserverFactory) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.sslConfigFunction = sslConfigFunction;
+            this.transportObserverFactory = transportObserverFactory;
         }
 
         @Override
@@ -261,6 +268,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             if (clientFilterFactory != null) {
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
+            }
+
+            if (transportObserverFactory != null) {
+                buildContext.builder.transportObserver(transportObserverFactory.apply(urlKey.hostAndPort));
             }
 
             return buildContext.build();
@@ -359,6 +370,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> transportObserver(
+            final Function<HostAndPort, TransportObserver> transportObserverFactory) {
+        this.transportObserverFactory = requireNonNull(transportObserverFactory);
         return this;
     }
 

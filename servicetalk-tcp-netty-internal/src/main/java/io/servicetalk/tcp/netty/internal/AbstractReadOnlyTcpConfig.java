@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
@@ -44,7 +45,9 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     private final FlushStrategy flushStrategy;
     @Nullable
     private final WireLoggingInitializer wireLoggingInitializer;
-    private boolean alpnConfigured;
+    @Nullable
+    private final TransportObserver transportObserver;
+    private final boolean alpnConfigured;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from,
                                         final boolean alpnConfigured) {
@@ -53,6 +56,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
         flushStrategy = from.flushStrategy();
         final String wireLoggerName = from.wireLoggerName();
         wireLoggingInitializer = wireLoggerName != null ? new WireLoggingInitializer(wireLoggerName) : null;
+        transportObserver = from.transportObserver();
         this.alpnConfigured = alpnConfigured;
     }
 
@@ -93,6 +97,16 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     public final WireLoggingInitializer wireLoggingInitializer() {
         return wireLoggingInitializer;
+    }
+
+    /**
+     * Returns the {@link TransportObserver} if any for all channels.
+     *
+     * @return the {@link TransportObserver} if any
+     */
+    @Nullable
+    public final TransportObserver transportObserver() {
+        return transportObserver;
     }
 
     /**

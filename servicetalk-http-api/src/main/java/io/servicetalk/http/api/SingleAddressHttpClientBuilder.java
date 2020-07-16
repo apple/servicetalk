@@ -23,6 +23,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -54,6 +55,9 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> transportObserver(TransportObserver transportObserver);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
