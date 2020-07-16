@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -26,10 +25,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.util.AttributeKey.newInstance;
 
-/**
- * Utilities for {@link TransportObserver}.
- */
-public final class TransportObserverUtils {
+final class TransportObserverUtils {
 
     private static final AttributeKey<ConnectionObserver> CONNECTION_OBSERVER = newInstance("ConnectionObserver");
     private static final AttributeKey<Throwable> CONNECTION_ERROR = newInstance("ConnectionError");

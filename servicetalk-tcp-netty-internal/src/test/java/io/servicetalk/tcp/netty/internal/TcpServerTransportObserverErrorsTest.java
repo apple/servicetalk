@@ -28,12 +28,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -69,8 +71,8 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     }
 
     @Parameters(name = "errorSource={0}")
-    public static ErrorSource[] getErrorSources() {
-        return ErrorSource.values();
+    public static Collection<ErrorSource> getErrorSources() {
+        return singletonList(ErrorSource.PIPELINE);
     }
 
     @Override
