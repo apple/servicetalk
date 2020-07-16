@@ -44,7 +44,12 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
-    @Override
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     * @return {@code this}.
+     */
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> transportObserver(
             TransportObserver transportObserver);
 

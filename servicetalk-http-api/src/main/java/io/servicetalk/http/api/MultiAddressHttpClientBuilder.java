@@ -64,10 +64,16 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> transportObserver(TransportObserver transportObserver);
-
-    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    /**
+     * Sets a factory for {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserverFactory A factory that creates a {@link TransportObserver} per {@link HostAndPort}.
+     * @return {@code this}.
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> transportObserver(
+            Function<HostAndPort, TransportObserver> transportObserverFactory);
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.

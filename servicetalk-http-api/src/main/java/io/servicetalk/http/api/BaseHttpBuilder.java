@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.TransportObserver;
 
 import org.slf4j.event.Level;
 
@@ -81,14 +80,6 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @return {@code this}.
      */
     public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName);
-
-    /**
-     * Sets a {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> transportObserver(TransportObserver transportObserver);
 
     /**
      * Configurations of various HTTP protocol versions.
