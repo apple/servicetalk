@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecurityHandshakeObserverHandler;
+
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -37,6 +39,7 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     private final int hostnameVerificationPort;
     private final SslContext sslContext;
     private final boolean deferSslHandler;
+    private final boolean observable;
 
     /**
      * New instance.
@@ -48,22 +51,22 @@ public class SslClientChannelInitializer implements ChannelInitializer {
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
                                        @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
-                                       final boolean deferSslHandler) {
+                                       final boolean deferSslHandler, final boolean observable) {
         this.sslContext = requireNonNull(sslContext);
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
         this.hostnameVerificationHost = hostnameVerificationHost;
         this.hostnameVerificationPort = hostnameVerificationPort;
         this.deferSslHandler = deferSslHandler;
+        this.observable = observable;
     }
 
     @Override
     public void init(Channel channel) {
         final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
                 hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
-        if (deferSslHandler) {
-            channel.pipeline().addLast(new DeferSslHandler(channel, sslHandler));
-        } else {
-            channel.pipeline().addLast(sslHandler);
+        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, observable) : sslHandler);
+        if (observable) {
+            channel.pipeline().addLast(SecurityHandshakeObserverHandler.INSTANCE);
         }
     }
 }

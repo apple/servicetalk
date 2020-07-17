@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
@@ -22,6 +23,9 @@ import io.servicetalk.transport.netty.internal.TransportObserverInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
+
+import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecureSide.NONE;
+import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecureSide.SERVER;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -38,8 +42,11 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (config.transportObserver() != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver()));
+        final boolean isSslEnabled = config.sslContext() != null || config.domainNameMapping() != null;
+        final TransportObserver transportObserver = config.transportObserver();
+        if (transportObserver != null) {
+            delegate = delegate.andThen(new TransportObserverInitializer(transportObserver,
+                    isSslEnabled ? SERVER : NONE));
         }
 
         if (config.idleTimeoutMs() != null) {
@@ -47,9 +54,11 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         }
 
         if (config.domainNameMapping() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping(),
+                    transportObserver != null));
         } else if (config.sslContext() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext(),
+                    transportObserver != null));
         }
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
