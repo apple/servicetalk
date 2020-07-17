@@ -52,6 +52,7 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     private ChannelInitializer channelInitializer = channel -> { };
 
     public TcpServerTransportObserverErrorsTest(ErrorSource errorSource) {
+        super(false);
         this.errorSource = errorSource;
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
@@ -90,7 +91,8 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     public void testConnectionClosed() throws Exception {
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
-        verify(serverTransportObserver, await()).onNewConnection();
+        serverConnectionReceived.await();
+        verify(serverTransportObserver).onNewConnection();
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
                 break;
@@ -108,7 +110,8 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
         }
         connection.onClose().toFuture().get();
         verify(clientConnectionObserver).connectionClosed();
-        verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
+        serverConnectionClosed.await();
+        verify(serverConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(serverTransportObserver, serverConnectionObserver);
     }
 }
