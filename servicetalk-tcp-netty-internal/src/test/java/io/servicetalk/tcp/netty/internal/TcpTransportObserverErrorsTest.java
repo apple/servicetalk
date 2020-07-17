@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(Parameterized.class)
-public final class TcpServerTransportObserverErrorsTest extends AbstractTransportObserverTest {
+public final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
 
     private enum ErrorSource {
         CONNECTION_ACCEPTOR,
@@ -51,8 +51,7 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     private final ErrorSource errorSource;
     private ChannelInitializer channelInitializer = channel -> { };
 
-    public TcpServerTransportObserverErrorsTest(ErrorSource errorSource) {
-        super(false);
+    public TcpTransportObserverErrorsTest(ErrorSource errorSource) {
         this.errorSource = errorSource;
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
@@ -91,8 +90,7 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
     public void testConnectionClosed() throws Exception {
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
-        serverConnectionReceived.await();
-        verify(serverTransportObserver).onNewConnection();
+        verify(serverTransportObserver, await()).onNewConnection();
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
                 break;
@@ -110,8 +108,7 @@ public final class TcpServerTransportObserverErrorsTest extends AbstractTranspor
         }
         connection.onClose().toFuture().get();
         verify(clientConnectionObserver).connectionClosed();
-        serverConnectionClosed.await();
-        verify(serverConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
+        verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(serverTransportObserver, serverConnectionObserver);
     }
 }

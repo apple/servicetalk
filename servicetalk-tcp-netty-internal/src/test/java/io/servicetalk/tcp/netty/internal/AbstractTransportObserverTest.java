@@ -16,23 +16,19 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
-import java.util.concurrent.CountDownLatch;
+import org.mockito.Mockito;
+import org.mockito.verification.VerificationWithTimeout;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class AbstractTransportObserverTest extends AbstractTcpServerTest {
-
-    protected final boolean secure;
 
     protected final TransportObserver clientTransportObserver;
     protected final ConnectionObserver clientConnectionObserver;
@@ -42,12 +38,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
     protected final ConnectionObserver serverConnectionObserver;
     protected final SecurityHandshakeObserver serverSecurityHandshakeObserver;
 
-    protected final CountDownLatch serverConnectionReceived = new CountDownLatch(1);
-    protected final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
-
-    public AbstractTransportObserverTest(boolean secure) {
-        this.secure = secure;
-
+    protected AbstractTransportObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "clientSecurityHandshakeObserver");
@@ -59,42 +50,39 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         serverSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "serverSecurityHandshakeObserver");
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
-
-        connectionAcceptor(ACCEPT_ALL);
-    }
-
-    @Override
-    void connectionAcceptor(ConnectionAcceptor another) {
-        ConnectionAcceptor current = ctx -> {
-            serverConnectionReceived.countDown();
-            ctx.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
-            return completed();
-        };
-        super.connectionAcceptor(current.append(another));
     }
 
     @Override
     TcpClientConfig getTcpClientConfig() {
         final TcpClientConfig config = super.getTcpClientConfig();
         config.transportObserver(clientTransportObserver);
-        if (secure) {
-            ClientSecurityConfig securityConfig = new ClientSecurityConfig("foo", -1);
-            securityConfig.disableHostnameVerification();
-            securityConfig.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
-            config.secure(securityConfig.asReadOnly());
-        }
+        return config;
+    }
+
+    static ClientSecurityConfig defaultClientSecurityConfig() {
+        ClientSecurityConfig config = new ClientSecurityConfig("foo", -1);
+        config.disableHostnameVerification();
+        config.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
         return config;
     }
 
     @Override
-    final TcpServerConfig getTcpServerConfig() {
+    TcpServerConfig getTcpServerConfig() {
         final TcpServerConfig config = super.getTcpServerConfig();
         config.transportObserver(serverTransportObserver);
-        if (secure) {
-            ServerSecurityConfig securityConfig = new ServerSecurityConfig();
-            securityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
-            config.secure(securityConfig.asReadOnly());
-        }
         return config;
+    }
+
+    static ServerSecurityConfig defaultServerSecurityConfig() {
+        ServerSecurityConfig config = new ServerSecurityConfig();
+        config.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+        return config;
+    }
+
+    /**
+     * Because the client is just a trigger for server-side events we need to await for invocations to verify them.
+     */
+    static VerificationWithTimeout await() {
+        return Mockito.timeout(Long.MAX_VALUE);
     }
 }
