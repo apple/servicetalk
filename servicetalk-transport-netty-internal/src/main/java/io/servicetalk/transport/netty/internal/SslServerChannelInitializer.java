@@ -47,6 +47,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
      * New instance.
      *
      * @param sslContext to use for configuring SSL.
+     * @param observable {@code true} to enable observability for {@link SslHandler}.
      */
     public SslServerChannelInitializer(final SslContext sslContext, final boolean observable) {
         this.sslContext = requireNonNull(sslContext);
@@ -58,6 +59,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
      * New instance.
      *
      * @param domainNameMapping to use for configuring SSL.
+     * @param observable {@code true} to enable observability for {@link SslHandler}.
      */
     public SslServerChannelInitializer(final DomainNameMapping<SslContext> domainNameMapping,
                                        final boolean observable) {
