@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
@@ -59,10 +60,11 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
-    static ClientSecurityConfig defaultClientSecurityConfig() {
+    static ClientSecurityConfig defaultClientSecurityConfig(SslProvider provider) {
         ClientSecurityConfig config = new ClientSecurityConfig("foo", -1);
         config.disableHostnameVerification();
         config.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
+        config.provider(provider);
         return config;
     }
 
@@ -73,9 +75,10 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
-    static ServerSecurityConfig defaultServerSecurityConfig() {
+    static ServerSecurityConfig defaultServerSecurityConfig(SslProvider provider) {
         ServerSecurityConfig config = new ServerSecurityConfig();
         config.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+        config.provider(provider);
         return config;
     }
 

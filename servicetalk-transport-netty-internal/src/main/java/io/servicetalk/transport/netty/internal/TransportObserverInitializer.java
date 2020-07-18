@@ -32,6 +32,7 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.securityHandshakeObserver;
 import static java.util.Objects.requireNonNull;
@@ -84,7 +85,7 @@ public final class TransportObserverInitializer implements ChannelInitializer {
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            if (secure == SecureSide.CLIENT && ctx.channel().isActive()) {
+            if (secure != SecureSide.NONE && ctx.channel().isActive()) {
                 reportSecurityHandshakeStarting(ctx.channel());
             }
         }
@@ -95,14 +96,6 @@ public final class TransportObserverInitializer implements ChannelInitializer {
                 reportSecurityHandshakeStarting(ctx.channel());
             }
             ctx.fireChannelActive();
-        }
-
-        @Override
-        public void read(final ChannelHandlerContext ctx) {
-            if (secure == SecureSide.SERVER) {
-                reportSecurityHandshakeStarting(ctx.channel());
-            }
-            ctx.read();
         }
 
         void reportSecurityHandshakeStarting(final Channel channel) {
@@ -159,10 +152,14 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
             if (evt instanceof SslHandshakeCompletionEvent) {
-                final SecurityHandshakeObserver observer = securityHandshakeObserver(ctx.channel());
+                final Channel channel = ctx.channel();
+                final SecurityHandshakeObserver observer = securityHandshakeObserver(channel);
                 assert observer != null;
                 final SSLSession sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        observer::handshakeFailed);
+                        cause -> {
+                            observer.handshakeFailed(cause);
+                            assignConnectionError(channel, cause);
+                        });
                 if (sslSession != null) {
                     observer.handshakeComplete(sslSession);
                 }

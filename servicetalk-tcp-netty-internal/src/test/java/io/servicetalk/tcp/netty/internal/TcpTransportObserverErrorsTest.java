@@ -109,6 +109,7 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         connection.onClose().toFuture().get();
         verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
-        verifyNoMoreInteractions(serverTransportObserver, serverConnectionObserver);
+        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
+                serverTransportObserver, serverConnectionObserver);
     }
 }
