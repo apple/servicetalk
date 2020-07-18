@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -31,6 +32,9 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -290,23 +294,37 @@ public abstract class GrpcServerBuilder {
 
     private void appendCatchAllFilterIfRequired() {
         if (!appendedCatchAllFilter) {
-            doAppendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
-                @Override
-                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest request,
-                                                            final StreamingHttpResponseFactory responseFactory) {
-                    final Single<StreamingHttpResponse> handle;
-                    try {
-                        handle = super.handle(ctx, request, responseFactory);
-                    } catch (Throwable cause) {
-                        return succeeded(newErrorResponse(responseFactory, cause,
-                                ctx.executionContext().bufferAllocator()));
-                    }
-                    return handle.recoverWith(cause -> succeeded(newErrorResponse(responseFactory, cause,
-                            ctx.executionContext().bufferAllocator())));
-                }
-            });
+            doAppendHttpServiceFilter(CatchAllHttpServiceFilter::new);
             appendedCatchAllFilter = true;
+        }
+    }
+
+    private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
+        private static final Logger LOGGER = LoggerFactory.getLogger(CatchAllHttpServiceFilter.class);
+
+        CatchAllHttpServiceFilter(final StreamingHttpService service) {
+            super(service);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory responseFactory) {
+            final Single<StreamingHttpResponse> handle;
+            try {
+                handle = delegate().handle(ctx, request, responseFactory);
+            } catch (Throwable cause) {
+                return convertToGrpcErrorResponse(ctx, responseFactory, cause);
+            }
+            return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+        }
+
+        private Single<StreamingHttpResponse> convertToGrpcErrorResponse(
+                final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
+                final Throwable cause) {
+            LOGGER.error("Unexpected error from service {}.", delegate(), cause);
+            return succeeded(newErrorResponse(responseFactory, cause,
+                    ctx.executionContext().bufferAllocator()));
         }
     }
 }
