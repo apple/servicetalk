@@ -28,19 +28,19 @@ import static io.servicetalk.transport.netty.internal.TransportObserverUtils.rep
 public final class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
-    private final boolean observable;
+    private final boolean observeSsl;
 
-    DeferSslHandler(final Channel channel, final SslHandler handler, final boolean observable) {
+    DeferSslHandler(final Channel channel, final SslHandler handler, final boolean observeSsl) {
         this.channel = channel;
         this.handler = handler;
-        this.observable = observable;
+        this.observeSsl = observeSsl;
     }
 
     /**
      * Indicates that we are ready to stop deferring, and add the deferred {@link SslHandler}.
      */
     public void ready() {
-        if (observable) {
+        if (observeSsl) {
             reportSecurityHandshakeStarting(channel);
         }
         channel.pipeline().replace(this, null, handler);

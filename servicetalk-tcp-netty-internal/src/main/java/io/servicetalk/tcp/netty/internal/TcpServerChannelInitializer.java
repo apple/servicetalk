@@ -24,9 +24,6 @@ import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 
-import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecureSide.NONE;
-import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecureSide.SERVER;
-
 /**
  * {@link ChannelInitializer} for TCP.
  */
@@ -42,11 +39,10 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        final boolean isSslEnabled = config.sslContext() != null || config.domainNameMapping() != null;
         final TransportObserver transportObserver = config.transportObserver();
         if (transportObserver != null) {
             delegate = delegate.andThen(new TransportObserverInitializer(transportObserver,
-                    isSslEnabled ? SERVER : NONE));
+                    config.sslContext() != null || config.domainNameMapping() != null));
         }
 
         if (config.idleTimeoutMs() != null) {

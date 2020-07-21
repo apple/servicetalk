@@ -42,27 +42,19 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TransportObserverInitializer implements ChannelInitializer {
 
-    /**
-     * Tells which side is using secure connection.
-     */
-    public enum SecureSide {
-        CLIENT,
-        SERVER,
-        NONE
-    }
-
     private final TransportObserver transportObserver;
-    private final SecureSide secureSide;
+    private final boolean secure;
 
     /**
      * Creates a new instance.
      *
      * @param transportObserver {@link TransportObserver} to initialize for the channel
-     * @param secureSide tells which side is using secure connection
+     * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final TransportObserver transportObserver, final SecureSide secureSide) {
+    public TransportObserverInitializer(final TransportObserver transportObserver,
+                                        final boolean secure) {
         this.transportObserver = requireNonNull(transportObserver);
-        this.secureSide = secureSide;
+        this.secure = secure;
     }
 
     @Override
@@ -70,38 +62,38 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         final ConnectionObserver observer = requireNonNull(transportObserver.onNewConnection());
         assignConnectionObserver(channel, observer);
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new TransportObserverHandler(observer, secureSide));
+        pipeline.addLast(new TransportObserverHandler(observer, secure));
     }
 
     private static final class TransportObserverHandler extends ChannelDuplexHandler {
         private final ConnectionObserver observer;
-        private final SecureSide secure;
-        private boolean handshakeStarted;
+        private final boolean secure;
+        private boolean handshakeStartNotified;
 
-        TransportObserverHandler(final ConnectionObserver observer, final SecureSide secure) {
+        TransportObserverHandler(final ConnectionObserver observer, final boolean secure) {
             this.observer = observer;
             this.secure = secure;
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            if (secure != SecureSide.NONE && ctx.channel().isActive()) {
+            if (secure && ctx.channel().isActive()) {
                 reportSecurityHandshakeStarting(ctx.channel());
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            if (secure == SecureSide.CLIENT) {
+            if (secure) {
                 reportSecurityHandshakeStarting(ctx.channel());
             }
             ctx.fireChannelActive();
         }
 
         void reportSecurityHandshakeStarting(final Channel channel) {
-            if (!handshakeStarted) {
+            if (!handshakeStartNotified) {
+                handshakeStartNotified = true;
                 TransportObserverUtils.reportSecurityHandshakeStarting(channel);
-                handshakeStarted = true;
             }
         }
 
