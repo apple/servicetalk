@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecurityHandshakeObserverHandler;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -41,18 +39,15 @@ public class SslServerChannelInitializer implements ChannelInitializer {
     private final DomainNameMapping<SslContext> domainNameMapping;
     @Nullable
     private final SslContext sslContext;
-    private final boolean observable;
 
     /**
      * New instance.
      *
      * @param sslContext to use for configuring SSL.
-     * @param observable {@code true} to enable observability for {@link SslHandler}.
      */
-    public SslServerChannelInitializer(final SslContext sslContext, final boolean observable) {
+    public SslServerChannelInitializer(final SslContext sslContext) {
         this.sslContext = requireNonNull(sslContext);
         domainNameMapping = null;
-        this.observable = observable;
     }
 
     /**
@@ -65,7 +60,6 @@ public class SslServerChannelInitializer implements ChannelInitializer {
                                        final boolean observable) {
         this.domainNameMapping = requireNonNull(domainNameMapping);
         sslContext = null;
-        this.observable = observable;
     }
 
     @Override
@@ -76,9 +70,6 @@ public class SslServerChannelInitializer implements ChannelInitializer {
         } else {
             assert domainNameMapping != null;
             channel.pipeline().addLast(new SniHandlerWithPooledAllocator(domainNameMapping));
-        }
-        if (observable) {
-            channel.pipeline().addLast(SecurityHandshakeObserverHandler.INSTANCE);
         }
     }
 

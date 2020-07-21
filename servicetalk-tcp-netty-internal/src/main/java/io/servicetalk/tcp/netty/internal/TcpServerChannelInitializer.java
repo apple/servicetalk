@@ -53,8 +53,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping(),
                     transportObserver != null));
         } else if (config.sslContext() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext(),
-                    transportObserver != null));
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();

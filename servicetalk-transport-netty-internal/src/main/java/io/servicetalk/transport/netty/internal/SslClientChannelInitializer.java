@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.TransportObserverInitializer.SecurityHandshakeObserverHandler;
-
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -66,8 +64,5 @@ public class SslClientChannelInitializer implements ChannelInitializer {
         final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
                 hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
         channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, observable) : sslHandler);
-        if (observable) {
-            channel.pipeline().addLast(SecurityHandshakeObserverHandler.INSTANCE);
-        }
     }
 }

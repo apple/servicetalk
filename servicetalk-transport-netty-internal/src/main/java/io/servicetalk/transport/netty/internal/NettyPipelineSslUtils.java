@@ -15,6 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
@@ -23,6 +26,9 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
+
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.securityHandshakeObserver;
 
 /**
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
@@ -55,17 +61,33 @@ public final class NettyPipelineSslUtils {
     public static SSLSession extractSslSession(ChannelPipeline pipeline,
                                                SslHandshakeCompletionEvent sslEvent,
                                                Consumer<Throwable> failureConsumer) {
+        final Channel channel = pipeline.channel();
+        final SecurityHandshakeObserver securityObserver = securityHandshakeObserver(channel);
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
-                return sslHandler.engine().getSession();
+                final SSLSession session = sslHandler.engine().getSession();
+                if (securityObserver != null) {
+                    securityObserver.handshakeComplete(session);
+                }
+                return session;
             } else {
-                failureConsumer.accept(new IllegalStateException("Unable to find " + SslHandler.class.getName() +
-                        " in the pipeline."));
+                deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " +
+                        SslHandler.class.getName() + " in the pipeline."), securityObserver, channel);
             }
         } else {
-            failureConsumer.accept(sslEvent.cause());
+            deliverFailureCause(failureConsumer, sslEvent.cause(), securityObserver, channel);
         }
         return null;
+    }
+
+    private static void deliverFailureCause(final Consumer<Throwable> failureConsumer, final Throwable cause,
+                                            @Nullable final SecurityHandshakeObserver securityObserver,
+                                            final Channel channel) {
+        if (securityObserver != null) {
+            securityObserver.handshakeFailed(cause);
+            assignConnectionError(channel, cause);
+        }
+        failureConsumer.accept(cause);
     }
 }
