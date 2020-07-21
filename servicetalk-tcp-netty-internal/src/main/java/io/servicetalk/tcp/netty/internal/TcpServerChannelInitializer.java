@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
@@ -39,9 +38,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        final TransportObserver transportObserver = config.transportObserver();
-        if (transportObserver != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(transportObserver,
+        if (config.transportObserver() != null) {
+            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver(),
                     config.sslContext() != null || config.domainNameMapping() != null));
         }
 
@@ -50,8 +48,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         }
 
         if (config.domainNameMapping() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping(),
-                    transportObserver != null));
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
         } else if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
