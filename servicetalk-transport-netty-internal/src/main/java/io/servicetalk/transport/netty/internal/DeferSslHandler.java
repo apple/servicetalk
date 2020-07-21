@@ -25,7 +25,7 @@ import static io.servicetalk.transport.netty.internal.TransportObserverUtils.rep
 /**
  * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
  */
-public final class DeferSslHandler extends ChannelDuplexHandler {
+public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
     private final boolean observeSsl;
