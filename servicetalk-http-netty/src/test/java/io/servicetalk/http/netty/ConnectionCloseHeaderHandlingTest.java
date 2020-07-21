@@ -208,13 +208,17 @@ public class ConnectionCloseHeaderHandlingTest {
             this.noResponseContent = noResponseContent;
         }
 
-        @Parameters(name = "viaProxy={0}, awaitRequestPayload={1}, awaitResponsePayload={2}, " +
+        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}, awaitResponsePayload={2}, " +
                 "requestInitiatesClosure={3}, noRequestContent={4}, noResponseContent={5}")
         public static Collection<Boolean[]> data() {
             Collection<Boolean[]> data = new ArrayList<>();
             for (boolean viaProxy : TRUE_FALSE) {
                 for (boolean awaitRequestPayload : TRUE_FALSE) {
                     for (boolean awaitResponsePayload : TRUE_FALSE) {
+                        if (awaitRequestPayload && awaitResponsePayload) {
+                            // Skip configuration that will cause a deadlock.
+                            continue;
+                        }
                         for (boolean requestInitiatesClosure : TRUE_FALSE) {
                             for (boolean noRequestContent : TRUE_FALSE) {
                                 for (boolean noResponseContent : TRUE_FALSE) {
@@ -231,7 +235,6 @@ public class ConnectionCloseHeaderHandlingTest {
 
         @Test
         public void testConnectionClosure() throws Exception {
-            assumeFalse("Skip states that will cause deadlock", awaitRequestPayload && awaitResponsePayload);
             // FIXME: remove the following assume when the NettyPipelinedConnection bug is fixed:
             assumeFalse("Temporarily skip states that unexpectedly cause deadlock",
                     !awaitRequestPayload && awaitResponsePayload && !noRequestContent);
@@ -277,7 +280,7 @@ public class ConnectionCloseHeaderHandlingTest {
             super(viaProxy, awaitRequestPayload);
         }
 
-        @Parameters(name = "viaProxy={0}, awaitRequestPayload={1}")
+        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}")
         public static Collection<Boolean[]> data() {
             return asList(
                     new Boolean[] {false, false},
