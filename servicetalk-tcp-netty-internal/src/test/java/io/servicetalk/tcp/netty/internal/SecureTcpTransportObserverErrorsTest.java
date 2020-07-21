@@ -125,7 +125,7 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
             case NOT_MATCHING_PROTOCOLS:
                 clientSecurityConfig.protocols("TLSv1.2");
                 clientConfig.secure(clientSecurityConfig);
-                serverSecurityConfig.protocols("TLSv1.3");
+                serverSecurityConfig.protocols("TLSv1.1");
                 serverConfig.secure(serverSecurityConfig);
                 break;
             case NOT_MATCHING_CIPHERS:
