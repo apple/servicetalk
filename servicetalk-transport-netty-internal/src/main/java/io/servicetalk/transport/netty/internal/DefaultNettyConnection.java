@@ -69,7 +69,7 @@ import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEAB
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -580,7 +580,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // the current netty version) gets triggered reliably at the appropriate time.
                 connection.nettyChannelPublisher.channelInboundClosed();
             } else if (evt instanceof SslHandshakeCompletionEvent) {
-                connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
+                connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
                         this::tryFailSubscriber);
                 if (subscriber != null) {
                     assert waitForSslHandshake;

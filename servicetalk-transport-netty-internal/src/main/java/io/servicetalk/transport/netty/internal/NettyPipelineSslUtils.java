@@ -49,8 +49,8 @@ public final class NettyPipelineSslUtils {
     }
 
     /**
-     * Extract the {@link SSLSession} from the {@link ChannelPipeline} if the {@link SslHandshakeCompletionEvent}
-     * is successful.
+     * Extracts the {@link SSLSession} from the {@link ChannelPipeline} if the {@link SslHandshakeCompletionEvent}
+     * is successful and reports the result to {@link SecurityHandshakeObserver} if available.
      *
      * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
      * @param sslEvent the event indicating a SSL/TLS handshake completed.
@@ -58,9 +58,9 @@ public final class NettyPipelineSslUtils {
      * @return The {@link SSLSession} or {@code null} if none can be found.
      */
     @Nullable
-    public static SSLSession extractSslSession(ChannelPipeline pipeline,
-                                               SslHandshakeCompletionEvent sslEvent,
-                                               Consumer<Throwable> failureConsumer) {
+    public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
+                                                        SslHandshakeCompletionEvent sslEvent,
+                                                        Consumer<Throwable> failureConsumer) {
         final Channel channel = pipeline.channel();
         final SecurityHandshakeObserver securityObserver = securityHandshakeObserver(channel);
         if (sslEvent.isSuccess()) {
