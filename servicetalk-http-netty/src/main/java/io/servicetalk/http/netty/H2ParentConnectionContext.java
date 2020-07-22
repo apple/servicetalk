@@ -53,7 +53,7 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
-import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
@@ -215,8 +215,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             try {
                 if (evt instanceof SslHandshakeCompletionEvent) {
-                    parentContext.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                            this::tryFailSubscriber);
+                    parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber);
                     tryCompleteSubscriber();
                 }
             } finally {

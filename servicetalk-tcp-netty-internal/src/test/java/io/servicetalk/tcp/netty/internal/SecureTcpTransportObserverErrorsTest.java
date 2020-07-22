@@ -1,0 +1,217 @@
+/*
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.tcp.netty.internal;
+
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
+import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
+
+import io.netty.handler.ssl.NotSslRecordException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLProtocolException;
+
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.REQUIRE;
+import static java.util.Collections.singletonList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+@RunWith(Parameterized.class)
+public final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
+
+    private enum ErrorReason {
+        SECURE_CLIENT_TO_PLAIN_SERVER,
+        PLAIN_CLIENT_TO_SECURE_SERVER,
+        WRONG_HOSTNAME_VERIFICATION,
+        UNTRUSTED_SERVER_CERTIFICATE,
+        UNTRUSTED_CLIENT_CERTIFICATE,
+        MISSED_CLIENT_CERTIFICATE,
+        NOT_MATCHING_PROTOCOLS,
+        NOT_MATCHING_CIPHERS,
+    }
+
+    private final ErrorReason errorReason;
+    private final SslProvider clientProvider;
+    private final SslProvider serverProvider;
+
+    private final TcpClientConfig clientConfig = super.getTcpClientConfig();
+    private final TcpServerConfig serverConfig = super.getTcpServerConfig();
+
+    private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
+
+    public SecureTcpTransportObserverErrorsTest(ErrorReason errorReason,
+                                                SslProvider clientProvider, SslProvider serverProvider) {
+        this.errorReason = errorReason;
+        this.clientProvider = clientProvider;
+        this.serverProvider = serverProvider;
+        // clientConfig.enableWireLogging("servicetalk-tests-client-wire-logger");
+        // serverConfig.enableWireLogging("servicetalk-tests-server-wire-logger");
+        ClientSecurityConfig clientSecurityConfig = defaultClientSecurityConfig(clientProvider);
+        ServerSecurityConfig serverSecurityConfig = defaultServerSecurityConfig(serverProvider);
+        switch (errorReason) {
+            case SECURE_CLIENT_TO_PLAIN_SERVER:
+                clientConfig.secure(clientSecurityConfig);
+                // In this scenario server may close the connection with or without an exception, depending on OS events
+                // Using CountDownLatch to verify that any of these two methods was invoked:
+                doAnswer(__ -> {
+                    serverConnectionClosed.countDown();
+                    return null;
+                    // In most cases it closes with
+                    // io.netty.channel.unix.Errors$NativeIoException: readAddress(..) failed: Connection reset by peer
+                }).when(serverConnectionObserver).connectionClosed(any(IOException.class));
+                doAnswer(__ -> {
+                    serverConnectionClosed.countDown();
+                    return null;
+                    // But sometimes netty may close the connection before we generate StacklessClosedChannelException
+                    // in io.servicetalk.transport.netty.internal.DefaultNettyConnection.channelInactive(...)
+                }).when(serverConnectionObserver).connectionClosed();
+                break;
+            case PLAIN_CLIENT_TO_SECURE_SERVER:
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case WRONG_HOSTNAME_VERIFICATION:
+                clientSecurityConfig.hostNameVerification("HTTPS", "foo");
+                clientConfig.secure(clientSecurityConfig);
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case UNTRUSTED_SERVER_CERTIFICATE:
+                clientSecurityConfig.trustManager(() -> null);
+                clientConfig.secure(clientSecurityConfig);
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case UNTRUSTED_CLIENT_CERTIFICATE:
+                clientSecurityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+                clientConfig.secure(clientSecurityConfig);
+                serverSecurityConfig.clientAuth(REQUIRE);
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case MISSED_CLIENT_CERTIFICATE:
+                clientConfig.secure(clientSecurityConfig);
+                serverSecurityConfig.clientAuth(REQUIRE);
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case NOT_MATCHING_PROTOCOLS:
+                clientSecurityConfig.protocols("TLSv1.2");
+                clientConfig.secure(clientSecurityConfig);
+                serverSecurityConfig.protocols("TLSv1.1");
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            case NOT_MATCHING_CIPHERS:
+                clientSecurityConfig.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"));
+                clientConfig.secure(clientSecurityConfig);
+                serverSecurityConfig.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"));
+                serverConfig.secure(serverSecurityConfig);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported ErrorSource: " + errorReason);
+        }
+    }
+
+    @Parameters(name = "errorReason={0}, clientProvider={1}, serverProvider={2}")
+    public static Collection<Object[]> data() {
+        Collection<Object[]> data = new ArrayList<>();
+        for (ErrorReason reason : ErrorReason.values()) {
+            data.add(new Object[] {reason, JDK, JDK});
+            data.add(new Object[] {reason, JDK, OPENSSL});
+            data.add(new Object[] {reason, OPENSSL, JDK});
+            data.add(new Object[] {reason, OPENSSL, OPENSSL});
+        }
+        return data;
+    }
+
+    @Override
+    TcpClientConfig getTcpClientConfig() {
+        return clientConfig;
+    }
+
+    @Override
+    TcpServerConfig getTcpServerConfig() {
+        return serverConfig;
+    }
+
+    @Test
+    public void testSslErrors() throws Exception {
+        CountDownLatch clientConnected = new CountDownLatch(1);
+        AtomicReference<NettyConnection<Buffer, Buffer>> connection = new AtomicReference<>();
+        client.connect(CLIENT_CTX, serverAddress).subscribe(c -> {
+            connection.set(c);
+            clientConnected.countDown();
+        });
+        verify(clientTransportObserver, await()).onNewConnection();
+        verify(serverTransportObserver, await()).onNewConnection();
+        switch (errorReason) {
+            case SECURE_CLIENT_TO_PLAIN_SERVER:
+                verify(clientConnectionObserver, await()).onSecurityHandshake();
+                if (clientProvider == JDK) {
+                    verify(clientSecurityHandshakeObserver, await()).handshakeFailed(any(SSLProtocolException.class));
+                    verify(clientConnectionObserver, await()).connectionClosed(any(SSLProtocolException.class));
+                } else {
+                    verify(clientSecurityHandshakeObserver, await()).handshakeFailed(any(SSLHandshakeException.class));
+                    verify(clientConnectionObserver, await()).connectionClosed(any(SSLHandshakeException.class));
+                }
+                serverConnectionClosed.await();
+                break;
+            case PLAIN_CLIENT_TO_SECURE_SERVER:
+                verify(serverConnectionObserver, await()).onSecurityHandshake();
+                clientConnected.await();
+                connection.get().write(from(DEFAULT_ALLOCATOR.fromAscii("Hello"))).toFuture().get();
+                if (serverProvider == JDK) {
+                    verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(NotSslRecordException.class));
+                    verify(serverConnectionObserver, await()).connectionClosed(any(NotSslRecordException.class));
+                } else {
+                    verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(SSLHandshakeException.class));
+                    verify(serverConnectionObserver, await()).connectionClosed(any(SSLHandshakeException.class));
+                }
+                verify(clientConnectionObserver, await()).connectionClosed();
+                break;
+            case WRONG_HOSTNAME_VERIFICATION:
+            case UNTRUSTED_SERVER_CERTIFICATE:
+            case UNTRUSTED_CLIENT_CERTIFICATE:
+            case MISSED_CLIENT_CERTIFICATE:
+            case NOT_MATCHING_PROTOCOLS:
+            case NOT_MATCHING_CIPHERS:
+                verify(clientConnectionObserver, await()).onSecurityHandshake();
+                verify(serverConnectionObserver, await()).onSecurityHandshake();
+                verify(clientSecurityHandshakeObserver, await()).handshakeFailed(any(SSLException.class));
+                verify(clientConnectionObserver, await()).connectionClosed(any(SSLException.class));
+                verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(SSLException.class));
+                verify(serverConnectionObserver, await()).connectionClosed(any(SSLException.class));
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported ErrorSource: " + errorReason);
+        }
+        verifyNoMoreInteractions(clientSecurityHandshakeObserver, serverSecurityHandshakeObserver);
+    }
+}
