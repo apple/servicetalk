@@ -20,22 +20,29 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslHandler;
 
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.reportSecurityHandshakeStarting;
+
 /**
  * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
  */
 public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
+    private final boolean observeSsl;
 
-    DeferSslHandler(final Channel channel, final SslHandler handler) {
+    DeferSslHandler(final Channel channel, final SslHandler handler, final boolean observeSsl) {
         this.channel = channel;
         this.handler = handler;
+        this.observeSsl = observeSsl;
     }
 
     /**
      * Indicates that we are ready to stop deferring, and add the deferred {@link SslHandler}.
      */
     public void ready() {
+        if (observeSsl) {
+            reportSecurityHandshakeStarting(channel);
+        }
         channel.pipeline().replace(this, null, handler);
     }
 }

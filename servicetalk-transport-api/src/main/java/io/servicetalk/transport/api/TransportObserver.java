@@ -21,7 +21,7 @@ package io.servicetalk.transport.api;
 public interface TransportObserver {
 
     /**
-     * Notifies when transport starts initializing a new network connection.
+     * Callback when transport starts initializing a new network connection.
      *
      * @return a new {@link ConnectionObserver} that provides visibility into events associated with a new connection
      */

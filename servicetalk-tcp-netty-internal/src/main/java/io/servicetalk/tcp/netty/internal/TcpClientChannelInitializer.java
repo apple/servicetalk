@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
@@ -51,19 +52,21 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (config.transportObserver() != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver()));
+        final SslContext sslContext = config.sslContext();
+        final TransportObserver transportObserver = config.transportObserver();
+        if (transportObserver != null) {
+            delegate = delegate.andThen(new TransportObserverInitializer(transportObserver,
+                    sslContext != null && !deferSslHandler));
         }
 
         if (config.idleTimeoutMs() != null) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
-        final SslContext sslContext = config.sslContext();
         if (sslContext != null) {
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort(), deferSslHandler));
+                    config.sslHostnameVerificationPort(), deferSslHandler, transportObserver != null));
         }
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();

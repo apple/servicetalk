@@ -39,7 +39,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.transportObserver() != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver()));
+            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver(),
+                    config.sslContext() != null || config.domainNameMapping() != null));
         }
 
         if (config.idleTimeoutMs() != null) {

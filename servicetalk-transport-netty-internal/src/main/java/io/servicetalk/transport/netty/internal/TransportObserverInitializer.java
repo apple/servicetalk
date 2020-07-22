@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
@@ -34,28 +35,58 @@ import static java.util.Objects.requireNonNull;
 public final class TransportObserverInitializer implements ChannelInitializer {
 
     private final TransportObserver transportObserver;
+    private final boolean secure;
 
     /**
      * Creates a new instance.
      *
      * @param transportObserver {@link TransportObserver} to initialize for the channel
+     * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final TransportObserver transportObserver) {
+    public TransportObserverInitializer(final TransportObserver transportObserver,
+                                        final boolean secure) {
         this.transportObserver = requireNonNull(transportObserver);
+        this.secure = secure;
     }
 
     @Override
     public void init(final Channel channel) {
         final ConnectionObserver observer = requireNonNull(transportObserver.onNewConnection());
         assignConnectionObserver(channel, observer);
-        channel.pipeline().addLast(new TransportObserverChannelHandler(observer));
+        final ChannelPipeline pipeline = channel.pipeline();
+        pipeline.addLast(new TransportObserverHandler(observer, secure));
     }
 
-    private static final class TransportObserverChannelHandler extends ChannelDuplexHandler {
+    private static final class TransportObserverHandler extends ChannelDuplexHandler {
         private final ConnectionObserver observer;
+        private final boolean secure;
+        private boolean handshakeStartNotified;
 
-        TransportObserverChannelHandler(final ConnectionObserver observer) {
+        TransportObserverHandler(final ConnectionObserver observer, final boolean secure) {
             this.observer = observer;
+            this.secure = secure;
+        }
+
+        @Override
+        public void handlerAdded(final ChannelHandlerContext ctx) {
+            if (secure && ctx.channel().isActive()) {
+                reportSecurityHandshakeStarting(ctx.channel());
+            }
+        }
+
+        @Override
+        public void channelActive(final ChannelHandlerContext ctx) {
+            if (secure) {
+                reportSecurityHandshakeStarting(ctx.channel());
+            }
+            ctx.fireChannelActive();
+        }
+
+        void reportSecurityHandshakeStarting(final Channel channel) {
+            if (!handshakeStartNotified) {
+                handshakeStartNotified = true;
+                TransportObserverUtils.reportSecurityHandshakeStarting(channel);
+            }
         }
 
         @Override
