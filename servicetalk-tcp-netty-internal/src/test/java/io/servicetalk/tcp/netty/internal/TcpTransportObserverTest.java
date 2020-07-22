@@ -51,17 +51,18 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
         }).ignoreElements().subscribe(); // Keep reading in background thread to prevent connection from closing
         responseLatch.await();
         assertThat("Unexpected response.", response.get(), equalTo(content));
-        verify(clientConnectionObserver).onDataRead(content.readableBytes());
         verify(serverConnectionObserver).onDataRead(content.readableBytes());
         verify(serverConnectionObserver).onDataWrite(content.readableBytes());
         verify(serverConnectionObserver).onFlush();
+        verify(clientConnectionObserver).onDataRead(content.readableBytes());
 
         verify(clientConnectionObserver, never()).connectionClosed();
         verify(serverConnectionObserver, never()).connectionClosed();
         connection.closeAsync().toFuture().get();
         verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed();
-        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
-                serverTransportObserver, serverConnectionObserver);
+
+        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver,
+                serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);
     }
 }

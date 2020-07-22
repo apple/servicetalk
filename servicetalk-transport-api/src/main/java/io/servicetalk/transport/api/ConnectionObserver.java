@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.net.ssl.SSLSession;
+
 /**
  * An observer interface that provides visibility into events associated with a network connection.
  */
@@ -40,14 +42,41 @@ public interface ConnectionObserver {
     void onFlush();
 
     /**
-     * Notifies when the connection is closed due to an {@link Throwable error}.
+     * Callback when a security handshake is initiated.
+     *
+     * @return a new {@link SecurityHandshakeObserver} that provides visibility into security handshake events
+     */
+    SecurityHandshakeObserver onSecurityHandshake();
+
+    /**
+     * Callback when the connection is closed due to an {@link Throwable error}.
      *
      * @param error an occurred error
      */
     void connectionClosed(Throwable error);
 
     /**
-     * Notifies when the connection is closed.
+     * Callback when the connection is closed.
      */
     void connectionClosed();
+
+    /**
+     * An observer interface that provides visibility into security handshake events.
+     */
+    interface SecurityHandshakeObserver {
+
+        /**
+         * Callback when the handshake is failed.
+         *
+         * @param cause the cause of handshake failure
+         */
+        void handshakeFailed(Throwable cause);
+
+        /**
+         * Callback when the handshake is complete successfully.
+         *
+         * @param sslSession the {@link SSLSession} for this connection
+         */
+        void handshakeComplete(SSLSession sslSession);
+    }
 }

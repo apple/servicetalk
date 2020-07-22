@@ -15,8 +15,13 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
+import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
@@ -28,18 +33,24 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
 
     protected final TransportObserver clientTransportObserver;
     protected final ConnectionObserver clientConnectionObserver;
+    protected final SecurityHandshakeObserver clientSecurityHandshakeObserver;
 
     protected final TransportObserver serverTransportObserver;
     protected final ConnectionObserver serverConnectionObserver;
+    protected final SecurityHandshakeObserver serverSecurityHandshakeObserver;
 
-    public AbstractTransportObserverTest() {
-        clientTransportObserver = mock(TransportObserver.class);
-        clientConnectionObserver = mock(ConnectionObserver.class);
+    protected AbstractTransportObserverTest() {
+        clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
+        clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
+        clientSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "clientSecurityHandshakeObserver");
         when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+        when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
 
-        serverTransportObserver = mock(TransportObserver.class);
-        serverConnectionObserver = mock(ConnectionObserver.class);
+        serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
+        serverConnectionObserver = mock(ConnectionObserver.class, "serverConnectionObserver");
+        serverSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "serverSecurityHandshakeObserver");
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
+        when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
     }
 
     @Override
@@ -49,17 +60,32 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
+    static ClientSecurityConfig defaultClientSecurityConfig(SslProvider provider) {
+        ClientSecurityConfig config = new ClientSecurityConfig("foo", -1);
+        config.disableHostnameVerification();
+        config.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
+        config.provider(provider);
+        return config;
+    }
+
     @Override
-    final TcpServerConfig getTcpServerConfig() {
+    TcpServerConfig getTcpServerConfig() {
         final TcpServerConfig config = super.getTcpServerConfig();
         config.transportObserver(serverTransportObserver);
+        return config;
+    }
+
+    static ServerSecurityConfig defaultServerSecurityConfig(SslProvider provider) {
+        ServerSecurityConfig config = new ServerSecurityConfig();
+        config.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+        config.provider(provider);
         return config;
     }
 
     /**
      * Because the client is just a trigger for server-side events we need to await for invocations to verify them.
      */
-    protected static VerificationWithTimeout await() {
+    static VerificationWithTimeout await() {
         return Mockito.timeout(Long.MAX_VALUE);
     }
 }
