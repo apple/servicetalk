@@ -111,8 +111,9 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         if (parentSpanContext != null) {
             spanBuilder = spanBuilder.asChildOf(parentSpanContext);
         }
-        Scope scope = spanBuilder.startActive(true);
-        return new ServiceScopeTracker(scope, parentSpanContext);
+        Span span = spanBuilder.start();
+        Scope scope = tracer.activateSpan(span);
+        return new ServiceScopeTracker(scope, span, parentSpanContext);
     }
 
     private final class ServiceScopeTracker extends ScopeTracker {
@@ -120,8 +121,8 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         @Nullable
         private SpanContext parentSpanContext;
 
-        ServiceScopeTracker(final Scope scope, @Nullable final SpanContext parentSpanContext) {
-            super(scope);
+        ServiceScopeTracker(Scope scope, final Span span, @Nullable final SpanContext parentSpanContext) {
+            super(scope, span);
             this.parentSpanContext = parentSpanContext;
         }
 
@@ -129,7 +130,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
-                tracer.inject(currentScope.span().context(), formatter, metaData.headers());
+                tracer.inject(getSpan().context(), formatter, metaData.headers());
             }
         }
     }

@@ -34,10 +34,10 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import org.junit.After;
 import org.junit.Before;
@@ -158,33 +158,36 @@ public class TracingHttpRequesterFilterTest {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
                     .appendClientFilter(new TracingHttpRequesterFilter(tracer, "testClient"))
                     .appendClientFilter(new TestTracingLoggerFilter(TRACING_TEST_LOG_LINE_PREFIX)).build()) {
-                try (InMemoryScope clientScope = tracer.buildSpan("test").startActive(true)) {
-                    HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
-                    TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
+                    InMemorySpan clientSpan = tracer.buildSpan("test").start();
+                    try (Scope ignored = tracer.activateSpan(clientSpan)) {
+                        HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
+                        TestSpanState serverSpanState = response.payloadBody(httpSerializer.deserializerFor(
                             TestSpanState.class));
 
-                    assertThat(serverSpanState.traceId, isHexId());
-                    assertThat(serverSpanState.spanId, isHexId());
-                    assertThat(serverSpanState.parentSpanId, isHexId());
+                        assertThat(serverSpanState.traceId, isHexId());
+                        assertThat(serverSpanState.spanId, isHexId());
+                        assertThat(serverSpanState.parentSpanId, isHexId());
 
-                    assertThat(serverSpanState.traceId, equalToIgnoringCase(clientScope.span().traceIdHex()));
-                    assertThat(serverSpanState.parentSpanId, equalToIgnoringCase(clientScope.span().spanIdHex()));
+                        assertThat(serverSpanState.traceId, equalToIgnoringCase(clientSpan.traceIdHex()));
+                        assertThat(serverSpanState.parentSpanId, equalToIgnoringCase(clientSpan.spanIdHex()));
 
-                    // don't mess with caller span state
-                    assertEquals(clientScope.span(), tracer.activeSpan());
+                        // don't mess with caller span state
+                        assertEquals(clientSpan, tracer.activeSpan());
 
-                    assertEquals(1, spanListener.spanFinishedCount());
-                    InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
-                    assertNotNull(lastFinishedSpan);
-                    assertEquals(SPAN_KIND_CLIENT, lastFinishedSpan.tags().get(SPAN_KIND.getKey()));
-                    assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
-                    assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
-                    assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
-                    assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
+                        assertEquals(1, spanListener.spanFinishedCount());
+                        InMemorySpan lastFinishedSpan = spanListener.lastFinishedSpan();
+                        assertNotNull(lastFinishedSpan);
+                        assertEquals(SPAN_KIND_CLIENT, lastFinishedSpan.tags().get(SPAN_KIND.getKey()));
+                        assertEquals(GET.name(), lastFinishedSpan.tags().get(HTTP_METHOD.getKey()));
+                        assertEquals(requestUrl, lastFinishedSpan.tags().get(HTTP_URL.getKey()));
+                        assertEquals(OK.code(), lastFinishedSpan.tags().get(HTTP_STATUS.getKey()));
+                        assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
 
-                    verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
+                        verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
                             serverSpanState.spanId, serverSpanState.parentSpanId, TRACING_TEST_LOG_LINE_PREFIX);
-                }
+                    } finally {
+                        clientSpan.finish();
+                    }
             }
         }
     }

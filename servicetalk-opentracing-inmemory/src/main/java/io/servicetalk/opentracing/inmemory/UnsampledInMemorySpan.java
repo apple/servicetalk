@@ -19,6 +19,7 @@ import io.servicetalk.opentracing.inmemory.api.InMemoryReference;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanLog;
 
 import io.opentracing.Span;
+import io.opentracing.tag.Tag;
 
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +63,11 @@ final class UnsampledInMemorySpan extends AbstractInMemorySpan {
 
     @Override
     public Span setTag(String key, Number value) {
+        return this;
+    }
+
+    @Override
+    public <T> Span setTag(Tag<T> tag, T value) {
         return this;
     }
 
