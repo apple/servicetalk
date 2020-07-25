@@ -14,27 +14,51 @@
  * limitations under the License.
  */
 
+buildscript {
+  dependencies {
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
+  }
+}
+
 apply plugin: "java"
-apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
+apply plugin: "com.google.protobuf"
 apply from: "../../gradle/idea.gradle"
 
 dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-grpc-netty")
+  implementation project(":servicetalk-grpc-protoc")
   implementation project(":servicetalk-grpc-protobuf")
 
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 
-serviceTalkGrpc {
-  protobufVersion = project.property("protobufVersion")
-
-  // The following setting must be omitted in users projects and is necessary here
-  // only because we want to use the locally built version of the plugin
-  serviceTalkProtocPluginPath =
-      "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/servicetalk-grpc-protoc-" +
-          project.version + "-all.jar"
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
+  plugins {
+    servicetalk_grpc {
+      //// Users are expected to use "artifact" instead of "path". we use "path"
+      //// only because we want to use the gradle project local version of the plugin
+      // artifact = "io.servicetalk:servicetalk-grpc-proto"$serviceTalkVersion"
+      path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
+                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+    }
+  }
+  generateProtoTasks {
+    all().each { task ->
+      task.plugins {
+        servicetalk_grpc {
+          // Need to tell protobuf-gradle-plugin to output in the correct directory if all generated
+          // code for a single proto goes to a single file (e.g. "java_multiple_files = false" in the .proto).
+          outputSubDir = "java"
+        }
+      }
+    }
+  }
+  generatedFilesBaseDir = "$buildDir/generated/sources"
 }
 
 // The following setting must be omitted in users projects and is necessary here

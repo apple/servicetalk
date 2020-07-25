@@ -22,7 +22,6 @@ buildscript {
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
 apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
@@ -73,14 +72,11 @@ publishing {
   }
 }
 
-serviceTalkGrpc {
-  protobufVersion = project.property("protobufVersion")
-
-  // The following setting must be omitted in users projects and is necessary here
-  // only because we want to use the locally built version of the plugin
-  serviceTalkProtocPluginPath =
-      "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/servicetalk-grpc-protoc-" +
-          project.version + "-all.jar"
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
+  generatedFilesBaseDir = "$buildDir/generated/sources"
 }
 
 afterEvaluate {
