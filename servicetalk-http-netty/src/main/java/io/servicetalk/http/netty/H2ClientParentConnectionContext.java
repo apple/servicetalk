@@ -40,6 +40,9 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -74,8 +77,11 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.StreamObserverUtils.registerStreamObserver;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -145,6 +151,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
+        @Nullable
+        private MultiplexedObserver observer;
 
         DefaultH2ClientParentConnection(H2ClientParentConnectionContext connection,
                                         Subscriber<? super H2ClientParentConnection> subscriber,
@@ -172,6 +180,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
+                final ConnectionObserver connectionObserver = connectionObserver(nettyChannel());
+                if (connectionObserver != null) {
+                    observer = requireNonNull(connectionObserver.establishedMultiplexed(this));
+                }
                 subscriberCopy.onSuccess(this);
             }
         }
@@ -247,9 +259,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
+                Http2StreamChannel streamChannel = future.getNow();
+                parentContext.trackActiveStream(streamChannel);
                 try {
-                    Http2StreamChannel streamChannel = future.getNow();
-                    parentContext.trackActiveStream(streamChannel);
+                    StreamObserver streamObserver = registerStreamObserver(streamChannel, observer);
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
                             PROTOCOL_OUTBOUND_CLOSE_HANDLER));
@@ -265,7 +278,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     parentContext.executionContext().executionStrategy(),
                                     HTTP_2_0,
                                     parentContext.sslSession(),
-                                    parentContext.nettyChannel().config());
+                                    parentContext.nettyChannel().config(),
+                                    streamObserver);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
@@ -273,6 +287,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
                             executionContext(), reqRespFactory, headersFactory).request(strategy, request));
                 } catch (Throwable cause) {
+                    assignConnectionError(streamChannel, cause);
+                    streamChannel.close();
                     subscriber.onError(cause);
                     return;
                 }

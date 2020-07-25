@@ -18,10 +18,13 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,26 +44,35 @@ final class Flush {
      * @param channel Channel to flush.
      * @param source Original source.
      * @param flushStrategy {@link FlushStrategy} to apply.
+     * @param observer a {@link WriteObserver} to report write events
      * @param <T> Type of elements emitted by {@code source}.
      * @return {@link Publisher} that forwards all items from {@code source} and flushes the channel as directed by
      * {@link FlushStrategy}.
      */
-    static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushStrategy flushStrategy) {
+    static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushStrategy flushStrategy,
+                                           @Nullable WriteObserver observer) {
         requireNonNull(channel);
         requireNonNull(flushStrategy);
-        return source.liftSync(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel));
+        return source.liftSync(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel, observer));
     }
 
     private static final class FlushSubscriber<T> implements Subscriber<T> {
         private final EventExecutor eventLoop;
         private final Subscriber<? super T> subscriber;
+        @Nullable
+        private final WriteObserver observer;
         private final WriteEventsListener writeEventsListener;
         private volatile boolean enqueueFlush;
 
-        FlushSubscriber(FlushStrategy flushStrategy, Subscriber<? super T> subscriber, Channel channel) {
+        FlushSubscriber(FlushStrategy flushStrategy, Subscriber<? super T> subscriber, Channel channel,
+                        @Nullable WriteObserver observer) {
             this.eventLoop = requireNonNull(channel.eventLoop());
             this.subscriber = requireNonNull(subscriber);
+            this.observer = observer;
             this.writeEventsListener = flushStrategy.apply(() -> {
+                if (observer != null) {
+                    observer.onFlushRequest();
+                }
                 if (enqueueFlush) {
                     eventLoop.execute(channel::flush);
                 } else {
@@ -80,11 +92,17 @@ final class Flush {
                 subscriber.onSubscribe(new Subscription() {
                     @Override
                     public void request(long n) {
+                        if (observer != null) {
+                            observer.requestedToWrite(n);
+                        }
                         subscription.request(n);
                     }
 
                     @Override
                     public void cancel() {
+                        if (observer != null) {
+                            observer.writeCancelled();
+                        }
                         subscription.cancel();
                         writeEventsListener.writeCancelled();
                     }
@@ -102,6 +120,9 @@ final class Flush {
             // event loop thread) we short circuit on the "in event loop check".
             if (!eventLoop.inEventLoop() && !enqueueFlush) {
                 enqueueFlush = true;
+            }
+            if (observer != null) {
+                observer.itemReceived();
             }
             subscriber.onNext(t);
             writeEventsListener.itemWritten(t);

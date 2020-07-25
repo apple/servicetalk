@@ -49,6 +49,22 @@ public interface ConnectionObserver {
     SecurityHandshakeObserver onSecurityHandshake();
 
     /**
+     * Callback when a non-multiplexed connection is established and ready.
+     *
+     * @param info {@link ConnectionInfo} for the established connection
+     * @return a new {@link NonMultiplexedObserver} that provides visibility into read and write events
+     */
+    NonMultiplexedObserver established(ConnectionInfo info);
+
+    /**
+     * Callback when a multiplexed connection is established and ready.
+     *
+     * @param info {@link ConnectionInfo} for the established connection
+     * @return a new {@link MultiplexedObserver} that provides visibility into new streams
+     */
+    MultiplexedObserver establishedMultiplexed(ConnectionInfo info);
+
+    /**
      * Callback when the connection is closed due to an {@link Throwable error}.
      *
      * @param error an occurred error
@@ -78,5 +94,136 @@ public interface ConnectionObserver {
          * @param sslSession the {@link SSLSession} for this connection
          */
         void handshakeComplete(SSLSession sslSession);
+    }
+
+    /**
+     * An observer interface that provides visibility into read and write events of a non-multiplexed connection.
+     */
+    interface NonMultiplexedObserver {
+
+        /**
+         * Callback when the connection starts reading a new message.
+         *
+         * @return {@link ReadObserver} that provides visibility into <strong>read</strong> events
+         */
+        ReadObserver onNewRead();
+
+        /**
+         * Callback when the connection starts writing a new message.
+         *
+         * @return {@link WriteObserver} that provides visibility into <strong>write</strong> events
+         */
+        WriteObserver onNewWrite();
+    }
+
+    /**
+     * An observer interface that provides visibility into new streams created by a multiplexed connection.
+     */
+    interface MultiplexedObserver {
+
+        /**
+         * Callback when the connection creates a new stream.
+         *
+         * @return {@link StreamObserver} that provides visibility into stream events
+         */
+        StreamObserver onNewStream();
+    }
+
+    /**
+     * An observer interface that provides visibility into stream events.
+     */
+    interface StreamObserver extends NonMultiplexedObserver {
+
+        /**
+         * Callback when the stream is closed due to an {@link Throwable error}.
+         *
+         * @param error an occurred error
+         */
+        void streamClosed(Throwable error);
+
+        /**
+         * Callback when the stream is closed.
+         */
+        void streamClosed();
+    }
+
+    /**
+     * An observer interface that provides visibility into <strong>read</strong> events.
+     */
+    interface ReadObserver {
+
+        /**
+         * Callback when new items are requested to read.
+         *
+         * @param n number of requested items to read
+         */
+        void requestedToRead(long n);
+
+        /**
+         * Invokes when a new item is read.
+         */
+        void itemRead();
+
+        /**
+         * Callback when the read operation fails with an {@link Throwable error}.
+         *
+         * @param cause {@link Throwable} that terminated the read
+         */
+        void readFailed(Throwable cause);
+
+        /**
+         * Callback when the entire read operation completes successfully.
+         */
+        void readComplete();
+
+        /**
+         * Callback when the read operation is cancelled.
+         */
+        void readCancelled();
+    }
+
+    /**
+     * An observer interface that provides visibility into <strong>write</strong> events.
+     */
+    interface WriteObserver {
+
+        /**
+         * Callback when new items are requested to write.
+         *
+         * @param n number of requested items to write
+         */
+        void requestedToWrite(long n);
+
+        /**
+         * Callback when an item is received and ready to be written.
+         */
+        void itemReceived();
+
+        /**
+         * Callback when flush operation is requested.
+         */
+        void onFlushRequest();
+
+        /**
+         * Callback when an item is written to the transport.
+         */
+        void itemWritten();
+
+        /**
+         * Callback when the write operation fails with an {@link Throwable error}.
+         *
+         * @param cause {@link Throwable} that terminated the write
+         */
+        void writeFailed(Throwable cause);
+
+        /**
+         * Callback when the entire write operation completes successfully.
+         */
+        void writeComplete();
+
+        /**
+         * Callback when the write operation is cancelled.
+         */
+        void writeCancelled();
     }
 }

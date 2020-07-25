@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -31,12 +32,14 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
@@ -57,12 +60,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -71,10 +76,10 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
@@ -115,6 +120,13 @@ public abstract class AbstractNettyHttpServerTest {
     private StreamingHttpClient httpClient;
     private StreamingHttpConnection httpConnection;
     private StreamingHttpService service;
+    @Nullable
+    private StreamingHttpServiceFilterFactory serviceFilterFactory;
+    private HttpProtocolConfig protocol = h1Default();
+    @Nullable
+    private TransportObserver clientTransportObserver;
+    @Nullable
+    private TransportObserver serverTransportObserver;
 
     AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
@@ -139,10 +151,17 @@ public abstract class AbstractNettyHttpServerTest {
         // differently.
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
                 .executionStrategy(defaultStrategy(serverExecutor))
-                .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
+                .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
+                .protocols(protocol);
         if (sslEnabled) {
             serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey);
+        }
+        if (serviceFilterFactory != null) {
+            serverBuilder.appendServiceFilter(serviceFilterFactory);
+        }
+        if (serverTransportObserver != null) {
+            serverBuilder.transportObserver(serverTransportObserver);
         }
         serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
@@ -154,8 +173,13 @@ public abstract class AbstractNettyHttpServerTest {
             clientBuilder.secure().disableHostnameVerification()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
+        if (clientTransportObserver != null) {
+            clientBuilder.transportObserver(clientTransportObserver);
+        }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
-                .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();
+                .executionStrategy(defaultStrategy(clientExecutor))
+                .protocols(protocol)
+                .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
 
@@ -176,6 +200,10 @@ public abstract class AbstractNettyHttpServerTest {
 
     protected void service(final StreamingHttpService service) {
         this.service = service;
+    }
+
+    void serviceFilterFactory(StreamingHttpServiceFilterFactory serviceFilterFactory) {
+        this.serviceFilterFactory = serviceFilterFactory;
     }
 
     @After
@@ -203,6 +231,15 @@ public abstract class AbstractNettyHttpServerTest {
 
     ServerContext serverContext() {
         return serverContext;
+    }
+
+    void protocol(HttpProtocolConfig protocol) {
+        this.protocol = requireNonNull(protocol);
+    }
+
+    void transportObserver(TransportObserver client, TransportObserver server) {
+        this.clientTransportObserver = client;
+        this.serverTransportObserver = server;
     }
 
     StreamingHttpResponse makeRequest(final StreamingHttpRequest request)

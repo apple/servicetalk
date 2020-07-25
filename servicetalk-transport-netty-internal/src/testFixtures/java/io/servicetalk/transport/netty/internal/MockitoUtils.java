@@ -13,20 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.tcp.netty.internal;
+package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import org.mockito.Mockito;
+import org.mockito.verification.VerificationWithTimeout;
 
-final class TcpProtocol implements Protocol {
+/**
+ * Utilities for {@link Mockito}.
+ */
+public final class MockitoUtils {
 
-    static final Protocol TCP = new TcpProtocol();
-
-    private TcpProtocol() {
-        // Singleton
+    private MockitoUtils() {
+        // No instances.
     }
 
-    @Override
-    public String name() {
-        return "TCP";
+    /**
+     * Alias for {@link Mockito#timeout(long)} that awaits indefinitely.
+     * <p>
+     * Because the client is just a trigger for server-side events sometimes we need to await for invocations to verify
+     * them.
+     */
+    public static VerificationWithTimeout await() {
+        return Mockito.timeout(Long.MAX_VALUE);
     }
 }

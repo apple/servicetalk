@@ -18,6 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.transport.api.ConnectionObserver.NonMultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
@@ -47,17 +49,21 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private Queue<Object> pending;
     @Nullable
     private Throwable fatalError;
+    @Nullable
+    private NonMultiplexedObserver readWriteObserver;
 
     private final Channel channel;
     private final CloseHandler closeHandler;
     private final EventLoop eventLoop;
     private final Predicate<T> terminalSignalPredicate;
 
-    NettyChannelPublisher(Channel channel, Predicate<T> terminalSignalPredicate, CloseHandler closeHandler) {
+    NettyChannelPublisher(Channel channel, Predicate<T> terminalSignalPredicate, CloseHandler closeHandler,
+                          @Nullable NonMultiplexedObserver readWriteObserver) {
         this.eventLoop = channel.eventLoop();
         this.channel = channel;
         this.closeHandler = closeHandler;
         this.terminalSignalPredicate = requireNonNull(terminalSignalPredicate);
+        this.readWriteObserver = readWriteObserver;
     }
 
     @Override
@@ -67,6 +73,10 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         } else {
             eventLoop.execute(() -> subscribe0(nextSubscriber));
         }
+    }
+
+    void readWriteObserver(@Nullable final NonMultiplexedObserver readWriteObserver) {
+        this.readWriteObserver = readWriteObserver;
     }
 
     void channelRead(T data) {
@@ -300,7 +310,12 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
                     new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
             assert requestCount == 0;
-            subscription = new SubscriptionImpl(subscriber);
+            try {
+                subscription = new SubscriptionImpl(subscriber, this.readWriteObserver);
+            } catch (Throwable t) {
+                deliverErrorFromSource(subscriber, t);
+                return;
+            }
             this.subscription = subscription;
             subscriber.onSubscribe(subscription);
             // Fatal error is removed from the queue once it is drained for a Subscriber.
@@ -318,14 +333,44 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     private final class SubscriptionImpl implements Subscription {
 
+        @Nullable
+        private final ReadObserver observer;
         final Subscriber<? super T> associatedSub;
 
-        private SubscriptionImpl(Subscriber<? super T> associatedSub) {
-            this.associatedSub = associatedSub;
+        private SubscriptionImpl(final Subscriber<? super T> subscriber,
+                                 @Nullable final NonMultiplexedObserver readWriteObserver) {
+            observer = readWriteObserver == null ? null : requireNonNull(readWriteObserver.onNewRead());
+            this.associatedSub = observer == null ? subscriber : new Subscriber<T>() {
+                @Override
+                public void onSubscribe(final Subscription subscription) {
+                    subscriber.onSubscribe(subscription);
+                }
+
+                @Override
+                public void onNext(@Nullable final T t) {
+                    observer.itemRead();
+                    subscriber.onNext(t);
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    observer.readFailed(t);
+                    subscriber.onError(t);
+                }
+
+                @Override
+                public void onComplete() {
+                    observer.readComplete();
+                    subscriber.onComplete();
+                }
+            };
         }
 
         @Override
-        public void request(long n) {
+        public void request(final long n) {
+            if (observer != null) {
+                observer.requestedToRead(n);
+            }
             if (eventLoop.inEventLoop()) {
                 NettyChannelPublisher.this.requestN(n, this);
             } else {
@@ -335,6 +380,9 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
         @Override
         public void cancel() {
+            if (observer != null) {
+                observer.readCancelled();
+            }
             if (eventLoop.inEventLoop()) {
                 NettyChannelPublisher.this.cancel(this);
             } else {

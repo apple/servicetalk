@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
+import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
@@ -107,12 +108,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final CloseHandler closeHandler;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
-                          CloseHandler closeHandler) {
+                          CloseHandler closeHandler, @Nullable WriteObserver observer) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
         this.demandEstimator = demandEstimator;
-        promise = new AllWritesPromise(channel);
+        promise = new AllWritesPromise(channel, observer);
         this.closeHandler = closeHandler;
     }
 
@@ -274,9 +275,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
          */
         private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>();
+        @Nullable
+        private final WriteObserver observer;
 
-        AllWritesPromise(final Channel channel) {
+        AllWritesPromise(final Channel channel, @Nullable WriteObserver observer) {
             super(channel);
+            this.observer = observer;
         }
 
         @Override
@@ -410,6 +414,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
+            if (observer != null) {
+                observer.itemWritten();
+            }
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
                 try {
@@ -461,6 +468,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             notifyAllListeners(cause);
             if (cause == null) {
                 try {
+                    if (observer != null) {
+                        observer.writeComplete();
+                    }
                     subscriber.onComplete();
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
@@ -470,6 +480,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
             } else {
                 try {
+                    if (observer != null) {
+                        observer.writeFailed(cause);
+                    }
                     subscriber.onError(cause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);

@@ -44,7 +44,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         };
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         this.subscriber = new WriteStreamSubscriber(channel, demandEstimator, subscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
 
         this.subscriber.onNext(1);
         this.subscriber.onError(DELIBERATE_EXCEPTION);

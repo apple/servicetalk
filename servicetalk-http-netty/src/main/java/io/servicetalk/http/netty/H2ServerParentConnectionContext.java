@@ -29,6 +29,9 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -39,6 +42,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +53,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.StreamObserverUtils.registerStreamObserver;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
 import static java.util.Objects.requireNonNull;
 
 final class H2ServerParentConnectionContext extends H2ParentConnectionContext implements ServerContext {
@@ -128,13 +134,17 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     pipeline = channel.pipeline();
 
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline));
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
+                            connectionObserver(channel));
 
                     new H2ServerParentChannelInitializer(h2ServerConfig,
-                        new io.netty.channel.ChannelInitializer<Channel>() {
+                        new io.netty.channel.ChannelInitializer<Http2StreamChannel>() {
                             @Override
-                            protected void initChannel(final Channel streamChannel) {
+                            protected void initChannel(final Http2StreamChannel streamChannel) {
                                 connection.trackActiveStream(streamChannel);
+                                final StreamObserver streamObserver = registerStreamObserver(streamChannel,
+                                        parentChannelInitializer.multiplexedObserver);
+
                                 // Netty To ServiceTalk type conversion
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
@@ -157,7 +167,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.executionContext().executionStrategy(),
                                                 HTTP_2_0,
                                                 connection.sslSession(),
-                                                channel.config());
+                                                channel.config(),
+                                                streamObserver);
 
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service,
@@ -181,13 +192,19 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private static final class DefaultH2ServerParentConnection extends AbstractH2ParentConnection {
         @Nullable
         private Subscriber<? super H2ServerParentConnectionContext> subscriber;
+        @Nullable
+        private final ConnectionObserver connectionObserver;
+        @Nullable
+        private MultiplexedObserver multiplexedObserver;
 
         DefaultH2ServerParentConnection(final H2ServerParentConnectionContext parentContext,
                                         final Subscriber<? super H2ServerParentConnectionContext> subscriber,
                                         final DelayedCancellable delayedCancellable,
-                                        final boolean waitForSslHandshake) {
+                                        final boolean waitForSslHandshake,
+                                        @Nullable final ConnectionObserver connectionObserver) {
             super(parentContext, delayedCancellable, waitForSslHandshake);
             this.subscriber = requireNonNull(subscriber);
+            this.connectionObserver = connectionObserver;
         }
 
         @Override
@@ -200,6 +217,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             if (subscriber != null) {
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
+                if (connectionObserver != null) {
+                    multiplexedObserver = requireNonNull(connectionObserver.establishedMultiplexed(parentContext));
+                }
                 subscriberCopy.onSuccess((H2ServerParentConnectionContext) parentContext);
             }
         }

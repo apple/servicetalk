@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -27,7 +28,10 @@ import javax.annotation.Nullable;
 import static io.netty.util.AttributeKey.newInstance;
 import static java.util.Objects.requireNonNull;
 
-final class TransportObserverUtils {
+/**
+ * Utilities for {@link TransportObserver}.
+ */
+public final class TransportObserverUtils {
 
     private static final AttributeKey<ConnectionObserver> CONNECTION_OBSERVER = newInstance("ConnectionObserver");
     private static final AttributeKey<Throwable> CONNECTION_ERROR = newInstance("ConnectionError");
@@ -57,8 +61,14 @@ final class TransportObserverUtils {
         });
     }
 
+    /**
+     * Returns {@link ConnectionObserver} if associated with the provided {@link Channel}.
+     *
+     * @param channel to look for a {@link ConnectionObserver}
+     * @return {@link ConnectionObserver} if associated with the provided {@link Channel} or {@code null}
+     */
     @Nullable
-    static ConnectionObserver connectionObserver(final Channel channel) {
+    public static ConnectionObserver connectionObserver(final Channel channel) {
         return channel.attr(CONNECTION_OBSERVER).get();
     }
 
@@ -68,14 +78,20 @@ final class TransportObserverUtils {
      * @param channel a {@link Channel} to assign a {@link Throwable} to
      * @param error a {@link Throwable}
      */
-    static void assignConnectionError(final Channel channel, final Throwable error) {
+    public static void assignConnectionError(final Channel channel, final Throwable error) {
         if (connectionObserver(channel) != null) {
             channel.attr(CONNECTION_ERROR).setIfAbsent(error);
         }
     }
 
+    /**
+     * Returns an {@link Throwable error} assigned with the specified {@link Channel}.
+     *
+     * @param channel to look for a {@link Throwable}
+     * @return an {@link Throwable error} assigned with the specified {@link Channel}.
+     */
     @Nullable
-    private static Throwable connectionError(final Channel channel) {
+    public static Throwable connectionError(final Channel channel) {
         return channel.attr(CONNECTION_ERROR).getAndSet(null);
     }
 

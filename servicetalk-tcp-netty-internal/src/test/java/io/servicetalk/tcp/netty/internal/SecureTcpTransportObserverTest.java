@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -32,6 +33,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.transport.netty.internal.MockitoUtils.await;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -75,6 +77,9 @@ public class SecureTcpTransportObserverTest extends AbstractTransportObserverTes
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
+
+        verify(clientConnectionObserver).established(any(ConnectionInfo.class));
+        verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
 
         // handshake starts
         verify(clientConnectionObserver).onSecurityHandshake();
