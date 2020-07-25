@@ -343,7 +343,7 @@ final class NettyHttpServer {
                                             return handleResponse(requestMethod, response);
                                         }),
                                 (cause, executor) -> from(newErrorResponse(cause, executor,
-                                        request.version(), keepAlive)));
+                                        request.version(), keepAlive), EmptyHttpHeaders.INSTANCE));
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
