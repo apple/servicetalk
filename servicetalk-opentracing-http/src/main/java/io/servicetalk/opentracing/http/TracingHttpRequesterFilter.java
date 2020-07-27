@@ -37,6 +37,7 @@ import io.opentracing.Tracer.SpanBuilder;
 
 import java.util.function.UnaryOperator;
 
+import static io.opentracing.tag.Tags.ERROR;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
@@ -133,8 +134,26 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
         if (activeSpan != null) {
             spanBuilder = spanBuilder.asChildOf(activeSpan);
         }
-        Scope scope = spanBuilder.startActive(true);
-        tracer.inject(scope.span().context(), formatter, request.headers());
-        return new ScopeTracker(scope);
+        Span span = spanBuilder.start();
+        Scope scope = tracer.activateSpan(span);
+        try {
+            tracer.inject(span.context(), formatter, request.headers());
+            return new ScopeTracker(scope, span);
+        } catch (Throwable cause) {
+            handlePrematureError(span, scope);
+            throw cause;
+        }
+    }
+
+    private static void handlePrematureError(Span span, Scope scope) {
+        try {
+            scope.close();
+        } finally {
+            try {
+                ERROR.set(span, true);
+            } finally {
+                span.finish();
+            }
+        }
     }
 }

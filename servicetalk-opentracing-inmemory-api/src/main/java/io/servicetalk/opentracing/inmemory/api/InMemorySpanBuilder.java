@@ -62,16 +62,5 @@ public interface InMemorySpanBuilder extends SpanBuilder {
     InMemorySpanBuilder withStartTimestamp(long microseconds);
 
     @Override
-    InMemoryScope startActive(boolean finishSpanOnClose);
-
-    /**
-     * {@inheritDoc}
-     * @deprecated {@link SpanBuilder#startManual()} is deprecated.
-     */
-    @Deprecated
-    @Override
-    InMemorySpan startManual();
-
-    @Override
     InMemorySpan start();
 }

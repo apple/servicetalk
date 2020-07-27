@@ -24,6 +24,7 @@ import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.Tracer;
 
 import javax.annotation.Nullable;
@@ -57,12 +58,15 @@ abstract class AbstractTracingHttpFilter {
 
     static class ScopeTracker implements TerminalSignalConsumer {
 
-        protected final Scope currentScope;
+        private final Scope currentScope;
+        private final Span span;
+
         @Nullable
         private HttpResponseMetaData metaData;
 
-        ScopeTracker(final Scope currentScope) {
+        ScopeTracker(Scope currentScope, final Span span) {
             this.currentScope = requireNonNull(currentScope);
+            this.span = requireNonNull(span);
         }
 
         void onResponseMeta(final HttpResponseMetaData metaData) {
@@ -75,25 +79,31 @@ abstract class AbstractTracingHttpFilter {
             tagStatusCode();
             try {
                 if (isError(metaData)) {
-                    ERROR.set(currentScope.span(), true);
+                    ERROR.set(span, true);
                 }
             } finally {
-                currentScope.close();
+                closeAll();
             }
         }
 
         @Override
         public void onError(final Throwable throwable) {
-            tagStatusCode();
-            ERROR.set(currentScope.span(), true);
-            currentScope.close();
+            try {
+                tagStatusCode();
+                ERROR.set(span, true);
+            } finally {
+                closeAll();
+            }
         }
 
         @Override
         public void cancel() {
-            tagStatusCode();
-            ERROR.set(currentScope.span(), true);
-            currentScope.close();
+            try {
+                tagStatusCode();
+                ERROR.set(span, true);
+            } finally {
+                closeAll();
+            }
         }
 
         /**
@@ -116,8 +126,20 @@ abstract class AbstractTracingHttpFilter {
 
         private void tagStatusCode() {
             if (metaData != null) {
-                HTTP_STATUS.set(currentScope.span(), metaData.status().code());
+                HTTP_STATUS.set(span, metaData.status().code());
             }
+        }
+
+        private void closeAll() {
+            try {
+                currentScope.close();
+            } finally {
+                span.finish();
+            }
+        }
+
+        final Span getSpan() {
+            return span;
         }
     }
 }

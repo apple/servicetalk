@@ -16,7 +16,6 @@
 package io.servicetalk.opentracing.inmemory;
 
 import io.servicetalk.opentracing.inmemory.api.InMemoryReference;
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanBuilder;
@@ -24,6 +23,8 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,13 +173,22 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
     @Nullable
     @Override
     public InMemorySpan activeSpan() {
-        InMemoryScope scope = this.scopeManager.active();
-        return scope == null ? null : scope.span();
+        return scopeManager.activeSpan();
+    }
+
+    @Override
+    public Scope activateSpan(Span span) {
+        return scopeManager.activate(span);
     }
 
     @Override
     public InMemorySpanBuilder buildSpan(final String operationName) {
         return new DefaultInMemorySpanBuilder(operationName);
+    }
+
+    @Override
+    public void close() {
+        //noop
     }
 
     @Override
@@ -198,9 +208,9 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
             InMemorySpanContext maybeParent = parent();
             if (maybeParent == null && !ignoreActiveSpan) {
                 // Try to infer the parent based upon the ScopeManager's active Scope.
-                InMemoryScope activeScope = scopeManager().active();
-                if (activeScope != null) {
-                    maybeParent = activeScope.span().context();
+                InMemorySpan span = scopeManager().activeSpan();
+                if (span != null) {
+                    maybeParent = span.context();
                 }
             }
 
@@ -229,11 +239,6 @@ public final class DefaultInMemoryTracer extends AbstractInMemoryTracer {
             } else {
                 return new UnsampledInMemorySpan(operationName, references, traceIdHex, spanIdHex, parentSpanIdHex);
             }
-        }
-
-        @Override
-        public InMemoryScope startActive(final boolean finishSpanOnClose) {
-            return scopeManager().activate(start(), finishSpanOnClose);
         }
     }
 

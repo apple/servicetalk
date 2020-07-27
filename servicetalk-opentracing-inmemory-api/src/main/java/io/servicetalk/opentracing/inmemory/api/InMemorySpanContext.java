@@ -38,4 +38,12 @@ public interface InMemorySpanContext extends SpanContext {
     default boolean isSampled() {
         return traceState().isSampled();
     }
+
+    default String toTraceId() {
+        return traceState().traceIdHex();
+    }
+
+    default String toSpanId() {
+        return traceState().spanIdHex();
+    }
 }

@@ -18,7 +18,6 @@ package io.servicetalk.opentracing.log4j2;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
 import org.apache.logging.log4j.ThreadContext;
@@ -57,23 +56,23 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
         // isEmpty() may return true, but then get(..) may return elements from the trace.
         switch (key) {
             case TRACE_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                if (scope != null) {
-                    return scope.span().traceIdHex();
+                InMemorySpan span = SCOPE_MANAGER.activeSpan();
+                if (span != null) {
+                    return span.traceIdHex();
                 }
                 break;
             }
             case SPAN_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                if (scope != null) {
-                    return scope.span().spanIdHex();
+                InMemorySpan span = SCOPE_MANAGER.activeSpan();
+                if (span != null) {
+                    return span.spanIdHex();
                 }
                 break;
             }
             case PARENT_SPAN_ID_KEY: {
-                InMemoryScope scope = SCOPE_MANAGER.active();
-                if (scope != null) {
-                    return scope.span().nonnullParentSpanIdHex();
+                InMemorySpan span = SCOPE_MANAGER.activeSpan();
+                if (span != null) {
+                    return span.nonnullParentSpanIdHex();
                 }
                 break;
             }
@@ -91,9 +90,8 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
     @Override
     public Map<String, String> getCopy() {
         Map<String, String> copy = super.getCopy();
-        InMemoryScope scope = SCOPE_MANAGER.active();
-        if (scope != null) {
-            InMemorySpan span = scope.span();
+        InMemorySpan span = SCOPE_MANAGER.activeSpan();
+        if (span != null) {
             copy.put(TRACE_ID_KEY, span.traceIdHex());
             copy.put(SPAN_ID_KEY, span.spanIdHex());
             copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
@@ -110,7 +108,7 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
     @Override
     public boolean isEmpty() {
-        return super.isEmpty() && SCOPE_MANAGER.active() == null;
+        return super.isEmpty() && SCOPE_MANAGER.activeSpan() == null;
     }
 
     @Override
@@ -123,16 +121,15 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
     @Override
     @Nullable
     protected Map<String, String> getCopyOrNull() {
-        InMemoryScope scope = SCOPE_MANAGER.active();
+        InMemorySpan span = SCOPE_MANAGER.activeSpan();
         Map<String, String> copy = super.getCopyOrNull();
-        if (copy == null && scope == null) {
+        if (copy == null && span == null) {
             return null;
         }
         if (copy == null) {
             copy = new HashMap<>(4);
         }
-        if (scope != null) {
-            InMemorySpan span = scope.span();
+        if (span != null) {
             copy.put(TRACE_ID_KEY, span.traceIdHex());
             copy.put(SPAN_ID_KEY, span.spanIdHex());
             copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
@@ -142,6 +139,6 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
 
     private static boolean containsTracingKey(String key) {
         return (TRACE_ID_KEY.equals(key) || SPAN_ID_KEY.equals(key) || PARENT_SPAN_ID_KEY.equals(key)) &&
-                SCOPE_MANAGER.active() != null; // defer SCOPE_MANAGER.active() because it may access a thread local
+                SCOPE_MANAGER.activeSpan() != null; // defer SCOPE_MANAGER.active() because it may access a thread local
     }
 }
