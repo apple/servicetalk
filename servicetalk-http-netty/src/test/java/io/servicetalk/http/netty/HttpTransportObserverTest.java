@@ -45,6 +45,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -63,6 +64,7 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_BEFORE_RE
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
 import static io.servicetalk.transport.netty.internal.MockitoUtils.await;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -71,7 +73,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMostOnce;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -111,18 +112,29 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     private final ReadObserver serverReadObserver;
     private final WriteObserver serverWriteObserver;
 
+    private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
     private final CountDownLatch requestReceived = new CountDownLatch(1);
+    private final CountDownLatch processRequest = new CountDownLatch(1);
 
     public HttpTransportObserverTest(Protocol protocol) {
         super(CACHED, CACHED_SERVER);
         this.protocol = protocol;
         protocol(protocol.config);
+        connectionAcceptor(ctx -> {
+            ctx.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
+            return completed();
+        });
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 requestReceived.countDown();
+                try {
+                    processRequest.await();
+                } catch (InterruptedException e) {
+                    return throwException(e);
+                }
                 return delegate().handle(ctx, request, responseFactory);
             }
         });
@@ -171,6 +183,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void connectionEstablished() throws Exception {
+        processRequest.countDown();
         StreamingHttpConnection connection = streamingHttpConnection();
 
         verify(clientTransportObserver).onNewConnection();
@@ -186,18 +199,18 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(serverConnectionObserver, await()).establishedMultiplexed(any(ConnectionInfo.class));
         }
 
-        connection.close();
+        connection.closeGracefully();
+        assertConnectionClosed();
         verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed();
-        if (protocol == Protocol.HTTP_2) {
-            // Clear connection preface:
-            clearInvocations(clientConnectionObserver, serverConnectionObserver);
-        }
 
-        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
-                clientNonMultiplexedObserver, clientMultiplexedObserver,
-                serverTransportObserver, serverConnectionObserver,
-                serverNonMultiplexedObserver, serverMultiplexedObserver);
+        verifyNoMoreInteractions(clientTransportObserver, clientNonMultiplexedObserver, clientMultiplexedObserver,
+                serverTransportObserver, serverNonMultiplexedObserver, serverMultiplexedObserver);
+        if (protocol != Protocol.HTTP_2) {
+            // HTTP/2 coded adds additional write/flush events related to connection preface. Also, it may emit more
+            // flush events on the pipeline after the connection is closed.
+            verifyNoMoreInteractions(clientConnectionObserver, serverConnectionObserver);
+        }
     }
 
     @Test
@@ -216,6 +229,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
     public void testRequestResponse(StreamingHttpRequest request, HttpResponseStatus expectedStatus,
                                     int expectedResponseLength) throws Exception {
+        processRequest.countDown();
         assertResponse(makeRequest(request), protocol.version, expectedStatus, expectedResponseLength);
 
         verifyNewReadAndNewWrite(2);
@@ -228,14 +242,14 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(serverReadObserver, atLeastOnce()).itemRead();
-        verify(serverReadObserver).readComplete();
+        verify(serverReadObserver, await()).readComplete();
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(serverWriteObserver, atLeastOnce()).itemReceived();
         verify(serverWriteObserver, atLeastOnce()).onFlushRequest();
         verify(serverWriteObserver, atLeastOnce()).itemWritten();
         if (protocol == Protocol.HTTP_2) {
-            // HTTP/1.x has a single write publisher across all requests
+            // HTTP/1.x has a single write publisher across all requests that does not complete after each response
             verify(serverWriteObserver).writeComplete();
         }
 
@@ -259,6 +273,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     }
 
     public void testServerFailsResponsePayloadBody(String path, boolean serverReadCompletes) throws Exception {
+        processRequest.countDown();
         StreamingHttpConnection connection = streamingHttpConnection();
         StreamingHttpResponse response = makeRequest(connection.post(path)
                 .addHeader(CONTENT_LENGTH, ZERO));
@@ -271,11 +286,10 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                 ClosedChannelException.class : H2StreamResetException.class;
         assertThat(e.getCause(), instanceOf(causeType));
 
-        if (protocol == Protocol.HTTP_1) {
-            assertConnectionClosed();
-        } else {
-            connection.close();
+        if (protocol == Protocol.HTTP_2) {
+            connection.closeGracefully();
         }
+        assertConnectionClosed();
         verifyNewReadAndNewWrite(1);
 
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
@@ -321,17 +335,17 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                             try {
                                 requestReceived.await();
                             } catch (InterruptedException interruptedException) {
-                                // ignore
+                                return throwException(interruptedException);
                             }
                             return failed(DELIBERATE_EXCEPTION);
                         }))));
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        processRequest.countDown();
 
-        if (protocol == Protocol.HTTP_1) {
-            assertConnectionClosed();
-        } else {
-            connection.close();
+        if (protocol == Protocol.HTTP_2) {
+            connection.closeGracefully();
         }
+        assertConnectionClosed();
         verifyNewReadAndNewWrite(1);
 
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
@@ -350,9 +364,6 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(serverWriteObserver, atMostOnce()).itemReceived();
-        verify(serverWriteObserver, atMostOnce()).onFlushRequest();
-        verify(serverWriteObserver, atMostOnce()).itemWritten();
         // WriteStreamSubscriber.close0(...) cancels subscription and then terminates the subscriber:
         verify(serverWriteObserver, await()).writeFailed(any(Exception.class));
         verify(serverWriteObserver, atMostOnce()).writeCancelled();
@@ -362,7 +373,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         verifyNoMoreInteractions(
                 clientNonMultiplexedObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverNonMultiplexedObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
+                serverNonMultiplexedObserver, serverMultiplexedObserver, serverReadObserver);
     }
 
     private void verifyNewReadAndNewWrite(int nonMultiplexedTimes) {
@@ -383,5 +394,11 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(serverStreamObserver).onNewWrite();
             verify(serverStreamObserver, await()).streamClosed();
         }
+    }
+
+    @Override
+    void assertConnectionClosed() throws Exception {
+        super.assertConnectionClosed();
+        serverConnectionClosed.await();
     }
 }
