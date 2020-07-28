@@ -466,8 +466,9 @@ public class DefaultDnsClientTest {
 
         final int expectedActiveCount = 1;
         final int expectedInactiveCount = 1;
+        final int expectedErrorCount = 1;
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + expectedErrorCount);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
@@ -489,8 +490,9 @@ public class DefaultDnsClientTest {
         try {
             final int expectedActiveCount = 1;
             final int expectedInactiveCount = 0;
+            final int expectedErrorCount = 1;
 
-            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
+            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + expectedErrorCount);
             AtomicReference<Throwable> throwableRef = new AtomicReference<>();
             Publisher<ServiceDiscovererEvent<InetAddress>> publisher = customClient.dnsQuery("apple.com");
             ServiceDiscovererTestSubscriber<InetAddress> subscriber =
