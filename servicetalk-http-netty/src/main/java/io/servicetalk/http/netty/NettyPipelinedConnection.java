@@ -230,6 +230,11 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                             if (nextWriteTask != null) {
                                 nextWriteTask.run();
                             }
+                        // The write and read operation are coupled via a merge operator. This is because if an error
+                        // occurs on write or read we want to propagate the error back to the user. On the client side
+                        // the most straightforward way to propagate an error through the APIs is through the read async
+                        // source. This has a side effect that the read async source isn't strictly full-duplex (data
+                        // will be full-duplex, but completion will be delayed until the write completes).
                         }).merge(new Publisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
