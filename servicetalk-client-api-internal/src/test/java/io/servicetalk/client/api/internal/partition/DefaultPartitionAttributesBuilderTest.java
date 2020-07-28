@@ -31,7 +31,7 @@ import static org.junit.Assert.fail;
 public class DefaultPartitionAttributesBuilderTest {
     private static final Key<String> SHARD_KEY = Key.newKey("shard");
     private static final Key<String> DC_KEY = Key.newKey("dc");
-    private static final Key<Boolean> MASTER_KEY = Key.newKey("master");
+    private static final Key<Boolean> MAIN_KEY = Key.newKey("main");
     private static final Key<Integer> OTHER_KEY = Key.newKey("other");
     private static final Key<Integer> OTHER_KEY2 = Key.newKey("other2");
     private static final String DEFAULT_SHARD = "myshard";
@@ -54,7 +54,7 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         try {
             builder.add(OTHER_KEY, 3);
@@ -69,7 +69,7 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(OTHER_KEY2, 10);
         builder.add(OTHER_KEY, 3);
@@ -86,7 +86,7 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(OTHER_KEY2, 10);
         builder.add(OTHER_KEY, 2);
@@ -103,21 +103,21 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(8);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         PartitionAttributes partitionAttributes = builder.build();
         assertSize(partitionAttributes, 4);
         assertEquals(DEFAULT_SHARD, partitionAttributes.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes.get(DC_KEY));
         assertEquals((Integer) 2, partitionAttributes.get(OTHER_KEY));
-        assertEquals(true, partitionAttributes.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes.get(MAIN_KEY));
     }
 
     @Test
     public void addFourItemsSortedCorrectlyB() {
         PartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(4);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
-        builder.add(MASTER_KEY, false);
+        builder.add(MAIN_KEY, false);
         builder.add(DC_KEY, DEFAULT_DC);
         builder.add(OTHER_KEY, 2);
         PartitionAttributes partitionAttributes = builder.build();
@@ -125,7 +125,7 @@ public class DefaultPartitionAttributesBuilderTest {
         assertEquals(DEFAULT_SHARD, partitionAttributes.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes.get(DC_KEY));
         assertEquals((Integer) 2, partitionAttributes.get(OTHER_KEY));
-        assertEquals(false, partitionAttributes.get(MASTER_KEY));
+        assertEquals(false, partitionAttributes.get(MAIN_KEY));
     }
 
     @Test
@@ -133,12 +133,12 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         PartitionAttributes partitionAttributes = builder.build();
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         PartitionAttributes partitionAttributes2 = builder.build();
 
@@ -147,9 +147,9 @@ public class DefaultPartitionAttributesBuilderTest {
         assertSize(partitionAttributes, 3);
         assertEquals(DEFAULT_SHARD, partitionAttributes2.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes2.get(DC_KEY));
-        assertEquals(true, partitionAttributes2.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes2.get(MAIN_KEY));
         assertSize(partitionAttributes2, 3);
-        assertEquals(true, partitionAttributes2.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes2.get(MAIN_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes2.get(DC_KEY));
         assertEquals(DEFAULT_SHARD, partitionAttributes2.get(SHARD_KEY));
     }
@@ -159,12 +159,12 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         PartitionAttributes partitionAttributes = builder.build();
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, false);
+        builder.add(MAIN_KEY, false);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         PartitionAttributes partitionAttributes2 = builder.build();
 
@@ -172,9 +172,9 @@ public class DefaultPartitionAttributesBuilderTest {
         assertSize(partitionAttributes, 3);
         assertEquals(DEFAULT_SHARD, partitionAttributes.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes.get(DC_KEY));
-        assertEquals(true, partitionAttributes.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes.get(MAIN_KEY));
         assertSize(partitionAttributes2, 3);
-        assertEquals(false, partitionAttributes2.get(MASTER_KEY));
+        assertEquals(false, partitionAttributes2.get(MAIN_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes2.get(DC_KEY));
         assertEquals(DEFAULT_SHARD, partitionAttributes2.get(SHARD_KEY));
     }
@@ -184,12 +184,12 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         PartitionAttributes partitionAttributes = builder.build();
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         builder.add(OTHER_KEY, 2);
         PartitionAttributes partitionAttributes2 = builder.build();
 
@@ -197,10 +197,10 @@ public class DefaultPartitionAttributesBuilderTest {
         assertSize(partitionAttributes, 3);
         assertEquals(DEFAULT_SHARD, partitionAttributes.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes.get(DC_KEY));
-        assertEquals(true, partitionAttributes.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes.get(MAIN_KEY));
         assertNull(partitionAttributes.get(OTHER_KEY));
         assertSize(partitionAttributes2, 3);
-        assertEquals(true, partitionAttributes2.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes2.get(MAIN_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes2.get(DC_KEY));
         assertEquals((Integer) 2, partitionAttributes2.get(OTHER_KEY));
         assertNull(partitionAttributes2.get(SHARD_KEY));
@@ -211,21 +211,21 @@ public class DefaultPartitionAttributesBuilderTest {
         DefaultPartitionAttributesBuilder builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(SHARD_KEY, DEFAULT_SHARD);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         PartitionAttributes partitionAttributes = builder.build();
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_KEY, DEFAULT_DC);
-        builder.add(MASTER_KEY, true);
+        builder.add(MAIN_KEY, true);
         PartitionAttributes partitionAttributes2 = builder.build();
 
         assertNotEquals(partitionAttributes, partitionAttributes2);
         assertSize(partitionAttributes, 3);
         assertEquals(DEFAULT_SHARD, partitionAttributes.get(SHARD_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes.get(DC_KEY));
-        assertEquals(true, partitionAttributes.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes.get(MAIN_KEY));
         assertSize(partitionAttributes2, 2);
-        assertEquals(true, partitionAttributes2.get(MASTER_KEY));
+        assertEquals(true, partitionAttributes2.get(MAIN_KEY));
         assertEquals(DEFAULT_DC, partitionAttributes2.get(DC_KEY));
     }
 

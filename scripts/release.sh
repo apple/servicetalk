@@ -56,10 +56,10 @@ else
 fi
 
 $git fetch -p
-if $git rev-parse --quiet --verify master > /dev/null; then
-    $git checkout master
+if $git rev-parse --quiet --verify main > /dev/null; then
+    $git checkout main
 else
-    $git checkout --track origin/master
+    $git checkout --track origin/main
 fi
 $git pull
 $git log -n1
@@ -114,4 +114,4 @@ for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
 done
 
 $git commit -a -m "Preparing for $nextVersion development"
-$git push origin master
+$git push origin main

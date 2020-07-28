@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  * Provide a way to describe a partition using a collection of of attributes. Typically only a single type of any
  * particular {@link Key} exists in each {@link PartitionAttributes}. For example:
  * <pre>
- * { [Key(shard) = "shard X"], [Key(data center) = "data center X"], [Key(is master) = "false/true"] }
+ * { [Key(shard) = "shard X"], [Key(data center) = "data center X"], [Key(is main) = "false/true"] }
  * </pre>
  * This construct allows for the attributes to partially specify a partition and preform "wild card" type matching.
  */
