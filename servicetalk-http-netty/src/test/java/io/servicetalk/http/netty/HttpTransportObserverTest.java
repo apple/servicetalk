@@ -39,6 +39,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Mockito;
+import org.mockito.verification.VerificationWithTimeout;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -63,7 +65,6 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_BEFORE_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
-import static io.servicetalk.transport.netty.internal.MockitoUtils.await;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -400,5 +401,9 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     void assertConnectionClosed() throws Exception {
         super.assertConnectionClosed();
         serverConnectionClosed.await();
+    }
+
+    private static VerificationWithTimeout await() {
+        return Mockito.timeout(Long.MAX_VALUE);
     }
 }

@@ -39,7 +39,6 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.transport.netty.internal.MockitoUtils.await;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;

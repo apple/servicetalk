@@ -27,6 +27,9 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
+import org.mockito.Mockito;
+import org.mockito.verification.VerificationWithTimeout;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
@@ -121,5 +124,9 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         verify(nonMultiplexedObserver).onNewRead();
         verify(readObserver).requestedToRead(anyLong());
         verify(readObserver, atLeastOnce()).itemRead();
+    }
+
+    static VerificationWithTimeout await() {
+        return Mockito.timeout(Long.MAX_VALUE);
     }
 }

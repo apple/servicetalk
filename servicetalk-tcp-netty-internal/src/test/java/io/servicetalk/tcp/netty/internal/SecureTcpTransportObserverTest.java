@@ -33,7 +33,6 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
-import static io.servicetalk.transport.netty.internal.MockitoUtils.await;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
