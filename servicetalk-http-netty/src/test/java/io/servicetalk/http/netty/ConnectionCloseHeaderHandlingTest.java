@@ -70,7 +70,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
 
 @RunWith(Enclosed.class)
 public class ConnectionCloseHeaderHandlingTest {
@@ -191,40 +190,30 @@ public class ConnectionCloseHeaderHandlingTest {
 
         private final CountDownLatch responsePayloadReceived = new CountDownLatch(1);
 
-        private final boolean awaitRequestPayload;
-        private final boolean awaitResponsePayload;
         private final boolean requestInitiatesClosure;
         private final boolean noRequestContent;
         private final boolean noResponseContent;
 
-        public NonPipelinedRequestsTest(boolean viaProxy, boolean awaitRequestPayload, boolean awaitResponsePayload,
+        public NonPipelinedRequestsTest(boolean viaProxy, boolean awaitRequestPayload,
                                         boolean requestInitiatesClosure,
                                         boolean noRequestContent, boolean noResponseContent) throws Exception {
             super(viaProxy, awaitRequestPayload);
-            this.awaitRequestPayload = awaitRequestPayload;
-            this.awaitResponsePayload = awaitResponsePayload;
             this.requestInitiatesClosure = requestInitiatesClosure;
             this.noRequestContent = noRequestContent;
             this.noResponseContent = noResponseContent;
         }
 
-        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}, awaitResponsePayload={2}, " +
-                "requestInitiatesClosure={3}, noRequestContent={4}, noResponseContent={5}")
+        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}, " +
+                "requestInitiatesClosure={2}, noRequestContent={3}, noResponseContent={4}")
         public static Collection<Boolean[]> data() {
             Collection<Boolean[]> data = new ArrayList<>();
             for (boolean viaProxy : TRUE_FALSE) {
                 for (boolean awaitRequestPayload : TRUE_FALSE) {
-                    for (boolean awaitResponsePayload : TRUE_FALSE) {
-                        if (awaitRequestPayload && awaitResponsePayload) {
-                            // Skip configuration that will cause a deadlock.
-                            continue;
-                        }
-                        for (boolean requestInitiatesClosure : TRUE_FALSE) {
-                            for (boolean noRequestContent : TRUE_FALSE) {
-                                for (boolean noResponseContent : TRUE_FALSE) {
-                                    data.add(new Boolean[] {viaProxy, awaitRequestPayload, awaitResponsePayload,
-                                            requestInitiatesClosure, noRequestContent, noResponseContent});
-                                }
+                    for (boolean requestInitiatesClosure : TRUE_FALSE) {
+                        for (boolean noRequestContent : TRUE_FALSE) {
+                            for (boolean noResponseContent : TRUE_FALSE) {
+                                data.add(new Boolean[] {viaProxy, awaitRequestPayload,
+                                        requestInitiatesClosure, noRequestContent, noResponseContent});
                             }
                         }
                     }
@@ -235,9 +224,6 @@ public class ConnectionCloseHeaderHandlingTest {
 
         @Test
         public void testConnectionClosure() throws Exception {
-            // FIXME: remove the following assume when the NettyPipelinedConnection bug is fixed:
-            assumeFalse("Temporarily skip states that unexpectedly cause deadlock",
-                    !awaitRequestPayload && awaitResponsePayload && !noRequestContent);
             String content = "request_content";
             StreamingHttpRequest request = connection.newRequest(noRequestContent ? GET : POST, "/first")
                     .setQueryParameter("noResponseContent", valueOf(noResponseContent))
@@ -246,9 +232,6 @@ public class ConnectionCloseHeaderHandlingTest {
                 request.payloadBody(connection.connectionContext().executionContext().executor().submit(() -> {
                     try {
                         responseReceived.await();
-                        if (awaitResponsePayload) {
-                            responsePayloadReceived.await();
-                        }
                     } catch (InterruptedException e) {
                         throwException(e);
                     }
