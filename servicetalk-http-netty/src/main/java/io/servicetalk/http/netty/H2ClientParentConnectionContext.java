@@ -83,6 +83,7 @@ import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEAB
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -185,7 +186,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 subscriber = null;
                 final ConnectionObserver connectionObserver = connectionObserver(nettyChannel());
                 if (connectionObserver != null) {
-                    observer = requireNonNull(connectionObserver.establishedMultiplexed(this));
+                    observer = safeReport(() -> connectionObserver.establishedMultiplexed(this),
+                            connectionObserver, "multiplexed connection established");
                 }
                 subscriberCopy.onSuccess(this);
             }

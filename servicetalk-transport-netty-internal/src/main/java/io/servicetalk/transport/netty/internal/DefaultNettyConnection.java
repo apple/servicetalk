@@ -79,6 +79,7 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNetty
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -277,16 +278,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private Publisher<Read> registerReadObserver(final Publisher<Read> readPublisher) {
         return defer(() -> {
             final DataObserver dataObserver = this.dataObserver;
-            if (dataObserver == null) {
-                return readPublisher.subscribeShareContext();
-            }
-
             final ReadObserver observer;
-            try {
-                observer = requireNonNull(dataObserver.onNewRead());
-            } catch (Throwable unexpected) {
-                LOGGER.warn("Unexpected exception from {} while reporting creation of a new read",
-                        dataObserver, unexpected);
+            if (dataObserver == null ||
+                    (observer = safeReport(dataObserver::onNewRead, dataObserver, "new read")) == null) {
                 return readPublisher.subscribeShareContext();
             }
 
@@ -313,7 +307,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
                 @Override
                 public void onError(final Throwable t) {
-                    safeReport(() -> observer.readFailed(t), observer, "read failed");
+                    safeReport(() -> observer.readFailed(t), observer, "read failed", t);
                 }
 
                 @Override
@@ -322,14 +316,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 }
             }).subscribeShareContext();
         });
-    }
-
-    private static void safeReport(final Runnable runnable, final Object observer, final String event) {
-        try {
-            runnable.run();
-        } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting {} event", observer, event, unexpected);
-        }
     }
 
     private Publisher<Read> enrichErrorPublisher(final Throwable t) {
@@ -386,13 +372,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final DataObserver dataObserver = DefaultNettyConnection.this.dataObserver;
-                final WriteObserver writeObserver;
-                try {
-                    writeObserver = dataObserver == null ? null : requireNonNull(dataObserver.onNewWrite());
-                } catch (Throwable t) {
-                    deliverErrorFromSource(completableSubscriber, t);
-                    return;
-                }
+                final WriteObserver writeObserver = dataObserver == null ? null :
+                        safeReport(dataObserver::onNewWrite, dataObserver, "new write");
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
@@ -704,7 +685,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
             if (observer != null) {
-                connection.dataObserver = requireNonNull(observer.established(connection));
+                connection.dataObserver = safeReport(() -> observer.established(connection), observer,
+                        "connection established");
             }
             subscriberCopy.onSuccess(connection);
         }

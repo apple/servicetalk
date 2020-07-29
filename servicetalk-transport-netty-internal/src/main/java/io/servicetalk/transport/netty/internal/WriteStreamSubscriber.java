@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -415,7 +416,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 return nettySharedPromiseTryStatus();
             }
             if (observer != null) {
-                observer.itemWritten();
+                safeReport(observer::itemWritten, observer, "item written");
             }
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
@@ -469,7 +470,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (cause == null) {
                 try {
                     if (observer != null) {
-                        observer.writeComplete();
+                        safeReport(observer::writeComplete, observer, "item complete");
                     }
                     subscriber.onComplete();
                 } catch (Throwable t) {
@@ -481,7 +482,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             } else {
                 try {
                     if (observer != null) {
-                        observer.writeFailed(cause);
+                        safeReport(() -> observer.writeFailed(cause), observer, "item failed", cause);
                     }
                     subscriber.onError(cause);
                 } catch (Throwable t) {

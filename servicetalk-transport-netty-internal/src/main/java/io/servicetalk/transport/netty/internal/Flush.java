@@ -26,6 +26,7 @@ import io.netty.util.concurrent.EventExecutor;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -71,7 +72,7 @@ final class Flush {
             this.observer = observer;
             this.writeEventsListener = flushStrategy.apply(() -> {
                 if (observer != null) {
-                    observer.onFlushRequest();
+                    safeReport(observer::onFlushRequest, observer, "flush request");
                 }
                 if (enqueueFlush) {
                     eventLoop.execute(channel::flush);
@@ -93,7 +94,7 @@ final class Flush {
                     @Override
                     public void request(long n) {
                         if (observer != null) {
-                            observer.requestedToWrite(n);
+                            safeReport(() -> observer.requestedToWrite(n), observer, "requested to write");
                         }
                         subscription.request(n);
                     }
@@ -101,7 +102,7 @@ final class Flush {
                     @Override
                     public void cancel() {
                         if (observer != null) {
-                            observer.writeCancelled();
+                            safeReport(observer::writeCancelled, observer, "write cancelled");
                         }
                         subscription.cancel();
                         writeEventsListener.writeCancelled();
@@ -122,7 +123,7 @@ final class Flush {
                 enqueueFlush = true;
             }
             if (observer != null) {
-                observer.itemReceived();
+                safeReport(observer::itemReceived, observer, "item received");
             }
             subscriber.onNext(t);
             writeEventsListener.itemWritten(t);

@@ -63,7 +63,7 @@ import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extr
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
@@ -163,23 +163,17 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Nullable
     static StreamObserver registerStreamObserver(final Http2StreamChannel streamChannel,
                                                  @Nullable final MultiplexedObserver multiplexedObserver) {
-        if (multiplexedObserver == null) {
-            return null;
-        }
         final StreamObserver observer;
-        try {
-            observer = requireNonNull(multiplexedObserver.onNewStream());
-        } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting creation of a new stream",
-                    multiplexedObserver, unexpected);
+        if (multiplexedObserver == null ||
+                (observer = safeReport(multiplexedObserver::onNewStream, multiplexedObserver, "new stream")) == null) {
             return null;
         }
         streamChannel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = connectionError(streamChannel);
             if (t == null) {
-                observer.streamClosed();
+                safeReport((Runnable) observer::streamClosed, observer, "stream closed");
             } else {
-                observer.streamClosed(t);
+                safeReport(() -> observer.streamClosed(t), observer, "stream closed", t);
             }
         });
         return observer;
