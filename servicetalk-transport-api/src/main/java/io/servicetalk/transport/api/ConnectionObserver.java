@@ -19,6 +19,9 @@ import javax.net.ssl.SSLSession;
 
 /**
  * An observer interface that provides visibility into events associated with a network connection.
+ * <p>
+ * Either {@link #connectionClosed()} or {@link #connectionClosed(Throwable)} will be invoked to signal when connection
+ * is closed.
  */
 public interface ConnectionObserver {
 
@@ -78,6 +81,9 @@ public interface ConnectionObserver {
 
     /**
      * An observer interface that provides visibility into security handshake events.
+     * <p>
+     * Either {@link #handshakeComplete(SSLSession)} or {@link #handshakeFailed(Throwable)} will be invoked to signal
+     * successful or failed completion of the handshake.
      */
     interface SecurityHandshakeObserver {
 
@@ -131,6 +137,9 @@ public interface ConnectionObserver {
 
     /**
      * An observer interface that provides visibility into stream events.
+     * <p>
+     * Either {@link #streamClosed()} or {@link #streamClosed(Throwable)} will be invoked to signal when a stream is
+     * closed.
      */
     interface StreamObserver extends DataObserver {
 
@@ -149,6 +158,10 @@ public interface ConnectionObserver {
 
     /**
      * An observer interface that provides visibility into <strong>read</strong> events.
+     * <p>
+     * Either {@link #readComplete()} or {@link #readFailed(Throwable)} will be invoked to signal when a read operation
+     * terminates. {@link #readCancelled()} is also a terminal signal for the read operation, however it may be invoked
+     * concurrently with {@link #readComplete()} or {@link #readFailed(Throwable)}.
      */
     interface ReadObserver {
 
@@ -186,6 +199,10 @@ public interface ConnectionObserver {
 
     /**
      * An observer interface that provides visibility into <strong>write</strong> events.
+     * <p>
+     * Either {@link #writeComplete()} or {@link #writeFailed(Throwable)} will be invoked to signal when a write
+     * operation terminates. {@link #writeCancelled()} is also a terminal signal for the write operation, however it may
+     * be invoked concurrently with {@link #writeComplete()} or {@link #writeFailed(Throwable)}.
      */
     interface WriteObserver {
 
