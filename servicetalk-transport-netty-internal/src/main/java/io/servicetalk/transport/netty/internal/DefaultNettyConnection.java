@@ -28,7 +28,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ConnectionObserver.NonMultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -127,17 +127,16 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private final ChannelConfig parentChannelConfig;
     @Nullable
-    private volatile NonMultiplexedObserver readWriteObserver;
+    private volatile DataObserver dataObserver;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    Predicate<Read> terminalPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig,
-                                   @Nullable NonMultiplexedObserver readWriteObserver) {
+                                   @Nullable DataObserver dataObserver) {
         super(channel, executor);
-        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler,
-                readWriteObserver);
+        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler, dataObserver);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
@@ -173,7 +172,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.sslSession = sslSession;
         this.parentChannelConfig = parentChannelConfig;
         this.protocol = requireNonNull(protocol);
-        this.readWriteObserver = readWriteObserver;
+        this.dataObserver = dataObserver;
     }
 
     /**
@@ -191,7 +190,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
-     * @param readWriteObserver {@link NonMultiplexedObserver} to observe read and write events
+     * @param dataObserver {@link DataObserver} to observe data related events
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -201,10 +200,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
-            @Nullable ChannelConfig parentChannelConfig, @Nullable NonMultiplexedObserver readWriteObserver) {
+            @Nullable ChannelConfig parentChannelConfig, @Nullable DataObserver dataObserver) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
-                sslSession, parentChannelConfig, readWriteObserver);
+                sslSession, parentChannelConfig, dataObserver);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, null));
         return connection;
@@ -270,9 +269,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         };
     }
 
-    private void readWriteObserver(@Nullable final NonMultiplexedObserver readWriteObserver) {
-        this.readWriteObserver = readWriteObserver;
-        nettyChannelPublisher.readWriteObserver(readWriteObserver);
+    private void dataObserver(@Nullable final DataObserver dataObserver) {
+        this.dataObserver = dataObserver;
+        nettyChannelPublisher.dataObserver(dataObserver);
     }
 
     private Publisher<Read> enrichErrorPublisher(final Throwable t) {
@@ -328,10 +327,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         return cleanupStateWhenDone(new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                final NonMultiplexedObserver readWriteObserver = DefaultNettyConnection.this.readWriteObserver;
+                final DataObserver dataObserver = DefaultNettyConnection.this.dataObserver;
                 final ConnectionObserver.WriteObserver writeObserver;
                 try {
-                    writeObserver = readWriteObserver == null ? null : requireNonNull(readWriteObserver.onNewWrite());
+                    writeObserver = dataObserver == null ? null : requireNonNull(dataObserver.onNewWrite());
                 } catch (Throwable t) {
                     deliverErrorFromSource(completableSubscriber, t);
                     return;
@@ -647,7 +646,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
             if (observer != null) {
-                connection.readWriteObserver(requireNonNull(observer.established(connection)));
+                connection.dataObserver(requireNonNull(observer.established(connection)));
             }
             subscriberCopy.onSuccess(connection);
         }

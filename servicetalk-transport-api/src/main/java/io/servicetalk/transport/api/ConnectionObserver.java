@@ -52,9 +52,9 @@ public interface ConnectionObserver {
      * Callback when a non-multiplexed connection is established and ready.
      *
      * @param info {@link ConnectionInfo} for the established connection
-     * @return a new {@link NonMultiplexedObserver} that provides visibility into read and write events
+     * @return a new {@link DataObserver} that provides visibility into read and write events
      */
-    NonMultiplexedObserver established(ConnectionInfo info);
+    DataObserver established(ConnectionInfo info);
 
     /**
      * Callback when a multiplexed connection is established and ready.
@@ -97,9 +97,9 @@ public interface ConnectionObserver {
     }
 
     /**
-     * An observer interface that provides visibility into read and write events of a non-multiplexed connection.
+     * An observer interface that provides visibility into read and write events related to data flow.
      */
-    interface NonMultiplexedObserver {
+    interface DataObserver {
 
         /**
          * Callback when the connection starts reading a new message.
@@ -132,7 +132,7 @@ public interface ConnectionObserver {
     /**
      * An observer interface that provides visibility into stream events.
      */
-    interface StreamObserver extends NonMultiplexedObserver {
+    interface StreamObserver extends DataObserver {
 
         /**
          * Callback when the stream is closed due to an {@link Throwable error}.

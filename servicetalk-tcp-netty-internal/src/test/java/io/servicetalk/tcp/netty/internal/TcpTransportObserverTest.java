@@ -45,7 +45,7 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
 
         Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
         connection.write(from(content.duplicate())).toFuture().get();
-        verifyWriteObserver(clientNonMultiplexedObserver, clientWriteObserver, true);
+        verifyWriteObserver(clientDataObserver, clientWriteObserver, true);
         verify(clientConnectionObserver).onDataWrite(content.readableBytes());
         verify(clientConnectionObserver).onFlush();
 
@@ -58,12 +58,12 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
         responseLatch.await();
         assertThat("Unexpected response.", response.get(), equalTo(content));
         verify(serverConnectionObserver).onDataRead(content.readableBytes());
-        verifyReadObserver(serverNonMultiplexedObserver, serverReadObserver);
+        verifyReadObserver(serverDataObserver, serverReadObserver);
         verify(serverConnectionObserver).onDataWrite(content.readableBytes());
         verify(serverConnectionObserver).onFlush();
-        verifyWriteObserver(serverNonMultiplexedObserver, serverWriteObserver, false);
+        verifyWriteObserver(serverDataObserver, serverWriteObserver, false);
         verify(clientConnectionObserver).onDataRead(content.readableBytes());
-        verifyReadObserver(clientNonMultiplexedObserver, clientReadObserver);
+        verifyReadObserver(clientDataObserver, clientReadObserver);
 
         verify(clientConnectionObserver, never()).connectionClosed();
         verify(serverConnectionObserver, never()).connectionClosed();
@@ -78,8 +78,8 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
         verify(serverWriteObserver).writeCancelled();
 
         verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver,
-                clientNonMultiplexedObserver, clientReadObserver, clientWriteObserver,
+                clientDataObserver, clientReadObserver, clientWriteObserver,
                 serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver,
-                serverNonMultiplexedObserver, serverReadObserver, serverWriteObserver);
+                serverDataObserver, serverReadObserver, serverWriteObserver);
     }
 }

@@ -18,7 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.transport.api.ConnectionObserver.NonMultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 
 import io.netty.channel.Channel;
@@ -50,7 +50,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     @Nullable
     private Throwable fatalError;
     @Nullable
-    private NonMultiplexedObserver readWriteObserver;
+    private DataObserver dataObserver;
 
     private final Channel channel;
     private final CloseHandler closeHandler;
@@ -58,12 +58,12 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private final Predicate<T> terminalSignalPredicate;
 
     NettyChannelPublisher(Channel channel, Predicate<T> terminalSignalPredicate, CloseHandler closeHandler,
-                          @Nullable NonMultiplexedObserver readWriteObserver) {
+                          @Nullable DataObserver dataObserver) {
         this.eventLoop = channel.eventLoop();
         this.channel = channel;
         this.closeHandler = closeHandler;
         this.terminalSignalPredicate = requireNonNull(terminalSignalPredicate);
-        this.readWriteObserver = readWriteObserver;
+        this.dataObserver = dataObserver;
     }
 
     @Override
@@ -75,8 +75,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
-    void readWriteObserver(@Nullable final NonMultiplexedObserver readWriteObserver) {
-        this.readWriteObserver = readWriteObserver;
+    void dataObserver(@Nullable final DataObserver dataObserver) {
+        this.dataObserver = dataObserver;
     }
 
     void channelRead(T data) {
@@ -311,7 +311,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         } else {
             assert requestCount == 0;
             try {
-                subscription = new SubscriptionImpl(subscriber, this.readWriteObserver);
+                subscription = new SubscriptionImpl(subscriber, this.dataObserver);
             } catch (Throwable t) {
                 deliverErrorFromSource(subscriber, t);
                 return;
@@ -337,9 +337,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         private final ReadObserver observer;
         final Subscriber<? super T> associatedSub;
 
-        private SubscriptionImpl(final Subscriber<? super T> subscriber,
-                                 @Nullable final NonMultiplexedObserver readWriteObserver) {
-            observer = readWriteObserver == null ? null : requireNonNull(readWriteObserver.onNewRead());
+        private SubscriptionImpl(final Subscriber<? super T> subscriber, @Nullable final DataObserver dataObserver) {
+            observer = dataObserver == null ? null : requireNonNull(dataObserver.onNewRead());
             this.associatedSub = observer == null ? subscriber : new Subscriber<T>() {
                 @Override
                 public void onSubscribe(final Subscription subscription) {

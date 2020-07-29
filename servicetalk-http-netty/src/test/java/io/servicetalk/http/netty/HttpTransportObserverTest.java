@@ -29,7 +29,7 @@ import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamResetException;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
-import io.servicetalk.transport.api.ConnectionObserver.NonMultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
@@ -99,7 +99,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
-    private final NonMultiplexedObserver clientNonMultiplexedObserver;
+    private final DataObserver clientDataObserver;
     private final MultiplexedObserver clientMultiplexedObserver;
     private final StreamObserver clientStreamObserver;
     private final ReadObserver clientReadObserver;
@@ -107,7 +107,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
     private final TransportObserver serverTransportObserver;
     private final ConnectionObserver serverConnectionObserver;
-    private final NonMultiplexedObserver serverNonMultiplexedObserver;
+    private final DataObserver serverDataObserver;
     private final MultiplexedObserver serverMultiplexedObserver;
     private final StreamObserver serverStreamObserver;
     private final ReadObserver serverReadObserver;
@@ -142,35 +142,35 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
-        clientNonMultiplexedObserver = mock(NonMultiplexedObserver.class, "clientNonMultiplexedObserver");
+        clientDataObserver = mock(DataObserver.class, "clientDataObserver");
         clientMultiplexedObserver = mock(MultiplexedObserver.class, "clientMultiplexedObserver");
         clientStreamObserver = mock(StreamObserver.class, "clientStreamObserver");
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
         when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
-        when(clientConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(clientNonMultiplexedObserver);
+        when(clientConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientConnectionObserver.establishedMultiplexed(any(ConnectionInfo.class)))
                 .thenReturn(clientMultiplexedObserver);
         when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
-        when(clientNonMultiplexedObserver.onNewRead()).thenReturn(clientReadObserver);
-        when(clientNonMultiplexedObserver.onNewWrite()).thenReturn(clientWriteObserver);
+        when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
+        when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
         when(clientStreamObserver.onNewRead()).thenReturn(clientReadObserver);
         when(clientStreamObserver.onNewWrite()).thenReturn(clientWriteObserver);
 
         serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
         serverConnectionObserver = mock(ConnectionObserver.class, "serverConnectionObserver");
-        serverNonMultiplexedObserver = mock(NonMultiplexedObserver.class, "serverNonMultiplexedObserver");
+        serverDataObserver = mock(DataObserver.class, "serverDataObserver");
         serverMultiplexedObserver = mock(MultiplexedObserver.class, "serverMultiplexedObserver");
         serverStreamObserver = mock(StreamObserver.class, "serverStreamObserver");
         serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
-        when(serverConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(serverNonMultiplexedObserver);
+        when(serverConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverConnectionObserver.establishedMultiplexed(any(ConnectionInfo.class)))
                 .thenReturn(serverMultiplexedObserver);
         when(serverMultiplexedObserver.onNewStream()).thenReturn(serverStreamObserver);
-        when(serverNonMultiplexedObserver.onNewRead()).thenReturn(serverReadObserver);
-        when(serverNonMultiplexedObserver.onNewWrite()).thenReturn(serverWriteObserver);
+        when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
+        when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
         when(serverStreamObserver.onNewRead()).thenReturn(serverReadObserver);
         when(serverStreamObserver.onNewWrite()).thenReturn(serverWriteObserver);
 
@@ -193,8 +193,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(clientConnectionObserver).established(any(ConnectionInfo.class));
             verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
 
-            verify(serverNonMultiplexedObserver, await()).onNewRead();
-            verify(serverNonMultiplexedObserver, await()).onNewWrite();
+            verify(serverDataObserver, await()).onNewRead();
+            verify(serverDataObserver, await()).onNewWrite();
         } else {
             verify(clientConnectionObserver).establishedMultiplexed(any(ConnectionInfo.class));
             verify(serverConnectionObserver, await()).establishedMultiplexed(any(ConnectionInfo.class));
@@ -205,8 +205,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed();
 
-        verifyNoMoreInteractions(clientTransportObserver, clientNonMultiplexedObserver, clientMultiplexedObserver,
-                serverTransportObserver, serverNonMultiplexedObserver, serverMultiplexedObserver);
+        verifyNoMoreInteractions(clientTransportObserver, clientDataObserver, clientMultiplexedObserver,
+                serverTransportObserver, serverDataObserver, serverMultiplexedObserver);
         if (protocol != Protocol.HTTP_2) {
             // HTTP/2 coded adds additional write/flush events related to connection preface. Also, it may emit more
             // flush events on the pipeline after the connection is closed.
@@ -259,8 +259,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver).readComplete();
 
         verifyNoMoreInteractions(
-                clientNonMultiplexedObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverNonMultiplexedObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
+                clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
+                serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
     }
 
     @Test
@@ -321,8 +321,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver).readFailed(any(causeType));
 
         verifyNoMoreInteractions(
-                clientNonMultiplexedObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverNonMultiplexedObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
+                clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
+                serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
     }
 
     @Test
@@ -373,16 +373,16 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver).readCancelled();
 
         verifyNoMoreInteractions(
-                clientNonMultiplexedObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverNonMultiplexedObserver, serverMultiplexedObserver, serverReadObserver);
+                clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
+                serverDataObserver, serverMultiplexedObserver, serverReadObserver);
     }
 
     private void verifyNewReadAndNewWrite(int nonMultiplexedTimes) {
         if (protocol == Protocol.HTTP_1) {
-            verify(clientNonMultiplexedObserver).onNewRead();
-            verify(clientNonMultiplexedObserver).onNewWrite();
-            verify(serverNonMultiplexedObserver, await().times(nonMultiplexedTimes)).onNewRead();
-            verify(serverNonMultiplexedObserver, atLeastOnce()).onNewWrite();
+            verify(clientDataObserver).onNewRead();
+            verify(clientDataObserver).onNewWrite();
+            verify(serverDataObserver, await().times(nonMultiplexedTimes)).onNewRead();
+            verify(serverDataObserver, atLeastOnce()).onNewWrite();
         } else {
             verify(clientMultiplexedObserver).onNewStream();
             verify(serverMultiplexedObserver).onNewStream();

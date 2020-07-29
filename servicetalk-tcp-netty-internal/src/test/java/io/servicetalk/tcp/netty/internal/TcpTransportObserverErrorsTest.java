@@ -121,7 +121,7 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
 
                 assertThrows(ExecutionException.class, () -> connection.write(
                         Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
-                verify(clientNonMultiplexedObserver).onNewWrite();
+                verify(clientDataObserver).onNewWrite();
                 verify(clientWriteObserver).requestedToWrite(anyLong());
                 verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
                 break;
