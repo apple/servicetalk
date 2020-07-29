@@ -1,5 +1,5 @@
 = gRPC
 
-This module defines the ServiceTalk client and server API for the link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC]
+This module defines the ServiceTalk client and server API for the link:https://github.com/grpc/grpc/blob/main/doc/PROTOCOL-HTTP2.md[gRPC]
 protocol.
 See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.

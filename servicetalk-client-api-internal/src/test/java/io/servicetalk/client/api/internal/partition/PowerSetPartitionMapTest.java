@@ -39,7 +39,7 @@ public class PowerSetPartitionMapTest {
     private static final Key<Integer> DC_ID = Key.newKey("dc");
     private static final Key<String> APP_ID = Key.newKey("app");
     private static final Key<Integer> SHARD_ID = Key.newKey("shard");
-    private static final Key<Boolean> IS_MASTER = Key.newKey("master");
+    private static final Key<Boolean> IS_MAIN = Key.newKey("main");
     private static final Key<Boolean> EXTRA = Key.newKey("extra");
     private static final ListenableAsyncCloseable VALUE = new ListenableAsyncCloseable() {
         private final Processor close = newCompletableProcessor();
@@ -115,11 +115,11 @@ public class PowerSetPartitionMapTest {
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
-        builder.add(IS_MASTER, false);
+        builder.add(IS_MAIN, false);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(1);
@@ -148,27 +148,27 @@ public class PowerSetPartitionMapTest {
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, false);
+        builder.add(IS_MAIN, false);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
-        builder.add(IS_MASTER, false);
+        builder.add(IS_MAIN, false);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 1);
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(2);
         builder.add(DC_ID, 2);
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertNull(map.get(builder.build()));
     }
 
@@ -191,19 +191,19 @@ public class PowerSetPartitionMapTest {
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, false);
+        builder.add(IS_MAIN, false);
         assertEquals(VALUE, map.get(builder.build()));
 
         builder = new DefaultPartitionAttributesBuilder(3);
         builder.add(DC_ID, 1);
         builder.add(APP_ID, "notmyapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         assertNull(map.get(builder.build()));
     }
 
@@ -221,7 +221,7 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 9);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         builder.add(EXTRA, true);
         assertNull(map.get(builder.build()));
     }
@@ -242,7 +242,7 @@ public class PowerSetPartitionMapTest {
     public void testAddDuplicationPartitions() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         assertTrue("New map is not empty.", map.isEmpty());
-        PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MASTER, true).add(SHARD_ID, 1)
+        PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MAIN, true).add(SHARD_ID, 1)
                 .build();
         List<ListenableAsyncCloseable> added1 = map.add(partition);
         List<ListenableAsyncCloseable> added2 = map.add(partition);
@@ -285,7 +285,7 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 10);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, false);
+        builder.add(IS_MAIN, false);
         return builder.build();
     }
 
@@ -294,7 +294,7 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 10);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         return builder.build();
     }
 
@@ -303,7 +303,7 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 9);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         return builder.build();
     }
 
@@ -312,7 +312,7 @@ public class PowerSetPartitionMapTest {
         builder.add(DC_ID, 1);
         builder.add(SHARD_ID, 8);
         builder.add(APP_ID, "myapp");
-        builder.add(IS_MASTER, true);
+        builder.add(IS_MAIN, true);
         return builder.build();
     }
 }

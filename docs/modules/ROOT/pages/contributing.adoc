@@ -2,4 +2,4 @@
 
 ServiceTalk is available on link:https://github.com/apple/servicetalk/[GitHub] and we welcome code contributions, issues
 and general feedback. Before you get started, we suggest reading the
-link:https://github.com/apple/servicetalk/blob/master/CONTRIBUTING.adoc[contribution guidelines].
+link:https://github.com/apple/servicetalk/blob/main/CONTRIBUTING.adoc[contribution guidelines].
