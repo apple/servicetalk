@@ -27,6 +27,8 @@ import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
@@ -34,13 +36,17 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -55,9 +61,15 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
+import static java.util.Objects.requireNonNull;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
+
     final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
@@ -148,6 +160,31 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         keepAliveManager.trackActiveStream(streamChannel);
     }
 
+    @Nullable
+    static StreamObserver registerStreamObserver(final Http2StreamChannel streamChannel,
+                                                 @Nullable final MultiplexedObserver multiplexedObserver) {
+        if (multiplexedObserver == null) {
+            return null;
+        }
+        final StreamObserver observer;
+        try {
+            observer = requireNonNull(multiplexedObserver.onNewStream());
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting creation of a new stream",
+                    multiplexedObserver, unexpected);
+            return null;
+        }
+        streamChannel.closeFuture().addListener((ChannelFutureListener) future -> {
+            Throwable t = connectionError(streamChannel);
+            if (t == null) {
+                observer.streamClosed();
+            } else {
+                observer.streamClosed(t);
+            }
+        });
+        return observer;
+    }
+
     abstract static class AbstractH2ParentConnection extends ChannelInboundHandlerAdapter {
         final H2ParentConnectionContext parentContext;
         final boolean waitForSslHandshake;
@@ -208,6 +245,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            assignConnectionError(ctx.channel(), cause);
             parentContext.transportError.onSuccess(cause);
         }
 

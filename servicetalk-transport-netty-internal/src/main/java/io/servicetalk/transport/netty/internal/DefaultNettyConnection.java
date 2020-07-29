@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -29,6 +31,8 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
+import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
+import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -63,6 +67,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -136,8 +141,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig,
                                    @Nullable DataObserver dataObserver) {
         super(channel, executor);
-        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler, dataObserver);
-        this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
+        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
+        this.readPublisher = registerReadObserver(nettyChannelPublisher.recoverWith(this::enrichErrorPublisher));
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
@@ -269,9 +274,62 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         };
     }
 
-    private void dataObserver(@Nullable final DataObserver dataObserver) {
-        this.dataObserver = dataObserver;
-        nettyChannelPublisher.dataObserver(dataObserver);
+    private Publisher<Read> registerReadObserver(final Publisher<Read> readPublisher) {
+        return defer(() -> {
+            final DataObserver dataObserver = this.dataObserver;
+            if (dataObserver == null) {
+                return readPublisher.subscribeShareContext();
+            }
+
+            final ReadObserver observer;
+            try {
+                observer = requireNonNull(dataObserver.onNewRead());
+            } catch (Throwable unexpected) {
+                LOGGER.warn("Unexpected exception from {} while reporting creation of a new read",
+                        dataObserver, unexpected);
+                return readPublisher.subscribeShareContext();
+            }
+
+            return readPublisher.beforeSubscription(() -> new Subscription() {
+                @Override
+                public void request(final long n) {
+                    safeReport(() -> observer.requestedToRead(n), observer, "requested to read");
+                }
+
+                @Override
+                public void cancel() {
+                    safeReport(observer::readCancelled, observer, "read cancelled");
+                }
+            }).beforeSubscriber(() -> new PublisherSource.Subscriber<Read>() {
+                @Override
+                public void onSubscribe(final Subscription subscription) {
+                    // noop
+                }
+
+                @Override
+                public void onNext(@Nullable final Read read) {
+                    safeReport(observer::itemRead, observer, "item read");
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    safeReport(() -> observer.readFailed(t), observer, "read failed");
+                }
+
+                @Override
+                public void onComplete() {
+                    safeReport(observer::readComplete, observer, "read complete");
+                }
+            }).subscribeShareContext();
+        });
+    }
+
+    private static void safeReport(final Runnable runnable, final Object observer, final String event) {
+        try {
+            runnable.run();
+        } catch (Throwable unexpected) {
+            LOGGER.warn("Unexpected exception from {} while reporting {} event", observer, event, unexpected);
+        }
     }
 
     private Publisher<Read> enrichErrorPublisher(final Throwable t) {
@@ -328,7 +386,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final DataObserver dataObserver = DefaultNettyConnection.this.dataObserver;
-                final ConnectionObserver.WriteObserver writeObserver;
+                final WriteObserver writeObserver;
                 try {
                     writeObserver = dataObserver == null ? null : requireNonNull(dataObserver.onNewWrite());
                 } catch (Throwable t) {
@@ -646,7 +704,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
             if (observer != null) {
-                connection.dataObserver(requireNonNull(observer.established(connection)));
+                connection.dataObserver = requireNonNull(observer.established(connection));
             }
             subscriberCopy.onSuccess(connection);
         }

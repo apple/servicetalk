@@ -161,6 +161,8 @@ public interface ConnectionObserver {
 
         /**
          * Invokes when a new item is read.
+         * <p>
+         * Content of the read items should be inspected at the higher level API when these items are consumed.
          */
         void itemRead();
 
@@ -196,6 +198,8 @@ public interface ConnectionObserver {
 
         /**
          * Callback when an item is received and ready to be written.
+         * <p>
+         * Content of the received items should be inspected at the higher level API when these items are produced.
          */
         void itemReceived();
 
@@ -206,6 +210,8 @@ public interface ConnectionObserver {
 
         /**
          * Callback when an item is written to the transport.
+         * <p>
+         * Content of the written items should be inspected at the higher level API when these items are produced.
          */
         void itemWritten();
 

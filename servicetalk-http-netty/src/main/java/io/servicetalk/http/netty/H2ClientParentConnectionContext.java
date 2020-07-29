@@ -60,6 +60,8 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -77,7 +79,6 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
-import static io.servicetalk.http.netty.StreamObserverUtils.registerStreamObserver;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
@@ -141,6 +142,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
     private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements
                                                                                              H2ClientParentConnection {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(DefaultH2ClientParentConnection.class);
 
         private static final IgnoreConsumedEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
                 new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
@@ -259,9 +262,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
-                Http2StreamChannel streamChannel = future.getNow();
-                parentContext.trackActiveStream(streamChannel);
+                Http2StreamChannel streamChannel = null;
                 try {
+                    streamChannel = future.getNow();
+                    parentContext.trackActiveStream(streamChannel);
                     StreamObserver streamObserver = registerStreamObserver(streamChannel, observer);
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
@@ -287,8 +291,15 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
                             executionContext(), reqRespFactory, headersFactory).request(strategy, request));
                 } catch (Throwable cause) {
-                    assignConnectionError(streamChannel, cause);
-                    streamChannel.close();
+                    if (streamChannel != null) {
+                        try {
+                            assignConnectionError(streamChannel, cause);
+                            streamChannel.close();
+                        } catch (Throwable unexpected) {
+                            unexpected.addSuppressed(cause);
+                            LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
+                        }
+                    }
                     subscriber.onError(cause);
                     return;
                 }
