@@ -145,7 +145,18 @@ final class ProxyTunnel implements AutoCloseable {
                 out.write(b);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            LOGGER.error("Proxy exception", e);
+        } finally {
+            try {
+                cin.close();
+            } catch (IOException closeE) {
+                LOGGER.error("Cannot close InputStream", closeE);
+            }
+            try {
+                out.close();
+            } catch (IOException closeE) {
+                LOGGER.error("Cannot close OutputStream", closeE);
+            }
         }
     }
 
