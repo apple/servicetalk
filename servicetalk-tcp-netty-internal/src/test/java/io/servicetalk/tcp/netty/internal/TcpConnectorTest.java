@@ -18,7 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.ConnectionContext.Protocol;
+import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 

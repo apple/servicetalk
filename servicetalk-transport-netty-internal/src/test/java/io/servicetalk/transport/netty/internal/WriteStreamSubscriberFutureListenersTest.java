@@ -73,7 +73,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         subscriber = new WriteStreamSubscriber(channel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
         TestSubscription subscription = new TestSubscription();
         subscriber.onSubscribe(subscription);
         assertThat("No items requested.", subscription.requested(), greaterThan(0L));
@@ -177,7 +177,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         WriteStreamSubscriber subscriber = new WriteStreamSubscriber(mockChannel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
         subscriber.onNext(1);
         verifyListenerInvokedWithSuccess(listeners.take());
         subscriber.onNext(2);

@@ -17,16 +17,20 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Mockito;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -35,8 +39,10 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -46,6 +52,7 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
     private enum ErrorSource {
         CONNECTION_ACCEPTOR,
         PIPELINE,
+        CLIENT_WRITE,
     }
 
     private final ErrorSource errorSource;
@@ -65,6 +72,8 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                     }
                 });
                 break;
+            case CLIENT_WRITE:
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
@@ -72,7 +81,7 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
 
     @Parameters(name = "errorSource={0}")
     public static Collection<ErrorSource> getErrorSources() {
-        return singletonList(ErrorSource.PIPELINE);
+        return asList(ErrorSource.PIPELINE, ErrorSource.CLIENT_WRITE);
     }
 
     @Override
@@ -95,6 +104,9 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
             case CONNECTION_ACCEPTOR:
                 break;
             case PIPELINE:
+                verify(clientConnectionObserver).established(any(ConnectionInfo.class));
+                verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
+
                 Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
                 connection.write(from(content.duplicate())).toFuture().get();
                 verify(clientConnectionObserver).onDataWrite(content.readableBytes());
@@ -103,13 +115,39 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                         () -> connection.read().firstOrElse(() -> null).toFuture().get());
                 verify(serverConnectionObserver).onDataRead(content.readableBytes());
                 break;
+            case CLIENT_WRITE:
+                verify(clientConnectionObserver).established(any(ConnectionInfo.class));
+                verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
+
+                assertThrows(ExecutionException.class, () -> connection.write(
+                        Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
+                verify(clientDataObserver).onNewWrite();
+                verify(clientWriteObserver).requestedToWrite(anyLong());
+                verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
         connection.onClose().toFuture().get();
         verify(clientConnectionObserver).connectionClosed();
-        verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
+        switch (errorSource) {
+            case PIPELINE:
+                verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
+                break;
+            case CLIENT_WRITE:
+                verify(serverConnectionObserver, await()).connectionClosed();
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
+        }
+
         verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
                 serverTransportObserver, serverConnectionObserver);
+    }
+
+    @After
+    public void qwe() {
+        System.err.println(Mockito.mockingDetails(serverConnectionObserver).printInvocations());
+        System.err.println(Mockito.mockingDetails(clientWriteObserver).printInvocations());
     }
 }

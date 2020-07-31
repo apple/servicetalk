@@ -36,7 +36,7 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
-import io.servicetalk.transport.api.ConnectionContext.Protocol;
+import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;

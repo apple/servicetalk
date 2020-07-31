@@ -17,79 +17,8 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import java.net.SocketAddress;
-import java.net.SocketOption;
-import java.net.StandardSocketOptions;
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
-
 /**
  * A context for a connection.
  */
-public interface ConnectionContext extends ListenableAsyncCloseable {
-    /**
-     * The {@link SocketAddress} to which the associated connection is bound.
-     *
-     * @return The {@link SocketAddress} to which the associated connection is bound.
-     */
-    SocketAddress localAddress();
-
-    /**
-     * The {@link SocketAddress} to which the associated connection is connected.
-     *
-     * @return The {@link SocketAddress} to which the associated connection is connected.
-     */
-    SocketAddress remoteAddress();
-
-    /**
-     * Get the {@link SSLSession} for this connection.
-     *
-     * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.
-     */
-    @Nullable
-    SSLSession sslSession();
-
-    /**
-     * Get the {@link ExecutionContext} for this {@link ConnectionContext}.
-     * <p>
-     * The {@link ExecutionContext#ioExecutor()} will represent the thread responsible for IO for this
-     * {@link ConnectionContext}. Note that this maybe different that what was used to create this object because
-     * at this time a specific {@link IoExecutor} has been selected.
-     *
-     * @return the {@link ExecutionContext} for this {@link ConnectionContext}.
-     */
-    ExecutionContext executionContext();
-
-    /**
-     * Get the {@link SocketOption} value of type {@code T} for this {@link ConnectionContext}.
-     *
-     * @param option {@link SocketOption} to get.
-     * @param <T> the type of the {@link SocketOption} value.
-     * @return the {@link SocketOption} value of type {@code T} for this {@link ConnectionContext} or {@code null} if
-     * this {@link SocketOption} is not supported by this {@link ConnectionContext}.
-     * @see StandardSocketOptions
-     * @see ServiceTalkSocketOptions
-     */
-    @Nullable
-    <T> T socketOption(SocketOption<T> option);
-
-    /**
-     * Get the {@link Protocol} for this {@link ConnectionContext}.
-     *
-     * @return the {@link Protocol} for this {@link ConnectionContext}.
-     */
-    Protocol protocol();
-
-    /**
-     * Provides information about the network protocol.
-     */
-    interface Protocol {
-
-        /**
-         * Returns name of the protocol.
-         *
-         * @return name of the protocol
-         */
-        String name();
-    }
+public interface ConnectionContext extends ConnectionInfo, ListenableAsyncCloseable {
 }
