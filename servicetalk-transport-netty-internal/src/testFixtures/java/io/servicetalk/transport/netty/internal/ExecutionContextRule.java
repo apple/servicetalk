@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
@@ -83,6 +84,11 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
                 Executors::newCachedThreadExecutor
         );
+    }
+
+    public static ExecutionContextRule cached(String ioThreadPrefix, String executorThreadPrefix) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(new IoThreadFactory(ioThreadPrefix)),
+                () -> newCachedThreadExecutor(new DefaultThreadFactory(executorThreadPrefix)));
     }
 
     public static ExecutionContextRule fixed(int size) {

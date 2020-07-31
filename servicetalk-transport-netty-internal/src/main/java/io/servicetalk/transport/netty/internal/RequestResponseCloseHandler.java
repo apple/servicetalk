@@ -252,20 +252,16 @@ class RequestResponseCloseHandler extends CloseHandler {
         if (idle(pending, state)) {
             closeChannel(channel, evt);
         } else if (isClient) {
-            if (evt == PROTOCOL_CLOSING_INBOUND) {
-                if (pending != 0) {
-                    // Protocol inbound closing for a client is when a response is read, which decrements the pending
-                    // count before reading the inbound closure signal. This means if pending > 0 there are more
-                    // requests pending responses but the peer has signalled close. We need to abort write for pending
-                    // requests:
-                    if (has(state, WRITE)) {
-                        channel.pipeline().fireUserEventTriggered(AbortWritesEvent.INSTANCE);
-                        state = unset(state, WRITE);
-                    }
-                    pending = 0;
+            if (evt == PROTOCOL_CLOSING_INBOUND && pending != 0) {
+                // Protocol inbound closing for a client is when a response is read, which decrements the pending
+                // count before reading the inbound closure signal. This means if pending > 0 there are more
+                // requests pending responses but the peer has signalled close. We need to abort write for pending
+                // requests:
+                if (has(state, WRITE)) {
+                    channel.pipeline().fireUserEventTriggered(AbortWritesEvent.INSTANCE);
+                    state = unset(state, WRITE);
                 }
-            } else if (!has(state, WRITE)) { // only USER_CLOSING - Don't abort any request
-                clientHalfCloseOutbound(channel);
+                pending = 0;
             }
         } else if (evt == PROTOCOL_CLOSING_OUTBOUND) { // Server
             // eagerly close inbound channel on an outbound close command, unless we are still reading
@@ -361,15 +357,6 @@ class RequestResponseCloseHandler extends CloseHandler {
                 LOGGER.trace("{} set SO_LINGER=0 failed (expected when IN+OUT or IN+RST closed channel): {}",
                         channel, e.getMessage());
             }
-        }
-    }
-
-    private void clientHalfCloseOutbound(final Channel channel) {
-        assert isClient;
-        if (!has(state, OUT_CLOSED) && channel instanceof DuplexChannel) {
-            LOGGER.debug("{} Half-Closing OUTBOUND", channel);
-            state = unset(state, WRITE);
-            ((DuplexChannel) channel).shutdownOutput().addListener((ChannelFutureListener) this::onHalfClosed);
         }
     }
 
