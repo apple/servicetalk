@@ -15,9 +15,9 @@
  */
 package io.servicetalk.opentracing.asynccontext;
 
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
+import io.opentracing.Scope;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -33,10 +33,12 @@ public class AsyncContextInMemoryScopeManagerTest {
     @Mock
     private InMemorySpan mockSpan2;
 
+    private AsyncContextInMemoryScopeManager scopeManager = (AsyncContextInMemoryScopeManager) SCOPE_MANAGER;
+
     @Before
     public void setup() {
         initMocks(this);
-        InMemoryScope previousScope = SCOPE_MANAGER.active();
+        AsyncContextInMemoryScopeManager.AsyncContextInMemoryScope previousScope = scopeManager.active();
         if (previousScope != null) {
             previousScope.close();
         }
@@ -44,20 +46,18 @@ public class AsyncContextInMemoryScopeManagerTest {
 
     @Test
     public void closedScopeNotReturnedByActive() {
-        InMemoryScope scope = SCOPE_MANAGER.activate(mockSpan, true);
-        assertSame(scope, SCOPE_MANAGER.active());
-        assertSame(mockSpan, scope.span());
+        Scope scope = SCOPE_MANAGER.activate(mockSpan);
+        assertSame(scope, scopeManager.active());
         scope.close();
-        assertNull(SCOPE_MANAGER.active());
+        assertNull(scopeManager.active());
     }
 
     @Test
     public void previousScopeRestoredAfterCurrentScopeClosed() {
-        InMemoryScope previousScope = SCOPE_MANAGER.activate(mockSpan2, true);
-        InMemoryScope scope = SCOPE_MANAGER.activate(mockSpan, true);
-        assertSame(scope, SCOPE_MANAGER.active());
-        assertSame(mockSpan, scope.span());
+        Scope previousScope = SCOPE_MANAGER.activate(mockSpan2);
+        Scope scope = SCOPE_MANAGER.activate(mockSpan);
+        assertSame(scope, scopeManager.active());
         scope.close();
-        assertSame(previousScope, SCOPE_MANAGER.active());
+        assertSame(previousScope, scopeManager.active());
     }
 }

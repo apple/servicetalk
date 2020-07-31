@@ -22,6 +22,8 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.tag.Tag;
 import io.opentracing.tag.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +90,12 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     }
 
     @Override
+    public <T> Tracer.SpanBuilder withTag(Tag<T> tag, T value) {
+        putTag(tag.getKey(), value);
+        return this;
+    }
+
+    @Override
     public final InMemorySpanBuilder withStartTimestamp(long microseconds) {
         startTimestampMicros = microseconds;
         return this;
@@ -127,16 +135,6 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     public InMemorySpanBuilder ignoreActiveSpan() {
         ignoreActiveSpan = true;
         return this;
-    }
-
-    /**
-     * @deprecated
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public InMemorySpan startManual() {
-        return start();
     }
 
     /**

@@ -17,9 +17,11 @@ package io.servicetalk.opentracing.asynccontext;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
+
+import io.opentracing.Scope;
+import io.opentracing.Span;
 
 import javax.annotation.Nullable;
 
@@ -30,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link InMemoryScopeManager} that uses {@link AsyncContext} as the backing storage.
  */
 public final class AsyncContextInMemoryScopeManager implements InMemoryScopeManager {
-    private static final AsyncContextMap.Key<InMemoryScope> SCOPE_KEY = newKey("opentracing");
+    private static final AsyncContextMap.Key<AsyncContextInMemoryScope> SCOPE_KEY = newKey("opentracing");
     public static final InMemoryScopeManager SCOPE_MANAGER = new AsyncContextInMemoryScopeManager();
 
     private AsyncContextInMemoryScopeManager() {
@@ -38,50 +40,50 @@ public final class AsyncContextInMemoryScopeManager implements InMemoryScopeMana
     }
 
     @Override
-    public InMemoryScope activate(final InMemorySpan span, final boolean finishSpanOnClose) {
+    public Scope activate(final Span span) {
         AsyncContextMap contextMap = AsyncContext.current();
         AsyncContextInMemoryScope scope = new AsyncContextInMemoryScope(
-                contextMap.get(SCOPE_KEY), span, finishSpanOnClose);
+                contextMap.get(SCOPE_KEY), (InMemorySpan) span);
         contextMap.put(SCOPE_KEY, scope);
         return scope;
     }
 
-    @Nullable
     @Override
-    public InMemoryScope active() {
+    public InMemorySpan activeSpan() {
+        AsyncContextInMemoryScope active = AsyncContext.get(SCOPE_KEY);
+        if (active != null) {
+            return active.span();
+        }
+        return null;
+    }
+
+    //visible for testing
+    @Nullable
+    AsyncContextInMemoryScope active() {
         return AsyncContext.get(SCOPE_KEY);
     }
 
-    private static final class AsyncContextInMemoryScope implements InMemoryScope {
+    static final class AsyncContextInMemoryScope implements Scope {
         @Nullable
-        private final InMemoryScope previousScope;
+        private final AsyncContextInMemoryScope previousScope;
         private final InMemorySpan span;
-        private final boolean finishSpanOnClose;
 
-        AsyncContextInMemoryScope(@Nullable InMemoryScope previousScope,
-                                  InMemorySpan span, boolean finishSpanOnClose) {
+        AsyncContextInMemoryScope(@Nullable AsyncContextInMemoryScope previousScope,
+                                  InMemorySpan span) {
             this.previousScope = previousScope;
             this.span = requireNonNull(span);
-            this.finishSpanOnClose = finishSpanOnClose;
         }
 
         @Override
         public void close() {
-            try {
-                if (previousScope == null) {
-                    AsyncContext.remove(SCOPE_KEY);
-                } else {
-                    AsyncContext.put(SCOPE_KEY, previousScope);
-                }
-            } finally {
-                if (finishSpanOnClose) {
-                    span.finish();
-                }
+            if (previousScope == null) {
+                AsyncContext.remove(SCOPE_KEY);
+            } else {
+                AsyncContext.put(SCOPE_KEY, previousScope);
             }
         }
 
-        @Override
-        public InMemorySpan span() {
+        InMemorySpan span() {
             return span;
         }
 

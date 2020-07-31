@@ -17,7 +17,6 @@ package io.servicetalk.opentracing.log4j2;
 
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
-import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 
 import org.junit.After;
@@ -55,16 +54,14 @@ public class ServiceTalkTracingThreadContextMapTest {
     @Test
     public void tracingInfoDisplayedPresentInLogsViaMDC() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
-        try (InMemoryScope scope = tracer.buildSpan("test").startActive(true)) {
-            assertNotNull(scope);
-            InMemorySpan span = scope.span();
-            assertNotNull(span);
+        InMemorySpan span = tracer.buildSpan("test").start();
+        assertNotNull(span);
+        tracer.activateSpan(span);
 
-            LOGGER.debug("testing logging and MDC");
-            String v = stableAccumulated(1000);
-            assertContainsMdcPair(v, "traceId=", span.traceIdHex());
-            assertContainsMdcPair(v, "spanId=", span.spanIdHex());
-            assertContainsMdcPair(v, "parentSpanId=", span.nonnullParentSpanIdHex());
-        }
+        LOGGER.debug("testing logging and MDC");
+        String v = stableAccumulated(1000);
+        assertContainsMdcPair(v, "traceId=", span.traceIdHex());
+        assertContainsMdcPair(v, "spanId=", span.spanIdHex());
+        assertContainsMdcPair(v, "parentSpanId=", span.nonnullParentSpanIdHex());
     }
 }

@@ -15,34 +15,17 @@
  */
 package io.servicetalk.opentracing.inmemory.api;
 
+import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
-import io.opentracing.Span;
 
 import javax.annotation.Nullable;
 
 /**
- * A {@link ScopeManager} that works with {@link InMemoryScope} instances.
+ * A {@link ScopeManager} that works with {@link Scope} instances.
  */
 public interface InMemoryScopeManager extends ScopeManager {
-    /**
-     * {@inheritDoc}
-     * @throws ClassCastException if {@code span} is not of type {@link InMemorySpan}.
-     */
-    @Override
-    default InMemoryScope activate(Span span, boolean finishSpanOnClose) {
-        return activate((InMemorySpan) span, finishSpanOnClose);
-    }
-
-    /**
-     * Same as {@link #activate(Span, boolean)} but the span must be of type {@link InMemorySpan}.
-     * @param span the {@link InMemorySpan} to active.
-     * @param finishSpanOnClose {@code true} to call {@link InMemorySpan#finish()} when {@link InMemoryScope#close()} is
-     * called.
-     * @return A {@link InMemoryScope} that has been activated.
-     */
-    InMemoryScope activate(InMemorySpan span, boolean finishSpanOnClose);
 
     @Nullable
     @Override
-    InMemoryScope active();
+    InMemorySpan activeSpan();
 }

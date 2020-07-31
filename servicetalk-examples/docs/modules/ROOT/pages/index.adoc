@@ -6,4 +6,4 @@ The examples are divided based on protocol and currently have the following supp
 - xref:http/index.adoc[HTTP] - examples for link:https://tools.ietf.org/html/rfc7231[HTTP]
 protocol
 - xref:grpc/index.adoc[gRPC] - examples for
-link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]
+link:https://github.com/grpc/grpc/blob/main/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]

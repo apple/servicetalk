@@ -20,6 +20,7 @@ import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanLog;
 
 import io.opentracing.Span;
+import io.opentracing.tag.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +89,12 @@ final class SampledInMemorySpan extends AbstractInMemorySpan {
     @Override
     public Span setTag(String key, Number value) {
         putTag(key, value);
+        return this;
+    }
+
+    @Override
+    public <T> Span setTag(Tag<T> tag, T value) {
+        tag.set(this, value);
         return this;
     }
 
