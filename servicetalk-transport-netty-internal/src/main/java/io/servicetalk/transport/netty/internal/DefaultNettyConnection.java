@@ -67,7 +67,6 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -276,45 +275,49 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Publisher<Read> registerReadObserver(final Publisher<Read> readPublisher) {
-        return defer(() -> {
+        return readPublisher.liftSync(target -> {
             final DataObserver dataObserver = this.dataObserver;
             final ReadObserver observer;
             if (dataObserver == null ||
                     (observer = safeReport(dataObserver::onNewRead, dataObserver, "new read")) == null) {
-                return readPublisher.subscribeShareContext();
+                return target;
             }
-
-            return readPublisher.beforeSubscription(() -> new Subscription() {
-                @Override
-                public void request(final long n) {
-                    safeReport(() -> observer.requestedToRead(n), observer, "requested to read");
-                }
-
-                @Override
-                public void cancel() {
-                    safeReport(observer::readCancelled, observer, "read cancelled");
-                }
-            }).beforeSubscriber(() -> new PublisherSource.Subscriber<Read>() {
+            return new PublisherSource.Subscriber<Read>() {
                 @Override
                 public void onSubscribe(final Subscription subscription) {
-                    // noop
+                    target.onSubscribe(new Subscription() {
+                        @Override
+                        public void request(final long n) {
+                            safeReport(() -> observer.requestedToRead(n), observer, "requested to read");
+                            subscription.request(n);
+                        }
+
+                        @Override
+                        public void cancel() {
+                            safeReport(observer::readCancelled, observer, "read cancelled");
+                            subscription.cancel();
+                        }
+                    });
                 }
 
                 @Override
                 public void onNext(@Nullable final Read read) {
                     safeReport(observer::itemRead, observer, "item read");
+                    target.onNext(read);
                 }
 
                 @Override
                 public void onError(final Throwable t) {
                     safeReport(() -> observer.readFailed(t), observer, "read failed", t);
+                    target.onError(t);
                 }
 
                 @Override
                 public void onComplete() {
                     safeReport(observer::readComplete, observer, "read complete");
+                    target.onComplete();
                 }
-            }).subscribeShareContext();
+            };
         });
     }
 
