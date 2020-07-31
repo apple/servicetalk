@@ -15,7 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext.Protocol;
+import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 
 final class TcpProtocol implements Protocol {
 

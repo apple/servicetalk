@@ -27,6 +27,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -51,7 +52,11 @@ public final class TransportObserverInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = requireNonNull(transportObserver.onNewConnection());
+        final ConnectionObserver observer = safeReport(transportObserver::onNewConnection, transportObserver,
+                "new connection");
+        if (observer == null) {
+            return;
+        }
         assignConnectionObserver(channel, observer);
         final ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new TransportObserverHandler(observer, secure));
@@ -100,7 +105,7 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         }
 
         private void reportDataRead(final int size) {
-            observer.onDataRead(size);
+            safeReport(() -> observer.onDataRead(size), observer, "data read");
         }
 
         @Override
@@ -114,12 +119,12 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         }
 
         private void reportDataWritten(final int size) {
-            observer.onDataWrite(size);
+            safeReport(() -> observer.onDataWrite(size), observer, "data write");
         }
 
         @Override
         public void flush(final ChannelHandlerContext ctx) {
-            observer.onFlush();
+            safeReport(observer::onFlush, observer, "flush");
             ctx.flush();
         }
     }

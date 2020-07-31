@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.netty.channel.Channel;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 
 import java.util.function.BiPredicate;
 
@@ -29,10 +30,11 @@ import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final H2ProtocolConfig config;
-    private final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer;
+    private final io.netty.channel.ChannelInitializer<Http2StreamChannel> streamChannelInitializer;
 
-    H2ServerParentChannelInitializer(final H2ProtocolConfig config,
-                                     final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer) {
+    H2ServerParentChannelInitializer(
+            final H2ProtocolConfig config,
+            final io.netty.channel.ChannelInitializer<Http2StreamChannel> streamChannelInitializer) {
         this.config = config;
         this.streamChannelInitializer = streamChannelInitializer;
     }

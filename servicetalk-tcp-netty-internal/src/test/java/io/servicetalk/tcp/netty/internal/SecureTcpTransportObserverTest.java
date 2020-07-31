@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -75,6 +76,9 @@ public class SecureTcpTransportObserverTest extends AbstractTransportObserverTes
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
+
+        verify(clientConnectionObserver).established(any(ConnectionInfo.class));
+        verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
 
         // handshake starts
         verify(clientConnectionObserver).onSecurityHandshake();

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
+import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -107,12 +109,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final CloseHandler closeHandler;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
-                          CloseHandler closeHandler) {
+                          CloseHandler closeHandler, @Nullable WriteObserver observer) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
         this.demandEstimator = demandEstimator;
-        promise = new AllWritesPromise(channel);
+        promise = new AllWritesPromise(channel, observer);
         this.closeHandler = closeHandler;
     }
 
@@ -274,9 +276,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
          */
         private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>();
+        @Nullable
+        private final WriteObserver observer;
 
-        AllWritesPromise(final Channel channel) {
+        AllWritesPromise(final Channel channel, @Nullable WriteObserver observer) {
             super(channel);
+            this.observer = observer;
         }
 
         @Override
@@ -410,6 +415,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
+            if (observer != null) {
+                safeReport(observer::itemWritten, observer, "item written");
+            }
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
                 try {
@@ -461,6 +469,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             notifyAllListeners(cause);
             if (cause == null) {
                 try {
+                    if (observer != null) {
+                        safeReport(observer::writeComplete, observer, "item complete");
+                    }
                     subscriber.onComplete();
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
@@ -470,6 +481,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
             } else {
                 try {
+                    if (observer != null) {
+                        safeReport(() -> observer.writeFailed(cause), observer, "item failed", cause);
+                    }
                     subscriber.onError(cause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
