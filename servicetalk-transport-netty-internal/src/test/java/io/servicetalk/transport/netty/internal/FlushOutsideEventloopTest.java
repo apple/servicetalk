@@ -40,7 +40,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     public void setup0() {
         src = new TestPublisher<>();
         strategy = new MockFlushStrategy();
-        Publisher<Integer> composedFlush = composeFlushes(channel, src, strategy)
+        Publisher<Integer> composedFlush = composeFlushes(channel, src, strategy, null)
                 .beforeOnNext(integer -> channel.write(integer));
         toSource(composedFlush).subscribe(subscriber);
         subscriber.request(Long.MAX_VALUE);

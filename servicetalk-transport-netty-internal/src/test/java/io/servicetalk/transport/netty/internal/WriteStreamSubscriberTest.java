@@ -48,7 +48,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void setUp() throws Exception {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
-        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler, null);
         subscription = mock(Subscription.class);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -103,7 +103,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
@@ -122,7 +122,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
