@@ -273,7 +273,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         // No connection was selected: create a new one
-        return connectionFactory.newConnection(host.address)
+        return connectionFactory.newConnection(host.address, null)
                 .flatMap(newCnx -> {
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be used
                     // concurrently and hence a new connection can be rejected by the selector.

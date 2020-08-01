@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -143,12 +144,13 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         }
 
         @Override
-        public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
+        public Single<C> newConnection(final ResolvedAddress resolvedAddress,
+                                       @Nullable final TransportObserver observer) {
             return new SubscribableSingle<C>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                     if (limiter.isConnectAllowed(resolvedAddress)) {
-                        toSource(original.newConnection(resolvedAddress))
+                        toSource(original.newConnection(resolvedAddress, observer))
                                 .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
                     } else {
                         deliverErrorFromSource(subscriber, limiter.newConnectionRefusedException(resolvedAddress));

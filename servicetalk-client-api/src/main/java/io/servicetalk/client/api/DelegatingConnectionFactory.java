@@ -18,6 +18,9 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.TransportObserver;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,8 +44,8 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
     }
 
     @Override
-    public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-        return delegate.newConnection(resolvedAddress);
+    public Single<C> newConnection(final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
+        return delegate.newConnection(resolvedAddress, observer);
     }
 
     @Override

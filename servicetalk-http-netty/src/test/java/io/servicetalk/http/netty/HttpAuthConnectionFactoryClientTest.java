@@ -26,6 +26,7 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
@@ -99,8 +100,8 @@ public class HttpAuthConnectionFactoryClientTest {
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(
-                final ResolvedAddress resolvedAddress) {
-            return delegate.newConnection(resolvedAddress).flatMap(cnx ->
+                final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
+            return delegate.newConnection(resolvedAddress, observer).flatMap(cnx ->
                     cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))
                             .recoverWith(cause -> {
                                 cnx.closeAsync().subscribe();

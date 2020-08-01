@@ -30,7 +30,6 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
@@ -52,9 +51,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
 
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> transportObserver(TransportObserver transportObserver);
 
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);

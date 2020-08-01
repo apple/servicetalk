@@ -28,6 +28,7 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import java.util.function.Function;
@@ -65,8 +66,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         filterableConnectionFactory = connectionFactoryFilter.create(
                 new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
                     @Override
-                    public Single<FilterableStreamingHttpConnection> newConnection(final ResolvedAddress ra) {
-                        return newFilterableConnection(ra);
+                    public Single<FilterableStreamingHttpConnection> newConnection(
+                            final ResolvedAddress ra, @Nullable final TransportObserver observer) {
+                        return newFilterableConnection(ra, observer);
                     }
 
                     @Override
@@ -88,8 +90,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     }
 
     @Override
-    public final Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
-        return filterableConnectionFactory.newConnection(resolvedAddress)
+    public final Single<LoadBalancedStreamingHttpConnection> newConnection(
+            final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
+        return filterableConnectionFactory.newConnection(resolvedAddress, observer)
                 .map(conn -> {
                     FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                             connectionFilterFunction.create(conn) : conn;
@@ -106,7 +109,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                 });
     }
 
-    abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(ResolvedAddress resolvedAddress);
+    abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
+            ResolvedAddress resolvedAddress, @Nullable TransportObserver observer);
 
     abstract ReservableRequestConcurrencyController newConcurrencyController(
             FilterableStreamingHttpConnection connection, Completable onClosing);

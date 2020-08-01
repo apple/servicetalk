@@ -34,6 +34,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -170,8 +171,9 @@ public class AutoRetryTest {
         }
 
         @Override
-        public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress) {
-            return delegate().newConnection(inetSocketAddress)
+        public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final TransportObserver observer) {
+            return delegate().newConnection(inetSocketAddress, observer)
                     .flatMap(c -> c.closeAsync().concat(succeeded(c)));
         }
     }

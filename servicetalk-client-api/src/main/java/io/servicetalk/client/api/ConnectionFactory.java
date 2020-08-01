@@ -17,6 +17,9 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.TransportObserver;
+
+import javax.annotation.Nullable;
 
 /**
  * A factory for creating new connections.
@@ -31,7 +34,9 @@ public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
      * Creates and asynchronously returns a connection.
      *
      * @param address to connect.
+     * @param observer {@link TransportObserver} that provides visibility into transport events associated with a new
+     * connection.
      * @return {@link Single} that emits the created connection.
      */
-    Single<C> newConnection(ResolvedAddress address);
+    Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer);
 }

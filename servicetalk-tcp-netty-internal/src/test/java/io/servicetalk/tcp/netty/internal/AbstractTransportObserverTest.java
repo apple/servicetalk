@@ -30,6 +30,8 @@ import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
+import javax.annotation.Nullable;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
@@ -79,11 +81,10 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
     }
 
+    @Nullable
     @Override
-    TcpClientConfig getTcpClientConfig() {
-        final TcpClientConfig config = super.getTcpClientConfig();
-        config.transportObserver(clientTransportObserver);
-        return config;
+    TransportObserver getClientTransportObserver() {
+        return clientTransportObserver;
     }
 
     static ClientSecurityConfig defaultClientSecurityConfig(SslProvider provider) {
