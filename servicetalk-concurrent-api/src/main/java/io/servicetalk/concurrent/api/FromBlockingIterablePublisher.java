@@ -19,9 +19,6 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.FromIterablePublisher.FromIterableSubscription;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
@@ -31,7 +28,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static java.util.Objects.requireNonNull;
 
 final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FromBlockingIterablePublisher.class);
 
     private final BlockingIterable<? extends T> iterable;
     private final LongSupplier timeoutSupplier;

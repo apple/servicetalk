@@ -162,11 +162,6 @@ final class InvokingThreadsRecorder<T> {
         return client;
     }
 
-    IoExecutor ioExecutor() {
-        assert ioExecutor != null;
-        return ioExecutor;
-    }
-
     @Nullable
     HttpExecutionStrategy executionStrategy() {
         return strategy;
