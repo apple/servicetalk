@@ -22,9 +22,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.BiIntPredicate;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
@@ -191,7 +189,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(
-            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
+            ServiceDiscoveryRetryStrategy<R, SDE> retryStrategy);
 
     /**
      * Sets a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.

@@ -20,12 +20,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
-import io.netty.resolver.dns.DnsNameResolverTimeoutException;
-
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
@@ -44,7 +40,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
     private Integer ndots;
-    private Predicate<Throwable> invalidateHostsOnDnsFailure = defaultInvalidateHostsOnDnsFailurePredicate();
     @Nullable
     private Boolean optResourceEnabled;
     @Nullable
@@ -117,30 +112,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     public DefaultDnsServiceDiscovererBuilder queryTimeout(final Duration queryTimeout) {
         this.queryTimeout = queryTimeout;
         return this;
-    }
-
-    /**
-     * Allows sending 'unavailable' events for all current active hosts for particular DNS errors.
-     * <p>
-     * Note: The default does not send 'unavailable' events when a DNS lookup times out.
-     *
-     * @param invalidateHostsOnDnsFailure determines whether or not to send 'unavailable' events.
-     * @return {@code this}.
-     */
-    public DefaultDnsServiceDiscovererBuilder invalidateHostsOnDnsFailure(
-            final Predicate<Throwable> invalidateHostsOnDnsFailure) {
-        this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
-        return this;
-    }
-
-    /**
-     * Returns a default value for {@link #invalidateHostsOnDnsFailure(Predicate)}.
-     *
-     * @return a default value for {@link #invalidateHostsOnDnsFailure(Predicate)}
-     */
-    public static Predicate<Throwable> defaultInvalidateHostsOnDnsFailurePredicate() {
-        return t -> t instanceof UnknownHostException &&
-                !(t.getCause() instanceof DnsNameResolverTimeoutException);
     }
 
     /**
@@ -238,7 +209,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
-                invalidateHostsOnDnsFailure, optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
+                optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }

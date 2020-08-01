@@ -29,7 +29,6 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -47,6 +46,7 @@ import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -293,10 +293,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-        builderTemplate.retryServiceDiscoveryErrors(retryStrategy);
+            ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy) {
+        builderTemplate.retryServiceDiscoveryErrors((ServiceDiscoveryRetryStrategy) retryStrategy);
         return this;
     }
 
