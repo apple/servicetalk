@@ -34,8 +34,7 @@ public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
      * Creates and asynchronously returns a connection.
      *
      * @param address to connect.
-     * @param observer {@link TransportObserver} that provides visibility into transport events associated with a new
-     * connection.
+     * @param observer {@link TransportObserver} for the newly created connection.
      * @return {@link Single} that emits the created connection.
      */
     Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer);
