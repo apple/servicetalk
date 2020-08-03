@@ -30,6 +30,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
@@ -60,7 +61,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
-     * {@link ConnectionFactory#newConnection(Object)}.
+     * {@link ConnectionFactory#newConnection(Object, TransportObserver)}.
      * Some potential candidates for filtering include logging and metrics.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

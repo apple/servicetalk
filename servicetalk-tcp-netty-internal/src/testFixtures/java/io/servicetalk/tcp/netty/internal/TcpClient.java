@@ -63,6 +63,7 @@ public final class TcpClient {
      * New instance.
      *
      * @param config for the client.
+     * @param observer {@link TransportObserver} for the newly created connection.
      */
     public TcpClient(TcpClientConfig config, @Nullable TransportObserver observer) {
         this.config = config.asReadOnly(emptyList());
