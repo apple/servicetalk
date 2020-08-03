@@ -476,10 +476,6 @@ public class ServerEffectiveStrategyTest {
             return invokingThreadsRecorder.client().asBlockingClient();
         }
 
-        Executor executor() {
-            return executor;
-        }
-
         void verifyOffloads(final ServiceType serviceType) {
             assert invokingThreadsRecorder != null;
             if (verifyStrategyUsed) {
