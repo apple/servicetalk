@@ -19,12 +19,15 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -39,11 +42,11 @@ final class StreamingConnectionFactory {
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
-            final ReadOnlyHttpClientConfig roConfig) {
+            final ReadOnlyHttpClientConfig roConfig, @Nullable final TransportObserver observer) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false,
                 executionContext, channel -> createConnection(channel, executionContext, roConfig,
-                        new TcpClientChannelInitializer(roConfig.tcpConfig(), roConfig.hasProxy())));
+                        new TcpClientChannelInitializer(roConfig.tcpConfig(), observer, roConfig.hasProxy())));
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,

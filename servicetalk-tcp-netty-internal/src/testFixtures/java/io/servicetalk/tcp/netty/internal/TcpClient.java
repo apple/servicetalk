@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -40,6 +41,7 @@ import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -54,21 +56,18 @@ import static org.junit.Assume.assumeTrue;
 public final class TcpClient {
 
     private final ReadOnlyTcpClientConfig config;
-
-    /**
-     * New instance with default configuration.
-     */
-    public TcpClient() {
-        this(defaultConfig());
-    }
+    @Nullable
+    private final TransportObserver observer;
 
     /**
      * New instance.
      *
      * @param config for the client.
+     * @param observer {@link TransportObserver} for the newly created connection.
      */
-    public TcpClient(TcpClientConfig config) {
+    public TcpClient(TcpClientConfig config, @Nullable TransportObserver observer) {
         this.config = config.asReadOnly(emptyList());
+        this.observer = observer;
     }
 
     /**
@@ -97,7 +96,7 @@ public final class TcpClient {
                 channel -> DefaultNettyConnection.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                        new TcpClientChannelInitializer(config).andThen(
+                        new TcpClientChannelInitializer(config, observer).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
                         executionContext.executionStrategy(), TCP));
     }

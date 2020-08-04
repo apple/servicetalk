@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
@@ -36,6 +37,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -87,7 +89,8 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
         }
 
         @Override
-        public Single<LoadBalancedConnection> newConnection(final InetSocketAddress inetSocketAddress) {
+        public Single<LoadBalancedConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                            @Nullable final TransportObserver observer) {
             return succeeded(new LoadBalancedConnection() {
                 @Override
                 public int score() {

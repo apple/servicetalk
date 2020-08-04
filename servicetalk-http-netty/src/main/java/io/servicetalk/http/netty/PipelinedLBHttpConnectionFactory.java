@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -47,9 +48,10 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     }
 
     @Override
-    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
+    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
+                                                                      @Nullable final TransportObserver observer) {
         assert config.h1Config() != null;
-        return buildStreaming(executionContext, resolvedAddress, config)
+        return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,
                         reqRespFactory));
     }

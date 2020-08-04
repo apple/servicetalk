@@ -22,7 +22,6 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -73,14 +72,6 @@ interface BaseGrpcClientBuilder<U, R> {
      * @return {@code this}.
      */
     BaseGrpcClientBuilder<U, R> enableWireLogging(String loggerName);
-
-    /**
-     * Sets a {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> transportObserver(TransportObserver transportObserver);
 
     /**
      * Configurations of various underlying protocol versions.

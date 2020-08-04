@@ -39,6 +39,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -160,8 +161,8 @@ public class ConnectionFactoryFilterTest {
                 new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(original) {
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
-                            final InetSocketAddress inetSocketAddress) {
-                        return delegate().newConnection(inetSocketAddress).map(filter);
+                            final InetSocketAddress inetSocketAddress, @Nullable final TransportObserver observer) {
+                        return delegate().newConnection(inetSocketAddress, observer).map(filter);
                     }
                 };
     }

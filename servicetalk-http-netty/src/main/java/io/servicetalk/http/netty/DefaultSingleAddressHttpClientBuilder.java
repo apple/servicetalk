@@ -50,7 +50,6 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.NetUtil;
@@ -405,12 +404,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         config.tcpConfig().enableWireLogging(loggerName);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> transportObserver(final TransportObserver transportObserver) {
-        config.tcpConfig().transportObserver(transportObserver);
         return this;
     }
 

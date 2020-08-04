@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -179,10 +180,11 @@ public class ResponseCancelTest {
         }
 
         @Override
-        public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress) {
+        public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final TransportObserver observer) {
             return defer(() -> {
                 connectionCount.incrementAndGet();
-                return delegate().newConnection(inetSocketAddress);
+                return delegate().newConnection(inetSocketAddress, observer);
             });
         }
     }
