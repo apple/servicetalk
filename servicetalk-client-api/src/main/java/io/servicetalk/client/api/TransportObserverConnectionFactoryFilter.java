@@ -22,7 +22,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -49,7 +49,9 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
     /**
      * Creates a new instance.
      *
-     * @param observerFactory a factory to create a {@link TransportObserver} for new connections
+     * @param observerFactory a factory to create a {@link TransportObserver} for new connections per
+     * {@link ResolvedAddress}. May return {@code null} to avoid configuring {@link TransportObserver} for some
+     * addresses.
      */
     public TransportObserverConnectionFactoryFilter(
             final Function<ResolvedAddress, TransportObserver> observerFactory) {
@@ -62,11 +64,14 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
             @Override
             public Single<C> newConnection(final ResolvedAddress resolvedAddress,
                                            @Nullable final TransportObserver originalObserver) {
-                return defer(() -> {
-                    final TransportObserver newObserver = requireNonNull(observerFactory.apply(resolvedAddress));
-                    return delegate().newConnection(resolvedAddress, originalObserver == null ? newObserver :
-                            new BiTransportObserver(originalObserver, newObserver));
-                }).subscribeShareContext();
+                final TransportObserver newObserver;
+                try {
+                    newObserver = observerFactory.apply(resolvedAddress);
+                } catch (Throwable t) {
+                    return failed(t);
+                }
+                return delegate().newConnection(resolvedAddress, originalObserver == null ? newObserver :
+                       newObserver == null ? originalObserver : new BiTransportObserver(originalObserver, newObserver));
             }
         };
     }

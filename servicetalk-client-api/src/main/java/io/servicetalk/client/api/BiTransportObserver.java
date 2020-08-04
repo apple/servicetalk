@@ -63,29 +63,20 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void onDataRead(final int size) {
-            try {
-                first.onDataRead(size);
-            } finally {
-                second.onDataRead(size);
-            }
+            first.onDataRead(size);
+            second.onDataRead(size);
         }
 
         @Override
         public void onDataWrite(final int size) {
-            try {
-                first.onDataWrite(size);
-            } finally {
-                second.onDataWrite(size);
-            }
+            first.onDataWrite(size);
+            second.onDataWrite(size);
         }
 
         @Override
         public void onFlush() {
-            try {
-                first.onFlush();
-            } finally {
-                second.onFlush();
-            }
+            first.onFlush();
+            second.onFlush();
         }
 
         @Override
@@ -105,20 +96,14 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void connectionClosed(final Throwable error) {
-            try {
-                first.connectionClosed(error);
-            } finally {
-                second.connectionClosed(error);
-            }
+            first.connectionClosed(error);
+            second.connectionClosed(error);
         }
 
         @Override
         public void connectionClosed() {
-            try {
-                first.connectionClosed();
-            } finally {
-                second.connectionClosed();
-            }
+            first.connectionClosed();
+            second.connectionClosed();
         }
     }
 
@@ -135,20 +120,14 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void handshakeFailed(final Throwable cause) {
-            try {
-                first.handshakeFailed(cause);
-            } finally {
-                second.handshakeFailed(cause);
-            }
+            first.handshakeFailed(cause);
+            second.handshakeFailed(cause);
         }
 
         @Override
         public void handshakeComplete(final SSLSession sslSession) {
-            try {
-                first.handshakeComplete(sslSession);
-            } finally {
-                second.handshakeComplete(sslSession);
-            }
+            first.handshakeComplete(sslSession);
+            second.handshakeComplete(sslSession);
         }
     }
 
@@ -202,20 +181,14 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void streamClosed(final Throwable error) {
-            try {
-                first.streamClosed(error);
-            } finally {
-                second.streamClosed(error);
-            }
+            first.streamClosed(error);
+            second.streamClosed(error);
         }
 
         @Override
         public void streamClosed() {
-            try {
-                first.streamClosed();
-            } finally {
-                second.streamClosed();
-            }
+            first.streamClosed();
+            second.streamClosed();
         }
     }
 
@@ -231,47 +204,32 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void requestedToRead(final long n) {
-            try {
-                first.requestedToRead(n);
-            } finally {
-                second.requestedToRead(n);
-            }
+            first.requestedToRead(n);
+            second.requestedToRead(n);
         }
 
         @Override
         public void itemRead() {
-            try {
-                first.itemRead();
-            } finally {
-                second.itemRead();
-            }
+            first.itemRead();
+            second.itemRead();
         }
 
         @Override
         public void readFailed(final Throwable cause) {
-            try {
-                first.readFailed(cause);
-            } finally {
-                second.readFailed(cause);
-            }
+            first.readFailed(cause);
+            second.readFailed(cause);
         }
 
         @Override
         public void readComplete() {
-            try {
-                first.readComplete();
-            } finally {
-                second.readComplete();
-            }
+            first.readComplete();
+            second.readComplete();
         }
 
         @Override
         public void readCancelled() {
-            try {
-                first.readCancelled();
-            } finally {
-                second.readCancelled();
-            }
+            first.readCancelled();
+            second.readCancelled();
         }
     }
 
@@ -287,65 +245,44 @@ final class BiTransportObserver implements TransportObserver {
 
         @Override
         public void requestedToWrite(final long n) {
-            try {
-                first.requestedToWrite(n);
-            } finally {
-                second.requestedToWrite(n);
-            }
+            first.requestedToWrite(n);
+            second.requestedToWrite(n);
         }
 
         @Override
         public void itemReceived() {
-            try {
-                first.itemReceived();
-            } finally {
-                second.itemReceived();
-            }
+            first.itemReceived();
+            second.itemReceived();
         }
 
         @Override
         public void onFlushRequest() {
-            try {
-                first.onFlushRequest();
-            } finally {
-                second.onFlushRequest();
-            }
+            first.onFlushRequest();
+            second.onFlushRequest();
         }
 
         @Override
         public void itemWritten() {
-            try {
-                first.itemWritten();
-            } finally {
-                second.itemWritten();
-            }
+            first.itemWritten();
+            second.itemWritten();
         }
 
         @Override
         public void writeFailed(final Throwable cause) {
-            try {
-                first.writeFailed(cause);
-            } finally {
-                second.writeFailed(cause);
-            }
+            first.writeFailed(cause);
+            second.writeFailed(cause);
         }
 
         @Override
         public void writeComplete() {
-            try {
-                first.writeComplete();
-            } finally {
-                second.writeComplete();
-            }
+            first.writeComplete();
+            second.writeComplete();
         }
 
         @Override
         public void writeCancelled() {
-            try {
-                first.writeCancelled();
-            } finally {
-                second.writeCancelled();
-            }
+            first.writeCancelled();
+            second.writeCancelled();
         }
     }
 }
