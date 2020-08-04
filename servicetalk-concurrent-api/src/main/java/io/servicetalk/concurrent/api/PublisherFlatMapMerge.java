@@ -158,7 +158,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         @Override
         public void cancel() {
-            doCancel(true);
+            doCancel(true, true);
         }
 
         @Override
@@ -173,8 +173,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         FlowControlUtils::addWithOverflowProtectionIfNotNegative) == 0) {
                     drainPending();
                 }
-                if (mappedDemandUpdater.getAndAccumulate(this, n,
-                        FlowControlUtils::addWithOverflowProtection) == 0) {
+                if (incMappedDemand(n)) {
                     distributeMappedDemand();
                 }
             }
@@ -217,7 +216,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         @Override
         public void onError(final Throwable t) {
-            if (!onError0(t, false, false)) {
+            if (!onError0(t, true)) {
                 LOGGER.debug("Already terminated/cancelled, ignoring error notification.", t);
             }
         }
@@ -232,12 +231,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             }
         }
 
-        private boolean onError0(Throwable throwable, boolean overrideComplete,
-                                 boolean cancelSubscriberIfNecessary) {
+        private boolean onError0(Throwable throwable, boolean fromUpstream) {
             final TerminalNotification notification = TerminalNotification.error(throwable);
-            if (trySetTerminal(notification, overrideComplete, terminalNotificationUpdater, this)) {
+            if (trySetTerminal(notification, !fromUpstream, terminalNotificationUpdater, this)) {
                 try {
-                    doCancel(cancelSubscriberIfNecessary);
+                    doCancel(!fromUpstream, true);
                 } finally {
                     enqueueAndDrain(notification);
                 }
@@ -247,14 +245,39 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private long reserveMappedDemand() {
-            return mappedDemandUpdater.getAndSet(this, 0);
+            for (;;) {
+                final long currMappedDemand = mappedDemand;
+                if (currMappedDemand <= 0) {
+                    // if the value of mappedDemand becomes positive, the caller will trigger a reevaluation.
+                    return 0;
+                }
+                if (mappedDemandUpdater.compareAndSet(this, currMappedDemand, 0)) {
+                    return currMappedDemand;
+                }
+            }
         }
 
-        private int reserveMappedDemandQuota() {
+        private boolean incMappedDemand(long n) {
+            assert n > 0;
+            final long prev = mappedDemandUpdater.getAndAccumulate(this, n,
+                    FlowControlUtils::addWithUnderOverflowProtection);
+            return prev <= 0 && n + prev > 0;
+        }
+
+        private int reserveMappedDemandQuota(boolean reserveIfNotPositive) {
             for (;;) {
                 final long prevDemand = mappedDemand;
                 if (prevDemand <= 0) {
-                    return 0;
+                    if (!reserveIfNotPositive) {
+                        return 0;
+                    }
+                    // mappedDemand is allowed to go negative here in order to distribute some initial demand to each
+                    // source. This is to avoid a single mapped source (or set of sources) not making any progress with
+                    // the demand they were given, taking demand away from sources that could make progress. The maximum
+                    // queue size should be bound by (maxConcurrency * minMappedDemand).
+                    if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - source.minMappedDemand)) {
+                        return source.minMappedDemand;
+                    }
                 }
                 final int quota = calculateRequestNQuota(prevDemand);
                 if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - quota)) {
@@ -263,12 +286,12 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             }
         }
 
-        private void distributeMappedDemand(FlatMapPublisherSubscriber<T, R> hungrySubscriber) {
-            final int quota = reserveMappedDemandQuota();
+        private void distributeMappedDemand(FlatMapPublisherSubscriber<T, R> hungrySubscriber,
+                                            boolean giveDemandEvenIfNegative) {
+            final int quota = reserveMappedDemandQuota(giveDemandEvenIfNegative);
             if (quota > 0) {
                 final int usedQuota = hungrySubscriber.request(quota);
-                if (usedQuota < quota && mappedDemandUpdater.getAndAccumulate(this, quota - usedQuota,
-                        FlowControlUtils::addWithOverflowProtection) == 0) {
+                if (usedQuota < quota && incMappedDemand(quota - usedQuota)) {
                     // If we gave some back and transitioned from 0 demand, we need to try to distribute demand
                     // in case other hungry subscribers were added in the mean time
                     // (since we have not acquired the requestingLock).
@@ -295,7 +318,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         }
                         if (remainingRequestN > 0) {
                             mappedDemandUpdater.accumulateAndGet(this, remainingRequestN,
-                                    FlowControlUtils::addWithOverflowProtection);
+                                    FlowControlUtils::addWithUnderOverflowProtection);
                         }
                     }
                 } catch (Throwable cause) {
@@ -310,21 +333,19 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private int calculateRequestNQuota(long availableRequestN) {
-            // Get an approximate quota to distribute to each active mapped subscriber. If
-            // activeMappedSources changes (subscriber added or terminated) we will re-distribute.
-            final int prevActiveSources = activeMappedSources;
-            return (int) min(Integer.MAX_VALUE,
-                    max(prevActiveSources > 0 ? availableRequestN / prevActiveSources : availableRequestN,
-                            source.minMappedDemand));
+            // Get an approximate quota to distribute to each active mapped subscriber.
+            return (int) min(Integer.MAX_VALUE, max(availableRequestN / source.maxConcurrency, source.minMappedDemand));
         }
 
-        private void doCancel(boolean cancelSubscription) {
+        private void doCancel(boolean cancelSubscription, boolean invalidatePendingDemand) {
             // Prevent future onNext operations from adding to subscribers which otherwise may result in
             // not cancelling mapped Subscriptions. This should be Integer.MIN_VALUE to prevent subsequent mapped
             // source completion from incrementing the count to 0 or positive as terminateActiveMappedSources flips
             // the count to negative to signal to mapped sources we have completed.
             activeMappedSources = Integer.MIN_VALUE;
-            pendingDemand = -1;
+            if (invalidatePendingDemand) {
+                pendingDemand = -1;
+            }
             try {
                 if (cancelSubscription) {
                     assert subscription != null;
@@ -351,12 +372,13 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         private void tryEmitItem(Object item, FlatMapPublisherSubscriber<T, R> subscriber) {
             if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
+                boolean mappedSourcesCompleted = false;
                 try {
                     if (subscriber.hasSignalsQueued() || (needsDemand(item) && !tryDecrementPendingDemand())) {
                         subscriber.markSignalsQueued();
                         enqueueItem(item); // drain isn't necessary. when demand arrives a drain will be attempted.
                     } else if (item == MAPPED_SOURCE_COMPLETE) {
-                        requestMoreFromUpstream(1);
+                        mappedSourcesCompleted = true;
                     } else {
                         final boolean demandConsumed = sendToTarget(item);
                         assert demandConsumed == needsDemand(item);
@@ -365,6 +387,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     if (!releaseLock(emittingLockUpdater, this)) {
                         drainPending();
                     }
+                }
+                if (mappedSourcesCompleted) { // request more from upstream outside the critical section.
+                    requestMoreFromUpstream(1);
                 }
             } else { // slow path. there is concurrency, go through the queue to avoid concurrent delivery.
                 subscriber.markSignalsQueued();
@@ -389,7 +414,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
                 throw exception;
             } else {
-                onError0(exception, true, true);
+                onError0(exception, false);
             }
         }
 
@@ -402,58 +427,58 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                     final long prevDemand = pendingDemandUpdater.getAndSet(this, 0);
                     long emittedCount = 0;
                     if (prevDemand < 0) {
-                        // if we have been cancelled then we avoid delivering any signals, but we still deliver error
-                        // terminals below by making sure emittedCount == prevDemand.
-                        pendingDemand = emittedCount = prevDemand;
-                        signals.clear();
-                    }
-                    Object t;
-                    while (emittedCount < prevDemand && (t = signals.poll()) != null) {
-                        try {
-                            if (t == MAPPED_SOURCE_COMPLETE) {
-                                ++mappedSourcesCompleted;
-                            } else if (sendToTarget(t)) {
-                                ++emittedCount;
-                            }
-                        } catch (Throwable cause) {
-                            delayedCause = catchUnexpected(delayedCause, cause);
+                        pendingDemand = prevDemand;
+                        // Don't wait for demand to deliver the terminalNotification if present. The queued signals
+                        // maybe from optimistic demand, but the error is from an event that needs immediate propagation
+                        // (e.g. illegal requestN, failure to enqueue).
+                        TerminalNotification t = terminalNotification;
+                        if (t != null && t != complete()) {
+                            sendToTarget(t); // if this throws its OK as we have terminated
                         }
-                    }
-
-                    // check if a terminal event is pending, or give back demand.
-                    if (emittedCount == prevDemand) {
-                        for (;;) {
+                    } else {
+                        Object t;
+                        while (emittedCount < prevDemand && (t = signals.poll()) != null) {
                             try {
-                                t = signals.peek();
                                 if (t == MAPPED_SOURCE_COMPLETE) {
-                                    signals.poll();
                                     ++mappedSourcesCompleted;
-                                } else if (t instanceof FlatMapPublisherSubscriber) {
-                                    signals.poll();
-                                    @SuppressWarnings("unchecked")
-                                    final FlatMapPublisherSubscriber<T, R> hungrySubscriber =
-                                            (FlatMapPublisherSubscriber<T, R>) t;
-                                    distributeMappedDemand(hungrySubscriber);
-                                } else {
-                                    break;
+                                } else if (sendToTarget(t)) {
+                                    ++emittedCount;
                                 }
                             } catch (Throwable cause) {
                                 delayedCause = catchUnexpected(delayedCause, cause);
                             }
                         }
 
-                        if (t instanceof TerminalNotification) {
-                            sendToTarget((TerminalNotification) t); // if this throws its OK as we have terminated
-                        } else {
-                            t = terminalNotification;
-                            if (t != null && t != complete()) { // don't wait for demand to process an error
+                        // check if a terminal event is pending, or give back demand.
+                        if (emittedCount == prevDemand) {
+                            for (;;) {
+                                try {
+                                    t = signals.peek();
+                                    if (t == MAPPED_SOURCE_COMPLETE) {
+                                        signals.poll();
+                                        ++mappedSourcesCompleted;
+                                    } else if (t instanceof FlatMapPublisherSubscriber) {
+                                        signals.poll();
+                                        @SuppressWarnings("unchecked")
+                                        final FlatMapPublisherSubscriber<T, R> hungrySubscriber =
+                                                (FlatMapPublisherSubscriber<T, R>) t;
+                                        distributeMappedDemand(hungrySubscriber, false);
+                                    } else {
+                                        break;
+                                    }
+                                } catch (Throwable cause) {
+                                    delayedCause = catchUnexpected(delayedCause, cause);
+                                }
+                            }
+
+                            if (t instanceof TerminalNotification) {
                                 sendToTarget((TerminalNotification) t); // if this throws its OK as we have terminated
                             }
+                        } else {
+                            assert emittedCount < prevDemand;
+                            pendingDemandUpdater.accumulateAndGet(this, prevDemand - emittedCount,
+                                    FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                         }
-                    } else {
-                        assert emittedCount < prevDemand;
-                        pendingDemandUpdater.accumulateAndGet(this, prevDemand - emittedCount,
-                                FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                     }
                 } finally {
                     tryAcquire = !releaseLock(emittingLockUpdater, this);
@@ -485,17 +510,19 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             if (targetTerminated) {
                 return false;
             } else if (item instanceof TerminalNotification) {
-                // Load the terminal notification in case an error happened after an onComplete and we override the
-                // terminal value.
-                TerminalNotification terminalNotification = this.terminalNotification;
-                assert terminalNotification != null;
-                sendToTarget(terminalNotification);
+                TerminalNotification terminalNotification;
+                if (item == complete() && (terminalNotification = this.terminalNotification) != null) {
+                    // Load the terminal notification in case an error happened after an onComplete and we override the
+                    // terminal value.
+                    sendToTarget(terminalNotification);
+                } else {
+                    sendToTarget((TerminalNotification) item);
+                }
                 return false;
             } else if (item instanceof FlatMapPublisherSubscriber) {
                 @SuppressWarnings("unchecked")
-                final FlatMapPublisherSubscriber<T, R> hungrySubscriber =
-                        (FlatMapPublisherSubscriber<T, R>) item;
-                distributeMappedDemand(hungrySubscriber);
+                final FlatMapPublisherSubscriber<T, R> hungrySubscriber = (FlatMapPublisherSubscriber<T, R>) item;
+                distributeMappedDemand(hungrySubscriber, false);
                 return false;
             }
             target.onNext(unwrapNullUnchecked(item));
@@ -545,8 +572,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber, int unusedDemand) {
             if (cancellableSubscribers.remove(subscriber) && decrementActiveMappedSources()) {
                 return true;
-            } else if (unusedDemand > 0 && mappedDemandUpdater.getAndAccumulate(this, unusedDemand,
-                            FlowControlUtils::addWithOverflowProtection) == 0) {
+            } else if (unusedDemand > 0 && incMappedDemand(unusedDemand)) {
                 distributeMappedDemand();
             }
             return false;
@@ -604,7 +630,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             @Override
             public void onSubscribe(final Subscription s) {
                 subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
-                parent.distributeMappedDemand(this);
+                parent.distributeMappedDemand(this, true);
             }
 
             @Override
@@ -623,7 +649,12 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             @Override
             public void onError(final Throwable t) {
                 if (!parent.source.delayError) {
-                    parent.onError0(t, true, true);
+                    // Make sure errors aren't delivered out of order relative to onNext signals which maybe queued.
+                    try {
+                        parent.doCancel(true, false);
+                    } finally {
+                        parent.tryEmitItem(TerminalNotification.error(t), this);
+                    }
                 } else {
                     CompositeException de = parent.delayedError;
                     if (de == null) {
@@ -637,11 +668,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         de.add(t);
                     }
                     if (parent.removeSubscriber(this, pendingDemandUpdater.getAndSet(this, -1))) {
-                        trySetTerminal(TerminalNotification.error(de), true, terminalNotificationUpdater, parent);
-
-                        // Since we have already added error to delayedError, we use complete() TerminalNotification
-                        // as a dummy signal to start draining and termination.
-                        parent.enqueueAndDrain(complete());
+                        parent.enqueueAndDrain(TerminalNotification.error(de));
                     } else {
                         parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                     }

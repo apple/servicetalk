@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.PublisherSource.Subscription;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
@@ -273,17 +274,59 @@ public class PublisherFlatMapMergeTest {
         assertTrue(mappedSubscription.isCancelled());
 
         mappedPublisher.onNext(2);
-        // We don't allow any emissions post cancel/terminal.
         assertThat(subscriber.pollAllOnNext(), is(empty()));
         if (onError) {
             mappedPublisher.onError(DELIBERATE_EXCEPTION);
-            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         } else {
             mappedPublisher.onComplete();
-            // Since FlatMap needs to track the requestN amount leased to mapped Publishers, the cancel state is
-            // aggressive in suppressing onNext signals, and this currently extends to onComplete.
-            assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
         }
+        // Since FlatMap needs to track the requestN amount leased to mapped Publishers, the cancel state is
+        // aggressive in suppressing onNext signals (tck tests fail if signals are delivered after cancel).
+        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+    }
+
+    @Test
+    public void errorFromMappedSubscriberIsSequencedWithOnNextSignals() throws InterruptedException {
+        List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        toSource(publisher.flatMapMerge(i -> {
+            TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
+            mappedPublishers.add(pair);
+            return pair.mappedPublisher;
+        }, 2, 2)).subscribe(subscriber);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+
+        verifyCumulativeDemand(upstreamSubscription, 2);
+        publisher.onNext(1, 2);
+
+        assertThat(mappedPublishers, hasSize(2));
+        TestSubscriptionPublisherPair<Integer> first = mappedPublishers.get(0);
+        TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
+
+        first.doOnSubscribe(1);
+        first.mappedSubscription.awaitRequestN(2);
+        second.doOnSubscribe(2);
+        second.mappedSubscription.awaitRequestN(2);
+
+        // Exhaust outstanding requestN from downstream
+        first.mappedPublisher.onNext(10);
+        assertThat(subscriber.pollAllOnNext(), contains(10));
+
+        // These signals should be queued, and the error shouldn't jump the queue.
+        second.mappedPublisher.onNext(11);
+        second.mappedPublisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+        assertTrue(upstreamSubscription.isCancelled());
+
+        subscription.request(1);
+        assertThat(subscriber.pollAllOnNext(), contains(11));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -805,6 +848,43 @@ public class PublisherFlatMapMergeTest {
 
         publisher.onComplete();
         subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void lastActiveMappedPublisherCanDeliverData() throws Throwable {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+        final int lastIndex = 2;
+        toSource(range(0, lastIndex)
+                .flatMapMerge(i -> i == lastIndex - 1 ? from(lastIndex) : never(), lastIndex, 1)
+        ).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                causeRef.set(t);
+                latch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                causeRef.set(new IllegalStateException("onComplete not expected"));
+                latch.countDown();
+            }
+        });
+        latch.await();
+        Throwable cause = causeRef.get();
+        if (cause != null) {
+            throw cause;
+        }
     }
 
     private static final class TestSubscriptionPublisherPair<T> {
