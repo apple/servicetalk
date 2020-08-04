@@ -272,8 +272,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             }
         }
 
-        // No connection was selected: create a new one
-        return connectionFactory.newConnection(host.address)
+        // No connection was selected: create a new one.
+        // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
+        // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
+        return connectionFactory.newConnection(host.address, null)
                 .flatMap(newCnx -> {
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be used
                     // concurrently and hence a new connection can be rejected by the selector.

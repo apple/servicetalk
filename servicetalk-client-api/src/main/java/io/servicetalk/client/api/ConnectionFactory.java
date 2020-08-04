@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.TransportObserver;
+
+import javax.annotation.Nullable;
 
 /**
  * A factory for creating new connections.
@@ -31,7 +34,8 @@ public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
      * Creates and asynchronously returns a connection.
      *
      * @param address to connect.
+     * @param observer {@link TransportObserver} for the newly created connection.
      * @return {@link Single} that emits the created connection.
      */
-    Single<C> newConnection(ResolvedAddress address);
+    Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer);
 }

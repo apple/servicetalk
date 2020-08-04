@@ -23,7 +23,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -43,15 +42,6 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
-    /**
-     * Sets a {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
-     * @return {@code this}.
-     */
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> transportObserver(
-            TransportObserver transportObserver);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);

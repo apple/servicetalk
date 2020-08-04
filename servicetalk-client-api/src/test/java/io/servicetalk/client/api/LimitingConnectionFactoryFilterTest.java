@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class LimitingConnectionFactoryFilterTest {
     public void setUp() {
         original = newMockConnectionFactory();
         connectionOnClose = new LinkedBlockingQueue<>();
-        when(original.newConnection(any())).thenAnswer(invocation -> {
+        when(original.newConnection(any(), any())).thenAnswer(invocation -> {
             ListenableAsyncCloseable conn = mock(ListenableAsyncCloseable.class);
             Processor onClose = newCompletableProcessor();
             connectionOnClose.add(onClose);
@@ -77,42 +77,42 @@ public class LimitingConnectionFactoryFilterTest {
     public void enforceMaxConnections() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
-        cf.newConnection("c1").toFuture().get();
+        cf.newConnection("c1", null).toFuture().get();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(instanceOf(ConnectException.class));
-        cf.newConnection("c2").toFuture().get();
+        cf.newConnection("c2", null).toFuture().get();
     }
 
     @Test
     public void onCloseReleasesPermit() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
-        cf.newConnection("c1").toFuture().get();
+        cf.newConnection("c1", null).toFuture().get();
         connectAndVerifyFailed(cf);
         connectionOnClose.take().onComplete();
-        cf.newConnection("c3").toFuture().get();
+        cf.newConnection("c3", null).toFuture().get();
     }
 
     @Test
     public void cancelReleasesPermit() throws Exception {
         ConnectionFactory<String, ListenableAsyncCloseable> o = newMockConnectionFactory();
-        when(o.newConnection(any())).thenReturn(never());
+        when(o.newConnection(any(), any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
-        connectlistener.listen(cf.newConnection("c1")).verifyNoEmissions();
+        connectlistener.listen(cf.newConnection("c1", null)).verifyNoEmissions();
         connectAndVerifyFailed(cf);
         connectlistener.cancel();
 
         ListenableAsyncCloseable c = mock(ListenableAsyncCloseable.class);
         when(c.onClose()).thenReturn(Completable.never());
-        when(o.newConnection(any())).thenReturn(succeeded(c));
-        cf.newConnection("c2").toFuture().get();
+        when(o.newConnection(any(), any())).thenReturn(succeeded(c));
+        cf.newConnection("c2", null).toFuture().get();
     }
 
     private static void connectAndVerifyFailed(final ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf)
             throws Exception {
         try {
-            cf.newConnection("c-fail").toFuture().get();
+            cf.newConnection("c-fail", null).toFuture().get();
             fail("Connect expected to fail.");
         } catch (ExecutionException e) {
             assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));

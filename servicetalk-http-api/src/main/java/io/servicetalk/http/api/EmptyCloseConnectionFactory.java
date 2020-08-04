@@ -19,8 +19,10 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.TransportObserver;
 
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
@@ -35,7 +37,7 @@ final class EmptyCloseConnectionFactory<ResolvedAddress, C extends ListenableAsy
     }
 
     @Override
-    public Single<C> newConnection(ResolvedAddress resolvedAddress) {
+    public Single<C> newConnection(final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
         return factory.apply(resolvedAddress);
     }
 

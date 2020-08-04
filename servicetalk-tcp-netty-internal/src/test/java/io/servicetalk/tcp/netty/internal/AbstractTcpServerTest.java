@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -38,6 +39,7 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -93,7 +95,7 @@ public abstract class AbstractTcpServerTest {
 
     // Visible for overriding.
     TcpClient createClient() {
-        return new TcpClient(getTcpClientConfig());
+        return new TcpClient(getTcpClientConfig(), getClientTransportObserver());
     }
 
     // Visible for overriding.
@@ -108,6 +110,12 @@ public abstract class AbstractTcpServerTest {
             tcpClientConfig.secure(securityConfig.asReadOnly());
         }
         return tcpClientConfig;
+    }
+
+    // Visible for overriding.
+    @Nullable
+    TransportObserver getClientTransportObserver() {
+        return null;
     }
 
     // Visible for overriding.
