@@ -27,6 +27,8 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import javax.net.ssl.SSLSession;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Combines two {@link TransportObserver}s into a single {@link TransportObserver}.
  */
@@ -42,8 +44,8 @@ final class BiTransportObserver implements TransportObserver {
      * @param second the {@link TransportObserver} that will receive events second
      */
     BiTransportObserver(final TransportObserver first, final TransportObserver second) {
-        this.first = first;
-        this.second = second;
+        this.first = requireNonNull(first);
+        this.second = requireNonNull(second);
     }
 
     @Override
