@@ -36,6 +36,7 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 import static java.lang.Math.ceil;
+import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -112,6 +113,15 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             return this;
         }
 
+        /**
+         * Specifies a {@link BiFunction} which is applied as-is using {@link Publisher#retryWhen(BiIntFunction)}
+         * on the {@link Publisher} passed to {@link DefaultServiceDiscoveryRetryStrategy#apply(Publisher)}.
+         *
+         * @param retryStrategy A {@link BiFunction} which is applied as-is using
+         * {@link Publisher#retryWhen(BiIntFunction)} on the {@link Publisher} passed to
+         * {@link DefaultServiceDiscoveryRetryStrategy#apply(Publisher)}.
+         * @return {@code this}.
+         */
         public Builder<ResolvedAddress, E> retryStrategy(
                 final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
             this.retryStrategy = requireNonNull(retryStrategy);
@@ -119,9 +129,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         }
 
         /**
-         * Creates a new {@link ServiceDiscoveryRetryStrategy} using the passed {@link BiFunction} which is applied
-         * as-is using {@link Publisher#retryWhen(BiIntFunction)} on the {@link Publisher} passed to
-         * {@link DefaultServiceDiscoveryRetryStrategy#apply(Publisher)}.
+         * Creates a new {@link ServiceDiscoveryRetryStrategy}.
          *
          * @return A new {@link ServiceDiscoveryRetryStrategy}.
          */
@@ -232,7 +240,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
                 // new address after a retry
                 activeAddresses.put(address, event);
                 final boolean removed = retainedAddresses.remove(address) != null;
-                if (activeAddresses.size() == targetSize) {
+                if (activeAddresses.size() >= targetSize) {
                     final List<E> allEvents = new ArrayList<>(retainedAddresses.size() + (removed ? 0 : 1));
                     if (!removed) {
                         allEvents.add(event);
@@ -261,18 +269,23 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
     }
 
     private static final class IndefiniteRetryStrategy implements BiIntFunction<Throwable, Completable> {
-        private static final int MAX_RETRIES = 10;
         private final BiIntFunction<Throwable, Completable> delegate;
+        private final int maxRetries;
 
         IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay) {
-            delegate = retryWithExponentialBackoffAndJitter(MAX_RETRIES, __ -> true, initialDelay, executor);
+            this(executor, initialDelay, 10);
+        }
+
+        IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay, final int maxRetries) {
+            delegate = retryWithExponentialBackoffAndJitter(maxRetries, __ -> true, initialDelay, executor);
+            this.maxRetries = maxRetries;
         }
 
         @Override
         public Completable apply(final int count, final Throwable cause) {
             // As we are retrying indefinitely (unless closed), cap the backoff on MAX_RETRIES retries to avoid
             // impractical backoffs
-            return delegate.apply(count % (MAX_RETRIES - 1), cause);
+            return delegate.apply(max(1, count % (maxRetries)), cause);
         }
     }
 }

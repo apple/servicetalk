@@ -239,7 +239,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
                     builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address);
             return serviceDiscovererRetryStrategy.apply(sdEvents.beforeOnError(sdStatus::nextError))
-                    .whenOnNext(__ -> sdStatus.resetError());
+                    .beforeOnNext(__ -> sdStatus.resetError());
             // We do not complete sdStatus to let LB decide when to retry if SD completes.
         }
 
