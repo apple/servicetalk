@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -174,7 +175,8 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
         if (clientTransportObserver != null) {
-            clientBuilder.transportObserver(clientTransportObserver);
+            clientBuilder.appendConnectionFactoryFilter(
+                    new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor))
@@ -237,7 +239,7 @@ public abstract class AbstractNettyHttpServerTest {
         this.protocol = requireNonNull(protocol);
     }
 
-    void transportObserver(TransportObserver client, TransportObserver server) {
+    void transportObserver(@Nullable TransportObserver client, @Nullable TransportObserver server) {
         this.clientTransportObserver = client;
         this.serverTransportObserver = server;
     }

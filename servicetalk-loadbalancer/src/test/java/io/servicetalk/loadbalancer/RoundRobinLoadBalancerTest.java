@@ -34,6 +34,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.After;
 import org.junit.Before;
@@ -508,7 +509,7 @@ public class RoundRobinLoadBalancerTest {
         }
 
         @Override
-        public Single<TestLoadBalancedConnection> newConnection(String s) {
+        public Single<TestLoadBalancedConnection> newConnection(String s, TransportObserver observer) {
             return connectionFactory.apply(s);
         }
 

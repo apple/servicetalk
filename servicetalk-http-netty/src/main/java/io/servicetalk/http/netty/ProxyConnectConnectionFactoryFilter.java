@@ -24,6 +24,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -31,6 +32,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -67,8 +70,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
         }
 
         @Override
-        public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-            return delegate().newConnection(resolvedAddress).flatMap(c -> {
+        public Single<C> newConnection(final ResolvedAddress resolvedAddress,
+                                       @Nullable final TransportObserver observer) {
+            return delegate().newConnection(resolvedAddress, observer).flatMap(c -> {
                 try {
                     // We currently only have access to a StreamingHttpRequester, which means we are forced to provide
                     // an HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the

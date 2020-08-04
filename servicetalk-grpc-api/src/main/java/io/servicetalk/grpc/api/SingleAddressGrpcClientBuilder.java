@@ -54,9 +54,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> transportObserver(TransportObserver transportObserver);
-
-    @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
 
     /**
@@ -64,7 +61,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
-     * {@link ConnectionFactory#newConnection(Object)}.
+     * {@link ConnectionFactory#newConnection(Object, TransportObserver)}.
      * Some potential candidates for filtering include logging and metrics.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

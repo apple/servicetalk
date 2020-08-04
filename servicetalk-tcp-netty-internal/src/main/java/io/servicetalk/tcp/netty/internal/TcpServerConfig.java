@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.util.NetUtil;
@@ -32,8 +33,15 @@ import static java.util.Objects.requireNonNull;
 public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
     @Nullable
+    private TransportObserver transportObserver;
+    @Nullable
     private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
     private int backlog = NetUtil.SOMAXCONN;
+
+    @Nullable
+    TransportObserver transportObserver() {
+        return transportObserver;
+    }
 
     @Nullable
     Map<String, ReadOnlyServerSecurityConfig> sniConfigs() {
@@ -42,6 +50,15 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
 
     int backlog() {
         return backlog;
+    }
+
+    /**
+     * Sets a {@link TransportObserver} that provides visibility into transport events.
+     *
+     * @param transportObserver A {@link TransportObserver} that provides visibility into transport events.
+     */
+    public void transportObserver(final TransportObserver transportObserver) {
+        this.transportObserver = requireNonNull(transportObserver);
     }
 
     /**

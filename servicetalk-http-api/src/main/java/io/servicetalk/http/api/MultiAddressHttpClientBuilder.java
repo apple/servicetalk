@@ -23,7 +23,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.BiConsumer;
@@ -66,15 +65,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
-
-    /**
-     * Sets a factory for {@link TransportObserver} that provides visibility into transport events.
-     *
-     * @param transportObserverFactory A factory that creates a {@link TransportObserver} per {@link HostAndPort}.
-     * @return {@code this}.
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> transportObserver(
-            Function<HostAndPort, TransportObserver> transportObserverFactory);
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
