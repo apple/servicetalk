@@ -16,15 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -177,7 +175,8 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
         if (clientTransportObserver != null) {
-            clientBuilder.appendConnectionFactoryFilter(observableConnectionFactoryFilter(clientTransportObserver));
+            clientBuilder.appendConnectionFactoryFilter(
+                    new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor))
@@ -243,18 +242,6 @@ public abstract class AbstractNettyHttpServerTest {
     void transportObserver(@Nullable TransportObserver client, @Nullable TransportObserver server) {
         this.clientTransportObserver = client;
         this.serverTransportObserver = server;
-    }
-
-    private static ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection>
-            observableConnectionFactoryFilter(TransportObserver clientTransportObserver) {
-        return original ->
-                new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(original) {
-                    @Override
-                    public Single<FilterableStreamingHttpConnection> newConnection(
-                            InetSocketAddress inetSocketAddress, @Nullable TransportObserver observer) {
-                        return delegate().newConnection(inetSocketAddress, clientTransportObserver);
-                    }
-                };
     }
 
     StreamingHttpResponse makeRequest(final StreamingHttpRequest request)
