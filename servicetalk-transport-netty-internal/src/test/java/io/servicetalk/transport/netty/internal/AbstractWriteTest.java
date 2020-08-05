@@ -18,14 +18,11 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.CompletableSource;
 
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;
-
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -102,8 +99,6 @@ public abstract class AbstractWriteTest {
 
     static final class WriteInfo {
 
-        @Nullable
-        private final ChannelFuture future;
         private final long writeCapacityBefore;
         private final long writeCapacityAfter;
         private final String msg;
@@ -111,20 +106,7 @@ public abstract class AbstractWriteTest {
         WriteInfo(long writeCapacityBefore, long writeCapacityAfter, String msg) {
             this.writeCapacityBefore = writeCapacityBefore;
             this.writeCapacityAfter = writeCapacityAfter;
-            this.future = null;
             this.msg = msg;
-        }
-
-        WriteInfo(ChannelFuture future, long writeCapacityBefore, long writeCapacityAfter, String msg) {
-            this.future = future;
-            this.writeCapacityBefore = writeCapacityBefore;
-            this.writeCapacityAfter = writeCapacityAfter;
-            this.msg = msg;
-        }
-
-        @Nullable
-        ChannelFuture future() {
-            return future;
         }
 
         long writeCapacityBefore() {

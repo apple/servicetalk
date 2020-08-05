@@ -510,10 +510,6 @@ public class ClientEffectiveStrategyTest {
             return invokingThreadsRecorder.client();
         }
 
-        Executor executor() {
-            return executor;
-        }
-
         void verifyOffloads(final ClientType clientType) {
             assert invokingThreadsRecorder != null;
             if (verifyStrategyUsed) {

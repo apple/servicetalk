@@ -54,10 +54,6 @@ class TestDnsServer extends DnsServer {
         this.store = new DelegateRecordStore(store);
     }
 
-    void store(final RecordStore store) {
-        this.store.setStore(store);
-    }
-
     @Override
     public void start() throws IOException {
         InetSocketAddress address = AddressUtils.localAddress(0);

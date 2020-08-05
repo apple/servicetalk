@@ -56,7 +56,6 @@ public class SpliceFlatStreamToMetaSingleTest {
     private final Payload one = new Payload();
     private final Payload two = new Payload();
     private final LastPayload last = new LastPayload();
-    private final Data data = new Data(metaData, from(one, two, last));
 
     private final TestPublisherSubscriber<Payload> payloadSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Payload> dupePayloadSubscriber = new TestPublisherSubscriber<>();
