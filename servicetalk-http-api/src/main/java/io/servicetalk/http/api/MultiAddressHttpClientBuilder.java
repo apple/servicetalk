@@ -63,6 +63,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+
+    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
@@ -114,8 +117,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public MultiAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                   final StreamingHttpClientFilterFactory factory) {
-        super.appendClientFilter(predicate, factory);
-        return this;
+        return (MultiAddressHttpClientBuilder<U, R>) super.appendClientFilter(predicate, factory);
     }
 
     /**
@@ -166,7 +168,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
                                                                   MultiAddressHttpClientFilterFactory<U> factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
-
         return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
     }
 
