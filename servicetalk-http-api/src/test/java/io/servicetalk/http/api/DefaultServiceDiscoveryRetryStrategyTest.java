@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -205,6 +206,27 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         verifyNoEventsReceived(state);
 
         sendUpAndVerifyReceive(state, "addr1", sdEvents);
+    }
+
+    @Test
+    public void varyPercentage() throws Exception {
+        for (int percent = 1; percent < 100; percent += 10) {
+            State state = new State(percent);
+            TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+            List<ServiceDiscovererEvent<String>> events = new ArrayList<>();
+            final int addrSize = 100;
+            for (int j = 0; j < addrSize; j++) {
+                events.add(sendUpAndVerifyReceive(state, "addr" + j, sdEvents));
+            }
+            sdEvents = triggerRetry(state, sdEvents);
+            for (int i = 1; i < percent; i++) {
+                sdEvents.onNext(events.get(i - 1));
+                verifyNoEventsReceived(state);
+            }
+            sdEvents.onNext(events.get(percent - 1));
+            final List<ServiceDiscovererEvent<String>> removed = state.subscriber.takeItems();
+            assertThat("Unexpected events received.", removed, hasSize(addrSize - percent));
+        }
     }
 
     private void verifyNoEventsReceived(final State state) {

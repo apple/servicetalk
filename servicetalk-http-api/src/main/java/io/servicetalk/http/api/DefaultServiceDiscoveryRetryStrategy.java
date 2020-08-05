@@ -36,7 +36,6 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 import static java.lang.Math.ceil;
-import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -220,7 +219,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             } else {
                 retainedAddresses.putAll(activeAddresses);
             }
-            targetSize = (int) (ceil(retainTillReceivePercentage / 100d) * activeAddresses.size());
+            targetSize = (int) (ceil(retainTillReceivePercentage / 100d * activeAddresses.size()));
             activeAddresses.clear();
         }
 
@@ -273,7 +272,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         private final int maxRetries;
 
         IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay) {
-            this(executor, initialDelay, 10);
+            this(executor, initialDelay, 8);
         }
 
         IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay, final int maxRetries) {
@@ -285,7 +284,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         public Completable apply(final int count, final Throwable cause) {
             // As we are retrying indefinitely (unless closed), cap the backoff on MAX_RETRIES retries to avoid
             // impractical backoffs
-            return delegate.apply(max(1, count % (maxRetries)), cause);
+            return delegate.apply((count % (maxRetries)) + 1, cause);
         }
     }
 }
