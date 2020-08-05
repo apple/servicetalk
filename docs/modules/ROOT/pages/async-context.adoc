@@ -27,7 +27,7 @@ API has a few benefits:
 Some APIs / features assume static state that is coupled with the current thread. This worked well in the
 1-request-per-thread model, however it breaks down when we may process a request on different threads due to
 asynchronous execution and also share threads for processing different requests. For example the
-link:https://github.com/opentracing/opentracing-java/blob/main/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
+link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
 and the
 link:http://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
 
