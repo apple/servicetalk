@@ -23,12 +23,9 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
@@ -44,22 +41,16 @@ public final class TransportObserverInitializer implements ChannelInitializer {
      * @param transportObserver {@link TransportObserver} to initialize for the channel
      * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final TransportObserver transportObserver,
-                                        final boolean secure) {
-        this.transportObserver = requireNonNull(transportObserver);
+    public TransportObserverInitializer(final TransportObserver transportObserver, final boolean secure) {
+        this.transportObserver = new CatchAllTransportObserver(transportObserver);
         this.secure = secure;
     }
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = safeReport(transportObserver::onNewConnection, transportObserver,
-                "new connection");
-        if (observer == null) {
-            return;
-        }
+        final ConnectionObserver observer = transportObserver.onNewConnection();
         assignConnectionObserver(channel, observer);
-        final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new TransportObserverHandler(observer, secure));
+        channel.pipeline().addLast(new TransportObserverHandler(observer, secure));
     }
 
     private static final class TransportObserverHandler extends ChannelDuplexHandler {
@@ -97,34 +88,26 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         @Override
         public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
             if (msg instanceof ByteBuf) {
-                reportDataRead(((ByteBuf) msg).readableBytes());
+                observer.onDataRead(((ByteBuf) msg).readableBytes());
             } else if (msg instanceof ByteBufHolder) {
-                reportDataRead(((ByteBufHolder) msg).content().readableBytes());
+                observer.onDataRead(((ByteBufHolder) msg).content().readableBytes());
             }
             ctx.fireChannelRead(msg);
-        }
-
-        private void reportDataRead(final int size) {
-            safeReport(() -> observer.onDataRead(size), observer, "data read");
         }
 
         @Override
         public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
             if (msg instanceof ByteBuf) {
-                reportDataWritten(((ByteBuf) msg).readableBytes());
+                observer.onDataWrite(((ByteBuf) msg).readableBytes());
             } else if (msg instanceof ByteBufHolder) {
-                reportDataWritten(((ByteBufHolder) msg).content().readableBytes());
+                observer.onDataWrite(((ByteBufHolder) msg).content().readableBytes());
             }
             ctx.write(msg, promise);
         }
 
-        private void reportDataWritten(final int size) {
-            safeReport(() -> observer.onDataWrite(size), observer, "data write");
-        }
-
         @Override
         public void flush(final ChannelHandlerContext ctx) {
-            safeReport(observer::onFlush, observer, "flush");
+            observer.onFlush();
             ctx.flush();
         }
     }
