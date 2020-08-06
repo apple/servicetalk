@@ -26,12 +26,12 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.CharSequences;
+import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -41,6 +41,7 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
+import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -62,16 +63,13 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
-import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -85,9 +83,6 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
-    private static final BiIntFunction<Throwable, ? extends Completable> DEFAULT_SD_RETRY_STRATEGY =
-            retryWithConstantBackoffAndJitter(MAX_VALUE, t -> true, ofSeconds(60), immediate());
-
     @Nullable
     private final U address;
     @Nullable
@@ -97,8 +92,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy = DEFAULT_SD_RETRY_STRATEGY;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
+    @Nullable
+    private ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
             address -> new HostHeaderHttpRequesterFilter(hostToCharSequenceFunction.apply(address));
@@ -213,33 +209,37 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
         final StreamingHttpRequestResponseFactory reqRespFactory;
+        final ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
         @Nullable
         final U proxyAddress;
 
-        HttpClientBuildContext(final DefaultSingleAddressHttpClientBuilder<U, R> builder,
-                               final HttpExecutionContext executionContext,
-                               final StreamingHttpRequestResponseFactory reqRespFactory,
-                               @Nullable final U proxyAddress) {
+        HttpClientBuildContext(
+                final DefaultSingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext executionContext,
+                final StreamingHttpRequestResponseFactory reqRespFactory,
+                @Nullable final ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> sdRetryStrategy,
+                @Nullable final U proxyAddress) {
             this.builder = builder;
             this.executionContext = executionContext;
             this.reqRespFactory = reqRespFactory;
+            this.serviceDiscovererRetryStrategy = sdRetryStrategy == null ?
+                    DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(executionContext.executor(),
+                            ofSeconds(60)).build() : sdRetryStrategy;
             this.proxyAddress = proxyAddress;
         }
 
         Publisher<? extends ServiceDiscovererEvent<R>> discover() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return builder.serviceDiscoverer.discover(
-                    proxyAddress != null ? proxyAddress : builder.address);
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
+                    builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address);
+            return serviceDiscovererRetryStrategy.apply(sdEvents);
         }
 
         Publisher<? extends ServiceDiscovererEvent<R>> discover(final SdStatusCompletable sdStatus) {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            final BiIntFunction<Throwable, ? extends Completable> retryWhen = builder.serviceDiscovererRetryStrategy;
-            return builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address)
-                    .retryWhen((i, t) -> {
-                        sdStatus.nextError(t);
-                        return retryWhen.apply(i, t);
-                    }).whenOnNext(__ -> sdStatus.resetError());
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
+                    builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address);
+            return serviceDiscovererRetryStrategy.apply(sdEvents.beforeOnError(sdStatus::nextError))
+                    .beforeOnNext(__ -> sdStatus.resetError());
             // We do not complete sdStatus to let LB decide when to retry if SD completes.
         }
 
@@ -368,7 +368,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
         }
 
-        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, proxyAddress);
+        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, serviceDiscovererRetryStrategy,
+                proxyAddress);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
@@ -468,7 +469,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
+            final ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy) {
         this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
         return this;
     }

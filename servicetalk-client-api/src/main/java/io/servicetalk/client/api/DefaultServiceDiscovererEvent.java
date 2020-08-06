@@ -46,6 +46,30 @@ public final class DefaultServiceDiscovererEvent<T> implements ServiceDiscoverer
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final DefaultServiceDiscovererEvent<?> that = (DefaultServiceDiscovererEvent<?>) o;
+
+        if (available != that.available) {
+            return false;
+        }
+        return address.equals(that.address);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = address.hashCode();
+        result = 31 * result + (available ? 1 : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "DefaultServiceDiscovererEvent{" +
                 "address=" + address +

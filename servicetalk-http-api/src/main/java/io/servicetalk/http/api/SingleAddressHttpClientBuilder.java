@@ -20,8 +20,6 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.BiIntFunction;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -86,7 +84,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
-            BiIntFunction<Throwable, ? extends Completable> retryStrategy);
+            ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> retryStrategy);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(

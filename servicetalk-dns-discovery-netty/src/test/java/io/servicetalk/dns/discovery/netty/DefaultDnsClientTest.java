@@ -465,7 +465,7 @@ public class DefaultDnsClientTest {
         recordStore.addResponse("apple.com", A, nextIp());
 
         final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 1;
+        final int expectedInactiveCount = 0;
         final int expectedErrorCount = 1;
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + expectedErrorCount);
@@ -486,7 +486,7 @@ public class DefaultDnsClientTest {
     public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp());
 
-        DnsClient customClient = dnsClientBuilder().invalidateHostsOnDnsFailure(__ -> false).build();
+        DnsClient customClient = dnsClientBuilder().build();
         try {
             final int expectedActiveCount = 1;
             final int expectedInactiveCount = 0;
@@ -516,7 +516,7 @@ public class DefaultDnsClientTest {
         DnsClient customClient = clientBuilderWithRetry().build();
         try {
             final int expectedActiveCount = 1;
-            final int expectedInactiveCount = 1;
+            final int expectedInactiveCount = 0;
 
             CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
             CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
