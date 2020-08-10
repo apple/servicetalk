@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.securityHandshakeObserver;
 
 /**
@@ -69,8 +68,7 @@ public final class NettyPipelineSslUtils {
             if (sslHandler != null) {
                 final SSLSession session = sslHandler.engine().getSession();
                 if (securityObserver != null) {
-                    safeReport(() -> securityObserver.handshakeComplete(session), securityObserver,
-                            "handshake complete");
+                    securityObserver.handshakeComplete(session);
                 }
                 return session;
             } else {
@@ -87,7 +85,7 @@ public final class NettyPipelineSslUtils {
                                             @Nullable final SecurityHandshakeObserver securityObserver,
                                             final Channel channel) {
         if (securityObserver != null) {
-            safeReport(() -> securityObserver.handshakeFailed(cause), securityObserver, "handshake failed", cause);
+            securityObserver.handshakeFailed(cause);
             assignConnectionError(channel, cause);
         }
         failureConsumer.accept(cause);

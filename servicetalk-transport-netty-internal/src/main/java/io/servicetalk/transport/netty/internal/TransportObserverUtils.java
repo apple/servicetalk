@@ -22,21 +22,15 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.netty.util.AttributeKey.newInstance;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Utilities for {@link TransportObserver}.
  */
 public final class TransportObserverUtils {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TransportObserverUtils.class);
 
     private static final AttributeKey<ConnectionObserver> CONNECTION_OBSERVER = newInstance("ConnectionObserver");
     private static final AttributeKey<Throwable> CONNECTION_ERROR = newInstance("ConnectionError");
@@ -58,9 +52,9 @@ public final class TransportObserverUtils {
         channel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = connectionError(channel);
             if (t == null) {
-                safeReport((Runnable) observer::connectionClosed, observer, "connection closed");
+                observer.connectionClosed();
             } else {
-                safeReport(() -> observer.connectionClosed(t), observer, "connection closed", t);
+                observer.connectionClosed(t);
             }
             channel.attr(CONNECTION_OBSERVER).set(null);
         });
@@ -103,64 +97,11 @@ public final class TransportObserverUtils {
     static void reportSecurityHandshakeStarting(final Channel channel) {
         final ConnectionObserver observer = connectionObserver(channel);
         assert observer != null;
-        channel.attr(SECURITY_HANDSHAKE_OBSERVER)
-                .set(safeReport(observer::onSecurityHandshake, observer, "security handshake"));
+        channel.attr(SECURITY_HANDSHAKE_OBSERVER).set(observer.onSecurityHandshake());
     }
 
     @Nullable
     static SecurityHandshakeObserver securityHandshakeObserver(final Channel channel) {
         return channel.attr(SECURITY_HANDSHAKE_OBSERVER).get();
-    }
-
-    /**
-     * Safely executes the passed {@link Runnable} and logs unexpected exception if any.
-     *
-     * @param runnable {@link Runnable} to run
-     * @param observer {@link Object} that is invoked
-     * @param event event that is invoked
-     */
-    public static void safeReport(final Runnable runnable, final Object observer, final String event) {
-        try {
-            runnable.run();
-        } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, event, unexpected);
-        }
-    }
-
-    /**
-     * Safely executes the passed {@link Runnable} and logs unexpected exception if any.
-     *
-     * @param runnable {@link Runnable} to run
-     * @param observer {@link Object} that is invoked
-     * @param event event that is invoked
-     * @param original an original {@link Throwable} to report about
-     */
-    public static void safeReport(final Runnable runnable, final Object observer, final String event,
-                                  final Throwable original) {
-        try {
-            runnable.run();
-        } catch (Throwable unexpected) {
-            unexpected.addSuppressed(original);
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, event, unexpected);
-        }
-    }
-
-    /**
-     * Safely executes the passed {@link Supplier} and logs unexpected exception if any.
-     *
-     * @param supplier {@link Supplier} to run
-     * @param observer {@link Object} that is invoked
-     * @param event event that is invoked
-     * @param <T> type of the observer produced by passed {@link Supplier}
-     * @return an observer produced by passed {@link Supplier} or {@code null} if an unexpected exception occurred
-     */
-    @Nullable
-    public static <T> T safeReport(final Supplier<T> supplier, final Object observer, final String event) {
-        try {
-            return requireNonNull(supplier.get());
-        } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, event, unexpected);
-            return null;
-        }
     }
 }

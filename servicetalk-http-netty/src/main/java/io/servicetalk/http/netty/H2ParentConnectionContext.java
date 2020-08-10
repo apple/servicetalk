@@ -63,7 +63,6 @@ import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extr
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.safeReport;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
@@ -163,17 +162,16 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Nullable
     static StreamObserver registerStreamObserver(final Http2StreamChannel streamChannel,
                                                  @Nullable final MultiplexedObserver multiplexedObserver) {
-        final StreamObserver observer;
-        if (multiplexedObserver == null ||
-                (observer = safeReport(multiplexedObserver::onNewStream, multiplexedObserver, "new stream")) == null) {
+        if (multiplexedObserver == null) {
             return null;
         }
+        final StreamObserver observer = multiplexedObserver.onNewStream();
         streamChannel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = connectionError(streamChannel);
             if (t == null) {
-                safeReport((Runnable) observer::streamClosed, observer, "stream closed");
+                observer.streamClosed();
             } else {
-                safeReport(() -> observer.streamClosed(t), observer, "stream closed", t);
+                observer.streamClosed(t);
             }
         });
         return observer;
