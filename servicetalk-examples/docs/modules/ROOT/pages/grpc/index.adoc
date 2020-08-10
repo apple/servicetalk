@@ -9,14 +9,14 @@ endif::[]
 = gRPC Examples
 
 The link:{source-root}/servicetalk-examples/grpc[`grpc`] folder contains examples for
-link:https://github.com/grpc/grpc/blob/main/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]. We provide
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]. We provide
 implementations for the examples proto services provided by
 link:https://github.com/grpc/grpc/tree/main/examples/protos[gRPC].
 
 [#HelloWorld]
 == Hello World
 
-Implementation for the link:https://github.com/grpc/grpc/blob/main/examples/protos/helloworld.proto[gRPC hello world example].
+Implementation for the link:https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto[gRPC hello world example].
 
 === Asynchronous
 
@@ -35,11 +35,11 @@ link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/service
 [#route-guide]
 == Route guide
 
-Implementation for the link:https://github.com/grpc/grpc/blob/main/examples/protos/route_guide.proto[gRPC route guide example].
+Implementation for the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[gRPC route guide example].
 
 === Asynchronous
 
-Asynchronous processing for different APIs in the link:https://github.com/grpc/grpc/blob/main/examples/protos/route_guide.proto[route guide service]
+Asynchronous processing for different APIs in the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[route guide service]
 are demonstrated using the link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideServer.java[RouteGuideServer]
 and the following clients:
 
@@ -58,7 +58,7 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-str
 
 === Blocking
 
-Blocking processing for different APIs in the link:https://github.com/grpc/grpc/blob/main/examples/protos/route_guide.proto[route guide service]
+Blocking processing for different APIs in the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[route guide service]
 are demonstrated using the link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideServer.java[BlockingRouteGuideServer]
 and the following clients:
 

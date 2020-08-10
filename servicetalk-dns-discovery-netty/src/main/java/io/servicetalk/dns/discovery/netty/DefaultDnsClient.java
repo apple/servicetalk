@@ -59,7 +59,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
@@ -99,14 +98,13 @@ final class DefaultDnsClient implements DnsClient {
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
-    private final Predicate<Throwable> invalidateHostsOnDnsFailure;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
     private boolean closed;
 
     DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL,
-                     @Nullable final Integer ndots, final Predicate<Throwable> invalidateHostsOnDnsFailure,
+                     @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
                      @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
@@ -114,7 +112,6 @@ final class DefaultDnsClient implements DnsClient {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
-        this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         this.observer = observer;
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
@@ -652,20 +649,8 @@ final class DefaultDnsClient implements DnsClient {
                 final Throwable cause = addressFuture.cause();
                 if (cause != null) {
                     reportResolutionFailed(resolutionObserver, cause);
-                    boolean deliverTerminal = true;
-                    try {
-                        deliverTerminal = !invalidateHostsOnDnsFailure.test(cause) ||
-                                clearAddressesAndPropagateRemovalEvents();
-                    } catch (Throwable cause2) {
-                        logUnexpectedException(cause2);
-                    }
-
-                    if (deliverTerminal) {
-                        cancel0();
-                        safeOnError(subscriber, cause);
-                    } else {
-                        cancellableForQuery = TERMINATE_ON_NEXT_REQUEST_N;
-                    }
+                    cancel0();
+                    safeOnError(subscriber, cause);
                 } else {
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
@@ -733,11 +718,6 @@ final class DefaultDnsClient implements DnsClient {
                     cancel0();
                     safeOnError(subscriber, cause);
                 }
-            }
-
-            private void logUnexpectedException(Throwable cause) {
-                LOGGER.warn("Exception from subscriber {} while handling error in DNS subscription {}",
-                        subscriber, this, cause);
             }
 
             private boolean clearAddressesAndPropagateRemovalEvents() {
