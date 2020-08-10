@@ -25,6 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
+import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
 
 /**
@@ -42,7 +43,7 @@ public final class TransportObserverInitializer implements ChannelInitializer {
      * @param secure {@code true} if the observed connection is secure
      */
     public TransportObserverInitializer(final TransportObserver transportObserver, final boolean secure) {
-        this.transportObserver = new CatchAllTransportObserver(transportObserver);
+        this.transportObserver = asSafeObserver(transportObserver);
         this.secure = secure;
     }
 

@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
+package io.servicetalk.transport.api;
 
-import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
-import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopReadObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopSecurityHandshakeObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopStreamObserver;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopDataObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopMultiplexedObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopReadObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopSecurityHandshakeObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopStreamObserver;
+import io.servicetalk.transport.api.NoopTransportObserver.NoopWriteObserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +133,7 @@ final class CatchAllTransportObserver implements TransportObserver {
 
         private final DataObserver observer;
 
-        private CatchAllDataObserver(final DataObserver observer) {
+        protected CatchAllDataObserver(final DataObserver observer) {
             this.observer = observer;
         }
 
