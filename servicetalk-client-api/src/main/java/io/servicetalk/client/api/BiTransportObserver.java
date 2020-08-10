@@ -144,12 +144,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public ReadObserver onNewRead() {
+        public final ReadObserver onNewRead() {
             return new BiReadObserver(first.onNewRead(), second.onNewRead());
         }
 
         @Override
-        public WriteObserver onNewWrite() {
+        public final WriteObserver onNewWrite() {
             return new BiWriteObserver(first.onNewWrite(), second.onNewWrite());
         }
     }
