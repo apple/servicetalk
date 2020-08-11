@@ -31,6 +31,7 @@ import java.util.List;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -282,5 +283,30 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         assertThat(request.requestTarget(), equalTo(expectedRequestTarget));
         assertThat(request.version(), equalTo(expectedVersion));
         return request;
+    }
+
+    @Test
+    public void smuggleBeforeNonZeroContentLengthHeader() {
+        int contentLength = 128;
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
+                // framing terminating the request with no content-length or transfer-encoding, or with known zero
+                // content-length [1].
+                // [1] https://tools.ietf.org/html/rfc7230#section-3.3.3
+                "Smuggled: " + startLine() + "\r\n\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
+        assertEmptyTrailers(channel());
+    }
+
+    @Test
+    public void smuggleBeforeTransferEncodingHeader() {
+        smuggleTransferEncoding(true);
     }
 }

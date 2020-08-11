@@ -30,6 +30,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -47,10 +48,14 @@ import java.util.List;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.lang.Integer.toHexString;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -319,5 +324,54 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         assertThat(response.status().code(), is(expectedStatus.code()));
         assertThat(response.status().reasonPhrase(), equalTo(expectedStatus.reasonPhrase()));
         return response;
+    }
+
+    @Test
+    public void smuggleBeforeNonZeroContentLengthHeader() {
+        int contentLength = 128;
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                // If a Transfer-Encoding header field is present in a response and
+                // the chunked transfer coding is not the final encoding, the
+                // message body length is determined by reading the connection until
+                // it is closed by the server [1].
+                // [1] https://tools.ietf.org/html/rfc7230#section-3.3.3
+                "Smuggled: " + startLine() + "\r\n\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
+        Buffer buffer = channel().readInbound();
+        assertThat(buffer.toString(US_ASCII), is("Content-Length: " + contentLength +
+                "\r\nConnection: keep-alive\r\n\r\n"));
+        channel().close();
+        assertEmptyTrailers(channel());
+        assertFalse(channel().finishAndReleaseAll());
+    }
+
+    @Test
+    public void smuggleBeforeTransferEncodingHeader() {
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                // Otherwise, this is a response message without a declared message
+                // body length, so the message body length is determined by the
+                // number of octets received prior to the server closing the
+                // connection [1].
+                // [1] https://tools.ietf.org/html/rfc7230#section-3.3.3
+                "Smuggled: " + startLine() + "\r\n\r\n" +
+                TRANSFER_ENCODING + ": " + CHUNKED + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
+        Buffer buffer = channel().readInbound();
+        assertThat(buffer.toString(US_ASCII), is(TRANSFER_ENCODING + ": " + CHUNKED +
+                "\r\nConnection: keep-alive\r\n\r\n"));
+        channel().close();
+        assertEmptyTrailers(channel());
+        assertFalse(channel().finishAndReleaseAll());
     }
 }

@@ -445,7 +445,7 @@ abstract class HttpObjectDecoderTest {
         writeContent(chunkLength);
         // we omit writing the "\r\n" after chunk-data intentionally
         DecoderException e = assertThrows(DecoderException.class, this::writeLastChunk);
-        assertThat(e.getCause(), is(instanceOf(IllegalStateException.class)));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
         assertThat(e.getCause().getMessage(), startsWith("Could not find CRLF"));
         assertThat(channel().inboundMessages(), is(not(empty())));
     }
@@ -501,5 +501,77 @@ abstract class HttpObjectDecoderTest {
                 () -> writeMsg("TrailerStatus: good" + "\r\n" + "\r\n"));
         assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
         assertThat(channel().inboundMessages(), is(not(empty())));
+    }
+
+    @Test
+    public void smuggleBeforeZeroContentLengthHeader() {
+        smuggleZeroContentLength(true);
+    }
+
+    @Test
+    public void smuggleAfterZeroContentLengthHeader() {
+        smuggleZeroContentLength(false);
+    }
+
+    private void smuggleZeroContentLength(boolean smuggleBeforeContentLength) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLine() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
+                // framing terminating the request with no content-length or transfer-encoding, or with known zero
+                // content-length [1].
+                // [1] https://tools.ietf.org/html/rfc7230#section-3.3.3
+                (smuggleBeforeContentLength ?
+                        "Smuggled: " + startLine() + "\r\n\r\n" + "Content-Length: 0" + "\r\n" :
+                        "Content-Length: 0" + "\r\n" + "Smuggled: " + startLine() + "\r\n\r\n") +
+                "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+
+        HttpMetaData metaData = assertStartLine();
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
+        assertEmptyTrailers(channel());
+    }
+
+    @Test
+    public void smuggleAfterTransferEncodingHeader() {
+        smuggleTransferEncoding(false);
+    }
+
+    protected void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
+                // framing terminating the request with no content-length or transfer-encoding, or with known zero
+                // content-length [1].
+                // [1] https://tools.ietf.org/html/rfc7230#section-3.3.3
+                (smuggleBeforeTransferEncoding ?
+                        "Smuggled: " + startLine() + "\r\n\r\n" + TRANSFER_ENCODING + ":" + CHUNKED + "\r\n" :
+                        TRANSFER_ENCODING + ":" + CHUNKED + "\r\n" + "Smuggled: " + startLine() + "\r\n\r\n") +
+                "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
+        assertSingleHeaderValue(metaData.headers(), "Smuggled", startLine());
+    }
+
+    @Test
+    public void smuggleNameBeforeNonZeroContentLengthHeader() {
+        smuggleNameZeroContentLengthHeader(true);
+    }
+
+    @Test
+    public void smuggleNameAfterNonZeroContentLengthHeader() {
+        smuggleNameZeroContentLengthHeader(false);
+    }
+
+    private void smuggleNameZeroContentLengthHeader(boolean smuggleBeforeContentLength) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                        (smuggleBeforeContentLength ?
+                                startLine() + "\r\n\r\n" + "Content-Length: 0" + "\r\n" :
+                                "Content-Length: 0" + "\r\n" + startLine() + "\r\n\r\n") +
+                "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
     }
 }
