@@ -30,7 +30,7 @@ import java.util.function.BiPredicate;
 
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
-import static io.netty.handler.logging.LogLevel.TRACE;
+import static io.servicetalk.transport.netty.internal.NettyLoggerUtils.getNettyLogLevel;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
@@ -62,7 +62,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         final String frameLoggerName = config.frameLoggerName();
         if (frameLoggerName != null) {
-            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, frameLoggerName));
+            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(getNettyLogLevel(frameLoggerName), frameLoggerName));
         }
 
         // TODO(scott): more configuration. header validation, settings stream, etc...

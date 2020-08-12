@@ -18,7 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.handler.logging.LoggingHandler;
 
-import static io.netty.handler.logging.LogLevel.TRACE;
+import static io.servicetalk.transport.netty.internal.NettyLoggerUtils.getNettyLogLevel;
 
 /**
  * A {@link ChannelInitializer} that enables wire-logging for all channels.
@@ -34,7 +34,7 @@ public class WireLoggingInitializer implements ChannelInitializer {
      * @param loggerName The name of the logger to log wire events.
      */
     public WireLoggingInitializer(final String loggerName) {
-        loggingHandler = new LoggingHandler(loggerName, TRACE);
+        loggingHandler = new LoggingHandler(loggerName, getNettyLogLevel(loggerName));
     }
 
     @Override

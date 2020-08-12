@@ -26,7 +26,7 @@ import io.netty.handler.codec.http2.Http2StreamChannel;
 import java.util.function.BiPredicate;
 
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forServer;
-import static io.netty.handler.logging.LogLevel.TRACE;
+import static io.servicetalk.transport.netty.internal.NettyLoggerUtils.getNettyLogLevel;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final H2ProtocolConfig config;
@@ -55,7 +55,7 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
 
         final String frameLoggerName = config.frameLoggerName();
         if (frameLoggerName != null) {
-            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, frameLoggerName));
+            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(getNettyLogLevel(frameLoggerName), frameLoggerName));
         }
 
         // TODO(scott): more configuration. header validation, settings stream, etc...
