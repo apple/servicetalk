@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
@@ -60,7 +59,6 @@ public final class NettyPipelineSslUtils {
                                                         final SslHandshakeCompletionEvent sslEvent,
                                                         final Consumer<Throwable> failureConsumer,
                                                         @Nullable final SecurityHandshakeObserver securityObserver) {
-        final Channel channel = pipeline.channel();
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {

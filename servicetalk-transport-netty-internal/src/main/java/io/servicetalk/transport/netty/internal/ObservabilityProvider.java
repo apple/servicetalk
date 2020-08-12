@@ -21,6 +21,9 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
 
+/**
+ * A helper class which allows sharing observers between different layers and handlers.
+ */
 public final class ObservabilityProvider {
 
     private final TransportObserver transportObserver;
@@ -43,9 +46,15 @@ public final class ObservabilityProvider {
         return connectionObserver = transportObserver.onNewConnection();
     }
 
+    /**
+     * Returns current {@link ConnectionObserver}.
+     *
+     * @return current {@link ConnectionObserver}.
+     */
     public ConnectionObserver connectionObserver() {
         final ConnectionObserver connectionObserver = this.connectionObserver;
         assert connectionObserver != null;
+        this.connectionObserver = null; // Clear the reference to allow GC to destroy the object.
         return connectionObserver;
     }
 
@@ -56,9 +65,15 @@ public final class ObservabilityProvider {
         handshakeObserver = connectionObserver.onSecurityHandshake();
     }
 
+    /**
+     * Returns current {@link SecurityHandshakeObserver}.
+     *
+     * @return current {@link SecurityHandshakeObserver}.
+     */
     public SecurityHandshakeObserver handshakeObserver() {
         final SecurityHandshakeObserver handshakeObserver = this.handshakeObserver;
         assert handshakeObserver != null;
+        // Do not clear the reference to observe renegotiation.
         return handshakeObserver;
     }
 }
