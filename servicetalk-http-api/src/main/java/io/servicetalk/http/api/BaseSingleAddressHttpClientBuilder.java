@@ -33,6 +33,9 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
 
     @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
+
+    @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     @Override
@@ -58,6 +61,16 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendClientFilter(
+            StreamingHttpClientFilterFactory factory);
+
+    @Override
+    public BaseSingleAddressHttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                            StreamingHttpClientFilterFactory factory) {
+        return (BaseSingleAddressHttpClientBuilder<U, R, SDE>) super.appendClientFilter(predicate, factory);
+    }
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
