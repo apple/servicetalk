@@ -40,7 +40,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -48,6 +47,7 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -79,10 +79,9 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -102,7 +101,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         FlushStrategy parentFlushStrategy,
                                                         @Nullable Long idleTimeoutMs,
                                                         HttpExecutionStrategy executionStrategy,
-                                                        ChannelInitializer initializer) {
+                                                        ChannelInitializer initializer,
+                                                        @Nullable ObservabilityProvider observabilityProvider) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -125,10 +125,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     initializer.init(channel);
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
-                            delayedCancellable,
-                            NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(), reqRespFactory);
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(),
+                            reqRespFactory, observabilityProvider);
                 } catch (Throwable cause) {
-                    channel.close();
+                    close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
@@ -155,15 +155,16 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         @Nullable
-        private MultiplexedObserver observer;
+        private MultiplexedObserver multiplexedObserver;
 
         DefaultH2ClientParentConnection(H2ClientParentConnectionContext connection,
                                         Subscriber<? super H2ClientParentConnection> subscriber,
                                         DelayedCancellable delayedCancellable,
                                         boolean waitForSslHandshake,
                                         HttpHeadersFactory headersFactory,
-                                        StreamingHttpRequestResponseFactory reqRespFactory) {
-            super(connection, delayedCancellable, waitForSslHandshake);
+                                        StreamingHttpRequestResponseFactory reqRespFactory,
+                                        @Nullable ObservabilityProvider observabilityProvider) {
+            super(connection, delayedCancellable, waitForSslHandshake, observabilityProvider);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -183,9 +184,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
-                final ConnectionObserver connectionObserver = connectionObserver(nettyChannel());
-                if (connectionObserver != null) {
-                    observer = connectionObserver.establishedMultiplexed(this);
+                if (observabilityProvider != null) {
+                    multiplexedObserver = observabilityProvider.connectionObserver()
+                            .establishedMultiplexed(this);
                 }
                 subscriberCopy.onSuccess(this);
             }
@@ -194,7 +195,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         void tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
-                parentContext.nettyChannel().close();
+                close(parentContext.nettyChannel(), cause);
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
@@ -266,7 +267,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 try {
                     streamChannel = future.getNow();
                     parentContext.trackActiveStream(streamChannel);
-                    StreamObserver streamObserver = registerStreamObserver(streamChannel, observer);
+                    StreamObserver streamObserver = registerStreamObserver(streamChannel, multiplexedObserver);
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
                             PROTOCOL_OUTBOUND_CLOSE_HANDLER));
@@ -293,8 +294,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {
-                            assignConnectionError(streamChannel, cause);
-                            streamChannel.close();
+                            close(streamChannel, cause);
                         } catch (Throwable unexpected) {
                             unexpected.addSuppressed(cause);
                             LOGGER.warn("Unexpected exception while handling the original cause", unexpected);

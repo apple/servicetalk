@@ -115,7 +115,7 @@ public class DefaultNettyConnectionTest {
                     return true;
                 },
                 closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
-                mock(Protocol.class)).toFuture().get();
+                mock(Protocol.class), null).toFuture().get();
         publisher = new TestPublisher<>();
     }
 

@@ -25,6 +25,7 @@ import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.ObservabilityProvider.newObservabilityProvider;
 import static java.util.Collections.emptyList;
 
 /**
@@ -83,13 +85,15 @@ public class TcpServer {
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
+        final ObservabilityProvider observabilityProvider = newObservabilityProvider(config.transportObserver());
         return TcpServerBinder.bind(localAddress(port), config, false,
                 executionContext, connectionAcceptor,
                 channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                        new TcpServerChannelInitializer(config)
-                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP),
+                        new TcpServerChannelInitializer(config, observabilityProvider)
+                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
+                        observabilityProvider),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                         .beforeFinally(() -> serverConnection.closeAsync().subscribe())

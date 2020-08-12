@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -45,6 +46,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.ObservabilityProvider.newObservabilityProvider;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -92,13 +94,14 @@ public final class TcpClient {
      * @return New {@link NettyConnection}.
      */
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
+        final ObservabilityProvider observabilityProvider = newObservabilityProvider(observer);
         return TcpConnector.connect(null, address, config, false, executionContext,
                 channel -> DefaultNettyConnection.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                        new TcpClientChannelInitializer(config, observer).andThen(
+                        new TcpClientChannelInitializer(config, observabilityProvider).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                        executionContext.executionStrategy(), TCP));
+                        executionContext.executionStrategy(), TCP, observabilityProvider));
     }
 
     /**

@@ -32,7 +32,8 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
@@ -101,7 +102,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
                         data.getClass().getSimpleName());
                 exceptionCaught0(fatalError);
             }
-            channel.close();
+            close(channel, fatalError);
         }
     }
 
@@ -157,10 +158,11 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             }
         } else {
             resetSubscription();
-            forSubscription.associatedSub.onError(newExceptionForInvalidRequestN(n));
+            final IllegalArgumentException cause = newExceptionForInvalidRequestN(n);
+            forSubscription.associatedSub.onError(cause);
             // The specification has been violated. There is no way to know if more demand for data will come, so we
             // force close the connection to ensure we don't hang indefinitely.
-            channel.close();
+            close(channel, cause);
         }
     }
 

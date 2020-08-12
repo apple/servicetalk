@@ -37,32 +37,36 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     private final int hostnameVerificationPort;
     private final SslContext sslContext;
     private final boolean deferSslHandler;
-    private final boolean observable;
+    @Nullable
+    private final Runnable handshakeStarted;
 
     /**
      * New instance.
+     *
      * @param sslContext to use for configuring SSL.
      * @param hostnameVerificationAlgorithm hostname verification algorithm.
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
-     * @param observable {@code true} to enable observability for {@link SslHandler}.
+     * @param observabilityProvider {@link ObservabilityProvider} that helps to provide observability features.
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
                                        @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
-                                       final boolean deferSslHandler, final boolean observable) {
+                                       final boolean deferSslHandler,
+                                       @Nullable final ObservabilityProvider observabilityProvider) {
         this.sslContext = requireNonNull(sslContext);
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
         this.hostnameVerificationHost = hostnameVerificationHost;
         this.hostnameVerificationPort = hostnameVerificationPort;
         this.deferSslHandler = deferSslHandler;
-        this.observable = observable;
+        this.handshakeStarted = observabilityProvider == null ? null : observabilityProvider::onSecurityHandshake;
     }
 
     @Override
     public void init(Channel channel) {
         final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
                 hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
-        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, observable) : sslHandler);
+        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, handshakeStarted) :
+                sslHandler);
     }
 }

@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamRefusedException;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamResetException;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
@@ -69,11 +70,12 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         }
     }
 
-    final void writeBuffer(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+    static void writeBuffer(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
         if (byteBuf == null) {
-            promise.setFailure(new IllegalArgumentException("unsupported Buffer type:" + msg));
-            ctx.close();
+            final IllegalArgumentException cause = new IllegalArgumentException("unsupported Buffer type:" + msg);
+            promise.setFailure(cause);
+            ChannelCloseUtils.close(ctx, cause);
         } else {
             ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
         }

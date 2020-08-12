@@ -29,7 +29,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
@@ -71,13 +70,13 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionObserver;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -228,6 +227,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param observabilityProvider {@link ObservabilityProvider} that helps to provide observability features.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -236,7 +236,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol) {
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
+            @Nullable ObservabilityProvider observabilityProvider) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -259,9 +260,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     ChannelPipeline pipeline = connection.channel().pipeline();
                     nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
-                            connectionObserver(channel));
+                            observabilityProvider);
                 } catch (Throwable cause) {
-                    channel.close();
+                    close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
                     return;
                 }
@@ -545,7 +546,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Nullable
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
         @Nullable
-        private final ConnectionObserver observer;
+        private final ObservabilityProvider observabilityProvider;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
                                        @Nullable
@@ -553,12 +554,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                        @Nullable
                                        DelayedCancellable delayedCancellable,
                                        boolean waitForSslHandshake,
-                                       @Nullable ConnectionObserver observer) {
+                                       @Nullable ObservabilityProvider observabilityProvider) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
-            this.observer = observer;
+            this.observabilityProvider = observabilityProvider;
         }
 
         @Override
@@ -639,7 +640,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.nettyChannelPublisher.channelInboundClosed();
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber);
+                        this::tryFailSubscriber,
+                        observabilityProvider == null ? null : observabilityProvider.handshakeObserver());
                 if (subscriber != null) {
                     assert waitForSslHandshake;
                     completeSubscriber();
@@ -684,15 +686,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
-            if (observer != null) {
-                connection.dataObserver = observer.established(connection);
+            if (observabilityProvider != null) {
+                connection.dataObserver = observabilityProvider.connectionObserver().established(connection);
             }
             subscriberCopy.onSuccess(connection);
         }
 
         private void tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
-                connection.channel().close();
+                close(connection.channel(), cause);
                 SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);

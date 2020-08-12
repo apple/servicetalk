@@ -19,11 +19,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import io.netty.channel.Channel;
 
@@ -42,22 +42,23 @@ final class StreamingConnectionFactory {
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
-            final ReadOnlyHttpClientConfig roConfig, @Nullable final TransportObserver observer) {
+            final ReadOnlyHttpClientConfig roConfig, @Nullable final ObservabilityProvider observabilityProvider) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false,
                 executionContext, channel -> createConnection(channel, executionContext, roConfig,
-                        new TcpClientChannelInitializer(roConfig.tcpConfig(), observer, roConfig.hasProxy())));
+                    new TcpClientChannelInitializer(roConfig.tcpConfig(), observabilityProvider, roConfig.hasProxy()),
+                        observabilityProvider));
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
             final HttpExecutionContext executionContext, final ReadOnlyHttpClientConfig config,
-            final ChannelInitializer initializer) {
+            final ChannelInitializer initializer, @Nullable final ObservabilityProvider observabilityProvider) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         assert config.h1Config() != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), LAST_CHUNK_PREDICATE, closeHandler, config.tcpConfig().flushStrategy(),
                 config.tcpConfig().idleTimeoutMs(), initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1), HTTP_1_1, channel);
+                executionContext.executionStrategy(), HTTP_1_1, observabilityProvider), HTTP_1_1, channel);
     }
 }

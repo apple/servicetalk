@@ -16,73 +16,84 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
-import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
  */
 public final class TransportObserverInitializer implements ChannelInitializer {
 
-    private final TransportObserver transportObserver;
+    private final ObservabilityProvider provider;
     private final boolean secure;
 
     /**
      * Creates a new instance.
      *
-     * @param transportObserver {@link TransportObserver} to initialize for the channel
+     * @param provider {@link ObservabilityProvider} that helps to provide observability features
      * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final TransportObserver transportObserver, final boolean secure) {
-        this.transportObserver = asSafeObserver(transportObserver);
+    public TransportObserverInitializer(final ObservabilityProvider provider, final boolean secure) {
+        this.provider = requireNonNull(provider);
         this.secure = secure;
     }
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = transportObserver.onNewConnection();
-        assignConnectionObserver(channel, observer);
-        channel.pipeline().addLast(new TransportObserverHandler(observer, secure));
+        final ConnectionObserver observer = provider.onNewConnection();
+        channel.closeFuture().addListener((ChannelFutureListener) future -> {
+            Throwable t = channelError(channel);
+            if (t == null) {
+                observer.connectionClosed();
+            } else {
+                observer.connectionClosed(t);
+            }
+        });
+        channel.pipeline().addLast(new TransportObserverHandler(observer, provider, secure));
     }
 
     private static final class TransportObserverHandler extends ChannelDuplexHandler {
         private final ConnectionObserver observer;
+        private final ObservabilityProvider provider;
         private final boolean secure;
         private boolean handshakeStartNotified;
 
-        TransportObserverHandler(final ConnectionObserver observer, final boolean secure) {
+        TransportObserverHandler(final ConnectionObserver observer, final ObservabilityProvider provider,
+                                 final boolean secure) {
             this.observer = observer;
+            this.provider = provider;
             this.secure = secure;
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
             if (secure && ctx.channel().isActive()) {
-                reportSecurityHandshakeStarting(ctx.channel());
+                reportSecurityHandshakeStarting();
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             if (secure) {
-                reportSecurityHandshakeStarting(ctx.channel());
+                reportSecurityHandshakeStarting();
             }
             ctx.fireChannelActive();
         }
 
-        void reportSecurityHandshakeStarting(final Channel channel) {
+        void reportSecurityHandshakeStarting() {
             if (!handshakeStartNotified) {
                 handshakeStartNotified = true;
-                TransportObserverUtils.reportSecurityHandshakeStarting(channel);
+                // Use provider instead of ConnectionObserver to let other layers access SecurityHandshakeObserver
+                provider.onSecurityHandshake();
             }
         }
 

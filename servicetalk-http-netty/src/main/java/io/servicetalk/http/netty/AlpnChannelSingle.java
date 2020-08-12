@@ -32,6 +32,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
@@ -55,7 +57,7 @@ final class AlpnChannelSingle extends SubscribableSingle<String> {
         try {
             channelInitializer.init(channel);
         } catch (Throwable cause) {
-            channel.close();
+            close(channel, cause);
             deliverErrorFromSource(subscriber, cause);
             return;
         }
@@ -107,20 +109,21 @@ final class AlpnChannelSingle extends SubscribableSingle<String> {
         @Override
         protected void handshakeFailure(final ChannelHandlerContext ctx, final Throwable cause) {
             LOGGER.warn("{} TLS handshake failed:", ctx.channel(), cause);
-            failSubscriber(cause);
+            failSubscriber(cause, ctx.channel());
         }
 
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
             LOGGER.warn("{} Failed to select the application-level protocol:", ctx.channel(), cause);
-            if (!failSubscriber(cause)) {
-                // Propagate exception in the pipeline if subscribed is already complete
+            if (!failSubscriber(cause, ctx.channel())) {
+                // Propagate exception in the pipeline if subscriber is already complete
                 ctx.fireExceptionCaught(cause);
                 ctx.close();
             }
         }
 
-        private boolean failSubscriber(final Throwable cause) {
+        private boolean failSubscriber(final Throwable cause, final Channel channel) {
+            assignConnectionError(channel, cause);
             if (subscriber != null) {
                 final SingleSource.Subscriber<? super String> subscriberCopy = subscriber;
                 subscriber = null;

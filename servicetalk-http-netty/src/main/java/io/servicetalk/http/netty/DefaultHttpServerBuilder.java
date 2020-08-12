@@ -27,10 +27,13 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.transport.netty.internal.ObservabilityProvider.newObservabilityProvider;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -108,14 +111,16 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
         final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
+        final ObservabilityProvider observabilityProvider = newObservabilityProvider(
+                roConfig.tcpConfig().transportObserver());
         if (roConfig.isH2PriorKnowledge()) {
             return H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody);
+                    service, drainRequestPayloadBody, observabilityProvider);
         }
         return roConfig.tcpConfig().isAlpnConfigured() ?
                 AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
-                        service, drainRequestPayloadBody) :
+                        service, drainRequestPayloadBody, observabilityProvider) :
                 NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
-                        service, drainRequestPayloadBody);
+                        service, drainRequestPayloadBody, observabilityProvider);
     }
 }

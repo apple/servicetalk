@@ -25,7 +25,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -48,10 +48,10 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     }
 
     @Override
-    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
-                                                                      @Nullable final TransportObserver observer) {
+    Single<FilterableStreamingHttpConnection> newFilterableConnection(
+            final ResolvedAddress resolvedAddress, @Nullable final ObservabilityProvider observabilityProvider) {
         assert config.h1Config() != null;
-        return buildStreaming(executionContext, resolvedAddress, config, observer)
+        return buildStreaming(executionContext, resolvedAddress, config, observabilityProvider)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,
                         reqRespFactory));
     }

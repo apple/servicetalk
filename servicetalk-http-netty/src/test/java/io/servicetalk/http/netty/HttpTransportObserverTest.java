@@ -258,6 +258,11 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).itemRead();
         verify(clientReadObserver).readComplete();
 
+        if (protocol == Protocol.HTTP_2) {
+            verify(clientStreamObserver).streamClosed();
+            verify(serverStreamObserver, await()).streamClosed();
+        }
+
         verifyNoMoreInteractions(
                 clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
                 serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
@@ -320,6 +325,16 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).itemRead();
         verify(clientReadObserver).readFailed(any(causeType));
 
+        if (protocol == Protocol.HTTP_1) {
+            verify(clientConnectionObserver).connectionClosed();    // FIXME should we see connection RST here?
+            verify(serverConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
+        } else {
+            verify(clientStreamObserver).streamClosed(any(causeType));
+            verify(serverStreamObserver).streamClosed(DELIBERATE_EXCEPTION);
+            verify(clientConnectionObserver).connectionClosed();
+            verify(serverConnectionObserver).connectionClosed();
+        }
+
         verifyNoMoreInteractions(
                 clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
                 serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
@@ -372,6 +387,16 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(clientReadObserver).readCancelled();
 
+        if (protocol == Protocol.HTTP_1) {
+            verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
+            verify(serverConnectionObserver).connectionClosed(any(IOException.class));
+        } else {
+            verify(clientStreamObserver).streamClosed(DELIBERATE_EXCEPTION);
+            verify(serverStreamObserver).streamClosed(any(H2StreamResetException.class));
+            verify(clientConnectionObserver).connectionClosed();
+            verify(serverConnectionObserver).connectionClosed();
+        }
+
         verifyNoMoreInteractions(
                 clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
                 serverDataObserver, serverMultiplexedObserver, serverReadObserver);
@@ -389,11 +414,9 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
             verify(clientStreamObserver).onNewRead();
             verify(clientStreamObserver).onNewWrite();
-            verify(clientStreamObserver).streamClosed();
 
             verify(serverStreamObserver).onNewRead();
             verify(serverStreamObserver).onNewWrite();
-            verify(serverStreamObserver, await()).streamClosed();
         }
     }
 

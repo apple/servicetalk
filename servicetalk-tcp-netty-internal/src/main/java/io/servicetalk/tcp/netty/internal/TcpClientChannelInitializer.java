@@ -15,10 +15,10 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
+import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 import io.servicetalk.transport.netty.internal.TransportObserverInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
@@ -40,30 +40,28 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param observer {@link TransportObserver} that provides visibility into transport events associated with a new
-     * TCP connection.
+     * @param observabilityProvider {@link ObservabilityProvider} that helps to provide observability features.
      */
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config,
-                                       @Nullable final TransportObserver observer) {
-        this(config, observer, false);
+                                       @Nullable final ObservabilityProvider observabilityProvider) {
+        this(config, observabilityProvider, false);
     }
 
     /**
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param observer {@link TransportObserver} that provides visibility into transport events associated with a new
-     * TCP connection.
+     * @param observabilityProvider {@link ObservabilityProvider} that helps to provide observability features.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config,
-                                       @Nullable final TransportObserver observer,
+                                       @Nullable final ObservabilityProvider observabilityProvider,
                                        final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         final SslContext sslContext = config.sslContext();
-        if (observer != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(observer,
+        if (observabilityProvider != null) {
+            delegate = delegate.andThen(new TransportObserverInitializer(observabilityProvider,
                     sslContext != null && !deferSslHandler));
         }
 
@@ -74,7 +72,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
         if (sslContext != null) {
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort(), deferSslHandler, observer != null));
+                    config.sslHostnameVerificationPort(), deferSslHandler, observabilityProvider));
         }
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
