@@ -182,6 +182,9 @@
           <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-client-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-client-api/0.30/index.html">0.30</a>
         </li>
         <li class="version">
@@ -206,6 +209,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.31/index.html">0.31</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-concurrent-api/0.30/index.html">0.30</a>
@@ -252,6 +258,9 @@
           <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-examples/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-examples/0.30/index.html">0.30</a>
         </li>
         <li class="version">
@@ -294,6 +303,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.31/index.html">0.31</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-grpc-api/0.30/index.html">0.30</a>
@@ -340,6 +352,9 @@
           <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-http-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-http-api/0.30/index.html">0.30</a>
         </li>
         <li class="version">
@@ -382,6 +397,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.31/index.html">0.31</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-router-jersey/0.30/index.html">0.30</a>
@@ -428,6 +446,9 @@
           <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-data-jackson-jersey/0.30/index.html">0.30</a>
         </li>
         <li class="version">
@@ -472,6 +493,9 @@
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-loadbalancer/0.30/index.html">0.30</a>
         </li>
         <li class="version">
@@ -511,6 +535,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.31/index.html">0.31</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-security-jersey/0.30/index.html">0.30</a>
@@ -555,6 +582,9 @@
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../0.31/index.html">0.31</a>
         </li>
         <li class="version">
           <a href="../0.30/index.html">0.30</a>
@@ -614,6 +644,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="blocking-safe-by-default.html">SNAPSHOT</a>
+    <a class="version" href="../0.31/blocking-safe-by-default.html">0.31</a>
     <a class="version" href="../0.30/blocking-safe-by-default.html">0.30</a>
     <a class="version" href="../0.29/blocking-safe-by-default.html">0.29</a>
     <a class="version" href="../0.28/blocking-safe-by-default.html">0.28</a>
@@ -628,7 +659,7 @@
     <a class="version" href="../0.19/blocking-safe-by-default.html">0.19</a>
   </div>
 </div>
-  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/edit/master/docs/modules/ROOT/pages/blocking-safe-by-default.adoc">Edit this Page</a></div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/edit/main/docs/modules/ROOT/pages/blocking-safe-by-default.adoc">Edit this Page</a></div>
 </div>
         <article class="doc">
 <h1>Blocking safe by default</h1>
@@ -697,7 +728,7 @@ event loop.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Simply put, ServiceTalk makes sure that no user code is called on the event loop. In order to do that, it uses an
-<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a> to
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a> to
 <em>offload</em> invocation of user code out of the event loop to a different thread.</p>
 </div>
 <div class="sect2">
@@ -712,7 +743,7 @@ code can interact with the event loop on a certain path.</p>
 <div class="sect2">
 <h3 id="execution-strategy"><a class="anchor" href="#execution-strategy"></a><a class="link" href="#execution-strategy">Execution Strategy</a></h3>
 <div class="paragraph">
-<p>An <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">Execution Strategy</a>
+<p>An <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">Execution Strategy</a>
 has two primary purposes:</p>
 </div>
 <div class="olist arabic">
@@ -722,7 +753,7 @@ has two primary purposes:</p>
 </li>
 <li>
 <p>Optionally specify an
-<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
 to use for offloading. In absence of a specified <code>Executor</code>, ServiceTalk will use a default <code>Executor</code>.</p>
 </li>
 </ol>
@@ -765,7 +796,7 @@ block, they can declare so through the constructs provided at the
 </li>
 <li>
 <p><em>Override execution strategy</em>: ServiceTalk provides a way for users to override the
-<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">Execution Strategy</a>
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">Execution Strategy</a>
 used for a client/server. This disables all intelligence around finding the optimized strategy and just uses the
 provided strategy.</p>
 </li>
