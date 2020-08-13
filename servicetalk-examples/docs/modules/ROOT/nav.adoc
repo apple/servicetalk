@@ -1,5 +1,5 @@
 ifndef::page-version[]
-:page-version: 0.31
+:page-version: SNAPSHOT
 endif::[]
 
 include::{page-version}@servicetalk::partial$nav-versioned.adoc[]
