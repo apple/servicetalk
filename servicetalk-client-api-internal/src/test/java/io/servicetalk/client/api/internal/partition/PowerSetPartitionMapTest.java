@@ -247,7 +247,7 @@ public class PowerSetPartitionMapTest {
         List<ListenableAsyncCloseable> added1 = map.add(partition);
         List<ListenableAsyncCloseable> added2 = map.add(partition);
         assertEquals("Added partitions are not equal.", added1, added2);
-        assertEquals("Same partition added twice.", map.size(), 1);
+        assertEquals("Same partition added twice.", 1, map.size());
 
         List<ListenableAsyncCloseable> removed = map.remove(partition);
         assertEquals("Unexpected size of removed partitions.", removed.size(), added1.size());
