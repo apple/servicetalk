@@ -24,7 +24,9 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.AttributeKey;
 
+import static io.netty.util.AttributeKey.newInstance;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 import static java.util.Objects.requireNonNull;
 
@@ -33,23 +35,25 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TransportObserverInitializer implements ChannelInitializer {
 
-    private final ObservabilityProvider provider;
+    public static final AttributeKey<ConnectionObserver.SecurityHandshakeObserver> SECURITY_HANDSHAKE_OBSERVER =
+            newInstance("SecurityHandshakeObserver");
+
+    private final ConnectionObserver observer;
     private final boolean secure;
 
     /**
      * Creates a new instance.
      *
-     * @param provider {@link ObservabilityProvider} that helps to provide observability features
+     * @param observer {@link ConnectionObserver} to report network events.
      * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final ObservabilityProvider provider, final boolean secure) {
-        this.provider = requireNonNull(provider);
+    public TransportObserverInitializer(final ConnectionObserver observer, final boolean secure) {
+        this.observer = requireNonNull(observer);
         this.secure = secure;
     }
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = provider.onNewConnection();
         channel.closeFuture().addListener((ChannelFutureListener) future -> {
             Throwable t = channelError(channel);
             if (t == null) {
@@ -58,42 +62,38 @@ public final class TransportObserverInitializer implements ChannelInitializer {
                 observer.connectionClosed(t);
             }
         });
-        channel.pipeline().addLast(new TransportObserverHandler(observer, provider, secure));
+        channel.pipeline().addLast(new TransportObserverHandler(observer, secure));
     }
 
     private static final class TransportObserverHandler extends ChannelDuplexHandler {
         private final ConnectionObserver observer;
-        private final ObservabilityProvider provider;
         private final boolean secure;
         private boolean handshakeStartNotified;
 
-        TransportObserverHandler(final ConnectionObserver observer, final ObservabilityProvider provider,
-                                 final boolean secure) {
+        TransportObserverHandler(final ConnectionObserver observer, final boolean secure) {
             this.observer = observer;
-            this.provider = provider;
             this.secure = secure;
         }
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
             if (secure && ctx.channel().isActive()) {
-                reportSecurityHandshakeStarting();
+                reportSecurityHandshakeStarting(ctx.channel());
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             if (secure) {
-                reportSecurityHandshakeStarting();
+                reportSecurityHandshakeStarting(ctx.channel());
             }
             ctx.fireChannelActive();
         }
 
-        void reportSecurityHandshakeStarting() {
+        void reportSecurityHandshakeStarting(final Channel channel) {
             if (!handshakeStartNotified) {
                 handshakeStartNotified = true;
-                // Use provider instead of ConnectionObserver to let other layers access SecurityHandshakeObserver
-                provider.onSecurityHandshake();
+                channel.attr(SECURITY_HANDSHAKE_OBSERVER).set(observer.onSecurityHandshake());
             }
         }
 

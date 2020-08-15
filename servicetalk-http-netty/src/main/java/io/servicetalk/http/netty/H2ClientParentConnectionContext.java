@@ -40,6 +40,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -47,7 +48,6 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
-import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -102,7 +102,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         @Nullable Long idleTimeoutMs,
                                                         HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer,
-                                                        @Nullable ObservabilityProvider observabilityProvider) {
+                                                        @Nullable ConnectionObserver observer) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -126,7 +126,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(),
-                            reqRespFactory, observabilityProvider);
+                            reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -163,8 +163,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         boolean waitForSslHandshake,
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
-                                        @Nullable ObservabilityProvider observabilityProvider) {
-            super(connection, delayedCancellable, waitForSslHandshake, observabilityProvider);
+                                        @Nullable ConnectionObserver observer) {
+            super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -184,9 +184,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
-                if (observabilityProvider != null) {
-                    multiplexedObserver = observabilityProvider.connectionObserver()
-                            .establishedMultiplexed(this);
+                if (observer != null) {
+                    multiplexedObserver = observer.establishedMultiplexed(this);
                 }
                 subscriberCopy.onSuccess(this);
             }

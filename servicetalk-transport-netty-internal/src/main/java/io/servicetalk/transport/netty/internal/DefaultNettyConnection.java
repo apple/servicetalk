@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
@@ -227,7 +228,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
-     * @param observabilityProvider {@link ObservabilityProvider} that helps to provide observability features.
+     * @param observer {@link ConnectionObserver} to report network events.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -237,7 +238,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
-            @Nullable ObservabilityProvider observabilityProvider) {
+            @Nullable ConnectionObserver observer) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -259,8 +260,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     initializer.init(channel);
                     ChannelPipeline pipeline = connection.channel().pipeline();
                     nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
-                            observabilityProvider);
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -546,7 +546,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Nullable
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
         @Nullable
-        private final ObservabilityProvider observabilityProvider;
+        private final ConnectionObserver observer;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
                                        @Nullable
@@ -554,12 +554,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                        @Nullable
                                        DelayedCancellable delayedCancellable,
                                        boolean waitForSslHandshake,
-                                       @Nullable ObservabilityProvider observabilityProvider) {
+                                       @Nullable ConnectionObserver observer) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
-            this.observabilityProvider = observabilityProvider;
+            this.observer = observer;
         }
 
         @Override
@@ -640,8 +640,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.nettyChannelPublisher.channelInboundClosed();
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber,
-                        observabilityProvider == null ? null : observabilityProvider.handshakeObserver());
+                        this::tryFailSubscriber);
                 if (subscriber != null) {
                     assert waitForSslHandshake;
                     completeSubscriber();
@@ -686,8 +685,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
-            if (observabilityProvider != null) {
-                connection.dataObserver = observabilityProvider.connectionObserver().established(connection);
+            if (observer != null) {
+                connection.dataObserver = observer.established(connection);
             }
             subscriberCopy.onSuccess(connection);
         }

@@ -27,13 +27,13 @@ import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
@@ -178,16 +178,16 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         final boolean waitForSslHandshake;
         private final DelayedCancellable delayedCancellable;
         @Nullable
-        final ObservabilityProvider observabilityProvider;
+        final ConnectionObserver observer;
 
         AbstractH2ParentConnection(H2ParentConnectionContext parentContext,
                                    DelayedCancellable delayedCancellable,
                                    boolean waitForSslHandshake,
-                                   @Nullable ObservabilityProvider observabilityProvider) {
+                                   @Nullable ConnectionObserver observer) {
             this.parentContext = parentContext;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
-            this.observabilityProvider = observabilityProvider;
+            this.observer = observer;
         }
 
         abstract boolean hasSubscriber();
@@ -237,7 +237,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (observabilityProvider != null) {
+            if (observer != null) {
                 assignConnectionError(ctx.channel(), cause);
             }
             parentContext.transportError.onSuccess(cause);
@@ -248,8 +248,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             try {
                 if (evt instanceof SslHandshakeCompletionEvent) {
                     parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
-                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
-                            observabilityProvider == null ? null : observabilityProvider.handshakeObserver());
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber);
                     tryCompleteSubscriber();
                 }
             } finally {

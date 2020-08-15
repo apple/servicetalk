@@ -29,15 +29,16 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
-import io.servicetalk.transport.netty.internal.ObservabilityProvider;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -81,17 +82,20 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                       final SocketAddress listenAddress,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody,
-                                      @Nullable final ObservabilityProvider observabilityProvider) {
+                                      final boolean drainRequestPayloadBody) {
 
         assert config.isH2PriorKnowledge();
         assert config.h2Config() != null;
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // Auto read is required for h2
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, true, executionContext, connectionAcceptor,
-                channel -> initChannel(listenAddress, channel, executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig, observabilityProvider), service,
-                        drainRequestPayloadBody, observabilityProvider),
+                channel -> {
+                    final TransportObserver observer = tcpServerConfig.transportObserver();
+                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    return initChannel(listenAddress, channel, executionContext, config,
+                            new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
+                            drainRequestPayloadBody, connectionObserver);
+                },
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ })
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
@@ -104,7 +108,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 final Channel channel, final HttpExecutionContext httpExecutionContext,
                 final ReadOnlyHttpServerConfig config, final ChannelInitializer initializer,
                 final StreamingHttpService service, final boolean drainRequestPayloadBody,
-                @Nullable final ObservabilityProvider observabilityProvider) {
+                @Nullable final ConnectionObserver observer) {
 
         final H2ProtocolConfig h2ServerConfig = config.h2Config();
         assert h2ServerConfig != null;
@@ -135,8 +139,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     pipeline = channel.pipeline();
 
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
-                            observabilityProvider);
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), observer);
 
                     new H2ServerParentChannelInitializer(h2ServerConfig,
                         new io.netty.channel.ChannelInitializer<Http2StreamChannel>() {
@@ -200,8 +203,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                         final Subscriber<? super H2ServerParentConnectionContext> subscriber,
                                         final DelayedCancellable delayedCancellable,
                                         final boolean waitForSslHandshake,
-                                        @Nullable final ObservabilityProvider observabilityProvider) {
-            super(parentContext, delayedCancellable, waitForSslHandshake, observabilityProvider);
+                                        @Nullable final ConnectionObserver observer) {
+            super(parentContext, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
         }
 
@@ -215,9 +218,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             if (subscriber != null) {
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
-                if (observabilityProvider != null) {
-                    multiplexedObserver = observabilityProvider.connectionObserver()
-                            .establishedMultiplexed(parentContext);
+                if (observer != null) {
+                    multiplexedObserver = observer.establishedMultiplexed(parentContext);
                 }
                 subscriberCopy.onSuccess((H2ServerParentConnectionContext) parentContext);
             }

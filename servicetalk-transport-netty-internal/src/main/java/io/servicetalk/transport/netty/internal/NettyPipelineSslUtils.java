@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
@@ -25,6 +26,8 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
+
+import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
 
 /**
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
@@ -51,14 +54,14 @@ public final class NettyPipelineSslUtils {
      * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
      * @param sslEvent the event indicating a SSL/TLS handshake completed.
      * @param failureConsumer invoked if a failure is encountered.
-     * @param securityObserver the {@link SecurityHandshakeObserver} to report the result of handshake.
      * @return The {@link SSLSession} or {@code null} if none can be found.
      */
     @Nullable
-    public static SSLSession extractSslSessionAndReport(final ChannelPipeline pipeline,
-                                                        final SslHandshakeCompletionEvent sslEvent,
-                                                        final Consumer<Throwable> failureConsumer,
-                                                        @Nullable final SecurityHandshakeObserver securityObserver) {
+    public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
+                                                        SslHandshakeCompletionEvent sslEvent,
+                                                        Consumer<Throwable> failureConsumer) {
+        final Channel channel = pipeline.channel();
+        final SecurityHandshakeObserver securityObserver = channel.attr(SECURITY_HANDSHAKE_OBSERVER).get();
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
