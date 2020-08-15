@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.transport.netty.internal.TransportObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
+import static io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
 
 /**
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
