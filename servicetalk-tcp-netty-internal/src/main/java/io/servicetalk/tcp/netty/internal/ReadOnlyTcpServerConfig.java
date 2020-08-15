@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 
 /**
@@ -49,7 +50,7 @@ public final class ReadOnlyTcpServerConfig
      */
     ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
         super(from, !supportedAlpnProtocols.isEmpty());
-        transportObserver = from.transportObserver();
+        transportObserver = from.transportObserver() == null ? null : asSafeObserver(from.transportObserver());
         final ReadOnlyServerSecurityConfig securityConfig = from.securityConfig();
         if (from.sniConfigs() != null) {
             if (securityConfig == null) {

@@ -35,6 +35,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
@@ -68,7 +69,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
                             final ResolvedAddress ra, @Nullable final TransportObserver observer) {
-                        return newFilterableConnection(ra, observer);
+                        return newFilterableConnection(ra, observer == null ? null : asSafeObserver(observer));
                     }
 
                     @Override
