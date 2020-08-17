@@ -27,8 +27,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.securityHandshakeObserver;
+import static io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
 
 /**
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
@@ -62,7 +61,7 @@ public final class NettyPipelineSslUtils {
                                                         SslHandshakeCompletionEvent sslEvent,
                                                         Consumer<Throwable> failureConsumer) {
         final Channel channel = pipeline.channel();
-        final SecurityHandshakeObserver securityObserver = securityHandshakeObserver(channel);
+        final SecurityHandshakeObserver securityObserver = channel.attr(SECURITY_HANDSHAKE_OBSERVER).get();
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
@@ -73,20 +72,18 @@ public final class NettyPipelineSslUtils {
                 return session;
             } else {
                 deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " +
-                        SslHandler.class.getName() + " in the pipeline."), securityObserver, channel);
+                        SslHandler.class.getName() + " in the pipeline."), securityObserver);
             }
         } else {
-            deliverFailureCause(failureConsumer, sslEvent.cause(), securityObserver, channel);
+            deliverFailureCause(failureConsumer, sslEvent.cause(), securityObserver);
         }
         return null;
     }
 
     private static void deliverFailureCause(final Consumer<Throwable> failureConsumer, final Throwable cause,
-                                            @Nullable final SecurityHandshakeObserver securityObserver,
-                                            final Channel channel) {
+                                            @Nullable final SecurityHandshakeObserver securityObserver) {
         if (securityObserver != null) {
             securityObserver.handshakeFailed(cause);
-            assignConnectionError(channel, cause);
         }
         failureConsumer.accept(cause);
     }

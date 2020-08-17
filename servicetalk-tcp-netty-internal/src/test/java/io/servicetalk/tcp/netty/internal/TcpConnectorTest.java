@@ -110,7 +110,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class))).toFuture().get();
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), null)).toFuture().get();
         connection.closeAsync().toFuture().get();
 
         registeredLatch.await();

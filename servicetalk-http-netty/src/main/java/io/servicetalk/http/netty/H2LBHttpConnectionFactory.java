@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.util.function.Function;
@@ -51,19 +52,22 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
     }
 
     @Override
-    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
-                                                                      @Nullable final TransportObserver observer) {
+    Single<FilterableStreamingHttpConnection> newFilterableConnection(
+            final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
         assert config.h2Config() != null;
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // Auto read is required for h2
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true,
-                executionContext, channel -> H2ClientParentConnectionContext.initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(),
-                        config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
-                        roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
-                        new TcpClientChannelInitializer(roTcpClientConfig, observer).andThen(
-                                new H2ClientParentChannelInitializer(config.h2Config()))));
+        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
+                channel -> {
+                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    return H2ClientParentConnectionContext.initChannel(channel,
+                            executionContext.bufferAllocator(), executionContext.executor(),
+                            config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
+                            roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
+                            new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
+                                    new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver);
+                });
     }
 
     @Override

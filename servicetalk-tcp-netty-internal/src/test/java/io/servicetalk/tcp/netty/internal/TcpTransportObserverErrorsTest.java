@@ -25,21 +25,17 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.mockito.Mockito;
 
-import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -80,8 +76,8 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
     }
 
     @Parameters(name = "errorSource={0}")
-    public static Collection<ErrorSource> getErrorSources() {
-        return asList(ErrorSource.PIPELINE, ErrorSource.CLIENT_WRITE);
+    public static ErrorSource[] getErrorSources() {
+        return ErrorSource.values();
     }
 
     @Override
@@ -100,13 +96,12 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
+        verify(clientConnectionObserver).established(any(ConnectionInfo.class));
+        verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
                 break;
             case PIPELINE:
-                verify(clientConnectionObserver).established(any(ConnectionInfo.class));
-                verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
-
                 Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
                 connection.write(from(content.duplicate())).toFuture().get();
                 verify(clientConnectionObserver).onDataWrite(content.readableBytes());
@@ -116,9 +111,6 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                 verify(serverConnectionObserver).onDataRead(content.readableBytes());
                 break;
             case CLIENT_WRITE:
-                verify(clientConnectionObserver).established(any(ConnectionInfo.class));
-                verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
-
                 assertThrows(ExecutionException.class, () -> connection.write(
                         Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
                 verify(clientDataObserver).onNewWrite();
@@ -129,12 +121,14 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
         connection.onClose().toFuture().get();
-        verify(clientConnectionObserver).connectionClosed();
         switch (errorSource) {
+            case CONNECTION_ACCEPTOR:
             case PIPELINE:
                 verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
+                verify(clientConnectionObserver).connectionClosed();
                 break;
             case CLIENT_WRITE:
+                verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
                 verify(serverConnectionObserver, await()).connectionClosed();
                 break;
             default:
@@ -143,11 +137,5 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
 
         verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
                 serverTransportObserver, serverConnectionObserver);
-    }
-
-    @After
-    public void qwe() {
-        System.err.println(Mockito.mockingDetails(serverConnectionObserver).printInvocations());
-        System.err.println(Mockito.mockingDetails(clientWriteObserver).printInvocations());
     }
 }

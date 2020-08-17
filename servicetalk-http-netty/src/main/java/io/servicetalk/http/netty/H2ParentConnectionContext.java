@@ -27,6 +27,7 @@ import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -45,8 +46,6 @@ import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -58,17 +57,14 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.connectionError;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
-
     final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
@@ -167,7 +163,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
         final StreamObserver observer = multiplexedObserver.onNewStream();
         streamChannel.closeFuture().addListener((ChannelFutureListener) future -> {
-            Throwable t = connectionError(streamChannel);
+            Throwable t = channelError(streamChannel);
             if (t == null) {
                 observer.streamClosed();
             } else {
@@ -181,13 +177,17 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         final H2ParentConnectionContext parentContext;
         final boolean waitForSslHandshake;
         private final DelayedCancellable delayedCancellable;
+        @Nullable
+        final ConnectionObserver observer;
 
         AbstractH2ParentConnection(H2ParentConnectionContext parentContext,
                                    DelayedCancellable delayedCancellable,
-                                   boolean waitForSslHandshake) {
+                                   boolean waitForSslHandshake,
+                                   @Nullable ConnectionObserver observer) {
             this.parentContext = parentContext;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
+            this.observer = observer;
         }
 
         abstract boolean hasSubscriber();
@@ -237,7 +237,9 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            assignConnectionError(ctx.channel(), cause);
+            if (observer != null) {
+                assignConnectionError(ctx.channel(), cause);
+            }
             parentContext.transportError.onSuccess(cause);
         }
 

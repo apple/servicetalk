@@ -24,7 +24,9 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -59,8 +61,12 @@ final class AlpnServerContext {
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
         return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor,
-                channel -> initChannel(listenAddress, channel, config, executionContext, service,
-                        drainRequestPayloadBody),
+                channel -> {
+                    final TransportObserver observer = tcpConfig.transportObserver();
+                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    return initChannel(listenAddress, channel, config, executionContext, service,
+                            drainRequestPayloadBody, connectionObserver);
+                },
                 serverConnection -> {
                     // Start processing requests on http/1.1 connection:
                     if (serverConnection instanceof NettyHttpServerConnection) {
@@ -80,16 +86,18 @@ final class AlpnServerContext {
                                                               final ReadOnlyHttpServerConfig config,
                                                               final HttpExecutionContext httpExecutionContext,
                                                               final StreamingHttpService service,
-                                                              final boolean drainRequestPayloadBody) {
+                                                              final boolean drainRequestPayloadBody,
+                                                              @Nullable final ConnectionObserver observer) {
         return new AlpnChannelSingle(channel,
-                new TcpServerChannelInitializer(config.tcpConfig()), true).flatMap(protocol -> {
+                new TcpServerChannelInitializer(config.tcpConfig(), observer), true).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     return NettyHttpServer.initChannel(channel, httpExecutionContext, config,
-                            NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody);
+                            NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
                 case HTTP_2:
                     return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext,
-                            config, NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody);
+                            config, NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody,
+                            observer);
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }

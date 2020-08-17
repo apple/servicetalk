@@ -16,50 +16,63 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.AttributeKey;
 
-import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
-import static io.servicetalk.transport.netty.internal.TransportObserverUtils.assignConnectionObserver;
+import static io.netty.util.AttributeKey.newInstance;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
  */
-public final class TransportObserverInitializer implements ChannelInitializer {
+public final class ConnectionObserverInitializer implements ChannelInitializer {
 
-    private final TransportObserver transportObserver;
+    public static final AttributeKey<SecurityHandshakeObserver> SECURITY_HANDSHAKE_OBSERVER =
+            newInstance("SecurityHandshakeObserver");
+
+    private final ConnectionObserver observer;
     private final boolean secure;
 
     /**
      * Creates a new instance.
      *
-     * @param transportObserver {@link TransportObserver} to initialize for the channel
+     * @param observer {@link ConnectionObserver} to report network events.
      * @param secure {@code true} if the observed connection is secure
      */
-    public TransportObserverInitializer(final TransportObserver transportObserver, final boolean secure) {
-        this.transportObserver = asSafeObserver(transportObserver);
+    public ConnectionObserverInitializer(final ConnectionObserver observer, final boolean secure) {
+        this.observer = requireNonNull(observer);
         this.secure = secure;
     }
 
     @Override
     public void init(final Channel channel) {
-        final ConnectionObserver observer = transportObserver.onNewConnection();
-        assignConnectionObserver(channel, observer);
-        channel.pipeline().addLast(new TransportObserverHandler(observer, secure));
+        channel.closeFuture().addListener((ChannelFutureListener) future -> {
+            Throwable t = channelError(channel);
+            if (t == null) {
+                observer.connectionClosed();
+            } else {
+                observer.connectionClosed(t);
+            }
+        });
+        channel.pipeline().addLast(new ConnectionObserverHandler(observer, secure));
     }
 
-    private static final class TransportObserverHandler extends ChannelDuplexHandler {
+    private static final class ConnectionObserverHandler extends ChannelDuplexHandler {
+
         private final ConnectionObserver observer;
         private final boolean secure;
         private boolean handshakeStartNotified;
 
-        TransportObserverHandler(final ConnectionObserver observer, final boolean secure) {
+        ConnectionObserverHandler(final ConnectionObserver observer, final boolean secure) {
             this.observer = observer;
             this.secure = secure;
         }
@@ -82,7 +95,7 @@ public final class TransportObserverInitializer implements ChannelInitializer {
         void reportSecurityHandshakeStarting(final Channel channel) {
             if (!handshakeStartNotified) {
                 handshakeStartNotified = true;
-                TransportObserverUtils.reportSecurityHandshakeStarting(channel);
+                channel.attr(SECURITY_HANDSHAKE_OBSERVER).set(observer.onSecurityHandshake());
             }
         }
 

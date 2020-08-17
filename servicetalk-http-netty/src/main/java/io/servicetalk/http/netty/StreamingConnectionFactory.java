@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
@@ -44,20 +45,23 @@ final class StreamingConnectionFactory {
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
             final ReadOnlyHttpClientConfig roConfig, @Nullable final TransportObserver observer) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false,
-                executionContext, channel -> createConnection(channel, executionContext, roConfig,
-                        new TcpClientChannelInitializer(roConfig.tcpConfig(), observer, roConfig.hasProxy())));
+        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext,
+                channel -> {
+                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    return createConnection(channel, executionContext, roConfig, new TcpClientChannelInitializer(
+                            roConfig.tcpConfig(), connectionObserver, roConfig.hasProxy()), connectionObserver);
+                });
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
             final HttpExecutionContext executionContext, final ReadOnlyHttpClientConfig config,
-            final ChannelInitializer initializer) {
+            final ChannelInitializer initializer, @Nullable final ConnectionObserver connectionObserver) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         assert config.h1Config() != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), LAST_CHUNK_PREDICATE, closeHandler, config.tcpConfig().flushStrategy(),
                 config.tcpConfig().idleTimeoutMs(), initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1), HTTP_1_1, channel);
+                executionContext.executionStrategy(), HTTP_1_1, connectionObserver), HTTP_1_1, channel);
     }
 }

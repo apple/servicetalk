@@ -15,13 +15,16 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
-import io.servicetalk.transport.netty.internal.TransportObserverInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
+
+import javax.annotation.Nullable;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -34,12 +37,14 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
+     * @param observer {@link ConnectionObserver} to report network events.
      */
-    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
+    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config,
+                                       @Nullable final ConnectionObserver observer) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (config.transportObserver() != null) {
-            delegate = delegate.andThen(new TransportObserverInitializer(config.transportObserver(),
+        if (observer != null) {
+            delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     config.sslContext() != null || config.domainNameMapping() != null));
         }
 
