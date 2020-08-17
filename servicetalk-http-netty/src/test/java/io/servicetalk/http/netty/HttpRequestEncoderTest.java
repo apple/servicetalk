@@ -420,11 +420,12 @@ public class HttpRequestEncoderTest {
                             SEC, null,
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                                    defaultFlushStrategy(), null, new TcpServerChannelInitializer(sConfig).andThen(
+                                    defaultFlushStrategy(), null,
+                                    new TcpServerChannelInitializer(sConfig, null).andThen(
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
-                                            }), defaultStrategy(), mock(Protocol.class)),
+                                            }), defaultStrategy(), mock(Protocol.class), null),
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
@@ -452,7 +453,7 @@ public class HttpRequestEncoderTest {
                                                                     serverCloseTrigger.onComplete();
                                                                 }
                                                             }
-                                                        })), defaultStrategy(), HTTP_1_1);
+                                                        })), defaultStrategy(), HTTP_1_1, null);
                             }
                     ).toFuture().get());
 

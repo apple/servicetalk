@@ -48,8 +48,10 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -123,8 +125,13 @@ final class NettyHttpServer {
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
-                channel -> initChannel(channel, executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
+                channel -> {
+                    final TransportObserver observer = tcpServerConfig.transportObserver();
+                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    return initChannel(channel, executionContext, config,
+                            new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
+                            drainRequestPayloadBody, connectionObserver);
+                },
                 serverConnection -> serverConnection.process(true))
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
@@ -138,9 +145,10 @@ final class NettyHttpServer {
                                                          final ReadOnlyHttpServerConfig config,
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
-                                                         final boolean drainRequestPayloadBody) {
+                                                         final boolean drainRequestPayloadBody,
+                                                         @Nullable final ConnectionObserver observer) {
         return initChannel(channel, httpExecutionContext, config, initializer, service, drainRequestPayloadBody,
-                forPipelinedRequestResponse(false, channel.config()));
+                observer, forPipelinedRequestResponse(false, channel.config()));
     }
 
     static Single<NettyHttpServerConnection> initChannel(final Channel channel,
@@ -149,6 +157,7 @@ final class NettyHttpServer {
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
                                                          final boolean drainRequestPayloadBody,
+                                                         @Nullable final ConnectionObserver observer,
                                                          final CloseHandler closeHandler) {
         final H1ProtocolConfig h1Config = config.h1Config();
         assert h1Config != null;
@@ -156,7 +165,7 @@ final class NettyHttpServer {
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
-                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1)
+                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }

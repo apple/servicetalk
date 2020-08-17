@@ -126,7 +126,7 @@ public class FlushStrategyOnServerTest {
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
         serverConnection = initChannel(channel, httpExecutionContext, config,
-                new TcpServerChannelInitializer(config.tcpConfig()), service, true,
+                new TcpServerChannelInitializer(config.tcpConfig(), null), service, true, null,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
                 .toFuture().get();
         serverConnection.process(true);

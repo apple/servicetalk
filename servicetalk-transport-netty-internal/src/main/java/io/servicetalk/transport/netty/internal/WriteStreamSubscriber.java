@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -483,13 +484,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     if (observer != null) {
                         observer.writeFailed(cause);
                     }
+                    assignConnectionError(channel, cause);
                     subscriber.onError(cause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
                 }
                 if (!hasFlag(CHANNEL_CLOSED)) {
                     // Close channel on error.
-                    channel.close();
+                    ChannelCloseUtils.close(channel, cause);
                 }
             }
         }
