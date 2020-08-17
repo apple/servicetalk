@@ -17,9 +17,9 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
-import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
