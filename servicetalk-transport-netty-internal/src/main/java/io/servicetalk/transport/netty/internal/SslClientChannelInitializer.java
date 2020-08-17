@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionObserver;
+
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -37,7 +39,8 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     private final int hostnameVerificationPort;
     private final SslContext sslContext;
     private final boolean deferSslHandler;
-    private final boolean observable;
+    @Nullable
+    private final ConnectionObserver observer;
 
     /**
      * New instance.
@@ -46,23 +49,23 @@ public class SslClientChannelInitializer implements ChannelInitializer {
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
-     * @param observable {@code true} to enable observability for {@link SslHandler}.
+     * @param observer {@link ConnectionObserver} to report network events.
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
                                        @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
-                                       final boolean deferSslHandler, final boolean observable) {
+                                       final boolean deferSslHandler, @Nullable final ConnectionObserver observer) {
         this.sslContext = requireNonNull(sslContext);
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
         this.hostnameVerificationHost = hostnameVerificationHost;
         this.hostnameVerificationPort = hostnameVerificationPort;
         this.deferSslHandler = deferSslHandler;
-        this.observable = observable;
+        this.observer = observer;
     }
 
     @Override
     public void init(Channel channel) {
         final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
                 hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
-        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, observable) : sslHandler);
+        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, observer) : sslHandler);
     }
 }

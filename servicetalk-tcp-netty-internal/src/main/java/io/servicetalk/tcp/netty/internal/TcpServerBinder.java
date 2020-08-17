@@ -48,6 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
@@ -128,7 +129,7 @@ public final class TcpServerBinder {
                         LOGGER.debug("Failed to create a connection for remote address {}", channel.remoteAddress(),
                                 cause);
                     }
-                    channel.close();
+                    close(channel, cause);
                 }).subscribe(connectionConsumer);
             }
         });
@@ -145,7 +146,7 @@ public final class TcpServerBinder {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet,
                                 connectionAcceptor, executionContext));
                     } else {
-                        channel.close();
+                        close(channel, f.cause());
                         subscriber.onError(f.cause());
                     }
                 });
