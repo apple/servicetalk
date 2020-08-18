@@ -24,8 +24,6 @@ import io.netty.handler.ssl.SslHandler;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
-
 /**
  * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
  */
@@ -46,7 +44,7 @@ public class DeferSslHandler extends ChannelDuplexHandler {
      */
     public void ready() {
         if (observer != null) {
-            channel.attr(SECURITY_HANDSHAKE_OBSERVER).set(observer.onSecurityHandshake());
+            channel.pipeline().fireUserEventTriggered(observer.onSecurityHandshake());
         }
         channel.pipeline().replace(this, null, handler);
     }

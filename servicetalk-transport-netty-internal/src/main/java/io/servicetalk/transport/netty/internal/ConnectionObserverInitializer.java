@@ -25,9 +25,10 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.AttributeKey;
+import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
-import static io.netty.util.AttributeKey.newInstance;
+import javax.annotation.Nullable;
+
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 import static java.util.Objects.requireNonNull;
 
@@ -35,9 +36,6 @@ import static java.util.Objects.requireNonNull;
  * A {@link ChannelInitializer} that registers a {@link ConnectionObserver} for all channels.
  */
 public final class ConnectionObserverInitializer implements ChannelInitializer {
-
-    public static final AttributeKey<SecurityHandshakeObserver> SECURITY_HANDSHAKE_OBSERVER =
-            newInstance("SecurityHandshakeObserver");
 
     private final ConnectionObserver observer;
     private final boolean secure;
@@ -70,7 +68,8 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
 
         private final ConnectionObserver observer;
         private final boolean secure;
-        private boolean handshakeStartNotified;
+        @Nullable
+        private SecurityHandshakeObserver handshakeObserver;
 
         ConnectionObserverHandler(final ConnectionObserver observer, final boolean secure) {
             this.observer = observer;
@@ -80,22 +79,32 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
             if (secure && ctx.channel().isActive()) {
-                reportSecurityHandshakeStarting(ctx.channel());
+                reportSecurityHandshakeStarting();
             }
         }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             if (secure) {
-                reportSecurityHandshakeStarting(ctx.channel());
+                reportSecurityHandshakeStarting();
             }
             ctx.fireChannelActive();
         }
 
-        void reportSecurityHandshakeStarting(final Channel channel) {
-            if (!handshakeStartNotified) {
-                handshakeStartNotified = true;
-                channel.attr(SECURITY_HANDSHAKE_OBSERVER).set(observer.onSecurityHandshake());
+        void reportSecurityHandshakeStarting() {
+            if (handshakeObserver == null) {
+                handshakeObserver = observer.onSecurityHandshake();
+            }
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+            if (evt instanceof WaitingForHandshakeCompletionEvent) {
+                final SecurityHandshakeObserver handshakeObserver = this.handshakeObserver;
+                assert handshakeObserver != null;
+                ctx.fireUserEventTriggered(handshakeObserver);
+            } else {
+                ctx.fireUserEventTriggered(evt);
             }
         }
 
@@ -123,6 +132,20 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void flush(final ChannelHandlerContext ctx) {
             observer.onFlush();
             ctx.flush();
+        }
+    }
+
+    /**
+     * Event that is fired once the handler is awaiting {@link SslHandshakeCompletionEvent}.
+     */
+    public static final class WaitingForHandshakeCompletionEvent {
+        /**
+         * {@link WaitingForHandshakeCompletionEvent} instance to use.
+         */
+        public static final WaitingForHandshakeCompletionEvent INSTANCE = new WaitingForHandshakeCompletionEvent();
+
+        private WaitingForHandshakeCompletionEvent() {
+            // Singleton
         }
     }
 }

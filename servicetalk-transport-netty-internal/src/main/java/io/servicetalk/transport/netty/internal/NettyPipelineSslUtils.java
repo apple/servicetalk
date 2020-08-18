@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
@@ -26,8 +25,6 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
-
-import static io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.SECURITY_HANDSHAKE_OBSERVER;
 
 /**
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
@@ -54,28 +51,28 @@ public final class NettyPipelineSslUtils {
      * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
      * @param sslEvent the event indicating a SSL/TLS handshake completed.
      * @param failureConsumer invoked if a failure is encountered.
+     * @param observer the {@link SecurityHandshakeObserver} to report handshake status.
      * @return The {@link SSLSession} or {@code null} if none can be found.
      */
     @Nullable
     public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
                                                         SslHandshakeCompletionEvent sslEvent,
-                                                        Consumer<Throwable> failureConsumer) {
-        final Channel channel = pipeline.channel();
-        final SecurityHandshakeObserver securityObserver = channel.attr(SECURITY_HANDSHAKE_OBSERVER).get();
+                                                        Consumer<Throwable> failureConsumer,
+                                                        @Nullable SecurityHandshakeObserver observer) {
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
                 final SSLSession session = sslHandler.engine().getSession();
-                if (securityObserver != null) {
-                    securityObserver.handshakeComplete(session);
+                if (observer != null) {
+                    observer.handshakeComplete(session);
                 }
                 return session;
             } else {
                 deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " +
-                        SslHandler.class.getName() + " in the pipeline."), securityObserver);
+                        SslHandler.class.getName() + " in the pipeline."), observer);
             }
         } else {
-            deliverFailureCause(failureConsumer, sslEvent.cause(), securityObserver);
+            deliverFailureCause(failureConsumer, sslEvent.cause(), observer);
         }
         return null;
     }

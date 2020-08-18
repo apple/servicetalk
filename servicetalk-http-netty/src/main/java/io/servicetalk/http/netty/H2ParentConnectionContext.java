@@ -28,6 +28,8 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.WaitingForHandshakeCompletionEvent;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
@@ -156,6 +158,9 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         private final DelayedCancellable delayedCancellable;
         @Nullable
         final ConnectionObserver observer;
+        @Nullable
+        private SecurityHandshakeObserver handshakeObserver;
+        private boolean active;
 
         AbstractH2ParentConnection(H2ParentConnectionContext parentContext,
                                    DelayedCancellable delayedCancellable,
@@ -223,9 +228,13 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         @Override
         public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             try {
+                if (evt instanceof SecurityHandshakeObserver) {
+                    assert this.handshakeObserver == null;
+                    this.handshakeObserver = (SecurityHandshakeObserver) evt;
+                }
                 if (evt instanceof SslHandshakeCompletionEvent) {
                     parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
-                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber);
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber, handshakeObserver);
                     tryCompleteSubscriber();
                 }
             } finally {
@@ -256,7 +265,16 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
 
         private void doChannelActive(ChannelHandlerContext ctx) {
+            if (active) {
+                return;
+            }
+            active = true;
+
             if (waitForSslHandshake) {
+                if (observer != null) {
+                    // Notify ConnectionObserverHandler that we are ready to receive SecurityHandshakeObserver instance
+                    ctx.pipeline().fireUserEventTriggered(WaitingForHandshakeCompletionEvent.INSTANCE);
+                }
                 // Force a read to get the SSL handshake started, any application data that makes it past the SslHandler
                 // will be queued in the NettyChannelPublisher.
                 ctx.read();
