@@ -735,7 +735,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             final int lfIndex = findLF(buffer, startIndex, toIndex);
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
-                    throw new IllegalStateException("Could not find CRLF within " + maxLineSize + " bytes");
+                    throw new IllegalArgumentException("Could not find CRLF within " + maxLineSize + " bytes");
                 }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
