@@ -36,6 +36,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -69,7 +70,7 @@ public class SecurityHandshakeObserverTest {
     @ClassRule
     public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
 
-    // @Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TransportObserver clientTransportObserver;
