@@ -146,14 +146,17 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                             @Override
                             protected void initChannel(final Http2StreamChannel streamChannel) {
                                 connection.trackActiveStream(streamChannel);
-                                final StreamObserver streamObserver = registerStreamObserver(streamChannel,
-                                        parentChannelInitializer.multiplexedObserver);
+
+                                // Stream observability
+                                MultiplexedObserver multiplexedObserver = parentChannelInitializer.multiplexedObserver;
+                                StreamObserver streamObserver = multiplexedObserver == null ? null :
+                                        multiplexedObserver.onNewStream();
 
                                 // Netty To ServiceTalk type conversion
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
                                         h2ServerConfig.headersFactory(),
-                                        PROTOCOL_OUTBOUND_CLOSE_HANDLER));
+                                        PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
 
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =
@@ -219,7 +222,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 Subscriber<? super H2ServerParentConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
                 if (observer != null) {
-                    multiplexedObserver = observer.establishedMultiplexed(parentContext);
+                    multiplexedObserver = observer.multiplexedConnectionEstablished(parentContext);
                 }
                 subscriberCopy.onSuccess((H2ServerParentConnectionContext) parentContext);
             }

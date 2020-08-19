@@ -87,14 +87,14 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public DataObserver established(final ConnectionInfo info) {
-            return safeReport(() -> observer.established(info), observer, "connection established",
+        public DataObserver connectionEstablished(final ConnectionInfo info) {
+            return safeReport(() -> observer.connectionEstablished(info), observer, "connection established",
                     CatchAllDataObserver::new, NoopDataObserver.INSTANCE);
         }
 
         @Override
-        public MultiplexedObserver establishedMultiplexed(final ConnectionInfo info) {
-            return safeReport(() -> observer.establishedMultiplexed(info), observer,
+        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
+            return safeReport(() -> observer.multiplexedConnectionEstablished(info), observer,
                     "multiplexed connection established",
                     CatchAllMultiplexedObserver::new, NoopMultiplexedObserver.INSTANCE);
         }
@@ -129,22 +129,22 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
     }
 
-    private static class CatchAllDataObserver implements DataObserver {
+    private static final class CatchAllDataObserver implements DataObserver {
 
         private final DataObserver observer;
 
-        protected CatchAllDataObserver(final DataObserver observer) {
+        private CatchAllDataObserver(final DataObserver observer) {
             this.observer = observer;
         }
 
         @Override
-        public final ReadObserver onNewRead() {
+        public ReadObserver onNewRead() {
             return safeReport(observer::onNewRead, observer, "new read",
                     CatchAllReadObserver::new, NoopReadObserver.INSTANCE);
         }
 
         @Override
-        public final WriteObserver onNewWrite() {
+        public WriteObserver onNewWrite() {
             return safeReport(observer::onNewWrite, observer, "new read",
                     CatchAllWriteObserver::new, NoopWriteObserver.INSTANCE);
         }
@@ -165,13 +165,18 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
     }
 
-    private static final class CatchAllStreamObserver extends CatchAllDataObserver implements StreamObserver {
+    private static final class CatchAllStreamObserver implements StreamObserver {
 
         private final StreamObserver observer;
 
         private CatchAllStreamObserver(final StreamObserver observer) {
-            super(observer);
             this.observer = observer;
+        }
+
+        @Override
+        public DataObserver streamEstablished() {
+            return safeReport(observer::streamEstablished, observer, "stream established",
+                    CatchAllDataObserver::new, NoopDataObserver.INSTANCE);
         }
 
         @Override

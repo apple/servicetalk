@@ -63,12 +63,12 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public DataObserver established(final ConnectionInfo info) {
+        public DataObserver connectionEstablished(final ConnectionInfo info) {
             return NoopDataObserver.INSTANCE;
         }
 
         @Override
-        public MultiplexedObserver establishedMultiplexed(final ConnectionInfo info) {
+        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
             return NoopMultiplexedObserver.INSTANCE;
         }
 
@@ -140,13 +140,8 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public ReadObserver onNewRead() {
-            return NoopReadObserver.INSTANCE;
-        }
-
-        @Override
-        public WriteObserver onNewWrite() {
-            return NoopWriteObserver.INSTANCE;
+        public DataObserver streamEstablished() {
+            return NoopDataObserver.INSTANCE;
         }
 
         @Override
