@@ -38,7 +38,8 @@ import org.junit.runners.Parameterized.Parameters;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -54,6 +55,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
@@ -73,8 +75,8 @@ public class AlpnClientAndServerTest {
     @Nullable
     private final Class<? extends Throwable> expectedExceptionType;
 
-    private final AtomicReference<HttpServiceContext> serviceContext = new AtomicReference<>();
-    private final AtomicReference<HttpProtocolVersion> requestVersion = new AtomicReference<>();
+    private final BlockingQueue<HttpServiceContext> serviceContext = new LinkedBlockingDeque<>();
+    private final BlockingQueue<HttpProtocolVersion> requestVersion = new LinkedBlockingDeque<>();
 
     public AlpnClientAndServerTest(List<String> serverSideProtocols,
                                    List<String> clientSideProtocols,
@@ -120,8 +122,8 @@ public class AlpnClientAndServerTest {
                 .provider(OPENSSL)
                 .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlocking((ctx, request, responseFactory) -> {
-                    serviceContext.set(ctx);
-                    requestVersion.set(request.version());
+                    serviceContext.put(ctx);
+                    requestVersion.put(request.version());
                     return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer());
                 })
                 .toFuture().get();
@@ -178,9 +180,13 @@ public class AlpnClientAndServerTest {
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textDeserializer()), is(PAYLOAD_BODY));
 
-            assertThat(serviceContext.get().protocol(), is(expectedProtocol));
-            assertThat(serviceContext.get().sslSession(), is(notNullValue()));
-            assertThat(requestVersion.get(), is(expectedProtocol));
+            HttpServiceContext serviceCtx = serviceContext.take();
+            assertThat(serviceCtx.protocol(), is(expectedProtocol));
+            assertThat(serviceCtx.sslSession(), is(notNullValue()));
+            assertThat(requestVersion.take(), is(expectedProtocol));
+
+            assertThat(serviceContext, is(empty()));
+            assertThat(requestVersion, is(empty()));
         }
     }
 }
