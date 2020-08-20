@@ -36,6 +36,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -49,9 +50,13 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         CONNECTION_ACCEPTOR,
         PIPELINE,
         CLIENT_WRITE,
+        CLIENT_IDLE_TIMEOUT,
+        SERVER_IDLE_TIMEOUT,
     }
 
     private final ErrorSource errorSource;
+    private final TcpClientConfig tcpClientConfig = super.getTcpClientConfig();
+    private final TcpServerConfig tcpServerConfig = super.getTcpServerConfig();
     private ChannelInitializer channelInitializer = channel -> { };
 
     public TcpTransportObserverErrorsTest(ErrorSource errorSource) {
@@ -69,6 +74,12 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                 });
                 break;
             case CLIENT_WRITE:
+                break;
+            case CLIENT_IDLE_TIMEOUT:
+                tcpClientConfig.socketOption(IDLE_TIMEOUT, 1L);
+                break;
+            case SERVER_IDLE_TIMEOUT:
+                tcpServerConfig.socketOption(IDLE_TIMEOUT, 1L);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
@@ -89,6 +100,16 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                 return super.getChannelInitializer(service, executionContext).andThen(channelInitializer);
             }
         };
+    }
+
+    @Override
+    TcpClientConfig getTcpClientConfig() {
+        return tcpClientConfig;
+    }
+
+    @Override
+    TcpServerConfig getTcpServerConfig() {
+        return tcpServerConfig;
     }
 
     @Test
@@ -117,6 +138,9 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
                 verify(clientWriteObserver).requestedToWrite(anyLong());
                 verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
                 break;
+            case CLIENT_IDLE_TIMEOUT:
+            case SERVER_IDLE_TIMEOUT:
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
@@ -124,11 +148,16 @@ public final class TcpTransportObserverErrorsTest extends AbstractTransportObser
         switch (errorSource) {
             case CONNECTION_ACCEPTOR:
             case PIPELINE:
-                verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
                 verify(clientConnectionObserver).connectionClosed();
+                verify(serverConnectionObserver, await()).connectionClosed(DELIBERATE_EXCEPTION);
                 break;
             case CLIENT_WRITE:
                 verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
+                verify(serverConnectionObserver, await()).connectionClosed();
+                break;
+            case CLIENT_IDLE_TIMEOUT:
+            case SERVER_IDLE_TIMEOUT:
+                verify(clientConnectionObserver).connectionClosed();
                 verify(serverConnectionObserver, await()).connectionClosed();
                 break;
             default:
