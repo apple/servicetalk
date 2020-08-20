@@ -32,6 +32,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -194,7 +195,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
-     * @param dataObserver {@link DataObserver} to observe data related events
+     * @param streamObserver {@link StreamObserver} to report internal events
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -204,10 +205,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
-            @Nullable ChannelConfig parentChannelConfig, @Nullable DataObserver dataObserver) {
+            @Nullable ChannelConfig parentChannelConfig, @Nullable StreamObserver streamObserver) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
-                sslSession, parentChannelConfig, dataObserver);
+                sslSession, parentChannelConfig, streamObserver == null ? null : streamObserver.streamEstablished());
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, null));
         return connection;
@@ -686,7 +687,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
             if (observer != null) {
-                connection.dataObserver = observer.established(connection);
+                connection.dataObserver = observer.connectionEstablished(connection);
             }
             subscriberCopy.onSuccess(connection);
         }

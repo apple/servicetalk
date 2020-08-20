@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamRefusedException;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamResetException;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -42,17 +43,22 @@ import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
+    @Nullable
+    private final StreamObserver observer;
 
-    AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler) {
+    AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
+                            @Nullable StreamObserver observer) {
         this.allocator = allocator;
         this.headersFactory = headersFactory;
         this.closeHandler = closeHandler;
+        this.observer = observer;
     }
 
     @Override
@@ -121,5 +127,18 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     private static Http2DataFrame release(Http2DataFrame dataFrame) {
         dataFrame.release();
         return null;
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        if (observer != null) {
+            final Throwable t = channelError(ctx.channel());
+            if (t == null) {
+                observer.streamClosed();
+            } else {
+                observer.streamClosed(t);
+            }
+        }
+        ctx.fireChannelInactive();
     }
 }
