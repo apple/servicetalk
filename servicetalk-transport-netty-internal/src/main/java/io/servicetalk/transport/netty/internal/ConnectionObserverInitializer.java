@@ -25,7 +25,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
 import javax.annotation.Nullable;
 
@@ -64,7 +63,7 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         channel.pipeline().addLast(new ConnectionObserverHandler(observer, secure));
     }
 
-    private static final class ConnectionObserverHandler extends ChannelDuplexHandler {
+    static final class ConnectionObserverHandler extends ChannelDuplexHandler {
 
         private final ConnectionObserver observer;
         private final boolean secure;
@@ -97,15 +96,9 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             }
         }
 
-        @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-            if (evt instanceof WaitingForHandshakeCompletionEvent) {
-                final SecurityHandshakeObserver handshakeObserver = this.handshakeObserver;
-                assert handshakeObserver != null;
-                ctx.fireUserEventTriggered(handshakeObserver);
-            } else {
-                ctx.fireUserEventTriggered(evt);
-            }
+        @Nullable
+        SecurityHandshakeObserver handshakeObserver() {
+            return handshakeObserver;
         }
 
         @Override
@@ -132,20 +125,6 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
         public void flush(final ChannelHandlerContext ctx) {
             observer.onFlush();
             ctx.flush();
-        }
-    }
-
-    /**
-     * Event that is fired once the handler is awaiting {@link SslHandshakeCompletionEvent}.
-     */
-    public static final class WaitingForHandshakeCompletionEvent {
-        /**
-         * {@link WaitingForHandshakeCompletionEvent} instance to use.
-         */
-        public static final WaitingForHandshakeCompletionEvent INSTANCE = new WaitingForHandshakeCompletionEvent();
-
-        private WaitingForHandshakeCompletionEvent() {
-            // Singleton
         }
     }
 }

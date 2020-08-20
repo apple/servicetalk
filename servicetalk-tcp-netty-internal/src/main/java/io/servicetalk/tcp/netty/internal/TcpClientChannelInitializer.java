@@ -72,7 +72,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
         if (sslContext != null) {
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort(), deferSslHandler, observer));
+                    config.sslHostnameVerificationPort(), deferSslHandler, observer != null));
         }
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();

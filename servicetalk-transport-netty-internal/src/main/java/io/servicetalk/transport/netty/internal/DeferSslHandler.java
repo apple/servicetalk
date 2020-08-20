@@ -15,14 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandler;
-
-import javax.annotation.Nullable;
 
 /**
  * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
@@ -30,22 +29,25 @@ import javax.annotation.Nullable;
 public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
-    @Nullable
-    private final ConnectionObserver observer;
+    private final boolean shouldReport;
 
-    DeferSslHandler(final Channel channel, final SslHandler handler, @Nullable final ConnectionObserver observer) {
+    DeferSslHandler(final Channel channel, final SslHandler handler, boolean shouldReport) {
         this.channel = channel;
         this.handler = handler;
-        this.observer = observer;
+        this.shouldReport = shouldReport;
     }
 
     /**
      * Indicates that we are ready to stop deferring, and add the deferred {@link SslHandler}.
      */
     public void ready() {
-        if (observer != null) {
-            channel.pipeline().fireUserEventTriggered(observer.onSecurityHandshake());
+        final ChannelPipeline pipeline = channel.pipeline();
+        if (shouldReport) {
+            final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
+            if (handler != null) {
+                handler.reportSecurityHandshakeStarting();
+            }
         }
-        channel.pipeline().replace(this, null, handler);
+        pipeline.replace(this, null, handler);
     }
 }

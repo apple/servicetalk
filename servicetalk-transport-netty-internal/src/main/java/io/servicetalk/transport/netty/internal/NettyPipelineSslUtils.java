@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
+import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.ConnectionObserverHandler;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
@@ -51,14 +52,15 @@ public final class NettyPipelineSslUtils {
      * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
      * @param sslEvent the event indicating a SSL/TLS handshake completed.
      * @param failureConsumer invoked if a failure is encountered.
-     * @param observer the {@link SecurityHandshakeObserver} to report handshake status.
+     * @param shouldReport {@code true} if the handshake status should be reported to {@link SecurityHandshakeObserver}.
      * @return The {@link SSLSession} or {@code null} if none can be found.
      */
     @Nullable
     public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
                                                         SslHandshakeCompletionEvent sslEvent,
                                                         Consumer<Throwable> failureConsumer,
-                                                        @Nullable SecurityHandshakeObserver observer) {
+                                                        boolean shouldReport) {
+        final SecurityHandshakeObserver observer = shouldReport ? handshakeObserver(pipeline) : null;
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
@@ -83,5 +85,14 @@ public final class NettyPipelineSslUtils {
             securityObserver.handshakeFailed(cause);
         }
         failureConsumer.accept(cause);
+    }
+
+    @Nullable
+    private static SecurityHandshakeObserver handshakeObserver(final ChannelPipeline pipeline) {
+        final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
+        if (handler == null) {
+            return null;
+        }
+        return handler.handshakeObserver();
     }
 }

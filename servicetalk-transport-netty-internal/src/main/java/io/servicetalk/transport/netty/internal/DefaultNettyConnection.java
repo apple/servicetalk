@@ -32,7 +32,6 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
-import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.DefaultExecutionContext;
@@ -42,7 +41,6 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
-import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer.WaitingForHandshakeCompletionEvent;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
 
 import io.netty.channel.Channel;
@@ -550,9 +548,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
         @Nullable
         private final ConnectionObserver observer;
-        @Nullable
-        private SecurityHandshakeObserver handshakeObserver;
-        private boolean active;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
                                        @Nullable
@@ -644,12 +639,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
                 // the current netty version) gets triggered reliably at the appropriate time.
                 connection.nettyChannelPublisher.channelInboundClosed();
-            } else if (evt instanceof SecurityHandshakeObserver) {
-                assert this.handshakeObserver == null;
-                this.handshakeObserver = (SecurityHandshakeObserver) evt;
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber, handshakeObserver);
+                        this::tryFailSubscriber, observer != null);
                 if (subscriber != null) {
                     assert waitForSslHandshake;
                     completeSubscriber();
@@ -681,16 +673,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         }
 
         private void doChannelActive(ChannelHandlerContext ctx) {
-            if (active) {
-                return;
-            }
-            active = true;
-
             if (waitForSslHandshake) {
-                if (observer != null) {
-                    // Notify ConnectionObserverHandler that we are ready to receive SecurityHandshakeObserver instance
-                    ctx.pipeline().fireUserEventTriggered(WaitingForHandshakeCompletionEvent.INSTANCE);
-                }
                 // Force a read to get the SSL handshake started, any application data that makes it past the SslHandler
                 // will be queued in the NettyChannelPublisher.
                 ctx.read();
