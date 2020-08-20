@@ -40,8 +40,8 @@ public class TcpTransportObserverTest extends AbstractTransportObserverTest {
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
-        verify(clientConnectionObserver).established(any(ConnectionInfo.class));
-        verify(serverConnectionObserver, await()).established(any(ConnectionInfo.class));
+        verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
+        verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
 
         Buffer content = connection.executionContext().bufferAllocator().fromAscii("Hello");
         connection.write(from(content.duplicate())).toFuture().get();

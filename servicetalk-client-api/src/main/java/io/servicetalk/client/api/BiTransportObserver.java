@@ -87,13 +87,14 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public DataObserver established(final ConnectionInfo info) {
-            return new BiDataObserver(first.established(info), second.established(info));
+        public DataObserver connectionEstablished(final ConnectionInfo info) {
+            return new BiDataObserver(first.connectionEstablished(info), second.connectionEstablished(info));
         }
 
         @Override
-        public MultiplexedObserver establishedMultiplexed(final ConnectionInfo info) {
-            return new BiMultiplexedObserver(first.establishedMultiplexed(info), second.establishedMultiplexed(info));
+        public MultiplexedObserver multiplexedConnectionEstablished(final ConnectionInfo info) {
+            return new BiMultiplexedObserver(first.multiplexedConnectionEstablished(info),
+                    second.multiplexedConnectionEstablished(info));
         }
 
         @Override
@@ -133,23 +134,23 @@ final class BiTransportObserver implements TransportObserver {
         }
     }
 
-    private static class BiDataObserver implements DataObserver {
+    private static final class BiDataObserver implements DataObserver {
 
         private final DataObserver first;
         private final DataObserver second;
 
-        protected BiDataObserver(final DataObserver first, final DataObserver second) {
+        private BiDataObserver(final DataObserver first, final DataObserver second) {
             this.first = first;
             this.second = second;
         }
 
         @Override
-        public final ReadObserver onNewRead() {
+        public ReadObserver onNewRead() {
             return new BiReadObserver(first.onNewRead(), second.onNewRead());
         }
 
         @Override
-        public final WriteObserver onNewWrite() {
+        public WriteObserver onNewWrite() {
             return new BiWriteObserver(first.onNewWrite(), second.onNewWrite());
         }
     }
@@ -170,15 +171,19 @@ final class BiTransportObserver implements TransportObserver {
         }
     }
 
-    private static final class BiStreamObserver extends BiDataObserver implements StreamObserver {
+    private static final class BiStreamObserver implements StreamObserver {
 
         private final StreamObserver first;
         private final StreamObserver second;
 
         private BiStreamObserver(final StreamObserver first, final StreamObserver second) {
-            super(first, second);
             this.first = first;
             this.second = second;
+        }
+
+        @Override
+        public DataObserver streamEstablished() {
+            return new BiDataObserver(first.streamEstablished(), second.streamEstablished());
         }
 
         @Override

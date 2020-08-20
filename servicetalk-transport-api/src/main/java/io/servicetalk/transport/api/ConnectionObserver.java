@@ -57,7 +57,7 @@ public interface ConnectionObserver {
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link DataObserver} that provides visibility into read and write events
      */
-    DataObserver established(ConnectionInfo info);
+    DataObserver connectionEstablished(ConnectionInfo info);
 
     /**
      * Callback when a multiplexed connection is established and ready.
@@ -65,7 +65,7 @@ public interface ConnectionObserver {
      * @param info {@link ConnectionInfo} for the established connection
      * @return a new {@link MultiplexedObserver} that provides visibility into new streams
      */
-    MultiplexedObserver establishedMultiplexed(ConnectionInfo info);
+    MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info);
 
     /**
      * Callback when the connection is closed due to an {@link Throwable error}.
@@ -128,7 +128,7 @@ public interface ConnectionObserver {
     interface MultiplexedObserver {
 
         /**
-         * Callback when the connection creates a new stream.
+         * Callback when the connection requests a new stream.
          *
          * @return {@link StreamObserver} that provides visibility into stream events
          */
@@ -141,7 +141,14 @@ public interface ConnectionObserver {
      * Either {@link #streamClosed()} or {@link #streamClosed(Throwable)} will be invoked to signal when a stream is
      * closed.
      */
-    interface StreamObserver extends DataObserver {
+    interface StreamObserver {
+
+        /**
+         * Callback when the stream is established and ready.
+         *
+         * @return a new {@link DataObserver} that provides visibility into read and write events
+         */
+        DataObserver streamEstablished();
 
         /**
          * Callback when the stream is closed due to an {@link Throwable error}.

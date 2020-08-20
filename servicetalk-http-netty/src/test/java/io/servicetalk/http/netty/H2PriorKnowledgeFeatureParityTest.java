@@ -103,6 +103,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -138,6 +139,7 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
@@ -188,12 +190,12 @@ public class H2PriorKnowledgeFeatureParityTest {
     @After
     public void teardown() throws Exception {
         if (serverAcceptorChannel != null) {
-            serverAcceptorChannel.close();
+            serverAcceptorChannel.close().syncUninterruptibly();
         }
         if (h1ServerContext != null) {
             h1ServerContext.close();
         }
-        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS);
+        serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
         Executor executor = clientExecutionStrategy.executor();
         if (executor != null) {
             executor.closeAsync().toFuture().get();
@@ -763,7 +765,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         AtomicReference<Channel> serverParentChannelRef = new AtomicReference<>();
         CountDownLatch serverChannelLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsAckLatch = new CountDownLatch(2);
-        InetSocketAddress serverAddress = bindH2Server(new ChannelInitializer<Channel>() {
+        serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) {
                 ch.pipeline().addLast(EchoHttp2Handler.INSTANCE);
@@ -784,7 +786,8 @@ public class H2PriorKnowledgeFeatureParityTest {
                 }
                 super.channelRead(ctx, msg);
             }
-        }));
+        }), identity());
+        InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
@@ -892,22 +895,21 @@ public class H2PriorKnowledgeFeatureParityTest {
         return newPublisherProcessor(16);
     }
 
-    private InetSocketAddress bindH2Server(ChannelHandler childChannelHandler,
-                                           Consumer<ChannelPipeline> parentChannelInitializer) {
+    static Channel bindH2Server(EventLoopGroup serverEventLoopGroup, ChannelHandler childChannelHandler,
+                                Consumer<ChannelPipeline> parentChannelInitializer,
+                                UnaryOperator<Http2FrameCodecBuilder> configureH2Codec) {
         ServerBootstrap sb = new ServerBootstrap();
         sb.group(serverEventLoopGroup);
         sb.channel(serverChannel(serverEventLoopGroup, InetSocketAddress.class));
         sb.childHandler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) {
-                ch.pipeline().addLast(
-                        Http2FrameCodecBuilder.forServer().build(),
+                ch.pipeline().addLast(configureH2Codec.apply(Http2FrameCodecBuilder.forServer()).build(),
                         new Http2MultiplexHandler(childChannelHandler));
                 parentChannelInitializer.accept(ch.pipeline());
             }
         });
-        serverAcceptorChannel = sb.bind(localAddress(0)).syncUninterruptibly().channel();
-        return (InetSocketAddress) serverAcceptorChannel.localAddress();
+        return sb.bind(localAddress(0)).syncUninterruptibly().channel();
     }
 
     private InetSocketAddress bindHttpEchoServer() throws Exception {
