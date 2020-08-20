@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -53,8 +54,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler) {
-        super(allocator, headersFactory, closeHandler);
+                                CloseHandler closeHandler, @Nullable StreamObserver observer) {
+        super(allocator, headersFactory, closeHandler, observer);
     }
 
     @Override

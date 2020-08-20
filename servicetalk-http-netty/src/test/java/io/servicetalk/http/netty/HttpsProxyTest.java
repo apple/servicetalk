@@ -32,7 +32,6 @@ import org.junit.Test;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -84,7 +83,11 @@ public class HttpsProxyTest {
 
     static void safeClose(@Nullable AutoCloseable closeable) {
         if (closeable != null) {
-            closeAndReThrowUnchecked(closeable);
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

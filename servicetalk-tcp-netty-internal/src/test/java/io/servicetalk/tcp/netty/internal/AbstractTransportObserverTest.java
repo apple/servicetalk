@@ -64,7 +64,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
         when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
-        when(clientConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
+        when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
         when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
 
@@ -76,7 +76,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
-        when(serverConnectionObserver.established(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
+        when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
         when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
     }

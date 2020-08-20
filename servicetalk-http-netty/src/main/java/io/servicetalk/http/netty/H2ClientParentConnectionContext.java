@@ -185,7 +185,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
                 if (observer != null) {
-                    multiplexedObserver = observer.establishedMultiplexed(this);
+                    multiplexedObserver = observer.multiplexedConnectionEstablished(this);
                 }
                 subscriberCopy.onSuccess(this);
             }
@@ -232,6 +232,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             return new SubscribableSingle<StreamingHttpResponse>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                    final StreamObserver observer = multiplexedObserver == null ? null :
+                            multiplexedObserver.onNewStream();
+
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
                     try {
@@ -240,15 +243,18 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
+                        if (observer != null) {
+                            observer.streamClosed(cause);
+                        }
                         deliverErrorFromSource(subscriber, cause);
                         return;
                     }
                     subscriber.onSubscribe(sequentialCancellable);
                     if (promise.isDone()) {
-                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, request);
+                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, request, observer);
                     } else {
-                        promise.addListener((FutureListener<Http2StreamChannel>) future ->
-                                childChannelActive(future, subscriber, sequentialCancellable, strategy, request));
+                        promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
+                                future, subscriber, sequentialCancellable, strategy, request, observer));
                     }
                 }
             };
@@ -258,7 +264,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         Subscriber<? super StreamingHttpResponse> subscriber,
                                         SequentialCancellable sequentialCancellable,
                                         HttpExecutionStrategy strategy,
-                                        StreamingHttpRequest request) {
+                                        StreamingHttpRequest request,
+                                        @Nullable StreamObserver streamObserver) {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
@@ -266,10 +273,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 try {
                     streamChannel = future.getNow();
                     parentContext.trackActiveStream(streamChannel);
-                    StreamObserver streamObserver = registerStreamObserver(streamChannel, multiplexedObserver);
+
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
-                            PROTOCOL_OUTBOUND_CLOSE_HANDLER));
+                            PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext.executionContext().bufferAllocator(),
