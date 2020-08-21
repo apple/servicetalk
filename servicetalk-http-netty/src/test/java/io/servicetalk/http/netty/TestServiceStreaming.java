@@ -32,9 +32,11 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 
@@ -56,6 +58,10 @@ final class TestServiceStreaming implements StreamingHttpService {
     private final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier;
 
     private int counter;
+
+    TestServiceStreaming() {
+        this(__ -> empty());
+    }
 
     TestServiceStreaming(final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier) {
         this.publisherSupplier = publisherSupplier;
@@ -113,6 +119,10 @@ final class TestServiceStreaming implements StreamingHttpService {
         final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
         if (contentLength != null) {
             response.headers().set(CONTENT_LENGTH, contentLength);
+        }
+        final CharSequence contentType = req.headers().get(CONTENT_TYPE);
+        if (contentType != null) {
+            response.headers().set(CONTENT_TYPE, contentType);
         }
         return response;
     }
