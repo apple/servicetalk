@@ -19,12 +19,11 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
-
-import javax.annotation.Nullable;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -40,10 +39,10 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * @param observer {@link ConnectionObserver} to report network events.
      */
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config,
-                                       @Nullable final ConnectionObserver observer) {
+                                       final ConnectionObserver observer) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (observer != null) {
+        if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
                     config.sslContext() != null || config.domainNameMapping() != null));
         }

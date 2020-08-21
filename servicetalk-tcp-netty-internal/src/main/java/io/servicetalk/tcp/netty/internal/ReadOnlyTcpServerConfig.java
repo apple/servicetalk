@@ -35,7 +35,6 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forServe
 public final class ReadOnlyTcpServerConfig
         extends AbstractReadOnlyTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
-    @Nullable
     private final TransportObserver transportObserver;
     @Nullable
     private final SslContext sslContext;
@@ -50,7 +49,7 @@ public final class ReadOnlyTcpServerConfig
      */
     ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
         super(from, !supportedAlpnProtocols.isEmpty());
-        transportObserver = from.transportObserver() == null ? null : asSafeObserver(from.transportObserver());
+        transportObserver = asSafeObserver(from.transportObserver());
         final ReadOnlyServerSecurityConfig securityConfig = from.securityConfig();
         if (from.sniConfigs() != null) {
             if (securityConfig == null) {
@@ -78,7 +77,6 @@ public final class ReadOnlyTcpServerConfig
      *
      * @return the {@link TransportObserver} if any
      */
-    @Nullable
     public TransportObserver transportObserver() {
         return transportObserver;
     }

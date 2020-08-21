@@ -37,7 +37,6 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     private final int hostnameVerificationPort;
     private final SslContext sslContext;
     private final boolean deferSslHandler;
-    private final boolean shouldReport;
 
     /**
      * New instance.
@@ -46,24 +45,21 @@ public class SslClientChannelInitializer implements ChannelInitializer {
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
-     * @param shouldReport {@code true} to report security handshake start when {@link DeferSslHandler} is ready.
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
                                        @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
-                                       final boolean deferSslHandler, final boolean shouldReport) {
+                                       final boolean deferSslHandler) {
         this.sslContext = requireNonNull(sslContext);
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
         this.hostnameVerificationHost = hostnameVerificationHost;
         this.hostnameVerificationPort = hostnameVerificationPort;
         this.deferSslHandler = deferSslHandler;
-        this.shouldReport = shouldReport;
     }
 
     @Override
     public void init(Channel channel) {
         final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
                 hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
-        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler, shouldReport) :
-                sslHandler);
+        channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler) : sslHandler);
     }
 }

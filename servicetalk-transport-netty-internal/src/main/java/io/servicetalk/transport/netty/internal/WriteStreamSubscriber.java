@@ -109,7 +109,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final CloseHandler closeHandler;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
-                          CloseHandler closeHandler, @Nullable WriteObserver observer) {
+                          CloseHandler closeHandler, WriteObserver observer) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
@@ -276,10 +276,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
          */
         private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>();
-        @Nullable
         private final WriteObserver observer;
 
-        AllWritesPromise(final Channel channel, @Nullable WriteObserver observer) {
+        AllWritesPromise(final Channel channel, WriteObserver observer) {
             super(channel);
             this.observer = observer;
         }
@@ -415,9 +414,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
-            if (observer != null) {
-                observer.itemWritten();
-            }
+            observer.itemWritten();
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
                 try {
@@ -469,9 +466,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             notifyAllListeners(cause);
             if (cause == null) {
                 try {
-                    if (observer != null) {
-                        observer.writeComplete();
-                    }
+                    observer.writeComplete();
                     subscriber.onComplete();
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
@@ -481,9 +476,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
             } else {
                 try {
-                    if (observer != null) {
-                        observer.writeFailed(cause);
-                    }
+                    observer.writeFailed(cause);
                     assignConnectionError(channel, cause);
                     subscriber.onError(cause);
                 } catch (Throwable t) {

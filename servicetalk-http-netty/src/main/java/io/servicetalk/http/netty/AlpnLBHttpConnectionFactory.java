@@ -60,7 +60,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(
-            final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
+            final ResolvedAddress resolvedAddress, final TransportObserver observer) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
@@ -70,9 +70,9 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(
-            final Channel channel, @Nullable final TransportObserver observer) {
+            final Channel channel, final TransportObserver observer) {
         final ReadOnlyTcpClientConfig tcpConfig = this.config.tcpConfig();
-        final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+        final ConnectionObserver connectionObserver = observer.onNewConnection();
         return new AlpnChannelSingle(channel,
                 new TcpClientChannelInitializer(tcpConfig, connectionObserver), false).flatMap(protocol -> {
             switch (protocol) {

@@ -24,8 +24,6 @@ import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
 
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -50,7 +48,7 @@ final class Flush {
      * {@link FlushStrategy}.
      */
     static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushStrategy flushStrategy,
-                                           @Nullable WriteObserver observer) {
+                                           WriteObserver observer) {
         requireNonNull(channel);
         requireNonNull(flushStrategy);
         return source.liftSync(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel, observer));
@@ -59,20 +57,17 @@ final class Flush {
     private static final class FlushSubscriber<T> implements Subscriber<T> {
         private final EventExecutor eventLoop;
         private final Subscriber<? super T> subscriber;
-        @Nullable
         private final WriteObserver observer;
         private final WriteEventsListener writeEventsListener;
         private volatile boolean enqueueFlush;
 
         FlushSubscriber(FlushStrategy flushStrategy, Subscriber<? super T> subscriber, Channel channel,
-                        @Nullable WriteObserver observer) {
+                        WriteObserver observer) {
             this.eventLoop = requireNonNull(channel.eventLoop());
             this.subscriber = requireNonNull(subscriber);
             this.observer = observer;
             this.writeEventsListener = flushStrategy.apply(() -> {
-                if (observer != null) {
-                    observer.onFlushRequest();
-                }
+                observer.onFlushRequest();
                 if (enqueueFlush) {
                     eventLoop.execute(channel::flush);
                 } else {
@@ -92,17 +87,13 @@ final class Flush {
                 subscriber.onSubscribe(new Subscription() {
                     @Override
                     public void request(long n) {
-                        if (observer != null) {
-                            observer.requestedToWrite(n);
-                        }
+                        observer.requestedToWrite(n);
                         subscription.request(n);
                     }
 
                     @Override
                     public void cancel() {
-                        if (observer != null) {
-                            observer.writeCancelled();
-                        }
+                        observer.writeCancelled();
                         subscription.cancel();
                         writeEventsListener.writeCancelled();
                     }
@@ -121,9 +112,7 @@ final class Flush {
             if (!eventLoop.inEventLoop() && !enqueueFlush) {
                 enqueueFlush = true;
             }
-            if (observer != null) {
-                observer.itemReceived();
-            }
+            observer.itemReceived();
             subscriber.onNext(t);
             writeEventsListener.itemWritten(t);
         }

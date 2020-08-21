@@ -60,7 +60,21 @@ public final class NettyPipelineSslUtils {
                                                         SslHandshakeCompletionEvent sslEvent,
                                                         Consumer<Throwable> failureConsumer,
                                                         boolean shouldReport) {
-        final SecurityHandshakeObserver observer = shouldReport ? handshakeObserver(pipeline) : null;
+        final SecurityHandshakeObserver observer;
+        if (shouldReport) {
+            try {
+                observer = handshakeObserver(pipeline);
+            } catch (Exception e) {
+                if (!sslEvent.isSuccess()) {
+                    e.addSuppressed(sslEvent.cause());
+                }
+                deliverFailureCause(failureConsumer, e, null);
+                return null;
+            }
+        } else {
+            observer = null;
+        }
+
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
@@ -70,8 +84,8 @@ public final class NettyPipelineSslUtils {
                 }
                 return session;
             } else {
-                deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " +
-                        SslHandler.class.getName() + " in the pipeline."), observer);
+                deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " + SslHandler.class +
+                        " in the pipeline."), observer);
             }
         } else {
             deliverFailureCause(failureConsumer, sslEvent.cause(), observer);
@@ -87,12 +101,15 @@ public final class NettyPipelineSslUtils {
         failureConsumer.accept(cause);
     }
 
-    @Nullable
     private static SecurityHandshakeObserver handshakeObserver(final ChannelPipeline pipeline) {
         final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
         if (handler == null) {
-            return null;
+            throw new IllegalStateException("Unable to find " + ConnectionObserverHandler.class + " in the pipeline.");
         }
-        return handler.handshakeObserver();
+        final SecurityHandshakeObserver handshakeObserver = handler.handshakeObserver();
+        if (handshakeObserver == null) {
+            throw new IllegalStateException("Unable to find " + SecurityHandshakeObserver.class);
+        }
+        return handshakeObserver;
     }
 }

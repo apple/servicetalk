@@ -29,6 +29,7 @@ import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import org.junit.After;
@@ -39,7 +40,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -113,9 +113,8 @@ public abstract class AbstractTcpServerTest {
     }
 
     // Visible for overriding.
-    @Nullable
     TransportObserver getClientTransportObserver() {
-        return null;
+        return NoopTransportObserver.INSTANCE;
     }
 
     // Visible for overriding.

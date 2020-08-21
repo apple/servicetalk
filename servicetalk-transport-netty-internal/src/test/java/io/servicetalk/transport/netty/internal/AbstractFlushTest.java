@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
@@ -37,7 +38,7 @@ abstract class AbstractFlushTest {
         EventLoop eventLoop = mock(EventLoop.class);
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
-        Publisher<String> flushedStream = composeFlushes(channel, source, strategy, null)
+        Publisher<String> flushedStream = composeFlushes(channel, source, strategy, NoopWriteObserver.INSTANCE)
                 .beforeOnNext(s -> channel.write(s));
         verifier = inOrder(channel);
         return flushedStream;

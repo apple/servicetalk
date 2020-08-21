@@ -53,14 +53,14 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(
-            final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
+            final ResolvedAddress resolvedAddress, final TransportObserver observer) {
         assert config.h2Config() != null;
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // Auto read is required for h2
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
                 channel -> {
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = observer.onNewConnection();
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
                             config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),

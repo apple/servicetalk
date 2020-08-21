@@ -48,6 +48,7 @@ import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -102,7 +103,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         @Nullable Long idleTimeoutMs,
                                                         HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer,
-                                                        @Nullable ConnectionObserver observer) {
+                                                        ConnectionObserver observer) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -154,8 +155,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
-        @Nullable
-        private MultiplexedObserver multiplexedObserver;
+        private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
 
         DefaultH2ClientParentConnection(H2ClientParentConnectionContext connection,
                                         Subscriber<? super H2ClientParentConnection> subscriber,
@@ -163,7 +163,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         boolean waitForSslHandshake,
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
-                                        @Nullable ConnectionObserver observer) {
+                                        ConnectionObserver observer) {
             super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
@@ -184,9 +184,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (subscriber != null) {
                 Subscriber<? super H2ClientParentConnection> subscriberCopy = subscriber;
                 subscriber = null;
-                if (observer != null) {
-                    multiplexedObserver = observer.multiplexedConnectionEstablished(this);
-                }
+                multiplexedObserver = observer.multiplexedConnectionEstablished(this);
                 subscriberCopy.onSuccess(this);
             }
         }
@@ -232,9 +230,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             return new SubscribableSingle<StreamingHttpResponse>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                    final StreamObserver observer = multiplexedObserver == null ? null :
-                            multiplexedObserver.onNewStream();
-
+                    final StreamObserver observer = multiplexedObserver.onNewStream();
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
                     try {
@@ -243,9 +239,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
-                        if (observer != null) {
-                            observer.streamClosed(cause);
-                        }
+                        observer.streamClosed(cause);
                         deliverErrorFromSource(subscriber, cause);
                         return;
                     }
@@ -265,7 +259,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         SequentialCancellable sequentialCancellable,
                                         HttpExecutionStrategy strategy,
                                         StreamingHttpRequest request,
-                                        @Nullable StreamObserver streamObserver) {
+                                        StreamObserver streamObserver) {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
