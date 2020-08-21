@@ -647,7 +647,7 @@ public final class HeaderUtils {
      * the provided charset has been found, {@code false} otherwise.
      * @see <a href="https://tools.ietf.org/html/rfc2045#section-5.1">Syntax of the Content-Type Header Field</a>
      */
-    static boolean hasContentType(final HttpHeaders headers,
+    public static boolean hasContentType(final HttpHeaders headers,
                                   final CharSequence expectedContentType,
                                   @Nullable final Charset expectedCharset) {
         final CharSequence contentTypeHeader = headers.get(CONTENT_TYPE);
