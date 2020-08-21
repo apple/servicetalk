@@ -46,7 +46,7 @@ public class SslClientChannelInitializer implements ChannelInitializer {
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
-     * @param shouldReport {@link true} to report security handshake start when {@link DeferSslHandler} is ready.
+     * @param shouldReport {@code true} to report security handshake start when {@link DeferSslHandler} is ready.
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
                                        @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
