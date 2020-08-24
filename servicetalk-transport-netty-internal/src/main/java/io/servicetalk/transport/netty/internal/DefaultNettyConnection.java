@@ -640,7 +640,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.nettyChannelPublisher.channelInboundClosed();
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber, observer != NoopConnectionObserver.INSTANCE);
+                        this::tryFailSubscriber);
                 if (subscriber != null) {
                     assert waitForSslHandshake;
                     completeSubscriber();

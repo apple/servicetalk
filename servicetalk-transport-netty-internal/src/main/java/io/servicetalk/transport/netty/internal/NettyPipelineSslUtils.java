@@ -52,29 +52,13 @@ public final class NettyPipelineSslUtils {
      * @param pipeline the {@link ChannelPipeline} which contains handler containing the {@link SSLSession}.
      * @param sslEvent the event indicating a SSL/TLS handshake completed.
      * @param failureConsumer invoked if a failure is encountered.
-     * @param shouldReport {@code true} if the handshake status should be reported to {@link SecurityHandshakeObserver}.
      * @return The {@link SSLSession} or {@code null} if none can be found.
      */
     @Nullable
     public static SSLSession extractSslSessionAndReport(ChannelPipeline pipeline,
                                                         SslHandshakeCompletionEvent sslEvent,
-                                                        Consumer<Throwable> failureConsumer,
-                                                        boolean shouldReport) {
-        final SecurityHandshakeObserver observer;
-        if (shouldReport) {
-            try {
-                observer = handshakeObserver(pipeline);
-            } catch (Exception e) {
-                if (!sslEvent.isSuccess()) {
-                    e.addSuppressed(sslEvent.cause());
-                }
-                deliverFailureCause(failureConsumer, e, null);
-                return null;
-            }
-        } else {
-            observer = null;
-        }
-
+                                                        Consumer<Throwable> failureConsumer) {
+        final SecurityHandshakeObserver observer = handshakeObserver(pipeline);
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
@@ -101,15 +85,12 @@ public final class NettyPipelineSslUtils {
         failureConsumer.accept(cause);
     }
 
+    @Nullable
     private static SecurityHandshakeObserver handshakeObserver(final ChannelPipeline pipeline) {
         final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
         if (handler == null) {
-            throw new IllegalStateException("Unable to find " + ConnectionObserverHandler.class + " in the pipeline.");
+            return null;
         }
-        final SecurityHandshakeObserver handshakeObserver = handler.handshakeObserver();
-        if (handshakeObserver == null) {
-            throw new IllegalStateException("Unable to find " + SecurityHandshakeObserver.class);
-        }
-        return handshakeObserver;
+        return handler.handshakeObserver();
     }
 }
