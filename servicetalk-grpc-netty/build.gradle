@@ -80,17 +80,11 @@ protobuf {
       }
     }
   }
-  generatedFilesBaseDir = "$buildDir/generated/sources"
+  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
 
 //// The following setting must be omitted in users projects and is necessary here
 //// only because we want to use the gradle project local version of the plugin
 afterEvaluate {
   generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
-}
-
-idea {
-  module {
-    testSourceDirs += files("${protobuf.generatedFilesBaseDir}/source/proto/test/grpc")
-  }
 }

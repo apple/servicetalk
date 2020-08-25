@@ -33,6 +33,7 @@ dependencies {
 
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation "junit:junit:$junitVersion"
 }
 
 jar {
@@ -76,7 +77,25 @@ protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:$protobufVersion"
   }
-  generatedFilesBaseDir = "$buildDir/generated/sources"
+  // Used for testing
+  plugins {
+    servicetalk_grpc {
+      path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
+                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+    }
+  }
+  generateProtoTasks {
+    all().each { task ->
+      task.plugins {
+        servicetalk_grpc {
+          // Need to tell protobuf-gradle-plugin to output in the correct directory if all generated
+          // code for a single proto goes to a single file (e.g. "java_multiple_files = false" in the .proto).
+          outputSubDir = "java"
+        }
+      }
+    }
+  }
+  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
 
 afterEvaluate {
