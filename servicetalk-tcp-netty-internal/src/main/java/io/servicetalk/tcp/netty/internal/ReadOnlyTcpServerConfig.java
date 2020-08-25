@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.handler.ssl.SslContext;
@@ -35,7 +36,6 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forServe
 public final class ReadOnlyTcpServerConfig
         extends AbstractReadOnlyTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
-    @Nullable
     private final TransportObserver transportObserver;
     @Nullable
     private final SslContext sslContext;
@@ -50,7 +50,9 @@ public final class ReadOnlyTcpServerConfig
      */
     ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
         super(from, !supportedAlpnProtocols.isEmpty());
-        transportObserver = from.transportObserver() == null ? null : asSafeObserver(from.transportObserver());
+        final TransportObserver transportObserver = from.transportObserver();
+        this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
+                asSafeObserver(transportObserver);
         final ReadOnlyServerSecurityConfig securityConfig = from.securityConfig();
         if (from.sniConfigs() != null) {
             if (securityConfig == null) {
@@ -78,7 +80,6 @@ public final class ReadOnlyTcpServerConfig
      *
      * @return the {@link TransportObserver} if any
      */
-    @Nullable
     public TransportObserver transportObserver() {
         return transportObserver;
     }

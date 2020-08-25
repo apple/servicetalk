@@ -257,13 +257,9 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver).readComplete();
 
         if (protocol == Protocol.HTTP_2) {
-            verify(clientStreamObserver).streamClosed();
+            verify(clientStreamObserver, await()).streamClosed();
             verify(serverStreamObserver, await()).streamClosed();
         }
-
-        verifyNoMoreInteractions(
-                clientDataObserver, clientMultiplexedObserver, clientReadObserver, clientWriteObserver,
-                serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
     }
 
     @Test

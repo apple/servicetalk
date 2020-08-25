@@ -41,6 +41,8 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopDataObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
 
 import io.netty.channel.Channel;
@@ -131,7 +133,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private SSLSession sslSession;
     @Nullable
     private final ChannelConfig parentChannelConfig;
-    @Nullable
     private volatile DataObserver dataObserver;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
@@ -139,7 +140,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig,
-                                   @Nullable DataObserver dataObserver) {
+                                   DataObserver dataObserver) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
         this.readPublisher = registerReadObserver(nettyChannelPublisher.recoverWith(this::enrichErrorPublisher));
@@ -194,8 +195,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param executionStrategy Used to derive the {@link #executionContext()}.
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
-     * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
-     * @param streamObserver {@link StreamObserver} to report internal events
+     * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s.
+     * @param streamObserver {@link StreamObserver} to report internal events.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -205,12 +206,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
-            @Nullable ChannelConfig parentChannelConfig, @Nullable StreamObserver streamObserver) {
+            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
-                sslSession, parentChannelConfig, streamObserver == null ? null : streamObserver.streamEstablished());
+                sslSession, parentChannelConfig, streamObserver.streamEstablished());
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
-                null, false, null));
+                null, false, NoopConnectionObserver.INSTANCE));
         return connection;
     }
 
@@ -239,7 +240,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
-            @Nullable ConnectionObserver observer) {
+            ConnectionObserver observer) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -250,7 +251,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                            executionStrategy, protocol, null, null, null);
+                            executionStrategy, protocol, null, null, NoopDataObserver.INSTANCE);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -278,7 +279,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private Publisher<Read> registerReadObserver(final Publisher<Read> readPublisher) {
         return readPublisher.liftSync(target -> {
             final DataObserver dataObserver = this.dataObserver;
-            if (dataObserver == null) {
+            if (dataObserver == NoopDataObserver.INSTANCE) {
                 return target;
             }
             final ReadObserver observer = dataObserver.onNewRead();
@@ -374,8 +375,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         return cleanupStateWhenDone(new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                final DataObserver dataObserver = DefaultNettyConnection.this.dataObserver;
-                final WriteObserver writeObserver = dataObserver == null ? null : dataObserver.onNewWrite();
+                final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
@@ -546,7 +546,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         private final DelayedCancellable delayedCancellable;
         @Nullable
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
-        @Nullable
         private final ConnectionObserver observer;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
@@ -555,7 +554,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                        @Nullable
                                        DelayedCancellable delayedCancellable,
                                        boolean waitForSslHandshake,
-                                       @Nullable ConnectionObserver observer) {
+                                       ConnectionObserver observer) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
@@ -641,7 +640,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.nettyChannelPublisher.channelInboundClosed();
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                        this::tryFailSubscriber, observer != null);
+                        this::tryFailSubscriber, observer != NoopConnectionObserver.INSTANCE);
                 if (subscriber != null) {
                     assert waitForSslHandshake;
                     completeSubscriber();
@@ -686,9 +685,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             assert subscriber != null;
             SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
             subscriber = null;
-            if (observer != null) {
-                connection.dataObserver = observer.connectionEstablished(connection);
-            }
+            connection.dataObserver = observer.connectionEstablished(connection);
             subscriberCopy.onSuccess(connection);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -85,11 +84,9 @@ public class TcpServer {
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
-        return TcpServerBinder.bind(localAddress(port), config, false,
-                executionContext, connectionAcceptor,
+        return TcpServerBinder.bind(localAddress(port), config, false, executionContext, connectionAcceptor,
                 channel -> {
-                    final TransportObserver observer = config.transportObserver();
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = config.transportObserver().onNewConnection();
                     return DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
                             UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),

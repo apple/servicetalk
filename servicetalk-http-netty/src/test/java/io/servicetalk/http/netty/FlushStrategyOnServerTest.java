@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -125,9 +126,10 @@ public class FlushStrategyOnServerTest {
                 new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, param.executionStrategy);
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
+        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
         serverConnection = initChannel(channel, httpExecutionContext, config,
-                new TcpServerChannelInitializer(config.tcpConfig(), null), service, true, null,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
+                new TcpServerChannelInitializer(config.tcpConfig(), connectionObserver), service, true,
+                connectionObserver, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
                 .toFuture().get();
         serverConnection.process(true);
         headersFactory = DefaultHttpHeadersFactory.INSTANCE;

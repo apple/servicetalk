@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +49,8 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void setUp() throws Exception {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
-        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler, null);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE);
         subscription = mock(Subscription.class);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -103,7 +105,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
@@ -122,7 +124,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);

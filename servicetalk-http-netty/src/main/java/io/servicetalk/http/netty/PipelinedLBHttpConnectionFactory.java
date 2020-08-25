@@ -49,7 +49,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress,
-                                                                      @Nullable final TransportObserver observer) {
+                                                                      final TransportObserver observer) {
         assert config.h1Config() != null;
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,

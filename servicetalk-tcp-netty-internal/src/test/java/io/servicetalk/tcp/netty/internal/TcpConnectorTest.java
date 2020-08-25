@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -110,7 +111,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), null)).toFuture().get();
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE))
+                .toFuture().get();
         connection.closeAsync().toFuture().get();
 
         registeredLatch.await();

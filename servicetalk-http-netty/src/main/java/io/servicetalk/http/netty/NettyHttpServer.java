@@ -51,7 +51,6 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -126,8 +125,7 @@ final class NettyHttpServer {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
                 channel -> {
-                    final TransportObserver observer = tcpServerConfig.transportObserver();
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = tcpServerConfig.transportObserver().onNewConnection();
                     return initChannel(channel, executionContext, config,
                             new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
                             drainRequestPayloadBody, connectionObserver);
@@ -146,7 +144,7 @@ final class NettyHttpServer {
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
                                                          final boolean drainRequestPayloadBody,
-                                                         @Nullable final ConnectionObserver observer) {
+                                                         final ConnectionObserver observer) {
         return initChannel(channel, httpExecutionContext, config, initializer, service, drainRequestPayloadBody,
                 observer, forPipelinedRequestResponse(false, channel.config()));
     }
@@ -157,7 +155,7 @@ final class NettyHttpServer {
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
                                                          final boolean drainRequestPayloadBody,
-                                                         @Nullable final ConnectionObserver observer,
+                                                         final ConnectionObserver observer,
                                                          final CloseHandler closeHandler) {
         final H1ProtocolConfig h1Config = config.h1Config();
         assert h1Config != null;
