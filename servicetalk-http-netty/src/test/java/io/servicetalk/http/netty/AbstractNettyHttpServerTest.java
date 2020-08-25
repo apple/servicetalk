@@ -43,6 +43,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -124,10 +125,8 @@ public abstract class AbstractNettyHttpServerTest {
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilterFactory;
     private HttpProtocolConfig protocol = h1Default();
-    @Nullable
-    private TransportObserver clientTransportObserver;
-    @Nullable
-    private TransportObserver serverTransportObserver;
+    private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
+    private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
 
     AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
@@ -153,16 +152,14 @@ public abstract class AbstractNettyHttpServerTest {
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
                 .executionStrategy(defaultStrategy(serverExecutor))
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
-                .protocols(protocol);
+                .protocols(protocol)
+                .transportObserver(serverTransportObserver);
         if (sslEnabled) {
             serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey);
         }
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);
-        }
-        if (serverTransportObserver != null) {
-            serverBuilder.transportObserver(serverTransportObserver);
         }
         serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
@@ -174,7 +171,7 @@ public abstract class AbstractNettyHttpServerTest {
             clientBuilder.secure().disableHostnameVerification()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
-        if (clientTransportObserver != null) {
+        if (clientTransportObserver != NoopTransportObserver.INSTANCE) {
             clientBuilder.appendConnectionFactoryFilter(
                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
         }
@@ -239,9 +236,9 @@ public abstract class AbstractNettyHttpServerTest {
         this.protocol = requireNonNull(protocol);
     }
 
-    void transportObserver(@Nullable TransportObserver client, @Nullable TransportObserver server) {
-        this.clientTransportObserver = client;
-        this.serverTransportObserver = server;
+    void transportObserver(TransportObserver client, TransportObserver server) {
+        this.clientTransportObserver = requireNonNull(client);
+        this.serverTransportObserver = requireNonNull(server);
     }
 
     StreamingHttpResponse makeRequest(final StreamingHttpRequest request)

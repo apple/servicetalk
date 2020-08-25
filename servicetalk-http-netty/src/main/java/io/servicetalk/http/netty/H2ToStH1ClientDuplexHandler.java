@@ -58,7 +58,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private HttpRequestMethod method;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler, @Nullable StreamObserver observer) {
+                                CloseHandler closeHandler, StreamObserver observer) {
         super(allocator, headersFactory, closeHandler, observer);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
     }

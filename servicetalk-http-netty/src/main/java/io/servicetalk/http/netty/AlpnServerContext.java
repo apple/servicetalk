@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -62,8 +61,7 @@ final class AlpnServerContext {
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
         return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor,
                 channel -> {
-                    final TransportObserver observer = tcpConfig.transportObserver();
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = tcpConfig.transportObserver().onNewConnection();
                     return initChannel(listenAddress, channel, config, executionContext, service,
                             drainRequestPayloadBody, connectionObserver);
                 },
@@ -87,7 +85,7 @@ final class AlpnServerContext {
                                                               final HttpExecutionContext httpExecutionContext,
                                                               final StreamingHttpService service,
                                                               final boolean drainRequestPayloadBody,
-                                                              @Nullable final ConnectionObserver observer) {
+                                                              final ConnectionObserver observer) {
         return new AlpnChannelSingle(channel,
                 new TcpServerChannelInitializer(config.tcpConfig(), observer), true).flatMap(protocol -> {
             switch (protocol) {

@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.EventLoop;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
     }
 
     @Test
@@ -102,7 +103,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         };
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         this.subscriber = new WriteStreamSubscriber(channel, demandEstimator, subscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
 
         this.subscriber.onNext(1);
         this.subscriber.onError(DELIBERATE_EXCEPTION);

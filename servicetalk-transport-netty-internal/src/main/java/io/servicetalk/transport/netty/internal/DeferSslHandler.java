@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,10 @@ import io.netty.handler.ssl.SslHandler;
 public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
     private final SslHandler handler;
-    private final boolean shouldReport;
 
-    DeferSslHandler(final Channel channel, final SslHandler handler, boolean shouldReport) {
+    DeferSslHandler(final Channel channel, final SslHandler handler) {
         this.channel = channel;
         this.handler = handler;
-        this.shouldReport = shouldReport;
     }
 
     /**
@@ -42,11 +40,9 @@ public class DeferSslHandler extends ChannelDuplexHandler {
      */
     public void ready() {
         final ChannelPipeline pipeline = channel.pipeline();
-        if (shouldReport) {
-            final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
-            if (handler != null) {
-                handler.reportSecurityHandshakeStarting();
-            }
+        final ConnectionObserverHandler observerHandler = pipeline.get(ConnectionObserverHandler.class);
+        if (observerHandler != null) {
+            observerHandler.reportSecurityHandshakeStarting();
         }
         pipeline.replace(this, null, handler);
     }

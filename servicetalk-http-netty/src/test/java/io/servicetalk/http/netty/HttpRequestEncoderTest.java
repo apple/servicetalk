@@ -37,11 +37,13 @@ import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -418,14 +420,17 @@ public class HttpRequestEncoderTest {
             ServerContext serverContext = resources.prepend(
                     TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
-                            channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
-                                    SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                                    defaultFlushStrategy(), null,
-                                    new TcpServerChannelInitializer(sConfig, null).andThen(
-                                            channel2 -> {
-                                                serverChannelRef.compareAndSet(null, channel2);
-                                                serverChannelLatch.countDown();
-                                            }), defaultStrategy(), mock(Protocol.class), null),
+                            channel -> {
+                                final ConnectionObserver observer = sConfig.transportObserver().onNewConnection();
+                                return DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
+                                        SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                                        defaultFlushStrategy(), null,
+                                        new TcpServerChannelInitializer(sConfig, observer).andThen(
+                                                channel2 -> {
+                                                    serverChannelRef.compareAndSet(null, channel2);
+                                                    serverChannelLatch.countDown();
+                                                }), defaultStrategy(), mock(Protocol.class), observer);
+                            },
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
@@ -437,7 +442,8 @@ public class HttpRequestEncoderTest {
                                 closeHandlerRef.compareAndSet(null, closeHandler);
                                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
                                         CEC.executor(), LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
-                                        null, new TcpClientChannelInitializer(cConfig.tcpConfig(), null)
+                                        null, new TcpClientChannelInitializer(cConfig.tcpConfig(),
+                                                NoopConnectionObserver.INSTANCE)
                                                 .andThen(new HttpClientChannelInitializer(
                                                         getByteBufAllocator(CEC.bufferAllocator()),
                                                         cConfig.h1Config(), closeHandler))
@@ -453,7 +459,8 @@ public class HttpRequestEncoderTest {
                                                                     serverCloseTrigger.onComplete();
                                                                 }
                                                             }
-                                                        })), defaultStrategy(), HTTP_1_1, null);
+                                                        })), defaultStrategy(), HTTP_1_1,
+                                                            NoopConnectionObserver.INSTANCE);
                             }
                     ).toFuture().get());
 

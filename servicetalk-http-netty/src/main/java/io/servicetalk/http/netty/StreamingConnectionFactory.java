@@ -28,8 +28,6 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
 
-import javax.annotation.Nullable;
-
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -43,11 +41,11 @@ final class StreamingConnectionFactory {
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
-            final ReadOnlyHttpClientConfig roConfig, @Nullable final TransportObserver observer) {
+            final ReadOnlyHttpClientConfig roConfig, final TransportObserver observer) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext,
                 channel -> {
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = observer.onNewConnection();
                     return createConnection(channel, executionContext, roConfig, new TcpClientChannelInitializer(
                             roConfig.tcpConfig(), connectionObserver, roConfig.hasProxy()), connectionObserver);
                 });
@@ -55,7 +53,7 @@ final class StreamingConnectionFactory {
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
             final HttpExecutionContext executionContext, final ReadOnlyHttpClientConfig config,
-            final ChannelInitializer initializer, @Nullable final ConnectionObserver connectionObserver) {
+            final ChannelInitializer initializer, final ConnectionObserver connectionObserver) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         assert config.h1Config() != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),

@@ -50,11 +50,10 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
-    @Nullable
     private final StreamObserver observer;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
-                            @Nullable StreamObserver observer) {
+                            StreamObserver observer) {
         this.allocator = allocator;
         this.headersFactory = headersFactory;
         this.closeHandler = closeHandler;
@@ -131,13 +130,11 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        if (observer != null) {
-            final Throwable t = channelError(ctx.channel());
-            if (t == null) {
-                observer.streamClosed();
-            } else {
-                observer.streamClosed(t);
-            }
+        final Throwable t = channelError(ctx.channel());
+        if (t == null) {
+            observer.streamClosed();
+        } else {
+            observer.streamClosed(t);
         }
         ctx.fireChannelInactive();
     }

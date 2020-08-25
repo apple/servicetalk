@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundBuffer;
@@ -115,7 +116,7 @@ public class DefaultNettyConnectionTest {
                     return true;
                 },
                 closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
-                mock(Protocol.class), null).toFuture().get();
+                mock(Protocol.class), NoopConnectionObserver.INSTANCE).toFuture().get();
         publisher = new TestPublisher<>();
     }
 
