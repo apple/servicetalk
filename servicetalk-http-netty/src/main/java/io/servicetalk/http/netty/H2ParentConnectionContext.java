@@ -225,7 +225,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             try {
                 if (evt instanceof SslHandshakeCompletionEvent) {
                     parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
-                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber);
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
+                            observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
                 }
             } finally {
