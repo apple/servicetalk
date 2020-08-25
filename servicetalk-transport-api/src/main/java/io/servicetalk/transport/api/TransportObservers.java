@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A factory to create different {@link TransportObserver}s.
  */
@@ -36,6 +38,31 @@ public final class TransportObservers {
         if (observer instanceof CatchAllTransportObserver) {
             return observer;
         }
+        if (observer instanceof BiTransportObserver) {
+            // BiTransportObserver is always safe
+            return observer;
+        }
         return new CatchAllTransportObserver(observer);
+    }
+
+    /**
+     * Combines multiple {@link TransportObserver}s into a single {@link TransportObserver}.
+     *
+     * @param other {@link TransportObserver}s to combine
+     * @return a {@link TransportObserver} that delegates all invocations to the provided {@link TransportObserver}s
+     */
+    public static TransportObserver combine(final TransportObserver... other) {
+        switch (other.length) {
+            case 0:
+                throw new IllegalArgumentException("At least one TransportObserver is required to combine");
+            case 1:
+                return requireNonNull(other[0]);
+            default:
+                BiTransportObserver bi = new BiTransportObserver(other[0], other[1]);
+                for (int i = 2; i < other.length; i++) {
+                    bi = new BiTransportObserver(bi, other[i]);
+                }
+                return bi;
+        }
     }
 }
