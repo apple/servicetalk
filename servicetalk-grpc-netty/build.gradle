@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
+buildscript {
+  dependencies {
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
+  }
+}
+
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
+apply plugin: "com.google.protobuf"
 
 dependencies {
   api project(":servicetalk-grpc-api")
@@ -49,44 +55,36 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
 
-serviceTalkGrpc {
-  protobufVersion = project.property("protobufVersion")
-
-  // The following setting must be omitted in users projects and is necessary here
-  // only because we want to use the locally built version of the plugin
-  serviceTalkProtocPluginPath =
-      "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/servicetalk-grpc-protoc-" +
-          project.version + "-all.jar"
-}
-
-// The following setting must be omitted in users projects and is necessary here
-// only because we want to use the locally built version of the plugin
-afterEvaluate {
-  generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
-}
-
-// Configure grpc-java as required by ProtocolCompatibilityTest
-def generatedBaseDir = "$projectDir/generated"
-
 protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
   plugins {
     grpc {
       artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
     }
+    servicetalk_grpc {
+      //// Users are expected to use "artifact" instead of "path". we use "path"
+      //// only because we want to use the gradle project local version of the plugin
+      path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
+                  "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
+    }
   }
   generateProtoTasks {
-    configure(all()) {
-      project.tasks.ideaModule.dependsOn(it)
-      plugins {
+    all().each { task ->
+      task.plugins {
         grpc {}
+        servicetalk_grpc {
+          outputSubDir = "java"
+        }
       }
     }
   }
-  generatedFilesBaseDir = generatedBaseDir
+  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
 
-idea {
-  module {
-    testSourceDirs += files("$generatedBaseDir/source/proto/test/grpc")
-  }
+//// The following setting must be omitted in users projects and is necessary here
+//// only because we want to use the gradle project local version of the plugin
+afterEvaluate {
+  generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
 }
