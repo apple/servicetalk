@@ -23,7 +23,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.transport.api.TransportObservers.biTransportObserver;
+import static io.servicetalk.transport.api.TransportObservers.combine;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -72,7 +72,7 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
                     return failed(t);
                 }
                 return delegate().newConnection(resolvedAddress, originalObserver == null ? newObserver :
-                       newObserver == null ? originalObserver : biTransportObserver(originalObserver, newObserver));
+                       newObserver == null ? originalObserver : combine(originalObserver, newObserver));
             }
         };
     }

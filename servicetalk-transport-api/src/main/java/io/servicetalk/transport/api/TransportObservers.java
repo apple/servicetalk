@@ -36,18 +36,27 @@ public final class TransportObservers {
         if (observer instanceof CatchAllTransportObserver) {
             return observer;
         }
+        if (observer instanceof BiTransportObserver) {
+            // BiTransportObserver is always safe
+            return observer;
+        }
         return new CatchAllTransportObserver(observer);
     }
 
     /**
-     * Combines two {@link TransportObserver}s into a single {@link TransportObserver}.
+     * Combines multiple {@link TransportObserver}s into a single {@link TransportObserver}.
      *
      * @param first the {@link TransportObserver} that will receive events first
      * @param second the {@link TransportObserver} that will receive events second
-     * @return a {@link TransportObserver} that delegates all invocations to the {@code first} and {@code second}
-     * {@link TransportObserver}s
+     * @param others additional {@link TransportObserver}s that will receive events
+     * @return a {@link TransportObserver} that delegates all invocations to the provided {@link TransportObserver}s
      */
-    public static TransportObserver biTransportObserver(final TransportObserver first, final TransportObserver second) {
-        return new BiTransportObserver(first, second);
+    public static TransportObserver combine(final TransportObserver first, final TransportObserver second,
+                                            final TransportObserver... others) {
+        BiTransportObserver bi = new BiTransportObserver(first, second);
+        for (TransportObserver other : others) {
+            bi = new BiTransportObserver(bi, other);
+        }
+        return bi;
     }
 }
