@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -73,7 +74,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         subscriber = new WriteStreamSubscriber(channel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
         TestSubscription subscription = new TestSubscription();
         subscriber.onSubscribe(subscription);
         assertThat("No items requested.", subscription.requested(), greaterThan(0L));
@@ -177,7 +178,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         WriteStreamSubscriber subscriber = new WriteStreamSubscriber(mockChannel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, null);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
         subscriber.onNext(1);
         verifyListenerInvokedWithSuccess(listeners.take());
         subscriber.onNext(2);

@@ -41,12 +41,12 @@ import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assume.assumeTrue;
@@ -57,7 +57,6 @@ import static org.junit.Assume.assumeTrue;
 public final class TcpClient {
 
     private final ReadOnlyTcpClientConfig config;
-    @Nullable
     private final TransportObserver observer;
 
     /**
@@ -66,9 +65,9 @@ public final class TcpClient {
      * @param config for the client.
      * @param observer {@link TransportObserver} for the newly created connection.
      */
-    public TcpClient(TcpClientConfig config, @Nullable TransportObserver observer) {
+    public TcpClient(TcpClientConfig config, TransportObserver observer) {
         this.config = config.asReadOnly(emptyList());
-        this.observer = observer;
+        this.observer = requireNonNull(observer);
     }
 
     /**
@@ -95,7 +94,7 @@ public final class TcpClient {
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
                 channel -> {
-                    final ConnectionObserver connectionObserver = observer == null ? null : observer.onNewConnection();
+                    final ConnectionObserver connectionObserver = observer.onNewConnection();
                     return initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
                             UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),

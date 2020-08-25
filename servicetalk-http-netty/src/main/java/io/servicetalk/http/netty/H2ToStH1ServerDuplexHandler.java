@@ -54,7 +54,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
-                                CloseHandler closeHandler, @Nullable StreamObserver observer) {
+                                CloseHandler closeHandler, StreamObserver observer) {
         super(allocator, headersFactory, closeHandler, observer);
     }
 

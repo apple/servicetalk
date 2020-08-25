@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.util.NetUtil;
@@ -32,13 +33,11 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
-    @Nullable
-    private TransportObserver transportObserver;
+    private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
     private int backlog = NetUtil.SOMAXCONN;
 
-    @Nullable
     TransportObserver transportObserver() {
         return transportObserver;
     }

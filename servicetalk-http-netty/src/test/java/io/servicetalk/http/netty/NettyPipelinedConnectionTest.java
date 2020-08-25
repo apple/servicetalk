@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
@@ -103,7 +104,8 @@ public class NettyPipelinedConnectionTest {
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), obj -> true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
-                channel2 -> { }, defaultStrategy(), mock(Protocol.class), null).toFuture().get();
+                channel2 -> { }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE)
+                        .toFuture().get();
         requester = new NettyPipelinedConnection<>(connection);
     }
 

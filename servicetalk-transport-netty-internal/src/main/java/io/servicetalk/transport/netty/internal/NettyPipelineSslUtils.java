@@ -22,6 +22,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -31,6 +33,9 @@ import javax.net.ssl.SSLSession;
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
  */
 public final class NettyPipelineSslUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelineSslUtils.class);
+
     private NettyPipelineSslUtils() {
         // no instances.
     }
@@ -91,8 +96,16 @@ public final class NettyPipelineSslUtils {
     private static SecurityHandshakeObserver handshakeObserver(final ChannelPipeline pipeline) {
         final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
         if (handler == null) {
+            LOGGER.warn("Expected to report the handshake completion event, but unable to find {} in the pipeline.",
+                    ConnectionObserverHandler.class);
             return null;
         }
-        return handler.handshakeObserver();
+        final SecurityHandshakeObserver handshakeObserver = handler.handshakeObserver();
+        if (handshakeObserver == null) {
+            LOGGER.warn("Expected to report the handshake completion event, but {} was not initialized.",
+                    SecurityHandshakeObserver.class);
+            return null;
+        }
+        return handshakeObserver;
     }
 }

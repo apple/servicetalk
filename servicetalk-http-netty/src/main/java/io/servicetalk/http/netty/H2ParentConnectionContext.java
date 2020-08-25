@@ -32,6 +32,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
@@ -154,13 +155,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         final H2ParentConnectionContext parentContext;
         final boolean waitForSslHandshake;
         private final DelayedCancellable delayedCancellable;
-        @Nullable
         final ConnectionObserver observer;
 
         AbstractH2ParentConnection(H2ParentConnectionContext parentContext,
                                    DelayedCancellable delayedCancellable,
                                    boolean waitForSslHandshake,
-                                   @Nullable ConnectionObserver observer) {
+                                   ConnectionObserver observer) {
             this.parentContext = parentContext;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
@@ -214,7 +214,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (observer != null) {
+            if (observer != NoopConnectionObserver.INSTANCE) {
                 assignConnectionError(ctx.channel(), cause);
             }
             parentContext.transportError.onSuccess(cause);
@@ -225,7 +225,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             try {
                 if (evt instanceof SslHandshakeCompletionEvent) {
                     parentContext.sslSession = extractSslSessionAndReport(ctx.pipeline(),
-                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber, observer != null);
+                            (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
+                            observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
                 }
             } finally {

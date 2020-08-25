@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -69,7 +70,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
                             final ResolvedAddress ra, @Nullable final TransportObserver observer) {
-                        return newFilterableConnection(ra, observer == null ? null : asSafeObserver(observer));
+                        return newFilterableConnection(ra, observer == null ? NoopTransportObserver.INSTANCE :
+                                asSafeObserver(observer));
                     }
 
                     @Override
@@ -111,7 +113,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     }
 
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(
-            ResolvedAddress resolvedAddress, @Nullable TransportObserver observer);
+            ResolvedAddress resolvedAddress, TransportObserver observer);
 
     abstract ReservableRequestConcurrencyController newConcurrencyController(
             FilterableStreamingHttpConnection connection, Completable onClosing);
