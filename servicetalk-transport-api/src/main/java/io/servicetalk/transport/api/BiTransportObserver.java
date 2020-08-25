@@ -13,39 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api;
+package io.servicetalk.transport.api;
 
-import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
-import io.servicetalk.transport.api.TransportObserver;
 
 import javax.net.ssl.SSLSession;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 
-/**
- * Combines two {@link TransportObserver}s into a single {@link TransportObserver}.
- */
 final class BiTransportObserver implements TransportObserver {
 
     private final TransportObserver first;
     private final TransportObserver second;
 
-    /**
-     * Creates a new instance.
-     *
-     * @param first the {@link TransportObserver} that will receive events first
-     * @param second the {@link TransportObserver} that will receive events second
-     */
     BiTransportObserver(final TransportObserver first, final TransportObserver second) {
-        this.first = requireNonNull(first);
-        this.second = requireNonNull(second);
+        this.first = asSafeObserver(first);
+        this.second = asSafeObserver(second);
     }
 
     @Override
