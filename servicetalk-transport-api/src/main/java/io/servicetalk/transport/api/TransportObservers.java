@@ -38,4 +38,16 @@ public final class TransportObservers {
         }
         return new CatchAllTransportObserver(observer);
     }
+
+    /**
+     * Combines two {@link TransportObserver}s into a single {@link TransportObserver}.
+     *
+     * @param first the {@link TransportObserver} that will receive events first
+     * @param second the {@link TransportObserver} that will receive events second
+     * @return a {@link TransportObserver} that delegates all invocations to the {@code first} and {@code second}
+     * {@link TransportObserver}s
+     */
+    public static TransportObserver biTransportObserver(final TransportObserver first, final TransportObserver second) {
+        return new BiTransportObserver(first, second);
+    }
 }
