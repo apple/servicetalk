@@ -22,6 +22,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -31,6 +33,9 @@ import javax.net.ssl.SSLSession;
  * Utilities for {@link ChannelPipeline} and SSL/TLS.
  */
 public final class NettyPipelineSslUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyPipelineSslUtils.class);
+
     private NettyPipelineSslUtils() {
         // no instances.
     }
@@ -60,21 +65,7 @@ public final class NettyPipelineSslUtils {
                                                         SslHandshakeCompletionEvent sslEvent,
                                                         Consumer<Throwable> failureConsumer,
                                                         boolean shouldReport) {
-        final SecurityHandshakeObserver observer;
-        if (shouldReport) {
-            try {
-                observer = handshakeObserver(pipeline);
-            } catch (Exception e) {
-                if (!sslEvent.isSuccess()) {
-                    e.addSuppressed(sslEvent.cause());
-                }
-                deliverFailureCause(failureConsumer, e, null);
-                return null;
-            }
-        } else {
-            observer = null;
-        }
-
+        final SecurityHandshakeObserver observer = shouldReport ? handshakeObserver(pipeline) : null;
         if (sslEvent.isSuccess()) {
             final SslHandler sslHandler = pipeline.get(SslHandler.class);
             if (sslHandler != null) {
@@ -84,8 +75,8 @@ public final class NettyPipelineSslUtils {
                 }
                 return session;
             } else {
-                deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " + SslHandler.class +
-                        " in the pipeline."), observer);
+                deliverFailureCause(failureConsumer, new IllegalStateException("Unable to find " +
+                        SslHandler.class.getName() + " in the pipeline."), observer);
             }
         } else {
             deliverFailureCause(failureConsumer, sslEvent.cause(), observer);
@@ -101,14 +92,19 @@ public final class NettyPipelineSslUtils {
         failureConsumer.accept(cause);
     }
 
+    @Nullable
     private static SecurityHandshakeObserver handshakeObserver(final ChannelPipeline pipeline) {
         final ConnectionObserverHandler handler = pipeline.get(ConnectionObserverHandler.class);
         if (handler == null) {
-            throw new IllegalStateException("Unable to find " + ConnectionObserverHandler.class + " in the pipeline.");
+            LOGGER.warn("Expected to report the handshake completion event, but unable to find {} in the pipeline.",
+                    ConnectionObserverHandler.class);
+            return null;
         }
         final SecurityHandshakeObserver handshakeObserver = handler.handshakeObserver();
         if (handshakeObserver == null) {
-            throw new IllegalStateException("Unable to find " + SecurityHandshakeObserver.class);
+            LOGGER.warn("Expected to report the handshake completion event, but {} was not initialized.",
+                    SecurityHandshakeObserver.class);
+            return null;
         }
         return handshakeObserver;
     }
