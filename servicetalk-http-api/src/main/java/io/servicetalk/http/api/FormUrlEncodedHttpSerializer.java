@@ -19,7 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.serialization.api.SerializationException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -32,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -57,7 +60,7 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
                             final Map<String, List<String>> parameters,
                             final BufferAllocator allocator) {
         addContentType.accept(headers);
-        return serialize(parameters, allocator);
+        return serialize(parameters, allocator, false);
     }
 
     @Override
@@ -68,6 +71,8 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
         return () -> {
             final BlockingIterator<Map<String, List<String>>> iterator = parameters.iterator();
             return new BlockingIterator<Buffer>() {
+                private boolean isContinuation;
+
                 @Override
                 public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
                     return iterator.hasNext(timeout, unit);
@@ -75,7 +80,10 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
 
                 @Override
                 public Buffer next(final long timeout, final TimeUnit unit) throws TimeoutException {
-                    return serialize(iterator.next(timeout, unit), allocator);
+                    Map<String, List<String>> next = iterator.next(timeout, unit);
+                    Buffer buffer = serialize(next, allocator, isContinuation);
+                    isContinuation = isContinuation || buffer.readableBytes() > 0;
+                    return buffer;
                 }
 
                 @Override
@@ -90,7 +98,10 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
 
                 @Override
                 public Buffer next() {
-                    return serialize(iterator.next(), allocator);
+                    Map<String, List<String>> next = iterator.next();
+                    Buffer buffer = serialize(next, allocator, isContinuation);
+                    isContinuation = isContinuation || buffer.readableBytes() > 0;
+                    return buffer;
                 }
             };
         };
@@ -100,8 +111,34 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     public Publisher<Buffer> serialize(final HttpHeaders headers,
                                        final Publisher<Map<String, List<String>>> parameters,
                                        final BufferAllocator allocator) {
+
         addContentType.accept(headers);
-        return parameters.map(values -> serialize(values, allocator));
+        return parameters.liftSync(subscriber -> new PublisherSource.Subscriber<Map<String, List<String>>>() {
+
+            private boolean isContinuation;
+
+            @Override
+            public void onSubscribe(PublisherSource.Subscription subscription) {
+                subscriber.onSubscribe(subscription);
+            }
+
+            @Override
+            public void onNext(@Nullable Map<String, List<String>> values) {
+                Buffer buffer = serialize(values, allocator, isContinuation);
+                isContinuation = isContinuation || buffer.readableBytes() > 0;
+                subscriber.onNext(buffer);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                subscriber.onError(t);
+            }
+
+            @Override
+            public void onComplete() {
+                subscriber.onComplete();
+            }
+        });
     }
 
     @Override
@@ -110,29 +147,52 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
                                                                   final BufferAllocator allocator) {
         addContentType.accept(headers);
         return new DelegatingToBufferHttpPayloadWriter<Map<String, List<String>>>(payloadWriter, allocator) {
+
+            private boolean isContinuation;
+
             @SuppressWarnings("ConstantConditions")
             @Override
-            public void write(final Map<String, List<String>> object) throws IOException {
-                delegate.write(serialize(object, allocator));
+            public void write(final Map<String, List<String>> values) throws IOException {
+                Buffer buffer = serialize(values, allocator, isContinuation);
+                isContinuation = isContinuation || buffer.readableBytes() > 0;
+                delegate.write(buffer);
             }
         };
     }
 
-    @Nullable
-    private Buffer serialize(@Nullable final Map<String, List<String>> parameters, final BufferAllocator allocator) {
+    private Buffer serialize(@Nullable final Map<String, List<String>> parameters, final BufferAllocator allocator,
+                             final boolean isContinuation) {
+
         if (parameters == null) {
-            return null;
+            return EMPTY_BUFFER;
         }
+
         final Buffer buffer = allocator.newBuffer();
-        parameters.forEach((key, values) -> values.forEach(value -> {
-                    if (buffer.writerIndex() != 0) {
-                        buffer.writeBytes("&".getBytes(charset));
-                    }
-                    buffer.writeBytes(urlEncode(key).getBytes(charset));
-                    buffer.writeBytes("=".getBytes(charset));
-                    buffer.writeBytes(urlEncode(value).getBytes(charset));
+        // Null values may be omitted
+        // https://tools.ietf.org/html/rfc1866#section-8.2
+        parameters.forEach((key, values) -> {
+            if (key == null || key.isEmpty()) {
+                throw new SerializationException("Null or empty keys are not supported " +
+                        "for x-www-form-urlencoded params");
+            }
+
+            if (values == null) {
+                return;
+            }
+
+            values.forEach(value -> {
+                if (value == null) {
+                    return;
                 }
-        ));
+
+                if (buffer.writerIndex() != 0 || isContinuation) {
+                    buffer.writeBytes("&".getBytes(charset));
+                }
+                buffer.writeBytes(urlEncode(key).getBytes(charset));
+                buffer.writeBytes("=".getBytes(charset));
+                buffer.writeBytes(urlEncode(value).getBytes(charset));
+            });
+        });
         return buffer;
     }
 
