@@ -42,7 +42,7 @@ protobuf {
     servicetalk_grpc {
       //// Users are expected to use "artifact" instead of "path". we use "path"
       //// only because we want to use the gradle project local version of the plugin
-      // artifact = "io.servicetalk:servicetalk-grpc-proto:$serviceTalkVersion:all@jar"
+      // artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion:all@jar"
       path = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
                   "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar").path
     }
