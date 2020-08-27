@@ -20,6 +20,8 @@ import io.netty.util.internal.logging.InternalLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 import static io.netty.handler.logging.LogLevel.DEBUG;
 import static io.netty.handler.logging.LogLevel.ERROR;
 import static io.netty.handler.logging.LogLevel.INFO;
@@ -36,8 +38,10 @@ public final class NettyLoggerUtils {
     /**
      * Translate the log level as determined by SL4J for the {@code loggerName} to Netty's {@link LogLevel} type.
      * @param loggerName The logger name to lookup.
-     * @return Netty's {@link LogLevel} corresponding to the SL4J log level for {@code loggerName}.
+     * @return Netty's {@link LogLevel} corresponding to the SL4J log level for {@code loggerName}, or {@code null} if
+     * the log level cannot be mapped to a {@link LogLevel}.
      */
+    @Nullable
     public static LogLevel getNettyLogLevel(String loggerName) {
         final Logger logger = LoggerFactory.getLogger(loggerName);
         if (logger.isTraceEnabled()) {
@@ -51,6 +55,6 @@ public final class NettyLoggerUtils {
         } else if (logger.isErrorEnabled()) {
             return ERROR;
         }
-        throw new IllegalArgumentException("unknown log level: " + logger);
+        return null;
     }
 }
