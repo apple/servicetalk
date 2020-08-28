@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -29,10 +30,12 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.rules.ExpectedException.none;
 
@@ -48,6 +51,11 @@ public class HttpProtocolConfigTest {
         @Override
         public HttpHeadersFactory headersFactory() {
             return DefaultHttpHeadersFactory.INSTANCE;
+        }
+
+        @Override
+        public Set<ContentCoding> supportedEncodings() {
+            return emptySet();
         }
     };
 

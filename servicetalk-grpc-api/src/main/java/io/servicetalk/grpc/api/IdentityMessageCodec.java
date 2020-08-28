@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,21 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
+
 /**
- * API for <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#message-encoding"> message
- * coding schemes</a>.
+ * NOOP Message encoding codec.
  */
-public interface GrpcMessageEncoding {
+final class IdentityMessageCodec implements MessageCodec {
 
-    /**
-     * A string representation for the message encoding.
-     *
-     * @return a string representation for the message encoding.
-     */
-    String name();
+    @Override
+    public Buffer encode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
+        return src;
+    }
 
-    /**
-     * The codec that supports encoding/decoding for this type of message-encoding.
-     *
-     * @return a shared instance of the codec for that message-encoding
-     */
-    MessageCodec codec();
+    @Override
+    public Buffer decode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
+        return src;
+    }
 }

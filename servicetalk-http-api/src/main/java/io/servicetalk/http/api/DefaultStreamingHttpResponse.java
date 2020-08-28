@@ -51,6 +51,12 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     }
 
     @Override
+    public StreamingHttpResponse encoding(final ContentCoding encoding) {
+        super.encoding(encoding);
+        return this;
+    }
+
+    @Override
     public Publisher<Buffer> payloadBody() {
         return payloadHolder.payloadBody();
     }

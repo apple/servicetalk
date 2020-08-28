@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.ContentCodings.none;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,7 +56,7 @@ public class RequestConversionTests extends AbstractConversionTest {
     private static Object[] newParam(final DefaultPayloadInfo payloadInfo, final String paramName) {
         return new Object[]{(Supplier<StreamingHttpRequest>) () ->
                 new DefaultStreamingHttpRequest(GET, "/", HTTP_1_1,
-                        DefaultHttpHeadersFactory.INSTANCE.newHeaders(), DEFAULT_ALLOCATOR,
+                        DefaultHttpHeadersFactory.INSTANCE.newHeaders(), none(), DEFAULT_ALLOCATOR,
                         new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE),
                 payloadInfo, paramName};
     }

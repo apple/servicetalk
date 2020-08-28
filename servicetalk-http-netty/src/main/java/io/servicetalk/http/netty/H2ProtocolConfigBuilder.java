@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
@@ -22,6 +23,7 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
@@ -29,6 +31,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -44,6 +48,7 @@ public final class H2ProtocolConfigBuilder {
     private UserDataLoggerConfig frameLoggerConfig;
     @Nullable
     private KeepAlivePolicy keepAlivePolicy;
+    private Set<ContentCoding> encodings = emptySet();
 
     H2ProtocolConfigBuilder() {
     }
@@ -114,13 +119,26 @@ public final class H2ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the supported {@link ContentCoding}s for the endpoint.
+     * The list will be advertised as part of the Accept-Encoding header
+     *
+     * @param encodings The list of supported {@link ContentCoding}s for this endpoint.
+     * @return {@code this}
+     * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
+     */
+    public H2ProtocolConfigBuilder supportedEncodings(final Set<ContentCoding> encodings) {
+        this.encodings = requireNonNull(encodings);
+        return this;
+    }
+
+    /**
      * Builds {@link H2ProtocolConfig}.
      *
      * @return {@link H2ProtocolConfig}
      */
     public H2ProtocolConfig build() {
         return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerConfig,
-                keepAlivePolicy);
+                keepAlivePolicy, encodings);
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
@@ -131,15 +149,18 @@ public final class H2ProtocolConfigBuilder {
         private final UserDataLoggerConfig frameLoggerConfig;
         @Nullable
         private final KeepAlivePolicy keepAlivePolicy;
+        private final Set<ContentCoding> supportedEncodings;
 
         DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
                                 @Nullable final UserDataLoggerConfig frameLoggerConfig,
-                                @Nullable final KeepAlivePolicy keepAlivePolicy) {
+                                @Nullable final KeepAlivePolicy keepAlivePolicy,
+                                final Set<ContentCoding> encodings) {
             this.headersFactory = headersFactory;
             this.headersSensitivityDetector = headersSensitivityDetector;
             this.frameLoggerConfig = frameLoggerConfig;
             this.keepAlivePolicy = keepAlivePolicy;
+            this.supportedEncodings = unmodifiableSet(encodings);
         }
 
         @Override
@@ -163,5 +184,10 @@ public final class H2ProtocolConfigBuilder {
         public KeepAlivePolicy keepAlivePolicy() {
             return keepAlivePolicy;
         }
-   }
+
+        @Override
+        public Set<ContentCoding> supportedEncodings() {
+            return supportedEncodings;
+        }
+    }
 }

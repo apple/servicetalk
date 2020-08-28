@@ -17,12 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
+import java.util.Set;
 import javax.annotation.Nullable;
 
 final class NonPipelinedStreamingHttpConnection
@@ -31,8 +33,9 @@ final class NonPipelinedStreamingHttpConnection
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpHeadersFactory headersFactory) {
-        super(connection, 1, executionContext, reqRespFactory, headersFactory);
+                                        final HttpHeadersFactory headersFactory,
+                                        final Set<ContentCoding> supportedEncodings) {
+        super(connection, 1, executionContext, reqRespFactory, headersFactory, supportedEncodings);
     }
 
     @Override

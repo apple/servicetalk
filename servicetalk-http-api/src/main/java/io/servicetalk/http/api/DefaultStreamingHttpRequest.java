@@ -32,10 +32,13 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
-                                final BufferAllocator allocator, @Nullable final Publisher payloadBody,
-                                final DefaultPayloadInfo payloadInfo,
+                                @Nullable final ContentCoding encoding, final BufferAllocator allocator,
+                                @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
                                 final HttpHeadersFactory headersFactory) {
         super(method, requestTarget, version, headers);
+        if (encoding != null) {
+            encoding(encoding);
+        }
         payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
                 version);
     }
@@ -43,6 +46,12 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     @Override
     public StreamingHttpRequest version(final HttpProtocolVersion version) {
         super.version(version);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest encoding(final ContentCoding encoding) {
+        super.encoding(encoding);
         return this;
     }
 

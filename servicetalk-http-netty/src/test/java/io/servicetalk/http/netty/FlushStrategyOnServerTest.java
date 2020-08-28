@@ -55,6 +55,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.ContentCodings.none;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -213,7 +214,7 @@ public class FlushStrategyOnServerTest {
 
     private void sendARequest() throws Exception {
         StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1,
-                headersFactory.newHeaders().set(TRANSFER_ENCODING, CHUNKED), DEFAULT_ALLOCATOR,
+                headersFactory.newHeaders().set(TRANSFER_ENCODING, CHUNKED), none(), DEFAULT_ALLOCATOR,
                 from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()),
                 headersFactory);
         channel.writeInbound(req);

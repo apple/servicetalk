@@ -44,6 +44,12 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
+    public HttpRequest encoding(final ContentCoding encoding) {
+        original.encoding(encoding);
+        return this;
+    }
+
+    @Override
     public HttpRequest method(final HttpRequestMethod method) {
         original.method(method);
         return this;
@@ -227,7 +233,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         Publisher<Object> payload = trailers != null ? from(payloadBody, trailers) : from(payloadBody);
-        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(),
+        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
                 original.payloadHolder().allocator(), payload, new DefaultPayloadInfo(this),
                 original.payloadHolder().headersFactory());
     }

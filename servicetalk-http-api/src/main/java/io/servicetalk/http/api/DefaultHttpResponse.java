@@ -43,6 +43,12 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     }
 
     @Override
+    public HttpResponse encoding(final ContentCoding encoding) {
+        original.encoding(encoding);
+        return this;
+    }
+
+    @Override
     public HttpResponse status(final HttpResponseStatus status) {
         original.status(status);
         return this;

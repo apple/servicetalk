@@ -41,6 +41,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.util.Arrays;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -112,7 +113,7 @@ public class GrpcServiceContextProtocolTest {
 
     @Test
     public void testRequestStream() throws Exception {
-        assertResponse(client.testRequestStream(singleton(newRequest())));
+        assertResponse(client.testRequestStream(Arrays.asList(newRequest(), newRequest())));
     }
 
     @Test

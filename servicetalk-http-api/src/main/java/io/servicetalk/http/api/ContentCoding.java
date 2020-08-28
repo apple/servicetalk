@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
-
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
+package io.servicetalk.http.api;
 
 /**
- * NOOP Message encoding codec
+ * API for HTTP <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.1">Content Codings</a>.
  */
-final class IdentityGrpcMessageCodec implements GrpcMessageCodec {
+public interface ContentCoding {
 
-    @Override
-    public Buffer encode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
-        return src;
-    }
+    /**
+     * A string representation for the content coding.
+     *
+     * @return a string representation for the content coding.
+     */
+    String name();
 
-    @Override
-    public Buffer decode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
-        return src;
-    }
+    /**
+     * The codec that supports encoding/decoding for this type of content coding.
+     *
+     * @return a shared instance of the codec for that content coding
+     */
+    ContentCodec codec();
 }

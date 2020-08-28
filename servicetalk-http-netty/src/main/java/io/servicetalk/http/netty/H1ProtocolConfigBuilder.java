@@ -15,11 +15,16 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import java.util.Set;
+
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,6 +43,7 @@ public final class H1ProtocolConfigBuilder {
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
     private H1SpecExceptions specExceptions = DEFAULT_H1_SPEC_EXCEPTIONS;
+    private Set<ContentCoding> encodings = emptySet();
 
     H1ProtocolConfigBuilder() {
     }
@@ -145,13 +151,27 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the supported {@link ContentCoding}s for the endpoint.
+     * The list will be advertised as part of the Accept-Encoding header
+     *
+     * @param encodings The list of supported {@link ContentCoding}s for this endpoint.
+     * @return {@code this}
+     * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
+     */
+    public H1ProtocolConfigBuilder supportedEncodings(final Set<ContentCoding> encodings) {
+        this.encodings = requireNonNull(encodings);
+        return this;
+    }
+
+    /**
      * Builds {@link H1ProtocolConfig}.
      *
      * @return a new {@link H1ProtocolConfig}
      */
     public H1ProtocolConfig build() {
         return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
-                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions);
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate, specExceptions,
+                encodings);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
@@ -163,11 +183,12 @@ public final class H1ProtocolConfigBuilder {
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
         private final H1SpecExceptions specExceptions;
+        private final Set<ContentCoding> supportedEncodings;
 
         DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate,
-                                final H1SpecExceptions specExceptions) {
+                                final H1SpecExceptions specExceptions, final Set<ContentCoding> supportedEncodings) {
             this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
@@ -175,6 +196,7 @@ public final class H1ProtocolConfigBuilder {
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
             this.specExceptions = specExceptions;
+            this.supportedEncodings = unmodifiableSet(supportedEncodings);
         }
 
         @Override
@@ -210,6 +232,11 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public H1SpecExceptions specExceptions() {
             return specExceptions;
+        }
+
+        @Override
+        public Set<ContentCoding> supportedEncodings() {
+            return supportedEncodings;
         }
     }
 }

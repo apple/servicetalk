@@ -62,10 +62,16 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         this.method = requireNonNull(method);
         this.requestTarget = requireNonNull(requestTarget);
     }
-
+    
     @Override
     public HttpRequestMetaData version(final HttpProtocolVersion version) {
         super.version(version);
+        return this;
+    }
+
+    @Override
+    public HttpMetaData encoding(final ContentCoding encoding) {
+        super.encoding(encoding);
         return this;
     }
 

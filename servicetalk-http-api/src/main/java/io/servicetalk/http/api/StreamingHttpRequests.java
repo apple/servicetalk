@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
@@ -43,8 +45,9 @@ public final class StreamingHttpRequests {
      */
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, null,
+            final HttpHeaders headers, final BufferAllocator allocator,
+            final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, allocator, null,
                 forUserCreated(headers), headersFactory);
     }
 
@@ -58,6 +61,7 @@ public final class StreamingHttpRequests {
      * request.
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param headers the {@link HttpHeaders} of the request.
+     * @param encoding the {@link ContentCoding} of the request.
      * @param allocator the allocator used for serialization purposes if necessary.
      * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
@@ -66,9 +70,9 @@ public final class StreamingHttpRequests {
      */
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
-            final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, payload,
+            final HttpHeaders headers, @Nullable final ContentCoding encoding, final BufferAllocator allocator,
+            final Publisher<Object> payload, final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, encoding, allocator, payload,
                 forTransportReceive(headers), headersFactory);
     }
 }

@@ -183,7 +183,6 @@ public final class ProtoBufSerializationProviderBuilder {
         private final Serializer serializer;
         private final GrpcMessageEncoding grpcMessageEncoding;
         private final Class<T> type;
-
         ProtoHttpSerializer(final Serializer serializer, final GrpcMessageEncoding grpcMessageEncoding,
                             final Class<T> type) {
             this.serializer = serializer;

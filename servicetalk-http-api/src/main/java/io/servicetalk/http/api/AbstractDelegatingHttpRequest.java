@@ -89,6 +89,11 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
+    public ContentCoding encoding() {
+        return original.encoding();
+    }
+
+    @Override
     public String toString() {
         return original.toString();
     }

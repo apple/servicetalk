@@ -29,6 +29,11 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     }
 
     @Override
+    public ContentCoding encoding() {
+        return original.encoding();
+    }
+
+    @Override
     public HttpHeaders headers() {
         return original.headers();
     }

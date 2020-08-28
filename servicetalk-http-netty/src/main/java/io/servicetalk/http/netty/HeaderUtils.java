@@ -31,12 +31,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -148,6 +151,11 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
+    @Nullable
+    private static CharSequence readContentEncoding(final HttpMetaData metaData) {
+        return metaData.headers().get(CONTENT_ENCODING);
+    }
+
     private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
         return HEAD.equals(requestMethod);
     }
@@ -185,7 +193,9 @@ final class HeaderUtils {
                 for (int i = 0; i < items.size(); i++) {
                     contentLength += calculateContentLength(items.get(i));
                 }
-                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
+                flatRequest = Publisher.<Object>from(metadata)
+                        .concat(fromIterable(items))
+                        .concat(succeeded(EmptyHttpHeaders.INSTANCE));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
@@ -217,6 +227,7 @@ final class HeaderUtils {
         if (canAddResponseTransferEncoding(response, requestMethod)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
+
         return response;
     }
 

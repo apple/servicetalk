@@ -161,6 +161,9 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse version(HttpProtocolVersion version);
 
     @Override
+    StreamingHttpResponse encoding(ContentCoding encoding);
+
+    @Override
     default StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {
         HttpResponseMetaData.super.addHeader(name, value);
         return this;

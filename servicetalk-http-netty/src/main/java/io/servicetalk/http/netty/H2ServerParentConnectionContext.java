@@ -149,9 +149,11 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                         parentChannelInitializer.multiplexedObserver.onNewStream();
 
                                 // Netty To ServiceTalk type conversion
+
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
                                         h2ServerConfig.headersFactory(),
+
                                         PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
 
                                 // ServiceTalk <-> Netty netty utilities
@@ -177,6 +179,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service,
                                         executionStrategy, h2ServerConfig.headersFactory(),
+                                        h2ServerConfig.supportedEncodings(),
                                         drainRequestPayloadBody).process(false);
                             }
                     }).init(channel);

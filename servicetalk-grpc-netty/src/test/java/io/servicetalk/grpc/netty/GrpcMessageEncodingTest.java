@@ -20,12 +20,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.grpc.api.GrpcMessageCodec;
 import io.servicetalk.grpc.api.GrpcMessageEncoding;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.grpc.api.MessageCodec;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamMetadata;
@@ -111,8 +111,8 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public GrpcMessageCodec codec() {
-            return new GrpcMessageCodec() {
+        public MessageCodec codec() {
+            return new MessageCodec() {
                 private static final int OUGHT_TO_BE_ENOUGH = 1 << 20;
 
                 @Override
