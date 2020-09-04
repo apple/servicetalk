@@ -146,7 +146,7 @@ public class MultiAddressUrlHttpClientTest {
     sdThatSupportsInvalidHostname() {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
+            public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final HostAndPort hostAndPort) {
                 if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
                     return Publisher.failed(new UnknownHostException(
                             "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));

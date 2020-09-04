@@ -27,19 +27,20 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
-import static java.lang.Math.ceil;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Default implementation for {@link ServiceDiscoveryRetryStrategy}.
@@ -50,25 +51,35 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         E extends ServiceDiscovererEvent<ResolvedAddress>>
         implements ServiceDiscoveryRetryStrategy<ResolvedAddress, E> {
-    private final int retainTillReceivePercentage;
     private final UnaryOperator<E> flipAvailability;
+    private final boolean retainAddressesTillSuccess;
     private final BiIntFunction<Throwable, ? extends Completable> retryStrategy;
 
-    private DefaultServiceDiscoveryRetryStrategy(final int retainTillReceivePercentage,
-                                                 final UnaryOperator<E> flipAvailability,
+    private DefaultServiceDiscoveryRetryStrategy(final UnaryOperator<E> flipAvailability,
+                                                 final boolean retainAddressesTillSuccess,
                                                  final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-        this.retainTillReceivePercentage = retainTillReceivePercentage;
         this.flipAvailability = requireNonNull(flipAvailability);
+        this.retainAddressesTillSuccess = retainAddressesTillSuccess;
         this.retryStrategy = requireNonNull(retryStrategy);
     }
 
     @Override
-    public Publisher<E> apply(final Publisher<E> sdEvents) {
+    public Publisher<List<E>> apply(final Publisher<List<E>> sdEvents) {
         return defer(() -> {
-            EventsCache<ResolvedAddress, E> eventsCache =
-                    new EventsCache<>(retainTillReceivePercentage, flipAvailability);
-            return sdEvents.flatMapConcatIterable(eventsCache::consume)
-                    .beforeOnError(__ -> eventsCache.errorSeen())
+            EventsCache<ResolvedAddress, E> eventsCache = new EventsCache<>(flipAvailability);
+            if (retainAddressesTillSuccess) {
+                return sdEvents.map(eventsCache::consume)
+                        .beforeOnError(__ -> eventsCache.errorSeen())
+                        .retryWhen(retryStrategy);
+            }
+
+            return sdEvents.map(eventsCache::consume)
+                    .recoverWith(cause -> {
+                        final Collection<E> events = eventsCache.errorSeen();
+                        return events == null ? failed(cause) : Publisher.from(events.stream()
+                                .map(flipAvailability).collect(toList()))
+                                .concat(failed(cause));
+                    })
                     .retryWhen(retryStrategy);
         });
     }
@@ -80,10 +91,9 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
      * @param <E> Type of {@link ServiceDiscovererEvent}s published from {@link ServiceDiscoverer#discover(Object)}.
      */
     public static final class Builder<ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> {
-        // There is no reason for the choice of 75%, it is arbitrary and can be configured by users.
-        private int retainTillReceivePercentage = 75;
         private BiIntFunction<Throwable, ? extends Completable> retryStrategy;
         private final UnaryOperator<E> flipAvailability;
+        private boolean retainAddressesTillSuccess = true;
 
         private Builder(final BiIntFunction<Throwable, ? extends Completable> retryStrategy,
                         final UnaryOperator<E> flipAvailability) {
@@ -94,21 +104,14 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         /**
          * A {@link Publisher} returned from {@link ServiceDiscoverer#discover(Object)} may fail transiently leaving the
          * consumer of these events with an option of either disposing the addresses that were provided before the
-         * error or retain them till a retry succeeds. This option enables retention of addresses after an error is
-         * observed till the total number of received addresses after an error is {@code retainTillReceivePercentage}
-         * percent of the addresses that were available before the error was received.
+         * error or retain them till a retry succeeds. This option enables/disables retention of addresses after an
+         * error is observed till a subsequent success is observed.
          *
-         * @param retainTillReceivePercentage A percentage of addresses that were received before an error that should
-         * be received after a success, after which unreceived addresses are removed by sending appropriate
-         * {@link ServiceDiscovererEvent}s. When set to {@code 0}, addresses are not retained.
+         * @param retainAddressesTillSuccess Enables retention of addresses when {@code true}.
          * @return {@code this}.
          */
-        public Builder<ResolvedAddress, E> retainAddressesTillSuccess(final int retainTillReceivePercentage) {
-            if (retainTillReceivePercentage < 0) {
-                throw new IllegalArgumentException("retainTillReceivePercentage: " + retainTillReceivePercentage +
-                        " (expected >= 0)");
-            }
-            this.retainTillReceivePercentage = retainTillReceivePercentage;
+        public Builder<ResolvedAddress, E> retainAddressesTillSuccess(final boolean retainAddressesTillSuccess) {
+            this.retainAddressesTillSuccess = retainAddressesTillSuccess;
             return this;
         }
 
@@ -133,7 +136,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          * @return A new {@link ServiceDiscoveryRetryStrategy}.
          */
         public ServiceDiscoveryRetryStrategy<ResolvedAddress, E> build() {
-            return new DefaultServiceDiscoveryRetryStrategy<>(retainTillReceivePercentage, flipAvailability,
+            return new DefaultServiceDiscoveryRetryStrategy<>(flipAvailability, retainAddressesTillSuccess,
                     retryStrategy);
         }
 
@@ -203,62 +206,58 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         private static final Map NONE_RETAINED = emptyMap();
 
         private Map<R, E> retainedAddresses = noneRetained();
-        private int targetSize;
         private final Map<R, E> activeAddresses = new HashMap<>();
-        private final int retainTillReceivePercentage;
         private final UnaryOperator<E> flipAvailability;
 
-        EventsCache(final int retainTillReceivePercentage, final UnaryOperator<E> flipAvailability) {
-            this.retainTillReceivePercentage = retainTillReceivePercentage;
+        EventsCache(final UnaryOperator<E> flipAvailability) {
             this.flipAvailability = flipAvailability;
         }
 
-        void errorSeen() {
+        @Nullable
+        Collection<E> errorSeen() {
             if (retainedAddresses == NONE_RETAINED) {
                 retainedAddresses = new HashMap<>(activeAddresses);
-            } else {
-                retainedAddresses.putAll(activeAddresses);
             }
-            targetSize = (int) (ceil(retainTillReceivePercentage / 100d * activeAddresses.size()));
             activeAddresses.clear();
+            return retainedAddresses.isEmpty() ? null : retainedAddresses.values();
         }
 
-        Iterable<E> consume(final E event) {
-            final R address = event.address();
+        @Nullable
+        List<E> consume(final List<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
+                for (E e : events) {
+                    if (e.isAvailable()) {
+                        activeAddresses.put(e.address(), e);
+                    } else {
+                        activeAddresses.remove(e.address());
+                    }
+                }
+                return events;
+            }
+
+            // we have seen an error, replace cache with new addresses and deactivate the ones which are not present
+            // in the new list.
+            for (E event : events) {
+                final R address = event.address();
                 if (event.isAvailable()) {
                     activeAddresses.put(address, event);
                 } else {
                     activeAddresses.remove(address);
                 }
-                return singletonList(event);
             }
 
-            // we have seen an error and have not fully drained the retained address list
-            if (event.isAvailable()) {
-                // new address after a retry
-                activeAddresses.put(address, event);
-                final boolean removed = retainedAddresses.remove(address) != null;
-                if (activeAddresses.size() >= targetSize) {
-                    final List<E> allEvents = new ArrayList<>(retainedAddresses.size() + (removed ? 0 : 1));
-                    if (!removed) {
-                        allEvents.add(event);
-                    }
-                    for (E removalEvent : retainedAddresses.values()) {
-                        allEvents.add(flipAvailability.apply(removalEvent));
-                    }
-                    retainedAddresses = noneRetained();
-                    targetSize = 0;
-                    return allEvents;
-                }
-                // If we already had it in retained addresses, then the event can be ignored as the consumer of events
-                // already knows about the address
-                return removed ? emptyList() : singletonList(event);
+            List<E> toReturn = new ArrayList<>(activeAddresses.values());
+            for (R address : activeAddresses.keySet()) {
+                retainedAddresses.remove(address);
             }
-            // removal must be for a previously added address which would have already removed from the retained
-            // address list, so we do not need to touch the retainedAddresses
-            activeAddresses.remove(address);
-            return singletonList(event);
+
+            if (!retainedAddresses.isEmpty()) {
+                for (E evt : retainedAddresses.values()) {
+                    toReturn.add(flipAvailability.apply(evt));
+                }
+            }
+            retainedAddresses = noneRetained();
+            return toReturn.isEmpty() ? null : toReturn;
         }
 
         @SuppressWarnings("unchecked")

@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -47,6 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -157,7 +159,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
          * @return stream of {@link PartitionedServiceDiscovererEvent}s for this partitions with valid addresses
          */
         @Override
-        public Publisher<ServiceDiscovererEvent<R>> discover(final U ignoredAddress) {
+        public Publisher<List<ServiceDiscovererEvent<R>>> discover(final U ignoredAddress) {
             return newGroup.filter(new Predicate<PSDE>() {
                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                 private final Map<R, MutableInt> addressCount = new HashMap<>();
@@ -182,7 +184,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     }
                     return acceptEvent;
                 }
-            }).beforeFinally(partition::closeNow).map(psde -> psde);
+            }).beforeFinally(partition::closeNow).map(psde -> singletonList(psde));
         }
 
         @Override

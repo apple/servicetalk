@@ -56,6 +56,7 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -71,7 +72,9 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.time.Duration.ofSeconds;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided address.
@@ -253,8 +256,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
 
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
-                    ctx.serviceDiscoverer.discover(ctx.address());
+            final Publisher<ServiceDiscovererEvent<R>> sdEvents =
+                    ctx.serviceDiscoverer.discover(ctx.address()).flatMapConcatIterable(identity());
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
@@ -546,19 +549,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ServiceDiscovererEvent<InetSocketAddress>> {
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
+        private final Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> resolution;
         private final OriginalAddress originalAddress;
 
         private NoopServiceDiscoverer(final OriginalAddress originalAddress, final InetSocketAddress address) {
             this.originalAddress = requireNonNull(originalAddress);
-            resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
-                    new DefaultServiceDiscovererEvent<>(requireNonNull(address), true))
+            resolution = Publisher.<List<ServiceDiscovererEvent<InetSocketAddress>>>from(
+                    singletonList(new DefaultServiceDiscovererEvent<>(requireNonNull(address), true)))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
                     .concat(never());
         }
 
         @Override
-        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final OriginalAddress address) {
+        public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final OriginalAddress address) {
             if (!this.originalAddress.equals(address)) {
                 return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
             }
@@ -617,7 +620,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         @Override
-        public Publisher<E> discover(final U u) {
+        public Publisher<List<E>> discover(final U u) {
             return delegate().discover(u)
                     .beforeOnError(status::nextError)
                     .beforeOnNext(__ -> status.resetError());
@@ -636,7 +639,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         @Override
-        public Publisher<E> discover(final U u) {
+        public Publisher<List<E>> discover(final U u) {
             return retryStrategy.apply(delegate().discover(u));
         }
     }

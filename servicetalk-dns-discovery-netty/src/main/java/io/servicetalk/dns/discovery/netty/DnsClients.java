@@ -24,6 +24,10 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Utilities methods and conversion routines for {@link DnsClient}.
@@ -61,7 +65,7 @@ final class DnsClients {
             }
 
             @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final String s) {
+            public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final String s) {
                 return dns.dnsSrvQuery(s);
             }
         };
@@ -95,12 +99,18 @@ final class DnsClients {
             }
 
             @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
-                return dns.dnsQuery(hostAndPort.hostName()).map(originalEvent ->
-                        new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.address(),
-                                hostAndPort.port()), originalEvent.isAvailable())
-                );
+            public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final HostAndPort hostAndPort) {
+                return dns.dnsQuery(hostAndPort.hostName())
+                        .map(events -> mapEventList(events,
+                                inetAddress -> new InetSocketAddress(inetAddress, hostAndPort.port())));
             }
         };
+    }
+
+    static <T, R> List<ServiceDiscovererEvent<R>> mapEventList(final List<ServiceDiscovererEvent<T>> original,
+                                                               final Function<T, R> mapper) {
+        return original.stream()
+                .map(evt -> new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.isAvailable()))
+                .collect(toList());
     }
 }

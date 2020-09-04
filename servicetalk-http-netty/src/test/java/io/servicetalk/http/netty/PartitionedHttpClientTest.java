@@ -50,6 +50,8 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -100,7 +102,7 @@ public class PartitionedHttpClientTest {
         sdPublisher = new TestPublisher.Builder<PartitionedServiceDiscovererEvent<ServerAddress>>()
                 .disableAutoOnSubscribe().build();
         psd = mock(ServiceDiscoverer.class);
-        Publisher<PartitionedServiceDiscovererEvent<InetSocketAddress>> mappedSd =
+        Publisher<List<PartitionedServiceDiscovererEvent<InetSocketAddress>>> mappedSd =
                 sdPublisher.map(psde -> new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
                     @Override
                     public InetSocketAddress address() {
@@ -116,7 +118,7 @@ public class PartitionedHttpClientTest {
                     public PartitionAttributes partitionAddress() {
                         return psde.partitionAddress();
                     }
-                });
+                }).map(Collections::singletonList);
         when(psd.discover("test-cluster")).then(__ -> mappedSd);
     }
 

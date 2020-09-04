@@ -68,6 +68,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
 
@@ -107,7 +108,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             return builder.buildStreaming();
         };
 
-        final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(buildContext.address());
+        final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(buildContext.address())
+                .flatMapConcatIterable(identity());
 
         DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,

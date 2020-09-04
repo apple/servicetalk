@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * A client for the <a href="https://tools.ietf.org/html/rfc1035">DNS</a> protocol.
@@ -32,7 +33,7 @@ interface DnsClient extends ListenableAsyncCloseable {
      * @return A {@link Publisher} which provides notification when resolved addresses for the {@code hostName}
      * change.
      */
-    Publisher<ServiceDiscovererEvent<InetAddress>> dnsQuery(String hostName);
+    Publisher<List<ServiceDiscovererEvent<InetAddress>>> dnsQuery(String hostName);
 
     /**
      * Query for <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to
@@ -42,5 +43,5 @@ interface DnsClient extends ListenableAsyncCloseable {
      * @return A {@link Publisher} which provides notification when resolved addresses for the {@code serviceName}
      * change.
      */
-    Publisher<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(String serviceName);
+    Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(String serviceName);
 }
