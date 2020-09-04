@@ -335,14 +335,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         if (t instanceof AbortedFirstWrite) {
             final Throwable cause = t.getCause();
             if (closeReason != null) {
-                throwable = new RetryableClosureException(closeReason.wrapError(cause, channel()));
+                throwable = new RetryableClosureException(wrapIfReasonIsKnown(cause));
             } else {
                 throwable = cause;
             }
         } else if (t instanceof RetryableClosureException) {
             throwable = t;
-        } else if (t instanceof CloseEventObservedException) {
-            throwable = closeReason == ((CloseEventObservedException) t).event() ? t : wrapIfReasonIsKnown(t);
         } else {
             throwable = wrapIfReasonIsKnown(t);
         }
@@ -351,7 +349,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Throwable wrapIfReasonIsKnown(final Throwable t) {
-        return closeReason != null ? closeReason.wrapError(t, channel()) : t;
+        final CloseEvent closeReason = this.closeReason;
+        if (closeReason == null) {
+            return t;
+        }
+        if (t instanceof CloseEventObservedException && ((CloseEventObservedException) t).event() == closeReason) {
+            return t;
+        }
+        return closeReason.wrapError(t, channel());
     }
 
     private void cleanupOnWriteTerminated() {
