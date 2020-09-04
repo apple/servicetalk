@@ -95,7 +95,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
+            ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(

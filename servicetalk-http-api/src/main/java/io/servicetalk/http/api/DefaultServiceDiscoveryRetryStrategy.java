@@ -63,7 +63,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
     }
 
     @Override
-    public Publisher<? extends E> apply(final Publisher<? extends E> sdEvents) {
+    public Publisher<E> apply(final Publisher<E> sdEvents) {
         return defer(() -> {
             EventsCache<ResolvedAddress, E> eventsCache =
                     new EventsCache<>(retainTillReceivePercentage, flipAvailability);

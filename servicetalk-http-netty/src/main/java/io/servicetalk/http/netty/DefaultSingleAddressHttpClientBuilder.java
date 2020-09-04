@@ -91,10 +91,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
-    private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
-    private ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
+    private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
             address -> new HostHeaderHttpRequesterFilter(hostToCharSequenceFunction.apply(address));
@@ -109,7 +109,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     DefaultSingleAddressHttpClientBuilder(
             final U address, final U proxyAddress, Function<U, CharSequence> hostToCharSequenceFunction,
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this(address, serviceDiscoverer);
         this.proxyAddress = proxyAddress;
         this.hostToCharSequenceFunction = requireNonNull(hostToCharSequenceFunction);
@@ -117,7 +117,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
@@ -127,7 +127,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     DefaultSingleAddressHttpClientBuilder(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
@@ -209,38 +209,27 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
         final StreamingHttpRequestResponseFactory reqRespFactory;
-        final ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
+        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
+        private final SdStatusCompletable sdStatus;
         @Nullable
-        final U proxyAddress;
+        private final U proxyAddress;
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext executionContext,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
-                @Nullable final ServiceDiscoveryRetryStrategy<R, ? super ServiceDiscovererEvent<R>> sdRetryStrategy,
+                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd, final SdStatusCompletable sdStatus,
                 @Nullable final U proxyAddress) {
             this.builder = builder;
             this.executionContext = executionContext;
             this.reqRespFactory = reqRespFactory;
-            this.serviceDiscovererRetryStrategy = sdRetryStrategy == null ?
-                    DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(executionContext.executor(),
-                            ofSeconds(60)).build() : sdRetryStrategy;
+            this.serviceDiscoverer = sd;
+            this.sdStatus = sdStatus;
             this.proxyAddress = proxyAddress;
         }
 
-        Publisher<? extends ServiceDiscovererEvent<R>> discover() {
+        U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
-                    builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address);
-            return serviceDiscovererRetryStrategy.apply(sdEvents);
-        }
-
-        Publisher<? extends ServiceDiscovererEvent<R>> discover(final SdStatusCompletable sdStatus) {
-            assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
-                    builder.serviceDiscoverer.discover(proxyAddress != null ? proxyAddress : builder.address);
-            return serviceDiscovererRetryStrategy.apply(sdEvents.beforeOnError(sdStatus::nextError))
-                    .beforeOnNext(__ -> sdStatus.resetError());
-            // We do not complete sdStatus to let LB decide when to retry if SD completes.
+            return proxyAddress != null ? proxyAddress : builder.address;
         }
 
         StreamingHttpClient build() {
@@ -263,8 +252,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final SdStatusCompletable sdStatus = new SdStatusCompletable();
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover(sdStatus);
+
+            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
+                    ctx.serviceDiscoverer.discover(ctx.address());
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
@@ -318,7 +308,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (ctx.builder.autoRetry != null) {
                 lbClient = new AutoRetryFilter(lbClient,
-                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), sdStatus));
+                        ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
@@ -367,9 +357,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                     clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
         }
-
-        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, serviceDiscovererRetryStrategy,
-                proxyAddress);
+        final SdStatusCompletable sdStatus = new SdStatusCompletable();
+        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
+                new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(serviceDiscoverer, sdStatus),
+                        serviceDiscovererRetryStrategy == null ?
+                                DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(exec.executor(),
+                                        ofSeconds(60)).build()
+                                : serviceDiscovererRetryStrategy);
+        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, sd, sdStatus, proxyAddress);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
@@ -462,7 +457,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }
@@ -609,6 +604,68 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 processor = newCompletableProcessor();
                 seenError = false;
             }
+        }
+    }
+
+    private static final class StatusAwareServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
+            extends DelegatingServiceDiscoverer<U, R, E> {
+        private final SdStatusCompletable status;
+
+        StatusAwareServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate, final SdStatusCompletable status) {
+            super(delegate);
+            this.status = status;
+        }
+
+        @Override
+        public Publisher<E> discover(final U u) {
+            return delegate().discover(u)
+                    .beforeOnError(status::nextError)
+                    .beforeOnNext(__ -> status.resetError());
+            // We do not complete sdStatus to let LB decide when to retry if SD completes.
+        }
+    }
+
+    static final class RetryingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
+            extends DelegatingServiceDiscoverer<U, R, E> {
+        private final ServiceDiscoveryRetryStrategy<R, E> retryStrategy;
+
+        RetryingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate,
+                                  final ServiceDiscoveryRetryStrategy<R, E> retryStrategy) {
+            super(delegate);
+            this.retryStrategy = requireNonNull(retryStrategy);
+        }
+
+        @Override
+        public Publisher<E> discover(final U u) {
+            return retryStrategy.apply(delegate().discover(u));
+        }
+    }
+
+    private abstract static class DelegatingServiceDiscoverer<U, R, E extends ServiceDiscovererEvent<R>>
+            implements ServiceDiscoverer<U, R, E> {
+        private final ServiceDiscoverer<U, R, E> delegate;
+
+        DelegatingServiceDiscoverer(final ServiceDiscoverer<U, R, E> delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        ServiceDiscoverer<U, R, E> delegate() {
+            return delegate;
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
         }
     }
 }

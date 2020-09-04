@@ -81,8 +81,7 @@ public class PartitionedHttpClientTest {
     private static ServerContext srv1;
     private static ServerContext srv2;
     private TestPublisher<PartitionedServiceDiscovererEvent<ServerAddress>> sdPublisher;
-    private ServiceDiscoverer<String, InetSocketAddress,
-            ? extends PartitionedServiceDiscovererEvent<InetSocketAddress>> psd;
+    private ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> psd;
 
     @BeforeClass
     public static void setUpServers() throws Exception {

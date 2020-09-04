@@ -17,6 +17,7 @@ package io.servicetalk.client.api.internal;
 
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
@@ -74,8 +75,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
          * @param psd the partitioned {@link ServiceDiscoverer}
          * @return new client for the given arguments
          */
-        Client apply(PartitionAttributes pa,
-                     ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> psd);
+        Client apply(PartitionAttributes pa, ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> psd);
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedClientGroup.class);
@@ -140,7 +140,8 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     }
 
     private static final class PartitionServiceDiscoverer<U, R, C extends AsyncCloseable,
-            PSDE extends PartitionedServiceDiscovererEvent<R>> implements ServiceDiscoverer<U, R, PSDE> {
+            PSDE extends PartitionedServiceDiscovererEvent<R>>
+            implements ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> {
         private final ListenableAsyncCloseable close;
         private final GroupedPublisher<Partition<C>, PSDE> newGroup;
         private final Partition<C> partition;
@@ -156,7 +157,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
          * @return stream of {@link PartitionedServiceDiscovererEvent}s for this partitions with valid addresses
          */
         @Override
-        public Publisher<PSDE> discover(final U ignoredAddress) {
+        public Publisher<ServiceDiscovererEvent<R>> discover(final U ignoredAddress) {
             return newGroup.filter(new Predicate<PSDE>() {
                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                 private final Map<R, MutableInt> addressCount = new HashMap<>();
@@ -181,7 +182,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     }
                     return acceptEvent;
                 }
-            }).beforeFinally(partition::closeNow);
+            }).beforeFinally(partition::closeNow).map(psde -> psde);
         }
 
         @Override
@@ -200,7 +201,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     }
 
     private static final class Partition<C extends AsyncCloseable> implements AsyncCloseable {
-
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<Partition, Object> clientUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Partition.class, Object.class, "client");
 
