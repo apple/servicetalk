@@ -43,7 +43,10 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.TooLongFrameException;
@@ -211,6 +214,19 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract T createMessage(ByteBuf buffer, int firstStart, int firstLength,
                                        int secondStart, int secondLength,
                                        int thirdStart, int thirdLength);
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (isDecodingRequest()) {
+            final Channel channel = ctx.channel();
+            closeHandler.registerDiscardInboundRunnable(channel, () -> {
+                resetNow();
+                releaseCumulation();
+                channel.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
+                        DiscardInboundHandler.INSTANCE);
+            });
+        }
+    }
 
     @Override
     protected final void decode(final ChannelHandlerContext ctx, final ByteBuf buffer) {
@@ -843,5 +859,20 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static boolean isObsText(final byte value) {
         return value >= (byte) 0xA0 && value <= (byte) 0xFF; // xA0-xFF
+    }
+
+    @Sharable
+    private static final class DiscardInboundHandler extends SimpleChannelInboundHandler<Object> {
+
+        static final ChannelInboundHandler INSTANCE = new DiscardInboundHandler();
+
+        private DiscardInboundHandler() {
+            // Singleton
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
+            // noop
+        }
     }
 }

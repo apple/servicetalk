@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -25,12 +26,14 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -48,8 +51,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
@@ -60,15 +65,16 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
 
 @RunWith(Enclosed.class)
@@ -76,19 +82,25 @@ public class ConnectionCloseHeaderHandlingTest {
 
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
-    private abstract static class ConnectionSetup {
+    public abstract static class ConnectionSetup {
+
+        @ClassRule
+        public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
+        @ClassRule
+        public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
 
         @Rule
         public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
         @Nullable
         private final ProxyTunnel proxyTunnel;
-        private final IoExecutor serverIoExecutor;
         private final ServerContext serverContext;
         private final StreamingHttpClient client;
         protected final ReservedStreamingHttpConnection connection;
 
-        protected final CountDownLatch connectionClosed = new CountDownLatch(1);
+        private final CountDownLatch clientConnectionClosed = new CountDownLatch(1);
+        private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
+
         protected final CountDownLatch sendResponse = new CountDownLatch(1);
         protected final CountDownLatch responseReceived = new CountDownLatch(1);
         protected final CountDownLatch requestReceived = new CountDownLatch(1);
@@ -96,9 +108,16 @@ public class ConnectionCloseHeaderHandlingTest {
         protected final AtomicInteger requestPayloadSize = new AtomicInteger();
 
         protected ConnectionSetup(boolean viaProxy, boolean awaitRequestPayload) throws Exception {
-            serverIoExecutor = createIoExecutor(new IoThreadFactory("server-io-executor"));
             HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                    .ioExecutor(serverIoExecutor);
+                    .ioExecutor(SERVER_CTX.ioExecutor())
+                    .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                    .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
+                        @Override
+                        public Completable accept(final ConnectionContext context) {
+                            context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
+                            return completed();
+                        }
+                    });
 
             HostAndPort proxyAddress = null;
             if (viaProxy) {
@@ -115,8 +134,13 @@ public class ConnectionCloseHeaderHandlingTest {
                         requestReceived.countDown();
                         boolean noResponseContent = request.hasQueryParameter("noResponseContent", "true");
                         String content = noResponseContent ? "" : "server_content";
-                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO : valueOf(content.length()))
-                                .addHeader(CONNECTION, CLOSE);
+                        response.addHeader(CONTENT_LENGTH, noResponseContent ? ZERO : valueOf(content.length()));
+
+                        // Add the "connection: close" header only when request doesn't have one.
+                        // Otherwise, server should add it automatically.
+                        if (!request.headers().contains(CONNECTION, CLOSE)) {
+                            response.addHeader(CONNECTION, CLOSE);
+                        }
 
                         sendResponse.await();
                         try (HttpPayloadWriter<String> writer = response.sendMetaData(textSerializer())) {
@@ -148,15 +172,17 @@ public class ConnectionCloseHeaderHandlingTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                     .commit() :
                     HttpClients.forSingleAddress(serverAddress))
+                    .ioExecutor(CLIENT_CTX.ioExecutor())
+                    .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                     .buildStreaming();
             connection = client.reserveConnection(client.get("/")).toFuture().get();
-            connection.onClose().whenFinally(connectionClosed::countDown).subscribe();
+            connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
         }
 
         @After
         public void tearDown() throws Exception {
             try {
-                newCompositeCloseable().appendAll(connection, client, serverContext, serverIoExecutor).close();
+                newCompositeCloseable().appendAll(connection, client, serverContext).close();
             } finally {
                 if (proxyTunnel != null) {
                     safeClose(proxyTunnel);
@@ -176,12 +202,16 @@ public class ConnectionCloseHeaderHandlingTest {
         }
 
         protected static void assertResponsePayloadBody(StreamingHttpResponse response) throws Exception {
+            CharSequence contentLengthHeader = response.headers().get(CONTENT_LENGTH);
+            assertThat(contentLengthHeader, is(notNullValue()));
             int actualContentLength = response.payloadBody().map(Buffer::readableBytes)
-                    .collect(AtomicInteger::new, (total, current) -> {
-                        total.addAndGet(current);
-                        return total;
-                    }).toFuture().get().get();
-            assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(actualContentLength)));
+                    .collect(() -> 0, Integer::sum).toFuture().get();
+            assertThat(valueOf(actualContentLength), contentEqualTo(contentLengthHeader));
+        }
+
+        protected void awaitConnectionClosed() throws Exception {
+            clientConnectionClosed.await();
+            serverConnectionClosed.await();
         }
     }
 
@@ -251,7 +281,7 @@ public class ConnectionCloseHeaderHandlingTest {
             requestPayloadReceived.await();
             assertThat(request.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(requestPayloadSize.get())));
 
-            connectionClosed.await();
+            awaitConnectionClosed();
             assertClosedChannelException("/second");
         }
     }
@@ -297,7 +327,7 @@ public class ConnectionCloseHeaderHandlingTest {
             assertResponse(response);
             assertResponsePayloadBody(response);
 
-            connectionClosed.await();
+            awaitConnectionClosed();
             secondResponseReceived.await();
             assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
             assertClosedChannelException("/third");
@@ -329,7 +359,7 @@ public class ConnectionCloseHeaderHandlingTest {
             assertResponse(response);
             assertResponsePayloadBody(response);
 
-            connectionClosed.await();
+            awaitConnectionClosed();
             secondResponseReceived.await();
             assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
             assertClosedChannelException("/third");
@@ -347,7 +377,7 @@ public class ConnectionCloseHeaderHandlingTest {
 
             responseReceived.countDown();
             assertResponsePayloadBody(response);
-            connectionClosed.await();
+            awaitConnectionClosed();
         }
 
         @Test
@@ -369,7 +399,7 @@ public class ConnectionCloseHeaderHandlingTest {
             StreamingHttpResponse response = firstResponse.get();
             assertResponse(response);
             assertResponsePayloadBody(response);
-            connectionClosed.await();
+            awaitConnectionClosed();
         }
     }
 }

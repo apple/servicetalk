@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,16 @@ public abstract class CloseHandler {
     public abstract void protocolClosingOutbound(ChannelHandlerContext ctx);
 
     /**
+     * Registers a {@link Runnable} that discards all further inbound data.
+     *
+     * @param channel the {@link Channel} for which this {@link Runnable} is registering
+     * @param discardInbound the {@link Runnable} to discard all further inbound data
+     */
+    public abstract void registerDiscardInboundRunnable(Channel channel, Runnable discardInbound);
+
+    /**
+     * Registers a handler for {@link CloseEvent}.
+     *
      * @param channel the {@link Channel} for which this event handler is registering
      * @param eventHandler receives {@link CloseEvent}, to be emitted from the {@link EventLoop} for the {@link Channel}
      */
@@ -281,6 +291,10 @@ public abstract class CloseHandler {
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
         }
+
+        @Override
+        public void registerDiscardInboundRunnable(final Channel channel, final Runnable discardInbound) {
+        }
     }
 
     private static final class ProtocolOutboundCloseEventHandler extends CloseHandler {
@@ -339,6 +353,10 @@ public abstract class CloseHandler {
 
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void registerDiscardInboundRunnable(final Channel channel, final Runnable discardInbound) {
         }
     }
 

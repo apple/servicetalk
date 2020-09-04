@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,12 +86,13 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoE
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.FC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IC;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.ID;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IE;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IH;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IS;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OE;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OH;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OS;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.SR;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.UC;
@@ -153,6 +154,7 @@ public class RequestResponseCloseHandlerTest {
         private AtomicBoolean inputShutdown = new AtomicBoolean();
         private AtomicBoolean outputShutdown = new AtomicBoolean();
         private SocketChannelConfig scc;
+        private Runnable discardingInput;
 
         public Scenarios(final Mode mode, final List<Events> events, final ExpectEvent expectEvent,
                          final String desc, final String location) {
@@ -175,6 +177,7 @@ public class RequestResponseCloseHandlerTest {
             SR,         // validate Socket TCP RST -> SO_LINGER=0
             UC,         // emit User Closing
             IH, OH, FC, // validate Input/Output Half-close, Full-Close
+            ID,         // validate Input discarding
         }
 
         protected enum ExpectEvent {
@@ -243,22 +246,31 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, OB, OE, IE, IB, OS, SR, FC), CCO, "new req abort, complete resp, outbound closed"},
                     {S, e(IB, IE, OB, OE), NIL, "sequential, no close"},
                     {S, e(IB, IE, OB, IB, IE, OE, OB, OE), NIL, "pipelined, no close"},
-                    {S, e(IB, IE, IB, OB, OC, IH, OE, FC), PCO, "pipelined, closing outbound"},
-                    {S, e(IB, IE, IB, IE, OB, OC, IH, OE, FC), PCO, "pipelined, closing outbound, drop pending!"},
-                    {S, e(IB, IE, OB, OC, IH, OE, FC), PCO, "sequential, closing outbound"},
-                    {S, e(IB, OB, IE, IB, IC, OE, OB, IE, IH, OE, FC), PCI, "pipelined, closing inbound, drain"},
-                    {S, e(IB, IE, OB, IB, IC, IE, IH, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
-                    {S, e(IB, IE, OB, IB, IE, UC, IH, OE, OB, OE, FC), UCO, "pipelined, user closing, drain"},
+                    {S, e(IB, IE, IB, OB, OC, ID, OE, OH, FC), PCO, "pipelined, closing outbound"},
+                    {S, e(IB, IE, IB, IE, OB, OC, ID, OE, OH, FC), PCO, "pipelined, closing outbound, drop pending!"},
+                    {S, e(IB, IE, OB, OC, ID, OE, OH, FC), PCO, "sequential, closing outbound"},
+                    {S, e(IB, OB, OC, IE, ID, OE, OH, FC), PCO, "interleaved, closing outbound"},
+                    {S, e(IB, OB, OC, OE, IE, ID, OH, FC), PCO, "interleaved full dup, closing outbound"},
+                    {S, e(IB, OB, IE, IB, IC, OE, OB, IE, ID, OE, FC), PCI, "pipelined, closing inbound, drain"},
+                    {S, e(IB, IE, OB, IB, IC, IE, ID, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
+                    {S, e(IB, IE, OB, IB, IE, UC, ID, OE, OB, OE, OH, FC), UCO, "pipelined, user closing, drain"},
                     {S, e(IB, IC, OB, OE, IE, FC), PCI, "pipelined full dup, closing inbound"},
-                    {S, e(IB, OB, IE, IB, IC, IE, IH, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
+                    {S, e(IB, OB, IE, IB, IC, IE, ID, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
                     {S, e(IB, OB, IC, OE, IE, FC), PCI, "pipelined, full dup, closing inbound"},
-                    {S, e(IB, IC, IE, IH, OB, OE, FC), PCI, "sequential, closing inbound"},
-                    {S, e(IB, UC, IE, IH, OB, OE, FC), UCO, "sequential, user close"},
-                    {S, e(IB, OB, UC, IE, IH, OE, FC), UCO, "interleaved, user close"},
-                    {S, e(IB, IE, OB, OE, UC, FC), UCO, "sequential, idle, user close"},
-                    {S, e(IB, OB, IE, OE, UC, FC), UCO, "interleaved, idle, user close"},
-                    {S, e(IB, OB, OE, IE, UC, FC), UCO, "interleaved full dup, idle, user close"},
-                    {S, e(IB, OB, UC, OE, IE, FC), UCO, "interleaved full dup, user close"},
+                    {S, e(IB, IC, IE, ID, OB, OE, FC), PCI, "sequential, closing inbound"},
+                    {S, e(UC, ID, OH, FC), UCO, "recently open connection, idle, user close"},
+                    {S, e(IB, UC, IE, ID, OB, OE, OH, FC), UCO, "sequential, during req, user close"},
+                    {S, e(IB, IE, UC, ID, OB, OE, OH, FC), UCO, "sequential, user close"},
+                    {S, e(IB, IE, OB, UC, ID, OE, OH, FC), UCO, "sequential, during resp, user close"},
+                    {S, e(IB, IE, OB, OE, UC, ID, OH, FC), UCO, "sequential, idle, user close"},
+                    {S, e(IB, UC, OB, IE, ID, OE, OH, FC), UCO, "interleaved, before resp, user close"},
+                    {S, e(IB, OB, UC, IE, ID, OE, OH, FC), UCO, "interleaved, user close"},
+                    {S, e(IB, OB, IE, UC, ID, OE, OH, FC), UCO, "interleaved, after req, user close"},
+                    {S, e(IB, OB, IE, OE, UC, ID, OH, FC), UCO, "interleaved, idle, user close"},
+                    {S, e(IB, UC, OB, OE, IE, ID, OH, FC), UCO, "interleaved full dup, before resp, user close"},
+                    {S, e(IB, OB, UC, OE, IE, ID, OH, FC), UCO, "interleaved full dup, user close"},
+                    {S, e(IB, OB, OE, UC, IE, ID, OH, FC), UCO, "interleaved full dup, after resp, user close"},
+                    {S, e(IB, OB, OE, IE, UC, ID, OH, FC), UCO, "interleaved full dup, idle, user close"},
                     {S, e(IB, OB, IS, SR, OE, FC), CCI, "inbound closed while reading no pipeline"},
                     {S, e(IB, IS, SR, OB, OE, FC), CCI, "inbound closed while reading delay close until response"},
                     {S, e(IB, IE, IB, IS, SR, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, 2 pending"},
@@ -318,13 +330,18 @@ public class RequestResponseCloseHandlerTest {
             when(channel.shutdownInput()).then(__ -> {
                 inputShutdown.set(true);
                 LOGGER.debug("channel.shutdownInput()");
-                h.channelClosedInbound(ctx); // OutputShutDownEvent observed from transport
+                h.channelClosedInbound(ctx); // ChannelInputShutdownReadComplete observed from transport
                 return future;
             });
             when(channel.shutdownOutput()).then(__ -> {
                 outputShutdown.set(true);
                 LOGGER.debug("channel.shutdownOutput()");
-                h.channelClosedOutbound(ctx); // InputShutDownReadComplete observed from transport
+                h.channelClosedOutbound(ctx); // ChannelOutputShutdownEvent observed from transport
+                if (!inputShutdown.get()) {
+                    inputShutdown.set(true);
+                    LOGGER.debug("Remote peer closes inbound side in response to the shutdownOutput()");
+                    h.channelClosedInbound(ctx); // ChannelInputShutdownReadComplete observed from transport
+                }
                 return future;
             });
             when(channel.close()).then(__ -> {
@@ -347,6 +364,8 @@ public class RequestResponseCloseHandlerTest {
                     observedEvent = e;
                 }
             });
+            discardingInput = mock(Runnable.class);
+            h.registerDiscardInboundRunnable(channel, discardingInput);
         }
 
         private void assertCanRead() {
@@ -361,7 +380,7 @@ public class RequestResponseCloseHandlerTest {
         public void simulate() {
             LOGGER.debug("Test.Params: ({})", location); // Intellij jump to parameter format, don't change!
             LOGGER.debug("[{}] {} - {} = {}", desc, mode, events, expectEvent);
-            InOrder order = inOrder(h, channel, scc);
+            InOrder order = inOrder(h, channel, scc, discardingInput);
             verify(h).registerEventHandler(eq(channel), any());
             for (Events event : events) {
                 LOGGER.debug("{}", event);
@@ -420,6 +439,9 @@ public class RequestResponseCloseHandlerTest {
                     case FC:
                         order.verify(channel).close();
                         break;
+                    case ID:
+                        order.verify(discardingInput).run();
+                        break;
                     default:
                         throw new IllegalArgumentException("Unknown: " + event);
                 }
@@ -464,6 +486,9 @@ public class RequestResponseCloseHandlerTest {
                             break;
                         case OH:
                             verify(channel, never()).shutdownOutput();
+                            break;
+                        case ID:
+                            verify(discardingInput, never()).run();
                             break;
                         default:
                             throw new IllegalArgumentException("Unknown: " + c);
