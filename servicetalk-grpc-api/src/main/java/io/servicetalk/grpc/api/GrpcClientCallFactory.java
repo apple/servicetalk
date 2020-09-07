@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpClient;
 
+import java.util.Set;
+
 /**
  * A factory to create <a href="https://www.grpc.io">gRPC</a> client call objects for different
  * programming models.
@@ -31,6 +33,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * Creates a new {@link ClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -38,12 +41,14 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link ClientCall}.
      */
     <Req, Resp> ClientCall<Req, Resp>
-    newCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+    newCall(GrpcSerializationProvider serializationProvider, Set<GrpcMessageEncoding> supportedEncodings,
+            Class<Req> requestClass, Class<Resp> responseClass);
 
     /**
      * Creates a new {@link StreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -51,13 +56,14 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link StreamingClientCall}.
      */
     <Req, Resp> StreamingClientCall<Req, Resp>
-    newStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                     Class<Resp> responseClass);
+    newStreamingCall(GrpcSerializationProvider serializationProvider, Set<GrpcMessageEncoding> supportedEncodings,
+                     Class<Req> requestClass, Class<Resp> responseClass);
 
     /**
      * Creates a new {@link RequestStreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -65,13 +71,15 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link RequestStreamingClientCall}.
      */
     <Req, Resp> RequestStreamingClientCall<Req, Resp>
-    newRequestStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
+    newRequestStreamingCall(GrpcSerializationProvider serializationProvider,
+                            Set<GrpcMessageEncoding> supportedEncodings, Class<Req> requestClass,
                             Class<Resp> responseClass);
 
     /**
      * Creates a new {@link ResponseStreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -79,13 +87,15 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link ResponseStreamingClientCall}.
      */
     <Req, Resp> ResponseStreamingClientCall<Req, Resp>
-    newResponseStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
+    newResponseStreamingCall(GrpcSerializationProvider serializationProvider,
+                             Set<GrpcMessageEncoding> supportedEncodings, Class<Req> requestClass,
                              Class<Resp> responseClass);
 
     /**
      * Creates a new {@link BlockingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -93,13 +103,14 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link BlockingClientCall}.
      */
     <Req, Resp> BlockingClientCall<Req, Resp>
-    newBlockingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                    Class<Resp> responseClass);
+    newBlockingCall(GrpcSerializationProvider serializationProvider, Set<GrpcMessageEncoding> supportedEncodings,
+                    Class<Req> requestClass, Class<Resp> responseClass);
 
     /**
      * Creates a new {@link BlockingStreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -107,13 +118,15 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link BlockingStreamingClientCall}.
      */
     <Req, Resp> BlockingStreamingClientCall<Req, Resp>
-    newBlockingStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
+    newBlockingStreamingCall(GrpcSerializationProvider serializationProvider,
+                             Set<GrpcMessageEncoding> supportedEncodings, Class<Req> requestClass,
                              Class<Resp> responseClass);
 
     /**
      * Creates a new {@link BlockingRequestStreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -121,13 +134,15 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link BlockingRequestStreamingClientCall}.
      */
     <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
-    newBlockingRequestStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
+    newBlockingRequestStreamingCall(GrpcSerializationProvider serializationProvider,
+                                    Set<GrpcMessageEncoding> supportedEncodings, Class<Req> requestClass,
                                     Class<Resp> responseClass);
 
     /**
      * Creates a new {@link BlockingResponseStreamingClientCall}.
      *
      * @param serializationProvider {@link GrpcSerializationProvider} to use.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported for this client.
      * @param requestClass {@link Class} object for the request.
      * @param responseClass {@link Class} object for the response.
      * @param <Req> Type of request.
@@ -135,7 +150,8 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link BlockingResponseStreamingClientCall}.
      */
     <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
-    newBlockingResponseStreamingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
+    newBlockingResponseStreamingCall(GrpcSerializationProvider serializationProvider,
+                                     Set<GrpcMessageEncoding> supportedEncodings, Class<Req> requestClass,
                                      Class<Resp> responseClass);
 
     /**

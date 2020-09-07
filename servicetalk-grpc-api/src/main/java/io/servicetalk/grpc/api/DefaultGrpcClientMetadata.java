@@ -17,8 +17,7 @@ package io.servicetalk.grpc.api;
 
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
-
+import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
  */
@@ -27,14 +26,19 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Nullable
     private final GrpcExecutionStrategy strategy;
 
+    private final GrpcMessageEncoding requestEncoding;
+
     /**
      * Creates a new instance.
      *
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
     protected DefaultGrpcClientMetadata(final String path) {
-        super(path);
-        strategy = null;
+        this(path, (GrpcExecutionStrategy) null);
+    }
+
+    protected DefaultGrpcClientMetadata(final String path, final GrpcMessageEncoding requestEncoding) {
+        this(path, null, requestEncoding);
     }
 
     /**
@@ -45,13 +49,25 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      * method.
      */
     protected DefaultGrpcClientMetadata(final String path,
-                                        final GrpcExecutionStrategy strategy) {
+                                        @Nullable final GrpcExecutionStrategy strategy) {
+        this(path, strategy, NONE);
+    }
+
+    protected DefaultGrpcClientMetadata(final String path,
+                                        @Nullable final GrpcExecutionStrategy strategy,
+                                        final GrpcMessageEncoding requestEncoding) {
         super(path);
-        this.strategy = requireNonNull(strategy);
+        this.strategy = strategy;
+        this.requestEncoding = requestEncoding;
     }
 
     @Override
     public final GrpcExecutionStrategy strategy() {
         return strategy;
+    }
+
+    @Override
+    public GrpcMessageEncoding requestEncoding() {
+        return requestEncoding;
     }
 }

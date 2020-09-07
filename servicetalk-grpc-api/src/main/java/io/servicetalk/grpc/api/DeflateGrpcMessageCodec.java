@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,20 @@
  */
 package io.servicetalk.grpc.api;
 
-import javax.annotation.Nullable;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
-/**
- * Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.
- */
-public interface GrpcClientMetadata extends GrpcMetadata {
+public class DeflateGrpcMessageCodec extends ZipGrpcMessageCodec {
 
-    /**
-     * {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     *
-     * @return {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     */
-    @Nullable
-    GrpcExecutionStrategy strategy();
+    @Override
+    DeflaterOutputStream newCodecOutputStream(final OutputStream out) {
+        return new DeflaterOutputStream(out);
+    }
 
-    GrpcMessageEncoding requestEncoding();
+    @Override
+    InflaterInputStream newCodecInputStream(final InputStream in) {
+        return new InflaterInputStream(in);
+    }
 }

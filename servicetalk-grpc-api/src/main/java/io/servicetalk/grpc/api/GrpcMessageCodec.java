@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,20 @@
  */
 package io.servicetalk.grpc.api;
 
-import javax.annotation.Nullable;
+import io.servicetalk.buffer.api.BufferAllocator;
+
+import java.nio.ByteBuffer;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.
+ * Codec used to encode and decode gRPC messages.
+ * This instance is shared across all requests/responses therefore it must provide thread safety semantics.
  */
-public interface GrpcClientMetadata extends GrpcMetadata {
 
-    /**
-     * {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     *
-     * @return {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     */
-    @Nullable
-    GrpcExecutionStrategy strategy();
+@ThreadSafe
+public interface GrpcMessageCodec {
 
-    GrpcMessageEncoding requestEncoding();
+    ByteBuffer encode(ByteBuffer src, BufferAllocator allocator);
+
+    ByteBuffer decode(ByteBuffer src, BufferAllocator allocator);
 }

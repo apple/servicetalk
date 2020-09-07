@@ -15,8 +15,12 @@
  */
 package io.servicetalk.grpc.api;
 
+import java.util.Set;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static java.util.Collections.singleton;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,6 +43,8 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     @Nullable
     private FilterFactory filterFactory;
 
+    protected Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(NONE));
+
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>
      * {@link Client} contract using the passed {@link GrpcClientCallFactory}.
@@ -50,9 +56,9 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
         if (filterFactory == null) {
-            return newClient(clientCallFactory);
+            return newClient(clientCallFactory, supportedEncodings);
         }
-        return newClient(newFilter(newClient(clientCallFactory), filterFactory));
+        return newClient(newFilter(newClient(clientCallFactory, supportedEncodings), filterFactory));
     }
 
     /**
@@ -66,9 +72,11 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
         if (filterFactory == null) {
-            return newBlockingClient(clientCallFactory);
+            return newBlockingClient(clientCallFactory, supportedEncodings);
         }
-        return newClient(newFilter(newBlockingClient(clientCallFactory).asClient(), filterFactory)).asBlockingClient();
+        return newClient(newFilter(
+                newBlockingClient(clientCallFactory, supportedEncodings).asClient(), filterFactory))
+                .asBlockingClient();
     }
 
     /**
@@ -98,6 +106,19 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     }
 
     /**
+     * Sets the supported message encodings for this client.
+     * By default only {@link GrpcMessageEncodingRegistry#NONE} is supported
+     *
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
+     * @return {@code this}
+     */
+    public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
+    supportedEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
+        this.supportedEncodings = unmodifiableSet(requireNonNull(supportedEncodings));
+        return this;
+    }
+
+    /**
      * Appends the passed {@link FilterFactory} to this client factory.
      *
      * @param existing Existing {@link FilterFactory}.
@@ -112,11 +133,13 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link Client} contract using the passed {@link GrpcClientCallFactory}.
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * The returned {@link Client} should own the lifecycle of this factory.
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
-    protected abstract Client newClient(GrpcClientCallFactory clientCallFactory);
+    protected abstract Client newClient(GrpcClientCallFactory clientCallFactory,
+                                        Set<GrpcMessageEncoding> supportedEncodings);
 
     /**
      * Create a new {@link Filter} using the passed {@link Client} and {@link FilterFactory}.
@@ -141,9 +164,11 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link BlockingClient} contract using the passed {@link GrpcClientCallFactory}.
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
+     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * The returned {@link Client} should own the lifecycle of this factory.
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.
      */
-    protected abstract BlockingClient newBlockingClient(GrpcClientCallFactory clientCallFactory);
+    protected abstract BlockingClient newBlockingClient(GrpcClientCallFactory clientCallFactory,
+                                                        Set<GrpcMessageEncoding> supportedEncodings);
 }

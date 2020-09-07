@@ -22,9 +22,11 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements GrpcServiceContext {
@@ -32,12 +34,15 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     private final ConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
     private final GrpcProtocol protocol;
+    final Set<GrpcMessageEncoding> supportedEncodings;
 
-    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
+    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
+                              final Set<GrpcMessageEncoding> supportedEncodings) {
         super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
+        this.supportedEncodings = unmodifiableSet(requireNonNull(supportedEncodings));
     }
 
     @Override
@@ -59,6 +64,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     @Override
     public GrpcExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Override
+    public Set<GrpcMessageEncoding> supportedEncodings() {
+        return supportedEncodings;
     }
 
     @Nullable

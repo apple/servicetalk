@@ -18,12 +18,21 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 
+import java.util.Set;
+
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static java.util.Collections.singleton;
 
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service.
  */
 public interface GrpcService extends AsyncCloseable {
+
+    default Set<GrpcMessageEncoding> supportedEncodings() {
+        return singleton(NONE);
+    }
+
     @Override
     default Completable closeAsync() {
         return completed();

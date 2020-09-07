@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
+import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
 import static io.servicetalk.grpc.protobuf.test.TestProtos.DummyMessage;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
@@ -40,7 +40,7 @@ public class ProtoDeserializerTest {
 
     private final Parser<DummyMessage> parser = DummyMessage.parser();
     private final ProtoBufSerializationProvider<DummyMessage> serializationProvider =
-            new ProtoBufSerializationProvider<>(DummyMessage.class, None, parser);
+            new ProtoBufSerializationProvider<>(DummyMessage.class, NONE, parser);
 
     @Test
     public void zeroLengthMessageAligned() throws IOException {

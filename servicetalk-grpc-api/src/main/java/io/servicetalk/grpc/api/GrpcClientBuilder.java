@@ -182,6 +182,7 @@ public abstract class GrpcClientBuilder<U, R>
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
      */
     public final MultiClientBuilder buildMulti() {
+
         GrpcClientCallFactory callFactory = newGrpcClientCallFactory();
         return new MultiClientBuilder() {
             @Override
@@ -189,7 +190,7 @@ public abstract class GrpcClientBuilder<U, R>
                     Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
                     FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
             build(final GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory) {
-                return clientFactory.newClient(callFactory);
+                return clientFactory.newClient(callFactory, clientFactory.supportedEncodings);
             }
 
             @Override
@@ -198,7 +199,7 @@ public abstract class GrpcClientBuilder<U, R>
                     FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
             buildBlocking(
                     final GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory) {
-                return clientFactory.newBlockingClient(callFactory);
+                return clientFactory.newBlockingClient(callFactory, clientFactory.supportedEncodings);
             }
         };
     }

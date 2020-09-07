@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  */
 package io.servicetalk.grpc.api;
 
-import javax.annotation.Nullable;
+public class MessageEncodingException extends RuntimeException {
 
-/**
- * Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.
- */
-public interface GrpcClientMetadata extends GrpcMetadata {
+    private final String encoding;
 
-    /**
-     * {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     *
-     * @return {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     */
-    @Nullable
-    GrpcExecutionStrategy strategy();
+    public MessageEncodingException(String encoding) {
+        super("Compression " + encoding + " not supported");
+        this.encoding = encoding;
+    }
 
-    GrpcMessageEncoding requestEncoding();
+    public MessageEncodingException(String encoding, Throwable cause) {
+        super("Compression " + encoding + " not supported", cause);
+        this.encoding = encoding;
+    }
+
+    public String encoding() {
+        return encoding;
+    }
 }

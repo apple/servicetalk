@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -79,7 +80,7 @@ public class GrpcClientRequiresTrailersTest {
                     .version(request.version())
                     .setHeader(CONTENT_TYPE, "application/grpc")
                     .payloadBody(from(TestResponse.newBuilder().setMessage("response").build()),
-                            SERIALIZATION_PROVIDER.serializerFor(null, TestResponse.class));
+                            SERIALIZATION_PROVIDER.serializerFor(NONE, TestResponse.class));
 
             if (hasTrailers) {
                 response.transform(new StatelessTrailersTransformer<Buffer>() {
