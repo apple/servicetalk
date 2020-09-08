@@ -38,12 +38,14 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.DISCARDING_SERVER_INPUT;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_OUT_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.OUT_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.READ;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.WRITE;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.has;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.hasAny;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.idle;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.set;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.unset;
@@ -89,7 +91,8 @@ class RequestResponseCloseHandler extends CloseHandler {
         byte IN_CLOSED = 0x08;
         byte OUT_CLOSED = 0x10;
         byte CLOSED = 0x20;
-        byte CLOSING_SERVER_GRACEFULLY = 0x40;
+        byte DISCARDING_SERVER_INPUT = 0x40;
+        byte CLOSING_SERVER_GRACEFULLY = (byte) 0x80;
 
         byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
         byte IN_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
@@ -101,6 +104,10 @@ class RequestResponseCloseHandler extends CloseHandler {
 
         static boolean has(byte state, byte mask) {
             return (state & mask) == mask;
+        }
+
+        static boolean hasAny(byte state, byte flag1, byte flag2) {
+            return (state & (flag1 | flag2)) > 0;
         }
 
         static byte set(byte state, byte flags) {
@@ -274,7 +281,7 @@ class RequestResponseCloseHandler extends CloseHandler {
                                                      final boolean endInbound) {
 
         if (idle(pending, state)) {
-            if (isClient || (event != USER_CLOSING && event != PROTOCOL_CLOSING_OUTBOUND)) {
+            if (isClient || has(state, IN_CLOSED) || (event != USER_CLOSING && event != PROTOCOL_CLOSING_OUTBOUND)) {
                 closeChannel(channel, evt);
             } else {
                 serverCloseGracefully(channel);
@@ -416,14 +423,14 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     private void serverHalfCloseInbound(final Channel channel) {
         assert !isClient;
-        if (!has(state, IN_CLOSED)) {
+        if (!hasAny(state, DISCARDING_SERVER_INPUT, IN_CLOSED)) {
             // Instead of actual half-closure DuplexChannel.shutdownInput() we discard all further inbound data, but
             // keep reading to receive FIN from the remote peer.
             LOGGER.debug("{} Discarding further INBOUND", channel);
             state = unset(state, READ);
             discardInbound.run();
             channel.config().setAutoRead(true);
-            state = set(state, IN_CLOSED);
+            state = set(state, DISCARDING_SERVER_INPUT);
         }
     }
 

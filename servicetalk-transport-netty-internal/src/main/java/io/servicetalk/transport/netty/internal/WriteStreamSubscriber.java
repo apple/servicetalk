@@ -463,7 +463,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            notifyAllListeners(cause);
             if (cause == null) {
                 try {
                     observer.writeComplete();
@@ -487,6 +486,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     ChannelCloseUtils.close(channel, cause);
                 }
             }
+            // Notify listeners after the subscriber is terminated. Otherwise, WriteStreamSubscriber#channelClosed may
+            // be invoked that leads to the Subscription cancellation.
+            notifyAllListeners(cause);
         }
 
         private void notifyAllListeners(@Nullable Throwable cause) {
