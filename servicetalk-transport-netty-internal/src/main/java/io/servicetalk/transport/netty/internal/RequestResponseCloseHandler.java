@@ -107,7 +107,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         }
 
         static boolean hasAny(byte state, byte flag1, byte flag2) {
-            return (state & (flag1 | flag2)) > 0;
+            return (state & (flag1 | flag2)) != 0;
         }
 
         static byte set(byte state, byte flags) {
@@ -252,8 +252,11 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void closeChannelInbound(final Channel channel) {
-        if (!has(state, IN_CLOSED)) {
+        // Do not reset INBOUND when server is closing gracefully. This event is triggered during processing of
+        // ChannelOutputShutdownEvent if the USER_CLOSE was initiated after response was written.
+        if (!hasAny(state, IN_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
             LOGGER.debug("{} Half-Closing INBOUND (reset)", channel);
+            Thread.dumpStack();
             setSocketResetOnClose(channel);
             ((DuplexChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
         }
