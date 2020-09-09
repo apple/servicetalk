@@ -37,7 +37,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.US
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.ALL_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.DISCARDING_SERVER_INPUT;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_OUT_CLOSED;
@@ -49,6 +48,7 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.idle;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.set;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.unset;
+import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -92,14 +92,13 @@ class RequestResponseCloseHandler extends CloseHandler {
         byte OUT_CLOSED = 0x10;
         byte CLOSED = 0x20;
         byte DISCARDING_SERVER_INPUT = 0x40;
-        byte CLOSING_SERVER_GRACEFULLY = (byte) 0x80;
 
         byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
         byte IN_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
         byte MASK_IDLE = READ | WRITE;
 
         static boolean idle(int pending, byte state) {
-            return pending == 0 && (state & MASK_IDLE) == 0;
+            return (pending == 0 || pending == MAX_VALUE) && (state & MASK_IDLE) == 0;
         }
 
         static boolean has(byte state, byte mask) {
@@ -231,7 +230,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         assert ctx.executor().inEventLoop();
         state = set(state, IN_CLOSED);
         // Use the actual event that initiated graceful closure:
-        final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? event : CHANNEL_CLOSED_INBOUND;
+        final CloseEvent evt = pending == MAX_VALUE ? event : CHANNEL_CLOSED_INBOUND;
         assert evt != null;
         storeCloseRequestAndEmit(evt);
         maybeCloseChannelOnHalfClosed(ctx.channel(), evt);
@@ -243,7 +242,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         assert ctx.executor().inEventLoop();
         state = set(state, OUT_CLOSED);
         storeCloseRequestAndEmit(CHANNEL_CLOSED_OUTBOUND);
-        if (!has(state, CLOSING_SERVER_GRACEFULLY)) {
+        if (pending != MAX_VALUE) {
             // Only try to close when we are not closing server gracefully
             maybeCloseChannelOnHalfClosed(ctx.channel(), CHANNEL_CLOSED_OUTBOUND);
         }
@@ -254,7 +253,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     void closeChannelInbound(final Channel channel) {
         // Do not reset INBOUND when server is closing gracefully. This event is triggered during processing of
         // ChannelOutputShutdownEvent if the USER_CLOSE was initiated after response was written.
-        if (!hasAny(state, IN_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
+        if (!(has(state, IN_CLOSED) || pending != MAX_VALUE)) {
             LOGGER.debug("{} Half-Closing INBOUND (reset)", channel);
             Thread.dumpStack();
             setSocketResetOnClose(channel);
@@ -440,7 +439,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     private void serverHalfCloseOutbound(final Channel channel) {
         assert !isClient && idle(pending, state);
         if (!has(state, OUT_CLOSED)) {
-            state = set(state, CLOSING_SERVER_GRACEFULLY);
+            assert pending == 0;
+            // Use MAX_VALUE to indicate that server outbound is half-closed and we are waiting for
+            // ChannelInputShutdownReadComplete event.
+            pending = MAX_VALUE;
             LOGGER.debug("{} Half-Closing OUTBOUND", channel);
             halfCloseOutbound(channel, false);
             // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received
