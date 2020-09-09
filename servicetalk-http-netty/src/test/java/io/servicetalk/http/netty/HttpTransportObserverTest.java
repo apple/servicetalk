@@ -305,8 +305,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         if (serverReadCompletes) {
             verify(serverReadObserver).readComplete();
         } else {
-            // FIXME: because nobody subscribes to the request payload publisher, the cancel signal is not delivered
-            // verify(serverReadObserver).readCancelled();
+            verify(serverReadObserver, atMostOnce()).readCancelled();
+            verify(serverReadObserver, atMostOnce()).readFailed(any(Throwable.class));
         }
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
