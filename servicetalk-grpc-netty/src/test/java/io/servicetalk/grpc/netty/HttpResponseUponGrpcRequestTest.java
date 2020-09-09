@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -41,12 +40,12 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-public final class HtmlResponseUponGrpcRequestTest {
+public final class HttpResponseUponGrpcRequestTest {
 
     private ServerContext serverContext;
     private TesterProto.Tester.BlockingTesterClient client;
 
-    public HtmlResponseUponGrpcRequestTest() throws Exception {
+    public HttpResponseUponGrpcRequestTest() throws Exception {
         final String responsePayload = "non-grpc error!";
         serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2Default())
@@ -54,7 +53,6 @@ public final class HtmlResponseUponGrpcRequestTest {
                         succeeded(responseFactory.badRequest().payloadBody(responsePayload, textSerializer())));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .executionStrategy(noOffloadsStrategy())
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 

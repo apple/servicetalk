@@ -65,6 +65,14 @@ final class GrpcUtils {
     private static final CharSequence IDENTITY = newAsciiString(None.encoding());
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
+    private static final TrailersTransformer<Object, Object> ENSURE_GRPC_STATUS_RECEIVED =
+            new StatelessTrailersTransformer<Object>() {
+                @Override
+                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                    ensureGrpcStatusReceived(trailers);
+                    return trailers;
+                }
+            };
 
     private GrpcUtils() {
         // No instances.
@@ -149,7 +157,7 @@ final class GrpcUtils {
         // headers and trailers. Since this is streaming response and we have the headers now, we check for the
         // grpc-status here first. If there is no grpc-status in headers, we look for it in trailers later.
         final HttpHeaders headers = response.headers();
-        ensureNotPlainHtmlResponse(response.status(), headers);
+        ensureGrpcContentType(response.status(), headers);
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
@@ -157,7 +165,7 @@ final class GrpcUtils {
                     .concat(grpcStatusException != null ? failed(grpcStatusException) : empty());
         }
 
-        response.transformRaw(new EnsureValidGrpcResponseTransformer(response.status()));
+        response.transformRaw(ENSURE_GRPC_STATUS_RECEIVED);
         return deserializer.deserialize(headers, response.payloadBodyAndTrailers()
                 .filter(o -> !(o instanceof HttpHeaders)).map(o -> (Buffer) o));
     }
@@ -170,7 +178,7 @@ final class GrpcUtils {
 
         final HttpHeaders headers = response.headers();
         final HttpHeaders trailers = response.trailers();
-        ensureNotPlainHtmlResponse(response.status(), headers);
+        ensureGrpcContentType(response.status(), headers);
 
         // We will try the trailers first as this is the most likely place to find the gRPC-related headers.
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(trailers);
@@ -187,12 +195,12 @@ final class GrpcUtils {
         return response.payloadBody(deserializer);
     }
 
-    private static void ensureNotPlainHtmlResponse(final HttpResponseStatus status,
-                                                      final HttpHeaders headers) {
+    private static void ensureGrpcContentType(final HttpResponseStatus status,
+                                              final HttpHeaders headers) {
         final CharSequence contentTypeHeader = headers.get(CONTENT_TYPE);
         if (!hasContentType(headers, GRPC_CONTENT_TYPE, null)) {
             throw new GrpcStatus(INTERNAL, null,
-                    "HTTP  status code: " + status + "\n" +
+                    "HTTP status code: " + status + "\n" +
                             "\tinvalid " + CONTENT_TYPE + ": " + contentTypeHeader + "\n" +
                             "\theaders: " + headers.toString()).asException();
         }
@@ -354,39 +362,6 @@ final class GrpcUtils {
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
             return trailers;
-        }
-    }
-
-    static class EnsureValidGrpcResponseTransformer
-            implements TrailersTransformer<Object, Object> {
-
-        private final HttpResponseStatus status;
-
-        EnsureValidGrpcResponseTransformer(final HttpResponseStatus status) {
-            this.status = status;
-        }
-
-        @Nullable
-        @Override
-        public Object newState() {
-            return null;
-        }
-
-        @Override
-        public Object accept(@Nullable Object o, Object headers) {
-            return headers;
-        }
-
-        @Override
-        public HttpHeaders payloadComplete(@Nullable Object o, HttpHeaders trailers) {
-            ensureGrpcStatusReceived(trailers);
-            return trailers;
-        }
-
-        @Override
-        public HttpHeaders catchPayloadFailure(@Nullable Object o, Throwable cause, HttpHeaders trailers)
-                throws Throwable {
-            throw cause;
         }
     }
 }
