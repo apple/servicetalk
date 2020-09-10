@@ -80,7 +80,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
+            ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(

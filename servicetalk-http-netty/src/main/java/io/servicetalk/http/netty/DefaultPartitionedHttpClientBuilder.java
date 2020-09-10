@@ -33,6 +33,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -59,15 +60,20 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
 
+    private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
+    @Nullable
+    private ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
     private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
@@ -76,17 +82,24 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     DefaultPartitionedHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate,
+            final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
         this.builderTemplate = requireNonNull(builderTemplate);
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         this.partitionAttributesBuilderFactory = requireNonNull(partitionAttributesBuilderFactory);
     }
 
     @Override
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
+        ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
+                new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
+                        serviceDiscovererRetryStrategy == null ?
+                                DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
+                                        buildContext.executionContext.executor(), ofSeconds(60)).build() :
+                                serviceDiscovererRetryStrategy);
 
-        final PartitionedClientFactory<U, R, FilterableStreamingHttpClient>
-                clientFactory = (pa, sd) -> {
+        final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
             builder.serviceDiscoverer(sd);
@@ -94,9 +107,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             return builder.buildStreaming();
         };
 
-        @SuppressWarnings("unchecked")
-        final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
-                (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) buildContext.discover();
+        final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(buildContext.address());
 
         DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
@@ -121,7 +132,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         private final StreamingHttpRequestResponseFactory reqRespFactory;
 
         DefaultPartitionedStreamingHttpClientFilter(
-                final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents,
+                final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents,
                 final int psdMaxQueueSize,
                 final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory,
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
@@ -288,16 +299,15 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
-        builderTemplate.serviceDiscoverer(serviceDiscoverer);
+            final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy) {
-        builderTemplate.retryServiceDiscoveryErrors((ServiceDiscoveryRetryStrategy) retryStrategy);
+        this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
         return this;
     }
 

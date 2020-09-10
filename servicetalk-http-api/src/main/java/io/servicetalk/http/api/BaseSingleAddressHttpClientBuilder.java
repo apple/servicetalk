@@ -81,7 +81,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+            ServiceDiscoverer<U, R, SDE> serviceDiscoverer);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> retryServiceDiscoveryErrors(

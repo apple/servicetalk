@@ -116,8 +116,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    SingleAddressGrpcClientBuilder<U, R, SDE> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+    SingleAddressGrpcClientBuilder<U, R, SDE> serviceDiscoverer(ServiceDiscoverer<U, R, SDE> serviceDiscoverer);
 
     /**
      * Set a {@link HttpLoadBalancerFactory} to create {@link LoadBalancer} instances.

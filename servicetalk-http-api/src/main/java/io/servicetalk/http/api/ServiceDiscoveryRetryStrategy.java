@@ -34,5 +34,5 @@ public interface ServiceDiscoveryRetryStrategy<ResolvedAddress, E extends Servic
      * @param sdEvents {@link Publisher} of {@link ServiceDiscovererEvent} on which this strategy is to be applied.
      * @return {@link Publisher} after applying this retry strategy on the passed {@code sdEvents} {@link Publisher}.
      */
-    Publisher<? extends E> apply(Publisher<? extends E> sdEvents);
+    Publisher<E> apply(Publisher<E> sdEvents);
 }

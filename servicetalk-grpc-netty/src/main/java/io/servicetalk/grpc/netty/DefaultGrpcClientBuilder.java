@@ -119,7 +119,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         httpClientBuilder.serviceDiscoverer(serviceDiscoverer);
         return this;
     }

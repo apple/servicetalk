@@ -440,8 +440,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> serviceDiscoverer(
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress,
-                    ? extends ServiceDiscovererEvent<InetSocketAddress>> sd) {
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd) {
         builderTemplate.serviceDiscoverer(sd);
         return this;
     }
