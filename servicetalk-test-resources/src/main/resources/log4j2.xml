@@ -17,17 +17,16 @@
 <Configuration status="info">
   <Properties>
     <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
-    <Property name="thresholdLevel">${sys:servicetalk.logger.thresholdLevel:-INFO}</Property>
+    <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d %30t [%-5level] %-30logger{1} - %msg%n"/>
-      <ThresholdFilter level="${thresholdLevel}"/>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="servicetalk-tests-client-wire-logger" level="TRACE"/>
-    <Logger name="servicetalk-tests-server-wire-logger" level="TRACE"/>
+    <Logger name="servicetalk-tests-client-wire-logger" level="${wireLogLevel}"/>
+    <Logger name="servicetalk-tests-server-wire-logger" level="${wireLogLevel}"/>
     <Root level="${rootLevel}">
       <AppenderRef ref="Console"/>
     </Root>
