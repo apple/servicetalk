@@ -98,7 +98,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                                          final Function<PartitionAttributes, Client> unknownPartitionClient,
                                          final PartitionedClientFactory<U, R, Client> clientFactory,
                                          final PartitionMapFactory partitionMapFactory,
-                                         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents,
+                                         final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents,
                                          final int psdMaxQueueSize) {
 
         this.unknownPartitionClient = unknownPartitionClient;
