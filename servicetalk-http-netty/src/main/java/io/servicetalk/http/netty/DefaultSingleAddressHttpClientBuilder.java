@@ -56,7 +56,7 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -549,19 +549,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ServiceDiscovererEvent<InetSocketAddress>> {
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private final Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> resolution;
+        private final Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> resolution;
         private final OriginalAddress originalAddress;
 
         private NoopServiceDiscoverer(final OriginalAddress originalAddress, final InetSocketAddress address) {
             this.originalAddress = requireNonNull(originalAddress);
-            resolution = Publisher.<List<ServiceDiscovererEvent<InetSocketAddress>>>from(
+            resolution = Publisher.<Collection<ServiceDiscovererEvent<InetSocketAddress>>>from(
                     singletonList(new DefaultServiceDiscovererEvent<>(requireNonNull(address), true)))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
                     .concat(never());
         }
 
         @Override
-        public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final OriginalAddress address) {
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                final OriginalAddress address) {
             if (!this.originalAddress.equals(address)) {
                 return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
             }
@@ -620,7 +621,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         @Override
-        public Publisher<List<E>> discover(final U u) {
+        public Publisher<Collection<E>> discover(final U u) {
             return delegate().discover(u)
                     .beforeOnError(status::nextError)
                     .beforeOnNext(__ -> status.resetError());
@@ -639,7 +640,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         @Override
-        public Publisher<List<E>> discover(final U u) {
+        public Publisher<Collection<E>> discover(final U u) {
             return retryStrategy.apply(delegate().discover(u));
         }
     }

@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.List;
+import java.util.Collection;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,12 +41,12 @@ class DnsClientFilter implements DnsClient {
     }
 
     @Override
-    public Publisher<List<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String hostName) {
+    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String hostName) {
         return client.dnsQuery(hostName);
     }
 
     @Override
-    public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(final String serviceName) {
+    public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(final String serviceName) {
         return client.dnsSrvQuery(serviceName);
     }
 

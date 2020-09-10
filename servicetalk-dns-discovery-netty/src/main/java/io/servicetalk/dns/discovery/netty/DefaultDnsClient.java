@@ -54,6 +54,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -168,13 +169,13 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     @Override
-    public Publisher<List<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
+    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
         requireNonNull(address);
         return defer(() -> new ARecordPublisher(true, address, newDiscoveryObserver(address)));
     }
 
     @Override
-    public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(final String serviceName) {
+    public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(final String serviceName) {
         requireNonNull(serviceName);
         return defer(() -> {
             // State per subscribe requires defer so each subscribe gets independent state.

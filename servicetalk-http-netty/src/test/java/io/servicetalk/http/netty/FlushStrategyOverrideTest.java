@@ -44,7 +44,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -178,7 +177,7 @@ public class FlushStrategyOverrideTest {
         }
 
         @Override
-        public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
                 final InetSocketAddress inetSocketAddress) {
             return from(singletonList(new ServiceDiscovererEvent<InetSocketAddress>() {
                 @Override

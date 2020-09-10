@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -65,7 +66,7 @@ final class DnsClients {
             }
 
             @Override
-            public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final String s) {
+            public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(final String s) {
                 return dns.dnsSrvQuery(s);
             }
         };
@@ -99,7 +100,8 @@ final class DnsClients {
             }
 
             @Override
-            public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> discover(final HostAndPort hostAndPort) {
+            public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                    final HostAndPort hostAndPort) {
                 return dns.dnsQuery(hostAndPort.hostName())
                         .map(events -> mapEventList(events,
                                 inetAddress -> new InetSocketAddress(inetAddress, hostAndPort.port())));
@@ -107,7 +109,7 @@ final class DnsClients {
         };
     }
 
-    static <T, R> List<ServiceDiscovererEvent<R>> mapEventList(final List<ServiceDiscovererEvent<T>> original,
+    static <T, R> List<ServiceDiscovererEvent<R>> mapEventList(final Collection<ServiceDiscovererEvent<T>> original,
                                                                final Function<T, R> mapper) {
         return original.stream()
                 .map(evt -> new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.isAvailable()))

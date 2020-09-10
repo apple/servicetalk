@@ -19,7 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * A retry strategy for errors emitted from {@link ServiceDiscoverer#discover(Object)}.
@@ -36,5 +36,5 @@ public interface ServiceDiscoveryRetryStrategy<ResolvedAddress, E extends Servic
      * @param sdEvents {@link Publisher} of {@link ServiceDiscovererEvent} on which this strategy is to be applied.
      * @return {@link Publisher} after applying this retry strategy on the passed {@code sdEvents} {@link Publisher}.
      */
-    Publisher<List<E>> apply(Publisher<List<E>> sdEvents);
+    Publisher<Collection<E>> apply(Publisher<Collection<E>> sdEvents);
 }

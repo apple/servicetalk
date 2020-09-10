@@ -64,7 +64,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
     }
 
     @Override
-    public Publisher<List<E>> apply(final Publisher<List<E>> sdEvents) {
+    public Publisher<Collection<E>> apply(final Publisher<Collection<E>> sdEvents) {
         return defer(() -> {
             EventsCache<ResolvedAddress, E> eventsCache = new EventsCache<>(flipAvailability);
             if (retainAddressesTillSuccess) {
@@ -223,7 +223,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         }
 
         @Nullable
-        List<E> consume(final List<E> events) {
+        Collection<E> consume(final Collection<E> events) {
             if (retainedAddresses == NONE_RETAINED) {
                 for (E e : events) {
                     if (e.isAvailable()) {

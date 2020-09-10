@@ -38,6 +38,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -577,7 +578,7 @@ public class DefaultDnsClientTest {
                         .queryTimeout(ofMillis(100))
                         .appendFilter(client -> new DnsClientFilter(client) {
                             @Override
-                            public Publisher<List<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String s) {
+                            public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String s) {
                                 return super.dnsQuery(s).whenOnError(t -> {
                                     if (t.getCause() instanceof DnsNameResolverTimeoutException) {
                                         timeoutLatch.countDown();
@@ -733,12 +734,12 @@ public class DefaultDnsClientTest {
         return dnsClientBuilder()
                 .appendFilter(client -> new DnsClientFilter(client) {
                     @Override
-                    public Publisher<List<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String hostName) {
+                    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String hostName) {
                         return super.dnsQuery(hostName).retryWhen(retryStrategy);
                     }
 
                     @Override
-                    public Publisher<List<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(
+                    public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(
                             final String serviceName) {
                         return super.dnsSrvQuery(serviceName).retryWhen(retryStrategy);
                     }
