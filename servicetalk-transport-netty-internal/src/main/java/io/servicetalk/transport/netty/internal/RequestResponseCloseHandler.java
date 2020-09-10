@@ -124,11 +124,6 @@ class RequestResponseCloseHandler extends CloseHandler {
      */
     private Consumer<CloseEvent> eventHandler = __ -> { };
 
-    /**
-     * Discards all further inbound data.
-     */
-    private Runnable discardInbound = () -> { };
-
     RequestResponseCloseHandler(final boolean client) {
         isClient = client;
     }
@@ -153,12 +148,6 @@ class RequestResponseCloseHandler extends CloseHandler {
         assert channel.eventLoop().inEventLoop();
         assert isAllowHalfClosure(channel) : "Socket Half-Close DISABLED, this may violate some protocols";
         this.eventHandler = requireNonNull(eventHandler);
-    }
-
-    @Override
-    public void registerDiscardInboundRunnable(final Channel channel, final Runnable discardInbound) {
-        assert channel.eventLoop().inEventLoop();
-        this.discardInbound = requireNonNull(discardInbound);
     }
 
     private void storeCloseRequestAndEmit(final CloseEvent event) {
@@ -430,7 +419,7 @@ class RequestResponseCloseHandler extends CloseHandler {
             // keep reading to receive FIN from the remote peer.
             LOGGER.debug("{} Discarding further INBOUND", channel);
             state = unset(state, READ);
-            discardInbound.run();
+            channel.pipeline().fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
             channel.config().setAutoRead(true);
             state = set(state, DISCARDING_SERVER_INPUT);
         }

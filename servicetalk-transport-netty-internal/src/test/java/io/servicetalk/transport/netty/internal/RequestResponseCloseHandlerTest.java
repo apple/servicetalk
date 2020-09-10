@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
+import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -148,6 +149,7 @@ public class RequestResponseCloseHandlerTest {
 
         private ChannelHandlerContext ctx;
         private SocketChannel channel;
+        private ChannelPipeline pipeline;
         private RequestResponseCloseHandler h;
         @Nullable
         private CloseEvent observedEvent;
@@ -155,7 +157,6 @@ public class RequestResponseCloseHandlerTest {
         private AtomicBoolean inputShutdown = new AtomicBoolean();
         private AtomicBoolean outputShutdown = new AtomicBoolean();
         private SocketChannelConfig scc;
-        private Runnable discardingInput;
 
         public Scenarios(final Mode mode, final List<Events> events, final ExpectEvent expectEvent,
                          final String desc, final String location) {
@@ -329,7 +330,7 @@ public class RequestResponseCloseHandlerTest {
             when(channel.eventLoop()).thenReturn(loop);
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.isAllowHalfClosure()).thenReturn(true);
-            ChannelPipeline pipeline = mock(ChannelPipeline.class);
+            pipeline = mock(ChannelPipeline.class);
             when(channel.pipeline()).thenReturn(pipeline);
 
             when(channel.isOutputShutdown()).then(__ -> outputShutdown.get());
@@ -368,8 +369,6 @@ public class RequestResponseCloseHandlerTest {
                     observedEvent = e;
                 }
             });
-            discardingInput = mock(Runnable.class);
-            h.registerDiscardInboundRunnable(channel, discardingInput);
         }
 
         private void assertCanRead() {
@@ -384,7 +383,7 @@ public class RequestResponseCloseHandlerTest {
         public void simulate() {
             LOGGER.debug("Test.Params: ({})", location); // Intellij jump to parameter format, don't change!
             LOGGER.debug("[{}] {} - {} = {}", desc, mode, events, expectEvent);
-            InOrder order = inOrder(h, channel, scc, discardingInput);
+            InOrder order = inOrder(h, channel, pipeline, scc);
             verify(h).registerEventHandler(eq(channel), any());
             for (Events event : events) {
                 LOGGER.debug("{}", event);
@@ -444,7 +443,7 @@ public class RequestResponseCloseHandlerTest {
                         order.verify(channel).close();
                         break;
                     case ID:
-                        order.verify(discardingInput).run();
+                        order.verify(pipeline).fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
                         break;
                     case CI:
                         h.closeChannelInbound(channel);
@@ -500,7 +499,7 @@ public class RequestResponseCloseHandlerTest {
                             verify(channel, never()).shutdownOutput();
                             break;
                         case ID:
-                            verify(discardingInput, never()).run();
+                            verify(pipeline, never()).fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
                             break;
                         case CI:
                             verify(h, never()).closeChannelInbound(channel);

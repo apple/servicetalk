@@ -100,14 +100,6 @@ public abstract class CloseHandler {
     public abstract void protocolClosingOutbound(ChannelHandlerContext ctx);
 
     /**
-     * Registers a {@link Runnable} that discards all further inbound data.
-     *
-     * @param channel the {@link Channel} for which this {@link Runnable} is registering
-     * @param discardInbound the {@link Runnable} to discard all further inbound data
-     */
-    public abstract void registerDiscardInboundRunnable(Channel channel, Runnable discardInbound);
-
-    /**
      * Registers a handler for {@link CloseEvent}.
      *
      * @param channel the {@link Channel} for which this event handler is registering
@@ -291,10 +283,6 @@ public abstract class CloseHandler {
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
         }
-
-        @Override
-        public void registerDiscardInboundRunnable(final Channel channel, final Runnable discardInbound) {
-        }
     }
 
     private static final class ProtocolOutboundCloseEventHandler extends CloseHandler {
@@ -354,10 +342,6 @@ public abstract class CloseHandler {
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
         }
-
-        @Override
-        public void registerDiscardInboundRunnable(final Channel channel, final Runnable discardInbound) {
-        }
     }
 
     /**
@@ -381,6 +365,17 @@ public abstract class CloseHandler {
         static final AbortWritesEvent INSTANCE = new AbortWritesEvent();
 
         private AbortWritesEvent() {
+            // No instances.
+        }
+    }
+
+    /**
+     * Netty UserEvent to indicate the further inbound data should be discarded.
+     */
+    public static final class DiscardFurtherInboundEvent {
+        static final DiscardFurtherInboundEvent INSTANCE = new DiscardFurtherInboundEvent();
+
+        private DiscardFurtherInboundEvent() {
             // No instances.
         }
     }

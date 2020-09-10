@@ -40,10 +40,10 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -214,19 +214,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract T createMessage(ByteBuf buffer, int firstStart, int firstLength,
                                        int secondStart, int secondLength,
                                        int thirdStart, int thirdLength);
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        if (isDecodingRequest()) {
-            final Channel channel = ctx.channel();
-            closeHandler.registerDiscardInboundRunnable(channel, () -> {
-                resetNow();
-                releaseCumulation();
-                channel.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
-                        DiscardInboundHandler.INSTANCE);
-            });
-        }
-    }
 
     @Override
     protected final void decode(final ChannelHandlerContext ctx, final ByteBuf buffer) {
@@ -518,6 +505,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 default:
                     break;
             }
+        } else if (evt instanceof DiscardFurtherInboundEvent) {
+            resetNow();
+            releaseCumulation();
+            ctx.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
+                    DiscardInboundHandler.INSTANCE);
         }
         super.userEventTriggered(ctx, evt);
     }
@@ -863,7 +855,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Sharable
     private static final class DiscardInboundHandler extends SimpleChannelInboundHandler<Object> {
-
         static final ChannelInboundHandler INSTANCE = new DiscardInboundHandler();
 
         private DiscardInboundHandler() {
