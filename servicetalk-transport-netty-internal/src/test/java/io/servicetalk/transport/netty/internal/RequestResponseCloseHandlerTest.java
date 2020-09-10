@@ -247,34 +247,34 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, OB, OE, IE, IB, OS, SR, FC), CCO, "new req abort, complete resp, outbound closed"},
                     {S, e(IB, IE, OB, OE), NIL, "sequential, no close"},
                     {S, e(IB, IE, OB, IB, IE, OE, OB, OE), NIL, "pipelined, no close"},
-                    {S, e(IB, IE, IB, OB, OC, ID, OE, OH, FC), PCO, "pipelined, closing outbound"},
-                    {S, e(IB, IE, IB, IE, OB, OC, ID, OE, OH, FC), PCO, "pipelined, closing outbound, drop pending!"},
-                    {S, e(IB, IE, OB, OC, ID, OE, OH, FC), PCO, "sequential, closing outbound"},
-                    {S, e(IB, OB, OC, IE, ID, OE, OH, FC), PCO, "interleaved, closing outbound"},
-                    {S, e(IB, OB, OC, OE, IE, ID, OH, FC), PCO, "interleaved full dup, closing outbound"},
+                    {S, e(IB, IE, IB, OB, OC, ID, OE, OH, IS, FC), PCO, "pipelined, closing outbound"},
+                    {S, e(IB, IE, IB, IE, OB, OC, ID, OE, OH, IS, FC), PCO, "pipelined, closing outbound, drop pending!"},
+                    {S, e(IB, IE, OB, OC, ID, OE, OH, IS, FC), PCO, "sequential, closing outbound"},
+                    {S, e(IB, OB, OC, IE, ID, OE, OH, IS, FC), PCO, "interleaved, closing outbound"},
+                    {S, e(IB, OB, OC, OE, IE, ID, OH, IS, FC), PCO, "interleaved full dup, closing outbound"},
                     {S, e(IB, OB, OC, IE, ID, IS, OE, FC), PCO, "interleaved, input shutdowns, closing outbound"},
                     {S, e(IB, OB, IE, IB, IC, OE, OB, IE, ID, OE, FC), PCI, "pipelined, closing inbound, drain"},
                     {S, e(IB, IE, OB, IB, IC, IE, ID, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
-                    {S, e(IB, IE, OB, IB, IE, UC, ID, OE, OB, OE, OH, FC), UCO, "pipelined, user closing, drain"},
+                    {S, e(IB, IE, OB, IB, IE, UC, ID, OE, OB, OE, OH, IS, FC), UCO, "pipelined, user closing, drain"},
                     {S, e(IB, IC, OB, OE, IE, FC), PCI, "pipelined full dup, closing inbound"},
                     {S, e(IB, OB, IE, IB, IC, IE, ID, OE, OB, OE, FC), PCI, "pipelined, closing inbound"},
                     {S, e(IB, OB, IC, OE, IE, FC), PCI, "pipelined, full dup, closing inbound"},
                     {S, e(IB, IC, IE, ID, OB, OE, FC), PCI, "sequential, closing inbound"},
-                    {S, e(UC, ID, OH, FC), UCO, "recently open connection, idle, user close"},
-                    {S, e(IB, UC, IE, ID, OB, OE, OH, FC), UCO, "sequential, during req, user close"},
-                    {S, e(IB, IE, UC, ID, OB, OE, OH, FC), UCO, "sequential, user close"},
+                    {S, e(UC, ID, OH, IS, FC), UCO, "recently open connection, idle, user close"},
+                    {S, e(IB, UC, IE, ID, OB, OE, OH, IS, FC), UCO, "sequential, during req, user close"},
+                    {S, e(IB, IE, UC, ID, OB, OE, OH, IS, FC), UCO, "sequential, user close"},
                     {S, e(IB, IE, UC, ID, IS, OB, OE, FC), UCO, "sequential, input shutdown before resp, user close"},
                     {S, e(IB, IE, UC, ID, OB, IS, OE, FC), UCO, "sequential, input shutdown after resp, user close"},
-                    {S, e(IB, IE, OB, UC, ID, OE, OH, FC), UCO, "sequential, during resp, user close"},
-                    {S, e(IB, IE, OB, OE, UC, ID, OH, FC), UCO, "sequential, idle, user close"},
-                    {S, e(IB, UC, OB, IE, ID, OE, OH, FC), UCO, "interleaved, before resp, user close"},
-                    {S, e(IB, OB, UC, IE, ID, OE, OH, FC), UCO, "interleaved, user close"},
-                    {S, e(IB, OB, IE, UC, ID, OE, OH, FC), UCO, "interleaved, after req, user close"},
-                    {S, e(IB, OB, IE, OE, UC, ID, OH, FC), UCO, "interleaved, idle, user close"},
-                    {S, e(IB, UC, OB, OE, IE, ID, OH, FC), UCO, "interleaved full dup, before resp, user close"},
-                    {S, e(IB, OB, UC, OE, IE, ID, OH, FC), UCO, "interleaved full dup, user close"},
-                    {S, e(IB, OB, OE, UC, IE, ID, OH, FC), UCO, "interleaved full dup, after resp, user close"},
-                    {S, e(IB, OB, OE, IE, UC, ID, OH, FC), UCO, "interleaved full dup, idle, user close"},
+                    {S, e(IB, IE, OB, UC, ID, OE, OH, IS, FC), UCO, "sequential, during resp, user close"},
+                    {S, e(IB, IE, OB, OE, UC, ID, OH, IS, FC), UCO, "sequential, idle, user close"},
+                    {S, e(IB, UC, OB, IE, ID, OE, OH, IS, FC), UCO, "interleaved, before resp, user close"},
+                    {S, e(IB, OB, UC, IE, ID, OE, OH, IS, FC), UCO, "interleaved, user close"},
+                    {S, e(IB, OB, IE, UC, ID, OE, OH, IS, FC), UCO, "interleaved, after req, user close"},
+                    {S, e(IB, OB, IE, OE, UC, ID, OH, IS, FC), UCO, "interleaved, idle, user close"},
+                    {S, e(IB, UC, OB, OE, IE, ID, OH, IS, FC), UCO, "interleaved full dup, before resp, user close"},
+                    {S, e(IB, OB, UC, OE, IE, ID, OH, IS, FC), UCO, "interleaved full dup, user close"},
+                    {S, e(IB, OB, OE, UC, IE, ID, OH, IS, FC), UCO, "interleaved full dup, after resp, user close"},
+                    {S, e(IB, OB, OE, IE, UC, ID, OH, IS, FC), UCO, "interleaved full dup, idle, user close"},
                     {S, e(IB, IE, OB, OE, IS, FC), CCI, "sequential, idle, inbound closed"},
                     {S, e(IB, OB, IS, SR, OE, FC), CCI, "inbound closed while reading no pipeline"},
                     {S, e(IB, IS, SR, OB, OE, FC), CCI, "inbound closed while reading delay close until response"},
@@ -342,11 +342,6 @@ public class RequestResponseCloseHandlerTest {
                 outputShutdown.set(true);
                 LOGGER.debug("channel.shutdownOutput()");
                 h.channelClosedOutbound(ctx); // ChannelOutputShutdownEvent observed from transport
-                if (!inputShutdown.get()) {
-                    inputShutdown.set(true);
-                    LOGGER.debug("Remote peer closes inbound side in response to the shutdownOutput()");
-                    h.channelClosedInbound(ctx); // ChannelInputShutdownReadComplete observed from transport
-                }
                 return future;
             });
             when(channel.close()).then(__ -> {
