@@ -253,7 +253,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     void closeChannelInbound(final Channel channel) {
         // Do not reset INBOUND when server is closing gracefully. This event is triggered during processing of
         // ChannelOutputShutdownEvent if the USER_CLOSE was initiated after response was written.
-        if (!(has(state, IN_CLOSED) || pending != MAX_VALUE)) {
+        if (!(has(state, IN_CLOSED) || pending == MAX_VALUE)) {
             LOGGER.debug("{} Half-Closing INBOUND (reset)", channel);
             setSocketResetOnClose(channel);
             ((DuplexChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);

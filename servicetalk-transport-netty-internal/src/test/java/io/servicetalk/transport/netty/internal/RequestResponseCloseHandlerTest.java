@@ -83,6 +83,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.US
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.CI;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.FC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IC;
@@ -178,6 +179,7 @@ public class RequestResponseCloseHandlerTest {
             UC,         // emit User Closing
             IH, OH, FC, // validate Input/Output Half-close, Full-Close
             ID,         // validate Input discarding
+            CI, CO,     // emit Inbound/Outbound close (read cancellation, write subscriber termination)
         }
 
         protected enum ExpectEvent {
@@ -267,12 +269,14 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, IE, UC, ID, OB, IS, OE, FC), UCO, "sequential, input shutdown after resp, user close"},
                     {S, e(IB, IE, OB, UC, ID, OE, OH, IS, FC), UCO, "sequential, during resp, user close"},
                     {S, e(IB, IE, OB, OE, UC, ID, OH, IS, FC), UCO, "sequential, idle, user close"},
+                    {S, e(IB, IE, OB, OE, UC, ID, OH, CI, IS, FC), UCO, "sequential, idle, read cancelled, user close"},
                     {S, e(IB, UC, OB, IE, ID, OE, OH, IS, FC), UCO, "interleaved, before resp, user close"},
                     {S, e(IB, OB, UC, IE, ID, OE, OH, IS, FC), UCO, "interleaved, user close"},
                     {S, e(IB, OB, IE, UC, ID, OE, OH, IS, FC), UCO, "interleaved, after req, user close"},
                     {S, e(IB, OB, IE, OE, UC, ID, OH, IS, FC), UCO, "interleaved, idle, user close"},
                     {S, e(IB, UC, OB, OE, IE, ID, OH, IS, FC), UCO, "interleaved full dup, before resp, user close"},
                     {S, e(IB, OB, UC, OE, IE, ID, OH, IS, FC), UCO, "interleaved full dup, user close"},
+                    {S, e(IB, OB, UC, OE, IE, ID, OH, CI, IS, FC), UCO, "interleaved full dup, read cancelled, user close"},
                     {S, e(IB, OB, OE, UC, IE, ID, OH, IS, FC), UCO, "interleaved full dup, after resp, user close"},
                     {S, e(IB, OB, OE, IE, UC, ID, OH, IS, FC), UCO, "interleaved full dup, idle, user close"},
                     {S, e(IB, IE, OB, OE, IS, FC), CCI, "sequential, idle, inbound closed"},
@@ -442,6 +446,14 @@ public class RequestResponseCloseHandlerTest {
                     case ID:
                         order.verify(discardingInput).run();
                         break;
+                    case CI:
+                        h.closeChannelInbound(channel);
+                        order.verify(h).closeChannelInbound(channel);
+                        break;
+                    case CO:
+                        h.closeChannelOutbound(channel);
+                        order.verify(h).closeChannelOutbound(channel);
+                        break;
                     default:
                         throw new IllegalArgumentException("Unknown: " + event);
                 }
@@ -489,6 +501,12 @@ public class RequestResponseCloseHandlerTest {
                             break;
                         case ID:
                             verify(discardingInput, never()).run();
+                            break;
+                        case CI:
+                            verify(h, never()).closeChannelInbound(channel);
+                            break;
+                        case CO:
+                            verify(h, never()).closeChannelOutbound(channel);
                             break;
                         default:
                             throw new IllegalArgumentException("Unknown: " + c);
