@@ -89,6 +89,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         config.disableHostnameVerification();
         config.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
         config.provider(provider);
+        config.protocols("TLSv1.2");
         return config;
     }
 
@@ -103,6 +104,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         ServerSecurityConfig config = new ServerSecurityConfig();
         config.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
         config.provider(provider);
+        config.protocols("TLSv1.2");
         return config;
     }
 

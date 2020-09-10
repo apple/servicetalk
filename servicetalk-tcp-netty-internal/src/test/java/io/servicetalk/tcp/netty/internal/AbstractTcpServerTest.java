@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -27,7 +26,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
-import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
@@ -41,9 +39,8 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import java.util.function.Function;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 
 public abstract class AbstractTcpServerTest {
 
@@ -51,13 +48,9 @@ public abstract class AbstractTcpServerTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("server-io-executor")),
-            Executors::newCachedThreadExecutor);
+    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
     @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("client-io-executor")),
-            Executors::newCachedThreadExecutor);
+    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
 
     private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
