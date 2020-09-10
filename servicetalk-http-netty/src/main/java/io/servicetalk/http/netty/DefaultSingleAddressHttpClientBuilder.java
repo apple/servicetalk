@@ -253,8 +253,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
 
-            final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents =
-                    ctx.serviceDiscoverer.discover(ctx.address());
+            final Publisher<ServiceDiscovererEvent<R>> sdEvents = ctx.serviceDiscoverer.discover(ctx.address());
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
