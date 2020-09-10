@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * An implementation of {@link ClientGroup} that can be used for partitioned client use-cases where {@link
@@ -182,7 +183,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     }
                     return acceptEvent;
                 }
-            }).beforeFinally(partition::closeNow).map(psde -> psde);
+            }).beforeFinally(partition::closeNow).map(identity());
         }
 
         @Override
