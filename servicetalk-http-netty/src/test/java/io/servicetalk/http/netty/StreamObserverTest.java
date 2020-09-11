@@ -15,11 +15,16 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
@@ -46,8 +51,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -113,7 +119,8 @@ public class StreamObserverTest {
             return h2Builder;
         });
         client = HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverAcceptorChannel.localAddress()))
-                .protocols(h2Default())
+                .protocols(h2().enableFrameLogging("h2-logging").build())
+                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
                 .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                 .build();
     }
@@ -135,12 +142,22 @@ public class StreamObserverTest {
 
     @Test
     public void maxActiveStreamsViolationError() throws Exception {
-        try (HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+        CountDownLatch maxConcurrentStreamsValueSetToOne = new CountDownLatch(1);
+        try (HttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
+            conn.transportEventStream(MAX_CONCURRENCY).forEach(event -> {
+                if (event.event() == 1) {
+                    maxConcurrentStreamsValueSetToOne.countDown();
+                }
+            });
+            return conn;
+        }).toFuture().get()) {
             verify(clientTransportObserver).onNewConnection();
             verify(clientConnectionObserver).multiplexedConnectionEstablished(any(ConnectionInfo.class));
 
             connection.request(connection.get("/first")).subscribe(__ -> { /* no response expected */ });
             requestReceived.await();
+            maxConcurrentStreamsValueSetToOne.await();
+
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/second")).toFuture().get());
             assertThat(e.getCause(), instanceOf(StreamException.class));
@@ -151,12 +168,30 @@ public class StreamObserverTest {
             verify(clientDataObserver, times(2)).onNewWrite();
             verify(clientReadObserver).readCancelled();
             verify(clientWriteObserver).writeFailed(e.getCause());
-            verify(clientStreamObserver).streamClosed(e.getCause());
+            verify(clientStreamObserver, await()).streamClosed(e.getCause());
         }
         verify(clientStreamObserver, await()).streamClosed();
         verify(clientConnectionObserver).connectionClosed();
 
         verifyNoMoreInteractions(clientTransportObserver, clientMultiplexedObserver, clientStreamObserver,
                 clientDataObserver);
+    }
+
+    private static final class MulticastTransportEventsStreamingHttpConnectionFilter
+            extends StreamingHttpConnectionFilter {
+
+        private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrent;
+
+        public MulticastTransportEventsStreamingHttpConnectionFilter(final FilterableStreamingHttpConnection delegate) {
+            super(delegate);
+            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicastToExactly(2);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+            return eventKey == MAX_CONCURRENCY ? (Publisher<? extends T>) maxConcurrent :
+                    delegate().transportEventStream(eventKey);
+        }
     }
 }
