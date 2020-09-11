@@ -16,6 +16,6 @@
 
 name: servicetalk-grpc-api
 title: gRPC
-version: SNAPSHOT
+version: '0.32'
 nav:
   - modules/ROOT/nav.adoc
