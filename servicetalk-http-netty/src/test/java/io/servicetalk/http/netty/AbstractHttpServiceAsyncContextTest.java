@@ -88,6 +88,12 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         final ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
         final int numRequests = 10;
+        final String k1Value = "value";
+        // The service should get an empty AsyncContext regardless of what is done outside the service.
+        // There are utilities that may be accessed in a static context or before service initialization that
+        // shouldn't pollute the service's AsyncContext.
+        AsyncContext.current().put(K1, k1Value);
+
         try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0)),
                 useImmediate)) {
 
@@ -118,6 +124,7 @@ public abstract class AbstractHttpServiceAsyncContextTest {
             }
             latch.await();
             assertNull(causeRef.get());
+            assertEquals(k1Value, AsyncContext.get(K1));
         } finally {
             executorService.shutdown();
         }

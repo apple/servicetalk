@@ -87,20 +87,12 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
     }
 
     private static StreamingHttpService newEmptyAsyncContextService() {
-        // The service should get an empty AsyncContext regardless of what is done outside the service.
-        // There are utilities that may be accessed in a static context or before service initialization that
-        // shouldn't pollute the service's AsyncContext.
-        AsyncContext.current().put(K1, "value");
-
         return (ctx, request, factory) -> {
             request.payloadBodyAndTrailers().ignoreElements().subscribe();
 
             AsyncContextMap current = AsyncContext.current();
             if (!current.isEmpty()) {
-                StreamingHttpResponse response = factory.internalServerError();
-                return succeeded(response.payloadBody(textSerializer()
-                        .serialize(response.headers(), from(current.toString()),
-                                ctx.executionContext().bufferAllocator())));
+                return succeeded(factory.internalServerError().payloadBody(from(current.toString()), textSerializer()));
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
