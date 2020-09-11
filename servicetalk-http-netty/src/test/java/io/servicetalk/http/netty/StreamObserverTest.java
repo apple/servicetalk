@@ -182,7 +182,7 @@ public class StreamObserverTest {
 
         private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrent;
 
-        public MulticastTransportEventsStreamingHttpConnectionFilter(final FilterableStreamingHttpConnection delegate) {
+        MulticastTransportEventsStreamingHttpConnectionFilter(final FilterableStreamingHttpConnection delegate) {
             super(delegate);
             maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicastToExactly(2);
         }
