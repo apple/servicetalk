@@ -280,6 +280,15 @@ public final class AsyncContext {
     }
 
     /**
+     * Determine if {@link #disable()} has been previously called.
+     *
+     * @return {@code true} if {@link #disable()} has been previously called.
+     */
+    public static boolean isDisabled() {
+        return ENABLED_STATE.get() == STATE_DISABLED;
+    }
+
+    /**
      * This method is currently internal only! If it is exposed publicly, and {@link #STATE_DISABLED} is no longer a
      * terminal state the racy {@link #ENABLED_STATE} should be re-evaluated. We currently don't try to account for an
      * application calling this method and {@link #disable()} concurrently, and this may result in inconsistent

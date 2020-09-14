@@ -86,7 +86,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
+            ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(

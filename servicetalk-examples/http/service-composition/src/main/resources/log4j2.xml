@@ -21,14 +21,6 @@
     </Console>
   </Appenders>
   <Loggers>
-    <!--
-        This is an example of how to configure logging of wire events:
-          1. Add a Logger with `TRACE` level;
-          2. Use this new Logger name as an argument for `enableWireLogging(name)` method with desired builder/starter.
-    -->
-    <Logger name="servicetalk-client-wire-logger" level="TRACE"/>
-    <Logger name="servicetalk-server-wire-logger" level="TRACE"/>
-
     <!-- Prints server start and shutdown -->
     <Logger name="io.servicetalk.http.netty.NettyHttpServer" level="DEBUG"/>
 

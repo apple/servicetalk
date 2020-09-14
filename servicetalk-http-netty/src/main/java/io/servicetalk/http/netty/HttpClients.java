@@ -21,6 +21,9 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -33,6 +36,8 @@ import io.servicetalk.transport.api.HostAndPort;
 import java.net.InetSocketAddress;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
 
@@ -74,7 +79,7 @@ public final class HttpClients {
      * @return new builder with default configuration
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ? extends ServiceDiscovererEvent<InetSocketAddress>>
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
         return new DefaultMultiAddressUrlHttpClientBuilder(
                 new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
@@ -270,7 +275,7 @@ public final class HttpClients {
      * @return new builder with provided configuration
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer);
     }
@@ -292,11 +297,33 @@ public final class HttpClients {
      * @return new builder with provided configuration
      */
     public static <U, R> PartitionedHttpClientBuilder<U, R> forPartitionedAddress(
-            final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
         return new DefaultPartitionedHttpClientBuilder<>(
-                new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer),
-                partitionAttributesBuilderFactory);
+                new DefaultSingleAddressHttpClientBuilder<>(address,
+                        new ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>>() {
+                            private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+
+                            @Override
+                            public Publisher<ServiceDiscovererEvent<R>> discover(final U u) {
+                                return failed(new IllegalStateException("Invalid service discoverer."));
+                            }
+
+                            @Override
+                            public Completable onClose() {
+                                return closeable.onClose();
+                            }
+
+                            @Override
+                            public Completable closeAsync() {
+                                return closeable.closeAsync();
+                            }
+
+                            @Override
+                            public Completable closeAsyncGracefully() {
+                                return closeable.closeAsyncGracefully();
+                            }
+                        }), serviceDiscoverer, partitionAttributesBuilderFactory);
     }
 }

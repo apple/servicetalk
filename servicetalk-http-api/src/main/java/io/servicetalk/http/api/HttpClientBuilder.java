@@ -181,7 +181,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+            ServiceDiscoverer<U, R, SDE> serviceDiscoverer);
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
