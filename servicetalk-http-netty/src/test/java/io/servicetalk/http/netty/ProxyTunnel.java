@@ -144,6 +144,7 @@ final class ProxyTunnel implements AutoCloseable {
             while ((b = cin.read()) >= 0) {
                 out.write(b);
             }
+            out.flush();
         } catch (IOException e) {
             LOGGER.error("Proxy exception", e);
         } finally {
