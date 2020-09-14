@@ -60,6 +60,6 @@ final class StreamingConnectionFactory {
                 executionContext.executor(), LAST_CHUNK_PREDICATE, closeHandler, config.tcpConfig().flushStrategy(),
                 config.tcpConfig().idleTimeoutMs(), initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1, connectionObserver), HTTP_1_1, channel);
+                executionContext.executionStrategy(), HTTP_1_1, connectionObserver, true), HTTP_1_1, channel);
     }
 }
