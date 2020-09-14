@@ -344,10 +344,18 @@ public abstract class CloseHandler {
         }
     }
 
+    private abstract static class NettyUserEvent {
+
+        @Override
+        public String toString() {
+            return this.getClass().getName();
+        }
+    }
+
     /**
      * Netty UserEvent to indicate the end of a payload was observed at the transport.
      */
-    static final class ProtocolPayloadEndEvent {
+    static final class ProtocolPayloadEndEvent extends NettyUserEvent {
         /**
          * Netty UserEvent instance to indicate an outbound end of payload.
          */
@@ -361,7 +369,7 @@ public abstract class CloseHandler {
     /**
      * Netty UserEvent to indicate the output writes should be aborted because the channel is closing.
      */
-    static final class AbortWritesEvent {
+    static final class AbortWritesEvent extends NettyUserEvent {
         static final AbortWritesEvent INSTANCE = new AbortWritesEvent();
 
         private AbortWritesEvent() {
@@ -372,7 +380,7 @@ public abstract class CloseHandler {
     /**
      * Netty UserEvent to indicate the further inbound data should be discarded.
      */
-    public static final class DiscardFurtherInboundEvent {
+    public static final class DiscardFurtherInboundEvent extends NettyUserEvent {
         static final DiscardFurtherInboundEvent INSTANCE = new DiscardFurtherInboundEvent();
 
         private DiscardFurtherInboundEvent() {
