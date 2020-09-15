@@ -202,9 +202,8 @@ public final class SubscriberUtils {
      * Deliver a terminal complete to a {@link CompletableSource.Subscriber} that has not yet had
      * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} called.
      * @param subscriber The {@link CompletableSource.Subscriber} to terminate.
-     * @param <T> The type of {@link CompletableSource.Subscriber}.
      */
-    public static <T> void deliverCompleteFromSource(CompletableSource.Subscriber subscriber) {
+    public static void deliverCompleteFromSource(CompletableSource.Subscriber subscriber) {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
