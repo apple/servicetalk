@@ -56,40 +56,36 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * where:
  * <ul>
  *     <li>{@link Subscriber#onNext(Object) onNext Objects} consume non trivial amount of memory relative to the memory
- *     to manage the {@link FlatMapSubscriber#hungrySubscribers} queue (e.g. network buffer, serialized POJO)</li>
+ *     for managing demand through the {@link FlatMapSubscriber#signals} queue (network buffer, serialized POJO)</li>
  *     <li>downstream demand is available before signals from mapped sources are available
  *     (e.g. over a network boundary)</li>
  * </ul>
  * Scenarios where downstream demand is provided in small/slow increments relative to the amount of signals from mapped
  * Sources, or mapped Sources are backed by in memory content are expected to incur some additional overhead for
- * {@link FlatMapSubscriber#hungrySubscribers queue} management.
+ * managing demand through the {@link FlatMapSubscriber#signals} queue.
  *
  * @param <T> Type of original {@link Publisher}.
  * @param <R> Type of {@link Publisher} returned by the operator.
  */
 final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapMerge.class);
+    private static final int MIN_MAPPED_DEMAND = 1;
     private final Function<? super T, ? extends Publisher<? extends R>> mapper;
     private final int maxConcurrency;
-    private final int minMappedDemand;
     private final boolean delayError;
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
                           boolean delayError, Executor executor) {
-        this(original, mapper, delayError, 8, 8, executor);
+        this(original, mapper, delayError, 8, executor);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
-                          boolean delayError, int maxConcurrency, int minMappedDemand, Executor executor) {
+                          boolean delayError, int maxConcurrency, Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
         }
-        if (minMappedDemand <= 0) {
-            throw new IllegalArgumentException("minMappedDemand: " + minMappedDemand + " (expected >0)");
-        }
-        this.minMappedDemand = minMappedDemand;
         this.maxConcurrency = maxConcurrency;
         this.delayError = delayError;
     }
@@ -107,9 +103,6 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingLockUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "emittingLock");
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> requestingLockUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "requestingLock");
         @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<FlatMapSubscriber> mappedDemandUpdater =
                 AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "mappedDemand");
@@ -132,8 +125,6 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         @SuppressWarnings("unused")
         private volatile int emittingLock;
         private volatile int activeMappedSources;
-        @SuppressWarnings("unused")
-        private volatile int requestingLock;
         private volatile long pendingDemand;
         private volatile long mappedDemand;
 
@@ -146,13 +137,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private final Queue<Object> signals;
         private final PublisherFlatMapMerge<T, R> source;
         private final DynamicCompositeCancellable cancellableSubscribers;
-        private final Queue<FlatMapPublisherSubscriber<T, R>> hungrySubscribers;
 
         FlatMapSubscriber(PublisherFlatMapMerge<T, R> source, Subscriber<? super R> target) {
             this.source = source;
             this.target = target;
             signals = newUnboundedMpscQueue(4);
-            hungrySubscribers = newUnboundedMpscQueue(4);
             cancellableSubscribers = new SetDynamicCompositeCancellable(min(16, source.maxConcurrency));
         }
 
@@ -173,9 +162,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         FlowControlUtils::addWithOverflowProtectionIfNotNegative) == 0) {
                     drainPending();
                 }
-                if (incMappedDemand(n)) {
-                    distributeMappedDemand();
-                }
+                incMappedDemand(n);
             }
         }
 
@@ -244,97 +231,44 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             return false;
         }
 
-        private long reserveMappedDemand() {
-            for (;;) {
-                final long currMappedDemand = mappedDemand;
-                if (currMappedDemand <= 0) {
-                    // if the value of mappedDemand becomes positive, the caller will trigger a reevaluation.
-                    return 0;
-                }
-                if (mappedDemandUpdater.compareAndSet(this, currMappedDemand, 0)) {
-                    return currMappedDemand;
-                }
-            }
-        }
-
-        private boolean incMappedDemand(long n) {
+        private void incMappedDemand(long n) {
             assert n > 0;
-            final long prev = mappedDemandUpdater.getAndAccumulate(this, n,
-                    FlowControlUtils::addWithUnderOverflowProtection);
-            return prev <= 0 && n + prev > 0;
+            mappedDemandUpdater.getAndAccumulate(this, n, FlowControlUtils::addWithUnderOverflowProtection);
         }
 
-        private int reserveMappedDemandQuota(boolean reserveIfNotPositive) {
+        private int reserveMappedDemandQuota() {
             for (;;) {
                 final long prevDemand = mappedDemand;
                 if (prevDemand <= 0) {
-                    if (!reserveIfNotPositive) {
-                        return 0;
+                    // mappedDemand is allowed to go negative here in order to distribute MIN_MAPPED_DEMAND demand to
+                    // each source. This is to avoid a single mapped source (or set of sources) not making any progress
+                    // with the demand they were given, taking demand away from sources that could make progress. The
+                    // negative value ensures that if a source completes with unused demand it doesn't result in
+                    // artificially giving back "negative" demand and keeps the maximum queue size should be bound
+                    // to (maxConcurrency * minMappedDemand).
+                    if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - MIN_MAPPED_DEMAND)) {
+                        return MIN_MAPPED_DEMAND;
                     }
-                    // mappedDemand is allowed to go negative here in order to distribute some initial demand to each
-                    // source. This is to avoid a single mapped source (or set of sources) not making any progress with
-                    // the demand they were given, taking demand away from sources that could make progress. The maximum
-                    // queue size should be bound by (maxConcurrency * minMappedDemand).
-                    if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - source.minMappedDemand)) {
-                        return source.minMappedDemand;
+                } else {
+                    final int quota = calculateRequestNQuota(prevDemand);
+                    if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - quota)) {
+                        return quota;
                     }
-                }
-                final int quota = calculateRequestNQuota(prevDemand);
-                if (mappedDemandUpdater.compareAndSet(this, prevDemand, prevDemand - quota)) {
-                    return quota;
                 }
             }
         }
 
-        private void distributeMappedDemand(FlatMapPublisherSubscriber<T, R> hungrySubscriber,
-                                            boolean giveDemandEvenIfNegative) {
-            final int quota = reserveMappedDemandQuota(giveDemandEvenIfNegative);
-            if (quota > 0) {
-                final int usedQuota = hungrySubscriber.request(quota);
-                if (usedQuota < quota && incMappedDemand(quota - usedQuota)) {
-                    // If we gave some back and transitioned from 0 demand, we need to try to distribute demand
-                    // in case other hungry subscribers were added in the mean time
-                    // (since we have not acquired the requestingLock).
-                    distributeMappedDemand();
-                }
-            } else { // slow path. no demand, add to queue and process later when demand arrives.
-                hungrySubscribers.add(hungrySubscriber);
-                distributeMappedDemand();
-            }
-        }
-
-        private void distributeMappedDemand() {
-            Throwable delayedCause = null;
-            boolean tryAcquire = true;
-            while (tryAcquire && tryAcquireLock(requestingLockUpdater, this)) {
-                try {
-                    final long availableRequestN = reserveMappedDemand();
-                    if (availableRequestN > 0) {
-                        long remainingRequestN = availableRequestN;
-                        final int quota = calculateRequestNQuota(availableRequestN);
-                        FlatMapPublisherSubscriber<T, R> hungrySubscriber;
-                        while ((hungrySubscriber = hungrySubscribers.poll()) != null) {
-                            remainingRequestN -= hungrySubscriber.request(quota);
-                        }
-                        if (remainingRequestN > 0) {
-                            mappedDemandUpdater.accumulateAndGet(this, remainingRequestN,
-                                    FlowControlUtils::addWithUnderOverflowProtection);
-                        }
-                    }
-                } catch (Throwable cause) {
-                    delayedCause = catchUnexpected(delayedCause, cause);
-                } finally {
-                    tryAcquire = !releaseLock(requestingLockUpdater, this);
-                }
-            }
-            if (delayedCause != null) {
-                throwException(delayedCause);
+        private void distributeMappedDemand(FlatMapPublisherSubscriber<T, R> hungrySubscriber) {
+            final int quota = reserveMappedDemandQuota();
+            final int usedQuota = hungrySubscriber.request(quota);
+            if (usedQuota < quota) {
+                incMappedDemand(quota - usedQuota);
             }
         }
 
         private int calculateRequestNQuota(long availableRequestN) {
             // Get an approximate quota to distribute to each active mapped subscriber.
-            return (int) min(Integer.MAX_VALUE, max(availableRequestN / source.maxConcurrency, source.minMappedDemand));
+            return (int) min(Integer.MAX_VALUE, max(availableRequestN / source.maxConcurrency, MIN_MAPPED_DEMAND));
         }
 
         private void doCancel(boolean cancelSubscription, boolean invalidatePendingDemand) {
@@ -353,8 +287,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 }
             } finally {
                 cancellableSubscribers.cancel();
-                // Don't bother clearing out hungrySubscribers or signals (which require additional concurrency control)
-                // because it is assumed this Subscriber will be dereferenced and eligible for GC [1].
+                // Don't bother clearing out signals (which require additional concurrency control) because it is
+                // assumed this Subscriber will be dereferenced and eligible for GC [1].
                 // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.13
             }
         }
@@ -462,7 +396,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                                         @SuppressWarnings("unchecked")
                                         final FlatMapPublisherSubscriber<T, R> hungrySubscriber =
                                                 (FlatMapPublisherSubscriber<T, R>) t;
-                                        distributeMappedDemand(hungrySubscriber, false);
+                                        distributeMappedDemand(hungrySubscriber);
                                     } else {
                                         break;
                                     }
@@ -522,7 +456,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             } else if (item instanceof FlatMapPublisherSubscriber) {
                 @SuppressWarnings("unchecked")
                 final FlatMapPublisherSubscriber<T, R> hungrySubscriber = (FlatMapPublisherSubscriber<T, R>) item;
-                distributeMappedDemand(hungrySubscriber, false);
+                distributeMappedDemand(hungrySubscriber);
                 return false;
             }
             target.onNext(unwrapNullUnchecked(item));
@@ -572,8 +506,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber, int unusedDemand) {
             if (cancellableSubscribers.remove(subscriber) && decrementActiveMappedSources()) {
                 return true;
-            } else if (unusedDemand > 0 && incMappedDemand(unusedDemand)) {
-                distributeMappedDemand();
+            } else if (unusedDemand > 0) {
+                incMappedDemand(unusedDemand);
             }
             return false;
         }
@@ -630,7 +564,13 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             @Override
             public void onSubscribe(final Subscription s) {
                 subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
-                parent.distributeMappedDemand(this, true);
+                // RequestN management for mapped sources is "approximate" as it is divided between mapped sources. More
+                // demand may be distributed than is requested from downstream in order to avoid deadlock scenarios.
+                // To accommodate for the "approximate" mapped demand we maintain a signal queue (bounded by the
+                // concurrency). This presents an opportunity to decouple downstream requestN requests from iterating
+                // all active mapped sources and instead optimistically give out demand here and replenish demand after
+                // signals are delivered to the downstream subscriber (based upon available demand is available).
+                parent.distributeMappedDemand(this);
             }
 
             @Override

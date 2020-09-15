@@ -193,8 +193,7 @@ public abstract class Publisher<T> {
      * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
      * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
-     * To control the amount of concurrent processing done by this operator see
-     * {@link #flatMapMerge(Function, int, int)}.
+     * To control the amount of concurrent processing done by this operator see {@link #flatMapMerge(Function, int)}.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
      * transformation in sequential programming similar to:
@@ -251,15 +250,13 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
-     * @param minMappedDemandHint Hint for the minimum amount of {@link Subscription#request(long) demand} for
-     * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper,
-                                               int maxConcurrency, int minMappedDemandHint) {
-        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, minMappedDemandHint, executor);
+                                               int maxConcurrency) {
+        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, executor);
     }
 
     /**
@@ -273,7 +270,7 @@ public abstract class Publisher<T> {
      * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
      * <p>
      * To control the amount of concurrent processing done by this operator see
-     * {@link #flatMapMergeDelayError(Function, int, int)}.
+     * {@link #flatMapMergeDelayError(Function, int)}.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
      * transformation in sequential programming similar to:
@@ -351,15 +348,13 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
-     * @param minMappedDemandHint Hint for the minimum amount of {@link Subscription#request(long) demand} for
-     * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
-                                                         int maxConcurrency, int minMappedDemandHint) {
-        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, minMappedDemandHint, executor);
+                                                         int maxConcurrency) {
+        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, executor);
     }
 
     /**

@@ -95,7 +95,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void singleConcurrencyComplete() throws InterruptedException {
-        singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1), 1, 1));
+        singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1), 1));
     }
 
     @Test
@@ -105,7 +105,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void singleConcurrencyDelayErrorComplete() throws InterruptedException {
-        singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1), 1, 1));
+        singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1), 1));
     }
 
     @Test
@@ -126,7 +126,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void singleConcurrencyNullComplete() throws InterruptedException {
-        toSource(publisher.flatMapMerge(i -> from((Integer) null), 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> from((Integer) null), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
         publisher.onComplete();
@@ -138,7 +138,7 @@ public class PublisherFlatMapMergeTest {
     @Test
     public void singleItemSourceCompleteFirst() throws InterruptedException {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
         publisher.onComplete();
@@ -157,7 +157,7 @@ public class PublisherFlatMapMergeTest {
     @Test
     public void singleItemMappedCompleteFirst() throws InterruptedException {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
 
@@ -175,7 +175,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void singleItemMappedError() throws InterruptedException {
-        toSource(publisher.flatMapMerge(i -> Publisher.<Integer>failed(DELIBERATE_EXCEPTION), 1, 1))
+        toSource(publisher.flatMapMerge(i -> Publisher.<Integer>failed(DELIBERATE_EXCEPTION), 1))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -185,7 +185,7 @@ public class PublisherFlatMapMergeTest {
     @Test
     public void singleItemMappedErrorPostSourceComplete() throws InterruptedException {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
         publisher.onComplete();
@@ -201,7 +201,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void sourceEmitsErrorNoOnNext() throws InterruptedException {
-        toSource(publisher.flatMapMerge(i -> from(i + 1), 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription();
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -209,7 +209,7 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void sourceEmitsErrorPostOnNexts() throws InterruptedException {
-        toSource(publisher.flatMapMerge(i -> from(i + 1), 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -225,7 +225,7 @@ public class PublisherFlatMapMergeTest {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
         assertTrue(mappedPublisher.isSubscribed());
@@ -240,7 +240,7 @@ public class PublisherFlatMapMergeTest {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
         publisher.onNext(1);
@@ -264,7 +264,7 @@ public class PublisherFlatMapMergeTest {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
-        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
         publisher.onNext(1);
@@ -298,7 +298,7 @@ public class PublisherFlatMapMergeTest {
             TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
             mappedPublishers.add(pair);
             return pair.mappedPublisher;
-        }, 2, 2)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
 
@@ -310,9 +310,9 @@ public class PublisherFlatMapMergeTest {
         TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
 
         first.doOnSubscribe(1);
-        first.mappedSubscription.awaitRequestN(2);
+        first.mappedSubscription.awaitRequestN(1);
         second.doOnSubscribe(2);
-        second.mappedSubscription.awaitRequestN(2);
+        second.mappedSubscription.awaitRequestN(1);
 
         // Exhaust outstanding requestN from downstream
         first.mappedPublisher.onNext(10);
@@ -339,7 +339,7 @@ public class PublisherFlatMapMergeTest {
                 });
         toSource(publisher.<Integer>flatMapMerge(i -> {
             throw DELIBERATE_EXCEPTION;
-        }, 1, 1)).subscribe(subscriber);
+        }, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
 
         try {
@@ -369,7 +369,7 @@ public class PublisherFlatMapMergeTest {
             TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
             mappedPublishers.add(pair);
             return pair.mappedPublisher;
-        }, 2, 5)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
 
         // Should not request more than max concurrency.
@@ -426,7 +426,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.flatMapMerge(Publisher::from, 2, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(Publisher::from, 2)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
 
         subscription.request(Long.MAX_VALUE);
@@ -458,7 +458,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.flatMapMerge(Publisher::from, 2, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(Publisher::from, 2)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(max - 1);
 
@@ -477,7 +477,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.<Integer>flatMapMergeDelayError(i -> Publisher.failed(DELIBERATE_EXCEPTION), 2, 1))
+        toSource(publisher.<Integer>flatMapMergeDelayError(i -> Publisher.failed(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         verifyCumulativeDemand(upstreamSubscription, 2);
@@ -496,7 +496,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.flatMapMerge(Publisher::from, 10, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(Publisher::from, 10)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(2);
         verifyCumulativeDemand(upstreamSubscription, 10);
@@ -524,7 +524,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.flatMapMerge(Publisher::from, 2, 1)).subscribe(subscriber);
+        toSource(publisher.flatMapMerge(Publisher::from, 2)).subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(2);
         subscription.request(2);
@@ -547,7 +547,7 @@ public class PublisherFlatMapMergeTest {
             DeliberateException de = new DeliberateException();
             errors.add(de);
             return Publisher.failed(de);
-        }, 2, 1)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
 
         publisher.onNext(1, 2);
@@ -565,7 +565,7 @@ public class PublisherFlatMapMergeTest {
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         final int maxRange = 1000000;
-        toSource(publisher.flatMapMerge(i -> range(0, maxRange), 10, 1)).subscribe(
+        toSource(publisher.flatMapMerge(i -> range(0, maxRange), 10)).subscribe(
                 new Subscriber<Integer>() {
                     @Nullable
                     private Subscription subscription;
@@ -617,7 +617,7 @@ public class PublisherFlatMapMergeTest {
             TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
             mappedPublishers.add(pair);
             return pair.mappedPublisher;
-        }, 2, 5)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
         verifyCumulativeDemand(upstreamSubscription, 2);
 
@@ -662,7 +662,7 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.flatMapMerge(Publisher::from, 2, 5).beforeOnNext(received::add))
+        toSource(publisher.flatMapMerge(Publisher::from, 2).beforeOnNext(received::add))
                 .subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         assert executorService != null;
@@ -689,7 +689,7 @@ public class PublisherFlatMapMergeTest {
     public void concurrentMappedAndPublisherTermination() throws Exception {
         assert executor != null;
         Single<List<Integer>> single = range(0, 1000)
-                .flatMapMerge(i -> executor.submit(() -> i).toPublisher(), 1024, 10)
+                .flatMapMerge(i -> executor.submit(() -> i).toPublisher(), 1024)
                 .collect(ArrayList::new, (ints, i) -> {
                     ints.add(i);
                     return ints;
@@ -707,7 +707,7 @@ public class PublisherFlatMapMergeTest {
         final int mappedItems = 5;
         final TestCollectingPublisherSubscriber<IntPair> subscriber = new TestCollectingPublisherSubscriber<>();
         Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
-                .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems, mappedItems);
+                .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems);
         toSource(publisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(upstreamItems * mappedItems);
 
@@ -740,7 +740,7 @@ public class PublisherFlatMapMergeTest {
                         return i;
                     }
                     throw new DeliberateException();
-                }).toPublisher(), 1024, 10)
+                }).toPublisher(), 1024)
                 .recoverWith(t -> {
                     error.set(t);
                     return Publisher.empty();
@@ -773,7 +773,7 @@ public class PublisherFlatMapMergeTest {
             TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
             mappedPublishers.add(pair);
             return pair.mappedPublisher;
-        }, 2, 2)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
 
         publisher.onNext(1, 2);
@@ -821,7 +821,7 @@ public class PublisherFlatMapMergeTest {
             TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
             mappedPublishers.add(pair);
             return pair.mappedPublisher;
-        }, 2, 2)).subscribe(subscriber);
+        }, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
 
         publisher.onNext(1, 2);
@@ -852,32 +852,45 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void lastActiveMappedPublisherCanDeliverData() throws Throwable {
-        CountDownLatch latch = new CountDownLatch(1);
+        final int mappedRangeBegin = 5;
+        final int mappedRangeEnd = 10;
+        CountDownLatch latch = new CountDownLatch(mappedRangeEnd - mappedRangeBegin);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        final int lastIndex = 2;
+        final int lastIndex = 100;
         toSource(range(0, lastIndex)
-                .flatMapMerge(i -> i == lastIndex - 1 ? from(lastIndex) : never(), lastIndex, 1)
+                .flatMapMerge(i -> i == lastIndex - 1 ? range(mappedRangeBegin, mappedRangeEnd) : never(), lastIndex)
         ).subscribe(new Subscriber<Integer>() {
+            @Nullable
+            private Subscription subscription;
             @Override
             public void onSubscribe(final Subscription subscription) {
+                this.subscription = subscription;
                 subscription.request(1);
             }
 
             @Override
             public void onNext(@Nullable final Integer integer) {
+                assert subscription != null;
                 latch.countDown();
+                subscription.request(1);
             }
 
             @Override
             public void onError(final Throwable t) {
                 causeRef.set(t);
-                latch.countDown();
+                latchToZero();
             }
 
             @Override
             public void onComplete() {
                 causeRef.set(new IllegalStateException("onComplete not expected"));
-                latch.countDown();
+                latchToZero();
+            }
+
+            private void latchToZero() {
+                while (latch.getCount() > 0) {
+                    latch.countDown();
+                }
             }
         });
         latch.await();
