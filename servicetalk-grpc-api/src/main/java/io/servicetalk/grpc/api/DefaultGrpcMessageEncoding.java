@@ -15,12 +15,12 @@
  */
 package io.servicetalk.grpc.api;
 
-public class GrpcMessageEncodingImpl implements GrpcMessageEncoding {
+class DefaultGrpcMessageEncoding implements GrpcMessageEncoding {
 
     private final String encoding;
     private final GrpcMessageCodec codec;
 
-    public GrpcMessageEncodingImpl(final String encoding, final GrpcMessageCodec messageCodec) {
+    DefaultGrpcMessageEncoding(final String encoding, final GrpcMessageCodec messageCodec) {
         this.encoding = encoding;
         this.codec = messageCodec;
     }
@@ -37,7 +37,7 @@ public class GrpcMessageEncodingImpl implements GrpcMessageEncoding {
 
     @Override
     public String toString() {
-        return "GrpcMessageEncodingImpl{" +
+        return "DefaultGrpcMessageEncoding{" +
                 "encoding='" + encoding + '\'' +
                 '}';
     }

@@ -29,6 +29,13 @@ import static java.util.Collections.singleton;
  */
 public interface GrpcService extends AsyncCloseable {
 
+    /**
+     * The set of {@link GrpcMessageEncoding} encodings supported for this
+     * <a href="https://www.grpc.io">gRPC</a> service.
+     *
+     * @return The set of {@link GrpcMessageEncoding} encodings supported for this
+     * <a href="https://www.grpc.io">gRPC</a> service.
+     */
     default Set<GrpcMessageEncoding> supportedEncodings() {
         return singleton(NONE);
     }

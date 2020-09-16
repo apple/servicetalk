@@ -42,7 +42,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
-        this.supportedEncodings = unmodifiableSet(requireNonNull(supportedEncodings));
+        this.supportedEncodings = unmodifiableSet(supportedEncodings);
     }
 
     @Override

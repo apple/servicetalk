@@ -36,6 +36,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +46,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.toHeaderValue;
 import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
@@ -91,7 +91,7 @@ final class GrpcUtils {
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
-        headers.set(GRPC_ACCEPT_ENCODING_KEY, toHeaderValue(supportedEncodings));
+        headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncodingsHeaderValue(supportedEncodings));
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
@@ -180,7 +180,7 @@ final class GrpcUtils {
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
-            return (Publisher<Resp>) response.payloadBodyAndTrailers().ignoreElements()
+            return response.payloadBodyAndTrailers().ignoreElements()
                     .concat(grpcStatusException != null ? failed(grpcStatusException) : empty());
         }
 
@@ -303,12 +303,13 @@ final class GrpcUtils {
          * it SHALL send the message uncompressed.
          * ref: https://github.com/grpc/grpc/blob/master/doc/compression.md
          */
+        for (GrpcMessageEncoding encoding : serverSupportedEncodings) {
+            if (encoding != NONE && clientSupportedEncodings.contains(encoding)) {
+                return encoding;
+            }
+        }
 
-        return serverSupportedEncodings.stream()
-                .filter((encoding -> encoding != NONE)) // Avoid picking NONE if other encodings match
-                .filter(clientSupportedEncodings::contains)
-                .findFirst()
-                .orElse(NONE);
+        return NONE;
     }
 
     private static void initResponse(final HttpResponseMetaData response, @Nullable final GrpcServiceContext context) {
@@ -317,7 +318,7 @@ final class GrpcUtils {
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
         if (context != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, toHeaderValue(context.supportedEncodings()));
+            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncodingsHeaderValue(context.supportedEncodings()));
         }
     }
 
@@ -352,6 +353,29 @@ final class GrpcUtils {
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException("Could not decode grpc status details", e);
         }
+    }
+
+    /**
+     * Construct the gRPC header {@code grpc-accept-encoding} representation of the given encodings.
+     *
+     * @param encodings the list of encodings to be used in the string representation.
+     * @return a comma separated string representation of the encodings for use as a header value
+     */
+    private static CharSequence acceptedEncodingsHeaderValue(final Collection<GrpcMessageEncoding> encodings) {
+        StringBuilder builder = new StringBuilder();
+        for (GrpcMessageEncoding enc : encodings) {
+            // if (enc == NONE) {
+            //     continue;
+            // }
+
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+
+            builder.append(enc.name());
+        }
+
+        return newAsciiString(builder.toString());
     }
 
     @SuppressWarnings("unchecked")

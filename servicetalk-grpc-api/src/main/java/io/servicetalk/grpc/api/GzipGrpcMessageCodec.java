@@ -23,7 +23,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.InflaterInputStream;
 
-public class GzipGrpcMessageCodec extends ZipGrpcMessageCodec {
+class GzipGrpcMessageCodec extends ZipGrpcMessageCodec {
 
     @Override
     InflaterInputStream newCodecInputStream(final InputStream in) throws IOException {

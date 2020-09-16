@@ -20,7 +20,7 @@ import java.io.OutputStream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-public class DeflateGrpcMessageCodec extends ZipGrpcMessageCodec {
+class DeflateGrpcMessageCodec extends ZipGrpcMessageCodec {
 
     @Override
     DeflaterOutputStream newCodecOutputStream(final OutputStream out) {

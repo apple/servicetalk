@@ -32,5 +32,12 @@ public interface GrpcClientMetadata extends GrpcMetadata {
     @Nullable
     GrpcExecutionStrategy strategy();
 
+    /**
+     * {@link GrpcMessageEncoding} to use for the associated
+     * <a href="https://www.grpc.io">gRPC</a> method.
+     *
+     * @return {@link GrpcMessageEncoding} to use for the associated
+     * <a href="https://www.grpc.io">gRPC</a> method.
+     */
     GrpcMessageEncoding requestEncoding();
 }

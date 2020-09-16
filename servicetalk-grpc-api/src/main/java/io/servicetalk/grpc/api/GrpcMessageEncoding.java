@@ -15,11 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.util.Collection;
-
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-
 /**
  * Supported <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#message-encoding">
  *     gRPC message encoding schemes</a>.
@@ -39,27 +34,4 @@ public interface GrpcMessageEncoding {
      * @return a shared instance of the codec for that message-encoding
      */
     GrpcMessageCodec codec();
-
-    /**
-     * Construct the gRPC header {@code grpc-accept-encoding} representation of the given encodings.
-     *
-     * @param encodings the list of encodings to be used in the string representation.
-     * @return a comma separated string representation of the encodings for use as a header value
-     */
-    static CharSequence toHeaderValue(final Collection<GrpcMessageEncoding> encodings) {
-        StringBuilder builder = new StringBuilder();
-        for (GrpcMessageEncoding enc : encodings) {
-            if (enc == NONE) {
-                continue;
-            }
-
-            if (builder.length() > 0) {
-                builder.append(", ");
-            }
-
-            builder.append(enc.name());
-        }
-
-        return newAsciiString(builder.toString());
-    }
 }

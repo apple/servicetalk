@@ -18,17 +18,28 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.nio.ByteBuffer;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Codec used to encode and decode gRPC messages.
  * This instance is shared across all requests/responses therefore it must provide thread safety semantics.
  */
-
-@ThreadSafe
 public interface GrpcMessageCodec {
 
+    /**
+     * Take a {@link ByteBuffer} and encode its contents resulting in a {@link ByteBuffer} with the encoded contents.
+     *
+     * @param src the {@link ByteBuffer} to encode
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link ByteBuffer} the result buffer with the content encoded
+     */
     ByteBuffer encode(ByteBuffer src, BufferAllocator allocator);
 
+    /**
+     * Take a {@link ByteBuffer} and decode its contents resulting in a {@link ByteBuffer} with the decoded content.
+     *
+     * @param src the {@link ByteBuffer} to decode
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link ByteBuffer} the result buffer with the content decoded
+     */
     ByteBuffer decode(ByteBuffer src, BufferAllocator allocator);
 }

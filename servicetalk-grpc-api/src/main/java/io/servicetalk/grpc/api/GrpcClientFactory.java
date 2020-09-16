@@ -56,9 +56,9 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     final Client newClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
         if (filterFactory == null) {
-            return newClient(clientCallFactory, supportedEncodings);
+            return newClient(clientCallFactory);
         }
-        return newClient(newFilter(newClient(clientCallFactory, supportedEncodings), filterFactory));
+        return newClient(newFilter(newClient(clientCallFactory), filterFactory));
     }
 
     /**
@@ -72,10 +72,10 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     final BlockingClient newBlockingClientForCallFactory(GrpcClientCallFactory clientCallFactory) {
         if (filterFactory == null) {
-            return newBlockingClient(clientCallFactory, supportedEncodings);
+            return newBlockingClient(clientCallFactory);
         }
         return newClient(newFilter(
-                newBlockingClient(clientCallFactory, supportedEncodings).asClient(), filterFactory))
+                newBlockingClient(clientCallFactory).asClient(), filterFactory))
                 .asBlockingClient();
     }
 
@@ -114,7 +114,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
     supportedEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
-        this.supportedEncodings = unmodifiableSet(requireNonNull(supportedEncodings));
+        this.supportedEncodings = unmodifiableSet(supportedEncodings);
         return this;
     }
 
@@ -138,8 +138,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
-    protected abstract Client newClient(GrpcClientCallFactory clientCallFactory,
-                                        Set<GrpcMessageEncoding> supportedEncodings);
+    protected abstract Client newClient(GrpcClientCallFactory clientCallFactory);
 
     /**
      * Create a new {@link Filter} using the passed {@link Client} and {@link FilterFactory}.
@@ -169,6 +168,5 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.
      */
-    protected abstract BlockingClient newBlockingClient(GrpcClientCallFactory clientCallFactory,
-                                                        Set<GrpcMessageEncoding> supportedEncodings);
+    protected abstract BlockingClient newBlockingClient(GrpcClientCallFactory clientCallFactory);
 }

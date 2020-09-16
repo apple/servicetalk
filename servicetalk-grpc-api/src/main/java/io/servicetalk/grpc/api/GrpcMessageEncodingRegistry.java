@@ -28,11 +28,11 @@ public final class GrpcMessageEncodingRegistry {
     private static final ConcurrentMap<String, GrpcMessageEncoding> REGISTRY = new ConcurrentHashMap<>();
 
     public static final GrpcMessageEncoding NONE =
-            new GrpcMessageEncodingImpl("identity", new IdentityGrpcMessageCodec());
+            new DefaultGrpcMessageEncoding("identity", new IdentityGrpcMessageCodec());
     public static final GrpcMessageEncoding GZIP =
-            new GrpcMessageEncodingImpl("gzip", new GzipGrpcMessageCodec());
+            new DefaultGrpcMessageEncoding("gzip", new GzipGrpcMessageCodec());
     public static final GrpcMessageEncoding DEFLATE =
-            new GrpcMessageEncodingImpl("deflate", new DeflateGrpcMessageCodec());
+            new DefaultGrpcMessageEncoding("deflate", new DeflateGrpcMessageCodec());
 
     static {
         registerEncoding(NONE);

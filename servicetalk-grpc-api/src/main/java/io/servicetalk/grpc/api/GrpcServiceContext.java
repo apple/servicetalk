@@ -31,6 +31,13 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
     @Override
     GrpcProtocol protocol();
 
+    /**
+     * The set of {@link GrpcMessageEncoding} encoding used for this
+     * <a href="https://www.grpc.io">gRPC</a> call.
+     *
+     * @return the set of {@link GrpcMessageEncoding} encoding used for this
+     * <a href="https://www.grpc.io">gRPC</a> call
+     */
     Set<GrpcMessageEncoding> supportedEncodings();
 
     interface GrpcProtocol extends Protocol {

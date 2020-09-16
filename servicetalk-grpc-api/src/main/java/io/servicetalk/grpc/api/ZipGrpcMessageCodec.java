@@ -28,7 +28,7 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
 
-public abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
+abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
 
     private static final int ONE_KB = 1 << 10;
 
@@ -42,19 +42,7 @@ public abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
         final Buffer buffer = allocator.newBuffer(ONE_KB);
         DeflaterOutputStream output = null;
         try {
-            output = newCodecOutputStream(new OutputStream() {
-                @Override
-                public void write(final int b) throws IOException {
-                    buffer.ensureWritable(1);
-                    buffer.writeByte(b);
-                }
-
-                @Override
-                public void write(final byte[] b, final int off, final int len) throws IOException {
-                    buffer.ensureWritable(len);
-                    buffer.writeBytes(b, off, len);
-                }
-            });
+            output = newCodecOutputStream(Buffer.asOutputStream(buffer));
             output.write(src.array(), src.arrayOffset() + src.position(), src.remaining());
             output.finish();
             // Mark original as consumed
@@ -76,16 +64,9 @@ public abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
             input = newCodecInputStream(new ByteArrayInputStream(src.array(),
                     src.arrayOffset() + src.position(), src.remaining()));
 
-            int written = 0;
-            while ((written = input.read(buffer.array(),
-                    buffer.arrayOffset() + buffer.writerIndex(), buffer.writableBytes())) > 0) {
-                buffer.writerIndex(buffer.writerIndex() + written);
-                if (written < buffer.writableBytes()) {
-                    break;
-                }
+            int read = buffer.setBytesUntilEndStream(0, input, ONE_KB);
+            buffer.writerIndex(read);
 
-                buffer.ensureWritable(ONE_KB);
-            }
             // Mark original as consumed
             src.position(src.position() + src.remaining());
         } catch (IOException e) {
