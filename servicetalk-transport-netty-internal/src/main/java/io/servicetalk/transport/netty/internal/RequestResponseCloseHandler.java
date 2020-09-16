@@ -123,6 +123,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     private static boolean isAllowHalfClosure(final Channel channel) {
         return (channel instanceof SocketChannel) ? ((SocketChannel) channel).config().isAllowHalfClosure() :
+                channel instanceof DuplexChannel ||
                 channel instanceof EmbeddedChannel; // Exceptionally used in unit tests
     }
 

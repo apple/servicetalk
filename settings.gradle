@@ -41,6 +41,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:metadata",
         "servicetalk-examples:http:serialization",
         "servicetalk-examples:http:service-composition",
+        "servicetalk-examples:http:uds",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
         "servicetalk-grpc-netty",
@@ -82,3 +83,4 @@ project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-ja
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
 project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
+project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"

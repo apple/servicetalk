@@ -179,9 +179,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 globalDnsServiceDiscoverer());
     }
 
-    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(
-            final U u, final InetSocketAddress address) {
-        ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+    static <U, R> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
+            final U u, final R address) {
+        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
                 new NoopServiceDiscoverer<>(u, address);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
     }
@@ -495,6 +495,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
+    @Nullable
     private CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
@@ -506,8 +507,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         if (address instanceof InetSocketAddress) {
             return toSocketAddressString((InetSocketAddress) address);
         }
-        throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
-                " to CharSequence");
+        return address.toString();
     }
 
     private CharSequence unresolvedHostFunction(final U address) {
@@ -540,24 +540,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
-    private static final class NoopServiceDiscoverer<OriginalAddress>
-            implements ServiceDiscoverer<OriginalAddress, InetSocketAddress,
-            ServiceDiscovererEvent<InetSocketAddress>> {
+    private static final class NoopServiceDiscoverer<OriginalAddress, ResolvedAddress>
+            implements ServiceDiscoverer<OriginalAddress, ResolvedAddress,
+            ServiceDiscovererEvent<ResolvedAddress>> {
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
+        private final Publisher<ServiceDiscovererEvent<ResolvedAddress>> resolution;
         private final OriginalAddress originalAddress;
 
-        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final InetSocketAddress address) {
+        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final ResolvedAddress address) {
             this.originalAddress = requireNonNull(originalAddress);
-            resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
+            resolution = Publisher.<ServiceDiscovererEvent<ResolvedAddress>>from(
                     new DefaultServiceDiscovererEvent<>(requireNonNull(address), true))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
                     .concat(never());
         }
 
         @Override
-        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final OriginalAddress address) {
+        public Publisher<ServiceDiscovererEvent<ResolvedAddress>> discover(final OriginalAddress address) {
             if (!this.originalAddress.equals(address)) {
                 return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
             }
