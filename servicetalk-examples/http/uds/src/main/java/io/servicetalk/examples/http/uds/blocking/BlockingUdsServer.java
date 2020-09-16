@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,17 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 public final class BlockingUdsServer {
     public static void main(String[] args) throws Exception {
         DomainSocketAddress udsAddress = udsAddress();
-        try {
-            HttpServers.forAddress(udsAddress)
-                    .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                            responseFactory.ok().payloadBody("Hello World!", textSerializer()))
-                    .awaitShutdown();
-        } finally {
-            new File(udsAddress.getPath()).delete(); // After the server is done, clean up the file.
-        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // After the server is done, clean up the file. This doesn't cover all cases (external forced shutdown,
+            // JVM crash, etc.) but best-effort cleanup is sufficient for temp file to allow the example to re-run.
+            if (!new File(udsAddress.getPath()).delete()) {
+                System.err.println("failed to delete UDS file: " + udsAddress);
+            }
+        }));
+
+        HttpServers.forAddress(udsAddress)
+                .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
+                .awaitShutdown();
     }
 }

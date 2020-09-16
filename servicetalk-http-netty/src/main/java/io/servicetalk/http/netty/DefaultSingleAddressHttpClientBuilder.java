@@ -55,6 +55,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -179,7 +180,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 globalDnsServiceDiscoverer());
     }
 
-    static <U, R> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
+    static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
             final U u, final R address) {
         ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
                 new NoopServiceDiscoverer<>(u, address);
@@ -495,7 +496,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
-    @Nullable
     private CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;

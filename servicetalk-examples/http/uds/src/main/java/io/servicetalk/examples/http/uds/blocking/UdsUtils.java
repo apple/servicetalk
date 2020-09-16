@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.uds.blocking;
 import io.servicetalk.transport.api.DomainSocketAddress;
 
 import java.io.File;
-import java.io.IOException;
 
 public final class UdsUtils {
     /**
