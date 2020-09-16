@@ -544,13 +544,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 if (!pendingDemandUpdater.compareAndSet(this, 0, n)) {
                     return 0;
                 }
-                clearSignalsQueued();
+                signalsQueued = false;
                 subscription.request(n);
                 return n;
-            }
-
-            void clearSignalsQueued() {
-                signalsQueued = false;
             }
 
             void markSignalsQueued() {
