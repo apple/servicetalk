@@ -143,8 +143,7 @@ public class GracefulConnectionClosureHandlingTest {
             // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
             proxyTunnel = new ProxyTunnel();
             proxyAddress = proxyTunnel.startProxy();
-            serverBuilder.secure().protocols("TLSv1.2")
-                    .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
         } else {
             proxyTunnel = null;
         }
@@ -176,7 +175,6 @@ public class GracefulConnectionClosureHandlingTest {
         HostAndPort serverAddress = serverHostAndPort(serverContext);
         client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
                 .secure().disableHostnameVerification()
-                .protocols("TLSv1.2")
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .commit() :
                 HttpClients.forSingleAddress(serverAddress))
