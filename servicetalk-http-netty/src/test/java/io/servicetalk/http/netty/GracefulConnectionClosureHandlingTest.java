@@ -380,13 +380,23 @@ public class GracefulConnectionClosureHandlingTest {
             assertResponsePayloadBody(secondResponse);
             assertRequestPayloadBody(secondRequest);
         } else {
-            if (proxyTunnel != null) {
-                Exception e = assertThrows(ExecutionException.class, secondResponseFuture::get);
-                // Proxy tunnel may close the connection prematurely and cause "Connection reset by peer"
-                assertThat(e.getCause(), anyOf(instanceOf(ClosedChannelException.class),
-                        instanceOf(IOException.class)));
-            } else {
-                assertClosedChannelException(secondResponseFuture::get, CHANNEL_CLOSED_INBOUND);
+            // In case of server graceful closure the second response may complete successfully if the second request
+            // reached the server before the closure was triggered, or may fail if it's not.
+            StreamingHttpResponse secondResponse = null;
+            try {
+                secondResponse = secondResponseFuture.get();
+            } catch (ExecutionException e) {
+                if (proxyTunnel != null) {
+                    assertThat(e.getCause(), anyOf(instanceOf(ClosedChannelException.class),
+                            instanceOf(IOException.class)));
+                } else {
+                    assertClosedChannelException(secondResponseFuture::get, CHANNEL_CLOSED_INBOUND);
+                }
+            }
+            if (secondResponse != null) {
+                assertResponse(secondResponse);
+                assertResponsePayloadBody(secondResponse);
+                assertRequestPayloadBody(secondRequest);
             }
         }
 
