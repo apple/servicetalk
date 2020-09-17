@@ -33,6 +33,7 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.LoggingTransportObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
@@ -127,7 +128,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .enableWireLogging("servicetalk-tests-server-wire-logger")
-                // .transportObserver(new LoggingTransportObserver())
+                .transportObserver(new LoggingTransportObserver())
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
