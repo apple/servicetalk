@@ -34,8 +34,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
