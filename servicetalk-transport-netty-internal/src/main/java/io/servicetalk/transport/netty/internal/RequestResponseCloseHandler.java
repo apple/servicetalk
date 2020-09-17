@@ -160,6 +160,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadBeginInbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolPayloadBeginInbound");
         assert ctx.executor().inEventLoop();
         pending = isClient ? pending - 1 : pending + 1;
         state = set(state, READ);
@@ -167,6 +168,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolPayloadEndInbound");
         assert ctx.executor().inEventLoop();
         state = unset(state, READ);
         if (has(state, CLOSING)) {
@@ -178,6 +180,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadBeginOutbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolPayloadBeginOutbound");
         assert ctx.executor().inEventLoop();
         pending = isClient ? pending + 1 : pending - 1;
         state = set(state, WRITE);
@@ -185,6 +188,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolPayloadEndOutbound");
         if (isClient || has(state, CLOSING)) {
             ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
         }
@@ -192,6 +196,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolPayloadEndOutboundSuccess");
         assert ctx.executor().inEventLoop();
         state = unset(state, WRITE);
         if (has(state, CLOSING)) {
@@ -203,6 +208,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolClosingInbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolClosingInbound");
         assert ctx.executor().inEventLoop();
         storeCloseRequestAndEmit(PROTOCOL_CLOSING_INBOUND);
         maybeCloseChannelHalfOrFullyOnClosing(ctx.channel(), PROTOCOL_CLOSING_INBOUND);
@@ -210,6 +216,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("protocolClosingOutbound");
         assert ctx.executor().inEventLoop();
         storeCloseRequestAndEmit(PROTOCOL_CLOSING_OUTBOUND);
         maybeCloseChannelHalfOrFullyOnClosing(ctx.channel(), PROTOCOL_CLOSING_OUTBOUND);
@@ -217,6 +224,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedInbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("channelClosedInbound");
         assert ctx.executor().inEventLoop();
         state = set(state, IN_CLOSED);
         // Use the actual event that initiated graceful closure:
@@ -229,6 +237,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void channelClosedOutbound(final ChannelHandlerContext ctx) {
+        LOGGER.debug("channelClosedOutbound");
         assert ctx.executor().inEventLoop();
         state = set(state, OUT_CLOSED);
         storeCloseRequestAndEmit(CHANNEL_CLOSED_OUTBOUND);
@@ -241,6 +250,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void closeChannelInbound(final Channel channel) {
+        LOGGER.debug("closeChannelInbound");
         // Do not reset INBOUND when server is closing gracefully. This event is triggered during processing of
         // ChannelOutputShutdownEvent if the USER_CLOSE was initiated after response was written.
         if (!hasAny(state, IN_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
@@ -252,6 +262,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void closeChannelOutbound(final Channel channel) {
+        LOGGER.debug("closeChannelOutbound");
         if (!has(state, OUT_CLOSED)) {
             LOGGER.debug("{} Half-Closing OUTBOUND (reset)", channel);
             setSocketResetOnClose(channel);
@@ -261,6 +272,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void userClosing(final Channel channel) {
+        LOGGER.debug("userClosing");
         assert channel.eventLoop().inEventLoop();
         storeCloseRequestAndEmit(USER_CLOSING);
         maybeCloseChannelHalfOrFullyOnClosing(channel, USER_CLOSING);
