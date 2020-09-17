@@ -16,8 +16,8 @@
   -->
 <Configuration status="info">
   <Properties>
-    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
-    <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
+    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-DEBUG}</Property>
+    <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-TRACE}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
