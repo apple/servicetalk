@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -406,7 +407,14 @@ public abstract class HttpServerBuilder {
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
-        StreamingHttpService filteredService = serviceFilter != null ? serviceFilter.create(rawService) : rawService;
+        StreamingHttpServiceFilterFactory currServiceFilter = serviceFilter;
+        if (!AsyncContext.isDisabled()) {
+            StreamingHttpServiceFilterFactory asyncContextFilter = new AsyncContextAwareHttpServiceFilter();
+            currServiceFilter = currServiceFilter == null ?
+                    asyncContextFilter : asyncContextFilter.append(currServiceFilter);
+        }
+        StreamingHttpService filteredService = currServiceFilter != null ?
+                currServiceFilter.create(rawService) : rawService;
         return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
     }
 }

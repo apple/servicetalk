@@ -16,7 +16,8 @@
   -->
 <Configuration status="info">
   <Properties>
-    <Property name="level">${sys:servicetalk.logger.level:-INFO}</Property>
+    <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
+    <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
@@ -24,9 +25,9 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="servicetalk-tests-client-wire-logger" level="TRACE"/>
-    <Logger name="servicetalk-tests-server-wire-logger" level="TRACE"/>
-    <Root level="${level}">
+    <Logger name="servicetalk-tests-client-wire-logger" level="${wireLogLevel}"/>
+    <Logger name="servicetalk-tests-server-wire-logger" level="${wireLogLevel}"/>
+    <Root level="${rootLevel}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>

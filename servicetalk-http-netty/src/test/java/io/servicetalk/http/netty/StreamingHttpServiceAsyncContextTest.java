@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -27,9 +28,11 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.lang.Thread.currentThread;
 
 public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
@@ -87,12 +90,13 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
         return (ctx, request, factory) -> {
             request.payloadBodyAndTrailers().ignoreElements().subscribe();
 
-            if (!AsyncContext.isEmpty()) {
-                return succeeded(factory.internalServerError());
+            AsyncContextMap current = AsyncContext.current();
+            if (!current.isEmpty()) {
+                return succeeded(factory.internalServerError().payloadBody(from(current.toString()), textSerializer()));
             }
             CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
             if (requestId != null) {
-                AsyncContext.put(K1, requestId);
+                current.put(K1, requestId);
                 return succeeded(factory.ok()
                         .setHeader(REQUEST_ID_HEADER, requestId));
             } else {
