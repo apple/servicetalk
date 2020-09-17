@@ -49,3 +49,7 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
+
+test {
+  outputs.upToDateWhen { false }
+}

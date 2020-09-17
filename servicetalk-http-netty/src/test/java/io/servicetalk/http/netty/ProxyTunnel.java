@@ -131,23 +131,34 @@ final class ProxyTunnel implements AutoCloseable {
             out.flush();
 
             final InputStream cin = clientSocket.getInputStream();
-            executor.submit(() -> copyStream(out, cin));
-            copyStream(clientSocket.getOutputStream(), in);
+            executor.submit(() -> copyStream(out, cin, false));
+            copyStream(clientSocket.getOutputStream(), in, true);
         } else {
             throw new RuntimeException("Unrecognized initial line: " + initialLine);
         }
     }
 
-    private static void copyStream(final OutputStream out, final InputStream cin) {
+    private static void copyStream(final OutputStream out, final InputStream cin, boolean toServer) {
+        int read = 0;
+        int written = 0;
         try {
             int b;
             while ((b = cin.read()) >= 0) {
+                read++;
                 out.write(b);
+                written++;
             }
-            out.flush();
         } catch (IOException e) {
             LOGGER.error("Proxy exception", e);
         } finally {
+            LOGGER.info("Finish forwarding from {} to {}. Read {}B, written {}B",
+                    toServer ? "client" : "server", toServer ? "server" : "client", read, written);
+            try {
+                // Flush last data before closing if possible
+                out.flush();
+            } catch (IOException e) {
+                // Ignore
+            }
             try {
                 cin.close();
             } catch (IOException closeE) {

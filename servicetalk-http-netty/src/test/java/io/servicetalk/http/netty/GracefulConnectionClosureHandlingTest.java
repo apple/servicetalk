@@ -126,6 +126,8 @@ public class GracefulConnectionClosureHandlingTest {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                .enableWireLogging("servicetalk-tests-server-wire-logger")
+                // .transportObserver(new LoggingTransportObserver())
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
@@ -143,7 +145,7 @@ public class GracefulConnectionClosureHandlingTest {
             // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
             proxyTunnel = new ProxyTunnel();
             proxyAddress = proxyTunnel.startProxy();
-            serverBuilder.secure().protocols("TLSv1.2")
+            serverBuilder.secure()
                     .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
         } else {
             proxyTunnel = null;
@@ -175,13 +177,16 @@ public class GracefulConnectionClosureHandlingTest {
 
         HostAndPort serverAddress = serverHostAndPort(serverContext);
         client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
-                .secure().disableHostnameVerification()
-                .protocols("TLSv1.2")
+                .secure()
+                .disableHostnameVerification()
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .commit() :
                 HttpClients.forSingleAddress(serverAddress))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                .enableWireLogging("servicetalk-tests-client-wire-logger")
+                // .appendConnectionFactoryFilter(
+                //         new TransportObserverConnectionFactoryFilter<>(new LoggingTransportObserver()))
                 .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
                         new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(cf) {
                             @Override

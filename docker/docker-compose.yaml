@@ -55,7 +55,9 @@ services:
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew --no-daemon --parallel --max-workers=4 clean test"
+#    command: bash -cl "./gradlew --no-daemon --parallel --max-workers=4 :servicetalk-http-netty:test --tests \"GracefulConnectionClosureHandlingTest\""
+    command: bash -cl "./gradlew --no-daemon --parallel --max-workers=4 :servicetalk-http-netty:test --tests \"GracefulConnectionClosureHandlingTest.closePipelinedAfterTwoRequestsSentBeforeAnyResponseReceived[initiateClosureFromClient=false viaProxy=true]\""
+
 
   quality:
     << : *common

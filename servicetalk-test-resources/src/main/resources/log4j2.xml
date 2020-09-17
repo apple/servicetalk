@@ -25,6 +25,9 @@
     </Console>
   </Appenders>
   <Loggers>
+    <Logger name="io.netty.util.internal" level="INFO"/>
+    <Logger name="io.netty.handler.ssl.CipherSuiteConverter" level="INFO"/>
+    <Logger name="io.netty.buffer.PooledByteBufAllocator" level="INFO"/>
     <Logger name="servicetalk-tests-client-wire-logger" level="${wireLogLevel}"/>
     <Logger name="servicetalk-tests-server-wire-logger" level="${wireLogLevel}"/>
     <Root level="${rootLevel}">
