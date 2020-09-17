@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
+import io.servicetalk.transport.netty.internal.CloseHandler.ProtocolPayloadEndEvent;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -488,7 +489,7 @@ public class RequestResponseCloseHandlerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                    if (evt == ProtocolPayloadEndEvent.OUTBOUND) {
                         ab.set(true);
                     }
                     ctx.fireUserEventTriggered(evt);
@@ -506,7 +507,7 @@ public class RequestResponseCloseHandlerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                    if (evt == ProtocolPayloadEndEvent.OUTBOUND) {
                         ab.set(true);
                     }
                     ctx.fireUserEventTriggered(evt);
@@ -519,12 +520,45 @@ public class RequestResponseCloseHandlerTest {
         }
 
         @Test
+        public void serverProtocolEndEventDoesntEmitUntilClosingAndIdle() throws Exception {
+            AtomicBoolean ab = new AtomicBoolean(false);
+            final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt == ProtocolPayloadEndEvent.OUTBOUND) {
+                        ab.set(true);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+            final ChannelHandlerContext ctx = channel.pipeline().firstContext();
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
+            // Request #1
+            channel.eventLoop().execute(() -> ch.protocolPayloadBeginInbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndInbound(ctx));
+            // Request #2
+            channel.eventLoop().execute(() -> ch.protocolPayloadBeginInbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndInbound(ctx));
+            channel.eventLoop().execute(() -> ch.userClosing(channel));
+            // Response #1
+            channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx));
+            channel.runPendingTasks();
+            assertThat("ProtocolPayloadEndEvent.OUTBOUND should not fire", ab.get(), is(false));
+            // Response #2
+            channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx));
+            channel.close().syncUninterruptibly();
+            assertThat("ProtocolPayloadEndEvent.OUTBOUND not fired", ab.get(), is(true));
+        }
+
+        @Test
         public void serverProtocolEndEventEmitsUserEventWhenClosing() {
             AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                    if (evt == ProtocolPayloadEndEvent.OUTBOUND) {
                         ab.set(true);
                     }
                     ctx.fireUserEventTriggered(evt);
