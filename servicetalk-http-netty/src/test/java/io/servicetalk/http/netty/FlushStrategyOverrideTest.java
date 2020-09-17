@@ -57,6 +57,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -176,9 +177,9 @@ public class FlushStrategyOverrideTest {
         }
 
         @Override
-        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
                 final InetSocketAddress inetSocketAddress) {
-            return from(new ServiceDiscovererEvent<InetSocketAddress>() {
+            return from(singletonList(new ServiceDiscovererEvent<InetSocketAddress>() {
                 @Override
                 public InetSocketAddress address() {
                     return serverAddr;
@@ -188,7 +189,7 @@ public class FlushStrategyOverrideTest {
                 public boolean isAvailable() {
                     return true;
                 }
-            });
+            }));
         }
 
         @Override

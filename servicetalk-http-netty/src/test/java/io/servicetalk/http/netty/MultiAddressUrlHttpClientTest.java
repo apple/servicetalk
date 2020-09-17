@@ -38,6 +38,7 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -146,7 +147,8 @@ public class MultiAddressUrlHttpClientTest {
     sdThatSupportsInvalidHostname() {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
-            public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final HostAndPort hostAndPort) {
+            public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                    final HostAndPort hostAndPort) {
                 if (INVALID_HOSTNAME.equalsIgnoreCase(hostAndPort.hostName())) {
                     return Publisher.failed(new UnknownHostException(
                             "Special domain name \"" + INVALID_HOSTNAME + "\" always returns NXDOMAIN"));

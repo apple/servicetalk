@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.util.Collection;
+
 /**
  * Represents the interaction pattern with a service discovery system. It is assumed that once {@link #discover(Object)}
  * is called that the service discovery system will push data updates or implementations of this interface will poll for
@@ -47,5 +49,5 @@ public interface ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
      * </ul>
      * @return a {@link Publisher} that represents a stream of events from the service discovery system.
      */
-    Publisher<E> discover(UnresolvedAddress address);
+    Publisher<Collection<E>> discover(UnresolvedAddress address);
 }

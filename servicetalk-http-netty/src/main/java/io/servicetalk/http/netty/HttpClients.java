@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -307,7 +308,7 @@ public final class HttpClients {
                             private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
                             @Override
-                            public Publisher<ServiceDiscovererEvent<R>> discover(final U u) {
+                            public Publisher<Collection<ServiceDiscovererEvent<R>>> discover(final U u) {
                                 return failed(new IllegalStateException("Invalid service discoverer."));
                             }
 
