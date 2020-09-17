@@ -15,9 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-
-import java.nio.ByteBuffer;
 
 /**
  * Codec used to encode and decode gRPC messages.
@@ -26,20 +25,24 @@ import java.nio.ByteBuffer;
 public interface GrpcMessageCodec {
 
     /**
-     * Take a {@link ByteBuffer} and encode its contents resulting in a {@link ByteBuffer} with the encoded contents.
+     * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
      *
-     * @param src the {@link ByteBuffer} to encode
+     * @param src the {@link Buffer} to encode
+     * @param offset the offset of the source to start reading from
+     * @param length the total length available for reading
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
-     * @return {@link ByteBuffer} the result buffer with the content encoded
+     * @return {@link Buffer} the result buffer with the content encoded
      */
-    ByteBuffer encode(ByteBuffer src, BufferAllocator allocator);
+    Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
-     * Take a {@link ByteBuffer} and decode its contents resulting in a {@link ByteBuffer} with the decoded content.
+     * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
      *
-     * @param src the {@link ByteBuffer} to decode
+     * @param src the {@link Buffer} to decode
+     * @param offset the offset of the source to start reading from
+     * @param length the total length available for reading
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
-     * @return {@link ByteBuffer} the result buffer with the content decoded
+     * @return {@link Buffer} the result buffer with the content decoded
      */
-    ByteBuffer decode(ByteBuffer src, BufferAllocator allocator);
+    Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
 }

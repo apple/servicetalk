@@ -15,9 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-
-import java.nio.ByteBuffer;
 
 /**
  * NOOP Message encoding codec
@@ -25,12 +24,12 @@ import java.nio.ByteBuffer;
 final class IdentityGrpcMessageCodec implements GrpcMessageCodec {
 
     @Override
-    public ByteBuffer encode(final ByteBuffer src, final BufferAllocator allocator) {
+    public Buffer encode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
         return src;
     }
 
     @Override
-    public ByteBuffer decode(final ByteBuffer src, final BufferAllocator allocator) {
+    public Buffer decode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
         return src;
     }
 }

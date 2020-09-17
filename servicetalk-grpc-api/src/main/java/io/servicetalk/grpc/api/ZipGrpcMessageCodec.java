@@ -18,15 +18,17 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.buffer.api.Buffer.asInputStream;
+import static io.servicetalk.buffer.api.Buffer.asOutputStream;
+import static java.lang.Math.min;
 
 abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
 
@@ -37,45 +39,48 @@ abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
     abstract InflaterInputStream newCodecInputStream(InputStream in) throws IOException;
 
     @Override
-    public final ByteBuffer encode(final ByteBuffer src, final BufferAllocator allocator) {
-
-        final Buffer buffer = allocator.newBuffer(ONE_KB);
+    public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        final Buffer dst = allocator.newBuffer(ONE_KB);
         DeflaterOutputStream output = null;
         try {
-            output = newCodecOutputStream(Buffer.asOutputStream(buffer));
-            output.write(src.array(), src.arrayOffset() + src.position(), src.remaining());
+            output = newCodecOutputStream(asOutputStream(dst));
+
+            if (src.hasArray()) {
+                output.write(src.array(), offset, length);
+            } else {
+                while (src.readableBytes() > 0) {
+                    byte[] onHeap = new byte[min(src.readableBytes(), ONE_KB)];
+                    src.readBytes(onHeap);
+                    output.write(onHeap);
+                }
+            }
+
             output.finish();
-            // Mark original as consumed
-            src.position(src.position() + src.remaining());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             closeQuietly(output);
         }
 
-        return buffer.toNioBuffer();
+        return dst;
     }
 
     @Override
-    public final ByteBuffer decode(final ByteBuffer src, final BufferAllocator allocator) {
-        final Buffer buffer = allocator.newBuffer(ONE_KB);
+    public final Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        final Buffer dst = allocator.newBuffer(ONE_KB);
         InflaterInputStream input = null;
         try {
-            input = newCodecInputStream(new ByteArrayInputStream(src.array(),
-                    src.arrayOffset() + src.position(), src.remaining()));
+            input = newCodecInputStream(asInputStream(src));
 
-            int read = buffer.setBytesUntilEndStream(0, input, ONE_KB);
-            buffer.writerIndex(read);
-
-            // Mark original as consumed
-            src.position(src.position() + src.remaining());
+            int read = dst.setBytesUntilEndStream(0, input, ONE_KB);
+            dst.writerIndex(read);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             closeQuietly(input);
         }
 
-        return buffer.toNioBuffer();
+        return dst;
     }
 
     private void closeQuietly(@Nullable final Closeable closeable) {

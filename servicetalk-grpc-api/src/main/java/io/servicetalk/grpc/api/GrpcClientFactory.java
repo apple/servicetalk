@@ -43,6 +43,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     @Nullable
     private FilterFactory filterFactory;
 
+    @SuppressWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
     protected Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(NONE));
 
     /**
@@ -133,7 +134,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link Client} contract using the passed {@link GrpcClientCallFactory}.
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
-     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * The returned {@link Client} should own the lifecycle of this factory.
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
@@ -163,7 +163,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link BlockingClient} contract using the passed {@link GrpcClientCallFactory}.
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
-     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * The returned {@link Client} should own the lifecycle of this factory.
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.

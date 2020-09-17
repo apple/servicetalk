@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -113,29 +114,29 @@ public class GrpcMessageEncodingTest {
                 private static final int OUGHT_TO_BE_ENOUGH = 1 << 20;
 
                 @Override
-                public ByteBuffer encode(final ByteBuffer src, final BufferAllocator allocator) {
+                public Buffer encode(final Buffer src, int offset, int length, final BufferAllocator allocator) {
                     try {
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         GZIPOutputStream out = new GZIPOutputStream(bos);
-                        out.write(src.array(), src.arrayOffset() + src.position(), src.remaining());
+                        out.write(src.array(), offset, length);
                         out.finish();
-                        return ByteBuffer.wrap(bos.toByteArray());
+                        return allocator.wrap(bos.toByteArray());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
 
                 @Override
-                public ByteBuffer decode(final ByteBuffer src, final BufferAllocator allocator) {
+                public Buffer decode(final Buffer src, int offset, int length, final BufferAllocator allocator) {
                     try {
                         GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(src.array(),
-                                src.arrayOffset() + src.position(), src.remaining()));
+                                offset, length));
                         ByteBuffer res = ByteBuffer.allocate(OUGHT_TO_BE_ENOUGH);
                         int read = in.read(res.array(), res.arrayOffset() + res.position(), res.remaining());
                         res.position(read);
                         res.flip();
                         in.close();
-                        return res;
+                        return allocator.wrap(res.array(), 0, read);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -411,19 +412,22 @@ public class GrpcMessageEncodingTest {
 
     private void assertSuccessful(final GrpcMessageEncoding encoding) throws ExecutionException, InterruptedException {
         client.test(new TestMetadata(encoding), request()).toFuture().get();
-        client.testRequestStream(new TestRequestStreamMetadata(encoding), from(request())).toFuture().get();
+        client.testRequestStream(new TestRequestStreamMetadata(encoding), from(request(), request(), request(),
+                request(), request())).toFuture().get();
+
         client.testResponseStream(new TestResponseStreamMetadata(encoding), request()).forEach(__ -> { /* noop */ });
-        client.testBiDiStream(new TestBiDiStreamMetadata(encoding), from(request())).toFuture().get();
+        client.testBiDiStream(new TestBiDiStreamMetadata(encoding), from(request(), request(), request(),
+                request(), request())).toFuture().get();
     }
 
     private void assertUnimplemented(final GrpcMessageEncoding encoding) {
         assertThrowsGrpcStatusUnimplemented(() -> client.test(new TestMetadata(encoding), request()).toFuture().get());
         assertThrowsGrpcStatusUnimplemented(() -> client.testRequestStream(new TestRequestStreamMetadata(encoding),
-                from(request())).toFuture().get());
+                from(request(), request(), request(), request(), request())).toFuture().get());
         assertThrowsGrpcStatusUnimplemented(() -> client.testResponseStream(new TestResponseStreamMetadata(encoding),
                 request()).toFuture().get().forEach(__ -> { /* noop */ }));
         assertThrowsGrpcStatusUnimplemented(() -> client.testBiDiStream(new TestBiDiStreamMetadata(encoding),
-                from(request())).toFuture().get());
+                from(request(), request(), request(), request(), request())).toFuture().get());
     }
 
     private void assertThrowsGrpcStatusUnimplemented(final ThrowingRunnable runnable) {

@@ -157,20 +157,29 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     final T t;
                     try {
                         final CodedInputStream in;
-                        if (toDeserialize.nioBufferCount() == 1) {
-                            ByteBuffer nioBuffer = toDeserialize.toNioBuffer(toDeserialize.readerIndex(), lengthOfData);
-                            in = CodedInputStream.newInstance(decompressIfNeeded(encoder, compressed, nioBuffer));
+                        Buffer buffer = toDeserialize;
+                        int decodedLengthOfData = lengthOfData;
+                        if (compressed) {
+                            buffer = encoder.decode(toDeserialize, toDeserialize.readerIndex(),
+                                    lengthOfData, DEFAULT_ALLOCATOR);
+                            decodedLengthOfData = buffer.readableBytes();
+                        }
+
+                        if (buffer.nioBufferCount() == 1) {
+                            ByteBuffer nioBuffer = buffer.toNioBuffer(buffer.readerIndex(), decodedLengthOfData);
+                            in = CodedInputStream.newInstance(nioBuffer);
                         } else {
                             // Aggregated payload body may consist of multiple Buffers. In this case,
                             // CompositeBuffer.toNioBuffer(idx, length) may return a single ByteBuffer (when requested
                             // length < components[0].length) or create a new ByteBuffer and copy multiple components
                             // into it. Later, proto parser will copy data from this temporary ByteBuffer again.
                             // To avoid unnecessary copying, we use newCodedInputStream(buffers, lengthOfData).
-                            final ByteBuffer[] buffers = toDeserialize.toNioBuffers(toDeserialize.readerIndex(),
-                                    lengthOfData);
+                            final ByteBuffer[] buffers = buffer.toNioBuffers(buffer.readerIndex(),
+                                    buffer.readableBytes());
+
                             in = buffers.length == 1 ?
-                                    CodedInputStream.newInstance(decompressIfNeeded(encoder, compressed, buffers[0])) :
-                                    newCodedInputStream(encoder, compressed, buffers, lengthOfData);
+                                    CodedInputStream.newInstance(buffers[0]) :
+                                    newCodedInputStream(buffers, decodedLengthOfData);
                         }
 
                         t = parser.parseFrom(in);
@@ -178,9 +187,12 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                         throw new SerializationException(e);
                     }
 
-                    // The NIO buffer indexes are not connected to the Buffer indexes, so we need to update
-                    // our indexes and discard any bytes if necessary.
-                    toDeserialize.skipBytes(lengthOfData);
+                    if (!compressed) {
+                        // The NIO buffer indexes are not connected to the Buffer indexes, so we need to update
+                        // our indexes and discard any bytes if necessary.
+                        toDeserialize.skipBytes(lengthOfData);
+                    }
+
                     if (toDeserialize == accumulate) {
                         accumulate.discardSomeReadBytes();
                     }
@@ -213,24 +225,12 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             }
         }
 
-        private static CodedInputStream newCodedInputStream(final GrpcMessageCodec encoder,
-                                                            final boolean isCompressed, final ByteBuffer[] buffers,
-                                                            final int lengthOfData) {
+        private static CodedInputStream newCodedInputStream(final ByteBuffer[] buffers, final int lengthOfData) {
             // Because we allocated a new internal ByteBuffer that will never be mutated we may just wrap it and
             // enable aliasing to avoid an extra copying inside parser for a deserialized message.
-            final CodedInputStream in = unsafeWrap(decompressIfNeeded(encoder, isCompressed,
-                    mergeByteBuffers(buffers, lengthOfData))).newCodedInput();
+            final CodedInputStream in = unsafeWrap(mergeByteBuffers(buffers, lengthOfData)).newCodedInput();
             in.enableAliasing(true);
             return in;
-        }
-
-        private static ByteBuffer decompressIfNeeded(final GrpcMessageCodec encoder,
-                                                     final boolean isCompressed, final ByteBuffer buffer) {
-            if (!isCompressed) {
-                return buffer;
-            }
-
-            return encoder.decode(buffer, DEFAULT_ALLOCATOR);
         }
 
         private static ByteBuffer mergeByteBuffers(final ByteBuffer[] buffers, final int lengthOfData) {
@@ -309,10 +309,11 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             Buffer serialized = DEFAULT_ALLOCATOR.newBuffer(size);
             serialize0(msg, serialized);
 
-            ByteBuffer encoded = encoder.encode(serialized.toNioBuffer(), DEFAULT_ALLOCATOR);
+            Buffer encoded = encoder.encode(serialized, 0, serialized.readableBytes(), DEFAULT_ALLOCATOR);
+
             destination.writeByte(FLAG_COMPRESSED);
-            destination.writeInt(encoded.remaining());
-            destination.ensureWritable(encoded.remaining());
+            destination.writeInt(encoded.readableBytes());
+            destination.ensureWritable(encoded.readableBytes());
             destination.writeBytes(encoded);
         }
 
