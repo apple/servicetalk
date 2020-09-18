@@ -92,7 +92,7 @@ public class TcpServer {
                             UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                             new TcpServerChannelInitializer(config, connectionObserver)
                                     .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
-                            connectionObserver, false);
+                            connectionObserver);
                 },
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))

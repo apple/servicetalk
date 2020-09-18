@@ -429,7 +429,7 @@ public class HttpRequestEncoderTest {
                                                 channel2 -> {
                                                     serverChannelRef.compareAndSet(null, channel2);
                                                     serverChannelLatch.countDown();
-                                                }), defaultStrategy(), mock(Protocol.class), observer, false);
+                                                }), defaultStrategy(), mock(Protocol.class), observer);
                             },
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
@@ -460,7 +460,7 @@ public class HttpRequestEncoderTest {
                                                                 }
                                                             }
                                                         })), defaultStrategy(), HTTP_1_1,
-                                                            NoopConnectionObserver.INSTANCE, true);
+                                                            NoopConnectionObserver.INSTANCE);
                             }
                     ).toFuture().get());
 
