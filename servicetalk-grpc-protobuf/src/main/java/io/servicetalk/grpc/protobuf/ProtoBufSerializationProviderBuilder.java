@@ -61,6 +61,15 @@ public final class ProtoBufSerializationProviderBuilder {
 
     private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(NONE));
 
+    /**
+     * Set the supported message encodings for the serializers and deserializers.
+     * The encodings will be advertised on the endpoint's headers and also used to validate each encoded message
+     * {@link io.servicetalk.grpc.api.GrpcMessageEncodings#NONE} is always supported regardless of the config passed
+     *
+     * @param supportedEncodings the set of allowed encodings
+     * @param <T> Type of {@link MessageLite} to register.
+     * @return {@code this}
+     */
     public <T extends MessageLite> ProtoBufSerializationProviderBuilder
     supportedMessageEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
         this.supportedEncodings.clear();
@@ -79,8 +88,6 @@ public final class ProtoBufSerializationProviderBuilder {
      */
     public <T extends MessageLite> ProtoBufSerializationProviderBuilder
     registerMessageType(Class<T> messageType, Parser<T> parser) {
-        // supportedEncodings.add(NONE); //Always support NONE
-
         Map<GrpcMessageEncoding, HttpSerializer> serializersForType = new HashMap<>();
         Map<GrpcMessageEncoding, HttpDeserializer> deserializersForType = new HashMap<>();
         for (GrpcMessageEncoding grpcMessageEncoding : supportedEncodings) {
