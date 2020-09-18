@@ -36,7 +36,7 @@ final class Words {
     static final String request = "request";
     static final String routes = "routes";
     static final String rpc = "rpc";
-    static final String serializationProvider = "serializationProvider";
+    static final String initSerializationProvider = "initSerializationProvider";
     static final String service = "service";
     static final String strategy = "strategy";
     static final String encoding = "encoding";

@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import java.util.Set;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
 import static java.util.Collections.singleton;
 
 /**

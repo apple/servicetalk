@@ -50,12 +50,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> ClientCall<Req, Resp>
-    newCall(final GrpcSerializationProvider serializationProvider, final Set<GrpcMessageEncoding> supportedEncodings,
+    newCall(final GrpcSerializationProvider serializationProvider,
             final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
         final HttpClient client = streamingHttpClient.asClient();
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
                     serializationProvider, supportedEncodings, requestClass);
@@ -69,12 +70,12 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> StreamingClientCall<Req, Resp>
-    newStreamingCall(final GrpcSerializationProvider serializationProvider,
-                     final Set<GrpcMessageEncoding> supportedEncodings, final Class<Req> requestClass,
+    newStreamingCall(final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
                      final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
             initRequest(httpRequest, supportedEncodings);
@@ -93,31 +94,29 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> RequestStreamingClientCall<Req, Resp>
     newRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
-                            final Set<GrpcMessageEncoding> supportedEncodings,
                             final Class<Req> requestClass, final Class<Resp> responseClass) {
         final StreamingClientCall<Req, Resp> streamingClientCall =
-                newStreamingCall(serializationProvider, supportedEncodings, requestClass, responseClass);
+                newStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, request).firstOrError();
     }
 
     @Override
     public <Req, Resp> ResponseStreamingClientCall<Req, Resp>
     newResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
-                             final Set<GrpcMessageEncoding> supportedEncodings,
                              final Class<Req> requestClass, final Class<Resp> responseClass) {
         final StreamingClientCall<Req, Resp> streamingClientCall =
-                newStreamingCall(serializationProvider, supportedEncodings, requestClass, responseClass);
+                newStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, Publisher.from(request));
     }
 
     @Override
     public <Req, Resp> BlockingClientCall<Req, Resp>
     newBlockingCall(final GrpcSerializationProvider serializationProvider,
-                    final Set<GrpcMessageEncoding> supportedEncodings,
                     final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
@@ -135,12 +134,12 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> BlockingStreamingClientCall<Req, Resp>
     newBlockingStreamingCall(final GrpcSerializationProvider serializationProvider,
-                             final Set<GrpcMessageEncoding> supportedEncodings,
                              final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
         final BlockingStreamingHttpClient client = streamingHttpClient.asBlockingStreamingClient();
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
             initRequest(httpRequest, supportedEncodings);
@@ -159,10 +158,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
     newBlockingRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
-                                    final Set<GrpcMessageEncoding> supportedEncodings,
                                     final Class<Req> requestClass, final Class<Resp> responseClass) {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
-                newBlockingStreamingCall(serializationProvider, supportedEncodings, requestClass, responseClass);
+                newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
                 final Resp firstItem = iterator.next();
@@ -179,10 +177,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     @Override
     public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
     newBlockingResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
-                                     final Set<GrpcMessageEncoding> supportedEncodings,
                                      final Class<Req> requestClass, final Class<Resp> responseClass) {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
-                newBlockingStreamingCall(serializationProvider, supportedEncodings, requestClass, responseClass);
+                newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, singletonBlockingIterable(request));
     }
 

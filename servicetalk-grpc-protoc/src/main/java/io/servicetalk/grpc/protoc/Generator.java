@@ -109,12 +109,12 @@ import static io.servicetalk.grpc.protoc.Words.encoding;
 import static io.servicetalk.grpc.protoc.Words.executionContext;
 import static io.servicetalk.grpc.protoc.Words.existing;
 import static io.servicetalk.grpc.protoc.Words.factory;
+import static io.servicetalk.grpc.protoc.Words.initSerializationProvider;
 import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.onClose;
 import static io.servicetalk.grpc.protoc.Words.request;
 import static io.servicetalk.grpc.protoc.Words.routes;
 import static io.servicetalk.grpc.protoc.Words.rpc;
-import static io.servicetalk.grpc.protoc.Words.serializationProvider;
 import static io.servicetalk.grpc.protoc.Words.service;
 import static io.servicetalk.grpc.protoc.Words.strategy;
 import static io.servicetalk.grpc.protoc.Words.strategyFactory;
@@ -203,8 +203,10 @@ final class Generator {
 
     private void addSerializationProviderInit(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final CodeBlock.Builder staticInitBlockBuilder = CodeBlock.builder()
+                // TODO: Cache serializationProvider for each set of encoding types
                 .addStatement("$T builder = new $T()", ProtoBufSerializationProviderBuilder,
-                        ProtoBufSerializationProviderBuilder);
+                        ProtoBufSerializationProviderBuilder)
+                .addStatement("builder.supportedMessageEncodings($L)", supportedEncodings);
 
         concat(state.serviceProto.getMethodList().stream()
                         .filter(MethodDescriptorProto::hasInputType)
@@ -218,12 +220,17 @@ final class Generator {
                         builder, t, t));
 
         staticInitBlockBuilder
-                .addStatement("$L = $L.build()", serializationProvider, builder)
+                .addStatement("return $L.build()", builder)
                 .build();
 
         serviceClassBuilder
-                .addField(GrpcSerializationProvider, serializationProvider, PRIVATE, STATIC, FINAL)
-                .addStaticBlock(staticInitBlockBuilder.build());
+                .addMethod(methodBuilder(initSerializationProvider)
+                        .addModifiers(STATIC)
+                        .returns(GrpcSerializationProvider)
+                        .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
+                        .addCode(staticInitBlockBuilder.build())
+                        .build()
+                );
     }
 
     private void addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
@@ -321,27 +328,34 @@ final class Generator {
         // TODO: Warn for path override and Validate all paths are defined.
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
                 .addModifiers(PUBLIC, STATIC, FINAL)
+                .addField(FieldSpec.builder(GrpcSupportedEncodings, supportedEncodings, FINAL)
+                        .addModifiers(PRIVATE)
+                        .build()
+                )
                 .superclass(ParameterizedTypeName.get(GrpcRoutes, state.serviceClass))
                 .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
                         state.serviceClass))
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
+                        .addStatement("this.$L = java.util.Collections.emptySet()", supportedEncodings)
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
-                        .addStatement("super($L)", supportedEncodings)
+                        .addStatement("this.$L = $L", supportedEncodings, supportedEncodings)
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addStatement("super($L)", strategyFactory)
+                        .addStatement("this.$L = java.util.Collections.emptySet()", supportedEncodings)
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
-                        .addStatement("super($L, $L)", strategyFactory, supportedEncodings)
+                        .addStatement("super($L)", strategyFactory)
+                        .addStatement("this.$L = $L", supportedEncodings, supportedEncodings)
                         .build())
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
@@ -369,9 +383,10 @@ final class Generator {
                             .addModifiers(PUBLIC)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L, $L.getClass(), $S, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
-                                    addRouteMethodName, rpcInterface.className, RPC_PATH, rpc, routeName,
-                                    routeInterfaceClass, rpc, routeName, rpc, inClass, outClass, serializationProvider)
+                            .addStatement("$L($T.$L, $L.getClass(), $S, $L.wrap($L::$L, $L), $T.class, $T.class, " +
+                                            "$L($L))", addRouteMethodName, rpcInterface.className, RPC_PATH, rpc,
+                                    routeName, routeInterfaceClass, rpc, routeName, rpc, inClass, outClass,
+                                    initSerializationProvider, supportedEncodings)
                             .addStatement("return this")
                             .build())
                     .addMethod(methodBuilder(methodName)
@@ -379,9 +394,10 @@ final class Generator {
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L, $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
-                                    addRouteMethodName, rpcInterface.className, RPC_PATH, strategy,
-                                    routeInterfaceClass, rpc, routeName, rpc, inClass, outClass, serializationProvider)
+                            .addStatement("$L($T.$L, $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L($L))",
+                                    addRouteMethodName, rpcInterface.className, RPC_PATH, strategy, routeInterfaceClass,
+                                    rpc, routeName, rpc, inClass, outClass, initSerializationProvider,
+                                    supportedEncodings)
                             .addStatement("return this")
                             .build());
         });
@@ -608,7 +624,6 @@ final class Generator {
                         .addAnnotation(Override.class)
                         .returns(state.clientClass)
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        // .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
                         .addStatement("return new $T($L, $L)", defaultClientClass, factory, supportedEncodings)
                         .build())
                 .addMethod(methodBuilder("newFilter")
@@ -631,7 +646,6 @@ final class Generator {
                         .addAnnotation(Override.class)
                         .returns(state.blockingClientClass)
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        // .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
                         .addStatement("return new $T($L, $L)", defaultBlockingClientClass, factory, supportedEncodings)
                         .build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
@@ -836,9 +850,9 @@ final class Generator {
                                     .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)));
 
             constructorBuilder
-                    .addStatement("$L = $N.$L($L, $L, $T.class, $T.class)", callFieldName, factory,
-                            newCallMethodName(clientMetaData.methodProto, blocking), serializationProvider,
-                                                supportedEncodings, inClass, outClass);
+                    .addStatement("$L = $N.$L($L($L), $T.class, $T.class)", callFieldName, factory,
+                            newCallMethodName(clientMetaData.methodProto, blocking), initSerializationProvider,
+                            supportedEncodings, inClass, outClass);
         });
     }
 

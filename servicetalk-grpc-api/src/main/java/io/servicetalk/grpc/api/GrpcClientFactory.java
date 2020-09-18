@@ -18,7 +18,7 @@ package io.servicetalk.grpc.api;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
@@ -108,7 +108,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
 
     /**
      * Sets the supported message encodings for this client.
-     * By default only {@link GrpcMessageEncodingRegistry#NONE} is supported
+     * By default only {@link GrpcMessageEncodings#NONE} is supported
      *
      * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * @return {@code this}

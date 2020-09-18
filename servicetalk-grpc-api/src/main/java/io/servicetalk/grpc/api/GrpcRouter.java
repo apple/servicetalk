@@ -243,7 +243,6 @@ final class GrpcRouter {
 
         <Req, Resp> Builder addRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final Route<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             verifyNoOverrides(routes.put(path, new RouteProvider(executionContext -> toStreamingHttpService(
@@ -256,6 +255,8 @@ final class GrpcRouter {
                             GrpcMessageEncoding responseEncoding;
                             GrpcServiceContext serviceContext = null;
                             try {
+                                final Set<GrpcMessageEncoding> supportedEncodings =
+                                        serializationProvider.supportedEncodings();
                                 responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
                                 serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
                                 final HttpDeserializer<Req> deserializer =
@@ -303,7 +304,6 @@ final class GrpcRouter {
 
         <Req, Resp> Builder addStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             verifyNoOverrides(streamingRoutes.put(path, new RouteProvider(executionContext -> {
@@ -317,6 +317,8 @@ final class GrpcRouter {
                         GrpcServiceContext serviceContext = null;
 
                         try {
+                            final Set<GrpcMessageEncoding> supportedEncodings =
+                                    serializationProvider.supportedEncodings();
                             responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
                             serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
                             final HttpDeserializer<Req> deserializer =
@@ -366,10 +368,9 @@ final class GrpcRouter {
 
         <Req, Resp> Builder addRequestStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            return addStreamingRoute(path, executionStrategy, supportedEncodings,
+            return addStreamingRoute(path, executionStrategy,
                     new StreamingRoute<Req, Resp>() {
 
                         @Override
@@ -403,10 +404,9 @@ final class GrpcRouter {
          */
         <Req, Resp> Builder addResponseStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            return addStreamingRoute(path, executionStrategy, supportedEncodings, new StreamingRoute<Req, Resp>() {
+            return addStreamingRoute(path, executionStrategy, new StreamingRoute<Req, Resp>() {
 
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
@@ -452,7 +452,6 @@ final class GrpcRouter {
          */
         <Req, Resp> Builder addBlockingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final BlockingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             verifyNoOverrides(blockingRoutes.put(path, new RouteProvider(executionContext ->
@@ -464,6 +463,8 @@ final class GrpcRouter {
                             GrpcMessageEncoding responseEncoding;
                             GrpcServiceContext serviceContext = null;
                             try {
+                                final Set<GrpcMessageEncoding> supportedEncodings =
+                                        serializationProvider.supportedEncodings();
                                 responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
                                 serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
                                 final HttpDeserializer<Req> deserializer =
@@ -514,7 +515,6 @@ final class GrpcRouter {
          */
         <Req, Resp> Builder addBlockingStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             verifyNoOverrides(blockingStreamingRoutes.put(path, new RouteProvider(executionContext ->
@@ -522,6 +522,8 @@ final class GrpcRouter {
                         @Override
                         public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
                                            final BlockingStreamingHttpServerResponse response) throws Exception {
+                            final Set<GrpcMessageEncoding> supportedEncodings =
+                                    serializationProvider.supportedEncodings();
                             final GrpcMessageEncoding responseEncoding = firstMatchingEncodingOrNone(request,
                                     supportedEncodings);
                             final GrpcServiceContext serviceContext =
@@ -580,11 +582,10 @@ final class GrpcRouter {
          */
         <Req, Resp> Builder addBlockingRequestStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final BlockingRequestStreamingRoute<Req, Resp> route,
                 final Class<Req> requestClass, final Class<Resp> responseClass,
                 final GrpcSerializationProvider serializationProvider) {
-            return addBlockingStreamingRoute(path, executionStrategy, supportedEncodings,
+            return addBlockingStreamingRoute(path, executionStrategy,
                     new BlockingStreamingRoute<Req, Resp>() {
 
                         @Override
@@ -621,10 +622,9 @@ final class GrpcRouter {
          */
         <Req, Resp> Builder addBlockingResponseStreamingRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
-                final Set<GrpcMessageEncoding> supportedEncodings,
                 final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            return addBlockingStreamingRoute(path, executionStrategy, supportedEncodings,
+            return addBlockingStreamingRoute(path, executionStrategy,
                     new BlockingStreamingRoute<Req, Resp>() {
 
                         @Override

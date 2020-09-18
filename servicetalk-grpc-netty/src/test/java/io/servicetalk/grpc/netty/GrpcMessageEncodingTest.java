@@ -39,7 +39,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
@@ -47,10 +46,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,21 +56,24 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
 
 import static io.grpc.internal.GrpcUtil.MESSAGE_ACCEPT_ENCODING;
 import static io.grpc.internal.GrpcUtil.MESSAGE_ENCODING;
+import static io.servicetalk.buffer.api.Buffer.asInputStream;
+import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.DEFLATE;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.GZIP;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.encodingFor;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.registerEncoding;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.DEFLATE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.GZIP;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamMetadata;
@@ -85,23 +84,26 @@ import static io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.lang.String.join;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static java.util.Collections.disjoint;
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.zip.GZIPInputStream.GZIP_MAGIC;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.internal.util.io.IOUtil.closeQuietly;
 
 @RunWith(Parameterized.class)
 public class GrpcMessageEncodingTest {
 
-    private static final int ORIGINAL_PAYLOAD_SIZE = 512;
+    private static final int PAYLOAD_SIZE = 512;
     static final GrpcMessageEncoding CUSTOM_ENCODING = new GrpcMessageEncoding() {
         @Override
         public String name() {
@@ -114,32 +116,40 @@ public class GrpcMessageEncodingTest {
                 private static final int OUGHT_TO_BE_ENOUGH = 1 << 20;
 
                 @Override
-                public Buffer encode(final Buffer src, int offset, int length, final BufferAllocator allocator) {
+                public Buffer encode(final Buffer src, final int offset, final int length,
+                                           final BufferAllocator allocator) {
+                    final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
+                    DeflaterOutputStream output = null;
                     try {
-                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                        GZIPOutputStream out = new GZIPOutputStream(bos);
-                        out.write(src.array(), offset, length);
-                        out.finish();
-                        return allocator.wrap(bos.toByteArray());
+                        output = new GZIPOutputStream(asOutputStream(dst));
+                        output.write(src.array(), offset, length);
+                        output.finish();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
+                    } finally {
+                        closeQuietly(output);
                     }
+
+                    return dst;
                 }
 
                 @Override
-                public Buffer decode(final Buffer src, int offset, int length, final BufferAllocator allocator) {
+                public Buffer decode(final Buffer src, final int offset, final int length,
+                                           final BufferAllocator allocator) {
+                    final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
+                    InflaterInputStream input = null;
                     try {
-                        GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(src.array(),
-                                offset, length));
-                        ByteBuffer res = ByteBuffer.allocate(OUGHT_TO_BE_ENOUGH);
-                        int read = in.read(res.array(), res.arrayOffset() + res.position(), res.remaining());
-                        res.position(read);
-                        res.flip();
-                        in.close();
-                        return allocator.wrap(res.array(), 0, read);
+                        input = new GZIPInputStream(asInputStream(src));
+
+                        int read = dst.setBytesUntilEndStream(0, input, OUGHT_TO_BE_ENOUGH);
+                        dst.writerIndex(read);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
+                    } finally {
+                        closeQuietly(input);
                     }
+
+                    return dst;
                 }
             };
         }
@@ -160,112 +170,133 @@ public class GrpcMessageEncodingTest {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
-
                     final GrpcMessageEncoding requestEncoding = options.requestEncoding;
                     final Set<GrpcMessageEncoding> clientSupportedEncodings = options.clientSupported;
                     final Set<GrpcMessageEncoding> serverSupportedEncodings = options.serverSupported;
 
-                    request.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
-                        try {
-                            byte compressedFlag = buffer.getByte(0);
+                    try {
 
-                            if (requestEncoding == GZIP || requestEncoding.name().equals(CUSTOM_ENCODING.name())) {
-                                int actualHeader = buffer.getShortLE(5) & 0xFFFF;
-                                assertEquals(GZIP_MAGIC, actualHeader);
-                            }
-
-                            if (requestEncoding != NONE) {
-                                assertTrue("Compressed content length should be less than the original payload size",
-                                        buffer.readableBytes() < ORIGINAL_PAYLOAD_SIZE);
-                            } else {
-                                assertTrue("Uncompressed content length should be more than the original payload size",
-                                        buffer.readableBytes() > ORIGINAL_PAYLOAD_SIZE);
-                            }
-
-                            assertEquals(requestEncoding != NONE ? 1 : 0, compressedFlag);
-                        } catch (Throwable t) {
-                            t.printStackTrace();
-                            throw t;
-                        }
-                        return buffer;
-                    })));
-
-                    final CharSequence actualReqAcceptedEncodings = request.headers()
-                            .get(MESSAGE_ACCEPT_ENCODING, "null");
-
-                    final CharSequence expectedReqAcceptedEncodings = join(", ",
-                            (clientSupportedEncodings == null) ?
-                                    asList(NONE.name()) :
-                                    clientSupportedEncodings.stream().map((GrpcMessageEncoding::name))
-                                            .collect(toList()));
-
-                    assertTrue("Request encoding should be present in the request headers",
-                            contentEquals(requestEncoding.name(), request.headers().get(MESSAGE_ENCODING, "null")));
-                    assertTrue("Request accepted encodings should be present in the request headers",
-                            contentEquals(actualReqAcceptedEncodings, expectedReqAcceptedEncodings));
-
-                    return super.handle(ctx, request, responseFactory).map((response -> {
-
-                        final CharSequence actualRespAcceptedEncodings = response.headers()
-                                .get(MESSAGE_ACCEPT_ENCODING, "null");
-
-                        final CharSequence expectedRespAcceptedEncodings = join(", ",
-                                        (serverSupportedEncodings == null) ?
-                                                asList(NONE.name()) :
-                                                serverSupportedEncodings.stream().map((GrpcMessageEncoding::name))
-                                                        .collect(toList()));
-
-                        assertTrue("Response accepted encodings should be present in the response headers",
-                                contentEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings));
-
-                        final GrpcMessageEncoding respEnc = encodingFor(valueOf(response.headers()
-                                .get(MESSAGE_ENCODING, "identity")));
-
-                        if (clientSupportedEncodings == null) {
-                            assertEquals(NONE, respEnc);
-                        } else if (serverSupportedEncodings == null) {
-                            assertEquals(NONE, respEnc);
-                        } else {
-                            if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-                                assertEquals(NONE, respEnc);
-                            } else {
-                                assertTrue("Response encoding: [" + respEnc + "[ not in the " +
-                                                "client supported list [" + clientSupportedEncodings + "]",
-                                        clientSupportedEncodings.contains(respEnc));
-                                assertTrue("Response encoding: [" + respEnc + "[ not in the " +
-                                                "server supported list [" + serverSupportedEncodings + "]",
-                                        serverSupportedEncodings.contains(respEnc));
-                            }
-                        }
-
-                        response.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
+                        request.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
                             try {
+                                byte compressedFlag = buffer.getByte(0);
 
-                                if (buffer.readableBytes() > 0) {
-                                    byte compressedFlag = buffer.getByte(0);
-                                    assertEquals(respEnc != NONE ? 1 : 0, compressedFlag);
-
-                                    if (respEnc == GZIP || respEnc.name().equals(CUSTOM_ENCODING.name())) {
-                                        int actualHeader = buffer.getShortLE(5) & 0xFFFF;
-                                        assertEquals(GZIP_MAGIC, actualHeader);
-                                    }
-
-                                    if (respEnc != NONE) {
-                                        assertTrue("Compressed content length should be less than the original " +
-                                                "payload size", buffer.readableBytes() < ORIGINAL_PAYLOAD_SIZE);
-                                    } else {
-                                        assertTrue("Uncompressed content length should be more than the original " +
-                                                "payload size " + buffer.readableBytes(),
-                                                buffer.readableBytes() > ORIGINAL_PAYLOAD_SIZE);
-                                    }
+                                if (requestEncoding == GZIP || requestEncoding.name().equals(CUSTOM_ENCODING.name())) {
+                                    int actualHeader = buffer.getShortLE(5) & 0xFFFF;
+                                    assertEquals(GZIP_MAGIC, actualHeader);
                                 }
 
+                                if (requestEncoding != NONE) {
+                                    assertTrue("Compressed content length should be less than the " +
+                                                    "original payload size", buffer.readableBytes() < PAYLOAD_SIZE);
+                                } else {
+                                    assertTrue("Uncompressed content length should be more than the " +
+                                                    "original payload size", buffer.readableBytes() > PAYLOAD_SIZE);
+                                }
+
+                                assertEquals(requestEncoding != NONE ? 1 : 0, compressedFlag);
                             } catch (Throwable t) {
                                 t.printStackTrace();
                                 throw t;
                             }
                             return buffer;
                         })));
+
+                        final List<String> actualReqAcceptedEncodings = stream(request.headers()
+                                .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
+                                    .map((String::trim)).collect(toList());
+
+                        final List<String> expectedReqAcceptedEncodings = (clientSupportedEncodings == null) ?
+                                        emptyList() :
+                                        clientSupportedEncodings.stream()
+                                                .filter((enc) -> enc != NONE)
+                                                .map((GrpcMessageEncoding::name))
+                                                .collect(toList());
+
+                        assertTrue("Request encoding should be present in the request headers",
+                                contentEquals(requestEncoding.name(), request.headers().get(MESSAGE_ENCODING, "null")));
+                        if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
+                            assertEquals(expectedReqAcceptedEncodings, actualReqAcceptedEncodings);
+                        }
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        throw t;
+                    }
+
+                    return super.handle(ctx, request, responseFactory).map((response -> {
+                        try {
+                            final List<String> actualRespAcceptedEncodings = stream(response.headers()
+                                    .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
+                                    .map((String::trim)).collect(toList());
+
+                            final List<String> expectedRespAcceptedEncodings = (serverSupportedEncodings == null) ?
+                                    emptyList() :
+                                    serverSupportedEncodings.stream()
+                                            .filter((enc) -> enc != NONE)
+                                            .map((GrpcMessageEncoding::name))
+                                            .collect(toList());
+
+                            if (!expectedRespAcceptedEncodings.isEmpty() && !actualRespAcceptedEncodings.isEmpty()) {
+                                assertEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings);
+                            }
+
+                            final String respEncName = response.headers()
+                                    .get(MESSAGE_ENCODING, "identity").toString();
+
+                            if (clientSupportedEncodings == null) {
+                                assertEquals(NONE.name(), respEncName);
+                            } else if (serverSupportedEncodings == null) {
+                                assertEquals(NONE.name(), respEncName);
+                            } else {
+                                if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
+                                    assertEquals(NONE.name(), respEncName);
+                                } else {
+                                    assertNotNull("Response encoding not in the client supported list " +
+                                                    "[" + clientSupportedEncodings + "]",
+                                            encodingFor(clientSupportedEncodings, valueOf(response.headers()
+                                                    .get(MESSAGE_ENCODING, "identity"))));
+
+                                    assertNotNull("Response encoding not in the server supported list " +
+                                                    "[" + serverSupportedEncodings + "]",
+                                            encodingFor(serverSupportedEncodings, valueOf(response.headers()
+                                            .get(MESSAGE_ENCODING, "identity"))));
+                                }
+                            }
+
+                            response.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
+                                try {
+                                    final GrpcMessageEncoding respEnc =
+                                            encodingFor(clientSupportedEncodings == null ? of(NONE) :
+                                                    clientSupportedEncodings, valueOf(response.headers()
+                                                    .get(MESSAGE_ENCODING, "identity")));
+
+                                    if (buffer.readableBytes() > 0) {
+                                        byte compressedFlag = buffer.getByte(0);
+                                        assertEquals(respEnc != NONE ? 1 : 0, compressedFlag);
+
+                                        if (respEnc == GZIP || respEnc.name().equals(CUSTOM_ENCODING.name())) {
+                                            int actualHeader = buffer.getShortLE(5) & 0xFFFF;
+                                            assertEquals(GZIP_MAGIC, actualHeader);
+                                        }
+
+                                        if (respEnc != NONE) {
+                                            assertTrue("Compressed content length should be less than the original " +
+                                                    "payload size", buffer.readableBytes() < PAYLOAD_SIZE);
+                                        } else {
+                                            assertTrue("Uncompressed content length should be more than the original " +
+                                                            "payload size " + buffer.readableBytes(),
+                                                    buffer.readableBytes() > PAYLOAD_SIZE);
+                                        }
+                                    }
+                                } catch (Throwable t) {
+                                    t.printStackTrace();
+                                    throw t;
+                                }
+                                return buffer;
+                            })));
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                            throw t;
+                        }
 
                         return response;
                     }));
@@ -339,29 +370,24 @@ public class GrpcMessageEncodingTest {
     public static Object[][] params() {
         return new Object[][] {
                 {null, null, NONE, true},
-                {null, null, GZIP, false},
-                {null, null, DEFLATE, false},
-                {of(NONE, GZIP, DEFLATE), null, NONE, true},
-                {of(NONE, GZIP, DEFLATE), null, GZIP, true},
-                {of(NONE, GZIP, DEFLATE), null, DEFLATE, true},
-                {of(NONE, GZIP), null, DEFLATE, false},
-                {of(NONE, DEFLATE), null, GZIP, false},
-                {of(NONE, DEFLATE), null, DEFLATE, true},
+                {null, of(GZIP, NONE), GZIP, false},
+                {null, of(DEFLATE, NONE), DEFLATE, false},
+                {of(GZIP, DEFLATE, NONE), null, NONE, true},
+                {of(NONE, GZIP, DEFLATE), of(GZIP, NONE), GZIP, true},
+                {of(NONE, GZIP, DEFLATE), of(DEFLATE, NONE), DEFLATE, true},
+                {of(NONE, GZIP), of(DEFLATE, NONE), DEFLATE, false},
+                {of(NONE, DEFLATE), of(GZIP, NONE), GZIP, false},
+                {of(NONE, DEFLATE), of(DEFLATE, NONE), DEFLATE, true},
                 {of(NONE, DEFLATE), null, NONE, true},
-                {of(GZIP), null, NONE, true},
-                {of(GZIP), of(GZIP), NONE, true},
-                {of(GZIP), of(NONE, GZIP), NONE, true},
-                {of(GZIP), of(NONE, GZIP), GZIP, true},
-                {null, of(NONE, GZIP), GZIP, false},
-                {null, of(NONE, GZIP), DEFLATE, false},
-                {null, of(NONE, GZIP), NONE, true},
-                // {of(CUSTOM_ENCODING), of(CUSTOM_ENCODING), CUSTOM_ENCODING, true},
+                {of(GZIP), of(NONE), NONE, true},
+                {of(GZIP), of(GZIP, NONE), NONE, true},
+                {of(GZIP), of(GZIP, NONE), NONE, true},
+                {of(GZIP), of(GZIP, NONE), GZIP, true},
+                {null, of(GZIP, NONE), GZIP, false},
+                {null, of(GZIP, DEFLATE, NONE), DEFLATE, false},
+                {null, of(GZIP, NONE), NONE, true},
+                {of(CUSTOM_ENCODING), of(CUSTOM_ENCODING), CUSTOM_ENCODING, true},
         };
-    }
-
-    @BeforeClass
-    public static void initCustomEncoding() {
-        registerEncoding(CUSTOM_ENCODING);
     }
 
     @After
@@ -404,7 +430,7 @@ public class GrpcMessageEncodingTest {
     }
 
     private static TestRequest request() {
-        byte[] payload = new byte[ORIGINAL_PAYLOAD_SIZE];
+        byte[] payload = new byte[PAYLOAD_SIZE];
         Arrays.fill(payload, (byte) 'a');
         String name = new String(payload, StandardCharsets.US_ASCII);
         return TestRequest.newBuilder().setName(name).build();

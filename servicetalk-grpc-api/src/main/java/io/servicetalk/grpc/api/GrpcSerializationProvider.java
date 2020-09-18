@@ -18,10 +18,14 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpSerializer;
 
+import java.util.Set;
+
 /**
  * A provider for <a href="https://www.grpc.io">gRPC</a> serialization/deserialization.
  */
 public interface GrpcSerializationProvider {
+
+    Set<GrpcMessageEncoding> supportedEncodings();
 
     /**
      * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.

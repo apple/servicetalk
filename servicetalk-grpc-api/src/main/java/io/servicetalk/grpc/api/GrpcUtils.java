@@ -46,7 +46,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.CharSequences.split;
@@ -245,7 +246,7 @@ final class GrpcUtils {
             return NONE;
         }
 
-        GrpcMessageEncoding enc = GrpcMessageEncodingRegistry.encodingFor(allowedEncodings, encoding.toString());
+        GrpcMessageEncoding enc = encodingFor(allowedEncodings, encoding.toString());
         if (enc == null) {
             final String lowercaseEncoding = encoding.toString().toLowerCase();
             throw new MessageEncodingException(lowercaseEncoding);
@@ -265,7 +266,7 @@ final class GrpcUtils {
         Set<GrpcMessageEncoding> knownEncodings = new HashSet<>();
         List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
         for (CharSequence val : acceptEncodingValues) {
-            GrpcMessageEncoding enc = GrpcMessageEncodingRegistry.encodingFor(acceptedEncodings, val.toString().trim());
+            GrpcMessageEncoding enc = encodingFor(acceptedEncodings, val.toString().trim());
             if (enc != null) {
                 knownEncodings.add(enc);
             }
@@ -364,9 +365,9 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue(final Collection<GrpcMessageEncoding> encodings) {
         StringBuilder builder = new StringBuilder();
         for (GrpcMessageEncoding enc : encodings) {
-            // if (enc == NONE) {
-            //     continue;
-            // }
+            if (enc == NONE) {
+                continue;
+            }
 
             if (builder.length() > 0) {
                 builder.append(", ");

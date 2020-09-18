@@ -33,7 +33,6 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
@@ -47,9 +46,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.registerEncoding;
-import static io.servicetalk.grpc.netty.GrpcMessageEncodingTest.CUSTOM_ENCODING;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -108,11 +105,6 @@ public class GrpcClientRequiresTrailersTest {
     @Parameters(name = "streaming={0} has-trailers={1}")
     public static Object[][] params() {
         return new Object[][]{{false, false}, {false, true}, {true, false}, {true, true}};
-    }
-
-    @BeforeClass
-    public static void initCustomEncoding() {
-        registerEncoding(CUSTOM_ENCODING);
     }
 
     @After

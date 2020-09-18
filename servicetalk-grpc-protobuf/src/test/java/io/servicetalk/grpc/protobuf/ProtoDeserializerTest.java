@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.grpc.api.GrpcMessageEncodingRegistry.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
 import static io.servicetalk.grpc.protobuf.test.TestProtos.DummyMessage;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
