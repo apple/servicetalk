@@ -163,7 +163,7 @@ final class NettyHttpServer {
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
-                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer)
+                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }

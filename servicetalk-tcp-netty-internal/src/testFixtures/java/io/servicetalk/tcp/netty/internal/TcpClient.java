@@ -100,7 +100,7 @@ public final class TcpClient {
                             UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
                             new TcpClientChannelInitializer(config, connectionObserver).andThen(
                                     channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                            executionContext.executionStrategy(), TCP, connectionObserver);
+                            executionContext.executionStrategy(), TCP, connectionObserver, true);
                 });
     }
 

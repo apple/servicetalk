@@ -284,7 +284,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     HTTP_2_0,
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
-                                    streamObserver);
+                                    streamObserver,
+                                    true);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
