@@ -24,35 +24,71 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Default available encoding implementations.
+ * Encoding {@link #none()} is always supported regardless of the client or server settings.
+ *
+ * {@link #all()} is a set that includes all default encodings {@link #deflate()} and {@link #gzip()}.
+ */
 public final class GrpcMessageEncodings {
 
-    public static final GrpcMessageEncoding NONE = new DefaultGrpcMessageEncoding("identity",
-            new IdentityGrpcMessageCodec());
+    private static final GrpcMessageEncoding NONE =
+            new DefaultGrpcMessageEncoding("identity", new IdentityGrpcMessageCodec());
 
-    public static final GrpcMessageEncoding GZIP = new DefaultGrpcMessageEncoding("gzip",
-            new GzipGrpcMessageCodec());
+    private static final GrpcMessageEncoding GZIP = 
+            new DefaultGrpcMessageEncoding("gzip", new GzipGrpcMessageCodec());
 
-    public static final GrpcMessageEncoding DEFLATE = new DefaultGrpcMessageEncoding("deflate",
-            new DeflateGrpcMessageCodec());
+    private static final GrpcMessageEncoding DEFLATE =
+            new DefaultGrpcMessageEncoding("deflate", new DeflateGrpcMessageCodec());
 
-    public static final Set<GrpcMessageEncoding> ALL =
+    private static final Set<GrpcMessageEncoding> ALL =
             unmodifiableSet(new HashSet<>(asList(NONE, GZIP, DEFLATE)));
 
     private GrpcMessageEncodings() {
     }
 
-
+    /**
+     * Returns the default, always supported 'identity' {@link GrpcMessageEncoding}.
+     * @return the default, always supported 'identity' {@link GrpcMessageEncoding}
+     */
+    public static GrpcMessageEncoding none() {
+        return NONE;
+    }
 
     /**
-     * Returns a {@link GrpcMessageEncoding} that matches the input name.
-     * NULL or empty names will always result in NULL {@link GrpcMessageEncoding} and "identity" will
-     * always result in {@link GrpcMessageEncodings#NONE} regardless of its presence in the allowedList
-     *
-     * {@link GrpcMessageEncodings#NONE} is always supported
+     * Returns a GZIP based {@link GrpcMessageEncoding} backed by {@link java.util.zip.Inflater}.
+     * @return a GZIP based {@link GrpcMessageEncoding} backed by {@link java.util.zip.Inflater}
+     */
+    public static GrpcMessageEncoding gzip() {
+        return GZIP;
+    }
+
+    /**
+     * Returns a DEFLATE based {@link GrpcMessageEncoding} backed by {@link java.util.zip.Inflater}.
+     * @return a DEFLATE based {@link GrpcMessageEncoding} backed by {@link java.util.zip.Inflater}
+     */
+    public static GrpcMessageEncoding deflate() {
+        return DEFLATE;
+    }
+
+    /**
+     * Returns a list of all {@link GrpcMessageEncoding}s included by default.
+     * @return a list of all {@link GrpcMessageEncoding}s included by default
+     */
+    public static Set<GrpcMessageEncoding> all() {
+        return ALL;
+    }
+
+    /**
+     * Returns a {@link GrpcMessageEncoding} that matches the {@code name}.
+     * Returns {@code null} if {@code name} is {@code null} or empty.
+     * If {@code name} is {@code 'identity'} this will always result in
+     * {@link GrpcMessageEncodings#NONE} regardless of its presence in the {@code allowedList}.
      *
      * @param allowedList the source list to find a matching encoding in
      * @param name the encoding name used for the matching predicate
-     * @return an encoding from the allowed-list matching the name parameter
+     * @return an encoding from the allowed-list matching the {@code name},
+     *          otherwise {@code null} if {@code name} is {@code null} or empty
      */
     @Nullable
     public static GrpcMessageEncoding encodingFor(final Collection<GrpcMessageEncoding> allowedList,

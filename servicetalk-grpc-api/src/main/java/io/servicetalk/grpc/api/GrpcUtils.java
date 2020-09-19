@@ -46,8 +46,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
 import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.CharSequences.split;
@@ -67,12 +67,12 @@ final class GrpcUtils {
     private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
     // TODO (nkant): add project version
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
-    private static final CharSequence IDENTITY = newAsciiString(NONE.name());
+    private static final CharSequence IDENTITY = newAsciiString(none().name());
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
     private static final CharSequence GRPC_STATUS_UNIMPLEMENTED = newAsciiString("grpc-status-unimplemented");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
-    private static final Set<GrpcMessageEncoding> GRPC_ACCEPT_ENCODING_NONE = Collections.singleton(NONE);
+    private static final Set<GrpcMessageEncoding> GRPC_ACCEPT_ENCODING_NONE = Collections.singleton(none());
     private static final TrailersTransformer<Object, Object> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Object>() {
                 @Override
@@ -243,7 +243,7 @@ final class GrpcUtils {
                                                        final Set<GrpcMessageEncoding> allowedEncodings) {
         final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         if (encoding == null) {
-            return NONE;
+            return none();
         }
 
         GrpcMessageEncoding enc = encodingFor(allowedEncodings, encoding.toString());
@@ -279,8 +279,8 @@ final class GrpcUtils {
                                                            final Set<GrpcMessageEncoding> serverSupportedEncodings) {
         // Fast path, server has no encodings configured or has only None configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
-                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(NONE))) {
-            return NONE;
+                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(none()))) {
+            return none();
         }
 
         Set<GrpcMessageEncoding> clientSupportedEncodings =
@@ -292,8 +292,8 @@ final class GrpcUtils {
                                                            final Set<GrpcMessageEncoding> serverSupportedEncodings) {
         // Fast path, Client has no encodings configured, or has None as the only encoding configured
         if (clientSupportedEncodings == GRPC_ACCEPT_ENCODING_NONE ||
-                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(NONE))) {
-            return NONE;
+                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(none()))) {
+            return none();
         }
 
         /*
@@ -305,12 +305,12 @@ final class GrpcUtils {
          * ref: https://github.com/grpc/grpc/blob/master/doc/compression.md
          */
         for (GrpcMessageEncoding encoding : serverSupportedEncodings) {
-            if (encoding != NONE && clientSupportedEncodings.contains(encoding)) {
+            if (encoding != none() && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }
 
-        return NONE;
+        return none();
     }
 
     private static void initResponse(final HttpResponseMetaData response, @Nullable final GrpcServiceContext context) {
@@ -365,7 +365,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue(final Collection<GrpcMessageEncoding> encodings) {
         StringBuilder builder = new StringBuilder();
         for (GrpcMessageEncoding enc : encodings) {
-            if (enc == NONE) {
+            if (enc == none()) {
                 continue;
             }
 

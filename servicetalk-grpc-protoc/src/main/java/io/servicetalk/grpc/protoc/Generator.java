@@ -225,7 +225,7 @@ final class Generator {
 
         serviceClassBuilder
                 .addMethod(methodBuilder(initSerializationProvider)
-                        .addModifiers(STATIC)
+                        .addModifiers(PRIVATE, STATIC)
                         .returns(GrpcSerializationProvider)
                         .addParameter(GrpcSupportedEncodings, supportedEncodings, FINAL)
                         .addCode(staticInitBlockBuilder.build())

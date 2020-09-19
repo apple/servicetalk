@@ -18,7 +18,7 @@ package io.servicetalk.grpc.api;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
@@ -44,7 +44,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     private FilterFactory filterFactory;
 
     @SuppressWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
-    protected Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(NONE));
+    protected Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(none()));
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>
@@ -108,7 +108,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
 
     /**
      * Sets the supported message encodings for this client.
-     * By default only {@link GrpcMessageEncodings#NONE} is supported
+     * By default only {@link GrpcMessageEncodings#none()} is supported
      *
      * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
      * @return {@code this}

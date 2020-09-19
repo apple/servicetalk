@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -278,7 +278,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final GrpcMessageEncoding encoding) {
             this.encoder = encoding.codec();
-            this.encode = encoding != NONE;
+            this.encode = encoding != none();
         }
 
         @Override

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.grpc.api;
 
+/**
+ * Exception thrown when a message was encoded with an unsupported encoder.
+ */
 public final class MessageEncodingException extends RuntimeException {
 
     private final String encoding;

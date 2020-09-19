@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.grpc.api.GrpcMessageEncoding;
+import io.servicetalk.grpc.api.GrpcMessageEncodings;
 import io.servicetalk.grpc.api.GrpcSerializationProvider;
 import io.servicetalk.grpc.api.MessageEncodingException;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -39,7 +40,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Arrays.asList;
@@ -59,12 +60,12 @@ public final class ProtoBufSerializationProviderBuilder {
     private final Map<Class, Map<GrpcMessageEncoding, HttpSerializer>> serializers = new HashMap<>();
     private final Map<Class, Map<GrpcMessageEncoding, HttpDeserializer>> deserializers = new HashMap<>();
 
-    private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(NONE));
+    private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(none()));
 
     /**
      * Set the supported message encodings for the serializers and deserializers.
      * The encodings will be advertised on the endpoint's headers and also used to validate each encoded message
-     * {@link io.servicetalk.grpc.api.GrpcMessageEncodings#NONE} is always supported regardless of the config passed
+     * {@link GrpcMessageEncodings#none()} is always supported regardless of the config passed
      *
      * @param supportedEncodings the set of allowed encodings
      * @param <T> Type of {@link MessageLite} to register.
@@ -74,7 +75,7 @@ public final class ProtoBufSerializationProviderBuilder {
     supportedMessageEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
         this.supportedEncodings.clear();
         this.supportedEncodings.addAll(supportedEncodings);
-        this.supportedEncodings.add(NONE); // Always supported
+        this.supportedEncodings.add(none()); // Always supported
         return this;
     }
 

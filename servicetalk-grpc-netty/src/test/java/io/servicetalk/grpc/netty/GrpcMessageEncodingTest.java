@@ -70,10 +70,10 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.DEFLATE;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.GZIP;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.deflate;
 import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.gzip;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamMetadata;
@@ -170,7 +170,7 @@ public class GrpcMessageEncodingTest {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
-                    final GrpcMessageEncoding requestEncoding = options.requestEncoding;
+                    final GrpcMessageEncoding reqEncoding = options.requestEncoding;
                     final Set<GrpcMessageEncoding> clientSupportedEncodings = options.clientSupported;
                     final Set<GrpcMessageEncoding> serverSupportedEncodings = options.serverSupported;
 
@@ -180,12 +180,12 @@ public class GrpcMessageEncodingTest {
                             try {
                                 byte compressedFlag = buffer.getByte(0);
 
-                                if (requestEncoding == GZIP || requestEncoding.name().equals(CUSTOM_ENCODING.name())) {
+                                if (reqEncoding == gzip() || reqEncoding.name().equals(CUSTOM_ENCODING.name())) {
                                     int actualHeader = buffer.getShortLE(5) & 0xFFFF;
                                     assertEquals(GZIP_MAGIC, actualHeader);
                                 }
 
-                                if (requestEncoding != NONE) {
+                                if (reqEncoding != none()) {
                                     assertTrue("Compressed content length should be less than the " +
                                                     "original payload size", buffer.readableBytes() < PAYLOAD_SIZE);
                                 } else {
@@ -193,7 +193,7 @@ public class GrpcMessageEncodingTest {
                                                     "original payload size", buffer.readableBytes() > PAYLOAD_SIZE);
                                 }
 
-                                assertEquals(requestEncoding != NONE ? 1 : 0, compressedFlag);
+                                assertEquals(reqEncoding != none() ? 1 : 0, compressedFlag);
                             } catch (Throwable t) {
                                 t.printStackTrace();
                                 throw t;
@@ -208,12 +208,12 @@ public class GrpcMessageEncodingTest {
                         final List<String> expectedReqAcceptedEncodings = (clientSupportedEncodings == null) ?
                                         emptyList() :
                                         clientSupportedEncodings.stream()
-                                                .filter((enc) -> enc != NONE)
+                                                .filter((enc) -> enc != none())
                                                 .map((GrpcMessageEncoding::name))
                                                 .collect(toList());
 
                         assertTrue("Request encoding should be present in the request headers",
-                                contentEquals(requestEncoding.name(), request.headers().get(MESSAGE_ENCODING, "null")));
+                                contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING, "null")));
                         if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
                             assertEquals(expectedReqAcceptedEncodings, actualReqAcceptedEncodings);
                         }
@@ -231,7 +231,7 @@ public class GrpcMessageEncodingTest {
                             final List<String> expectedRespAcceptedEncodings = (serverSupportedEncodings == null) ?
                                     emptyList() :
                                     serverSupportedEncodings.stream()
-                                            .filter((enc) -> enc != NONE)
+                                            .filter((enc) -> enc != none())
                                             .map((GrpcMessageEncoding::name))
                                             .collect(toList());
 
@@ -243,12 +243,12 @@ public class GrpcMessageEncodingTest {
                                     .get(MESSAGE_ENCODING, "identity").toString();
 
                             if (clientSupportedEncodings == null) {
-                                assertEquals(NONE.name(), respEncName);
+                                assertEquals(none().name(), respEncName);
                             } else if (serverSupportedEncodings == null) {
-                                assertEquals(NONE.name(), respEncName);
+                                assertEquals(none().name(), respEncName);
                             } else {
                                 if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-                                    assertEquals(NONE.name(), respEncName);
+                                    assertEquals(none().name(), respEncName);
                                 } else {
                                     assertNotNull("Response encoding not in the client supported list " +
                                                     "[" + clientSupportedEncodings + "]",
@@ -265,20 +265,20 @@ public class GrpcMessageEncodingTest {
                             response.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
                                 try {
                                     final GrpcMessageEncoding respEnc =
-                                            encodingFor(clientSupportedEncodings == null ? of(NONE) :
+                                            encodingFor(clientSupportedEncodings == null ? of(none()) :
                                                     clientSupportedEncodings, valueOf(response.headers()
                                                     .get(MESSAGE_ENCODING, "identity")));
 
                                     if (buffer.readableBytes() > 0) {
                                         byte compressedFlag = buffer.getByte(0);
-                                        assertEquals(respEnc != NONE ? 1 : 0, compressedFlag);
+                                        assertEquals(respEnc != none() ? 1 : 0, compressedFlag);
 
-                                        if (respEnc == GZIP || respEnc.name().equals(CUSTOM_ENCODING.name())) {
+                                        if (respEnc == gzip() || respEnc.name().equals(CUSTOM_ENCODING.name())) {
                                             int actualHeader = buffer.getShortLE(5) & 0xFFFF;
                                             assertEquals(GZIP_MAGIC, actualHeader);
                                         }
 
-                                        if (respEnc != NONE) {
+                                        if (respEnc != none()) {
                                             assertTrue("Compressed content length should be less than the original " +
                                                     "payload size", buffer.readableBytes() < PAYLOAD_SIZE);
                                         } else {
@@ -369,23 +369,23 @@ public class GrpcMessageEncodingTest {
                                      "request-encoding={2} expected-success={3}")
     public static Object[][] params() {
         return new Object[][] {
-                {null, null, NONE, true},
-                {null, of(GZIP, NONE), GZIP, false},
-                {null, of(DEFLATE, NONE), DEFLATE, false},
-                {of(GZIP, DEFLATE, NONE), null, NONE, true},
-                {of(NONE, GZIP, DEFLATE), of(GZIP, NONE), GZIP, true},
-                {of(NONE, GZIP, DEFLATE), of(DEFLATE, NONE), DEFLATE, true},
-                {of(NONE, GZIP), of(DEFLATE, NONE), DEFLATE, false},
-                {of(NONE, DEFLATE), of(GZIP, NONE), GZIP, false},
-                {of(NONE, DEFLATE), of(DEFLATE, NONE), DEFLATE, true},
-                {of(NONE, DEFLATE), null, NONE, true},
-                {of(GZIP), of(NONE), NONE, true},
-                {of(GZIP), of(GZIP, NONE), NONE, true},
-                {of(GZIP), of(GZIP, NONE), NONE, true},
-                {of(GZIP), of(GZIP, NONE), GZIP, true},
-                {null, of(GZIP, NONE), GZIP, false},
-                {null, of(GZIP, DEFLATE, NONE), DEFLATE, false},
-                {null, of(GZIP, NONE), NONE, true},
+                {null, null, none(), true},
+                {null, of(gzip(), none()), gzip(), false},
+                {null, of(deflate(), none()), deflate(), false},
+                {of(gzip(), deflate(), none()), null, none(), true},
+                {of(none(), gzip(), deflate()), of(gzip(), none()), gzip(), true},
+                {of(none(), gzip(), deflate()), of(deflate(), none()), deflate(), true},
+                {of(none(), gzip()), of(deflate(), none()), deflate(), false},
+                {of(none(), deflate()), of(gzip(), none()), gzip(), false},
+                {of(none(), deflate()), of(deflate(), none()), deflate(), true},
+                {of(none(), deflate()), null, none(), true},
+                {of(gzip()), of(none()), none(), true},
+                {of(gzip()), of(gzip(), none()), none(), true},
+                {of(gzip()), of(gzip(), none()), none(), true},
+                {of(gzip()), of(gzip(), none()), gzip(), true},
+                {null, of(gzip(), none()), gzip(), false},
+                {null, of(gzip(), deflate(), none()), deflate(), false},
+                {null, of(gzip(), none()), none(), true},
                 {of(CUSTOM_ENCODING), of(CUSTOM_ENCODING), CUSTOM_ENCODING, true},
         };
     }

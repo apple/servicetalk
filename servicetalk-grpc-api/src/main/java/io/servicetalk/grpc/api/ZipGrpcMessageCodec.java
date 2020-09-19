@@ -18,6 +18,9 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +35,7 @@ import static java.lang.Math.min;
 
 abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZipGrpcMessageCodec.class);
     private static final int ONE_KB = 1 << 10;
 
     abstract DeflaterOutputStream newCodecOutputStream(OutputStream out) throws IOException;
@@ -89,7 +93,7 @@ abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
                 closeable.close();
             }
         } catch (IOException e) {
-            // Ignore
+            LOGGER.error("Unexpected IO exception while closing buffer streams", e);
         }
     }
 }

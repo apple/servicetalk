@@ -17,7 +17,8 @@ package io.servicetalk.grpc.api;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.NONE;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
+
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
  */
@@ -50,7 +51,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy) {
-        this(path, strategy, NONE);
+        this(path, strategy, none());
     }
 
     protected DefaultGrpcClientMetadata(final String path,

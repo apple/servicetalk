@@ -73,7 +73,7 @@ public final class CharSequences {
     }
 
     /**
-     * Split a given {@link CharSequence} to separate ones on the given delimiter.
+     * Split a given {@link CharSequence} to separate ones on the given {@code delimiter}.
      * The returned {@link CharSequence}s are created by invoking the {@link CharSequence#subSequence(int, int)} method
      * on the main one.
      *
@@ -88,20 +88,20 @@ public final class CharSequences {
             return emptyList();
         }
 
-        int lastIndex = 0;
+        int startIndex = 0;
         List<CharSequence> result = new ArrayList<>();
         for (int i = 0; i < input.length(); i++) {
             if (input.charAt(i) == delimiter) {
-                if ((i - lastIndex) > 0) {
-                    result.add(input.subSequence(lastIndex, i));
+                if ((i - startIndex) > 0) {
+                    result.add(input.subSequence(startIndex, i));
                 }
 
-                lastIndex = i + 1;
+                startIndex = i + 1;
             }
         }
 
-        if ((input.length() - lastIndex) > 0) {
-            result.add(input.subSequence(lastIndex, input.length()));
+        if ((input.length() - startIndex) > 0) {
+            result.add(input.subSequence(startIndex, input.length()));
         }
         return result;
     }
