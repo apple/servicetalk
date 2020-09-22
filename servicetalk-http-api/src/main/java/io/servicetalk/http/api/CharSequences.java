@@ -17,12 +17,15 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.http.api.AsciiBuffer.hashCodeAscii;
 import static java.lang.Character.toUpperCase;
+import static java.util.Collections.emptyList;
 
 /**
  * Provides factory methods for creating {@link CharSequence} implementations.
@@ -68,6 +71,42 @@ public final class CharSequences {
     public static CharSequence emptyAsciiString() {
         return EMPTY_ASCII_BUFFER;
     }
+
+    /**
+     * Split a given {@link CharSequence} to separate ones on the given {@code delimiter}.
+     * The returned {@link CharSequence}s are created by invoking the {@link CharSequence#subSequence(int, int)} method
+     * on the main one.
+     *
+     * This method has no support for regex.
+     *
+     * @param input The initial {@link CharSequence} to split, this experiences no side effects
+     * @param delimiter The delimiter character
+     * @return a {@link List} of {@link CharSequence} subsequences of the input with the separated values
+     */
+    public static List<CharSequence> split(final CharSequence input, final char delimiter) {
+        if (input.length() == 0) {
+            return emptyList();
+        }
+
+        int startIndex = 0;
+        List<CharSequence> result = new ArrayList<>();
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == delimiter) {
+                if ((i - startIndex) > 0) {
+                    result.add(input.subSequence(startIndex, i));
+                }
+
+                startIndex = i + 1;
+            }
+        }
+
+        if ((input.length() - startIndex) > 0) {
+            result.add(input.subSequence(startIndex, input.length()));
+        }
+        return result;
+    }
+
+
 
     /**
      * Attempt to unwrap a {@link CharSequence} and obtain the underlying {@link Buffer} if possible.

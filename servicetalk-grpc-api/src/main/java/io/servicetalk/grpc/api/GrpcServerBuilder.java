@@ -332,7 +332,7 @@ public abstract class GrpcServerBuilder {
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
             LOGGER.error("Unexpected error from service {}.", delegate(), cause);
-            return succeeded(newErrorResponse(responseFactory, cause,
+            return succeeded(newErrorResponse(responseFactory, null, cause,
                     ctx.executionContext().bufferAllocator()));
         }
     }

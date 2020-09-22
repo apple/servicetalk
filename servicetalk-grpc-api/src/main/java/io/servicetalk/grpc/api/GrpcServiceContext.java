@@ -18,6 +18,8 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import java.util.Set;
+
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service context.
  */
@@ -28,6 +30,15 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
 
     @Override
     GrpcProtocol protocol();
+
+    /**
+     * The set of {@link GrpcMessageEncoding} encoding used for this
+     * <a href="https://www.grpc.io">gRPC</a> call.
+     *
+     * @return the set of {@link GrpcMessageEncoding} encoding used for this
+     * <a href="https://www.grpc.io">gRPC</a> call
+     */
+    Set<GrpcMessageEncoding> supportedEncodings();
 
     interface GrpcProtocol extends Protocol {
 

@@ -19,22 +19,19 @@ package io.servicetalk.grpc.api;
  * Supported <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#message-encoding">
  *     gRPC message encoding schemes</a>.
  */
-public enum GrpcMessageEncoding {
-
-    None("identity");
-
-    private final String encoding;
-
-    GrpcMessageEncoding(final String encoding) {
-        this.encoding = encoding;
-    }
+public interface GrpcMessageEncoding {
 
     /**
      * A string representation for the message encoding.
      *
      * @return a string representation for the message encoding.
      */
-    public String encoding() {
-        return encoding;
-    }
+    String name();
+
+    /**
+     * The codec that supports encoding/decoding for this type of message-encoding.
+     *
+     * @return a shared instance of the codec for that message-encoding
+     */
+    GrpcMessageCodec codec();
 }

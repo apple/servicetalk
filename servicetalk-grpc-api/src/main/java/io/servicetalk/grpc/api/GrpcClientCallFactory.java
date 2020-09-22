@@ -38,7 +38,8 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link ClientCall}.
      */
     <Req, Resp> ClientCall<Req, Resp>
-    newCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass, Class<Resp> responseClass);
+    newCall(GrpcSerializationProvider serializationProvider,
+            Class<Req> requestClass, Class<Resp> responseClass);
 
     /**
      * Creates a new {@link StreamingClientCall}.
@@ -93,8 +94,8 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @return {@link BlockingClientCall}.
      */
     <Req, Resp> BlockingClientCall<Req, Resp>
-    newBlockingCall(GrpcSerializationProvider serializationProvider, Class<Req> requestClass,
-                    Class<Resp> responseClass);
+    newBlockingCall(GrpcSerializationProvider serializationProvider,
+                    Class<Req> requestClass, Class<Resp> responseClass);
 
     /**
      * Creates a new {@link BlockingStreamingClientCall}.

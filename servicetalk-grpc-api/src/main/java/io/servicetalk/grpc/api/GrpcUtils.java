@@ -31,21 +31,27 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.TrailersTransformer;
-import io.servicetalk.serialization.api.SerializationException;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.CharSequences.split;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -62,9 +68,12 @@ final class GrpcUtils {
     private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
     // TODO (nkant): add project version
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
-    private static final CharSequence IDENTITY = newAsciiString(None.encoding());
+    private static final CharSequence IDENTITY = newAsciiString(none().name());
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
+    private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
+    private static final CharSequence GRPC_STATUS_UNIMPLEMENTED = newAsciiString("grpc-status-unimplemented");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
+    private static final Set<GrpcMessageEncoding> GRPC_ACCEPT_ENCODING_NONE = Collections.singleton(none());
     private static final TrailersTransformer<Object, Object> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Object>() {
                 @Override
@@ -78,50 +87,58 @@ final class GrpcUtils {
         // No instances.
     }
 
-    static void initRequest(final HttpRequestMetaData request) {
+    static void initRequest(final HttpRequestMetaData request, final Set<GrpcMessageEncoding> supportedEncodings) {
         assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
+        headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncodingsHeaderValue(supportedEncodings));
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
+                                                 @Nullable final GrpcServiceContext context,
                                                  final Publisher<T> payload,
                                                  final HttpSerializer<T> serializer,
                                                  final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory).payloadBody(payload, serializer)
+        return newStreamingResponse(responseFactory, context).payloadBody(payload, serializer)
                 .transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
     static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
+                                             @Nullable final GrpcServiceContext context,
                                              final GrpcStatus status,
                                              final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory).transformRaw(new GrpcStatusUpdater(allocator, status));
+        return newStreamingResponse(responseFactory, context).transformRaw(new GrpcStatusUpdater(allocator, status));
     }
 
-    static HttpResponse newResponse(final HttpResponseFactory responseFactory, final BufferAllocator allocator) {
+    static HttpResponse newResponse(final HttpResponseFactory responseFactory,
+                                    @Nullable final GrpcServiceContext context,
+                                    final BufferAllocator allocator) {
         final HttpResponse response = responseFactory.ok();
-        initResponse(response);
+        initResponse(response, context);
         setStatusOk(response.trailers(), allocator);
         return response;
     }
 
-    static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory, final Throwable cause,
-                                         final BufferAllocator allocator) {
-        HttpResponse response = newResponse(responseFactory, allocator);
+    static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory,
+                                         @Nullable final GrpcServiceContext context,
+                                         final Throwable cause, final BufferAllocator allocator) {
+        HttpResponse response = newResponse(responseFactory, context, allocator);
         setStatus(response.trailers(), cause, allocator);
         return response;
     }
 
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                  final Throwable cause, final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory).transformRaw(new ErrorUpdater(cause, allocator));
+                                                  @Nullable final GrpcServiceContext context, final Throwable cause,
+                                                  final BufferAllocator allocator) {
+        return newStreamingResponse(responseFactory, context).transformRaw(new ErrorUpdater(cause, allocator));
     }
 
-    private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory) {
+    private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory,
+                                                              @Nullable final GrpcServiceContext context) {
         final StreamingHttpResponse response = responseFactory.ok();
-        initResponse(response);
+        initResponse(response, context);
         return response;
     }
 
@@ -145,6 +162,11 @@ final class GrpcUtils {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
             setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
+        } else if (cause instanceof MessageEncodingException) {
+            MessageEncodingException msgEncException = (MessageEncodingException) cause;
+            GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
+                    msgEncException.encoding() + "' not supported ");
+            setStatus(trailers, status, null, allocator);
         } else {
             setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
         }
@@ -210,8 +232,8 @@ final class GrpcUtils {
         final GrpcStatusCode statusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
-            throw new GrpcStatus(INTERNAL, null, "Response does not contain "
-                    + GRPC_STATUS_CODE_TRAILER + " header or trailer").asException();
+            throw new GrpcStatus(INTERNAL, null, "Response does not contain " +
+                    GRPC_STATUS_CODE_TRAILER + " header or trailer").asException();
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
@@ -219,22 +241,88 @@ final class GrpcUtils {
         }
     }
 
-    static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData) {
+    static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData,
+                                                       final Set<GrpcMessageEncoding> allowedEncodings) {
         final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
-        // identity is a special header for no compression
-        if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
-            final String lowercaseEncoding = encoding.toString().toLowerCase();
-            throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
-        } else {
-            return None;
+        if (encoding == null) {
+            return none();
         }
+
+        GrpcMessageEncoding enc = encodingFor(allowedEncodings, encoding.toString());
+        if (enc == null) {
+            final String lowercaseEncoding = encoding.toString().toLowerCase();
+            throw new MessageEncodingException(lowercaseEncoding);
+        }
+
+        return enc;
     }
 
-    private static void initResponse(final HttpResponseMetaData response) {
+    static Set<GrpcMessageEncoding> readGrpcAcceptMessageEncoding(final HttpMetaData httpMetaData,
+                                                                  final Set<GrpcMessageEncoding> acceptedEncodings) {
+        final CharSequence acceptEncodingsHeaderVal = httpMetaData.headers().get(GRPC_ACCEPT_ENCODING_KEY);
+
+        if (acceptEncodingsHeaderVal == null || acceptEncodingsHeaderVal.length() == 0) {
+            return GRPC_ACCEPT_ENCODING_NONE;
+        }
+
+        Set<GrpcMessageEncoding> knownEncodings = new HashSet<>();
+        List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
+        for (CharSequence val : acceptEncodingValues) {
+            GrpcMessageEncoding enc = encodingFor(acceptedEncodings, val.toString().trim());
+            if (enc != null) {
+                knownEncodings.add(enc);
+            }
+        }
+
+        return knownEncodings;
+    }
+
+    static GrpcMessageEncoding firstMatchingEncodingOrNone(final HttpMetaData httpMetaData,
+                                                           final Set<GrpcMessageEncoding> serverSupportedEncodings) {
+        // Fast path, server has no encodings configured or has only None configured as encoding
+        if (serverSupportedEncodings.isEmpty() ||
+                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(none()))) {
+            return none();
+        }
+
+        Set<GrpcMessageEncoding> clientSupportedEncodings =
+                readGrpcAcceptMessageEncoding(httpMetaData, serverSupportedEncodings);
+        return firstMatchingEncodingOrNone(clientSupportedEncodings, serverSupportedEncodings);
+    }
+
+    static GrpcMessageEncoding firstMatchingEncodingOrNone(final Set<GrpcMessageEncoding> clientSupportedEncodings,
+                                                           final Set<GrpcMessageEncoding> serverSupportedEncodings) {
+        // Fast path, Client has no encodings configured, or has None as the only encoding configured
+        if (clientSupportedEncodings == GRPC_ACCEPT_ENCODING_NONE ||
+                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(none()))) {
+            return none();
+        }
+
+        /*
+         * Iterate to find the first matched encoding, if no matches are found return None
+         *
+         * For every message a server is requested to compress using an algorithm it knows the client doesn't support
+         * (as indicated by the last grpc-accept-encoding header received from the client),
+         * it SHALL send the message uncompressed.
+         * ref: https://github.com/grpc/grpc/blob/master/doc/compression.md
+         */
+        for (GrpcMessageEncoding encoding : serverSupportedEncodings) {
+            if (encoding != none() && clientSupportedEncodings.contains(encoding)) {
+                return encoding;
+            }
+        }
+
+        return none();
+    }
+
+    private static void initResponse(final HttpResponseMetaData response, @Nullable final GrpcServiceContext context) {
         // The response status is 200 no matter what. Actual status is put in trailers.
         final HttpHeaders headers = response.headers();
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
+        if (context != null) {
+            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncodingsHeaderValue(context.supportedEncodings()));
+        }
     }
 
     @Nullable
@@ -268,6 +356,29 @@ final class GrpcUtils {
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException("Could not decode grpc status details", e);
         }
+    }
+
+    /**
+     * Construct the gRPC header {@code grpc-accept-encoding} representation of the given encodings.
+     *
+     * @param encodings the list of encodings to be used in the string representation.
+     * @return a comma separated string representation of the encodings for use as a header value
+     */
+    private static CharSequence acceptedEncodingsHeaderValue(final Collection<GrpcMessageEncoding> encodings) {
+        StringBuilder builder = new StringBuilder();
+        for (GrpcMessageEncoding enc : encodings) {
+            if (enc == none()) {
+                continue;
+            }
+
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+
+            builder.append(enc.name());
+        }
+
+        return newAsciiString(builder.toString());
     }
 
     @SuppressWarnings("unchecked")

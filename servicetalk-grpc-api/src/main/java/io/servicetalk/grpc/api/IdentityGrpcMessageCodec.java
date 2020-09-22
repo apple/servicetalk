@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,21 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 
 /**
- * A blocking <a href="https://www.grpc.io">gRPC</a> service.
+ * NOOP Message encoding codec
  */
-public interface BlockingGrpcService extends GracefulAutoCloseable {
+final class IdentityGrpcMessageCodec implements GrpcMessageCodec {
 
     @Override
-    default void close() throws Exception {
-        // noop
+    public Buffer encode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
+        return src;
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
+        return src;
     }
 }

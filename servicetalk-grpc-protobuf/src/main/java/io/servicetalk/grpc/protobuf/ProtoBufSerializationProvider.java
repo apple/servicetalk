@@ -17,6 +17,7 @@ package io.servicetalk.grpc.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
+import io.servicetalk.grpc.api.GrpcMessageCodec;
 import io.servicetalk.grpc.api.GrpcMessageEncoding;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.SerializationProvider;
@@ -39,12 +40,17 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 final class ProtoBufSerializationProvider<T extends MessageLite> implements SerializationProvider {
     private static final int LENGTH_PREFIXED_MESSAGE_HEADER_BYTES = 5;
+
+    private static final byte FLAG_UNCOMPRESSED = 0x0;
+    private static final byte FLAG_COMPRESSED = 0x1;
+
     private final Class<T> targetClass;
     private final GrpcMessageEncoding messageEncoding;
     private final ProtoSerializer serializer;
@@ -90,9 +96,9 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
     private static boolean isCompressed(Buffer buffer) throws SerializationException {
         byte compressionFlag = buffer.readByte();
-        if (compressionFlag == 0) {
+        if (compressionFlag == FLAG_UNCOMPRESSED) {
             return false;
-        } else if (compressionFlag == 1) {
+        } else if (compressionFlag == FLAG_COMPRESSED) {
             return true;
         }
         throw new SerializationException("compression flag must be 0 or 1 but was: " + compressionFlag);
@@ -101,6 +107,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
     private static final class ProtoDeserializer<T> implements StreamingDeserializer<T> {
         private final Parser<T> parser;
         private final CompositeBuffer accumulate;
+        private final GrpcMessageCodec encoder;
         /**
          * <ul>
          *     <li>{@code < 0} - read Length-Prefixed-Message header</li>
@@ -113,6 +120,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
         ProtoDeserializer(final Parser<T> parser,
                           @SuppressWarnings("unused") final GrpcMessageEncoding grpcMessageEncoding) {
             this.parser = parser;
+            this.encoder = grpcMessageEncoding.codec();
             accumulate = DEFAULT_ALLOCATOR.newCompositeBuffer(Integer.MAX_VALUE);
         }
 
@@ -132,8 +140,6 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     }
 
                     compressed = isCompressed(toDeserialize);
-                    // TODO (nkant) : handle compression
-                    assert !compressed;
 
                     // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md specifies size as 4 bytes
                     // unsigned int However netty buffers only support up to Integer.MAX_VALUE, and even
@@ -151,28 +157,42 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     final T t;
                     try {
                         final CodedInputStream in;
-                        if (toDeserialize.nioBufferCount() == 1) {
-                            in = CodedInputStream.newInstance(toDeserialize.toNioBuffer(toDeserialize.readerIndex(),
-                                    lengthOfData));
+                        Buffer buffer = toDeserialize;
+                        int decodedLengthOfData = lengthOfData;
+                        if (compressed) {
+                            buffer = encoder.decode(toDeserialize, toDeserialize.readerIndex(),
+                                    lengthOfData, DEFAULT_ALLOCATOR);
+                            decodedLengthOfData = buffer.readableBytes();
+                        }
+
+                        if (buffer.nioBufferCount() == 1) {
+                            ByteBuffer nioBuffer = buffer.toNioBuffer(buffer.readerIndex(), decodedLengthOfData);
+                            in = CodedInputStream.newInstance(nioBuffer);
                         } else {
                             // Aggregated payload body may consist of multiple Buffers. In this case,
                             // CompositeBuffer.toNioBuffer(idx, length) may return a single ByteBuffer (when requested
                             // length < components[0].length) or create a new ByteBuffer and copy multiple components
                             // into it. Later, proto parser will copy data from this temporary ByteBuffer again.
                             // To avoid unnecessary copying, we use newCodedInputStream(buffers, lengthOfData).
-                            final ByteBuffer[] buffers = toDeserialize.toNioBuffers(toDeserialize.readerIndex(),
-                                    lengthOfData);
-                            in = buffers.length == 1 ? CodedInputStream.newInstance(buffers[0]) :
-                                    newCodedInputStream(buffers, lengthOfData);
+                            final ByteBuffer[] buffers = buffer.toNioBuffers(buffer.readerIndex(),
+                                    buffer.readableBytes());
+
+                            in = buffers.length == 1 ?
+                                    CodedInputStream.newInstance(buffers[0]) :
+                                    newCodedInputStream(buffers, decodedLengthOfData);
                         }
+
                         t = parser.parseFrom(in);
                     } catch (InvalidProtocolBufferException e) {
                         throw new SerializationException(e);
                     }
 
-                    // The NIO buffer indexes are not connected to the Buffer indexes, so we need to update
-                    // our indexes and discard any bytes if necessary.
-                    toDeserialize.skipBytes(lengthOfData);
+                    if (!compressed) {
+                        // The NIO buffer indexes are not connected to the Buffer indexes, so we need to update
+                        // our indexes and discard any bytes if necessary.
+                        toDeserialize.skipBytes(lengthOfData);
+                    }
+
                     if (toDeserialize == accumulate) {
                         accumulate.discardSomeReadBytes();
                     }
@@ -253,7 +273,12 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
     private static final class ProtoSerializer implements StreamingSerializer {
 
-        ProtoSerializer(@SuppressWarnings("unused") final GrpcMessageEncoding encoding) {
+        private final GrpcMessageCodec encoder;
+        private final boolean encode;
+
+        ProtoSerializer(final GrpcMessageEncoding encoding) {
+            this.encoder = encoding.codec();
+            this.encode = encoding != none();
         }
 
         @Override
@@ -262,23 +287,51 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                 throw new SerializationException("Unknown type to serialize (expected MessageLite): " +
                         toSerialize.getClass().getName());
             }
-            final MessageLite msg = (MessageLite) toSerialize;
+
+            if (encode) {
+                serializeAndEncode((MessageLite) toSerialize, destination);
+            } else {
+                serializeOnly((MessageLite) toSerialize, destination);
+            }
+        }
+
+        private void serializeOnly(final MessageLite msg, final Buffer destination) {
             final int size = msg.getSerializedSize();
-            // TODO (nkant) : handle compression
-            destination.writeByte(0);
+            destination.writeByte(FLAG_UNCOMPRESSED);
             destination.writeInt(size);
             destination.ensureWritable(size);
 
+            serialize0(msg, destination);
+        }
+
+        private void serializeAndEncode(final MessageLite msg, final Buffer destination) {
+            final int size = msg.getSerializedSize();
+            Buffer serialized = DEFAULT_ALLOCATOR.newBuffer(size);
+            serialize0(msg, serialized);
+
+            Buffer encoded = encoder.encode(serialized, 0, serialized.readableBytes(), DEFAULT_ALLOCATOR);
+
+            destination.writeByte(FLAG_COMPRESSED);
+            destination.writeInt(encoded.readableBytes());
+            destination.ensureWritable(encoded.readableBytes());
+            destination.writeBytes(encoded);
+        }
+
+        private void serialize0(final MessageLite msg, final Buffer destination) {
+            final int size = msg.getSerializedSize();
             final int writerIdx = destination.writerIndex();
             final int writableBytes = destination.writableBytes();
             final CodedOutputStream out = destination.hasArray() ?
                     newInstance(destination.array(), destination.arrayOffset() + writerIdx, writableBytes) :
                     newInstance(destination.toNioBuffer(writerIdx, writableBytes));
+
             try {
                 msg.writeTo(out);
             } catch (IOException e) {
                 throw new SerializationException(e);
             }
+
+            // Forward write index of our buffer
             destination.writerIndex(writerIdx + size);
         }
     }
