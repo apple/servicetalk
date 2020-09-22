@@ -25,7 +25,6 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.all;
 
 public class HelloWorldServer {
 
