@@ -624,7 +624,7 @@ final class Generator {
                         .addAnnotation(Override.class)
                         .returns(state.clientClass)
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L)", defaultClientClass, factory, supportedEncodings)
+                        .addStatement("return new $T($L, $L())", defaultClientClass, factory, supportedEncodings)
                         .build())
                 .addMethod(methodBuilder("newFilter")
                         .addModifiers(PROTECTED)
@@ -646,7 +646,8 @@ final class Generator {
                         .addAnnotation(Override.class)
                         .returns(state.blockingClientClass)
                         .addParameter(GrpcClientCallFactory, factory, FINAL)
-                        .addStatement("return new $T($L, $L)", defaultBlockingClientClass, factory, supportedEncodings)
+                        .addStatement("return new $T($L, $L())", defaultBlockingClientClass, factory,
+                                supportedEncodings)
                         .build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
                 .addType(newFilterableClientToClientClassSpec(state, filterableClientToClientClass,

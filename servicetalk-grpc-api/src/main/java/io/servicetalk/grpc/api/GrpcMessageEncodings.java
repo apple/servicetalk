@@ -35,7 +35,7 @@ public final class GrpcMessageEncodings {
     private static final GrpcMessageEncoding NONE =
             new DefaultGrpcMessageEncoding("identity", new IdentityGrpcMessageCodec());
 
-    private static final GrpcMessageEncoding GZIP = 
+    private static final GrpcMessageEncoding GZIP =
             new DefaultGrpcMessageEncoding("gzip", new GzipGrpcMessageCodec());
 
     private static final GrpcMessageEncoding DEFLATE =

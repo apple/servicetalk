@@ -49,6 +49,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.grpc.api.GrpcMessageEncodings.encodingFor;
 import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.CharSequences.split;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
@@ -163,8 +164,9 @@ final class GrpcUtils {
             setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
         } else if (cause instanceof MessageEncodingException) {
             MessageEncodingException msgEncException = (MessageEncodingException) cause;
-            setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNIMPLEMENTED.value()),
-                    Status.newBuilder().setMessage(msgEncException.encoding()).build(), allocator);
+            GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
+                    msgEncException.encoding() + "' not supported ");
+            setStatus(trailers, status, null, allocator);
         } else {
             setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
         }

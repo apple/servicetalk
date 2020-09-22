@@ -43,8 +43,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     @Nullable
     private FilterFactory filterFactory;
 
-    @SuppressWarnings("URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD")
-    protected Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(none()));
+    private Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(none()));
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>
@@ -107,7 +106,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     }
 
     /**
-     * Sets the supported message encodings for this client.
+     * Sets the supported message encodings for this client factory.
      * By default only {@link GrpcMessageEncodings#none()} is supported
      *
      * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
@@ -117,6 +116,14 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     supportedEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
         this.supportedEncodings = unmodifiableSet(supportedEncodings);
         return this;
+    }
+
+    /**
+     * Return the list of supported {@link GrpcMessageEncoding}s for this client factory.
+     * @return the list of supported {@link GrpcMessageEncoding}s for this client factory
+     */
+    protected Set<GrpcMessageEncoding> supportedEncodings() {
+        return supportedEncodings;
     }
 
     /**
