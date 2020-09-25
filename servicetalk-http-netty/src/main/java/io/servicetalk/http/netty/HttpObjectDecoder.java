@@ -510,6 +510,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             releaseCumulation();
             ctx.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
                     DiscardInboundHandler.INSTANCE);
+            ctx.channel().config().setAutoRead(true);
         }
         super.userEventTriggered(ctx, evt);
     }

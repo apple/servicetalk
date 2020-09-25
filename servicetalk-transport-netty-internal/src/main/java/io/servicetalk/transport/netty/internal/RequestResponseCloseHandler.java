@@ -272,7 +272,7 @@ class RequestResponseCloseHandler extends CloseHandler {
                                                      final boolean endInbound) {
 
         if (idle(pending, state)) {
-            if (isClient || has(state, IN_CLOSED) || (event != USER_CLOSING && event != PROTOCOL_CLOSING_OUTBOUND)) {
+            if (isClient || has(state, IN_CLOSED) || (evt != USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
                 closeChannel(channel, evt);
             } else {
                 serverCloseGracefully(channel);
@@ -420,7 +420,6 @@ class RequestResponseCloseHandler extends CloseHandler {
             LOGGER.debug("{} Discarding further INBOUND", channel);
             state = unset(state, READ);
             channel.pipeline().fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
-            channel.config().setAutoRead(true);
             state = set(state, DISCARDING_SERVER_INPUT);
         }
     }
