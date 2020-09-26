@@ -29,6 +29,7 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -47,7 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class ServerRespondsOnProtocolClosingInboundTest {
+public class ServerRespondsOnClosingTest {
 
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
@@ -59,7 +60,7 @@ public class ServerRespondsOnProtocolClosingInboundTest {
     private final EmbeddedChannel channel;
     private final NettyHttpServerConnection serverConnection;
 
-    public ServerRespondsOnProtocolClosingInboundTest() throws Exception {
+    public ServerRespondsOnClosingTest() throws Exception {
         interceptor = new OutboundWriteEventsInterceptor();
         channel = new EmbeddedChannel(interceptor);
 
@@ -83,11 +84,41 @@ public class ServerRespondsOnProtocolClosingInboundTest {
     }
 
     @Test
-    public void requestReceivedBeforeProcessingStarts() throws Exception {
+    public void protocolClosingInboundBeforeProcessingStarts() throws Exception {
         channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-length: 0\r\n" +
                 "Connection: close\r\n" + "\r\n"));
+
+        // Start request processing (read and write) after request was received:
+        serverConnection.process(true);
+        // Verify that the server responded:
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3));
+        assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+    }
+
+    @Test
+    public void gracefulClosureBeforeProcessingStarts() throws Exception {
+        channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-length: 0\r\n" + "\r\n"));
+        serverConnection.closeAsyncGracefully().subscribe();
+        serverConnection.onClosing().toFuture().get();
+
+        // Start request processing (read and write) after request was received:
+        serverConnection.process(true);
+        // Verify that the server responded:
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3));
+        assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+    }
+
+    @Test
+    public void channelCloseInboundBeforeProcessingStarts() throws Exception {
+        channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-length: 0\r\n" + "\r\n"));
+        channel.pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
+
         // Start request processing (read and write) after request was received:
         serverConnection.process(true);
         // Verify that the server responded:
