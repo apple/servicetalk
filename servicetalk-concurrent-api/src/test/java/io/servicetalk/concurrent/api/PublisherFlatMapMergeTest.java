@@ -47,7 +47,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -283,6 +285,27 @@ public class PublisherFlatMapMergeTest {
         // Since FlatMap needs to track the requestN amount leased to mapped Publishers, the cancel state is
         // aggressive in suppressing onNext signals (tck tests fail if signals are delivered after cancel).
         assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+    }
+
+    @Test
+    public void errorDeliveredWithoutDrainingOptimisticDemand() throws InterruptedException {
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+
+        toSource(publisher.flatMapMerge(i -> range(0, 5), 10)).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+
+        verifyCumulativeDemand(upstreamSubscription, 10);
+        publisher.onNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        publisher.onError(DELIBERATE_EXCEPTION);
+
+        assertThat(subscriber.pollAllOnNext(), contains(0));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -898,6 +921,51 @@ public class PublisherFlatMapMergeTest {
         if (cause != null) {
             throw cause;
         }
+    }
+
+    @Test
+    public void internalQueueSizeIsBoundedByDownstreamDemand() throws Throwable {
+        // We only expect 1 signal, and if we get 2 then the test has failed. The goal is to only request 1 onNext and
+        // verify the operator bounds the amount of memory behind the scenes.
+        final AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        final CountDownLatch countDownLatch = new CountDownLatch(2);
+        final long memory = Runtime.getRuntime().maxMemory();
+        final byte[] array = new byte[(int) min(Integer.MAX_VALUE >>> 3, memory)];
+        array[0] = 1; // this value doesn't matter, just to suppressing warning about not writing to array.
+        toSource(range(0, 100000000).flatMapMerge(i -> from(array.clone()), 1))
+                .subscribe(new Subscriber<byte[]>() {
+                    @Override
+                    public void onSubscribe(final Subscription subscription) {
+                        // Only request a single element, flatMapMerge shouldn't continue to request and queue data
+                        // behind the scenes.
+                        subscription.request(1);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final byte[] integer) {
+                        countDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        throwableRef.set(t);
+                        countDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        throwableRef.set(new IllegalStateException("unexpected onComplete"));
+                        countDownLatch.countDown();
+                    }
+                });
+        // Wait some time to validate the operator bounds internal queue sizes. This is expected to timeout as we are
+        // asserting that a condition doesn't happen.
+        final boolean timedOut = countDownLatch.await(2, SECONDS);
+        final Throwable cause = throwableRef.get();
+        if (cause != null) {
+            throw cause;
+        }
+        assertFalse("The countDownLatch didn't timeout, and there was also no exception?!", timedOut);
     }
 
     private static final class TestSubscriptionPublisherPair<T> {

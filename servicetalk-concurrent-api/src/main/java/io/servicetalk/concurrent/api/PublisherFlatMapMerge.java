@@ -117,12 +117,12 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
                 "terminalNotification");
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings("UnusedDeclaration")
         @Nullable
         private volatile TerminalNotification terminalNotification;
         @Nullable
         private volatile CompositeException delayedError;
-        @SuppressWarnings("unused")
+        @SuppressWarnings("UnusedDeclaration")
         private volatile int emittingLock;
         private volatile int activeMappedSources;
         private volatile long pendingDemand;
@@ -260,9 +260,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         private void distributeMappedDemand(FlatMapPublisherSubscriber<T, R> hungrySubscriber) {
             final int quota = reserveMappedDemandQuota();
-            final int usedQuota = hungrySubscriber.request(quota);
-            if (usedQuota < quota) {
-                incMappedDemand(quota - usedQuota);
+            if (!hungrySubscriber.request(quota)) {
+                incMappedDemand(quota);
             }
         }
 
@@ -308,9 +307,15 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
                 boolean mappedSourcesCompleted = false;
                 try {
+                    // We can skip the queue if the following conditions are meet:
+                    // 1. There is downstream requestN demand.
+                    // 2. The mapped subscriber doesn't have any signals already in the queue. We only need to preserve
+                    //    the ordering for each mapped source, and there is no "overall" ordering.
+                    // 3. We don't concurrently invoke the downstream subscriber. Concurrency control is provided by the
+                    //    emitting lock.
                     if (subscriber.hasSignalsQueued() || (needsDemand(item) && !tryDecrementPendingDemand())) {
                         subscriber.markSignalsQueued();
-                        enqueueItem(item); // drain isn't necessary. when demand arrives a drain will be attempted.
+                        enqueueItem(item);
                     } else if (item == MAPPED_SOURCE_COMPLETE) {
                         mappedSourcesCompleted = true;
                     } else {
@@ -539,14 +544,14 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 subscription.cancel();
             }
 
-            int request(int n) {
+            boolean request(int n) {
                 assert n > 0;
                 if (!pendingDemandUpdater.compareAndSet(this, 0, n)) {
-                    return 0;
+                    return false;
                 }
                 signalsQueued = false;
                 subscription.request(n);
-                return n;
+                return true;
             }
 
             void markSignalsQueued() {
