@@ -43,6 +43,7 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
     public boolean add(Cancellable toAdd) {
         if (!cancellables.offer(toAdd)) {
             toAdd.cancel();
+            return false;
         } else if (isCancelled()) {
             cancelAll();
             return false;

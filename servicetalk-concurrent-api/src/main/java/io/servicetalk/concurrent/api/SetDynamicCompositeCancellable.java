@@ -72,6 +72,7 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
     public boolean add(Cancellable toAdd) {
         if (!cancellables.add(toAdd)) {
             toAdd.cancel(); // out of memory, or user has implemented equals/hashCode so there is overlap.
+            return false;
         } else if (isCancelled()) {
             cancelAll(); // avoid concurrency on toAdd if another thread invokes cancel(), just cancel all.
             return false;
