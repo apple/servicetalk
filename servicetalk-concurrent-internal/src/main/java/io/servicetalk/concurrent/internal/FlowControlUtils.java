@@ -121,6 +121,24 @@ public final class FlowControlUtils {
     }
 
     /**
+     * Add two longs and prevent [under|over]flow which is defined as if both {@code x} and {@code y} have the same sign
+     * but the result of {@code x + y} has a different sign.
+     * @param x first value.
+     * @param y second value.
+     * @return
+     * <ul>
+     *     <li>{@code x + y} if no overflow</li>
+     *     <li>{@link Long#MAX_VALUE} if overflow in the positive direction</li>
+     *     <li>{@link Long#MIN_VALUE} if otherwise in the negative direction</li>
+     * </ul>
+     */
+    public static long addWithUnderOverflowProtection(final long x, final long y) {
+        final long sum = x + y;
+        // if overflow, sign extended right shift, then flip lower 63 bits (non-sign bits) to get 2s complement min/max.
+        return ((x ^ sum) & (y ^ sum)) < 0 ? ((x >> 63) ^ Long.MAX_VALUE) : sum;
+    }
+
+    /**
      * Increment an {@code integer} referred by {@link AtomicIntegerFieldUpdater} atomically
      * and saturate to {@link Integer#MAX_VALUE} if overflow occurs.
      *
