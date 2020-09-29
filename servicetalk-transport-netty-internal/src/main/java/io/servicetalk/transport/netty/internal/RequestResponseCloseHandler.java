@@ -165,7 +165,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     @Override
     public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
         if (isClient || (has(state, CLOSING) && pending == 0)) {
-            ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
+            ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
         }
     }
 

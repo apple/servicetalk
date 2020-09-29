@@ -627,7 +627,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-            if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+            if (evt == CloseHandler.OutboundDataEndEvent.INSTANCE) {
                 connection.channelOutboundListener.channelOutboundClosed();
             } else if (evt == AbortWritesEvent.INSTANCE) {
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
