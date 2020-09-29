@@ -36,7 +36,6 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PR
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.ALL_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.DISCARDING_SERVER_INPUT;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_CLOSED;
@@ -82,17 +81,16 @@ class RequestResponseCloseHandler extends CloseHandler {
      * Original {@link CloseEvent} that initiated closing.
      */
     @Nullable
-    private CloseEvent event;
+    private CloseEvent closeEvent;
 
     protected interface State {
         byte READ = 0x01;
         byte WRITE = 0x02;
-        byte CLOSING = 0x04;
-        byte IN_CLOSED = 0x08;
-        byte OUT_CLOSED = 0x10;
-        byte CLOSED = 0x20;
-        byte DISCARDING_SERVER_INPUT = 0x40;
-        byte CLOSING_SERVER_GRACEFULLY = (byte) 0x80;
+        byte DISCARDING_SERVER_INPUT = 0x04;
+        byte CLOSING_SERVER_GRACEFULLY = 0x08;
+        byte IN_CLOSED = 0x10;
+        byte OUT_CLOSED = 0x20;
+        byte CLOSED = 0x40;
 
         byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
         byte IN_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
@@ -152,9 +150,8 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     private void storeCloseRequestAndEmit(final CloseEvent event) {
         eventHandler.accept(event);
-        state = set(state, CLOSING);
-        if (this.event == null) {
-            this.event = event;
+        if (this.closeEvent == null) {
+            this.closeEvent = event;
         }
     }
 
@@ -169,10 +166,9 @@ class RequestResponseCloseHandler extends CloseHandler {
     public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
         state = unset(state, READ);
-        if (has(state, CLOSING)) {
-            final CloseEvent event = this.event;
-            assert event != null;
-            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), event, true);
+        final CloseEvent evt = this.closeEvent;
+        if (evt != null) {
+            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, true);
         }
     }
 
@@ -185,7 +181,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
-        if (isClient || has(state, CLOSING)) {
+        if (isClient || closeEvent != null) {
             ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
         }
     }
@@ -194,10 +190,9 @@ class RequestResponseCloseHandler extends CloseHandler {
     public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
         state = unset(state, WRITE);
-        if (has(state, CLOSING)) {
-            final CloseEvent event = this.event;
-            assert event != null;
-            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), event, false);
+        final CloseEvent evt = this.closeEvent;
+        if (evt != null) {
+            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, false);
         }
     }
 
@@ -220,7 +215,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         assert ctx.executor().inEventLoop();
         state = set(state, IN_CLOSED);
         // Use the actual event that initiated graceful closure:
-        final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? event : CHANNEL_CLOSED_INBOUND;
+        final CloseEvent evt = has(state, CLOSING_SERVER_GRACEFULLY) ? closeEvent : CHANNEL_CLOSED_INBOUND;
         assert evt != null;
         storeCloseRequestAndEmit(evt);
         maybeCloseChannelOnHalfClosed(ctx.channel(), evt);
