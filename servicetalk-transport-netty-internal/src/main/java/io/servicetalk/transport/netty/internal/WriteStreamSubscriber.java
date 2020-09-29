@@ -200,6 +200,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     @Override
     public void channelOutboundClosed() {
         assert eventLoop.inEventLoop();
+        Subscription oldVal = subscriptionUpdater.getAndSet(this, CANCELLED);
+        if (oldVal != null) {
+            oldVal.cancel();
+        }
         promise.sourceTerminated(null);
     }
 

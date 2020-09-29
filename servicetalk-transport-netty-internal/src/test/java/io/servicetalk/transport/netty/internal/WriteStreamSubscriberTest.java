@@ -21,8 +21,6 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteOb
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.channels.ClosedChannelException;
-
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -95,7 +93,6 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void testOnErrorPostWrite() throws InterruptedException {
         writeAndFlush("Hello");
-        channel.flushOutbound();
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
         assertThat("Message not written.", channel.outboundMessages(), contains("Hello"));
@@ -147,11 +144,27 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     }
 
     @Test
-    public void onNextAfterChannelClose() {
-        subscriber.channelClosed(new ClosedChannelException());
+    public void onNextAfterChannelOutboundClosed() {
+        subscriber.channelOutboundClosed();
+        verify(subscription).cancel();
         subscriber.onNext("Hello");
         channel.runPendingTasks();
         assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+        verify(completableSubscriber).onComplete();
+    }
+
+    @Test
+    public void onNextAfterChannelClose() {
+        // Send first message to avoid AbortedFirstWrite wrapper:
+        writeAndFlush("Hello");
+        assertThat("Message not written.", channel.readOutbound(), is("Hello"));
+
+        subscriber.channelClosed(DELIBERATE_EXCEPTION);
+        verify(subscription).cancel();
+        subscriber.onNext("World");
+        channel.runPendingTasks();
+        assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+        verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
