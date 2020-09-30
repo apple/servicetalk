@@ -304,33 +304,32 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private void tryEmitItem(Object item, FlatMapPublisherSubscriber<T, R> subscriber) {
-            if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
-                boolean mappedSourcesCompleted = false;
+            // We can skip the queue if the following conditions are meet:
+            // 1. There is downstream requestN demand.
+            // 2. The mapped subscriber doesn't have any signals already in the queue. We only need to preserve the
+            //    ordering for each mapped source, and there is no "overall" ordering.
+            // 3. We don't concurrently invoke the downstream subscriber. Concurrency control is provided by the
+            //    emitting lock.
+            final boolean needsDemand;
+            if (subscriber.hasSignalsQueued() || ((needsDemand = needsDemand(item)) && !tryDecrementPendingDemand())) {
+                subscriber.markSignalsQueued();
+                enqueueAndDrain(item);
+            } else if (item == MAPPED_SOURCE_COMPLETE) {
+                requestMoreFromUpstream(1);
+            } else if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
                 try {
-                    // We can skip the queue if the following conditions are meet:
-                    // 1. There is downstream requestN demand.
-                    // 2. The mapped subscriber doesn't have any signals already in the queue. We only need to preserve
-                    //    the ordering for each mapped source, and there is no "overall" ordering.
-                    // 3. We don't concurrently invoke the downstream subscriber. Concurrency control is provided by the
-                    //    emitting lock.
-                    if (subscriber.hasSignalsQueued() || (needsDemand(item) && !tryDecrementPendingDemand())) {
-                        subscriber.markSignalsQueued();
-                        enqueueItem(item);
-                    } else if (item == MAPPED_SOURCE_COMPLETE) {
-                        mappedSourcesCompleted = true;
-                    } else {
-                        final boolean demandConsumed = sendToTarget(item);
-                        assert demandConsumed == needsDemand(item);
-                    }
+                    final boolean demandConsumed = sendToTarget(item);
+                    assert demandConsumed == needsDemand;
                 } finally {
                     if (!releaseLock(emittingLockUpdater, this)) {
                         drainPending();
                     }
                 }
-                if (mappedSourcesCompleted) { // request more from upstream outside the critical section.
-                    requestMoreFromUpstream(1);
-                }
             } else { // slow path. there is concurrency, go through the queue to avoid concurrent delivery.
+                if (needsDemand) { // give the demand back that we previously reserved
+                    pendingDemandUpdater.getAndAccumulate(this, 1,
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative);
+                }
                 subscriber.markSignalsQueued();
                 enqueueAndDrain(item);
             }
