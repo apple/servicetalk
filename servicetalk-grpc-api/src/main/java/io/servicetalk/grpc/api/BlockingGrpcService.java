@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
  * A blocking <a href="https://www.grpc.io">gRPC</a> service.
  */
 public interface BlockingGrpcService extends GracefulAutoCloseable {
+
     @Override
     default void close() throws Exception {
         // noop

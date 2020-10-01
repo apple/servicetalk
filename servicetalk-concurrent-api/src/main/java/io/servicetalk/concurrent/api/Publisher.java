@@ -189,8 +189,178 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see {@link #flatMapMerge(Function, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     ExecutorService e = ...;
+     *     List<Future<List<R>>> futures = ...; // assume this is thread safe
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         futures.add(e.submit(() -> {
+     *             return mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *         }));
+     *     }
+     *     List<R> results = new ArrayList<>(futures.size());
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<List<R>> future : futures) {
+     *         List<R> rList = future.get(); // Throws if the processing for this item failed.
+     *         results.addAll(rList);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
+     * each mapped {@link Publisher}.
+     * @param <R> The type of mapped {@link Publisher}.
+     * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+        return new PublisherFlatMapMerge<>(this, mapper, false, executor);
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     ExecutorService e = ...;
+     *     List<Future<List<R>>> futures = ...; // assume this is thread safe
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         futures.add(e.submit(() -> {
+     *             return mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *         }));
+     *     }
+     *     List<R> results = new ArrayList<>(futures.size());
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<List<R>> future : futures) {
+     *         List<R> rList = future.get(); // Throws if the processing for this item failed.
+     *         results.addAll(rList);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
+     * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
+     * @param <R> The type of mapped {@link Publisher}.
+     * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper,
+                                               int maxConcurrency) {
+        return new PublisherFlatMapMerge<>(this, mapper, false, maxConcurrency, executor);
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This is the same as {@link #flatMapMerge(Function)} just that if any mapped {@link Publisher} returned by
+     * {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately terminate. Instead,
+     * it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and then terminate the
+     * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapMergeDelayError(Function, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 List<R> rList = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.addAll(rList);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
+     *             }
+     *         });
+     *     }
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
+     * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
+     * each mapped {@link Publisher}.
+     * @param <R> The type of mapped {@link Publisher}.
+     * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+        return new PublisherFlatMapMerge<>(this, mapper, true, executor);
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This is the same as {@link #flatMapMerge(Function)} just that if any mapped {@link Publisher} returned by
+     * {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately terminate. Instead,
+     * it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and then terminate the
+     * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 List<R> rList = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.addAll(rList);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
+     *             }
+     *         });
+     *     }
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
+     * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
+     * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
+     * @param <R> The type of mapped {@link Publisher}.
+     * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
+                                                         int maxConcurrency) {
+        return new PublisherFlatMapMerge<>(this, mapper, true, maxConcurrency, executor);
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapMergeSingle(Function, int)}.
@@ -215,7 +385,7 @@ public abstract class Publisher<T> {
      *     return results;
      * }</pre>
      *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
@@ -227,8 +397,9 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
@@ -250,7 +421,7 @@ public abstract class Publisher<T> {
      *     return results;
      * }</pre>
      *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
      * Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request
      * more than this number at any point.
@@ -265,8 +436,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
      * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
@@ -301,9 +475,9 @@ public abstract class Publisher<T> {
      *         return rResults;
      *     }
      *     createAndThrowACompositeException(errors);
-    * }</pre>
+     * }</pre>
      *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
@@ -316,8 +490,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
      * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
@@ -351,7 +528,7 @@ public abstract class Publisher<T> {
      *     createAndThrowACompositeException(errors);
      * }</pre>
      *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
      * Even if the number of items requested by a {@link Subscriber} is more than this number,
      * this will never request more than this number at any point.
@@ -366,10 +543,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated successfully or any one of
-     * them has terminated with a failure.
-     * If the returned {@link Completable} should wait for the termination of all remaining {@link Completable}s when
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If the returned {@link Completable} should wait for the termination of all mapped {@link Completable}s when
      * any one of them terminates with a failure, {@link #flatMapCompletableDelayError(Function)} should be used.
      * <p>
      * To control the amount of concurrent processing done by this operator see
@@ -392,7 +570,7 @@ public abstract class Publisher<T> {
      *     }
      * }</pre>
      *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Completable}.
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Completable}.
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
@@ -405,10 +583,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated successfully or any one of
-     * them has terminated with a failure.
-     * If the returned {@link Completable} should wait for the termination of all remaining {@link Completable}s when
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If the returned {@link Completable} should wait for the termination of all mapped {@link Completable}s when
      * any one of them terminates with a failure, {@link #flatMapCompletableDelayError(Function)} should be used.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
@@ -442,12 +621,12 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated. If any {@link Completable}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Completable} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Completable}s to terminate and then
-     * terminate the returned {@link Completable} with all errors emitted by the {@link Completable}s produced by the
-     * {@code mapper}.
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If any mapped {@link Completable} terminates with an error the returned {@link Completable} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Completable}s to terminate.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapCompletableDelayError(Function, int)}.
@@ -488,12 +667,12 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Completable} and terminate the returned
-     * {@link Completable} when all the intermediate {@link Completable}s have terminated.If any {@link Completable}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Completable} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Completable}s to terminate and then
-     * terminate the returned {@link Completable} with all errors emitted by the {@link Completable}s produced by the
-     * {@code mapper}.
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If any mapped {@link Completable} terminates with an error the returned {@link Completable} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Completable}s to terminate.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:

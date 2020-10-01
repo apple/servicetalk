@@ -29,11 +29,12 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
+import java.util.Set;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
+import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static java.util.Objects.requireNonNull;
@@ -55,14 +56,15 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(requestClass);
         requireNonNull(responseClass);
         final HttpClient client = streamingHttpClient.asClient();
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, requestClass);
+                    serializationProvider, supportedEncodings, requestClass);
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? client.request(httpRequest) : client.request(strategy, httpRequest))
-                    .map(response -> validateResponseAndGetPayload(response,
-                            serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass)));
+                    .map(response -> validateResponseAndGetPayload(response, serializationProvider.deserializerFor(
+                                    readGrpcMessageEncoding(response, supportedEncodings), responseClass)));
         };
     }
 
@@ -73,17 +75,19 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
-            initRequest(httpRequest);
+            initRequest(httpRequest, supportedEncodings);
             httpRequest.payloadBody(request.map(GrpcUtils::uncheckedCast),
-                    serializationProvider.serializerFor(metadata, requestClass));
+                    serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? streamingHttpClient.request(httpRequest) :
                     streamingHttpClient.request(strategy, httpRequest))
                     .flatMapPublisher(response -> validateResponseAndGetPayload(response,
-                            serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass)));
+                            serializationProvider.deserializerFor(
+                                    readGrpcMessageEncoding(response, supportedEncodings), responseClass)));
         };
     }
 
@@ -112,16 +116,18 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
-                    serializationProvider, requestClass);
+                    serializationProvider, supportedEncodings, requestClass);
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             final HttpResponse response = strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest);
             return validateResponseAndGetPayload(response,
-                    serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass));
+                    serializationProvider.deserializerFor(
+                            readGrpcMessageEncoding(response, supportedEncodings), responseClass));
         };
     }
 
@@ -133,17 +139,19 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(requestClass);
         requireNonNull(responseClass);
         final BlockingStreamingHttpClient client = streamingHttpClient.asBlockingStreamingClient();
+        final Set<GrpcMessageEncoding> supportedEncodings = serializationProvider.supportedEncodings();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
-            initRequest(httpRequest);
-            httpRequest.payloadBody(request, serializationProvider.serializerFor(metadata, requestClass));
+            initRequest(httpRequest, supportedEncodings);
+            httpRequest.payloadBody(request, serializationProvider
+                    .serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
             final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest);
             return validateResponseAndGetPayload(response.toStreamingResponse(),
-                    serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass))
-                    .toIterable();
+                    serializationProvider.deserializerFor(
+                            readGrpcMessageEncoding(response, supportedEncodings), responseClass)).toIterable();
         };
     }
 
@@ -195,18 +203,14 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return streamingHttpClient.onClose();
     }
 
-    private GrpcMessageEncoding getMessageEncoding(@SuppressWarnings("unused") final GrpcClientMetadata metadata) {
-        // compression not yet supported.
-        return None;
-    }
-
     private static <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
                                                           final HttpRequestFactory requestFactory,
                                                           final GrpcSerializationProvider serializationProvider,
+                                                          final Set<GrpcMessageEncoding> supportedEncodings,
                                                           final Class<Req> requestClass) {
         final HttpRequest httpRequest = requestFactory.post(metadata.path());
-        initRequest(httpRequest);
+        initRequest(httpRequest, supportedEncodings);
         return httpRequest.payloadBody(uncheckedCast(rawReq),
-                serializationProvider.serializerFor(metadata, requestClass));
+                serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
     }
 }

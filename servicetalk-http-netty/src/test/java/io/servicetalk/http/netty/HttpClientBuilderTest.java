@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -110,7 +111,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         @SuppressWarnings("unchecked")
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =
                 mock(ServiceDiscoverer.class);
-        when(disco.discover(any())).thenReturn(sdPub);
+        when(disco.discover(any())).thenReturn(sdPub.map(Collections::singletonList));
 
         StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .serviceDiscoverer(disco)

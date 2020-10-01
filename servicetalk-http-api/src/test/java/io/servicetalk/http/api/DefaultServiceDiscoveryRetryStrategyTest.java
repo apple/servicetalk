@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -38,7 +38,10 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -53,8 +56,8 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
     @Test
     public void errorWithNoAddresses() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
         sendUpAndVerifyReceive(state, "addr1", sdEvents);
@@ -62,8 +65,8 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
     @Test
     public void newAddressPostRetry() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
 
@@ -71,16 +74,17 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
         verifyNoEventsReceived(state);
         final DefaultServiceDiscovererEvent<String> evt2 = new DefaultServiceDiscovererEvent<>("addr2", true);
-        sdEvents.onNext(evt2);
+        sdEvents.onNext(singletonList(evt2));
 
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                containsInAnyOrder(flipAvailable(evt1), evt2));
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0), containsInAnyOrder(flipAvailable(evt1), evt2));
     }
 
     @Test
     public void overlapAddressPostRetry() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
         final DefaultServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
@@ -89,52 +93,24 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
         verifyNoEventsReceived(state);
 
-        sdEvents.onNext(evt1); // previously existing, should not be emitted
-        verifyNoEventsReceived(state);
-
         final DefaultServiceDiscovererEvent<String> evt3 = new DefaultServiceDiscovererEvent<>("addr3", true);
-        sdEvents.onNext(evt3); // threshold breach, should evict addr2
+        sdEvents.onNext(asList(evt2, evt3));
 
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                containsInAnyOrder(flipAvailable(evt2), evt3));
-    }
-
-    @Test
-    public void errorWhileRetaining() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
-
-        final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
-        final DefaultServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
-
-        sdEvents = triggerRetry(state, sdEvents);
-
-        verifyNoEventsReceived(state);
-
-        sdEvents.onNext(evt1); // previously existing, should not be emitted
-        verifyNoEventsReceived(state);
-
-        sdEvents = triggerRetry(state, sdEvents); // error while retaining
-
-        final DefaultServiceDiscovererEvent<String> evt3 = new DefaultServiceDiscovererEvent<>("addr3", true);
-        sdEvents.onNext(evt3);
-
-        // T1: addr1, addr2 active
-        // T2: error => 75% of 2 addresses => retain till receive 2 addresses
-        // T3 addr1 active, addr2 retained
-        // T4: error => 75% of 1 active addresses => retain till receive 1 addresses
-        // T5: addr3 active, addr1 & addr2 retained => evict addr1 and addr2
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2), evt3));
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0),
+                containsInAnyOrder(flipAvailable(evt1), evt2, evt3));
     }
 
     @Test
     public void addRemoveBeforeRetry() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
-        sdEvents.onNext(flipAvailable(evt1));
-        assertThat("Unexpected event received", state.subscriber.takeItems(), contains(flipAvailable(evt1)));
+        sdEvents.onNext(singletonList(flipAvailable(evt1)));
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0), contains(flipAvailable(evt1)));
 
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
@@ -144,63 +120,55 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
     @Test
     public void removeAfterRetry() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
 
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
 
-        sdEvents.onNext(evt1); // pre-existing, no new event
-        sdEvents.onNext(flipAvailable(evt1));
+        sdEvents.onNext(asList(evt1, flipAvailable(evt1)));
 
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                contains(flipAvailable(evt1)));
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0), contains(flipAvailable(evt1)));
     }
 
     @Test
-    public void removeAfterRetryWithRetain() throws Exception {
-        State state = new State(75);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+    public void addAndRemovePostRetry() throws Exception {
+        State state = new State(true);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
         final DefaultServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
 
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
 
-        sdEvents.onNext(evt1); // pre-existing, no new event
-        sdEvents.onNext(flipAvailable(evt1));
-
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                contains(flipAvailable(evt1)));
-
-        sdEvents.onNext(evt2);
-        verifyNoEventsReceived(state);
+        sdEvents.onNext(asList(evt1, flipAvailable(evt1)));
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0),
+                containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2)));
     }
 
     @Test
     public void noRetainActiveAddresses() throws Exception {
-        State state = new State(0);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(false);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
         final DefaultServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
 
-        sdEvents = triggerRetry(state, sdEvents);
-        verifyNoEventsReceived(state);
-
-        sdEvents.onNext(evt1);
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                contains(flipAvailable(evt2)));
-
-        sdEvents.onNext(evt2);
-        assertThat("Unexpected event received", state.subscriber.takeItems(),
-                contains(evt2));
+        triggerRetry(state, sdEvents);
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        assertThat("Unexpected items received.", items, hasSize(1));
+        assertThat("Unexpected event received", items.get(0),
+                containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2)));
     }
 
     @Test
     public void noRetainErrorWithNoAddresses() throws Exception {
-        State state = new State(0);
-        TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
+        State state = new State(false);
+        TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
         sdEvents = triggerRetry(state, sdEvents);
         verifyNoEventsReceived(state);
@@ -208,46 +176,28 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         sendUpAndVerifyReceive(state, "addr1", sdEvents);
     }
 
-    @Test
-    public void varyPercentage() throws Exception {
-        for (int percent = 1; percent < 100; percent += 10) {
-            State state = new State(percent);
-            TestPublisher<ServiceDiscovererEvent<String>> sdEvents = state.pubs.take();
-            List<ServiceDiscovererEvent<String>> events = new ArrayList<>();
-            final int addrSize = 100;
-            for (int j = 0; j < addrSize; j++) {
-                events.add(sendUpAndVerifyReceive(state, "addr" + j, sdEvents));
-            }
-            sdEvents = triggerRetry(state, sdEvents);
-            for (int i = 1; i < percent; i++) {
-                sdEvents.onNext(events.get(i - 1));
-                verifyNoEventsReceived(state);
-            }
-            sdEvents.onNext(events.get(percent - 1));
-            final List<ServiceDiscovererEvent<String>> removed = state.subscriber.takeItems();
-            assertThat("Unexpected events received.", removed, hasSize(addrSize - percent));
-        }
-    }
-
     private void verifyNoEventsReceived(final State state) {
         assertThat("Unexpected event received", state.subscriber.takeItems(), hasSize(0));
     }
 
-    private TestPublisher<ServiceDiscovererEvent<String>> triggerRetry(final State state,
-            final TestPublisher<ServiceDiscovererEvent<String>> sdEvents) throws Exception {
+    private TestPublisher<Collection<ServiceDiscovererEvent<String>>> triggerRetry(final State state,
+            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents) throws Exception {
         sdEvents.onError(DELIBERATE_EXCEPTION);
         executorRule.executor().advanceTimeBy(1, MINUTES);
         return state.pubs.take();
     }
 
     private DefaultServiceDiscovererEvent<String> sendUpAndVerifyReceive(final State state, final String addr,
-            final TestPublisher<ServiceDiscovererEvent<String>> sdEvents) {
+            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents) {
         final DefaultServiceDiscovererEvent<String> evt = new DefaultServiceDiscovererEvent<>(addr, true);
-        sdEvents.onNext(evt);
-        final List<ServiceDiscovererEvent<String>> received = state.subscriber.takeItems();
+        sdEvents.onNext(singletonList(evt));
+        final Collection<ServiceDiscovererEvent<String>> received = state.subscriber.takeItems()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(toList());
         assertThat("Event not received.", received, hasSize(1));
-        assertThat("Unexpected event received.", received.get(0).address(), is(addr));
-        assertThat("Unexpected event received.", received.get(0).isAvailable(), is(true));
+        assertThat("Unexpected event received.", received.iterator().next().address(), is(addr));
+        assertThat("Unexpected event received.", received.iterator().next().isAvailable(), is(true));
         return evt;
     }
 
@@ -256,18 +206,18 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     private final class State {
-        final LinkedBlockingQueue<TestPublisher<ServiceDiscovererEvent<String>>> pubs;
-        final TestPublisherSubscriber<ServiceDiscovererEvent<String>> subscriber;
+        final LinkedBlockingQueue<TestPublisher<Collection<ServiceDiscovererEvent<String>>>> pubs;
+        final TestPublisherSubscriber<Collection<ServiceDiscovererEvent<String>>> subscriber;
 
-        State(final int retainAddressesTillSuccessPercentage) {
+        State(final boolean retainAddressesTillSuccess) {
             ServiceDiscoveryRetryStrategy<String, ServiceDiscovererEvent<String>> strategy =
                     Builder.<String>withDefaults(executorRule.executor(), ofSeconds(1))
-                            .retainAddressesTillSuccess(retainAddressesTillSuccessPercentage)
+                            .retainAddressesTillSuccess(retainAddressesTillSuccess)
                             .build();
             pubs = new LinkedBlockingQueue<>();
             subscriber = new TestPublisherSubscriber<>();
             toSource(strategy.apply(defer(() -> {
-                final TestPublisher<ServiceDiscovererEvent<String>> pub = new TestPublisher<>();
+                final TestPublisher<Collection<ServiceDiscovererEvent<String>>> pub = new TestPublisher<>();
                 pubs.add(pub);
                 return pub;
             }))).subscribe(subscriber);

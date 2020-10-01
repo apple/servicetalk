@@ -182,6 +182,7 @@ public abstract class GrpcClientBuilder<U, R>
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
      */
     public final MultiClientBuilder buildMulti() {
+
         GrpcClientCallFactory callFactory = newGrpcClientCallFactory();
         return new MultiClientBuilder() {
             @Override

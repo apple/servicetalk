@@ -128,7 +128,7 @@ public class DefaultNettyConnectionTest {
                                       final Object msg,
                                       final ChannelPromise promise) {
                         if (TRAILER.equals(msg)) {
-                            ctx.pipeline().fireUserEventTriggered(CloseHandler.ProtocolPayloadEndEvent.OUTBOUND);
+                            ctx.pipeline().fireUserEventTriggered(CloseHandler.OutboundDataEndEvent.INSTANCE);
                         }
                         ctx.write(msg, promise);
                     }
