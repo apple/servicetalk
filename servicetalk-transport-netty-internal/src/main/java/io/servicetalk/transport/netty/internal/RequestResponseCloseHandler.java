@@ -128,7 +128,7 @@ class RequestResponseCloseHandler extends CloseHandler {
                 || channel instanceof EmbeddedChannel   // Exceptionally used in unit tests
                 : "Channel does not implement DuplexChannel";
         if (channel instanceof DuplexChannel) {
-            assert channel.config().getOption(ALLOW_HALF_CLOSURE) == TRUE :
+            assert TRUE.equals(channel.config().getOption(ALLOW_HALF_CLOSURE)) :
                     "Half-Closure DISABLED, this may violate some protocols";
         }
     }
