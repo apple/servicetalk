@@ -29,6 +29,7 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
+import static io.servicetalk.transport.netty.internal.CloseHandlers.forPipelinedServer;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -86,7 +88,7 @@ public class ServerRespondsOnClosingTest {
         serverConnection = initChannel(channel, httpExecutionContext, config, new TcpServerChannelInitializer(
                 config.tcpConfig(), connectionObserver),
                 toStreamingHttpService(service, defaultStreamingInfluencer()).adaptor(), true,
-                connectionObserver).toFuture().get();
+                connectionObserver, forPipelinedServer(channel)).toFuture().get();
         serverConnection.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
         serverConnection.process(true);
     }
@@ -152,6 +154,8 @@ public class ServerRespondsOnClosingTest {
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
+        // Simulate ChannelInputShutdownReadComplete (FIN) on EmbeddedChannel to complete half-closure:
+        channel.pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
         assertServerConnectionClosed();
     }
 
@@ -166,5 +170,6 @@ public class ServerRespondsOnClosingTest {
     private void assertServerConnectionClosed() throws Exception {
         serverConnectionClosed.await();
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+        assertThat("Channel not closed.", channel.isOpen(), is(false));
     }
 }

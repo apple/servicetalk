@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
+import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +44,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.from;
@@ -52,7 +55,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
@@ -96,14 +98,15 @@ public class DefaultNettyConnectionTest {
 
     @Before
     public void setUp() throws Exception {
-        setupWithCloseHandler(UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+        setupWithCloseHandler(__ -> UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
-    private void setupWithCloseHandler(final CloseHandler closeHandler) throws Exception {
-        setupWithCloseHandler(closeHandler, immediate());
+    private void setupWithCloseHandler(Function<EmbeddedChannel, CloseHandler> closeHandlerFactory) throws Exception {
+        setupWithCloseHandler(closeHandlerFactory, immediate());
     }
 
-    private void setupWithCloseHandler(final CloseHandler closeHandler, Executor executor) throws Exception {
+    private void setupWithCloseHandler(Function<EmbeddedChannel, CloseHandler> closeHandlerFactory,
+                                       Executor executor) throws Exception {
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
         demandEstimator = mock(WriteDemandEstimator.class);
@@ -115,8 +118,8 @@ public class DefaultNettyConnectionTest {
                     }
                     return true;
                 },
-                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
-                mock(Protocol.class), NoopConnectionObserver.INSTANCE).toFuture().get();
+                closeHandlerFactory.apply(channel), defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(),
+                OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE).toFuture().get();
         publisher = new TestPublisher<>();
     }
 
@@ -247,8 +250,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithGracefulClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        setupWithCloseHandler(closeHandler);
+        setupWithCloseHandler(CloseHandlers::forPipelinedClient);
         closeListener.listen(conn.onClosing());
         conn.closeAsyncGracefully().toFuture().get();
         closeListener.verifyCompletion();
@@ -256,8 +258,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithHardClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        setupWithCloseHandler(closeHandler);
+        setupWithCloseHandler(CloseHandlers::forPipelinedClient);
         closeListener.listen(conn.onClosing());
         conn.closeAsync().toFuture().get();
         closeListener.verifyCompletion();
@@ -265,8 +266,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testOnClosingWithoutUserInitiatedClose() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        setupWithCloseHandler(closeHandler);
+        setupWithCloseHandler(CloseHandlers::forPipelinedClient);
         closeListener.listen(conn.onClosing());
         channel.close().get(); // Close and await closure.
         closeListener.verifyCompletion();
@@ -303,9 +303,8 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testErrorEnrichmentWithCloseHandlerOnWriteError() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        setupWithCloseHandler(closeHandler);
-        closeHandler.channelClosedOutbound(channel.pipeline().firstContext());
+        setupWithCloseHandler(CloseHandlers::forPipelinedClient);
+        channel.pipeline().fireUserEventTriggered(ChannelOutputShutdownEvent.INSTANCE);
         assertThat(channel.isActive(), is(false));
         writeListener.listen(conn.write(publisher));
 
@@ -324,13 +323,12 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
-        CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        setupWithCloseHandler(closeHandler);
-
+        setupWithCloseHandler(CloseHandlers::forPipelinedClient);
         toSource(conn.read()).subscribe(subscriber);
         subscriber.request(1);
         channel.writeInbound(allocator.fromAscii("DELIBERATE_EXCEPTION"));
-        closeHandler.channelClosedInbound(channel.pipeline().firstContext());
+        // Simulate ChannelInputShutdownReadComplete on EmbeddedChannel to complete half-closure:
+        channel.pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
 
         // TODO(scott): EmbeddedChannel doesn't support half closure so we need an alternative approach to fully
         // test half closure.
@@ -357,7 +355,7 @@ public class DefaultNettyConnectionTest {
         AtomicInteger taskSubmitted = new AtomicInteger();
         ExecutorService executor = java.util.concurrent.Executors.newCachedThreadPool();
         try {
-            setupWithCloseHandler(forPipelinedRequestResponse(true, channel.config()), from(task -> {
+            setupWithCloseHandler(CloseHandlers::forPipelinedClient, from(task -> {
                 taskSubmitted.incrementAndGet();
                 executor.submit(task);
             }));
