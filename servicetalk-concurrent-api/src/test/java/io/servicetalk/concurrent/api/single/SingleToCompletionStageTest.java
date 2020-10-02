@@ -44,6 +44,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -119,7 +120,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void nestedInADifferentFuture() throws Exception {
         String result = CompletableFuture.completedFuture("foo")
-                .thenCompose(s -> Single.succeeded(s + "bar").toCompletionStage())
+                .thenCompose(s -> succeeded(s + "bar").toCompletionStage())
                 .get();
         assertThat("Unexpected result.", result, is("foobar"));
     }
@@ -839,6 +840,26 @@ public class SingleToCompletionStageTest {
         latch.await();
         assertThat(causeRef.get(), is(instanceOf(CancellationException.class)));
         cancelLatch.await();
+    }
+
+    @Test
+    public void synchronousNormalTerminationDoesNotCancel() {
+        AtomicInteger cancelCount = new AtomicInteger();
+        String expected = "done";
+        Single<String> single = succeeded(expected).whenCancel(cancelCount::incrementAndGet);
+        assertThat(single.toCompletionStage().toCompletableFuture().join(), is(expected));
+        assertThat(cancelCount.get(), is(0));
+    }
+
+    @Test
+    public void asynchronousNormalTerminationDoesNotCancel() {
+        AtomicInteger cancelCount = new AtomicInteger();
+        String expected = "done";
+        CompletableFuture<String> future = source.whenCancel(cancelCount::incrementAndGet)
+                .toCompletionStage().toCompletableFuture();
+        jdkExecutor.execute(() -> source.onSuccess(expected));
+        assertThat(future.join(), is(expected));
+        assertThat(cancelCount.get(), is(0));
     }
 
     @Test
