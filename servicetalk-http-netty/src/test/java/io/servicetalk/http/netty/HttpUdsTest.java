@@ -60,7 +60,7 @@ public class HttpUdsTest {
         }
     }
 
-    private static DomainSocketAddress newSocketAddress() throws IOException {
+    static DomainSocketAddress newSocketAddress() throws IOException {
         File file = File.createTempFile("STUDS", ".uds");
         assertTrue(file.delete());
         return new DomainSocketAddress(file);
