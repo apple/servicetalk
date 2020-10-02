@@ -47,6 +47,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -750,6 +751,105 @@ public class PublisherFlatMapMergeTest {
                 throw new AssertionError("mapped element: " + intPair.x + " had out of order emissions. existing: " +
                         innerList + " new: " + intPair.y);
             }
+        }
+    }
+
+    @Test
+    public void concurrentSkipQueueDoesNotDeadlock() throws Throwable {
+        assert executorService != null;
+        List<TestSubscriptionPublisherPair<Integer>> mappedPublishers = new ArrayList<>();
+        CountDownLatch onNextLatch = new CountDownLatch(1);
+        CountDownLatch onNextSecondLatch = new CountDownLatch(2);
+        CountDownLatch onNextThirdLatch = new CountDownLatch(3);
+        CountDownLatch onNextWaitLatch = new CountDownLatch(1);
+        CountDownLatch onCompleteLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        toSource(publisher.flatMapMerge(i -> {
+            TestSubscriptionPublisherPair<Integer> pair = new TestSubscriptionPublisherPair<>(i);
+            mappedPublishers.add(pair);
+            return pair.mappedPublisher;
+        }, 3)).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                onNextLatch.countDown();
+                onNextSecondLatch.countDown();
+                onNextThirdLatch.countDown();
+                try {
+                    onNextWaitLatch.await();
+                } catch (InterruptedException e) {
+                    throwException(e);
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                errorRef.set(t);
+                onCompleteLatch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                onCompleteLatch.countDown();
+            }
+        });
+
+        upstreamSubscription.awaitRequestN(2);
+        publisher.onNext(1, 2);
+        publisher.onComplete();
+
+        assertThat(mappedPublishers, hasSize(2));
+        TestSubscriptionPublisherPair<Integer> first = mappedPublishers.get(0);
+        TestSubscriptionPublisherPair<Integer> second = mappedPublishers.get(1);
+
+        Future<?> f = executorService.submit(() -> {
+            try {
+                first.doOnSubscribe(1);
+                first.mappedSubscription.awaitRequestN(1);
+                first.mappedPublisher.onNext(1);
+            } catch (Throwable cause) {
+                first.mappedPublisher.onError(cause);
+                return;
+            }
+            first.mappedPublisher.onComplete();
+        });
+
+        // Wait for the executorService thread to be in onNext, we want to force concurrent delivery.
+        onNextLatch.await();
+
+        // Deliver the first signal, and allow the executorService thread to exit onNext.
+        second.doOnSubscribe(2);
+        second.mappedSubscription.awaitRequestN(2);
+        second.mappedPublisher.onNext(2);
+        onNextWaitLatch.countDown();
+
+        // Wait for the onNext from this thread to be delivered in the executorService thread.
+        onNextSecondLatch.await();
+
+        // Wait for the executorService thread to deliver onComplete and release the lock in the operator.
+        f.get();
+
+        // The second mapped publisher previously had items queued, and there are no other thread holding the lock in
+        // the operator, it should be delivered.
+        second.mappedPublisher.onNext(3);
+        onNextThirdLatch.await();
+
+        // Deliver the last onComplete and verify normal termination.
+        second.mappedPublisher.onComplete();
+        onCompleteLatch.await();
+        Throwable cause = errorRef.get();
+        if (cause != null) {
+            throw cause;
         }
     }
 
