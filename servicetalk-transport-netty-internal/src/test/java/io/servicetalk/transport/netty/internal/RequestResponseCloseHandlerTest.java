@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
-import io.servicetalk.transport.netty.internal.CloseHandler.OutboundDataEndEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
+import io.servicetalk.transport.netty.internal.CloseHandler.OutboundDataEndEvent;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
