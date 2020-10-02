@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
@@ -69,7 +70,7 @@ import static org.junit.Assert.fail;
 
 public class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
-    // @Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Nullable
     private static ExecutorService executorService;
