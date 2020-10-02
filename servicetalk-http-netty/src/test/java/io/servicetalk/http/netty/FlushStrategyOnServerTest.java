@@ -129,7 +129,7 @@ public class FlushStrategyOnServerTest {
     @After
     public void tearDown() throws Exception {
         try {
-            serverConnection.closeAsync().toFuture().get();
+            serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
             channel.close().syncUninterruptibly();
         }

@@ -20,8 +20,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.socket.ChannelInputShutdownReadComplete;
-import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
@@ -64,7 +62,6 @@ class RequestResponseCloseHandler extends CloseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestResponseCloseHandler.class);
 
     private final boolean isClient;
-    private final boolean isEmbeddedChannel;
 
     /**
      * Holds the protocol and {@link Channel} state flags.
@@ -127,13 +124,6 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     RequestResponseCloseHandler(final boolean client) {
         isClient = client;
-        isEmbeddedChannel = false;
-    }
-
-    // Only for tests
-    RequestResponseCloseHandler(final boolean client, final Channel channel) {
-        isClient = client;
-        isEmbeddedChannel = channel instanceof EmbeddedChannel;
     }
 
     // Visible for testing
@@ -146,10 +136,10 @@ class RequestResponseCloseHandler extends CloseHandler {
         return pending;
     }
 
-    private boolean isAllowHalfClosure(final Channel channel) {
+    private static boolean isAllowHalfClosure(final Channel channel) {
         return (channel instanceof SocketChannel) ? ((SocketChannel) channel).config().isAllowHalfClosure() :
                 channel instanceof DuplexChannel ||
-                isEmbeddedChannel; // Exceptionally used in unit tests
+                channel instanceof EmbeddedChannel; // Exceptionally used in unit tests
     }
 
     @Override
@@ -252,12 +242,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         if (!hasAny(state, IN_CLOSED, CLOSING_SERVER_GRACEFULLY)) {
             LOGGER.debug("{} Half-Closing INBOUND (reset)", channel);
             setSocketResetOnClose(channel);
-            if (isEmbeddedChannel) {
-                LOGGER.debug("{} EmbeddedChannel does not support half-closure, fire {} event manually on the pipeline",
-                        channel, ChannelInputShutdownReadComplete.class.getSimpleName());
-            } else {
-                ((DuplexChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
-            }
+            ((DuplexChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
         }
     }
 
@@ -266,12 +251,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         if (!has(state, OUT_CLOSED)) {
             LOGGER.debug("{} Half-Closing OUTBOUND (reset)", channel);
             setSocketResetOnClose(channel);
-            if (isEmbeddedChannel) {
-                LOGGER.debug("{} EmbeddedChannel does not support half-closure, fire {} event manually on the pipeline",
-                        channel, ChannelOutputShutdownEvent.class.getSimpleName());
-            } else {
-                halfCloseOutbound(channel, true);
-            }
+            halfCloseOutbound(channel, true);
         }
     }
 
@@ -445,13 +425,8 @@ class RequestResponseCloseHandler extends CloseHandler {
         if (!has(state, OUT_CLOSED)) {
             state = set(state, CLOSING_SERVER_GRACEFULLY);
             LOGGER.debug("{} Half-Closing OUTBOUND", channel);
-            if (isEmbeddedChannel) {
-                LOGGER.debug("{} EmbeddedChannel does not support half-closure, fire {} event manually on the pipeline",
-                        channel, ChannelInputShutdownReadComplete.class.getSimpleName());
-            } else {
-                halfCloseOutbound(channel, false);
-                // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received
-            }
+            halfCloseOutbound(channel, false);
+            // Final channel.close() will happen when FIN (ChannelInputShutdownReadComplete) is received
         }
     }
 
