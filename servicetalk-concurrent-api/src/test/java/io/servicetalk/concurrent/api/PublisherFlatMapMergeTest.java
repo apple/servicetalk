@@ -818,7 +818,7 @@ public class PublisherFlatMapMergeTest {
                 first.doOnSubscribe(1);
                 first.mappedSubscription.awaitRequestN(1);
                 first.mappedPublisher.onNext(1);
-            } catch (Throwable cause){
+            } catch (Throwable cause) {
                 first.mappedPublisher.onError(cause);
                 return;
             }
