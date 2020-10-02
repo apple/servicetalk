@@ -754,8 +754,6 @@ public class PublisherFlatMapMergeTest {
         }
     }
 
-
-
     @Test
     public void concurrentSkipQueueDoesNotDeadlock() throws Throwable {
         assert executorService != null;
