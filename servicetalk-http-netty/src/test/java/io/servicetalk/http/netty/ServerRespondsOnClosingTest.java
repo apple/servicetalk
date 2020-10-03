@@ -73,7 +73,9 @@ public class ServerRespondsOnClosingTest {
 
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), EXECUTOR_RULE.executor(), defaultStrategy());
-        ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
+        final HttpServerConfig httpServerConfig = new HttpServerConfig();
+        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-server-wire-logger");
+        ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
         BlockingHttpService service = (ctx, request, responseFactory) -> {
             releaseResponse.await();

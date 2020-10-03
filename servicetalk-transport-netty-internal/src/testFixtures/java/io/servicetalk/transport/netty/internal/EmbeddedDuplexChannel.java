@@ -75,7 +75,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     protected void doClose() throws Exception {
         super.doClose();
         isInputShutdown.set(true);
-        isOutputShutdown.set(true);
+        doShutdownOutput();
     }
 
     @Override
@@ -221,7 +221,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     @Override
     public ChannelFuture writeOneInbound(final Object msg, final ChannelPromise promise) {
         if (isInputShutdown.get()) {
-            promise.setFailure(newInputShutdownException());
+            promise.setSuccess();   // Ignore new inbound
             return promise;
         }
         return super.writeOneInbound(msg, promise);
@@ -229,30 +229,29 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public boolean writeInbound(final Object... msgs) {
-        ensureInputIsNotShutdown();
+        if (isInputShutdown.get()) {
+            // Ignore new inbound
+            return false;
+        }
         return super.writeInbound(msgs);
     }
 
     @Override
     public EmbeddedChannel flushInbound() {
-        ensureInputIsNotShutdown();
+        if (isInputShutdown.get()) {
+            // Ignore new inbound
+            return this;
+        }
         return super.flushInbound();
     }
 
     @Override
     protected void handleInboundMessage(final Object msg) {
-        ensureInputIsNotShutdown();
-        super.handleInboundMessage(msg);
-    }
-
-    private void ensureInputIsNotShutdown() {
         if (isInputShutdown.get()) {
-            throw newInputShutdownException();
+            // Ignore new inbound
+            return;
         }
-    }
-
-    private RuntimeException newInputShutdownException() {
-        return new IllegalStateException("Input shutdown");
+        super.handleInboundMessage(msg);
     }
 
     @Override
