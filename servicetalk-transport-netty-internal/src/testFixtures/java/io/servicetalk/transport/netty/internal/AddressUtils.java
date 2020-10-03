@@ -15,14 +15,18 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
 import static java.net.InetAddress.getLoopbackAddress;
+import static org.junit.Assert.assertTrue;
 
 /**
  * A utility class to work with addresses.
@@ -64,5 +68,17 @@ public final class AddressUtils {
     public static String hostHeader(final HostAndPort hostAndPort) {
         return isValidIpV6Address(hostAndPort.hostName()) ?
                 "[" + hostAndPort.hostName() + "]:" + hostAndPort.port() : hostAndPort.toString();
+    }
+
+    /**
+     * Creates a new {@link DomainSocketAddress}.
+     *
+     * @return a new {@link DomainSocketAddress}
+     * @throws IOException if a temporary file cannot be created for {@link DomainSocketAddress}
+     */
+    public static DomainSocketAddress newSocketAddress() throws IOException {
+        File file = File.createTempFile("STUDS", ".uds");
+        assertTrue(file.delete());
+        return new DomainSocketAddress(file);
     }
 }
