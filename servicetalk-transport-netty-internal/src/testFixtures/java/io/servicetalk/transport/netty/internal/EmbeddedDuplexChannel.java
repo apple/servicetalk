@@ -32,6 +32,7 @@ import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannelConfig;
+import io.netty.util.ReferenceCountUtil;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -221,8 +222,9 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     @Override
     public ChannelFuture writeOneInbound(final Object msg, final ChannelPromise promise) {
         if (isInputShutdown.get()) {
-            promise.setSuccess();   // Ignore new inbound
-            return promise;
+            // Ignore new inbound
+            ReferenceCountUtil.safeRelease(msg);
+            return promise.setSuccess();
         }
         return super.writeOneInbound(msg, promise);
     }
@@ -231,6 +233,9 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     public boolean writeInbound(final Object... msgs) {
         if (isInputShutdown.get()) {
             // Ignore new inbound
+            for (Object msg : msgs) {
+                ReferenceCountUtil.safeRelease(msg);
+            }
             return false;
         }
         return super.writeInbound(msgs);
@@ -249,6 +254,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     protected void handleInboundMessage(final Object msg) {
         if (isInputShutdown.get()) {
             // Ignore new inbound
+            ReferenceCountUtil.safeRelease(msg);
             return;
         }
         super.handleInboundMessage(msg);
