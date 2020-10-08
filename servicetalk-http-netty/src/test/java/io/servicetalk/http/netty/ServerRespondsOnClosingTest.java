@@ -69,7 +69,7 @@ public class ServerRespondsOnClosingTest {
 
     public ServerRespondsOnClosingTest() throws Exception {
         interceptor = new OutboundWriteEventsInterceptor();
-        channel = new EmbeddedDuplexChannel(interceptor);
+        channel = new EmbeddedDuplexChannel(false, interceptor);
 
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), EXECUTOR_RULE.executor(), defaultStrategy());
@@ -96,7 +96,7 @@ public class ServerRespondsOnClosingTest {
     @After
     public void tearDown() throws Exception {
         try {
-            serverConnection.closeAsync().toFuture().get();
+            serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
             channel.close().syncUninterruptibly();
         }
@@ -125,7 +125,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
-        sendRequest("/first?serverShouldClose=true", true);
+        sendRequest("/first?serverShouldClose=true", false);
         sendRequest("/second", false);
         releaseResponse.countDown();
         // Verify that the server responded:
@@ -136,7 +136,7 @@ public class ServerRespondsOnClosingTest {
     @Test
     public void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
         sendRequest("/first", false);
-        sendRequest("/second?serverShouldClose=true", true);
+        sendRequest("/second?serverShouldClose=true", false);
         releaseResponse.countDown();
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first

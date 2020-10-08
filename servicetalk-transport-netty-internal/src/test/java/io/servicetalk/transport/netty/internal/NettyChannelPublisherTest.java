@@ -31,7 +31,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import org.junit.After;
 import org.junit.Before;
@@ -83,7 +82,7 @@ public class NettyChannelPublisherTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
     private Publisher<Integer> publisher;
-    private EmbeddedChannel channel;
+    private EmbeddedDuplexChannel channel;
     private boolean nextItemTerminal;
     private boolean readRequested;
 
@@ -93,7 +92,7 @@ public class NettyChannelPublisherTest {
     }
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
-        channel = new EmbeddedChannel();
+        channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection =
                 DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
             immediate(), terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
@@ -119,7 +118,7 @@ public class NettyChannelPublisherTest {
         if (channel != null) {
             channel.close();
         }
-        channel = new EmbeddedChannel();
+        channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), (Integer obj) -> false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                 defaultFlushStrategy(), null, channel -> {

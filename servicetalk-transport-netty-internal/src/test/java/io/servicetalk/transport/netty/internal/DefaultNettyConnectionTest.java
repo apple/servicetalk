@@ -107,7 +107,7 @@ public class DefaultNettyConnectionTest {
     private void setupWithCloseHandler(Function<EmbeddedChannel, CloseHandler> closeHandlerFactory,
                                        Executor executor) throws Exception {
         allocator = DEFAULT_ALLOCATOR;
-        channel = new EmbeddedDuplexChannel();
+        channel = new EmbeddedDuplexChannel(false);
         demandEstimator = mock(WriteDemandEstimator.class);
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,

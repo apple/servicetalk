@@ -34,13 +34,14 @@ import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannelConfig;
 import io.netty.util.ReferenceCountUtil;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
@@ -50,11 +51,27 @@ import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
  */
 public final class EmbeddedDuplexChannel extends EmbeddedChannel implements DuplexChannel {
 
-    // Use atomics because shutdown may be requested from offloaded thread,
+    // Use atomic state because closure or shutdown may be requested from offloaded thread,
     // while EmbeddedEventLoop#inEventLoop() always returns `true`.
-    private final AtomicBoolean isInputShutdown = new AtomicBoolean();
-    private final AtomicBoolean isOutputShutdown = new AtomicBoolean();
+    private static final AtomicIntegerFieldUpdater<EmbeddedDuplexChannel> stateUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(EmbeddedDuplexChannel.class, "state");
 
+    private static final int STATE_NEW_MASK = 0;
+    private static final int STATE_ACTIVE_MASK = 1;
+    private static final int STATE_CLOSED_MASK = 1 << 1;
+    private static final int STATE_INPUT_SHUTDOWN_MASK = 1 << 2;
+    private static final int STATE_OUTPUT_SHUTDOWN_MASK = 1 << 3;
+    private static final int STATE_CLOSE_MASK = STATE_CLOSED_MASK |
+            STATE_INPUT_SHUTDOWN_MASK |
+            STATE_OUTPUT_SHUTDOWN_MASK;
+
+    /**
+     * Bit map = [Output Shutdown | Input Shutdown | Closed]
+     */
+    private volatile int state;
+
+    // Use CountDownLatch instead of ChannelFuture to allow waiting on the main thread, while shutdown is expected to
+    // happen on another thread. ChannelFuture considers the main thread as EventLoop thread and does not allow to sync.
     private final CountDownLatch inputShutdownLatch = new CountDownLatch(1);
     private final CountDownLatch outputShutdownLatch = new CountDownLatch(1);
 
@@ -66,22 +83,123 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     /**
      * Create a new instance with the pipeline initialized with the specified handlers.
      *
+     * @param autoRead {@code true} if the auto-read should be enabled, otherwise {@code false}
      * @param handlers the {@link ChannelHandler}s which will be add in the {@link ChannelPipeline}
      */
-    public EmbeddedDuplexChannel(ChannelHandler... handlers) {
+    public EmbeddedDuplexChannel(boolean autoRead, ChannelHandler... handlers) {
         super(handlers);
+        config().setAutoRead(autoRead);
+    }
+
+    private static boolean isActive(int state) {
+        return (state & STATE_ACTIVE_MASK) != 0;
+    }
+
+    private static boolean isClosed(int state) {
+        return (state & STATE_CLOSED_MASK) != 0;
+    }
+
+    private static boolean isInputShutdown(int state) {
+        return (state & STATE_INPUT_SHUTDOWN_MASK) != 0;
+    }
+
+    private static boolean isOutputShutdown(int state) {
+        return (state & STATE_OUTPUT_SHUTDOWN_MASK) != 0;
+    }
+
+    private static int inputShutdown(int state) {
+        return state | STATE_INPUT_SHUTDOWN_MASK;
+    }
+
+    private static int outputShutdown(int state) {
+        return state | STATE_OUTPUT_SHUTDOWN_MASK;
+    }
+
+    private void shutdown(boolean input, boolean output) throws IOException {
+        boolean shutdownInput;
+        boolean shutdownOutput;
+        for (;;) {
+            // We need to only shutdown what has not been shutdown yet, and if there is no change we should not
+            // shutdown anything.
+            final int oldState = this.state;
+            if (isClosed(oldState)) {
+                throw new ClosedChannelException();
+            }
+
+            shutdownInput = false;
+            shutdownOutput = false;
+            int newState = oldState;
+            if (input && !isInputShutdown(newState)) {
+                newState = inputShutdown(newState);
+                shutdownInput = true;
+            }
+            if (output && !isOutputShutdown(newState)) {
+                newState = outputShutdown(newState);
+                shutdownOutput = true;
+            }
+
+            // If there is no change in state, then we should not take any action.
+            if (newState == oldState) {
+                return;
+            }
+            if (stateUpdater.compareAndSet(this, oldState, newState)) {
+                break;
+            }
+        }
+        if (shutdownInput) {
+            try {
+                pipeline().fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
+                super.flushInbound();
+                pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
+            } finally {
+                inputShutdownLatch.countDown();
+            }
+        }
+        if (shutdownOutput) {
+            try {
+                super.flushOutbound();
+            } finally {
+                outputShutdownLatch.countDown();
+            }
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return !isClosed(state);
+    }
+
+    @Override
+    public boolean isActive() {
+        return isActive(state);
+    }
+
+    @Override
+    protected void doRegister() throws Exception {
+        stateUpdater.compareAndSet(this, STATE_NEW_MASK, state | STATE_ACTIVE_MASK);
+        super.doRegister();
     }
 
     @Override
     protected void doClose() throws Exception {
+        for (;;) {
+            final int state = this.state;
+            if (isClosed(state)) {
+                return;
+            }
+            // Once a close operation happens, the channel is considered shutdown.
+            if (stateUpdater.compareAndSet(this, state, STATE_CLOSE_MASK)) {
+                break;
+            }
+        }
         super.doClose();
-        isInputShutdown.set(true);
-        doShutdownOutput();
+        inputShutdownLatch.countDown();
+        outputShutdownLatch.countDown();
     }
 
     @Override
     public boolean isInputShutdown() {
-        return isInputShutdown.get();
+        return isInputShutdown(state);
     }
 
     /**
@@ -110,19 +228,18 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
             return close(promise);
         }
 
-        if (isInputShutdown.compareAndSet(false, true)) {
-            pipeline().fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
-            super.flushInbound();
-            pipeline().fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
-            inputShutdownLatch.countDown();
+        try {
+            shutdown(true, false);
+            promise.setSuccess();
+        } catch (Throwable cause) {
+            promise.setFailure(cause);
         }
-        promise.setSuccess();
         return promise;
     }
 
     @Override
     public boolean isOutputShutdown() {
-        return isOutputShutdown.get();
+        return isOutputShutdown(state);
     }
 
     /**
@@ -157,14 +274,14 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     }
 
     @Override
-    protected void doShutdownOutput() {
-        isOutputShutdown.set(true);
-        outputShutdownLatch.countDown();
+    protected void doShutdownOutput() throws Exception {
+        shutdown(false, true);
     }
 
     @Override
     public boolean isShutdown() {
-        return isInputShutdown() && isOutputShutdown();
+        final int state = this.state;
+        return isInputShutdown(state) && isOutputShutdown(state);
     }
 
     @Override
@@ -212,7 +329,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public Queue<Object> inboundMessages() {
-        if (isInputShutdown.get()) {
+        if (isInputShutdown()) {
             // Best effort to prevent external manipulations of internal inboundMessages queue:
             return new ArrayDeque<>(super.inboundMessages());
         }
@@ -221,7 +338,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public ChannelFuture writeOneInbound(final Object msg, final ChannelPromise promise) {
-        if (isInputShutdown.get()) {
+        if (isInputShutdown()) {
             // Ignore new inbound
             ReferenceCountUtil.safeRelease(msg);
             return promise.setSuccess();
@@ -231,7 +348,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public boolean writeInbound(final Object... msgs) {
-        if (isInputShutdown.get()) {
+        if (isInputShutdown()) {
             // Ignore new inbound
             for (Object msg : msgs) {
                 ReferenceCountUtil.safeRelease(msg);
@@ -243,7 +360,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public EmbeddedChannel flushInbound() {
-        if (isInputShutdown.get()) {
+        if (isInputShutdown()) {
             // Ignore new inbound
             return this;
         }
@@ -252,7 +369,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     protected void handleInboundMessage(final Object msg) {
-        if (isInputShutdown.get()) {
+        if (isInputShutdown()) {
             // Ignore new inbound
             ReferenceCountUtil.safeRelease(msg);
             return;
@@ -262,7 +379,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public Queue<Object> outboundMessages() {
-        if (isOutputShutdown.get()) {
+        if (isOutputShutdown()) {
             // Best effort to prevent external manipulations of internal outboundMessages queue:
             return new ArrayDeque<>(super.outboundMessages());
         }
@@ -271,7 +388,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public ChannelFuture writeOneOutbound(final Object msg, final ChannelPromise promise) {
-        if (isOutputShutdown.get()) {
+        if (isOutputShutdown()) {
             promise.setFailure(newOutputShutdownException());
             return promise;
         }
@@ -297,7 +414,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     }
 
     private void ensureOutputIsNotShutdown() {
-        if (isOutputShutdown.get()) {
+        if (isOutputShutdown()) {
             throw newOutputShutdownException();
         }
     }
