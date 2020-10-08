@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.transport.api.DomainSocketAddress;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
@@ -26,13 +25,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class HttpUdsTest {
@@ -58,11 +55,5 @@ public class HttpUdsTest {
                 assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
             }
         }
-    }
-
-    static DomainSocketAddress newSocketAddress() throws IOException {
-        File file = File.createTempFile("STUDS", ".uds");
-        assertTrue(file.delete());
-        return new DomainSocketAddress(file);
     }
 }

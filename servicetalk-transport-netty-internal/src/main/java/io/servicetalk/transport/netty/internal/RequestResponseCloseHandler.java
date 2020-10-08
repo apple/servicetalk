@@ -19,7 +19,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
@@ -29,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
@@ -48,6 +48,7 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.idle;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.set;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.unset;
+import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -136,16 +137,12 @@ class RequestResponseCloseHandler extends CloseHandler {
         return pending;
     }
 
-    private static boolean isAllowHalfClosure(final Channel channel) {
-        return (channel instanceof SocketChannel) ? ((SocketChannel) channel).config().isAllowHalfClosure() :
-                channel instanceof DuplexChannel ||
-                channel instanceof EmbeddedChannel; // Exceptionally used in unit tests
-    }
-
     @Override
     void registerEventHandler(final Channel channel, Consumer<CloseEvent> eventHandler) {
         assert channel.eventLoop().inEventLoop();
-        assert isAllowHalfClosure(channel) : "Socket Half-Close DISABLED, this may violate some protocols";
+        assert channel instanceof DuplexChannel : "Channel does not implement DuplexChannel";
+        assert TRUE.equals(channel.config().getOption(ALLOW_HALF_CLOSURE)) :
+                "Half-Closure DISABLED, this may violate some protocols";
         this.eventHandler = requireNonNull(eventHandler);
     }
 

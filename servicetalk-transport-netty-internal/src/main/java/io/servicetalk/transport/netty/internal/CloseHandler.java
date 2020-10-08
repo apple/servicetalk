@@ -20,11 +20,13 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.SocketChannelConfig;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+
+import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
+import static java.lang.Boolean.TRUE;
 
 /**
  * Contract between protocol codecs and a close handler.
@@ -43,9 +45,7 @@ public abstract class CloseHandler {
      * @return a new connection close handler with behavior for a pipelined request/response client or server
      */
     public static CloseHandler forPipelinedRequestResponse(boolean client, ChannelConfig config) {
-        if (config instanceof SocketChannelConfig) {
-            ((SocketChannelConfig) config).setAllowHalfClosure(true);
-        }
+        config.setOption(ALLOW_HALF_CLOSURE, TRUE);
         config.setAutoClose(false);
         return new RequestResponseCloseHandler(client);
     }

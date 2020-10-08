@@ -107,6 +107,7 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.UCO;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Mode.C;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Mode.S;
+import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Arrays.asList;
@@ -330,7 +331,7 @@ public class RequestResponseCloseHandlerTest {
             EventLoop loop = mock(EventLoop.class);
             when(channel.eventLoop()).thenReturn(loop);
             when(loop.inEventLoop()).thenReturn(true);
-            when(scc.isAllowHalfClosure()).thenReturn(true);
+            when(scc.getOption(ALLOW_HALF_CLOSURE)).thenReturn(TRUE);
             pipeline = mock(ChannelPipeline.class);
             when(channel.pipeline()).thenReturn(pipeline);
 

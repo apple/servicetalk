@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -28,13 +28,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture.newCancelPropagatingFuture;
 
 final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements Subscriber<T> {
-    private final DelayedCancellable cancellable;
+    private final SequentialCancellable cancellable;
 
     private SingleToCompletableFuture() {
-        cancellable = new DelayedCancellable();
+        cancellable = new SequentialCancellable();
     }
 
     static <X> CompletableFuture<X> createAndSubscribe(Single<X> original) {
@@ -43,19 +44,29 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         return provider.wrapCompletableFuture(future, original.subscribeAndReturnContext(future, provider));
     }
 
+    private void disableCancellable() {
+        // If the source terminates "normally", then we don't need to cancel the subscription. However if
+        // CompletableFuture#complete(T) (and related methods) are used to complete the future we do want to cancel the
+        // upstream subscription because we are no longer interested in its results. This is naturally racy due to the
+        // CompletableFuture APIs but a best effort is made to avoid cancelling when possible.
+        cancellable.nextCancellable(IGNORE_CANCEL);
+    }
+
     // Subscriber begin
     @Override
     public void onSubscribe(final Cancellable cancellable) {
-        this.cancellable.delayedCancellable(cancellable);
+        this.cancellable.nextCancellable(cancellable);
     }
 
     @Override
     public void onSuccess(@Nullable final T result) {
+        disableCancellable();
         super.complete(result);
     }
 
     @Override
     public void onError(final Throwable t) {
+        disableCancellable();
         super.completeExceptionally(t);
     }
     // Subscriber end

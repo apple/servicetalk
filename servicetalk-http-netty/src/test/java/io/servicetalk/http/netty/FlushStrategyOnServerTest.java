@@ -29,11 +29,11 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -78,7 +78,7 @@ public class FlushStrategyOnServerTest {
     public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
 
     private final OutboundWriteEventsInterceptor interceptor;
-    private final EmbeddedChannel channel;
+    private final EmbeddedDuplexChannel channel;
     private final AtomicBoolean useAggregatedResponse;
     private final NettyHttpServerConnection serverConnection;
 
@@ -98,7 +98,7 @@ public class FlushStrategyOnServerTest {
 
     public FlushStrategyOnServerTest(final Param param) throws Exception {
         interceptor = new OutboundWriteEventsInterceptor();
-        channel = new EmbeddedChannel(interceptor);
+        channel = new EmbeddedDuplexChannel(false, interceptor);
         useAggregatedResponse = new AtomicBoolean();
         StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());

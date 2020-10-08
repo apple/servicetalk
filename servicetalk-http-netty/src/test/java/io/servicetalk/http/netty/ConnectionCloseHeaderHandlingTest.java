@@ -34,6 +34,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -68,6 +69,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -78,6 +80,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Enclosed.class)
 public class ConnectionCloseHeaderHandlingTest {
@@ -112,8 +116,17 @@ public class ConnectionCloseHeaderHandlingTest {
         protected final CountDownLatch requestPayloadReceived = new CountDownLatch(1);
         protected final AtomicInteger requestPayloadSize = new AtomicInteger();
 
-        protected ConnectionSetup(boolean viaProxy, boolean awaitRequestPayload) throws Exception {
-            HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
+        protected ConnectionSetup(boolean useUds, boolean viaProxy, boolean awaitRequestPayload) throws Exception {
+            if (useUds) {
+                assumeTrue("Server's IoExecutor does not support UnixDomainSocket",
+                        SERVER_CTX.ioExecutor().isUnixDomainSocketSupported());
+                assumeTrue("Client's IoExecutor does not support UnixDomainSocket",
+                        CLIENT_CTX.ioExecutor().isUnixDomainSocketSupported());
+                assumeFalse("UDS cannot be used via proxy", viaProxy);
+            }
+            HttpServerBuilder serverBuilder = (useUds ?
+                    HttpServers.forAddress(newSocketAddress()) :
+                    HttpServers.forAddress(localAddress(0)))
                     .ioExecutor(SERVER_CTX.ioExecutor())
                     .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                     .enableWireLogging("servicetalk-tests-server-wire-logger")
@@ -173,13 +186,12 @@ public class ConnectionCloseHeaderHandlingTest {
                         }
                     });
 
-            HostAndPort serverAddress = serverHostAndPort(serverContext);
-            client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
+            client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
                     .secure().disableHostnameVerification()
                     .protocols("TLSv1.2")   // FIXME: remove after https://github.com/apple/servicetalk/pull/1156
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                     .commit() :
-                    HttpClients.forSingleAddress(serverAddress))
+                    HttpClients.forResolvedAddress(serverContext.listenAddress()))
                     .ioExecutor(CLIENT_CTX.ioExecutor())
                     .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                     .enableWireLogging("servicetalk-tests-client-wire-logger")
@@ -233,26 +245,32 @@ public class ConnectionCloseHeaderHandlingTest {
         private final boolean noRequestContent;
         private final boolean noResponseContent;
 
-        public NonPipelinedRequestsTest(boolean viaProxy, boolean awaitRequestPayload,
+        public NonPipelinedRequestsTest(boolean useUds, boolean viaProxy, boolean awaitRequestPayload,
                                         boolean requestInitiatesClosure,
                                         boolean noRequestContent, boolean noResponseContent) throws Exception {
-            super(viaProxy, awaitRequestPayload);
+            super(useUds, viaProxy, awaitRequestPayload);
             this.requestInitiatesClosure = requestInitiatesClosure;
             this.noRequestContent = noRequestContent;
             this.noResponseContent = noResponseContent;
         }
 
-        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}, " +
-                "requestInitiatesClosure={2}, noRequestContent={3}, noResponseContent={4}")
+        @Parameters(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}, " +
+                "requestInitiatesClosure={3}, noRequestContent={4}, noResponseContent={5}")
         public static Collection<Boolean[]> data() {
             Collection<Boolean[]> data = new ArrayList<>();
-            for (boolean viaProxy : TRUE_FALSE) {
-                for (boolean awaitRequestPayload : TRUE_FALSE) {
-                    for (boolean requestInitiatesClosure : TRUE_FALSE) {
-                        for (boolean noRequestContent : TRUE_FALSE) {
-                            for (boolean noResponseContent : TRUE_FALSE) {
-                                data.add(new Boolean[] {viaProxy, awaitRequestPayload,
-                                        requestInitiatesClosure, noRequestContent, noResponseContent});
+            for (boolean useUds : TRUE_FALSE) {
+                for (boolean viaProxy : TRUE_FALSE) {
+                    if (useUds && viaProxy) {
+                        // UDS cannot be used via proxy
+                        continue;
+                    }
+                    for (boolean awaitRequestPayload : TRUE_FALSE) {
+                        for (boolean requestInitiatesClosure : TRUE_FALSE) {
+                            for (boolean noRequestContent : TRUE_FALSE) {
+                                for (boolean noResponseContent : TRUE_FALSE) {
+                                    data.add(new Boolean[] {useUds, viaProxy, awaitRequestPayload,
+                                            requestInitiatesClosure, noRequestContent, noResponseContent});
+                                }
                             }
                         }
                     }
@@ -300,21 +318,24 @@ public class ConnectionCloseHeaderHandlingTest {
     @RunWith(Parameterized.class)
     public static class PipelinedRequestsTest extends ConnectionSetup {
 
-        public PipelinedRequestsTest(boolean viaProxy, boolean awaitRequestPayload) throws Exception {
-            super(viaProxy, awaitRequestPayload);
+        public PipelinedRequestsTest(boolean useUds, boolean viaProxy, boolean awaitRequestPayload) throws Exception {
+            super(useUds, viaProxy, awaitRequestPayload);
         }
 
-        @Parameters(name = "{index}: viaProxy={0}, awaitRequestPayload={1}")
+        @Parameters(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
         public static Collection<Boolean[]> data() {
             return asList(
-                    new Boolean[] {false, false},
-                    new Boolean[] {false, true},
-                    new Boolean[] {true, false},
-                    new Boolean[] {true, true}
+                    new Boolean[] {false, false, false},
+                    new Boolean[] {false, false, true},
+                    new Boolean[] {false, true, false},
+                    new Boolean[] {false, true, true},
+                    new Boolean[] {true, false, false},
+                    new Boolean[] {true, false, true}
             );
         }
 
         @Test
+        @Ignore("Temporary disable until https://github.com/apple/servicetalk/pull/1141 is merged")
         public void serverCloseTwoPipelinedRequestsSentBeforeFirstResponse() throws Exception {
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
@@ -338,14 +359,13 @@ public class ConnectionCloseHeaderHandlingTest {
             assertResponsePayloadBody(response);
 
             awaitConnectionClosed();
-            // FIXME: temporary disable check for /second until https://github.com/apple/servicetalk/pull/1141
-            // For more information, see https://github.com/apple/servicetalk/issues/1154
-            // secondResponseReceived.await();
-            // assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
+            secondResponseReceived.await();
+            assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
             assertClosedChannelException("/third");
         }
 
         @Test
+        @Ignore("Temporary disable until https://github.com/apple/servicetalk/pull/1141 is merged")
         public void serverCloseSecondPipelinedRequestWriteAborted() throws Exception {
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
@@ -371,10 +391,8 @@ public class ConnectionCloseHeaderHandlingTest {
             assertResponsePayloadBody(response);
 
             awaitConnectionClosed();
-            // FIXME: temporary disable check for /second until https://github.com/apple/servicetalk/pull/1141
-            // For more information, see https://github.com/apple/servicetalk/issues/1154
-            // secondResponseReceived.await();
-            // assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
+            secondResponseReceived.await();
+            assertThat(secondRequestError.get(), instanceOf(ClosedChannelException.class));
             assertClosedChannelException("/third");
         }
 
