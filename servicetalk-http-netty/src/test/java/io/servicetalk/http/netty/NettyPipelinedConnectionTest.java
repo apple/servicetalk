@@ -29,13 +29,13 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -92,11 +92,11 @@ public class NettyPipelinedConnectionTest {
     private TestPublisher<Integer> writePublisher1;
     private TestPublisher<Integer> writePublisher2;
     private NettyPipelinedConnection<Integer, Integer> requester;
-    private EmbeddedChannel channel;
+    private EmbeddedDuplexChannel channel;
 
     @Before
     public void setUp() throws Exception {
-        channel = new EmbeddedChannel();
+        channel = new EmbeddedDuplexChannel(false);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();

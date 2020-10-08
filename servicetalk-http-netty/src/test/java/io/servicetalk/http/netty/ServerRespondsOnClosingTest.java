@@ -25,10 +25,10 @@ import io.servicetalk.http.netty.FlushStrategyOnServerTest.OutboundWriteEventsIn
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -61,7 +61,7 @@ public class ServerRespondsOnClosingTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final OutboundWriteEventsInterceptor interceptor;
-    private final EmbeddedChannel channel;
+    private final EmbeddedDuplexChannel channel;
     private final NettyHttpServerConnection serverConnection;
 
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
@@ -69,11 +69,13 @@ public class ServerRespondsOnClosingTest {
 
     public ServerRespondsOnClosingTest() throws Exception {
         interceptor = new OutboundWriteEventsInterceptor();
-        channel = new EmbeddedChannel(interceptor);
+        channel = new EmbeddedDuplexChannel(false, interceptor);
 
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), EXECUTOR_RULE.executor(), defaultStrategy());
-        ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
+        final HttpServerConfig httpServerConfig = new HttpServerConfig();
+        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-server-wire-logger");
+        ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
         BlockingHttpService service = (ctx, request, responseFactory) -> {
             releaseResponse.await();
@@ -94,7 +96,7 @@ public class ServerRespondsOnClosingTest {
     @After
     public void tearDown() throws Exception {
         try {
-            serverConnection.closeAsync().toFuture().get();
+            serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
             channel.close().syncUninterruptibly();
         }
@@ -123,7 +125,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
-        sendRequest("/first?serverShouldClose=true", true);
+        sendRequest("/first?serverShouldClose=true", false);
         sendRequest("/second", false);
         releaseResponse.countDown();
         // Verify that the server responded:
@@ -134,7 +136,7 @@ public class ServerRespondsOnClosingTest {
     @Test
     public void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
         sendRequest("/first", false);
-        sendRequest("/second?serverShouldClose=true", true);
+        sendRequest("/second?serverShouldClose=true", false);
         releaseResponse.countDown();
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
@@ -152,6 +154,8 @@ public class ServerRespondsOnClosingTest {
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
+        channel.awaitOutputShutdown();
+        channel.shutdownInput();    // simulate FIN from the client
         assertServerConnectionClosed();
     }
 
@@ -166,5 +170,6 @@ public class ServerRespondsOnClosingTest {
     private void assertServerConnectionClosed() throws Exception {
         serverConnectionClosed.await();
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+        assertThat("Channel is not closed", channel.isOpen(), is(false));
     }
 }

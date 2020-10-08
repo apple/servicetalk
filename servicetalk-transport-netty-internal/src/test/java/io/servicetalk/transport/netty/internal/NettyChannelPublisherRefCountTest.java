@@ -22,7 +22,6 @@ import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,11 +48,11 @@ public class NettyChannelPublisherRefCountTest {
 
     private final TestPublisherSubscriber<Object> subscriber = new TestPublisherSubscriber<>();
     private Publisher<Object> publisher;
-    private EmbeddedChannel channel;
+    private EmbeddedDuplexChannel channel;
 
     @Before
     public void setUp() throws Exception {
-        channel = new EmbeddedChannel();
+        channel = new EmbeddedDuplexChannel(false);
         publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), x -> false,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> { },
                 OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE).toFuture().get().read();
