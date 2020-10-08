@@ -130,6 +130,8 @@ public class ServerRespondsOnClosingTest {
         releaseResponse.countDown();
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // only first
+        channel.awaitOutputShutdown();
+        channel.shutdownInput();    // simulate FIN from the client
         assertServerConnectionClosed();
     }
 
@@ -141,6 +143,8 @@ public class ServerRespondsOnClosingTest {
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
+        channel.awaitOutputShutdown();
+        channel.shutdownInput();    // simulate FIN from the client
         assertServerConnectionClosed();
     }
 
