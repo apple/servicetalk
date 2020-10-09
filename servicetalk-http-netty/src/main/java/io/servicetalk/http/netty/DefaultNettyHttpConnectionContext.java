@@ -75,9 +75,4 @@ final class DefaultNettyHttpConnectionContext extends DelegatingConnectionContex
     public Channel nettyChannel() {
         return nettyConnectionContext.nettyChannel();
     }
-
-    @Override
-    public String toString() {
-        return nettyConnectionContext.toString();
-    }
 }

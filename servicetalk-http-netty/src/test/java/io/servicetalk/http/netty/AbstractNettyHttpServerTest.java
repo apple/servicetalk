@@ -247,11 +247,15 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
-                        final HttpResponseStatus status, final int expectedSize)
-            throws ExecutionException, InterruptedException {
+                        final HttpResponseStatus status) {
         assertEquals(status, response.status());
         assertEquals(version, response.version());
+    }
 
+    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+                        final HttpResponseStatus status, final int expectedSize)
+            throws ExecutionException, InterruptedException {
+        assertResponse(response, version, status);
         final int size = awaitIndefinitelyNonNull(
                 response.payloadBody().collect(() -> 0, (is, c) -> is + c.readableBytes()));
         assertEquals(expectedSize, size);
@@ -260,8 +264,7 @@ public abstract class AbstractNettyHttpServerTest {
     void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
                         final HttpResponseStatus status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
-        assertEquals(status, response.status());
-        assertEquals(version, response.version());
+        assertResponse(response, version, status);
         final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
         if (expectedPayloadChunksAsStrings.isEmpty()) {
             assertTrue(bodyAsListOfStrings.isEmpty());
