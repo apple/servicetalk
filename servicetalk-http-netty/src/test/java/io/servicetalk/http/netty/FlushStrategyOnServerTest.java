@@ -254,5 +254,9 @@ public class FlushStrategyOnServerTest {
         int pendingEvents() {
             return writeEvents.size();
         }
+
+        int pendingWrites() {
+            return (int) writeEvents.stream().filter(evt -> evt != FLUSH).count();
+        }
     }
 }

@@ -174,7 +174,7 @@ public class ServerRespondsOnClosingTest {
 
     private void assertServerConnectionClosed() throws Exception {
         serverConnectionClosed.await();
-        assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+        assertThat("Unexpected writes", interceptor.pendingWrites(), is(0));
         assertThat("Channel is not closed", channel.isOpen(), is(false));
     }
 }
