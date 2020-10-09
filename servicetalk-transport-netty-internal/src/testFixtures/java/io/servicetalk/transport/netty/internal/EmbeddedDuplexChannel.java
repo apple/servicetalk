@@ -156,11 +156,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
             }
         }
         if (shutdownOutput) {
-            try {
-                super.flushOutbound();
-            } finally {
-                outputShutdownLatch.countDown();
-            }
+            outputShutdownLatch.countDown();
         }
     }
 
@@ -389,6 +385,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
     @Override
     public ChannelFuture writeOneOutbound(final Object msg, final ChannelPromise promise) {
         if (isOutputShutdown()) {
+            ReferenceCountUtil.safeRelease(msg);
             promise.setFailure(newOutputShutdownException());
             return promise;
         }
@@ -397,26 +394,30 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
 
     @Override
     public boolean writeOutbound(final Object... msgs) {
-        ensureOutputIsNotShutdown();
+        if (isOutputShutdown()) {
+            for (Object msg : msgs) {
+                ReferenceCountUtil.safeRelease(msg);
+            }
+            throw newOutputShutdownException();
+        }
         return super.writeOutbound(msgs);
     }
 
     @Override
     public EmbeddedChannel flushOutbound() {
-        ensureOutputIsNotShutdown();
+        if (isOutputShutdown()) {
+            throw newOutputShutdownException();
+        }
         return super.flushOutbound();
     }
 
     @Override
     protected void handleOutboundMessage(final Object msg) {
-        ensureOutputIsNotShutdown();
-        super.handleOutboundMessage(msg);
-    }
-
-    private void ensureOutputIsNotShutdown() {
         if (isOutputShutdown()) {
+            ReferenceCountUtil.safeRelease(msg);
             throw newOutputShutdownException();
         }
+        super.handleOutboundMessage(msg);
     }
 
     private RuntimeException newOutputShutdownException() {
