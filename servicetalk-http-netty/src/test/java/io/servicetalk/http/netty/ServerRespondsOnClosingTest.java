@@ -154,6 +154,7 @@ public class ServerRespondsOnClosingTest {
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
         serverConnection.onClosing().toFuture().get();
+        sendRequest("/third", false);   // should be discarded
         releaseResponse.countDown();
         // Verify that the server responded:
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
