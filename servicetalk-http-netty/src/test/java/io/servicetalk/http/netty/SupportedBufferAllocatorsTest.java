@@ -17,9 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +33,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCAT
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
@@ -50,11 +51,8 @@ public class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
     public SupportedBufferAllocatorsTest(HttpProtocol protocol, BufferAllocator allocator) {
         super(CACHED, CACHED_SERVER);
         this.protocol = protocol;
-        protocol(protocol.config);
         this.allocator = allocator;
-        service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) -> responseFactory.ok()
-                .payloadBody(allocator.fromAscii(request.payloadBody().toString(US_ASCII))),
-                strategy -> strategy)).adaptor());
+        protocol(protocol.config);
     }
 
     @Parameterized.Parameters(name = "{index}: protocol={0}, allocator={1}")
@@ -70,12 +68,19 @@ public class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
                 new Object[]{HTTP_2, PREFER_DIRECT_RO_ALLOCATOR});
     }
 
+    @Override
+    protected void service(final StreamingHttpService service) {
+        super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody(allocator.fromAscii(request.payloadBody().toString(US_ASCII))),
+                strategy -> strategy)).adaptor());
+    }
+
     @Test
     public void test() throws Exception {
         String payload = "Hello ServiceTalk";
-        StreamingHttpRequest request = streamingHttpConnection().post("/echo")
+        StreamingHttpRequest request = streamingHttpConnection().post("/")
                 .payloadBody(from(allocator.fromAscii(payload)));
         StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, protocol.version, HttpResponseStatus.OK, singletonList(payload));
+        assertResponse(response, protocol.version, OK, singletonList(payload));
     }
 }
