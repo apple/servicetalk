@@ -137,4 +137,9 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
     public Buffer wrap(ByteBuffer buffer) {
         return new ReadOnlyByteBuffer(buffer);
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "(directByDefault: " + preferDirect + ')';
+    }
 }
