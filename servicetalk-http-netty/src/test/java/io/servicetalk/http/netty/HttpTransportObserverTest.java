@@ -82,12 +82,12 @@ import static org.mockito.Mockito.when;
 @RunWith(Parameterized.class)
 public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
-    private enum Protocol {
+    enum Protocol {
         HTTP_1(h1Default(), HTTP_1_1),
         HTTP_2(h2Default(), HTTP_2_0);
 
-        private final HttpProtocolConfig config;
-        private final HttpProtocolVersion version;
+        final HttpProtocolConfig config;
+        final HttpProtocolVersion version;
 
         Protocol(HttpProtocolConfig config, HttpProtocolVersion version) {
             this.config = config;
