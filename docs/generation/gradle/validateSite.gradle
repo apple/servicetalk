@@ -27,6 +27,7 @@ def httpLinks = [
 
 // links to exclude from validation (for example because they require authentication or use untrusted cert)
 def excludedLinks = [
+    "https://netty.io", // started to return 520 status code frequently
     "https://reactivex.io", // untrusted cert
     "https://jemalloc.net" // untrusted cert
 ]
