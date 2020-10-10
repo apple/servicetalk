@@ -16,8 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -53,14 +51,12 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_BEFORE_READ;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ERROR_DURING_READ;
@@ -82,20 +78,7 @@ import static org.mockito.Mockito.when;
 @RunWith(Parameterized.class)
 public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
-    enum Protocol {
-        HTTP_1(h1Default(), HTTP_1_1),
-        HTTP_2(h2Default(), HTTP_2_0);
-
-        final HttpProtocolConfig config;
-        final HttpProtocolVersion version;
-
-        Protocol(HttpProtocolConfig config, HttpProtocolVersion version) {
-            this.config = config;
-            this.version = version;
-        }
-    }
-
-    private final Protocol protocol;
+    private final HttpProtocol protocol;
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
@@ -117,7 +100,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     private final CountDownLatch requestReceived = new CountDownLatch(1);
     private final CountDownLatch processRequest = new CountDownLatch(1);
 
-    public HttpTransportObserverTest(Protocol protocol) {
+    public HttpTransportObserverTest(HttpProtocol protocol) {
         super(CACHED, CACHED_SERVER);
         this.protocol = protocol;
         protocol(protocol.config);
@@ -176,8 +159,8 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     }
 
     @Parameters(name = "protocol={0}")
-    public static Protocol[] data() {
-        return Protocol.values();
+    public static HttpProtocol[] data() {
+        return HttpProtocol.values();
     }
 
     @Test
@@ -187,7 +170,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         verify(clientTransportObserver).onNewConnection();
         verify(serverTransportObserver, await()).onNewConnection();
-        if (protocol == Protocol.HTTP_1) {
+        if (protocol == HTTP_1) {
             verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
             verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
 
@@ -205,7 +188,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         verifyNoMoreInteractions(clientTransportObserver, clientDataObserver, clientMultiplexedObserver,
                 serverTransportObserver, serverDataObserver, serverMultiplexedObserver);
-        if (protocol != Protocol.HTTP_2) {
+        if (protocol != HTTP_2) {
             // HTTP/2 coded adds additional write/flush events related to connection preface. Also, it may emit more
             // flush events on the pipeline after the connection is closed.
             verifyNoMoreInteractions(clientConnectionObserver, serverConnectionObserver);
@@ -243,7 +226,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(serverReadObserver, atLeastOnce()).itemRead();
 
-        if (protocol == Protocol.HTTP_2) {
+        if (protocol == HTTP_2) {
             // HTTP/1.x has a single write publisher across all requests that does not complete after each response
             verify(serverWriteObserver, await()).writeComplete();
         }
@@ -256,7 +239,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).itemRead();
         verify(clientReadObserver).readComplete();
 
-        if (protocol == Protocol.HTTP_2) {
+        if (protocol == HTTP_2) {
             verify(clientStreamObserver, await()).streamClosed();
             verify(serverStreamObserver, await()).streamClosed();
         }
@@ -282,11 +265,11 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
         ExecutionException e = assertThrows(ExecutionException.class,
                 () -> response.payloadBody().ignoreElements().toFuture().get());
-        Class<? extends Throwable> causeType = protocol == Protocol.HTTP_1 ?
+        Class<? extends Throwable> causeType = protocol == HTTP_1 ?
                 ClosedChannelException.class : H2StreamResetException.class;
         assertThat(e.getCause(), instanceOf(causeType));
 
-        if (protocol == Protocol.HTTP_2) {
+        if (protocol == HTTP_2) {
             connection.closeGracefully();
         }
         assertConnectionClosed();
@@ -319,7 +302,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).itemRead();
         verify(clientReadObserver).readFailed(any(causeType));
 
-        if (protocol == Protocol.HTTP_1) {
+        if (protocol == HTTP_1) {
             verify(clientConnectionObserver).connectionClosed();    // FIXME should we see connection RST here?
             verify(serverConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
         } else {
@@ -352,7 +335,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         processRequest.countDown();
 
-        if (protocol == Protocol.HTTP_2) {
+        if (protocol == HTTP_2) {
             connection.closeGracefully();
         }
         assertConnectionClosed();
@@ -367,7 +350,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(serverReadObserver, atLeastOnce()).itemRead();
         verify(serverReadObserver, atMostOnce()).readCancelled();
-        if (protocol == Protocol.HTTP_1) {
+        if (protocol == HTTP_1) {
             verify(serverReadObserver, atMostOnce()).readFailed(any(IOException.class));
         } else {
             verify(serverReadObserver, await()).readFailed(any(H2StreamResetException.class));
@@ -381,7 +364,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(clientReadObserver).readCancelled();
 
-        if (protocol == Protocol.HTTP_1) {
+        if (protocol == HTTP_1) {
             verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);
             verify(serverConnectionObserver).connectionClosed(any(IOException.class));
         } else {
@@ -397,7 +380,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
     }
 
     private void verifyNewReadAndNewWrite(int nonMultiplexedTimes) {
-        if (protocol == Protocol.HTTP_1) {
+        if (protocol == HTTP_1) {
             verify(clientDataObserver).onNewRead();
             verify(clientDataObserver).onNewWrite();
             verify(serverDataObserver, await().times(nonMultiplexedTimes)).onNewRead();

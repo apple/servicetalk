@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamRefusedException;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamResetException;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
-import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
@@ -41,8 +40,8 @@ import javax.annotation.Nullable;
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
-import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
+import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
@@ -76,14 +75,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     static void writeBuffer(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
-        if (byteBuf == null) {
-            final IllegalArgumentException cause = new IllegalArgumentException("unsupported Buffer type:" + msg);
-            promise.setFailure(cause);
-            ChannelCloseUtils.close(ctx, cause);
-        } else {
-            ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
-        }
+        ctx.write(new DefaultHttp2DataFrame(encodeAndRetain((Buffer) msg), false), promise);
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {

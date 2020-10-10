@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.HttpTransportObserverTest.Protocol;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,17 +35,17 @@ import static org.hamcrest.Matchers.containsString;
 @RunWith(Parameterized.class)
 public class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
 
-    private final Protocol protocol;
+    private final HttpProtocol protocol;
 
-    public ConnectionContextToStringTest(Protocol protocol) {
+    public ConnectionContextToStringTest(HttpProtocol protocol) {
         super(CACHED, CACHED_SERVER);
         this.protocol = protocol;
         protocol(protocol.config);
     }
 
     @Parameterized.Parameters(name = "protocol={0}")
-    public static Protocol[] data() {
-        return Protocol.values();
+    public static HttpProtocol[] data() {
+        return HttpProtocol.values();
     }
 
     @Override

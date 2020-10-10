@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -40,8 +39,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
@@ -57,32 +54,18 @@ import static org.junit.Assert.assertThrows;
 @RunWith(Parameterized.class)
 public class HttpConnectionContextSocketOptionTest {
 
-    private enum Protocol {
-
-        HTTP_1_1(h1Default(), false),
-        HTTP_2(h2Default(), true);
-
-        final HttpProtocolConfig config;
-        final boolean autoRead;
-
-        Protocol(HttpProtocolConfig config, boolean autoRead) {
-            this.config = config;
-            this.autoRead = autoRead;
-        }
-    }
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final Protocol protocol;
+    private final HttpProtocol protocol;
 
-    public HttpConnectionContextSocketOptionTest(Protocol protocol) {
+    public HttpConnectionContextSocketOptionTest(HttpProtocol protocol) {
         this.protocol = protocol;
     }
 
     @Parameters(name = "protocol={0}")
     public static Object[] data() {
-        return Protocol.values();
+        return HttpProtocol.values();
     }
 
     @Test

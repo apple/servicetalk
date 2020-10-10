@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -79,10 +78,8 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 public abstract class AbstractNettyHttpServerTest {
@@ -262,15 +259,14 @@ public abstract class AbstractNettyHttpServerTest {
     }
 
     void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
-                        final HttpResponseStatus status, final List<String> expectedPayloadChunksAsStrings)
+                        final HttpResponseStatus status, final String expectedPayload)
             throws ExecutionException, InterruptedException {
         assertResponse(response, version, status);
-        final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
-        if (expectedPayloadChunksAsStrings.isEmpty()) {
-            assertTrue(bodyAsListOfStrings.isEmpty());
-        } else {
-            assertThat(bodyAsListOfStrings, contains(expectedPayloadChunksAsStrings.toArray()));
-        }
+        String actualPayload = response.payloadBody().collect(StringBuilder::new, (sb, chunk) -> {
+            sb.append(chunk.toString(US_ASCII));
+            return sb;
+        }).toFuture().get().toString();
+        assertThat(actualPayload, is(expectedPayload));
     }
 
     Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
@@ -283,11 +279,6 @@ public abstract class AbstractNettyHttpServerTest {
 
     Buffer getChunkFromString(final String text) {
         return DEFAULT_ALLOCATOR.fromAscii(text);
-    }
-
-    static List<String> getBodyAsListOfStrings(final StreamingHttpResponse response)
-            throws ExecutionException, InterruptedException {
-        return awaitIndefinitelyNonNull(response.payloadBody().map(c -> c.toString(US_ASCII)));
     }
 
     static <T> T awaitSingleIndefinitelyNonNull(Single<T> single) {

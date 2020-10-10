@@ -333,14 +333,14 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         }
     }
 
-    private static ByteBuf encodeAndRetain(Buffer msg) {
+    static ByteBuf encodeAndRetain(Buffer msg) {
         // We still want to retain the objects we encode because otherwise folks may hold on to references of objects
         // with a 0 reference count and get an IllegalReferenceCountException.
         // TODO(scott): add support for file region
         return toByteBuf(msg).retain();
     }
 
-    static ByteBuf toByteBuf(Buffer buffer) {
+    private static ByteBuf toByteBuf(Buffer buffer) {
         ByteBuf byteBuf = toByteBufNoThrow(buffer);
         return byteBuf != null ? byteBuf : wrappedBuffer(buffer.toNioBuffer());
     }
