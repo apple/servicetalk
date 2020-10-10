@@ -79,9 +79,9 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
@@ -189,7 +189,7 @@ public class RequestResponseCloseHandlerTest {
             NIL(null), // No event, not closed
             PCO(PROTOCOL_CLOSING_OUTBOUND),
             PCI(PROTOCOL_CLOSING_INBOUND),
-            UCO(USER_CLOSING),
+            UCO(GRACEFUL_USER_CLOSING),
             CCO(CHANNEL_CLOSED_OUTBOUND),
             CCI(CHANNEL_CLOSED_INBOUND);
 
@@ -432,8 +432,8 @@ public class RequestResponseCloseHandlerTest {
                         order.verify(scc).setSoLinger(0);
                         break;
                     case UC:
-                        h.userClosing(channel);
-                        order.verify(h).userClosing(channel);
+                        h.gracefulUserClosing(channel);
+                        order.verify(h).gracefulUserClosing(channel);
                         break;
                     case IH:
                         order.verify(channel).shutdownInput();
@@ -489,7 +489,7 @@ public class RequestResponseCloseHandlerTest {
                             verify(scc, never()).setSoLinger(0);
                             break;
                         case UC:
-                            verify(h, never()).userClosing(channel);
+                            verify(h, never()).gracefulUserClosing(channel);
                             break;
                         case FC:
                             verify(channel, never()).close();
@@ -582,7 +582,7 @@ public class RequestResponseCloseHandlerTest {
             // Request #2
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginInbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndInbound(ctx));
-            channel.eventLoop().execute(() -> ch.userClosing(channel));
+            channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
             // Response #1
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx));
@@ -608,7 +608,7 @@ public class RequestResponseCloseHandlerTest {
                 }
             });
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
-            channel.eventLoop().execute(() -> ch.userClosing(channel));
+            channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
             channel.close().syncUninterruptibly();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));

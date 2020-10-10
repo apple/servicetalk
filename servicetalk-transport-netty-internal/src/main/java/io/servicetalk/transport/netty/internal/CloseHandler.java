@@ -146,7 +146,7 @@ public abstract class CloseHandler {
      *
      * @param channel {@link Channel}
      */
-    abstract void userClosing(Channel channel);
+    abstract void gracefulUserClosing(Channel channel);
 
     /**
      * These events indicate an event was observed from the protocol or {@link Channel} that indicates the end of the
@@ -166,7 +166,7 @@ public abstract class CloseHandler {
         /**
          * User initiated close command, depends on the implementation but usually resembles outbound protocol close.
          */
-        USER_CLOSING("The close* method was called in the local application."),
+        GRACEFUL_USER_CLOSING("The graceful close* method was called in the local application."),
         /**
          * Outbound {@link SocketChannel} shutdown observed.
          */
@@ -252,7 +252,7 @@ public abstract class CloseHandler {
         }
 
         @Override
-        void userClosing(final Channel channel) {
+        void gracefulUserClosing(final Channel channel) {
             channel.close();
         }
 
@@ -310,7 +310,7 @@ public abstract class CloseHandler {
         }
 
         @Override
-        void userClosing(final Channel channel) {
+        void gracefulUserClosing(final Channel channel) {
             channel.close();
         }
 

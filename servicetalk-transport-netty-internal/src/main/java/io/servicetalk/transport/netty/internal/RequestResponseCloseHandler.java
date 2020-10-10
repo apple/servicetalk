@@ -31,9 +31,9 @@ import javax.annotation.Nullable;
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.ALL_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
@@ -253,10 +253,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     @Override
-    void userClosing(final Channel channel) {
+    void gracefulUserClosing(final Channel channel) {
         assert channel.eventLoop().inEventLoop();
-        storeCloseRequestAndEmit(USER_CLOSING);
-        maybeCloseChannelHalfOrFullyOnClosing(channel, USER_CLOSING);
+        storeCloseRequestAndEmit(GRACEFUL_USER_CLOSING);
+        maybeCloseChannelHalfOrFullyOnClosing(channel, GRACEFUL_USER_CLOSING);
     }
 
     // This closes the channel either completely when there are no more outstanding requests to drain or half-closes
@@ -265,7 +265,7 @@ class RequestResponseCloseHandler extends CloseHandler {
                                                      final boolean endInbound) {
 
         if (idle(pending, state)) {
-            if (isClient || has(state, IN_CLOSED) || (evt != USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
+            if (isClient || has(state, IN_CLOSED) || (evt != GRACEFUL_USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
                 closeChannel(channel, evt);
             } else {
                 serverCloseGracefully(channel);
@@ -279,8 +279,8 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     // Eagerly close on a closing event rather than deferring
     private void maybeCloseChannelHalfOrFullyOnClosing(final Channel channel, final CloseEvent evt) {
-        if (idle(pending, state)) { // Only USER_CLOSING
-            assert evt == USER_CLOSING;
+        if (idle(pending, state)) { // Only GRACEFUL_USER_CLOSING
+            assert evt == GRACEFUL_USER_CLOSING;
             if (isClient) {
                 closeChannel(channel, evt);
             } else {
@@ -306,8 +306,8 @@ class RequestResponseCloseHandler extends CloseHandler {
             }
             // discards extra pending requests when closing, ensures an eventual "idle" state
             pending = 0;
-        } else if (!has(state, READ)) { // Server && USER_CLOSING - Don't abort any request
-            assert evt == USER_CLOSING;
+        } else if (!has(state, READ)) { // Server && GRACEFUL_USER_CLOSING - Don't abort any request
+            assert evt == GRACEFUL_USER_CLOSING;
             serverHalfCloseInbound(channel);
         }
     }

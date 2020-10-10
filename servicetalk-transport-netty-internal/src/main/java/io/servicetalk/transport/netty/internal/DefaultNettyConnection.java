@@ -442,7 +442,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private void invokeUserCloseHandler() {
-        closeHandler.userClosing(channel());
+        closeHandler.gracefulUserClosing(channel());
     }
 
     @Override
