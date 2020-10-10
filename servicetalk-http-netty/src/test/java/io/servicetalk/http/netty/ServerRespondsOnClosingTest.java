@@ -164,6 +164,21 @@ public class ServerRespondsOnClosingTest {
         assertServerConnectionClosed();
     }
 
+    @Test
+    public void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
+        sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
+        sendRequest("/second", false);
+        serverConnection.closeAsyncGracefully().subscribe();
+        serverConnection.onClosing().toFuture().get();
+        sendRequest("/third", false);   // should be discarded
+        releaseResponse.countDown();
+        // Verify that the server responded:
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
+        channel.awaitOutputShutdown();
+        channel.shutdownInput();    // simulate FIN from the client
+        assertServerConnectionClosed();
+    }
+
     private void sendRequest(String requestTarget, boolean addCloseHeader) {
         channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET " + requestTarget + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
