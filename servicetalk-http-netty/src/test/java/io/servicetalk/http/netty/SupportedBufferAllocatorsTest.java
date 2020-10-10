@@ -40,7 +40,6 @@ import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 
 @RunWith(Parameterized.class)
 public class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
@@ -81,6 +80,6 @@ public class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
         StreamingHttpRequest request = streamingHttpConnection().post("/")
                 .payloadBody(from(allocator.fromAscii(payload)));
         StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, protocol.version, OK, singletonList(payload));
+        assertResponse(response, protocol.version, OK, payload);
     }
 }
