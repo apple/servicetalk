@@ -95,4 +95,9 @@ public class DelegatingConnectionContext implements ConnectionContext {
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
     }
+
+    @Override
+    public String toString() {
+        return delegate.toString();
+    }
 }

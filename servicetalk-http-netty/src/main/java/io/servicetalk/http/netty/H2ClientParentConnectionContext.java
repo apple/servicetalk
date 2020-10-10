@@ -382,6 +382,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
 
         @Override
+        public String toString() {
+            return parentContext.toString();
+        }
+
+        @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
         }
