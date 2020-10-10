@@ -48,7 +48,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.IMMEDIATE;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -140,7 +139,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
                     getChunkPublisherFromStrings("hello"));
             request.headers().set(CONTENT_LENGTH, "5");
             final StreamingHttpResponse response = makeRequest(request);
-            assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
+            assertResponse(response, HTTP_1_1, OK, "hello");
             if (!filterMode.expectAccept) {
                 throw new AssertionError("Expected filter to reject connection");
             }
