@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -139,6 +140,40 @@ public class BlockingStreamingHttpServiceTest {
                 .payloadBody(asList("Hello\n", "World\n"), textSerializer()));
         assertResponse(response);
         assertThat(response.toResponse().toFuture().get().payloadBody(), is(EMPTY_BUFFER));
+        assertThat(receivedPayloadBody.toString(), is(HELLO_WORLD));
+    }
+
+    @Test
+    public void clientRequestInputStreamPayloadBody() throws Exception {
+        StringBuilder receivedPayloadBody = new StringBuilder();
+
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            request.payloadBody().forEach(chunk -> receivedPayloadBody.append(chunk.toString(US_ASCII)));
+            response.sendMetaData().close();
+        });
+
+        BlockingStreamingHttpResponse response = client.request(client.post("/")
+                .payloadBody(new ByteArrayInputStream(HELLO_WORLD.getBytes(US_ASCII))));
+        assertResponse(response);
+        assertThat(response.toResponse().toFuture().get().payloadBody(), is(EMPTY_BUFFER));
+        assertThat(receivedPayloadBody.toString(), is(HELLO_WORLD));
+    }
+
+    @Test
+    public void clientResponseInputStreamPayloadBody() throws Exception {
+        StringBuilder receivedPayloadBody = new StringBuilder();
+
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            request.payloadBody().forEach(chunk -> receivedPayloadBody.append(chunk.toString(US_ASCII)));
+            response.sendMetaData().close();
+        });
+
+        String expectedBody = "overwritten";
+        BlockingStreamingHttpResponse response = client.request(client.post("/")
+                .payloadBody(new ByteArrayInputStream(HELLO_WORLD.getBytes(US_ASCII))));
+        assertResponse(response);
+        response.payloadBody(new ByteArrayInputStream(expectedBody.getBytes(US_ASCII)));
+        assertThat(response.toResponse().toFuture().get().payloadBody().toString(US_ASCII), is(expectedBody));
         assertThat(receivedPayloadBody.toString(), is(HELLO_WORLD));
     }
 

@@ -57,12 +57,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
      * <p>
-     * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
      * control.
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing {@link Iterable} payload body.
+     * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body.
      * @return {@code this}
      */
@@ -71,26 +71,40 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
      * <p>
-     * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
      * control.
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing {@link CloseableIterable} payload body.
+     * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body.
      * @return {@code this}
      */
     BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
 
     /**
+     * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
+     * control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing payload body that is being replaced.
+     * @param payloadBody The new payload body.
+     * @return {@code this}
+     */
+    BlockingStreamingHttpResponse payloadBody(InputStream payloadBody);
+
+    /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to the result of serialization.
      * <p>
-     * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
      * fine grain control.
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing {@link Iterable} payload body.
+     * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
@@ -101,12 +115,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to the result of serialization.
      * <p>
-     * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
      * fine grain control.
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
-     * combination with the existing {@link CloseableIterable} payload body.
+     * combination with the existing payload body that is being replaced.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
