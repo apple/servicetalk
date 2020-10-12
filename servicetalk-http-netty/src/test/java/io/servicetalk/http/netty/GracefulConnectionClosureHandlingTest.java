@@ -76,7 +76,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.USER_CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Integer.parseInt;
@@ -472,7 +472,7 @@ public class GracefulConnectionClosureHandlingTest {
     private void assertNextRequestFails() {
         assertClosedChannelException(
                 () -> connection.request(connection.get("/next").addHeader(CONTENT_LENGTH, ZERO)).toFuture().get(),
-                initiateClosureFromClient ? USER_CLOSING : CHANNEL_CLOSED_INBOUND);
+                initiateClosureFromClient ? GRACEFUL_USER_CLOSING : CHANNEL_CLOSED_INBOUND);
     }
 
     private void assertClosedChannelException(ThrowingRunnable runnable, CloseEvent expectedCloseEvent) {
