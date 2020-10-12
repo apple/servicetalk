@@ -265,7 +265,8 @@ class RequestResponseCloseHandler extends CloseHandler {
                                                      final boolean endInbound) {
 
         if (idle(pending, state)) {
-            if (isClient || has(state, IN_CLOSED) || (evt != GRACEFUL_USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
+            if (isClient || has(state, IN_CLOSED) ||
+                    (evt != GRACEFUL_USER_CLOSING && evt != PROTOCOL_CLOSING_OUTBOUND)) {
                 closeChannel(channel, evt);
             } else {
                 serverCloseGracefully(channel);
