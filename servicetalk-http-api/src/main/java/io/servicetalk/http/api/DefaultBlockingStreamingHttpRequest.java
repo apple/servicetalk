@@ -20,9 +20,11 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
 
+import java.io.InputStream;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
 final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
@@ -124,6 +126,13 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public BlockingStreamingHttpRequest payloadBody(final CloseableIterable<Buffer> payloadBody) {
         original.payloadBody(fromIterable(payloadBody));
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest payloadBody(final InputStream payloadBody) {
+        original.payloadBody(fromInputStream(payloadBody)
+                .map(bytes -> original.payloadHolder().allocator().wrap(bytes)));
         return this;
     }
 
