@@ -37,6 +37,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PR
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.ALL_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CLOSING_SERVER_GRACEFULLY;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.CONNECTED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.DISCARDING_SERVER_INPUT;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_CLOSED;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.IN_OUT_CLOSED;
@@ -92,6 +93,7 @@ class RequestResponseCloseHandler extends CloseHandler {
         byte IN_CLOSED = 0x10;
         byte OUT_CLOSED = 0x20;
         byte CLOSED = 0x40;
+        byte CONNECTED = (byte) 0x80;
 
         byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
         byte IN_OUT_CLOSED = IN_CLOSED | OUT_CLOSED;
@@ -146,10 +148,21 @@ class RequestResponseCloseHandler extends CloseHandler {
         this.eventHandler = requireNonNull(eventHandler);
     }
 
+    @Override
+    void notifyConnected(final Channel channel) {
+        state = set(state, CONNECTED);
+        final CloseEvent event = closeEvent;
+        if (!isClient && event != null) {
+            eventHandler.accept(event);
+        }
+    }
+
     private void storeCloseRequestAndEmit(final CloseEvent event) {
-        eventHandler.accept(event);
         if (this.closeEvent == null) {
             this.closeEvent = event;
+        }
+        if (isClient || has(state, CONNECTED)) {
+            eventHandler.accept(event);
         }
     }
 
@@ -175,6 +188,10 @@ class RequestResponseCloseHandler extends CloseHandler {
         assert ctx.executor().inEventLoop();
         pending = isClient ? pending + 1 : pending - 1;
         state = set(state, WRITE);
+        final CloseEvent event = closeEvent;
+        if (!isClient && event == PROTOCOL_CLOSING_INBOUND) {
+            eventHandler.accept(event);
+        }
     }
 
     @Override

@@ -151,7 +151,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.idleTimeoutMs = idleTimeoutMs;
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
-            closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
+            closeHandler.registerEventHandler(channel, evt -> {
+                assert channel.eventLoop().inEventLoop();
                 if (closeReason == null) {
                     closeReason = evt;
                     // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
@@ -384,6 +385,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
+                    closeHandler.notifyConnected(channel());
                     toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);
                 }
@@ -472,8 +474,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // the writeSubscriber.
             // It is also possible that Channel is in closing state, we should abort new writes if a closeReason was
             // observed:
-            CloseEvent closeReason = null;
-            if (!channel().isActive() || (closeReason = this.closeReason) != null) {
+            CloseEvent closeReason = this.closeReason;
+            if (closeReason != null || !channel().isActive()) {
                 final StacklessClosedChannelException e = StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "failIfWriteActive(...)");
                 newChannelOutboundListener.channelClosed(closeReason == null ? e : closeReason.wrapError(e, channel()));

@@ -89,7 +89,6 @@ public class ServerRespondsOnClosingTest {
                 config.tcpConfig(), connectionObserver),
                 toStreamingHttpService(service, strategy -> strategy).adaptor(), true,
                 connectionObserver).toFuture().get();
-        serverConnection.process(true);
     }
 
     @After
@@ -104,6 +103,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingInboundPipelinedFirstInitiatesClosure() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", true);
         // The following request after "Connection: close" header violates the spec, but we want to verify that server
         // discards those requests and do not respond to them:
@@ -115,6 +115,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingInboundPipelinedSecondInitiatesClosure() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second", true);
         handleRequests();
@@ -125,6 +126,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first?serverShouldClose=true", false);
         sendRequest("/second", false);
         handleRequests();
@@ -136,6 +138,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second?serverShouldClose=true", false);
         handleRequests();
@@ -147,6 +150,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void gracefulClosurePipelined() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
@@ -161,6 +165,7 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void gracefulClosurePipelinedDiscardPartialRequest() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first", false);
         // Send only initial line with CRLF that should hang in ByteToMessage cumulation buffer and will be discarded:
         channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET /second HTTP/1.1"));
@@ -174,11 +179,35 @@ public class ServerRespondsOnClosingTest {
 
     @Test
     public void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
+        serverConnection.process(true); // Start request processing (read and write)
         sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
         serverConnection.onClosing().toFuture().get();
         sendRequest("/third", false);   // should be discarded
+        handleRequests();
+        verifyResponse("/first");
+        respondWithFIN();
+        assertServerConnectionClosed();
+    }
+
+    @Test
+    public void protocolClosingInboundBeforeProcessingStarts() throws Exception {
+        sendRequest("/first", true);
+        // Start request processing (read and write) after request was received:
+        serverConnection.process(true);
+        handleRequests();
+        verifyResponse("/first");
+        assertServerConnectionClosed();
+    }
+
+    @Test
+    public void gracefulClosureBeforeProcessingStarts() throws Exception {
+        sendRequest("/first", false);
+        serverConnection.closeAsyncGracefully().subscribe();
+
+        // Start request processing (read and write) after request was received:
+        serverConnection.process(true);
         handleRequests();
         verifyResponse("/first");
         respondWithFIN();
@@ -220,11 +249,11 @@ public class ServerRespondsOnClosingTest {
 
     private void respondWithFIN() {
         assertThat("Server did not shutdown output", channel.isOutputShutdown(), is(true));
-        channel.shutdownInput();    // simulate FIN from the client
+        channel.shutdownInput().syncUninterruptibly();    // simulate FIN from the client
     }
 
     private void assertServerConnectionClosed() throws Exception {
-        serverConnection.onClose().toFuture().get();
+        // serverConnection.onClose().toFuture().get();
         assertThat("Unexpected writes", channel.outboundMessages(), hasSize(0));
         assertThat("Channel is not closed", channel.isOpen(), is(false));
     }

@@ -143,9 +143,7 @@ public class ConnectionCloseHeaderHandlingTest {
                 // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
                 proxyTunnel = new ProxyTunnel();
                 proxyAddress = proxyTunnel.startProxy();
-                serverBuilder.secure()
-                        .protocols("TLSv1.2")   // FIXME: remove after https://github.com/apple/servicetalk/pull/1156
-                        .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+                serverBuilder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
             } else {
                 proxyTunnel = null;
             }
@@ -188,7 +186,6 @@ public class ConnectionCloseHeaderHandlingTest {
 
             client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
                     .secure().disableHostnameVerification()
-                    .protocols("TLSv1.2")   // FIXME: remove after https://github.com/apple/servicetalk/pull/1156
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                     .commit() :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))

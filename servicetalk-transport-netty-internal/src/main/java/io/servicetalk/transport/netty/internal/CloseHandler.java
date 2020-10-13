@@ -108,6 +108,13 @@ public abstract class CloseHandler {
     abstract void registerEventHandler(Channel channel, Consumer<CloseEvent> eventHandler);
 
     /**
+     * Notifies that a read-write operation is connected to the {@link Channel}.
+     *
+     * @param channel the {@link Channel} for which this event handler is registering
+     */
+    abstract void notifyConnected(Channel channel);
+
+    /**
      * Signal {@link Channel} inbound close command observed, to be emitted from the {@link EventLoop} for the channel.
      *
      * @param ctx {@link ChannelHandlerContext}
@@ -234,6 +241,10 @@ public abstract class CloseHandler {
         }
 
         @Override
+        void notifyConnected(final Channel channel) {
+        }
+
+        @Override
         void channelClosedInbound(final ChannelHandlerContext ctx) {
         }
 
@@ -289,6 +300,10 @@ public abstract class CloseHandler {
 
         @Override
         void registerEventHandler(final Channel channel, final Consumer<CloseEvent> eventHandler) {
+        }
+
+        @Override
+        void notifyConnected(final Channel channel) {
         }
 
         @Override
