@@ -34,7 +34,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -335,7 +334,6 @@ public class ConnectionCloseHeaderHandlingTest {
         }
 
         @Test
-        @Ignore("Temporary disable until https://github.com/apple/servicetalk/pull/1141 is merged")
         public void serverCloseTwoPipelinedRequestsSentBeforeFirstResponse() throws Exception {
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
@@ -365,7 +363,6 @@ public class ConnectionCloseHeaderHandlingTest {
         }
 
         @Test
-        @Ignore("Temporary disable until https://github.com/apple/servicetalk/pull/1141 is merged")
         public void serverCloseSecondPipelinedRequestWriteAborted() throws Exception {
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
