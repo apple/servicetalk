@@ -101,10 +101,10 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.UC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.CCI;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.CCO;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.GUC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.NIL;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.PCI;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.PCO;
-import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.ExpectEvent.GUC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Mode.C;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Mode.S;
 import static java.lang.Boolean.TRUE;
