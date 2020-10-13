@@ -160,6 +160,19 @@ public class ServerRespondsOnClosingTest {
     }
 
     @Test
+    public void gracefulClosurePipelinedDiscardPartialRequest() throws Exception {
+        sendRequest("/first", false);
+        // Send only initial line with CRLF that should hang in ByteToMessage cumulation buffer and will be discarded:
+        channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET /second HTTP/1.1"));
+        serverConnection.closeAsyncGracefully().subscribe();
+        serverConnection.onClosing().toFuture().get();
+        handleRequests();
+        verifyResponse("/first");
+        respondWithFIN();
+        assertServerConnectionClosed();
+    }
+
+    @Test
     public void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
         sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
         sendRequest("/second", false);

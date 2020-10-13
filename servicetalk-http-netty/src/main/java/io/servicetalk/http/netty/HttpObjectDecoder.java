@@ -507,7 +507,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         } else if (evt instanceof DiscardFurtherInboundEvent) {
             resetNow();
-            releaseCumulation();
             ctx.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
                     DiscardInboundHandler.INSTANCE);
             ctx.channel().config().setAutoRead(true);
@@ -859,7 +858,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         static final ChannelInboundHandler INSTANCE = new DiscardInboundHandler();
 
         private DiscardInboundHandler() {
-            // Singleton
+            super(/* autoRelease */ true);
         }
 
         @Override

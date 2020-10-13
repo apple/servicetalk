@@ -242,7 +242,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     protected void cumulationReset() {
     }
 
-    protected final void releaseCumulation() {
+    private void releaseCumulation() {
         if (cumulation != null) {
             cumulation.release();
             cumulation = null;
