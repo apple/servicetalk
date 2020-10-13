@@ -169,7 +169,7 @@ public class SecurityHandshakeObserverTest {
                      .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                      .secure()
                      .disableHostnameVerification()
-                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
+                     .trustManager(DefaultTestCerts::loadServerCAPem)
                      .commit()
                      .appendConnectionFactoryFilter(
                              new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))

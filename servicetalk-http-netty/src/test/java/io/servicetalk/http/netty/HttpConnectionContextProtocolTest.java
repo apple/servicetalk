@@ -112,7 +112,7 @@ public class HttpConnectionContextProtocolTest {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext)).protocols(config.protocols);
         if (config.secure) {
-            builder.secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
+            builder.secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit();
         }
         return builder.buildBlocking();
     }

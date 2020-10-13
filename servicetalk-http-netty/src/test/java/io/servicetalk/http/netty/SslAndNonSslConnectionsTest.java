@@ -147,7 +147,7 @@ public class SslAndNonSslConnectionsTest {
     public void secureClientToNonSecureServerClosesConnection() throws Exception {
         assert serverCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx))
-                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit()
                 .buildBlocking()) {
             expectedException.expect(instanceOf(ClosedChannelException.class));
             client.request(client.get("/"));
@@ -173,7 +173,7 @@ public class SslAndNonSslConnectionsTest {
     public void singleAddressClientWithSslToSecureServer() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
-                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit()
                 .buildBlocking()) {
             testRequestResponse(client, "/", true);
         }
@@ -183,7 +183,7 @@ public class SslAndNonSslConnectionsTest {
     public void hostNameVerificationIsEnabledByDefault() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
-                .secure().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
+                .secure().trustManager(DefaultTestCerts::loadServerCAPem).commit()
                 .buildBlocking()) {
             expectedException.expect(instanceOf(SSLHandshakeException.class));
             // Hostname verification failure
@@ -196,7 +196,7 @@ public class SslAndNonSslConnectionsTest {
     public void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .secure((hap, config) -> config.disableHostnameVerification()
-                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                        .trustManager(DefaultTestCerts::loadServerCAPem))
                 .buildBlocking()) {
             testRequestResponse(client, secureRequestTarget, true);
         }
@@ -206,7 +206,7 @@ public class SslAndNonSslConnectionsTest {
     public void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .secure((hap, config) -> config.disableHostnameVerification()
-                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                        .trustManager(DefaultTestCerts::loadServerCAPem))
                 .buildBlocking()) {
             testRequestResponse(client, secureRequestTarget, true);
             resetMocks();
@@ -218,7 +218,7 @@ public class SslAndNonSslConnectionsTest {
     public void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .secure((hap, config) -> config.disableHostnameVerification()
-                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                        .trustManager(DefaultTestCerts::loadServerCAPem))
                 .buildBlocking()) {
             testRequestResponse(client, requestTarget, false);
             resetMocks();

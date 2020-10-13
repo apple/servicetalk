@@ -104,7 +104,7 @@ public class HttpsProxyTest {
         assert serverAddress != null && proxyAddress != null;
         client = HttpClients
                 .forSingleAddressViaProxy(serverAddress, proxyAddress)
-                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit()
                 .buildBlocking();
     }
 

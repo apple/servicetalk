@@ -135,7 +135,7 @@ public class AlpnClientAndServerTest {
                 .secure()
                 .disableHostnameVerification()
                 // required for generated test certificates
-                .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
+                .trustManager(DefaultTestCerts::loadServerCAPem)
                 .provider(OPENSSL)
                 .commit()
                 .buildBlocking();

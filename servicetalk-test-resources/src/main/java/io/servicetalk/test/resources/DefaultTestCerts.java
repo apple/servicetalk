@@ -45,11 +45,40 @@ public final class DefaultTestCerts {
     }
 
     /**
-     * Load the mutual auth CA file.
+     * Load the certificate of the Certificate Authority used to sign the {@link #loadServerPem()}.
      *
-     * @return an {@link InputStream} from the mutual auth CA file.
+     * @return an {@link InputStream} whose contents is the certificate of the Certificate Authority used to sign the
+     * {@link #loadServerPem()}.
      */
-    public static InputStream loadMutualAuthCaPem() {
-        return DefaultTestCerts.class.getResourceAsStream("mutual_auth_ca.pem");
+    public static InputStream loadServerCAPem() {
+        return DefaultTestCerts.class.getResourceAsStream("server_ca.pem");
+    }
+
+    /**
+     * Load the client private key.
+     *
+     * @return an {@link InputStream} from the client private key file.
+     */
+    public static InputStream loadClientKey() {
+        return DefaultTestCerts.class.getResourceAsStream("localhost_client.key");
+    }
+
+    /**
+     * Load the client certificate chain file.
+     *
+     * @return an {@link InputStream} from the client certificate chain file.
+     */
+    public static InputStream loadClientPem() {
+        return DefaultTestCerts.class.getResourceAsStream("localhost_client.pem");
+    }
+
+    /**
+     * Load the certificate of the Certificate Authority used to sign the {@link #loadClientPem()}.
+     *
+     * @return an {@link InputStream} whose contents is the certificate of the Certificate Authority used to sign the
+     * {@link #loadClientPem()}.
+     */
+    public static InputStream loadClientCAPem() {
+        return DefaultTestCerts.class.getResourceAsStream("client_ca.pem");
     }
 }
