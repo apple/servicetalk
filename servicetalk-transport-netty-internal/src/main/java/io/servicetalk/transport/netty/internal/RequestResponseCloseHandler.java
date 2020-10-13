@@ -409,8 +409,12 @@ class RequestResponseCloseHandler extends CloseHandler {
     private void serverHalfCloseInbound(final Channel channel) {
         assert !isClient;
         if (!hasAny(state, DISCARDING_SERVER_INPUT, IN_CLOSED)) {
-            // Instead of actual half-closure DuplexChannel.shutdownInput() we discard all further inbound data, but
-            // keep reading to receive FIN from the remote peer.
+            // Instead of actual half-closure via DuplexChannel.shutdownInput() we request the pipeline to discard all
+            // further inbound data until the FIN is received. Incoming FIN from the client-side
+            // (ChannelInputShutdownReadComplete event) notifies server that client received the last response and is
+            // also closing the connection. Therefore, we can complete graceful closure and close server's connection.
+            // DuplexChannel.shutdownInput() silently discards all incoming data at OS level and does not notify netty
+            // when the FIN is received.
             LOGGER.debug("{} Discarding further INBOUND", channel);
             state = unset(state, READ);
             channel.pipeline().fireUserEventTriggered(DiscardFurtherInboundEvent.INSTANCE);
