@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static java.lang.Math.min;
@@ -140,9 +141,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                             if (next == END_OF_STREAM) {
                                 try {
                                     output.finish();
-                                    if (dst.readableBytes() > 0) {
-                                        subscriber.onNext(dst.readSlice(dst.readableBytes()));
-                                    }
+                                    subscriber.onNext(dst.readSlice(dst.readableBytes()));
                                 } catch (IOException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -161,10 +160,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                             }
 
                             output.flush();
-
-                            if (dst.readableBytes() > 0) {
-                                subscriber.onNext(dst.readSlice(dst.readableBytes()));
-                            }
+                            subscriber.onNext(dst.readSlice(dst.readableBytes()));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -233,10 +229,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                     }
 
                     part = streamDecoder.decode(src);
-
-                    if (part != null) {
-                        subscriber.onNext(part);
-                    }
+                    subscriber.onNext(part != null ? part : EMPTY_BUFFER);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

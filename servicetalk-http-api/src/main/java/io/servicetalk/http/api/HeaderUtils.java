@@ -691,7 +691,7 @@ public final class HeaderUtils {
     }
 
     /**
-     * Established a commonly accepted encoding between server & client, according to the supported-encodings
+     * Establish a commonly accepted encoding between server and client, according to the supported-encodings
      * on the server side and the {@code 'Accepted-Encoding'} incoming header on the request.
      * <p>
      * If no supported encodings are configured then the result is always {@link ContentCodings#none()}
@@ -700,7 +700,7 @@ public final class HeaderUtils {
      *
      * @param headers The request headers
      * @param serverSupportedEncodings The supported encodings as configured for the server
-     * @return The {@link ContentCoding} that satisfies both client & server needs.
+     * @return The {@link ContentCoding} that satisfies both client and server needs.
      */
     public static ContentCoding negotiateAcceptedEncoding(final HttpHeaders headers,
                                                           final Set<ContentCoding> serverSupportedEncodings) {
