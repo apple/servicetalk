@@ -16,9 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -30,22 +35,30 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -60,17 +73,24 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 public class GracefulConnectionClosureHandlingTest {
@@ -86,6 +106,10 @@ public class GracefulConnectionClosureHandlingTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
+    private final boolean initiateClosureFromClient;
+    private final AsyncCloseable toClose;
+    private final CountDownLatch onClosing = new CountDownLatch(1);
+
     @Nullable
     private final ProxyTunnel proxyTunnel;
     private final ServerContext serverContext;
@@ -94,21 +118,38 @@ public class GracefulConnectionClosureHandlingTest {
 
     private final CountDownLatch clientConnectionClosed = new CountDownLatch(1);
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
+    private final CountDownLatch serverContextClosed = new CountDownLatch(1);
 
     private final CountDownLatch serverReceivedRequest = new CountDownLatch(1);
     private final BlockingQueue<Integer> serverReceivedRequestPayload = new ArrayBlockingQueue<>(2);
     private final CountDownLatch serverSendResponse = new CountDownLatch(1);
     private final CountDownLatch serverSendResponsePayload = new CountDownLatch(1);
 
-    private final BlockingQueue<StreamingHttpResponse> responses = new ArrayBlockingQueue<>(2);
+    public GracefulConnectionClosureHandlingTest(boolean initiateClosureFromClient, boolean useUds,
+                                                 boolean viaProxy) throws Exception {
+        this.initiateClosureFromClient = initiateClosureFromClient;
 
-    public GracefulConnectionClosureHandlingTest(boolean viaProxy) throws Exception {
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
+        if (useUds) {
+            assumeTrue("Server's IoExecutor does not support UnixDomainSocket",
+                    SERVER_CTX.ioExecutor().isUnixDomainSocketSupported());
+            assumeTrue("Client's IoExecutor does not support UnixDomainSocket",
+                    CLIENT_CTX.ioExecutor().isUnixDomainSocketSupported());
+            assumeFalse("UDS cannot be used via proxy", viaProxy);
+        }
+
+        HttpServerBuilder serverBuilder = (useUds ?
+                HttpServers.forAddress(newSocketAddress()) :
+                HttpServers.forAddress(localAddress(0)))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                .enableWireLogging("servicetalk-tests-server-wire-logger")
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
+                        if (!initiateClosureFromClient) {
+                            ((NettyHttpServer.NettyHttpServerConnection) context).onClosing()
+                                    .whenFinally(onClosing::countDown).subscribe();
+                        }
                         context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
                         return completed();
                     }
@@ -119,7 +160,9 @@ public class GracefulConnectionClosureHandlingTest {
             // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
             proxyTunnel = new ProxyTunnel();
             proxyAddress = proxyTunnel.startProxy();
-            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            serverBuilder.secure()
+                    .protocols("TLSv1.2")
+                    .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
         } else {
             proxyTunnel = null;
         }
@@ -146,23 +189,35 @@ public class GracefulConnectionClosureHandlingTest {
                 writer.write(RESPONSE_CONTENT);
             }
         });
+        serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
 
-        HostAndPort serverAddress = serverHostAndPort(serverContext);
-        client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
+        client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
                 .secure().disableHostnameVerification()
+                .protocols("TLSv1.2")
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .commit() :
-                HttpClients.forSingleAddress(serverAddress))
+                HttpClients.forResolvedAddress(serverContext.listenAddress()))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                .enableWireLogging("servicetalk-tests-client-wire-logger")
+                .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
+                        new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)
                 .buildStreaming();
         connection = client.reserveConnection(client.get("/")).toFuture().get();
         connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
+
+        toClose = initiateClosureFromClient ? connection : serverContext;
     }
 
-    @Parameters(name = "viaProxy={0}")
-    public static Collection<Boolean> data() {
-        return asList(false, true);
+    @Parameters(name = "initiateClosureFromClient={0} useUds={1} viaProxy={2}")
+    public static Collection<Boolean[]> data() {
+        return asList(
+                new Boolean[] {false, false, false},
+                new Boolean[] {false, false, true},
+                new Boolean[] {false, true, false},
+                new Boolean[] {true, false, false},
+                new Boolean[] {true, false, true},
+                new Boolean[] {true, true, false});
     }
 
     @After
@@ -178,7 +233,7 @@ public class GracefulConnectionClosureHandlingTest {
 
     @Test
     public void closeIdleBeforeExchange() throws Exception {
-        connection.closeGracefully();
+        triggerGracefulClosure();
         awaitConnectionClosed();
     }
 
@@ -187,12 +242,11 @@ public class GracefulConnectionClosureHandlingTest {
         serverSendResponse.countDown();
         serverSendResponsePayload.countDown();
 
-        connection.request(newRequest("/first")).subscribe(responses::add);
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = connection.request(newRequest("/first")).toFuture().get();
         assertResponse(response);
         assertResponsePayloadBody(response);
 
-        connection.closeGracefully();
+        triggerGracefulClosure();
         awaitConnectionClosed();
     }
 
@@ -200,13 +254,13 @@ public class GracefulConnectionClosureHandlingTest {
     public void closeAfterRequestMetaDataSentNoResponseReceived() throws Exception {
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
-        connection.request(request).subscribe(responses::add);
+        Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
         serverReceivedRequest.await();
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
         clientSendRequestPayload.countDown();
@@ -221,13 +275,13 @@ public class GracefulConnectionClosureHandlingTest {
     @Test
     public void closeAfterFullRequestSentNoResponseReceived() throws Exception {
         StreamingHttpRequest request = newRequest("/first");
-        connection.request(request).subscribe(responses::add);
+        Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
         serverReceivedRequest.await();
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
         assertRequestPayloadBody(request);
@@ -242,13 +296,13 @@ public class GracefulConnectionClosureHandlingTest {
     public void closeAfterRequestMetaDataSentResponseMetaDataReceived() throws Exception {
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
-        connection.request(request).subscribe(responses::add);
+        Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         clientSendRequestPayload.countDown();
         serverSendResponsePayload.countDown();
@@ -262,13 +316,13 @@ public class GracefulConnectionClosureHandlingTest {
     @Test
     public void closeAfterFullRequestSentResponseMetaDataReceived() throws Exception {
         StreamingHttpRequest request = newRequest("/first");
-        connection.request(request).subscribe(responses::add);
+        Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         serverSendResponsePayload.countDown();
         assertRequestPayloadBody(request);
@@ -282,10 +336,10 @@ public class GracefulConnectionClosureHandlingTest {
     public void closeAfterRequestMetaDataSentFullResponseReceived() throws Exception {
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
         StreamingHttpRequest request = newRequest("/first", clientSendRequestPayload);
-        connection.request(request).subscribe(responses::add);
+        Future<StreamingHttpResponse> responseFuture = connection.request(request).toFuture();
 
         serverSendResponse.countDown();
-        StreamingHttpResponse response = responses.take();
+        StreamingHttpResponse response = responseFuture.get();
         assertResponse(response);
 
         serverSendResponsePayload.countDown();
@@ -302,7 +356,7 @@ public class GracefulConnectionClosureHandlingTest {
         }).ignoreElements().subscribe(responsePayloadComplete::countDown);
         responsePayloadReceived.await();
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         clientSendRequestPayload.countDown();
         responsePayloadComplete.await();
@@ -314,30 +368,51 @@ public class GracefulConnectionClosureHandlingTest {
 
     @Test
     public void closePipelinedAfterTwoRequestsSentBeforeAnyResponseReceived() throws Exception {
-        StreamingHttpRequest zeroRequest = newRequest("/zero");
-        connection.request(zeroRequest).subscribe(responses::add);
+        StreamingHttpRequest firstRequest = newRequest("/first");
+        Future<StreamingHttpResponse> firstResponseFuture = connection.request(firstRequest).toFuture();
         serverReceivedRequest.await();
 
-        CountDownLatch firstRequestSent = new CountDownLatch(1);
-        StreamingHttpRequest firstRequest = newRequest("/first")
-                .transformPayloadBody(payload -> payload.whenOnComplete(firstRequestSent::countDown));
-        connection.request(firstRequest).subscribe(responses::add);
-        firstRequestSent.await();
+        CountDownLatch secondRequestSent = new CountDownLatch(1);
+        StreamingHttpRequest secondRequest = newRequest("/second")
+                .transformPayloadBody(payload -> payload.whenOnComplete(secondRequestSent::countDown));
+        Future<StreamingHttpResponse> secondResponseFuture = connection.request(secondRequest).toFuture();
+        secondRequestSent.await();
 
-        connection.closeAsyncGracefully().subscribe();
+        triggerGracefulClosure();
 
         serverSendResponse.countDown();
         serverSendResponsePayload.countDown();
 
-        StreamingHttpResponse zeroResponse = responses.take();
-        assertResponse(zeroResponse);
-        assertResponsePayloadBody(zeroResponse);
-        assertRequestPayloadBody(zeroRequest);
-
-        StreamingHttpResponse firstResponse = responses.take();
+        StreamingHttpResponse firstResponse = firstResponseFuture.get();
         assertResponse(firstResponse);
         assertResponsePayloadBody(firstResponse);
         assertRequestPayloadBody(firstRequest);
+
+        if (initiateClosureFromClient) {
+            StreamingHttpResponse secondResponse = secondResponseFuture.get();
+            assertResponse(secondResponse);
+            assertResponsePayloadBody(secondResponse);
+            assertRequestPayloadBody(secondRequest);
+        } else {
+            // In case of server graceful closure the second response may complete successfully if the second request
+            // reached the server before the closure was triggered, or may fail if it's not.
+            StreamingHttpResponse secondResponse = null;
+            try {
+                secondResponse = secondResponseFuture.get();
+            } catch (ExecutionException e) {
+                if (proxyTunnel != null) {
+                    assertThat(e.getCause(), anyOf(instanceOf(ClosedChannelException.class),
+                            instanceOf(IOException.class)));
+                } else {
+                    assertClosedChannelException(secondResponseFuture::get, CHANNEL_CLOSED_INBOUND);
+                }
+            }
+            if (secondResponse != null) {
+                assertResponse(secondResponse);
+                assertResponsePayloadBody(secondResponse);
+                assertRequestPayloadBody(secondRequest);
+            }
+        }
 
         awaitConnectionClosed();
         assertNextRequestFails();
@@ -381,14 +456,53 @@ public class GracefulConnectionClosureHandlingTest {
         assertThat(valueOf(actualContentLength), contentEqualTo(contentLengthHeader));
     }
 
+    private void triggerGracefulClosure() throws Exception {
+        toClose.closeAsyncGracefully().subscribe();
+        onClosing.await();
+    }
+
     private void awaitConnectionClosed() throws Exception {
         clientConnectionClosed.await();
         serverConnectionClosed.await();
+        if (!initiateClosureFromClient) {
+            serverContextClosed.await();
+        }
     }
 
     private void assertNextRequestFails() {
-        Exception e = assertThrows(ExecutionException.class,
-                () -> connection.request(connection.get("/next").addHeader(CONTENT_LENGTH, ZERO)).toFuture().get());
-        assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
+        assertClosedChannelException(
+                () -> connection.request(connection.get("/next").addHeader(CONTENT_LENGTH, ZERO)).toFuture().get(),
+                initiateClosureFromClient ? GRACEFUL_USER_CLOSING : CHANNEL_CLOSED_INBOUND);
+    }
+
+    private void assertClosedChannelException(ThrowingRunnable runnable, CloseEvent expectedCloseEvent) {
+        Exception e = assertThrows(ExecutionException.class, runnable);
+        Throwable cause = e.getCause();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+        while (cause != null && !(cause instanceof CloseEventObservedException)) {
+            cause = cause.getCause();
+        }
+        assertThat("Exception is not enhanced with CloseEvent", cause, is(notNullValue()));
+        assertThat(((CloseEventObservedException) cause).event(), is(expectedCloseEvent));
+    }
+
+    private static class OnClosingConnectionFactoryFilter<ResolvedAddress extends SocketAddress>
+            extends DelegatingConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
+
+        private final CountDownLatch onClosing;
+
+        OnClosingConnectionFactoryFilter(ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> cf,
+                                         CountDownLatch onClosing) {
+            super(cf);
+            this.onClosing = requireNonNull(onClosing);
+        }
+
+        @Override
+        public Single<FilterableStreamingHttpConnection> newConnection(ResolvedAddress address,
+                                                                       @Nullable final TransportObserver observer) {
+            return delegate().newConnection(address, observer).whenOnSuccess(connection ->
+                    ((NettyConnectionContext) connection.connectionContext()).onClosing()
+                            .whenFinally(onClosing::countDown).subscribe());
+        }
     }
 }

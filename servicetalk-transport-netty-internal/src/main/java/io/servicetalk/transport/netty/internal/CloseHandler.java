@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,8 @@ public abstract class CloseHandler {
     public abstract void protocolClosingOutbound(ChannelHandlerContext ctx);
 
     /**
+     * Registers a handler for {@link CloseEvent}.
+     *
      * @param channel the {@link Channel} for which this event handler is registering
      * @param eventHandler receives {@link CloseEvent}, to be emitted from the {@link EventLoop} for the {@link Channel}
      */
@@ -144,7 +146,7 @@ public abstract class CloseHandler {
      *
      * @param channel {@link Channel}
      */
-    abstract void userClosing(Channel channel);
+    abstract void gracefulUserClosing(Channel channel);
 
     /**
      * These events indicate an event was observed from the protocol or {@link Channel} that indicates the end of the
@@ -164,7 +166,7 @@ public abstract class CloseHandler {
         /**
          * User initiated close command, depends on the implementation but usually resembles outbound protocol close.
          */
-        USER_CLOSING("The close* method was called in the local application."),
+        GRACEFUL_USER_CLOSING("The graceful close* method was called in the local application."),
         /**
          * Outbound {@link SocketChannel} shutdown observed.
          */
@@ -250,7 +252,7 @@ public abstract class CloseHandler {
         }
 
         @Override
-        void userClosing(final Channel channel) {
+        void gracefulUserClosing(final Channel channel) {
             channel.close();
         }
 
@@ -308,7 +310,7 @@ public abstract class CloseHandler {
         }
 
         @Override
-        void userClosing(final Channel channel) {
+        void gracefulUserClosing(final Channel channel) {
             channel.close();
         }
 
@@ -342,10 +344,18 @@ public abstract class CloseHandler {
         }
     }
 
+    private abstract static class NettyUserEvent {
+
+        @Override
+        public String toString() {
+            return this.getClass().getName();
+        }
+    }
+
     /**
      * Netty UserEvent to indicate the end of a outbound data was observed at the transport.
      */
-    static final class OutboundDataEndEvent {
+    static final class OutboundDataEndEvent extends NettyUserEvent {
         /**
          * Netty UserEvent instance to indicate an outbound end of data.
          */
@@ -359,10 +369,21 @@ public abstract class CloseHandler {
     /**
      * Netty UserEvent to indicate the output writes should be aborted because the channel is closing.
      */
-    static final class AbortWritesEvent {
+    static final class AbortWritesEvent extends NettyUserEvent {
         static final AbortWritesEvent INSTANCE = new AbortWritesEvent();
 
         private AbortWritesEvent() {
+            // No instances.
+        }
+    }
+
+    /**
+     * Netty UserEvent to indicate the further inbound data should be discarded.
+     */
+    public static final class DiscardFurtherInboundEvent extends NettyUserEvent {
+        static final DiscardFurtherInboundEvent INSTANCE = new DiscardFurtherInboundEvent();
+
+        private DiscardFurtherInboundEvent() {
             // No instances.
         }
     }

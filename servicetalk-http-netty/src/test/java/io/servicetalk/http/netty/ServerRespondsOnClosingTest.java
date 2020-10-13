@@ -15,81 +15,80 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.netty.FlushStrategyOnServerTest.OutboundWriteEventsInterceptor;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class ServerRespondsOnClosingTest {
 
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
+    private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
+            DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
+    private static final String RESPONSE_PAYLOAD_BODY = "Hello World";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final OutboundWriteEventsInterceptor interceptor;
     private final EmbeddedDuplexChannel channel;
     private final NettyHttpServerConnection serverConnection;
-
-    private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
-    private final CountDownLatch releaseResponse = new CountDownLatch(1);
+    private final Queue<Exchange> requests = new ArrayDeque<>();
 
     public ServerRespondsOnClosingTest() throws Exception {
-        interceptor = new OutboundWriteEventsInterceptor();
-        channel = new EmbeddedDuplexChannel(false, interceptor);
-
+        channel = new EmbeddedDuplexChannel(false);
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
-                fromNettyEventLoop(channel.eventLoop()), EXECUTOR_RULE.executor(), defaultStrategy());
+                fromNettyEventLoop(channel.eventLoop()), immediate(), noOffloadsStrategy());
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
         httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-server-wire-logger");
         ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
-        BlockingHttpService service = (ctx, request, responseFactory) -> {
-            releaseResponse.await();
-            final HttpResponse response = responseFactory.ok().payloadBody("Hello World", textSerializer());
-            if (request.hasQueryParameter("serverShouldClose")) {
-                response.addHeader(CONNECTION, CLOSE);
-            }
-            return response;
+        HttpService service = (ctx, request, responseFactory) -> {
+            Processor<HttpResponse, HttpResponse> responseProcessor = newSingleProcessor();
+            requests.add(new Exchange(request, responseProcessor));
+            return fromSource(responseProcessor);
         };
         serverConnection = initChannel(channel, httpExecutionContext, config, new TcpServerChannelInitializer(
                 config.tcpConfig(), connectionObserver),
-                toStreamingHttpService(service, defaultStreamingInfluencer()).adaptor(), true,
+                toStreamingHttpService(service, strategy -> strategy).adaptor(), true,
                 connectionObserver).toFuture().get();
-        serverConnection.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
         serverConnection.process(true);
     }
 
@@ -98,6 +97,7 @@ public class ServerRespondsOnClosingTest {
         try {
             serverConnection.closeAsyncGracefully().toFuture().get();
         } finally {
+            channel.finishAndReleaseAll();
             channel.close().syncUninterruptibly();
         }
     }
@@ -105,10 +105,11 @@ public class ServerRespondsOnClosingTest {
     @Test
     public void protocolClosingInboundPipelinedFirstInitiatesClosure() throws Exception {
         sendRequest("/first", true);
+        // The following request after "Connection: close" header violates the spec, but we want to verify that server
+        // discards those requests and do not respond to them:
         sendRequest("/second", false);
-        releaseResponse.countDown();
-        // Verify that the server responded:
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // only first
+        handleRequests();
+        verifyResponse("/first");
         assertServerConnectionClosed();
     }
 
@@ -116,10 +117,9 @@ public class ServerRespondsOnClosingTest {
     public void protocolClosingInboundPipelinedSecondInitiatesClosure() throws Exception {
         sendRequest("/first", false);
         sendRequest("/second", true);
-        releaseResponse.countDown();
-        // Verify that the server responded:
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
+        handleRequests();
+        verifyResponse("/first");
+        verifyResponse("/second");
         assertServerConnectionClosed();
     }
 
@@ -127,9 +127,10 @@ public class ServerRespondsOnClosingTest {
     public void protocolClosingOutboundPipelinedFirstInitiatesClosure() throws Exception {
         sendRequest("/first?serverShouldClose=true", false);
         sendRequest("/second", false);
-        releaseResponse.countDown();
-        // Verify that the server responded:
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // only first
+        handleRequests();
+        verifyResponse("/first");
+        // Second request is discarded
+        respondWithFIN();
         assertServerConnectionClosed();
     }
 
@@ -137,10 +138,10 @@ public class ServerRespondsOnClosingTest {
     public void protocolClosingOutboundPipelinedSecondInitiatesClosure() throws Exception {
         sendRequest("/first", false);
         sendRequest("/second?serverShouldClose=true", false);
-        releaseResponse.countDown();
-        // Verify that the server responded:
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
+        handleRequests();
+        verifyResponse("/first");
+        verifyResponse("/second");
+        respondWithFIN();
         assertServerConnectionClosed();
     }
 
@@ -150,12 +151,37 @@ public class ServerRespondsOnClosingTest {
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
         serverConnection.onClosing().toFuture().get();
-        releaseResponse.countDown();
-        // Verify that the server responded:
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // first
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3)); // second
-        channel.awaitOutputShutdown();
-        channel.shutdownInput();    // simulate FIN from the client
+        sendRequest("/third", false);   // should be discarded
+        handleRequests();
+        verifyResponse("/first");
+        verifyResponse("/second");
+        respondWithFIN();
+        assertServerConnectionClosed();
+    }
+
+    @Test
+    public void gracefulClosurePipelinedDiscardPartialRequest() throws Exception {
+        sendRequest("/first", false);
+        // Send only initial line with CRLF that should hang in ByteToMessage cumulation buffer and will be discarded:
+        channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET /second HTTP/1.1"));
+        serverConnection.closeAsyncGracefully().subscribe();
+        serverConnection.onClosing().toFuture().get();
+        handleRequests();
+        verifyResponse("/first");
+        respondWithFIN();
+        assertServerConnectionClosed();
+    }
+
+    @Test
+    public void gracefulClosurePipelinedFirstResponseClosesConnection() throws Exception {
+        sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
+        sendRequest("/second", false);
+        serverConnection.closeAsyncGracefully().subscribe();
+        serverConnection.onClosing().toFuture().get();
+        sendRequest("/third", false);   // should be discarded
+        handleRequests();
+        verifyResponse("/first");
+        respondWithFIN();
         assertServerConnectionClosed();
     }
 
@@ -167,9 +193,49 @@ public class ServerRespondsOnClosingTest {
                 "\r\n"));
     }
 
+    private void handleRequests() {
+        Exchange exchange;
+        while ((exchange = requests.poll()) != null) {
+            HttpRequest request = exchange.request;
+            HttpResponse response = RESPONSE_FACTORY.ok()
+                    .setHeader("Request-Path", request.path())
+                    .payloadBody(RESPONSE_PAYLOAD_BODY, textSerializer());
+            if (request.hasQueryParameter("serverShouldClose")) {
+                response.setHeader(CONNECTION, CLOSE);
+            }
+            exchange.responseProcessor.onSuccess(response);
+        }
+    }
+
+    private void verifyResponse(String requestPath) {
+        // 3 items expected: meta-data, payload body, trailers
+        assertThat("Not a full response was written", channel.outboundMessages(), hasSize(greaterThanOrEqualTo(3)));
+        ByteBuf metaData = channel.readOutbound();
+        assertThat("Unexpected response meta-data", metaData.toString(US_ASCII), containsString(requestPath));
+        ByteBuf payloadBody = channel.readOutbound();
+        assertThat("Unexpected response payload body", payloadBody.toString(US_ASCII), equalTo(RESPONSE_PAYLOAD_BODY));
+        ByteBuf trailers = channel.readOutbound();
+        assertThat("Unexpected response trailers object", trailers.readableBytes(), is(0));
+    }
+
+    private void respondWithFIN() {
+        assertThat("Server did not shutdown output", channel.isOutputShutdown(), is(true));
+        channel.shutdownInput();    // simulate FIN from the client
+    }
+
     private void assertServerConnectionClosed() throws Exception {
-        serverConnectionClosed.await();
-        assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
+        serverConnection.onClose().toFuture().get();
+        assertThat("Unexpected writes", channel.outboundMessages(), hasSize(0));
         assertThat("Channel is not closed", channel.isOpen(), is(false));
+    }
+
+    private static final class Exchange {
+        final HttpRequest request;
+        final Processor<HttpResponse, HttpResponse> responseProcessor;
+
+        Exchange(HttpRequest request, Processor<HttpResponse, HttpResponse> responseProcessor) {
+            this.request = request;
+            this.responseProcessor = responseProcessor;
+        }
     }
 }

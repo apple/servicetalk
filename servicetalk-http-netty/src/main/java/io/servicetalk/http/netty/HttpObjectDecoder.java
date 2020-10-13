@@ -40,10 +40,13 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.TooLongFrameException;
@@ -502,6 +505,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 default:
                     break;
             }
+        } else if (evt instanceof DiscardFurtherInboundEvent) {
+            resetNow();
+            ctx.pipeline().replace(HttpObjectDecoder.this, DiscardInboundHandler.INSTANCE.toString(),
+                    DiscardInboundHandler.INSTANCE);
+            ctx.channel().config().setAutoRead(true);
         }
         super.userEventTriggered(ctx, evt);
     }
@@ -843,5 +851,19 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static boolean isObsText(final byte value) {
         return value >= (byte) 0xA0 && value <= (byte) 0xFF; // xA0-xFF
+    }
+
+    @Sharable
+    private static final class DiscardInboundHandler extends SimpleChannelInboundHandler<Object> {
+        static final ChannelInboundHandler INSTANCE = new DiscardInboundHandler();
+
+        private DiscardInboundHandler() {
+            super(/* autoRelease */ true);
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
+            // noop
+        }
     }
 }
