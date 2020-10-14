@@ -152,6 +152,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> {
+                assert channel.eventLoop().inEventLoop();
                 if (closeReason == null) {
                     closeReason = evt;
                     // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
@@ -381,25 +382,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
-                final Channel channel = channel();
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, demandEstimatorSupplier.get(),
+                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    notifyConnected(channel);
-                    toSource(composeFlushes(channel, write, flushStrategySupplier.get(), writeObserver))
+                    toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
-    }
-
-    private void notifyConnected(final Channel channel) {
-        final EventLoop eventLoop = channel.eventLoop();
-        if (eventLoop.inEventLoop()) {
-            closeHandler.notifyConnected(channel);
-        } else {
-            eventLoop.execute(() -> closeHandler.notifyConnected(channel));
-        }
     }
 
     /**

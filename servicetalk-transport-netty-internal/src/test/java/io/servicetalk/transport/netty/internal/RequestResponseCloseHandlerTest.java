@@ -119,7 +119,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -137,7 +136,6 @@ import static org.mockito.Mockito.when;
 public class RequestResponseCloseHandlerTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestResponseCloseHandlerTest.class);
-    private static final String MOCKED_CHANNEL_ID = "[id: 0xmocked, L:mocked - R:mocked]";
 
     @RunWith(Parameterized.class)
     public static class Scenarios {
@@ -373,7 +371,6 @@ public class RequestResponseCloseHandlerTest {
                     observedEvent = e;
                 }
             });
-            h.notifyConnected(channel);
         }
 
         private void assertCanRead() {
@@ -521,62 +518,6 @@ public class RequestResponseCloseHandlerTest {
 
         private static List<Events> e(Events... args) {
             return asList(args);
-        }
-    }
-
-    @RunWith(Parameterized.class)
-    public static class NotifyConnectedTest {
-
-        private final boolean isClient;
-        private final Channel channel;
-        private final RequestResponseCloseHandler ch;
-        @Nullable
-        private CloseEvent observedEvent;
-
-        public NotifyConnectedTest(boolean isClient) {
-            this.isClient = isClient;
-            channel = mock(SocketChannel.class, MOCKED_CHANNEL_ID);
-
-            SocketChannelConfig scc = mock(SocketChannelConfig.class);
-            when(channel.config()).thenReturn(scc);
-            when(scc.getOption(ALLOW_HALF_CLOSURE)).thenReturn(TRUE);
-
-            EventLoop loop = mock(EventLoop.class);
-            when(loop.inEventLoop()).thenReturn(true);
-            when(channel.eventLoop()).thenReturn(loop);
-
-            ChannelPipeline pipeline = mock(ChannelPipeline.class);
-            when(channel.pipeline()).thenReturn(pipeline);
-
-            ch = new RequestResponseCloseHandler(isClient);
-            ch.registerEventHandler(channel, evt -> {
-                if (observedEvent == null) {
-                    LOGGER.debug("Emitted: {}", evt);
-                    observedEvent = evt;
-                }
-            });
-        }
-
-        @Parameters(name = "isClient={0}")
-        public static Boolean[] data() {
-            return new Boolean[]{true, false};
-        }
-
-        @Test
-        public void closeEventBeforeNotifyConnected() {
-            ch.gracefulUserClosing(channel);
-            if (!isClient) {
-                assertThat("Unexpected CloseEvent", observedEvent, is(nullValue()));
-                ch.notifyConnected(channel);
-            }
-            assertThat("Unexpected CloseEvent", observedEvent, is(GRACEFUL_USER_CLOSING));
-        }
-
-        @Test
-        public void closeEventAfterNotifyConnected() {
-            ch.notifyConnected(channel);
-            ch.gracefulUserClosing(channel);
-            assertThat("Unexpected CloseEvent", observedEvent, is(GRACEFUL_USER_CLOSING));
         }
     }
 
