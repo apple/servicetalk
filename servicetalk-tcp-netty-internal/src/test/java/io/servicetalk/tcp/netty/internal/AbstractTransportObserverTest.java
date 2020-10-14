@@ -87,7 +87,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
     static ClientSecurityConfig defaultClientSecurityConfig(SslProvider provider) {
         ClientSecurityConfig config = new ClientSecurityConfig("foo", -1);
         config.disableHostnameVerification();
-        config.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
+        config.trustManager(DefaultTestCerts::loadServerCAPem);
         config.provider(provider);
         config.protocols("TLSv1.2");
         return config;

@@ -191,7 +191,7 @@ public class GracefulConnectionClosureHandlingTest {
 
         client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
                 .secure().disableHostnameVerification()
-                .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
+                .trustManager(DefaultTestCerts::loadServerCAPem)
                 .commit() :
                 HttpClients.forResolvedAddress(serverContext.listenAddress()))
                 .ioExecutor(CLIENT_CTX.ioExecutor())

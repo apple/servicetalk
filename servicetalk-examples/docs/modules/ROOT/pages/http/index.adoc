@@ -124,6 +124,19 @@ Using the following classes:
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same
 across all the HTTP APIs.
 
+[#Mutual-TLS]
+== Mutual TLS
+
+This example demonstrates how client and server can be configured to do mutual authentication via TLS.
+
+Using the following classes:
+
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpServerMutualTLS] - A server that sets the trust manager and key manager, and requires client authentication.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpClientMutualTLS] - A client that sets the trust manager and key manager.
+
+NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
+the same across all the HTTP APIs.
+
 [#HTTP2]
 == HTTP/2
 

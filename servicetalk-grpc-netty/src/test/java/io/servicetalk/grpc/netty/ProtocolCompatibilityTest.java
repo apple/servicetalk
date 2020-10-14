@@ -689,7 +689,7 @@ public class ProtocolCompatibilityTest {
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
         if (ssl) {
             builder.secure().disableHostnameVerification().provider(OPENSSL)
-                    .trustManager(DefaultTestCerts::loadServerPem).commit();
+                    .trustManager(DefaultTestCerts::loadServerCAPem).commit();
         }
         return builder.build(new Compat.ClientFactory());
     }

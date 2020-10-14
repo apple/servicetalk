@@ -36,6 +36,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:helloworld",
         "servicetalk-examples:grpc:routeguide",
         "servicetalk-examples:http:helloworld",
+        "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:http2",
         "servicetalk-examples:http:jaxrs",
         "servicetalk-examples:http:metadata",
@@ -84,3 +85,4 @@ project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http
 project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
+project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"

@@ -17,13 +17,26 @@
 
 set -e
 
-# Generate a new, self-signed root CA
-openssl req -new -x509 -days 30 -nodes -subj "/CN=ServiceTalkTestRoot" -newkey rsa:2048 -sha512 -keyout mutual_auth_ca.key -out mutual_auth_ca.pem
+# Server
+## Generate a new, self-signed root CA for the server
+openssl req -new -x509 -days 30 -nodes -subj "/CN=ServiceTalkTestServerRoot" -newkey rsa:2048 -sha512 -keyout server_ca.key -out server_ca.pem
 
-# Generate a certificate/key for the server to use for Hostname Verification via localhost
+## Generate a certificate/key for the server to use for Hostname Verification via localhost
 openssl req -new -keyout localhost_server_rsa.key -nodes -newkey rsa:2048 -subj "/CN=localhost" | \
-    openssl x509 -req -CAkey mutual_auth_ca.key -CA mutual_auth_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out localhost_server.pem
+    openssl x509 -req -CAkey server_ca.key -CA server_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out localhost_server.pem
 openssl pkcs8 -topk8 -inform PEM -outform PEM -in localhost_server_rsa.key -nocrypt -out localhost_server.key
 
-# Clean up intermediate files
-rm mutual_auth_ca.key localhost_server_rsa.key
+## Clean up intermediate files
+rm server_ca.key localhost_server_rsa.key
+
+# Client
+## Generate a new, self-signed root CA for the server
+openssl req -new -x509 -days 30 -nodes -subj "/CN=ServiceTalkTestClientRoot" -newkey rsa:2048 -sha512 -keyout client_ca.key -out client_ca.pem
+
+## Generate a certificate/key for the server to use for Hostname Verification via localhost
+openssl req -new -keyout localhost_client_rsa.key -nodes -newkey rsa:2048 -subj "/CN=localhost" | \
+    openssl x509 -req -CAkey client_ca.key -CA client_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out localhost_client.pem
+openssl pkcs8 -topk8 -inform PEM -outform PEM -in localhost_client_rsa.key -nocrypt -out localhost_client.key
+
+## Clean up intermediate files
+rm client_ca.key localhost_client_rsa.key
