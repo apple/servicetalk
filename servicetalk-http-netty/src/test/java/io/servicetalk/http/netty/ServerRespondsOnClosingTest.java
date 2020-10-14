@@ -253,7 +253,7 @@ public class ServerRespondsOnClosingTest {
     }
 
     private void assertServerConnectionClosed() throws Exception {
-        // serverConnection.onClose().toFuture().get();
+        serverConnection.onClose().toFuture().get();
         assertThat("Unexpected writes", channel.outboundMessages(), hasSize(0));
         assertThat("Channel is not closed", channel.isOpen(), is(false));
     }
