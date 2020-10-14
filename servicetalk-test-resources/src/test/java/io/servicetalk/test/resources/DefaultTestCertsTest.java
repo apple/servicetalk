@@ -33,19 +33,37 @@ public class DefaultTestCertsTest {
     @Test
     public void loadServerKey() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerKey());
-        assertEquals(1703, contents.length());
+        assertEquals(1707, contents.length());
     }
 
     @Test
     public void loadServerPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerPem());
-        assertEquals(984, contents.length());
+        assertEquals(992, contents.length());
     }
 
     @Test
-    public void loadMutualAuthCaPem() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadMutualAuthCaPem());
-        assertEquals(1004, contents.length());
+    public void loadServerCAPem() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadServerCAPem());
+        assertEquals(1020, contents.length());
+    }
+
+    @Test
+    public void loadClientKey() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadClientKey());
+        assertEquals(1707, contents.length());
+    }
+
+    @Test
+    public void loadClientPem() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadClientPem());
+        assertEquals(992, contents.length());
+    }
+
+    @Test
+    public void loadClientCAPem() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadClientCAPem());
+        assertEquals(1020, contents.length());
     }
 
     private String readFully(final InputStream inputStream) throws IOException {

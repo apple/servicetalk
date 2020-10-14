@@ -112,7 +112,7 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
                 serverConfig.secure(serverSecurityConfig);
                 break;
             case UNTRUSTED_CLIENT_CERTIFICATE:
-                clientSecurityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+                clientSecurityConfig.keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey);
                 clientConfig.secure(clientSecurityConfig);
                 serverSecurityConfig.clientAuth(REQUIRE);
                 serverConfig.secure(serverSecurityConfig);

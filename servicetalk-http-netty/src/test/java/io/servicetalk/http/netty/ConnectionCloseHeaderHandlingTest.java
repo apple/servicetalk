@@ -188,7 +188,7 @@ public class ConnectionCloseHeaderHandlingTest {
             client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
                     .secure().disableHostnameVerification()
                     .protocols("TLSv1.2")   // FIXME: remove after https://github.com/apple/servicetalk/pull/1156
-                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
+                    .trustManager(DefaultTestCerts::loadServerCAPem)
                     .commit() :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
                     .ioExecutor(CLIENT_CTX.ioExecutor())

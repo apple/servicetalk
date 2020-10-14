@@ -166,7 +166,7 @@ public abstract class AbstractNettyHttpServerTest {
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
             clientBuilder.secure().disableHostnameVerification()
-                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
+                    .trustManager(DefaultTestCerts::loadServerCAPem).commit();
         }
         if (clientTransportObserver != NoopTransportObserver.INSTANCE) {
             clientBuilder.appendConnectionFactoryFilter(

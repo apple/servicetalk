@@ -115,7 +115,7 @@ public class Tls13Test {
                     .protocols(TLS1_3)
                     .disableHostnameVerification()
                     // required for generated test certificates
-                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
+                    .trustManager(DefaultTestCerts::loadServerCAPem)
                     .provider(clientSslProvider);
             if (cipher != null) {
                 clientSecurityConfigurator.ciphers(singletonList(cipher));
