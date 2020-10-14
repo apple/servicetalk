@@ -381,15 +381,25 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
+                final Channel channel = channel();
+                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler, writeObserver);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    closeHandler.notifyConnected(channel());
-                    toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
+                    notifyConnected(channel);
+                    toSource(composeFlushes(channel, write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
+    }
+
+    private void notifyConnected(final Channel channel) {
+        final EventLoop eventLoop = channel.eventLoop();
+        if (eventLoop.inEventLoop()) {
+            closeHandler.notifyConnected(channel);
+        } else {
+            eventLoop.execute(() -> closeHandler.notifyConnected(channel));
+        }
     }
 
     /**

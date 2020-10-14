@@ -150,6 +150,7 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     void notifyConnected(final Channel channel) {
+        assert channel.eventLoop().inEventLoop();
         state = set(state, CONNECTED);
         final CloseEvent event = closeEvent;
         if (!isClient && event != null) {
