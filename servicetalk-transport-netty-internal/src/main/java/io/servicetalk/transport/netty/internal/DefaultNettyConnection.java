@@ -152,7 +152,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> {
-                assert channel.eventLoop().inEventLoop();
                 if (closeReason == null) {
                     closeReason = evt;
                     // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
