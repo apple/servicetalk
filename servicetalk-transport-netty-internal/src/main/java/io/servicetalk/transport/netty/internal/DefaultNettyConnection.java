@@ -134,13 +134,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private final ChannelConfig parentChannelConfig;
     private volatile DataObserver dataObserver;
+    private final boolean isClient;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    Predicate<Read> terminalPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig,
-                                   DataObserver dataObserver) {
+                                   DataObserver dataObserver, boolean isClient) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
         this.readPublisher = registerReadObserver(nettyChannelPublisher.recoverWith(this::enrichErrorPublisher));
@@ -180,6 +181,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.parentChannelConfig = parentChannelConfig;
         this.protocol = requireNonNull(protocol);
         this.dataObserver = dataObserver;
+        this.isClient = isClient;
     }
 
     /**
@@ -198,6 +200,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s.
      * @param streamObserver {@link StreamObserver} to report internal events.
+     * @param isClient tells if this {@link Channel} is for the client.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -207,10 +210,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
-            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver) {
+            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
-                sslSession, parentChannelConfig, streamObserver.streamEstablished());
+                sslSession, parentChannelConfig, streamObserver.streamEstablished(), isClient);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
         return connection;
@@ -232,6 +235,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
      * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param observer {@link ConnectionObserver} to report network events.
+     * @param isClient tells if this {@link Channel} is for the client.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -241,7 +245,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
-            ConnectionObserver observer) {
+            ConnectionObserver observer, boolean isClient) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -252,7 +256,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                            executionStrategy, protocol, null, null, NoopDataObserver.INSTANCE);
+                            executionStrategy, protocol, null, null, NoopDataObserver.INSTANCE, isClient);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -471,10 +475,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
-            // It is also possible that Channel is in closing state, we should abort new writes if a closeReason was
-            // observed:
+            // It is also possible that Channel is in closing state, we should abort new writes from the client-side
+            // if a closeReason was observed:
             CloseEvent closeReason = this.closeReason;
-            if (closeReason != null || !channel().isActive()) {
+            if ((isClient && closeReason != null) || !channel().isActive()) {
                 final StacklessClosedChannelException e = StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "failIfWriteActive(...)");
                 newChannelOutboundListener.channelClosed(closeReason == null ? e : closeReason.wrapError(e, channel()));
