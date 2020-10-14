@@ -53,6 +53,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -71,6 +72,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
@@ -95,6 +97,8 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class GracefulConnectionClosureHandlingTest {
 
+    private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
+
     @ClassRule
     public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
     @ClassRule
@@ -106,6 +110,7 @@ public class GracefulConnectionClosureHandlingTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
+    private final HttpProtocol protocol;
     private final boolean initiateClosureFromClient;
     private final AsyncCloseable toClose;
     private final CountDownLatch onClosing = new CountDownLatch(1);
@@ -125,8 +130,9 @@ public class GracefulConnectionClosureHandlingTest {
     private final CountDownLatch serverSendResponse = new CountDownLatch(1);
     private final CountDownLatch serverSendResponsePayload = new CountDownLatch(1);
 
-    public GracefulConnectionClosureHandlingTest(boolean initiateClosureFromClient, boolean useUds,
-                                                 boolean viaProxy) throws Exception {
+    public GracefulConnectionClosureHandlingTest(HttpProtocol protocol, boolean initiateClosureFromClient,
+                                                 boolean useUds, boolean viaProxy) throws Exception {
+        this.protocol = protocol;
         this.initiateClosureFromClient = initiateClosureFromClient;
 
         if (useUds) {
@@ -136,10 +142,12 @@ public class GracefulConnectionClosureHandlingTest {
                     CLIENT_CTX.ioExecutor().isUnixDomainSocketSupported());
             assumeFalse("UDS cannot be used via proxy", viaProxy);
         }
+        assumeFalse("Proxy is not supported with HTTP/2", protocol == HTTP_2 && viaProxy);
 
         HttpServerBuilder serverBuilder = (useUds ?
                 HttpServers.forAddress(newSocketAddress()) :
                 HttpServers.forAddress(localAddress(0)))
+                .protocols(protocol.config)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .enableWireLogging("servicetalk-tests-server-wire-logger")
@@ -147,7 +155,7 @@ public class GracefulConnectionClosureHandlingTest {
                     @Override
                     public Completable accept(final ConnectionContext context) {
                         if (!initiateClosureFromClient) {
-                            ((NettyHttpServer.NettyHttpServerConnection) context).onClosing()
+                            ((NettyConnectionContext) context).onClosing()
                                     .whenFinally(onClosing::countDown).subscribe();
                         }
                         context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
@@ -197,6 +205,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .commit() :
                 HttpClients.forResolvedAddress(serverContext.listenAddress()))
+                .protocols(protocol.config)
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .enableWireLogging("servicetalk-tests-client-wire-logger")
@@ -209,15 +218,24 @@ public class GracefulConnectionClosureHandlingTest {
         toClose = initiateClosureFromClient ? connection : serverContext;
     }
 
-    @Parameters(name = "initiateClosureFromClient={0} useUds={1} viaProxy={2}")
-    public static Collection<Boolean[]> data() {
-        return asList(
-                new Boolean[] {false, false, false},
-                new Boolean[] {false, false, true},
-                new Boolean[] {false, true, false},
-                new Boolean[] {true, false, false},
-                new Boolean[] {true, false, true},
-                new Boolean[] {true, true, false});
+    @Parameters(name = "{index}: protocol={0} initiateClosureFromClient={1} useUds={2} viaProxy={3}")
+    public static Collection<Object[]> data() {
+        Collection<Object[]> data = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            for (boolean initiateClosureFromClient : TRUE_FALSE) {
+                for (boolean useUds : TRUE_FALSE) {
+                    for (boolean viaProxy : TRUE_FALSE) {
+                        if (viaProxy && (useUds || protocol == HTTP_2)) {
+                            // UDS cannot be used via proxy
+                            // Proxy is not supported with HTTP/2
+                            continue;
+                        }
+                        data.add(new Object[] {protocol, initiateClosureFromClient, useUds, viaProxy});
+                    }
+                }
+            }
+        }
+        return data;
     }
 
     @After
@@ -479,6 +497,10 @@ public class GracefulConnectionClosureHandlingTest {
         Exception e = assertThrows(ExecutionException.class, runnable);
         Throwable cause = e.getCause();
         assertThat(cause, instanceOf(ClosedChannelException.class));
+        if (protocol == HTTP_2) {
+            // HTTP/2 does not enhance ClosedChannelException with CloseEvent
+            return;
+        }
         while (cause != null && !(cause instanceof CloseEventObservedException)) {
             cause = cause.getCause();
         }
