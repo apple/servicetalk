@@ -21,11 +21,11 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 
 enum HttpProtocol {
     HTTP_1(h1Default(), HTTP_1_1),
-    HTTP_2(h2Default(), HTTP_2_0);
+    HTTP_2(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger").build(), HTTP_2_0);
 
     final HttpProtocolConfig config;
     final HttpProtocolVersion version;

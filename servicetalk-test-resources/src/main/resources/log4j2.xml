@@ -18,6 +18,7 @@
   <Properties>
     <Property name="rootLevel">${sys:servicetalk.logger.rootLevel:-INFO}</Property>
     <Property name="wireLogLevel">${sys:servicetalk.logger.wireLogLevel:-OFF}</Property>
+    <Property name="h2FrameLogLevel">${sys:servicetalk.logger.h2FrameLogLevel:-OFF}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
@@ -25,8 +26,8 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="servicetalk-tests-client-wire-logger" level="${wireLogLevel}"/>
-    <Logger name="servicetalk-tests-server-wire-logger" level="${wireLogLevel}"/>
+    <Logger name="servicetalk-tests-wire-logger" level="${wireLogLevel}"/>
+    <Logger name="servicetalk-tests-h2-frame-logger" level="${h2FrameLogLevel}"/>
     <Root level="${rootLevel}">
       <AppenderRef ref="Console"/>
     </Root>

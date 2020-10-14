@@ -142,7 +142,7 @@ public class GracefulConnectionClosureHandlingTest {
                 HttpServers.forAddress(localAddress(0)))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-server-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger")
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
@@ -199,7 +199,7 @@ public class GracefulConnectionClosureHandlingTest {
                 HttpClients.forResolvedAddress(serverContext.listenAddress()))
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-client-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger")
                 .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
                         new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)
                 .buildStreaming();

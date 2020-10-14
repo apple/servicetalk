@@ -76,8 +76,6 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
         this.errorReason = errorReason;
         this.clientProvider = clientProvider;
         this.serverProvider = serverProvider;
-        // clientConfig.enableWireLogging("servicetalk-tests-client-wire-logger");
-        // serverConfig.enableWireLogging("servicetalk-tests-server-wire-logger");
         ClientSecurityConfig clientSecurityConfig = defaultClientSecurityConfig(clientProvider);
         ServerSecurityConfig serverSecurityConfig = defaultServerSecurityConfig(serverProvider);
         switch (errorReason) {

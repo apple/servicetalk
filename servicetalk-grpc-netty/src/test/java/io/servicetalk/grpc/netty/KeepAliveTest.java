@@ -33,8 +33,10 @@ import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -50,8 +52,10 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -60,34 +64,44 @@ import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class KeepAliveTest {
-    private final TesterClient client;
-    private final ServerContext ctx;
+
+    @ClassRule
+    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
+    @ClassRule
+    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(1, MINUTES);
+
+    private final TesterClient client;
+    private final ServerContext ctx;
     private final long idleTimeoutMillis;
 
     public KeepAliveTest(final boolean keepAlivesFromClient,
                          final Function<String, H2ProtocolConfig> protocolConfigSupplier,
                          final long idleTimeoutMillis) throws Exception {
         this.idleTimeoutMillis = idleTimeoutMillis;
-        GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0));
+        GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executionStrategy(defaultStrategy(SERVER_CTX.executor()));
         if (!keepAlivesFromClient) {
-            serverBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-server-wire-logger"));
+            serverBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-wire-logger"));
         } else {
             serverBuilder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMillis)
                     .protocols(HttpProtocolConfigs.h2()
-                            .enableFrameLogging("servicetalk-tests-server-wire-logger").build());
+                            .enableFrameLogging("servicetalk-tests-h2-frame-logger").build());
         }
         ctx = serverBuilder.listenAndAwait(new ServiceFactory(new InfiniteStreamsService()));
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(ctx));
+                GrpcClients.forAddress(serverHostAndPort(ctx))
+                        .ioExecutor(CLIENT_CTX.ioExecutor())
+                        .executionStrategy(defaultStrategy(CLIENT_CTX.executor()));
         if (keepAlivesFromClient) {
-            clientBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-client-wire-logger"));
+            clientBuilder.protocols(protocolConfigSupplier.apply("servicetalk-tests-wire-logger"));
         } else {
             clientBuilder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMillis)
                     .protocols(HttpProtocolConfigs.h2()
-                            .enableFrameLogging("servicetalk-tests-client-wire-logger").build());
+                            .enableFrameLogging("servicetalk-tests-h2-frame-logger").build());
         }
         client = clientBuilder.build(new TesterProto.Tester.ClientFactory());
     }

@@ -102,6 +102,7 @@ public abstract class AbstractTcpServerTest {
             securityConfig.disableHostnameVerification();
             tcpClientConfig.secure(securityConfig.asReadOnly());
         }
+        tcpClientConfig.enableWireLogging("servicetalk-tests-wire-logger");
         return tcpClientConfig;
     }
 
@@ -123,6 +124,7 @@ public abstract class AbstractTcpServerTest {
             securityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
             tcpServerConfig.secure(securityConfig.asReadOnly());
         }
+        tcpServerConfig.enableWireLogging("servicetalk-tests-wire-logger");
         return tcpServerConfig;
     }
 
