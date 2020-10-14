@@ -182,6 +182,9 @@
           <a href="../../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-client-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-client-api/0.32/index.html">0.32</a>
         </li>
         <li class="version">
@@ -212,6 +215,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.33/index.html">0.33</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-concurrent-api/0.32/index.html">0.32</a>
@@ -264,6 +270,9 @@
           <a href="../index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
           <a href="../../0.32/index.html">0.32</a>
         </li>
         <li class="version">
@@ -312,6 +321,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.33/index.html">0.33</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-grpc-api/0.32/index.html">0.32</a>
@@ -364,6 +376,9 @@
           <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-http-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-http-api/0.32/index.html">0.32</a>
         </li>
         <li class="version">
@@ -412,6 +427,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.33/index.html">0.33</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-router-jersey/0.32/index.html">0.32</a>
@@ -464,6 +482,9 @@
           <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-data-jackson-jersey/0.32/index.html">0.32</a>
         </li>
         <li class="version">
@@ -514,6 +535,9 @@
           <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-loadbalancer/0.32/index.html">0.32</a>
         </li>
         <li class="version">
@@ -559,6 +583,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.33/index.html">0.33</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-security-jersey/0.32/index.html">0.32</a>
@@ -609,6 +636,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.33/index.html">0.33</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk/0.32/index.html">0.32</a>
@@ -673,6 +703,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="index.html">SNAPSHOT</a>
+    <a class="version" href="../../0.33/http/index.html">0.33</a>
     <a class="version" href="../../0.32/http/index.html">0.32</a>
     <a class="version" href="../../0.31/http/index.html">0.31</a>
     <a class="version" href="../../0.30/http/index.html">0.30</a>
@@ -905,6 +936,40 @@ blocking and asynchronous interactions.</p>
 <td class="content">
 This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the metadata API is the same
 across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Mutual-TLS"><a class="anchor" href="#Mutual-TLS"></a><a class="link" href="#Mutual-TLS">Mutual TLS</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how client and server can be configured to do mutual authentication via TLS.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the TLS/SSL configuration API is
+the same across all the HTTP APIs.
 </td>
 </tr>
 </table>
