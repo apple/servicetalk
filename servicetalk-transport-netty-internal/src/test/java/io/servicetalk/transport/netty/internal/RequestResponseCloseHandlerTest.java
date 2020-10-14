@@ -319,7 +319,7 @@ public class RequestResponseCloseHandlerTest {
             // A description prefixed with "IGNORE " will not fail the suite!
             assumeThat(desc, desc, not(startsWith("IGNORE ")));
             ctx = mock(ChannelHandlerContext.class);
-            channel = mock(SocketChannel.class, "");
+            channel = mock(SocketChannel.class, "[id: 0xmocked, L:mocked - R:mocked]");
             when(ctx.channel()).thenReturn(channel);
 
             // Asserts
