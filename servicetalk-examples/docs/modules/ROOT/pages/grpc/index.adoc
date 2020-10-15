@@ -74,3 +74,10 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-str
 * link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideStreamingClient.java[BlockingRouteGuideStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[bi-directional streaming programming paradigm].
+
+[#protoc-options]
+== Protoc Options
+
+This example demonstrates how options for the servicetalk-grpc-protoc plugin can be used. See
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/protoc-options[protoc-options]
+for more details.
