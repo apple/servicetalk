@@ -1,0 +1,14 @@
+== ServiceTalk gRPC protoc options
+
+Using the same interface as the "Hello World" examples, demonstrate servicetalk-grpc-protoc plugin options.
+
+For example here is one of the options demonstrated:
+
+[source,gradle]
+----
+task.plugins {
+  servicetalk_grpc {
+    option 'typeNameSuffix=St'
+  }
+}
+----
