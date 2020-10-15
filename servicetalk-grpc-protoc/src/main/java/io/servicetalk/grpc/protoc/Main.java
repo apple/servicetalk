@@ -48,12 +48,12 @@ public final class Main {
      * <pre>
      * task.plugins {
      *   servicetalk_grpc {
-     *     option 'typeNamePostfix=Foo'
+     *     option 'typeNameSuffix=Foo'
      *   }
      * }
      * </pre>
      */
-    private static final String TYPE_NAME_POSTFIX_OPTION = "typeNamePostfix";
+    private static final String TYPE_NAME_SUFFIX_OPTION = "typeNameSuffix";
     private Main() {
         // no instances
     }
@@ -89,10 +89,10 @@ public final class Main {
 
         final Map<String, String> optionsMap = request.hasParameter() ?
                 parseOptions(request.getParameter()) : emptyMap();
-        final String typePostfixValue = optionsMap.get(TYPE_NAME_POSTFIX_OPTION);
+        final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
-                .map(protoFile -> new FileDescriptor(protoFile, typePostfixValue)).collect(toList());
+                .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
 
         final Map<String, ClassName> messageTypesMap = fileDescriptors.stream()
                 .map(FileDescriptor::messageTypesMap)
