@@ -177,3 +177,12 @@ builder API is the same across all the HTTP APIs.
 
 An advanced example which demonstrates a composition of various ServiceTalks services in one application.
 For more information see xref:http/service-composition.adoc[Service Composition].
+
+[#uds]
+== Unix Domain Sockets (UDS)
+
+This example demonstrates how client and server can use unix domain sockets. See
+the link:{source-root}/servicetalk-examples/http/uds[uds example code] for more details.
+
+NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the UDS configuration API is the
+same across all the HTTP APIs.
