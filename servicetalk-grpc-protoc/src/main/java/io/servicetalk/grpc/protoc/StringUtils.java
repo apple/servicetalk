@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.protoc;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Character.toLowerCase;
@@ -58,5 +60,44 @@ final class StringUtils {
 
     static boolean isNullOrEmpty(@Nullable final String v) {
         return v == null || v.isEmpty();
+    }
+
+    /**
+     * Parse options which are defined to be a comma separated list passed by protoc to the plugin.
+     * <pre>
+     *     protoc --plug_out=enable_bar:outdir --plug_opt=enable_baz
+     *     protoc --plug_out=enable_bar,enable_baz,mykey=myvalue:outdir
+     * </pre>
+     * @param parameters The options as specified by
+     * <a href="
+     * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.command_line_interface
+     * ">protoc options</a>
+     * and
+     * <a href="
+     * https://github.com/google/protobuf-gradle-plugin#configure-what-to-generate
+     * ">protobuf-gradle-plugin options</a>.
+     * @return A map of the options parsed into &lt;key,value&gt; pairs.
+     */
+    static Map<String, String> parseOptions(String parameters) {
+        Map<String, String> options = new HashMap<>();
+        int begin = 0;
+        while (begin < parameters.length() && begin >= 0) {
+            int delim = parameters.indexOf(',', begin);
+            final String option;
+            if (delim > begin) {
+                option = parameters.substring(begin, delim);
+                begin = delim + 1;
+            } else {
+                option = parameters.substring(begin);
+                begin = -1;
+            }
+            int equals = option.indexOf('=');
+            if (equals > 0) {
+                options.put(option.substring(0, equals), option.substring(equals + 1));
+            } else {
+                options.put(option, null);
+            }
+        }
+        return options;
     }
 }

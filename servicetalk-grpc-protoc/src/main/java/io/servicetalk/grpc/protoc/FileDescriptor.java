@@ -55,14 +55,18 @@ final class FileDescriptor implements GenerationContext {
     private final String javaPackageName;
     @Nullable
     private final String outerClassName;
+    @Nullable
+    private final String typeNameSuffix;
     private final List<TypeSpec.Builder> serviceClassBuilders;
     @Nullable
     private Set<String> reservedJavaTypeName;
 
-    FileDescriptor(final FileDescriptorProto protoFile) {
+    FileDescriptor(final FileDescriptorProto protoFile,
+                   @Nullable final String typeNameSuffix) {
         this.protoFile = protoFile;
         sanitizedProtoFileName = sanitizeFileName(protoFile.getName());
         protoPackageName = protoFile.hasPackage() ? protoFile.getPackage() : null;
+        this.typeNameSuffix = typeNameSuffix;
 
         if (protoFile.hasOptions()) {
             final FileOptions fileOptions = protoFile.getOptions();
@@ -133,7 +137,9 @@ final class FileDescriptor implements GenerationContext {
 
     @Override
     public TypeSpec.Builder newServiceClassBuilder(final ServiceDescriptorProto serviceProto) {
-        final String className = deconflictJavaTypeName(sanitizeClassName(serviceProto.getName()));
+        final String rawClassName = typeNameSuffix == null ? serviceProto.getName() :
+                serviceProto.getName() + typeNameSuffix;
+        final String className = deconflictJavaTypeName(sanitizeClassName(rawClassName));
 
         final TypeSpec.Builder builder = TypeSpec.classBuilder(className)
                 .addModifiers(PUBLIC, FINAL)
