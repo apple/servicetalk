@@ -75,6 +75,9 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN), TEXT_PLAIN, null));
 
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, null));
+
         assertFalse(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN), APPLICATION_JSON, null));
 
@@ -111,6 +114,12 @@ public class HeaderUtilsTest {
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("Text/Plain")), TEXT_PLAIN, null));
+
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("text/plain; charset=UTF-8")), TEXT_PLAIN, null));
+
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("text/plain;charset=UTF-8")), TEXT_PLAIN, null));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("Text/Plain")), TEXT_PLAIN, UTF_8));
