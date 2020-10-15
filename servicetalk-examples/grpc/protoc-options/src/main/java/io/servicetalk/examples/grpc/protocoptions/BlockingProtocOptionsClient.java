@@ -17,16 +17,15 @@ package io.servicetalk.examples.grpc.protocoptions;
 
 import io.servicetalk.grpc.netty.GrpcClients;
 
-import io.grpc.examples.helloworld.GreeterSt.BlockingGreeterClient;
-import io.grpc.examples.helloworld.GreeterSt.ClientFactory;
+import io.grpc.examples.helloworld.GreeterSt;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 
 public final class BlockingProtocOptionsClient {
 
     public static void main(String[] args) throws Exception {
-        try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
-                .buildBlocking(new ClientFactory())) {
+        try (GreeterSt.BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+                .buildBlocking(new GreeterSt.ClientFactory())) {
             HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Foo").build());
             System.out.println(reply);
         }
