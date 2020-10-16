@@ -32,6 +32,7 @@ import java.util.stream.StreamSupport;
 
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
@@ -39,6 +40,8 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -58,6 +61,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     protected abstract void createFixture(String uri);
 
+    protected abstract void createFixture(String uri, HttpRequestMethod method);
+
     protected abstract void setFixtureQueryParams(Map<String, List<String>> params);
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.1
@@ -68,14 +73,14 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNull(fixture.scheme());
         assertNull(fixture.userInfo());
         assertNull(fixture.host());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.port(), lessThan(0));
         assertEquals("/some/path", fixture.path());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
         assertNull(fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
@@ -91,19 +96,19 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("http", fixture.scheme());
         assertNull(fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.port(), lessThan(0));
         assertEquals("/some/path", fixture.path());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header ignored when request-target is absolute.
         fixture.headers().set(HOST, "other.site.com:8080");
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
     }
 
     @Test
@@ -113,25 +118,25 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("https", fixture.scheme());
         assertEquals("jdoe", fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.port(), lessThan(0));
         assertEquals("/some/path", fixture.path());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("https://jdoe@my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header ignored when request-target is absolute
         fixture.headers().set(HOST, "other.site.com:8080");
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.effectivePort(), lessThan(0));
     }
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.3
     @Test
     public void testParseHttpUriAuthorityForm() {
-        createFixture("my.site.com:80");
+        createFixture("my.site.com:80", CONNECT);
 
         assertNull(fixture.scheme());
         assertNull(fixture.userInfo());
@@ -139,7 +144,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(80, fixture.port());
         assertEquals("", fixture.path());
         assertEquals("", fixture.rawPath());
-        assertEquals("", fixture.rawQuery());
+        assertNull(fixture.rawQuery());
         assertEquals("my.site.com:80", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
@@ -159,14 +164,14 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNull(fixture.scheme());
         assertNull(fixture.userInfo());
         assertNull(fixture.host());
-        assertEquals(-1, fixture.port());
-        assertEquals("", fixture.path());
-        assertEquals("", fixture.rawPath());
-        assertEquals("", fixture.rawQuery());
+        assertThat(fixture.port(), lessThan(0));
+        assertEquals("*", fixture.path());
+        assertEquals("*", fixture.rawPath());
+        assertNull(fixture.rawQuery());
         assertEquals("*", fixture.requestTarget());
 
         assertNull(fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
@@ -182,19 +187,24 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNull(fixture.scheme());
         assertNull(fixture.userInfo());
         assertNull(fixture.host());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.port(), lessThan(0));
         assertEquals("/some/path", fixture.path());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
         assertEquals("host.header.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
         assertEquals("other.site.com", fixture.effectiveHost());
         assertEquals(8080, fixture.effectivePort());
+
+        // Test host header changes port, but keeps the same hostname.
+        fixture.headers().set(HOST, "other.site.com:8081");
+        assertEquals("other.site.com", fixture.effectiveHost());
+        assertEquals(8081, fixture.effectivePort());
     }
 
     @Test
@@ -205,19 +215,19 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("http", fixture.scheme());
         assertNull(fixture.userInfo());
         assertEquals("my.site.com", fixture.host());
-        assertEquals(-1, fixture.port());
+        assertThat(fixture.port(), lessThan(0));
         assertEquals("/some/path", fixture.path());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
 
         // Host header ignored when request-target is absolute.
         fixture.headers().set(HOST, "other.site.com:8080");
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
     }
 
     @Test
@@ -229,23 +239,30 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     public void testAppendSegmentsToPath() {
-        createFixture("base/");
+        createFixture("base");
         fixture.appendPathSegments("foo", "/$", "bar");
-        assertEquals("base/foo/%2F%24/bar", fixture.requestTarget());
+        assertEquals("base/foo/%2F$/bar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testAppendSegmentsToPathEncoded() {
+        createFixture("/base/");
+        fixture.appendPathSegments("foo", "/ ", "bar");
+        assertEquals("/base/foo/%2F%20/bar", fixture.requestTarget());
     }
 
     @Test
     public void testAppendSegmentsToPathWithQueryParam() {
-        createFixture("base/");
+        createFixture("/base/?baz=123");
         fixture.appendPathSegments("foo", "/$", "bar");
-        assertEquals("base/foo/%2F%24/bar", fixture.requestTarget());
+        assertEquals("/base/foo/%2F$/bar?baz=123", fixture.requestTarget());
     }
 
     @Test
     public void testAppendSegmentsToPathWithoutTrailingSlash() {
-        createFixture("base?baz=123");
+        createFixture("/base?baz=123");
         fixture.appendPathSegments("foo", "/$", "bar");
-        assertEquals("base/foo/%2F%24/bar?baz=123", fixture.requestTarget());
+        assertEquals("/base/foo/%2F$/bar?baz=123", fixture.requestTarget());
     }
 
     @Test
@@ -258,9 +275,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testSetRawPathWithoutLeadingSlash() {
         createFixture("temp");
-        expected.expect(IllegalArgumentException.class);
-        expected.expectMessage("Path must be empty or start with '/'");
         fixture.rawPath("foo");
+        assertEquals("/foo", fixture.requestTarget());
     }
 
     @Test
@@ -268,7 +284,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
         fixture.path("/new/$path$");
 
-        assertEquals("http://my.site.com/new/%24path%24?foo=bar&abc=def&foo=baz", fixture.requestTarget());
+        assertEquals("http://my.site.com/new/$path$?foo=bar&abc=def&foo=baz", fixture.requestTarget());
     }
 
     @Test
@@ -282,9 +298,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testReplacePathInOriginForm() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
-        fixture.path("/new/$path$");
+        fixture.path("/new/$path ");
 
-        assertEquals("/new/%24path%24?foo=bar&abc=def&foo=baz", fixture.requestTarget());
+        assertEquals("/new/$path%20?foo=bar&abc=def&foo=baz", fixture.requestTarget());
     }
 
     @Test
@@ -306,9 +322,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testSetRemoveExistingQuery() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
-        fixture.rawQuery("");
+        fixture.rawQuery(null);
 
         assertEquals("/some/path", fixture.requestTarget());
+    }
+
+    @Test
+    public void testSetClearExistingQuery() {
+        createFixture("/some/path?foo=bar&abc=def&foo=baz");
+        fixture.rawQuery("");
+
+        assertEquals("/some/path?", fixture.requestTarget());
     }
 
     @Test
@@ -423,12 +447,12 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(singletonList("def"), iteratorAsList(fixture.queryParametersIterator("abc")));
 
         // change it
-        fixture.path("/new/$path$");
+        fixture.path("/new/$path ");
 
         // parse it again
-        assertEquals("/new/%24path%24?foo=bar&abc=def&foo=baz", fixture.requestTarget());
-        assertEquals("/new/%24path%24", fixture.rawPath());
-        assertEquals("/new/$path$", fixture.path());
+        assertEquals("/new/$path%20?foo=bar&abc=def&foo=baz", fixture.requestTarget());
+        assertEquals("/new/$path%20", fixture.rawPath());
+        assertEquals("/new/$path ", fixture.path());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals(asList("bar", "baz"), iteratorAsList(fixture.queryParametersIterator("foo")));
         assertEquals(singletonList("def"), iteratorAsList(fixture.queryParametersIterator("abc")));
@@ -460,10 +484,10 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     public void testEncodeToRequestTargetWithNoParams() {
-        createFixture("/some/path");
+        createFixture("/some/path#fragment");
         setFixtureQueryParams(params);
 
-        assertEquals("/some/path", fixture.requestTarget());
+        assertEquals("/some/path#fragment", fixture.requestTarget());
     }
 
     @Test
@@ -477,33 +501,33 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     public void testEncodeToRequestTargetWithMultipleParams() {
-        createFixture("/some/path");
+        createFixture("/some/path#fragment");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("123", "456"));
         setFixtureQueryParams(params);
 
-        assertEquals("/some/path?foo=bar&foo=baz&abc=123&abc=456", fixture.requestTarget());
+        assertEquals("/some/path?foo=bar&foo=baz&abc=123&abc=456#fragment", fixture.requestTarget());
     }
 
     @Test
     public void testEncodeToRequestTargetWithSpecialCharacters() {
-        createFixture("/some/path");
+        createFixture("/some/path#fragment");
         params.put("pair", newList("key1=value1", "key2=value2"));
         setFixtureQueryParams(params);
 
-        assertEquals("/some/path?pair=key1%3Dvalue1&pair=key2%3Dvalue2", fixture.requestTarget());
+        assertEquals("/some/path?pair=key1%3Dvalue1&pair=key2%3Dvalue2#fragment", fixture.requestTarget());
     }
 
     @Test
     public void testEncodeToRequestTargetWithAbsoluteForm() {
-        createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+        createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz#fragment");
         params.put("foo", newList("new"));
         setFixtureQueryParams(params);
 
-        assertEquals("http://my.site.com/some/path?foo=new", fixture.requestTarget());
+        assertEquals("http://my.site.com/some/path?foo=new#fragment", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(-1, fixture.effectivePort());
+        assertThat(fixture.effectivePort(), lessThan(0));
     }
 
     @Test

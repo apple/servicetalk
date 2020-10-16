@@ -37,8 +37,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
 import static java.net.InetSocketAddress.createUnresolved;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

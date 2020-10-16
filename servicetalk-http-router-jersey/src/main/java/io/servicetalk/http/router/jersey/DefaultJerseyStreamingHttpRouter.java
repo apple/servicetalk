@@ -55,14 +55,12 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
@@ -189,22 +187,19 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                          final StreamingHttpResponseFactory factory,
                          final Subscriber<? super StreamingHttpResponse> subscriber,
                          final DelayedCancellable delayedCancellable) {
-
         final CharSequence baseUri = baseUriFunction.apply(serviceCtx, req);
-        final CharSequence path = ensureNoLeadingSlash(req.rawPath());
+        final CharSequence requestTarget = req.requestTarget();
 
-        // Jersey needs URI-unsafe query chars to be encoded
-        @Nullable
-        final String encodedQuery = req.rawQuery().isEmpty() ? null : encodeUnsafeCharacters(req.rawQuery());
+        final StringBuilder requestUriBuilder = new StringBuilder(baseUri.length() + requestTarget.length())
+                .append(baseUri);
 
-        final StringBuilder requestUriBuilder =
-                new StringBuilder(baseUri.length() + path.length() +
-                        (encodedQuery != null ? 1 + encodedQuery.length() : 0))
-                        .append(baseUri)
-                        .append(path);
+        // Jersey expects the baseUri ends in a '/' and if not will return 404s
+        assert baseUri.length() == 0 || baseUri.charAt(baseUri.length() - 1) == '/';
 
-        if (encodedQuery != null) {
-            requestUriBuilder.append('?').append(encodedQuery);
+        if (requestTarget.length() > 0 && requestTarget.charAt(0) == '/') {
+            requestUriBuilder.append(requestTarget, 1, requestTarget.length());
+        } else {
+            requestUriBuilder.append(requestTarget);
         }
 
         final ContainerRequest containerRequest = new ContainerRequest(
@@ -212,7 +207,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 URI.create(requestUriBuilder.toString()),
                 req.method().name(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
-                new MapPropertiesDelegate());
+                new MapPropertiesDelegate(), null);
 
         req.headers().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));

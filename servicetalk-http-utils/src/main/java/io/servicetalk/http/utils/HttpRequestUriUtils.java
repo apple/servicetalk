@@ -17,9 +17,13 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 
 /**
  * Helper methods for computing effective request URIs according
@@ -84,7 +88,7 @@ public final class HttpRequestUriUtils {
                                                 @Nullable final String fixedAuthority,
                                                 final boolean includeUserInfo) {
         return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, metaData.rawPath(),
-                metaData.rawQuery(), includeUserInfo);
+                metaData.rawQuery(), includeUserInfo, true);
     }
 
     /**
@@ -115,7 +119,7 @@ public final class HttpRequestUriUtils {
                                                 final String fixedAuthority,
                                                 final boolean includeUserInfo) {
         return buildEffectiveRequestUri(null, metaData, fixedScheme, fixedAuthority, metaData.rawPath(),
-                metaData.rawQuery(), includeUserInfo);
+                metaData.rawQuery(), includeUserInfo, true);
     }
 
     /**
@@ -170,16 +174,17 @@ public final class HttpRequestUriUtils {
                                            @Nullable final String fixedScheme,
                                            @Nullable final String fixedAuthority,
                                            final boolean includeUserInfo) {
-        return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, "/", null, includeUserInfo);
+        return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, "/", null, includeUserInfo, false);
     }
 
     private static String buildEffectiveRequestUri(@Nullable final ConnectionContext ctx,
                                                    final HttpRequestMetaData metaData,
                                                    @Nullable final String fixedScheme,
                                                    @Nullable final String fixedAuthority,
-                                                   @Nullable final String path,
-                                                   @Nullable final String query,
-                                                   final boolean includeUserInfo) {
+                                                   @Nullable String path,
+                                                   @Nullable String query,
+                                                   final boolean includeUserInfo,
+                                                   final boolean checkAuthorityOrAsteriskForm) {
 
         if (fixedScheme != null && !"http".equalsIgnoreCase(fixedScheme) && !"https".equalsIgnoreCase(fixedScheme)) {
             throw new IllegalArgumentException("Unsupported scheme: " + fixedScheme);
@@ -187,6 +192,13 @@ public final class HttpRequestUriUtils {
 
         if (ctx == null && (fixedScheme == null || fixedAuthority == null)) {
             throw new IllegalArgumentException("Context required without scheme and authority");
+        }
+
+        // https://tools.ietf.org/html/rfc7230#section-5.5
+        // If the request-target is in authority-form or asterisk-form, the effective request URI's combined
+        // path and query component is empty.
+        if (checkAuthorityOrAsteriskForm && (CONNECT.equals(metaData.method()) || OPTIONS.equals(metaData.method()))) {
+            path = query = null;
         }
 
         final String metadataScheme = metaData.scheme();
@@ -204,18 +216,19 @@ public final class HttpRequestUriUtils {
         final String scheme = fixedScheme != null ? fixedScheme.toLowerCase() :
                 (ctx.sslSession() != null ? "https" : "http");
 
+        final HostAndPort effectiveHostAndPort;
         if (fixedAuthority != null) {
             return buildRequestUri(
                     scheme,
                     fixedAuthority,
                     path,
                     query);
-        } else if (metaData.effectiveHost() != null) {
+        } else if ((effectiveHostAndPort = metaData.effectiveHostAndPort()) != null) {
             return buildRequestUri(
                     scheme,
                     includeUserInfo ? metaData.userInfo() : null,
-                    metaData.effectiveHost(),
-                    metaData.effectivePort(),
+                    effectiveHostAndPort.hostName(),
+                    effectiveHostAndPort.port(),
                     path,
                     query);
         } else {

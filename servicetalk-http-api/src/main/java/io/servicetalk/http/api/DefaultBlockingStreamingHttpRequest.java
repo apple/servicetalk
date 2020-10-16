@@ -21,8 +21,10 @@ import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -53,6 +55,12 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
+    public BlockingStreamingHttpRequest requestTarget(final String requestTarget, final Charset encoding) {
+        original.requestTarget(requestTarget, encoding);
+        return this;
+    }
+
+    @Override
     public BlockingStreamingHttpRequest path(final String path) {
         original.path(path);
         return this;
@@ -71,8 +79,14 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpRequest rawQuery(final String query) {
+    public BlockingStreamingHttpRequest rawQuery(@Nullable final String query) {
         original.rawQuery(query);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest query(final String query) {
+        original.query(query);
         return this;
     }
 

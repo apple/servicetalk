@@ -17,6 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
+import java.nio.charset.Charset;
+import javax.annotation.Nullable;
+
 /**
  * An HTTP request. The payload is represented as a single {@link Object}.
  */
@@ -81,7 +84,10 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest appendPathSegments(String... segments);
 
     @Override
-    HttpRequest rawQuery(String query);
+    HttpRequest rawQuery(@Nullable String query);
+
+    @Override
+    HttpRequest query(String query);
 
     @Override
     HttpRequest addQueryParameter(String key, String value);
@@ -109,6 +115,9 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
 
     @Override
     HttpRequest requestTarget(String requestTarget);
+
+    @Override
+    HttpRequest requestTarget(String requestTarget, Charset encoding);
 
     @Override
     default HttpRequest addHeader(final CharSequence name, final CharSequence value) {

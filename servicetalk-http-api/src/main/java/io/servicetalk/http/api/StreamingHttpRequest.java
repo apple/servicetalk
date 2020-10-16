@@ -19,8 +19,10 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import java.nio.charset.Charset;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 /**
  * The equivalent of {@link HttpRequest} but provides the payload as a {@link Publisher}.
@@ -166,7 +168,10 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest appendPathSegments(String... segments);
 
     @Override
-    StreamingHttpRequest rawQuery(String query);
+    StreamingHttpRequest rawQuery(@Nullable String query);
+
+    @Override
+    StreamingHttpRequest query(String query);
 
     @Override
     StreamingHttpRequest addQueryParameter(String key, String value);
@@ -194,6 +199,9 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    StreamingHttpRequest requestTarget(String requestTarget, Charset encoding);
 
     @Override
     default StreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {

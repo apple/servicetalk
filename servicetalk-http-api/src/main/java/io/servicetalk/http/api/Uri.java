@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey;
+package io.servicetalk.http.api;
 
-/**
- * CharSequence helpers.
- */
-final class CharSequenceUtils {
-    private CharSequenceUtils() {
-        // no instances
-    }
+import java.nio.charset.Charset;
+import javax.annotation.Nullable;
 
-    static CharSequence asCharSequence(final Object o) {
-        return o instanceof CharSequence ? (CharSequence) o : o.toString();
-    }
+interface Uri {
+    String uri();
+
+    @Nullable
+    String scheme();
+
+    @Nullable
+    String authority();
+
+    @Nullable
+    String userInfo();
+
+    @Nullable
+    String host();
+
+    int port();
+
+    String path();
+
+    String path(Charset charset);
+
+    @Nullable
+    String query();
+
+    @Nullable
+    String query(Charset charset);
+
+    @Nullable
+    String fragment();
 }

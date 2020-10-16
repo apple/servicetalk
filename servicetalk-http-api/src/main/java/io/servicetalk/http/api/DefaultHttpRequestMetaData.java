@@ -15,21 +15,25 @@
  */
 package io.servicetalk.http.api;
 
-import java.io.UnsupportedEncodingException;
+import io.servicetalk.transport.api.HostAndPort;
+
 import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpUri.HTTP_SCHEME;
-import static io.servicetalk.http.api.HttpUri.buildRequestTarget;
-import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
-import static java.net.URLEncoder.encode;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.UriComponentType.PATH;
+import static io.servicetalk.http.api.UriComponentType.PATH_SEGMENT;
+import static io.servicetalk.http.api.UriComponentType.QUERY;
+import static io.servicetalk.http.api.UriComponentType.QUERY_VALUE;
+import static io.servicetalk.http.api.UriUtils.decodeQueryParams;
+import static io.servicetalk.http.api.UriUtils.encodeComponent;
+import static io.servicetalk.http.api.UriUtils.parsePort;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -37,9 +41,8 @@ import static java.util.Objects.requireNonNull;
  * Default implementation of {@link HttpRequestMetaData}.
  */
 class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpRequestMetaData {
-
     private static final Charset REQUEST_TARGET_CHARSET = UTF_8;
-    private static final int PORT_NOT_ASSIGNED = -2;
+    static final int DEFAULT_MAX_QUERY_PARAMS = 1024;
 
     private HttpRequestMethod method;
     private String requestTarget;
@@ -47,29 +50,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Nullable
     private HttpQuery httpQuery;
     @Nullable
-    private HttpUri requestTargetUri;
-    @Nullable
-    private String effectiveRequestHost;
-    private int effectiveRequestPort = PORT_NOT_ASSIGNED;
-    @Nullable
-    private CharSequence effectiveRequestHostHeader;
+    private Uri requestTargetUri;
 
     DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
                                final HttpProtocolVersion version, final HttpHeaders headers) {
         super(version, headers);
         this.method = requireNonNull(method);
         this.requestTarget = requireNonNull(requestTarget);
-    }
-
-    DefaultHttpRequestMetaData(final DefaultHttpRequestMetaData requestMetaData) {
-        super(requestMetaData);
-        this.method = requestMetaData.method;
-        this.requestTarget = requestMetaData.requestTarget;
-        this.httpQuery = requestMetaData.httpQuery;
-        this.requestTargetUri = requestMetaData.requestTargetUri;
-        this.effectiveRequestHost = requestMetaData.effectiveRequestHost;
-        this.effectiveRequestPort = requestMetaData.effectiveRequestPort;
-        this.effectiveRequestHostHeader = requestMetaData.effectiveRequestHostHeader;
     }
 
     @Override
@@ -95,10 +82,22 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
+    public String requestTarget(final Charset encoding) {
+        return CONNECT.equals(method) ? HttpAuthorityFormUri.decode(requestTarget, encoding) :
+                Uri3986.decode(requestTarget, encoding);
+    }
+
+    @Override
     public HttpRequestMetaData requestTarget(final String requestTarget) {
         this.requestTarget = requireNonNull(requestTarget);
         invalidateParsedUri();
         return this;
+    }
+
+    @Override
+    public HttpRequestMetaData requestTarget(final String requestTarget, final Charset encoding) {
+         return requestTarget(CONNECT.equals(method) ? HttpAuthorityFormUri.encode(requestTarget, encoding, true) :
+                 Uri3986.encode(requestTarget, encoding, true));
     }
 
     @Nullable
@@ -121,37 +120,67 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final int port() {
-        return lazyParseRequestTarget().explicitPort();
+        return lazyParseRequestTarget().port();
     }
 
     @Override
     public final String rawPath() {
-        return lazyParseRequestTarget().rawPath();
-    }
-
-    @Override
-    public HttpRequestMetaData rawPath(final String path) {
-        if (!path.isEmpty() && path.charAt(0) != '/') {
-            throw new IllegalArgumentException("Path must be empty or start with '/'");
-        }
-        requestTarget(encodeRequestTarget(path, rawQuery(), null));
-        return this;
-    }
-
-    @Override
-    public final String path() {
         return lazyParseRequestTarget().path();
     }
 
     @Override
-    public HttpRequestMetaData path(String path) {
-        if (!path.isEmpty() && path.charAt(0) != '/') {
-            path = "/" + path;
+    public HttpRequestMetaData rawPath(final String path) {
+        Uri httpUri = lazyParseRequestTarget();
+        // Potentially over estimate the size of the URL to avoid resize/copy
+        StringBuilder sb = new StringBuilder(httpUri.uri().length() + path.length());
+
+        // Append everything up to and including the path
+        if (httpUri.scheme() != null) {
+            sb.append(httpUri.scheme()).append(':');
         }
-        // TODO This is an ugly hack!
-        final String encodedPath = urlEncode(path).replaceAll("%2F", "/");
-        requestTarget(encodeRequestTarget(encodedPath, rawQuery(), null));
-        return this;
+        if (httpUri.host() != null) {
+            // The authority component is preceded by a double slash ("//")
+            // authority   = [ userinfo "@" ] host [ ":" port ]
+            sb.append("//");
+            if (httpUri.userInfo() != null) {
+                sb.append(httpUri.userInfo()).append('@');
+            }
+
+            sb.append(httpUri.host());
+            if (httpUri.port() >= 0) {
+                sb.append(':').append(httpUri.port());
+            }
+        }
+
+        // Append the path
+        if (!path.isEmpty() && path.charAt(0) != '/') {
+            sb.append('/');
+        }
+        sb.append(path);
+
+        // Append the query string
+        String query = httpUri.query();
+        if (query != null) {
+            sb.append('?').append(query);
+        }
+
+        // Append the fragment
+        String fragment = httpUri.fragment();
+        if (fragment != null) {
+            sb.append('#').append(fragment);
+        }
+
+        return requestTarget(sb.toString());
+    }
+
+    @Override
+    public final String path() {
+        return lazyParseRequestTarget().path(REQUEST_TARGET_CHARSET);
+    }
+
+    @Override
+    public HttpRequestMetaData path(String path) {
+        return rawPath(encodeComponent(PATH, path, REQUEST_TARGET_CHARSET, true));
     }
 
     @Override
@@ -159,32 +188,105 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         if (segments.length == 0) {
             throw new IllegalArgumentException("At least one path segment must be provided");
         }
+        Uri httpUri = lazyParseRequestTarget();
+        StringBuilder sb = new StringBuilder(httpUri.uri().length() + segments.length * 8);
 
-        final String path = path();
-        final StringBuilder builder = new StringBuilder(path.length() + 8 * segments.length).append(path);
-        if (!path.isEmpty() && !path.endsWith("/")) {
-            builder.append('/');
+        // Append everything up to and including the path
+        if (httpUri.scheme() != null) {
+            sb.append(httpUri.scheme()).append(':');
         }
-        for (int i = 0; i < segments.length; i++) {
-            builder.append(urlEncode(segments[i]));
+        if (httpUri.host() != null) {
+            // The authority component is preceded by a double slash ("//")
+            // authority   = [ userinfo "@" ] host [ ":" port ]
+            sb.append("//");
+            if (httpUri.userInfo() != null) {
+                sb.append(httpUri.userInfo()).append('@');
+            }
 
-            if (i < (segments.length - 1)) {
-                builder.append('/');
+            sb.append(httpUri.host());
+            if (httpUri.port() >= 0) {
+                sb.append(':').append(httpUri.port());
             }
         }
-        requestTarget(encodeRequestTarget(builder.toString(), rawQuery(), null));
-        return this;
+
+        // Append the new path segments
+        String path = httpUri.path();
+        sb.append(path);
+        if (path.isEmpty() || path.charAt(path.length() - 1) != '/') {
+            sb.append('/');
+        }
+        for (int i = 0; i < segments.length - 1; i++) {
+            sb.append(encodeComponent(PATH_SEGMENT, segments[i], REQUEST_TARGET_CHARSET, false)).append('/');
+        }
+        sb.append(encodeComponent(PATH_SEGMENT, segments[segments.length - 1], REQUEST_TARGET_CHARSET, false));
+
+        // Append the query string
+        String query = httpUri.query();
+        if (query != null) {
+            sb.append('?').append(query);
+        }
+
+        // Append the fragment
+        String fragment = httpUri.fragment();
+        if (fragment != null) {
+            sb.append('#').append(fragment);
+        }
+
+        return requestTarget(sb.toString());
     }
 
     @Override
     public final String rawQuery() {
-        return lazyParseRequestTarget().rawQuery();
+        return lazyParseRequestTarget().query();
     }
 
     @Override
-    public HttpRequestMetaData rawQuery(final String query) {
-        requestTarget(encodeRequestTarget(rawPath(), requireNonNull(query), null));
-        return this;
+    public HttpRequestMetaData rawQuery(@Nullable final String query) {
+        Uri httpUri = lazyParseRequestTarget();
+        // Potentially over estimate the size of the URL to avoid resize/copy
+        StringBuilder sb = query != null ? new StringBuilder(httpUri.uri().length() + query.length()) :
+                                           new StringBuilder(httpUri.uri().length());
+        if (httpUri.scheme() != null) {
+            sb.append(httpUri.scheme()).append(':');
+        }
+        if (httpUri.host() != null) {
+            // The authority component is preceded by a double slash ("//")
+            // authority   = [ userinfo "@" ] host [ ":" port ]
+            sb.append("//");
+            if (httpUri.userInfo() != null) {
+                sb.append(httpUri.userInfo()).append('@');
+            }
+
+            sb.append(httpUri.host());
+            if (httpUri.port() >= 0) {
+                sb.append(':').append(httpUri.port());
+            }
+        }
+
+        sb.append(httpUri.path());
+
+        // Append the query string
+        if (query != null) {
+            sb.append('?').append(query);
+        }
+
+        // Append the fragment
+        String fragment = httpUri.fragment();
+        if (fragment != null) {
+            sb.append('#').append(fragment);
+        }
+
+        return requestTarget(sb.toString());
+    }
+
+    @Override
+    public String query() {
+        return lazyParseRequestTarget().query(REQUEST_TARGET_CHARSET);
+    }
+
+    @Override
+    public HttpRequestMetaData query(final String query) {
+        return rawQuery(encodeComponent(QUERY, query, REQUEST_TARGET_CHARSET, true));
     }
 
     @Nullable
@@ -194,7 +296,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public Iterable<Map.Entry<String, String>> queryParameters() {
+    public Iterable<Entry<String, String>> queryParameters() {
         return lazyParseQueryString();
     }
 
@@ -269,77 +371,128 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return lazyParseQueryString().remove(key, value);
     }
 
-    @Nullable
     @Override
-    public final String effectiveHost() {
-        lazyParseEffectiveRequest();
-        return effectiveRequestHost;
-    }
-
-    @Override
-    public final int effectivePort() {
-        lazyParseEffectiveRequest();
-        return effectiveRequestPort;
+    public HostAndPort effectiveHostAndPort() {
+        final CharSequence hostHeader;
+        final Uri effectiveRequestUri = lazyParseRequestTarget();
+        final String effectiveRequestUriHost = effectiveRequestUri.host();
+        if (effectiveRequestUriHost != null) {
+            return HostAndPort.of(effectiveRequestUriHost, effectiveRequestUri.port());
+        } else if ((hostHeader = headers().get(HOST)) != null) {
+            return parseHostHeader(hostHeader.toString());
+        }
+        return null;
     }
 
     private HttpQuery lazyParseQueryString() {
         if (httpQuery == null) {
-            httpQuery = new HttpQuery(decodeParams(lazyParseRequestTarget().rawQuery()), this::setQueryParams);
+            httpQuery = new HttpQuery(decodeQueryParams(lazyParseRequestTarget().query(),
+                    REQUEST_TARGET_CHARSET, DEFAULT_MAX_QUERY_PARAMS), this::setQueryParams);
         }
         return httpQuery;
     }
 
-    private HttpUri lazyParseRequestTarget() {
+    private Uri lazyParseRequestTarget() {
         if (requestTargetUri == null) {
-            requestTargetUri = new HttpUri(requestTarget());
+            requestTargetUri = CONNECT.equals(method) ? new HttpAuthorityFormUri(requestTarget()) :
+                    new Uri3986(requestTarget());
         }
         return requestTargetUri;
     }
 
-    private void lazyParseEffectiveRequest() {
-        final CharSequence hostHeader = headers().get(HOST);
-
-        if (effectiveRequestPort == PORT_NOT_ASSIGNED || !Objects.equals(hostHeader, effectiveRequestHostHeader)) {
-            final HttpUri effectiveRequestUri = new HttpUri(requestTarget(),
-                    () -> hostHeader != null ? hostHeader.toString() : null);
-            effectiveRequestHost = effectiveRequestUri.host();
-            effectiveRequestPort = effectiveRequestUri.explicitPort();
-            effectiveRequestHostHeader = hostHeader;
+    private static HostAndPort parseHostHeader(String parsedHostHeader) {
+        String parsedHost;
+        int parsedPort = -1;
+        final int x = parsedHostHeader.lastIndexOf(':');
+        if (x > 0) {
+            final int y = parsedHostHeader.lastIndexOf(':', x - 1);
+            if (y >= 0) {
+                // IPv6 address is present in the header
+                // https://tools.ietf.org/html/rfc3986#section-3.2.2
+                // A host identified by an Internet Protocol literal address, version 6
+                // [RFC3513] or later, is distinguished by enclosing the IP literal
+                // within square brackets ("[" and "]").  This is the only place where
+                // square bracket characters are allowed in the URI syntax.
+                final int cb;
+                if (parsedHostHeader.charAt(0) != '[' || (cb = parsedHostHeader.lastIndexOf(']')) < 0) {
+                    throw new IllegalArgumentException("IPv6 address should be in square brackets");
+                }
+                if (cb < x) {
+                    parsedHost = parsedHostHeader.substring(0, x);
+                    parsedPort = parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+                } else if (cb != parsedHostHeader.length() - 1) {
+                    throw new IllegalArgumentException(
+                            "']' should be at the end of IPv6 address or before port number");
+                } else {
+                    parsedHost = parsedHostHeader;
+                }
+            } else {
+                // IPv4 or literal host with port number
+                parsedHost = parsedHostHeader.substring(0, x);
+                parsedPort = parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+            }
+        } else if (x < 0) {
+            parsedHost = parsedHostHeader;
+        } else {
+            throw new IllegalArgumentException("Illegal position of colon in the host header");
         }
+        return HostAndPort.of(parsedHost, parsedPort);
     }
 
     // package-private for testing.
     void setQueryParams(final Map<String, List<String>> params) {
-        final QueryStringEncoder encoder = new QueryStringEncoder(rawPath());
+        Uri httpUri = lazyParseRequestTarget();
+        StringBuilder sb = new StringBuilder(httpUri.uri().length() + params.size() * 8);
+        if (httpUri.scheme() != null) {
+            sb.append(httpUri.scheme()).append(':');
+        }
+        if (httpUri.host() != null) {
+            // The authority component is preceded by a double slash ("//")
+            // authority   = [ userinfo "@" ] host [ ":" port ]
+            sb.append("//");
+            if (httpUri.userInfo() != null) {
+                sb.append(httpUri.userInfo()).append('@');
+            }
 
-        for (final Map.Entry<String, List<String>> entry : params.entrySet()) {
-            for (final String value : entry.getValue()) {
-                encoder.addParam(entry.getKey(), value);
+            sb.append(httpUri.host());
+            if (httpUri.port() >= 0) {
+                sb.append(':').append(httpUri.port());
             }
         }
 
-        requestTarget(encodeRequestTarget(null, null, encoder.toString()));
-    }
+        sb.append(httpUri.path());
 
-    private String encodeRequestTarget(@Nullable final String path,
-                                       @Nullable final String query,
-                                       @Nullable final String relativeReference) {
-        final HttpUri uri = lazyParseRequestTarget();
-        final String scheme = uri.scheme();
-        return buildRequestTarget(
-                scheme != null ? scheme : HTTP_SCHEME,
-                uri.host(),
-                uri.explicitPort(),
-                path,
-                query,
-                relativeReference);
+        // Append query params
+        Iterator<Entry<String, List<String>>> itr = params.entrySet().iterator();
+        char prefixChar = '?';
+        while (itr.hasNext()) {
+            Entry<String, List<String>> next = itr.next();
+            String encodedKey = encodeComponent(QUERY, next.getKey(), REQUEST_TARGET_CHARSET, true);
+            sb.append(prefixChar).append(encodedKey);
+            Iterator<String> valuesItr = next.getValue().iterator();
+            if (valuesItr.hasNext()) {
+                String value = valuesItr.next();
+                sb.append('=').append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                while (valuesItr.hasNext()) {
+                    value = valuesItr.next();
+                    sb.append('&').append(encodedKey).append('=')
+                      .append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                }
+            }
+            prefixChar = '&';
+        }
+
+        // Append fragment
+        String fragment = httpUri.fragment();
+        if (fragment != null) {
+            sb.append('#').append(fragment);
+        }
+
+        requestTarget(sb.toString());
     }
 
     private void invalidateParsedUri() {
         requestTargetUri = null;
-        effectiveRequestPort = PORT_NOT_ASSIGNED;
-        effectiveRequestHost = null;
-        effectiveRequestHostHeader = null;
         httpQuery = null;
     }
 
@@ -371,13 +524,5 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         result = 31 * result + method.hashCode();
         result = 31 * result + requestTarget.hashCode();
         return result;
-    }
-
-    private static String urlEncode(String s) {
-        try {
-            return encode(s, REQUEST_TARGET_CHARSET.name());
-        } catch (final UnsupportedEncodingException e) {
-            throw new UnsupportedCharsetException(REQUEST_TARGET_CHARSET.name());
-        }
     }
 }
