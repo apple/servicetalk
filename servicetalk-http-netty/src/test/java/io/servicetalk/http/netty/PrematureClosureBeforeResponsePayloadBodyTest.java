@@ -17,11 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufUtil;
@@ -30,7 +29,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -38,6 +37,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -61,7 +61,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,23 +71,24 @@ import static org.junit.Assert.assertThrows;
 
 public class PrematureClosureBeforeResponsePayloadBodyTest {
 
+    @ClassRule
+    public static final ExecutionContextRule SERVER_CTX = immediate();
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final ServerSocketChannel server;
     private final BlockingHttpClient client;
+    private final ReservedBlockingHttpConnection connection;
     private final AtomicReference<CharSequence> encodedResponse = new AtomicReference<>();
     private final CountDownLatch connectionClosedLatch = new CountDownLatch(1);
 
-    public PrematureClosureBeforeResponsePayloadBodyTest() {
-        EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
-                toEventLoopAwareNettyIoExecutor(globalExecutionContext().ioExecutor());
-        EventLoop loop = eventLoopAwareNettyIoExecutor.eventLoopGroup().next();
-
+    public PrematureClosureBeforeResponsePayloadBodyTest() throws Exception {
+        EventLoopGroup eventLoopGroup = toEventLoopAwareNettyIoExecutor(SERVER_CTX.ioExecutor()).eventLoopGroup();
         ServerBootstrap bs = new ServerBootstrap();
-        bs.group(loop);
-        bs.channel(serverChannel(loop, InetSocketAddress.class));
-        bs.childHandler(new ChannelInitializer() {
+        bs.group(eventLoopGroup);
+        bs.channel(serverChannel(eventLoopGroup, InetSocketAddress.class));
+        bs.childHandler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new HttpRequestDecoder());
@@ -111,10 +112,13 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 .syncUninterruptibly().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
+                .enableWireLogging("servicetalk-tests-wire-logger")
                 .protocols(h1()
                         .specExceptions(new H1SpecExceptions.Builder().allowPrematureClosureBeforePayloadBody().build())
                         .build())
                 .buildBlocking();
+        connection = client.reserveConnection(client.get("/"));
+        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
     }
 
     @After
@@ -132,12 +136,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n");   // no final CRLF after headers
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(PrematureChannelClosureException.class, () -> connection.request(request));
+        assertThrows(PrematureChannelClosureException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
@@ -146,12 +145,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
         encodedResponse.set("HTTP/1.1 200 OK\r\n" +
                 "Connection: close\r\n" + "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.payloadBody().readableBytes(), is(0));
@@ -165,12 +159,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Connection: close\r\n" + "\r\n" +
                 "hello");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.payloadBody().toString(US_ASCII), equalTo("hello"));
@@ -184,12 +173,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Content-Length: 0\r\n" +
                 "Connection: close\r\n" + "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo("0"));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
@@ -205,12 +189,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Connection: close\r\n" + "\r\n" +
                 "hello");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONTENT_LENGTH), contentEqualTo("5"));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
@@ -226,12 +205,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Connection: close\r\n" + "\r\n" +
                 "he");   // not the whole payload body
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        assertThrows(ClosedChannelException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
@@ -245,12 +219,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n" + "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
@@ -266,12 +235,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Connection: close\r\n" + "\r\n" +
                 "0\r\n" + "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
@@ -289,12 +253,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "hello\r\n" +
                 "0\r\n" + "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        HttpResponse response = connection.request(request);
+        HttpResponse response = connection.request(connection.get("/"));
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         assertThat(response.headers().get(TRANSFER_ENCODING), contentEqualTo(CHUNKED));
@@ -310,12 +269,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Connection: close\r\n" + "\r\n" +
                 "5");   // can be a chunk-size, but impossible to interpret it correctly
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        assertThrows(ClosedChannelException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
@@ -329,12 +283,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 // no chunk data of size 5 (e.g. "hello\r\n") and no last-chunk: 0\r\n
                 "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        assertThrows(ClosedChannelException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
@@ -349,12 +298,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 // no last-chunk: 0\r\n
                 "\r\n");
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        assertThrows(ClosedChannelException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
@@ -368,12 +312,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "hello\r\n" +
                 "0\r\n");   // no final CRLF
 
-        HttpRequest request = client.get("/");
-        ReservedBlockingHttpConnection connection = client.reserveConnection(request);
-        // Wait until a server closes the connection:
-        connection.connectionContext().onClose().whenFinally(connectionClosedLatch::countDown).subscribe();
-
-        assertThrows(ClosedChannelException.class, () -> connection.request(request));
+        assertThrows(ClosedChannelException.class, () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 }
