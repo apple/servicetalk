@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -212,7 +211,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         });
         latch.await();
         Throwable throwable = throwableRef.get();
-        assertThat(throwable, IsInstanceOf.instanceOf(IllegalArgumentException.class));
+        assertThat(throwable, instanceOf(IllegalArgumentException.class));
     }
 
     @Test
