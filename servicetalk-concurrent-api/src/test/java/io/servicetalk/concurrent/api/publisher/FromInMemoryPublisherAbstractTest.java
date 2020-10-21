@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +35,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -41,7 +43,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -211,7 +212,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         });
         latch.await();
         Throwable throwable = throwableRef.get();
-        assertTrue("unexpected throwable: " + throwable, throwable instanceof IllegalArgumentException);
+        assertThat(throwable, IsInstanceOf.instanceOf(IllegalArgumentException.class));
     }
 
     @Test
