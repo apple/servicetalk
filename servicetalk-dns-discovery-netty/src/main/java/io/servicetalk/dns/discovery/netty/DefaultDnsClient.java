@@ -106,7 +106,7 @@ final class DefaultDnsClient implements DnsClient {
     private boolean closed;
 
     DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL,
-                     @Nullable Integer datagramBufferCapacity, @Nullable final Integer ndots,
+                     @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
                      @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
@@ -138,8 +138,8 @@ final class DefaultDnsClient implements DnsClient {
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }
-        if (datagramBufferCapacity != null) {
-            builder.maxPayloadSize(datagramBufferCapacity);
+        if (maxUdpPayloadSize != null) {
+            builder.maxPayloadSize(maxUdpPayloadSize);
         }
         if (ndots != null) {
             builder.ndots(ndots);

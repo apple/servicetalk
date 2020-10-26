@@ -39,7 +39,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
-    private Integer datagramBufferCapacity;
+    private Integer maxUdpPayloadSize;
     @Nullable
     private Integer ndots;
     @Nullable
@@ -95,16 +95,18 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Set the capacity of the datagram packet buffer (in bytes).
+     * Set the maximum size of the receiving UDP datagram (in bytes).
+     * <p>
+     * If the DNS response exceeds this amount the request will be automatically retried via TCP.
      *
-     * @param datagramBufferCapacity the capacity of the datagram packet buffer
+     * @param maxUdpPayloadSize the maximum size of the receiving UDP datagram (in bytes)
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder datagramBufferCapacity(final int datagramBufferCapacity) {
-        if (datagramBufferCapacity <= 0) {
-            throw new IllegalArgumentException("datagramBufferCapacity: " + minTTLSeconds + " (expected > 0)");
+    public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
+        if (maxUdpPayloadSize <= 0) {
+            throw new IllegalArgumentException("maxUdpPayloadSize: " + minTTLSeconds + " (expected > 0)");
         }
-        this.datagramBufferCapacity = datagramBufferCapacity;
+        this.maxUdpPayloadSize = maxUdpPayloadSize;
         return this;
     }
 
@@ -225,7 +227,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
-                datagramBufferCapacity, ndots,
+                maxUdpPayloadSize, ndots,
                 optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
