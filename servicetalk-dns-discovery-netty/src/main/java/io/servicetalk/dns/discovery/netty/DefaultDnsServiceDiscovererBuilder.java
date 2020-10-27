@@ -39,6 +39,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private DnsResolverAddressTypes dnsResolverAddressTypes;
     @Nullable
+    private Integer maxUdpPayloadSize;
+    @Nullable
     private Integer ndots;
     @Nullable
     private Boolean optResourceEnabled;
@@ -59,8 +61,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
-        if (minTTLSeconds < 1) {
-            throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 1)");
+        if (minTTLSeconds <= 0) {
+            throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
         }
         this.minTTLSeconds = minTTLSeconds;
         return this;
@@ -89,6 +91,22 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     public DefaultDnsServiceDiscovererBuilder optResourceEnabled(final boolean optResourceEnabled) {
         this.optResourceEnabled = optResourceEnabled;
+        return this;
+    }
+
+    /**
+     * Set the maximum size of the receiving UDP datagram (in bytes).
+     * <p>
+     * If the DNS response exceeds this amount the request will be automatically retried via TCP.
+     *
+     * @param maxUdpPayloadSize the maximum size of the receiving UDP datagram (in bytes)
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
+        if (maxUdpPayloadSize <= 0) {
+            throw new IllegalArgumentException("maxUdpPayloadSize: " + minTTLSeconds + " (expected > 0)");
+        }
+        this.maxUdpPayloadSize = maxUdpPayloadSize;
         return this;
     }
 
@@ -208,7 +226,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, ndots,
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
+                maxUdpPayloadSize, ndots,
                 optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
                 dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
