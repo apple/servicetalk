@@ -180,10 +180,9 @@ final class UriUtils {
     }
 
     static String decodeComponent(final String s, final Charset charset) {
-        if (s.isEmpty()) {
+        if (s.indexOf('%') < 0) {
             return s;
         }
-
         byte[] bytes = s.getBytes(charset);
         for (int i = 0; i < bytes.length; ++i) {
             byte b = bytes[i];

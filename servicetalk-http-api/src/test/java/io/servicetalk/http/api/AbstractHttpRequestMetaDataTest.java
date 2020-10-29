@@ -471,15 +471,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals(singletonList("def"), iteratorAsList(fixture.queryParametersIterator("abc")));
 
         // change it
-        fixture.rawQuery("abc=new");
+        fixture.query("abc=new &abc=new2");
 
         // parse it again
-        assertEquals("/some/path?abc=new", fixture.requestTarget());
+        assertEquals("/some/path?abc=new%20&abc=new2", fixture.requestTarget());
         assertEquals("/some/path", fixture.rawPath());
         assertEquals("/some/path", fixture.path());
-        assertEquals("abc=new", fixture.rawQuery());
+        assertEquals("abc=new%20&abc=new2", fixture.rawQuery());
         assertEquals(singleton("abc"), fixture.queryParametersKeys());
-        assertEquals(singletonList("new"), iteratorAsList(fixture.queryParametersIterator("abc")));
+        assertEquals(asList("new ", "new2"), iteratorAsList(fixture.queryParametersIterator("abc")));
     }
 
     @Test

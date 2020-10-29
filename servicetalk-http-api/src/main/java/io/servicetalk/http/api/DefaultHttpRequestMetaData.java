@@ -51,6 +51,10 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private HttpQuery httpQuery;
     @Nullable
     private Uri requestTargetUri;
+    @Nullable
+    private String pathDecoded;
+    @Nullable
+    private String queryDecoded;
 
     DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
                                final HttpProtocolVersion version, final HttpHeaders headers) {
@@ -175,7 +179,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String path() {
-        return lazyParseRequestTarget().path(REQUEST_TARGET_CHARSET);
+        if (pathDecoded != null) {
+            return pathDecoded;
+        }
+        pathDecoded = lazyParseRequestTarget().path(REQUEST_TARGET_CHARSET);
+        return pathDecoded;
     }
 
     @Override
@@ -281,7 +289,11 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public String query() {
-        return lazyParseRequestTarget().query(REQUEST_TARGET_CHARSET);
+        if (queryDecoded != null) {
+            return queryDecoded;
+        }
+        queryDecoded = lazyParseRequestTarget().query(REQUEST_TARGET_CHARSET);
+        return queryDecoded;
     }
 
     @Override
@@ -494,6 +506,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     private void invalidateParsedUri() {
         requestTargetUri = null;
         httpQuery = null;
+        pathDecoded = null;
+        queryDecoded = null;
     }
 
     @Override
