@@ -171,7 +171,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest rawQuery(@Nullable String query);
 
     @Override
-    StreamingHttpRequest query(String query);
+    StreamingHttpRequest query(@Nullable String query);
 
     @Override
     StreamingHttpRequest addQueryParameter(String key, String value);

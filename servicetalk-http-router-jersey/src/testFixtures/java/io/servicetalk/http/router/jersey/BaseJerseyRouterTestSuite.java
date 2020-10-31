@@ -21,9 +21,6 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-        // Support
-        CharSequenceUtilTest.class,
-
         // Core JAX-RS features
         SynchronousResourceTest.class,
         AsynchronousResourceTest.class,

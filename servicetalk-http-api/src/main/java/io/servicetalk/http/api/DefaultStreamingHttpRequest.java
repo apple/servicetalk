@@ -89,7 +89,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest query(final String query) {
+    public StreamingHttpRequest query(@Nullable final String query) {
         super.query(query);
         return this;
     }

@@ -300,6 +300,16 @@ public class Uri3986Test {
     }
 
     @Test
+    public void justQuery() {
+        verifyUri3986("?queryname", null, null, null, -1, "", "", "queryname", "queryname", null);
+    }
+
+    @Test
+    public void justFragment() {
+        verifyUri3986("#tag", null, null, null, -1, "", "", null, null, "tag");
+    }
+
+    @Test
     public void schemeAuthority() {
         verifyUri3986("http://localhost:80", "http", null, "localhost", 80, "", "", null, null, null);
     }
@@ -582,6 +592,16 @@ public class Uri3986Test {
         new Uri3986("http://foo@[::1");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6ContentBeforePort() {
+        new Uri3986("http://[::1]foo:8080");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6ContentAfterPort() {
+        new Uri3986("http://[::1]:8080foo");
+    }
+
     private static void verifyAppleString(final String expectedUri, final boolean isSsl, final int port,
                                           @Nullable final String userInfo) {
         verifyUri3986(expectedUri, isSsl ? "https" : "http", userInfo, "apple.com", port, "/path/is/here",
@@ -618,10 +638,10 @@ public class Uri3986Test {
         assertThat("unexpected host()", uri.host(), is(expectedHost));
         assertThat("unexpected port()", uri.port(), port < 0 ? lessThan(0) : is(port));
         assertThat("unexpected authority()", uri.authority(), is(expectedAuthority(uri)));
-        assertThat("unexpected path()", uri.path(), is(expectedPath));
         assertThat("unexpected path(Charset)", uri.path(UTF_8), is(expectedPathDecoded));
-        assertThat("unexpected query()", uri.query(), is(expectedQuery));
+        assertThat("unexpected path()", uri.path(), is(expectedPath));
         assertThat("unexpected query(Charset)", uri.query(UTF_8), is(expectedQueryDecoded));
+        assertThat("unexpected query()", uri.query(), is(expectedQuery));
         assertThat("unexpected fragment()", uri.fragment(), is(expectedFragment));
     }
 

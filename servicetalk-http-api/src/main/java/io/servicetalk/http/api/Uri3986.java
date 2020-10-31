@@ -117,6 +117,8 @@ final class Uri3986 implements Uri {
                                     throw new IllegalArgumentException("duplicate/invalid host");
                                 }
                                 parsedHost = uri.substring(begin, i);
+                            } else if (parsingIPv6 == 2 && begin != i) {
+                                throw new IllegalArgumentException("Port must be immediately after IPv6address");
                             }
                             ++i;
                             if (parsingIPv6 != 1) {
@@ -269,7 +271,8 @@ final class Uri3986 implements Uri {
     @Nullable
     @Override
     public String query(final Charset charset) {
-        return isNullableComponent(query) ? null : decodeComponent(query, charset);
+        final String query = query();
+        return query == null ? null : decodeComponent(query, charset);
     }
 
     @Override
@@ -299,11 +302,6 @@ final class Uri3986 implements Uri {
         return component == NULL_COMPONENT ? null : component;
     }
 
-    @SuppressWarnings("StringEquality")
-    private static boolean isNullableComponent(@Nullable String component) {
-        return component == null || component == NULL_COMPONENT;
-    }
-
     private int pathEndIndex() {
         int i = 0;
         if (scheme != null) {
@@ -324,13 +322,13 @@ final class Uri3986 implements Uri {
         return i;
     }
 
-    private boolean hostAndPortEqual(final Uri3986 rhs) {
-        return port == rhs.port && Objects.equals(host, rhs.host);
-    }
-
     @Override
     public boolean equals(final Object o) {
-        return o instanceof Uri3986 && hostAndPortEqual((Uri3986) o);
+        if (!(o instanceof Uri3986)) {
+            return false;
+        }
+        final Uri3986 rhs = (Uri3986) o;
+        return port == rhs.port && Objects.equals(host, rhs.host);
     }
 
     @Override
@@ -435,6 +433,6 @@ final class Uri3986 implements Uri {
         } else if (port <= 65535) {
             return 5;
         }
-        throw new IllegalArgumentException("port out of bounds");
+        throw new IllegalArgumentException("port out of bounds: " + port);
     }
 }

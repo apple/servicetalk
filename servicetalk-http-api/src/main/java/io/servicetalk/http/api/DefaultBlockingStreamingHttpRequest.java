@@ -85,7 +85,7 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     }
 
     @Override
-    public BlockingStreamingHttpRequest query(final String query) {
+    public BlockingStreamingHttpRequest query(@Nullable final String query) {
         original.query(query);
         return this;
     }

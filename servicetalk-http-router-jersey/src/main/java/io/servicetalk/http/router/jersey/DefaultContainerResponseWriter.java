@@ -50,7 +50,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
-import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutionStrategy;
@@ -273,6 +272,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
                 HttpResponseStatus.of(statusInfo.getStatusCode(), statusInfo.getReasonPhrase());
+    }
+
+    private static CharSequence asCharSequence(final Object o) {
+        return o instanceof CharSequence ? (CharSequence) o : o.toString();
     }
 
     private boolean isHeadRequest() {

@@ -234,7 +234,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     public void testSetPathWithoutLeadingSlash() {
         createFixture("temp");
         fixture.path("foo");
-        assertEquals("/foo", fixture.requestTarget());
+        assertEquals("foo", fixture.requestTarget());
     }
 
     @Test
@@ -276,7 +276,81 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     public void testSetRawPathWithoutLeadingSlash() {
         createFixture("temp");
         fixture.rawPath("foo");
-        assertEquals("/foo", fixture.requestTarget());
+        assertEquals("foo", fixture.requestTarget());
+    }
+
+    @Test
+    public void testRawPathCanOverrideQueryComponent() {
+        // asserting current behavior, rawPath doesn't attempt full validation and assumes the path(..) method is used
+        // to encode if necessary.
+        createFixture("/temp");
+        fixture.rawPath("foo?bar");
+        assertEquals("foo?bar", fixture.requestTarget());
+        assertEquals("bar", fixture.rawQuery());
+    }
+
+    @Test
+    public void testRawPathCanOverrideFragmentComponent() {
+        // asserting current behavior, rawPath doesn't attempt full validation and assumes the path(..) method is used
+        // to encode if necessary.
+        createFixture("/temp");
+        fixture.rawPath("foo#bar");
+        assertEquals("foo#bar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testEncodedPathCanNotOverrideQueryComponent() {
+        createFixture("/temp");
+        fixture.path("foo?bar");
+        assertEquals("foo%3Fbar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testEncodedPathCanNotOverrideFragmentComponent() {
+        createFixture("/temp");
+        fixture.path("foo#bar");
+        assertEquals("foo%23bar", fixture.requestTarget());
+    }
+
+    @Test
+    public void testRelativePathCannotContainColonInFirstSegment() {
+        createFixture("http://temp");
+        expected.expect(IllegalArgumentException.class);
+        fixture.rawPath("foo:bar");
+    }
+
+    @Test
+    public void testPathCannotInjectAuthority() {
+        createFixture("/temp");
+        expected.expect(IllegalArgumentException.class);
+        fixture.rawPath("//authorityinjection");
+    }
+
+    @Test
+    public void testAuthoritySetAllowsPathAuthorityLookalike() {
+        createFixture("//realauthority");
+        fixture.rawPath("//authorityinjection");
+        assertEquals("//realauthority//authorityinjection", fixture.requestTarget());
+        assertEquals("realauthority", fixture.host());
+        assertEquals("//authorityinjection", fixture.path());
+    }
+
+    @Test
+    public void testEmptyPathWithQueryAndFragment() {
+        createFixture("/temp?foo#bar");
+        fixture.rawPath("");
+        assertEquals("?foo#bar", fixture.requestTarget());
+        assertEquals("", fixture.path());
+        assertEquals("foo", fixture.query());
+    }
+
+    @Test
+    public void testNullQueryWithPathAndFragment() {
+        createFixture("/temp?foo#bar");
+        fixture.rawQuery(null);
+        assertEquals("/temp#bar", fixture.requestTarget());
+        assertEquals("/temp", fixture.path());
+        assertNull(fixture.query());
     }
 
     @Test

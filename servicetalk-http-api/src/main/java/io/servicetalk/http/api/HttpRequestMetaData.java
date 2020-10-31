@@ -222,7 +222,8 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Because this modifies the request target, this may result in the clearing of internal caches.
      * See {@link #requestTarget(String)}.
      *
-     * @param query the encoded query to set.
+     * @param query the encoded query to set. {@code null} will clear the query value (e.g. no {@code ?} present in
+     * {@link #requestTarget()}.
      * @return {@code this}.
      */
     HttpRequestMetaData rawQuery(@Nullable String query);
@@ -231,10 +232,11 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Sets the path, performing encoding according
      * to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.
      *
-     * @param query the un-encoded query to set.
+     * @param query the un-encoded query to set. {@code null} will clear the query value (e.g. no {@code ?} present in
+     * {@link #requestTarget()}.
      * @return {@code this}.
      */
-    HttpRequestMetaData query(String query);
+    HttpRequestMetaData query(@Nullable String query);
 
     /**
      * Returns the value of a query parameter with the specified key. If there is more than one value for the specified
@@ -437,11 +439,13 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Get the <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
      * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
      * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
-     * The port component will be {@code <0} if none can be derived.
+     * The port component will be {@code <0} if none can be derived. This method typically pulls information from
+     * {@link #requestTarget()} and {@link HttpHeaderNames#HOST} header.
      *
      * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
      * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
-     * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
+     * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>. {@code null} if the
+     * request doesn't provide enough info to derive the host/port.
      */
     @Nullable
     HostAndPort effectiveHostAndPort();

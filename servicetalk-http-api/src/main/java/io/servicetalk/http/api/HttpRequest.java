@@ -87,7 +87,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest rawQuery(@Nullable String query);
 
     @Override
-    HttpRequest query(String query);
+    HttpRequest query(@Nullable String query);
 
     @Override
     HttpRequest addQueryParameter(String key, String value);

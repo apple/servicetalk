@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * {@link StreamingHttpRequest#requestTarget()} for each incoming request.
  */
 public final class RequestTargetDecoderHttpServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                              HttpExecutionStrategyInfluencer {
+                                                                    HttpExecutionStrategyInfluencer {
     private final Charset charset;
 
     /**

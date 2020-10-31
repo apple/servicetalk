@@ -86,7 +86,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpRequest query(final String query) {
+    public HttpRequest query(@Nullable final String query) {
         original.query(query);
         return this;
     }

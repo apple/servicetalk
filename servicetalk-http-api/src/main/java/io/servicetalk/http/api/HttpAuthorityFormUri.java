@@ -63,6 +63,8 @@ final class HttpAuthorityFormUri implements Uri {
                         throw new IllegalArgumentException("duplicate/invalid host");
                     }
                     parsedHost = uri.substring(begin, i);
+                } else if (parsingIPv6 == 2 && begin != i) {
+                    throw new IllegalArgumentException("Port must be immediately after IPv6address");
                 }
                 ++i;
                 if (parsingIPv6 != 1) {
@@ -157,12 +159,12 @@ final class HttpAuthorityFormUri implements Uri {
         return null;
     }
 
-    static String encode(String requestTarget, Charset charset, boolean preservePctEncoding) {
+    static String encode(String requestTarget, Charset charset) {
         HttpAuthorityFormUri uri = new HttpAuthorityFormUri(requestTarget);
         StringBuilder sb = new StringBuilder(uri.uri.length() + 16);
         if (!uri.host.isEmpty()) {
             sb.append(uri.host.charAt(0) != '[' ?
-                    encodeComponent(HOST_NON_IP, uri.host, charset, preservePctEncoding) : uri.host);
+                    encodeComponent(HOST_NON_IP, uri.host, charset, true) : uri.host);
         }
         if (uri.port >= 0) {
             sb.append(':').append(uri.port);

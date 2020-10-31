@@ -80,6 +80,16 @@ public class HttpAuthorityFormUriTest {
         new HttpAuthorityFormUri("[::1:65536");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6ContentBeforePort() {
+        new HttpAuthorityFormUri("[::1]foo:8080");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6ContentAfterPort() {
+        new HttpAuthorityFormUri("[::1]:8080foo");
+    }
+
     @Test
     public void encodeTouchesAllComponents() {
         verifyEncodeDecode("www.foo bar.com:8080", "www.foo%20bar.com:8080");
@@ -105,7 +115,7 @@ public class HttpAuthorityFormUriTest {
     }
 
     private static void verifyEncodeDecode(String decoded, String encoded) {
-        assertEquals(encoded, HttpAuthorityFormUri.encode(decoded, UTF_8, true));
+        assertEquals(encoded, HttpAuthorityFormUri.encode(decoded, UTF_8));
         assertEquals(decoded, HttpAuthorityFormUri.decode(encoded, UTF_8));
     }
 

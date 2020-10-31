@@ -224,7 +224,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest rawQuery(@Nullable String query);
 
     @Override
-    BlockingStreamingHttpRequest query(String query);
+    BlockingStreamingHttpRequest query(@Nullable String query);
 
     @Override
     BlockingStreamingHttpRequest addQueryParameter(String key, String value);

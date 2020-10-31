@@ -57,11 +57,10 @@ final class UriUtils {
     private static final long SUBDELIM_HMASK = highMask("!$&'()*+,;=");
 
     // pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-    private static final long PCHAR_LMASK = UNRESERVED_LMASK | SUBDELIM_LMASK | lowMask(";@");
-    private static final long PCHAR_HMASK = UNRESERVED_HMASK | SUBDELIM_HMASK | highMask(";@");
-
-    private static final long PCHAR_NOSUBDELIM_LMASK = UNRESERVED_LMASK | lowMask(";@");
-    private static final long PCHAR_NOSUBDELIM_HMASK = UNRESERVED_HMASK | highMask(";@");
+    private static final long PCHAR_NOSUBDELIM_LMASK = UNRESERVED_LMASK | lowMask(":@");
+    private static final long PCHAR_NOSUBDELIM_HMASK = UNRESERVED_HMASK | highMask(":@");
+    private static final long PCHAR_LMASK = PCHAR_NOSUBDELIM_LMASK | SUBDELIM_LMASK;
+    private static final long PCHAR_HMASK = PCHAR_NOSUBDELIM_HMASK | SUBDELIM_HMASK;
 
     // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
     static final long USERINFO_LMASK = UNRESERVED_LMASK | SUBDELIM_LMASK | lowMask(":");
@@ -131,11 +130,11 @@ final class UriUtils {
                     break;
                 case '&':
                 case ';':
-                    if (addQueryParam(rawQuery, nameStart, valueStart, i, charset, params, decoder)) {
-                        paramCountDown--;
-                        if (paramCountDown == 0) {
-                            return params;
+                    if (nameStart < i) {
+                        if (paramCountDown-- == 0) {
+                            throw new IllegalStateException("maxParams[" + maxParams + "] exceeded");
                         }
+                        addQueryParam(rawQuery, nameStart, valueStart, i, charset, params, decoder);
                     }
                     nameStart = i + 1;
                     break;
@@ -145,7 +144,12 @@ final class UriUtils {
                     // continue
             }
         }
-        addQueryParam(rawQuery, nameStart, valueStart, i, charset, params, decoder);
+        if (nameStart < i) {
+            if (paramCountDown <= 1) {
+                throw new IllegalStateException("maxParams[" + maxParams + "] exceeded");
+            }
+            addQueryParam(rawQuery, nameStart, valueStart, i, charset, params, decoder);
+        }
         return params;
     }
 
@@ -227,22 +231,19 @@ final class UriUtils {
                     (10 * toDecimal(uri.charAt(begin + 3))) +
                     toDecimal(uri.charAt(begin + 4));
             if (port > 65535) {
-                throw new IllegalArgumentException("port out of bounds");
+                throw new IllegalArgumentException("port out of bounds: " + port);
             }
             return port;
         } else if (len == 1) {
             return toDecimal(uri.charAt(begin));
         } else {
-            throw new IllegalArgumentException("invalid port");
+            throw new IllegalArgumentException("invalid port length: " + len);
         }
     }
 
-    private static boolean addQueryParam(final String s, final int nameStart, int valueStart, final int valueEnd,
-                                         final Charset charset, final Map<String, List<String>> params,
-                                         final BiFunction<String, Charset, String> decoder) {
-        if (nameStart >= valueEnd) {
-            return false;
-        }
+    private static void addQueryParam(final String s, final int nameStart, int valueStart, final int valueEnd,
+                                      final Charset charset, final Map<String, List<String>> params,
+                                      final BiFunction<String, Charset, String> decoder) {
         if (valueStart <= nameStart) {
             valueStart = valueEnd + 1;
         }
@@ -250,7 +251,6 @@ final class UriUtils {
         final String value = decoder.apply(s.substring(valueStart, valueEnd), charset);
         final List<String> values = params.computeIfAbsent(name, k -> new ArrayList<>(1)); // Often there's only 1 value
         values.add(value);
-        return true;
     }
 
     private static void encodeHexDigits(ByteArrayOutputStream baos, byte b) {
@@ -280,7 +280,7 @@ final class UriUtils {
         if (b < 10) {
             return (byte) ('0' + b);
         }
-        return (byte) ('A' - 10 + b); // uppercase
+        return (byte) ('A' - 0xA + b); // uppercase
     }
 
     /**
@@ -308,7 +308,7 @@ final class UriUtils {
 
     private static int toDecimal(final char c) {
         if (c < '0' || c > '9') {
-            throw new IllegalArgumentException("invalid port");
+            throw new IllegalArgumentException("invalid decimal character: " + c);
         }
         return c - '0';
     }
@@ -334,10 +334,12 @@ final class UriUtils {
 
     private static long lowMask(char first, char last) {
         assert first <= 127 && last <= 127;
+        if (first > 63) {
+            return 0;
+        }
         long mask = 0;
-        int begin = min(first, 63);
         int end = min(last, 63);
-        for (int i = begin; i <= end; ++i) {
+        for (int i = first; i <= end; ++i) {
             mask |= 1L << i;
         }
         return mask;
@@ -356,9 +358,12 @@ final class UriUtils {
 
     private static long highMask(char first, char last) {
         assert first <= 127 && last <= 127;
+        if (last < 64) {
+            return 0;
+        }
         long mask = 0;
-        int begin = max(first, 63) - 64;
-        int end = max(last, 63) - 64;
+        int begin = max(first, 64) - 64;
+        int end = last - 64;
         for (int i = begin; i <= end; ++i) {
             mask |= 1L << i;
         }
