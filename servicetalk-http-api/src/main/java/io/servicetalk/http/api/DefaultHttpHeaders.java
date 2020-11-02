@@ -59,17 +59,6 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    MultiMapEntry<CharSequence, CharSequence> newEntry(final CharSequence key,
-                                                       final CharSequence value, final int keyHash) {
-        return new MultiMapEntry<CharSequence, CharSequence>(value, keyHash) {
-            @Override
-            public CharSequence getKey() {
-                return key;
-            }
-        };
-    }
-
-    @Override
     public boolean containsIgnoreCase(final CharSequence name, final CharSequence value) {
         return contains(name, value, CharSequences::contentEqualsIgnoreCase);
     }
