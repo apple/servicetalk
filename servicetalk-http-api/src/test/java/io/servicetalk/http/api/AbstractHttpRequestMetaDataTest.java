@@ -231,6 +231,20 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testSlashAddedToPath() {
+        createFixture("//authority");
+        fixture.path("path");
+        assertEquals("//authority/path", fixture.requestTarget());
+    }
+
+    @Test
+    public void testSlashNotAddedToEmptyPath() {
+        createFixture("//authority");
+        fixture.path("");
+        assertEquals("//authority", fixture.requestTarget());
+    }
+
+    @Test
     public void testSetPathWithoutLeadingSlash() {
         createFixture("temp");
         fixture.path("foo");
@@ -263,6 +277,27 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("/base?baz=123");
         fixture.appendPathSegments("foo", "/$", "bar");
         assertEquals("/base/foo/%2F$/bar?baz=123", fixture.requestTarget());
+    }
+
+    @Test
+    public void testAppendAuthorityInFirstSegmentIsEscaped() {
+        createFixture("");
+        fixture.appendPathSegments("//authority");
+        assertEquals("%2F%2Fauthority", fixture.requestTarget());
+    }
+
+    @Test
+    public void testNoPathAppendColonInFirstSegment() {
+        createFixture("");
+        expected.expect(IllegalArgumentException.class);
+        fixture.appendPathSegments("foo:");
+    }
+
+    @Test
+    public void testEmptyPathAppendColonInFirstSegment() {
+        createFixture("/");
+        expected.expect(IllegalArgumentException.class);
+        fixture.appendPathSegments("foo:");
     }
 
     @Test
@@ -314,7 +349,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     @Test
     public void testRelativePathCannotContainColonInFirstSegment() {
-        createFixture("http://temp");
+        createFixture("temp");
         expected.expect(IllegalArgumentException.class);
         fixture.rawPath("foo:bar");
     }

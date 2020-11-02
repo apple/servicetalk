@@ -135,28 +135,20 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public HttpRequestMetaData rawPath(final String path) {
         Uri httpUri = lazyParseRequestTarget();
-        // Validate the path
-        int i = 0;
-        if (httpUri.scheme() != null) {
-            for (; i < path.length(); ++i) {
-                final char c = path.charAt(i);
-                if (c == '/') {
-                    break;
-                } else if (c == ':') {
-                    throw new IllegalArgumentException("relative-path cannot contain `:` in first segment");
-                }
-            }
-        }
-        if (httpUri.host() == null && path.length() >= 2 && path.charAt(0) == '/' && path.charAt(1) == '/') {
-            throw new IllegalArgumentException("No authority component means the path cannot start with '//'");
-        }
-        // It is assumed '?'/'#' characters that delimit query/fragment components have been escaped and not validated.
+        validateFirstPathSegment(httpUri, path);
 
         // Potentially over estimate the size of the URL to avoid resize/copy
         StringBuilder sb = new StringBuilder(httpUri.uri().length() + path.length());
         appendScheme(sb, httpUri);
         appendAuthority(sb, httpUri);
 
+        // https://tools.ietf.org/html/rfc3986#section-3.3
+        // If a URI contains an authority component, then the path component must either be empty or begin with a
+        // slash ("/") character.
+        final String host = httpUri.host();
+        if ((host != null && !host.isEmpty()) && (!path.isEmpty() && path.charAt(0) != '/')) {
+            sb.append('/');
+        }
         sb.append(path);
 
         appendQuery(sb, httpUri);
@@ -193,15 +185,20 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
         // Append the new path segments
         String path = httpUri.path();
+        final String segment = encodeComponent(PATH_SEGMENT, segments[0], REQUEST_TARGET_CHARSET, false);
+        if (path.isEmpty() || path.length() == 1 && path.charAt(0) == '/') {
+            validateFirstPathSegment(httpUri, segment);
+        }
         sb.append(path);
-        if (path.isEmpty() || path.charAt(path.length() - 1) != '/') {
+        // relative-path is valid so don't append a '/' in case there is nothing appended thus far.
+        // https://tools.ietf.org/html/rfc3986#section-4.2
+        if ((path.isEmpty() || path.charAt(path.length() - 1) != '/') && sb.length() != 0) {
             sb.append('/');
         }
-        final int segmentsLastIndex = segments.length - 1;
-        for (int i = 0; i < segmentsLastIndex; i++) {
-            sb.append(encodeComponent(PATH_SEGMENT, segments[i], REQUEST_TARGET_CHARSET, false)).append('/');
+        sb.append(segment);
+        for (int i = 1; i < segments.length; i++) {
+            sb.append('/').append(encodeComponent(PATH_SEGMENT, segments[i], REQUEST_TARGET_CHARSET, false));
         }
-        sb.append(encodeComponent(PATH_SEGMENT, segments[segmentsLastIndex], REQUEST_TARGET_CHARSET, false));
 
         // Append the query string
         appendQuery(sb, httpUri);
@@ -357,6 +354,32 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
                     new Uri3986(requestTarget());
         }
         return requestTargetUri;
+    }
+
+    private static void validateFirstPathSegment(final Uri httpUri, final String path) {
+        int i = 0;
+        final String scheme = httpUri.scheme();
+        if (scheme == null || scheme.isEmpty()) {
+            // https://tools.ietf.org/html/rfc3986#section-3.3
+            // In addition, a URI reference (Section 4.1) may be a relative-path reference, in which case the first path
+            // segment cannot contain a colon (":") character.
+            for (; i < path.length(); ++i) {
+                final char c = path.charAt(i);
+                if (c == '/') {
+                    break;
+                } else if (c == ':') {
+                    throw new IllegalArgumentException("relative-path cannot contain `:` in first segment");
+                }
+            }
+        }
+        // https://tools.ietf.org/html/rfc3986#section-3.3
+        // If a URI does not contain an authority component, then the path cannot begin with two slash characters
+        // ("//").
+        if (httpUri.host() == null && path.length() >= 2 && path.charAt(0) == '/' && path.charAt(1) == '/') {
+            throw new IllegalArgumentException("No authority component, path cannot start with '//'");
+        }
+        // It is assumed '?'/'#' characters that delimit query/fragment components have been escaped and are therefore
+        // not validated.
     }
 
     @Nullable
