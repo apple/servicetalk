@@ -75,16 +75,6 @@ abstract class MultiMap<K, V> {
     }
 
     /**
-     * Create a new {@link MultiMapEntry} to represent an entry in this {@link MultiMap}.
-     *
-     * @param key     The key for the {@link MultiMapEntry}.
-     * @param value   The value for the {@link MultiMapEntry}.
-     * @param keyHash The hash code for {@code key}.
-     * @return a new {@link MultiMapEntry} to represent an entry in this {@link MultiMap}.
-     */
-    abstract MultiMapEntry<K, V> newEntry(K key, V value, int keyHash);
-
-    /**
      * Generate a hash code for {@code key} used as an index in this {@link MultiMap}.
      *
      * @param key The key to create the hash code for.
@@ -134,6 +124,18 @@ abstract class MultiMap<K, V> {
      * @return {@code true} if {@code value1} and {@code value2} are equal.
      */
     protected abstract boolean equalsForValue(V value1, V value2);
+
+    /**
+     * Create a new {@link MultiMapEntry} to represent an entry in this {@link MultiMap}.
+     *
+     * @param key     The key for the {@link MultiMapEntry}.
+     * @param value   The value for the {@link MultiMapEntry}.
+     * @param keyHash The hash code for {@code key}.
+     * @return a new {@link MultiMapEntry} to represent an entry in this {@link MultiMap}.
+     */
+    private MultiMapEntry<K, V> newEntry(K key, V value, int keyHash) {
+        return new MultiMapEntry<>(key, value, keyHash);
+    }
 
     final Set<? extends K> getKeys() {
         if (isEmpty()) {
@@ -674,8 +676,9 @@ abstract class MultiMap<K, V> {
         }
     }
 
-    abstract static class MultiMapEntry<K, V> implements Entry<K, V> {
+    static final class MultiMapEntry<K, V> implements Entry<K, V> {
         final int keyHash;
+        private final K key;
         V value;
         /**
          * In bucket linked list pointing to the next item in the bucket.
@@ -693,15 +696,16 @@ abstract class MultiMap<K, V> {
         @Nullable
         MultiMapEntry<K, V> bucketLastOrPrevious;
 
-        MultiMapEntry(final V value, final int keyHash) {
+        MultiMapEntry(final K key, final V value, final int keyHash) {
             if (value == null) {
-                throw new IllegalArgumentException("Null values are not allowed");
+                throw new IllegalArgumentException("Null value for key: " + key);
             }
+            this.key = requireNonNull(key);
             this.value = value;
             this.keyHash = keyHash;
         }
 
-        final void addToBucketTail(final BucketHead<K, V> bucketHead) {
+        void addToBucketTail(final BucketHead<K, V> bucketHead) {
             assert bucketHead.entry != null;
             assert bucketHead.entry.bucketLastOrPrevious != null;
             bucketLastOrPrevious = bucketHead.entry.bucketLastOrPrevious;
@@ -709,17 +713,22 @@ abstract class MultiMap<K, V> {
             bucketHead.entry.bucketLastOrPrevious = this;
         }
 
-        final void addAsBucketHead() {
+        void addAsBucketHead() {
             bucketLastOrPrevious = this;
         }
 
         @Override
-        public final V getValue() {
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
             return value;
         }
 
         @Override
-        public final V setValue(final V value) {
+        public V setValue(final V value) {
             requireNonNull(value);
             final V oldValue = this.value;
             this.value = value;
@@ -727,22 +736,22 @@ abstract class MultiMap<K, V> {
         }
 
         @Override
-        public final String toString() {
+        public String toString() {
             return getKey() + "=" + value;
         }
 
         @Override
-        public final boolean equals(final Object o) {
+        public boolean equals(final Object o) {
             if (!(o instanceof Entry)) {
                 return false;
             }
             final Entry<?, ?> other = (Entry<?, ?>) o;
-            return getKey() != null && getKey().equals(other.getKey()) && value.equals(other.getValue());
+            return getKey().equals(other.getKey()) && value.equals(other.getValue());
         }
 
         @Override
-        public final int hashCode() {
-            return (getKey() == null ? 0 : getKey().hashCode()) ^ value.hashCode();
+        public int hashCode() {
+            return getKey().hashCode() ^ value.hashCode();
         }
     }
 }
