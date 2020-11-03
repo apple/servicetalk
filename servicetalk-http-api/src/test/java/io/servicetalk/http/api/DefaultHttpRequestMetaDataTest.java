@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.List;
-import java.util.Map;
-
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -32,10 +29,5 @@ public class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataT
     @Override
     protected void createFixture(final String uri, final HttpRequestMethod method) {
         fixture = new DefaultHttpRequestMetaData(method, uri, HTTP_1_1, INSTANCE.newHeaders());
-    }
-
-    @Override
-    protected void setFixtureQueryParams(final Map<String, List<String>> params) {
-        fixture.setQueryParams(params);
     }
 }
