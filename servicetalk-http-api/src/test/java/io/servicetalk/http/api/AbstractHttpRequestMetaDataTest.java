@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.HostAndPort;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -44,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -228,6 +231,72 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         fixture.headers().set(HOST, "other.site.com:8080");
         assertEquals("my.site.com", fixture.effectiveHost());
         assertThat(fixture.effectivePort(), lessThan(0));
+    }
+
+    @Test
+    public void testEffectiveHostIPv6NoPort() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]");
+
+        HostAndPort hostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(hostAndPort);
+        assertEquals("[1:2:3::5]", hostAndPort.hostName());
+        assertThat(hostAndPort.port(), lessThan(0));
+    }
+
+    @Test
+    public void testEffectiveHostIPv6WithPort() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]:8080");
+
+        HostAndPort hostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(hostAndPort);
+        assertEquals("[1:2:3::5]", hostAndPort.hostName());
+        assertEquals(8080, hostAndPort.port());
+    }
+
+    @Test
+    public void testEffectiveHostIPv6EmptyPort() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]:");
+        expected.expect(IllegalArgumentException.class);
+        fixture.effectiveHostAndPort();
+    }
+
+    @Test
+    public void testEffectiveHostIPv6BeforePort() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]:f8080");
+
+        expected.expect(IllegalArgumentException.class);
+        fixture.effectiveHostAndPort();
+    }
+
+    @Test
+    public void testEffectiveHostIPv6AfterPort() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]:8080f");
+
+        expected.expect(IllegalArgumentException.class);
+        fixture.effectiveHostAndPort();
+    }
+
+    @Test
+    public void testEffectiveHostIPv6InvalidPortDelimiter() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5]f8080");
+
+        expected.expect(IllegalArgumentException.class);
+        fixture.effectiveHostAndPort();
+    }
+
+    @Test
+    public void testEffectiveHostIPv6NoClosingBrace() {
+        createFixture("some/path?foo=bar&abc=def&foo=baz");
+        fixture.headers().set(HOST, "[1:2:3::5");
+
+        expected.expect(IllegalArgumentException.class);
+        fixture.effectiveHostAndPort();
     }
 
     @Test
@@ -637,6 +706,35 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         assertEquals("my.site.com", fixture.effectiveHost());
         assertThat(fixture.effectivePort(), lessThan(0));
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithAbsoluteFormWithPort() {
+        createFixture("http://my.site.com:8080/some/path?foo=bar&abc=def&foo=baz#fragment");
+        params.put("foo", newList("new"));
+        setFixtureQueryParams(params);
+
+        assertEquals("http://my.site.com:8080/some/path?foo=new#fragment", fixture.requestTarget());
+
+        HostAndPort hostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(hostAndPort);
+        assertEquals("my.site.com", hostAndPort.hostName());
+        assertEquals(8080, hostAndPort.port());
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithAbsoluteFormWithUserInfo() {
+        createFixture("http://user@my.site.com/some/path?foo=bar&abc=def&foo=baz#fragment");
+        params.put("foo", newList("new"));
+        setFixtureQueryParams(params);
+
+        assertEquals("http://user@my.site.com/some/path?foo=new#fragment", fixture.requestTarget());
+        fixture.path("");
+        assertEquals("http://user@my.site.com?foo=new#fragment", fixture.requestTarget());
+        assertEquals("", fixture.path());
+        assertEquals("", fixture.path()); // check cached value
+        assertEquals("foo=new", fixture.query());
+        assertEquals("foo=new", fixture.query()); // check cached value
     }
 
     @Test

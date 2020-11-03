@@ -391,20 +391,18 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         String parsedHost;
         int parsedPort = -1;
         if (parsedHostHeader.charAt(0) == '[') {
-            // IPv6 address is present in the header
             // https://tools.ietf.org/html/rfc3986#section-3.2.2
-            // A host identified by an Internet Protocol literal address, version 6
-            // [RFC3513] or later, is distinguished by enclosing the IP literal
-            // within square brackets ("[" and "]").  This is the only place where
-            // square bracket characters are allowed in the URI syntax.
+            // A host identified by an Internet Protocol literal address, version 6 [RFC3513] or later, is distinguished
+            // by enclosing the IP literal within square brackets ("[" and "]").  This is the only place where square
+            // bracket characters are allowed in the URI syntax.
             final int x = parsedHostHeader.lastIndexOf(']');
             if (x <= 0) {
                 throw new IllegalArgumentException("IPv6 address should be in square brackets, and not empty");
             }
-            parsedHost = parsedHostHeader.substring(0, x);
+            parsedHost = parsedHostHeader.substring(0, x + 1);
             if (parsedHostHeader.length() - 1 > x) {
                 if (parsedHostHeader.charAt(x + 1) == ':') {
-                    parsedPort = parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+                    parsedPort = parsePort(parsedHostHeader, x + 2, parsedHostHeader.length());
                 } else {
                     throw new IllegalArgumentException("Unexpected content after IPv6 address");
                 }
