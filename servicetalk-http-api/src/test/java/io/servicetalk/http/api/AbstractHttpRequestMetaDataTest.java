@@ -34,6 +34,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static java.lang.System.lineSeparator;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.emptyList;
@@ -45,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -528,10 +530,25 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testAddQueryEquals() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        T oldFixture = fixture;
+        createFixture("/some/path");
+        assertNotEquals(fixture, oldFixture);
+    }
+
+    @Test
+    public void testAddQueryDecode() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        assertEquals("/some/path?foo=bar", fixture.requestTarget(UTF_8));
+    }
+
+    @Test
     public void testParseEmptyAndEncodeQuery() {
         createFixture("/some/path");
         fixture.addQueryParameter("foo", "bar");
-
         assertEquals("/some/path?foo=bar", fixture.requestTarget());
     }
 
