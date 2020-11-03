@@ -539,10 +539,18 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
-    public void testAddQueryDecode() {
+    public void testAddQueryDecodeRequestTarget() {
         createFixture("/some/path");
         fixture.addQueryParameter("foo", "bar");
         assertEquals("/some/path?foo=bar", fixture.requestTarget(UTF_8));
+    }
+
+    @Test
+    public void testAddQueryEncodeRequestTarget() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        fixture.requestTarget("/some/new/path");
+        assertEquals("/some/new/path", fixture.requestTarget(UTF_8));
     }
 
     @Test
