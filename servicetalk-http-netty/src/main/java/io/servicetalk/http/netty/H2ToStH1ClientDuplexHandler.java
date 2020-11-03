@@ -71,7 +71,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             CharSequence host = h1Headers.getAndRemove(HOST);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
             if (host == null) {
-                host = metaData.effectiveHost();
+                host = metaData.host();
                 if (host != null) {
                     h2Headers.authority(host);
                 }

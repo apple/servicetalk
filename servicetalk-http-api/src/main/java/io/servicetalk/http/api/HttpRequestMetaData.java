@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.HostAndPort;
+
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -51,6 +54,16 @@ public interface HttpRequestMetaData extends HttpMetaData {
     String requestTarget();
 
     /**
+     * The <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
+     *
+     * @param encoding the {@link Charset} to use to
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">decode</a> the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
+     * @return The <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
+     */
+    String requestTarget(Charset encoding);
+
+    /**
      * Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
      * <p>
      * This will be treated as encoded according to
@@ -64,6 +77,21 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @return {@code this}.
      */
     HttpRequestMetaData requestTarget(String requestTarget);
+
+    /**
+     * Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
+     * <p>
+     * This may result in clearing of internal caches used by methods that are derived from the {@code request-target},
+     * such as {@link #path()}, {@link #rawQuery()}, etc.
+     *
+     * @param requestTarget the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> to set.
+     * @param encoding the {@link Charset} to use to
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">encode</a> {@code requestTarget} before setting the
+     * value.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData requestTarget(String requestTarget, Charset encoding);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.1">scheme component</a> derived
@@ -173,7 +201,18 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * <p>
      * No decoding has been done on the query component: the value is provided as specified in the request target.
      */
+    @Nullable
     String rawQuery();
+
+    /**
+     * Get an equivalent value as {@link #rawQuery()} but decoded according
+     * to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.
+     *
+     * @return an equivalent value as {@link #rawQuery()} but decoded according
+     * to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.
+     */
+    @Nullable
+    String query();
 
     /**
      * Sets the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> to {@code query}, without
@@ -183,10 +222,21 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Because this modifies the request target, this may result in the clearing of internal caches.
      * See {@link #requestTarget(String)}.
      *
-     * @param query the encoded query to set.
+     * @param query the encoded query to set. {@code null} will clear the query value (e.g. no {@code ?} present in
+     * {@link #requestTarget()}.
      * @return {@code this}.
      */
-    HttpRequestMetaData rawQuery(String query);
+    HttpRequestMetaData rawQuery(@Nullable String query);
+
+    /**
+     * Sets the path, performing encoding according
+     * to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.
+     *
+     * @param query the un-encoded query to set. {@code null} will clear the query value (e.g. no {@code ?} present in
+     * {@link #requestTarget()}.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData query(@Nullable String query);
 
     /**
      * Returns the value of a query parameter with the specified key. If there is more than one value for the specified
@@ -358,22 +408,47 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
      * from {@link #requestTarget()} and the {@code Host} header field value. This is the scheme component to use
      * when computing an <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
-     *
+     * <p>
+     * @deprecated Use {@link #effectiveHostAndPort()}.
      * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
      * from {@link #requestTarget()} and the {@code Host} header field value, or {@code null} if none can be derived.
      */
+    @Deprecated
     @Nullable
-    String effectiveHost();
+    default String effectiveHost() {
+        HostAndPort hostAndPort = effectiveHostAndPort();
+        return hostAndPort == null ? null : hostAndPort.hostName();
+    }
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port component</a> derived
      * from {@link #requestTarget()} and the {@code Host} header field value. This is the scheme component to use
      * when computing an <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
-     *
+     * <p>
+     * @deprecated Use {@link #effectiveHostAndPort()}.
      * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port component</a> derived
      * from {@link #requestTarget()}, and the {@code Host} header field value, or {@code <0} if none can be derived.
      */
-    int effectivePort();
+    @Deprecated
+    default int effectivePort() {
+        HostAndPort hostAndPort = effectiveHostAndPort();
+        return hostAndPort == null ? -1 : hostAndPort.port();
+    }
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
+     * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
+     * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
+     * The port component will be {@code <0} if none can be derived. This method typically pulls information from
+     * {@link #requestTarget()} and {@link HttpHeaderNames#HOST} header.
+     *
+     * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
+     * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
+     * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>. {@code null} if the
+     * request doesn't provide enough info to derive the host/port.
+     */
+    @Nullable
+    HostAndPort effectiveHostAndPort();
 
     @Override
     HttpRequestMetaData version(HttpProtocolVersion version);

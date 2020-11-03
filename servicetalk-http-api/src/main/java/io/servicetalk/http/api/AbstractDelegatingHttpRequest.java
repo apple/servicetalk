@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.transport.api.HostAndPort;
+
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -106,6 +109,11 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
+    public String requestTarget(Charset encoding) {
+        return original.requestTarget(encoding);
+    }
+
+    @Override
     @Nullable
     public String scheme() {
         return original.scheme();
@@ -144,6 +152,11 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
+    public String query() {
+        return original.query();
+    }
+
+    @Override
     public boolean hasQueryParameter(final String key) {
         return original.hasQueryParameter(key);
     }
@@ -157,6 +170,12 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     @Override
     public int effectivePort() {
         return original.effectivePort();
+    }
+
+    @Nullable
+    @Override
+    public HostAndPort effectiveHostAndPort() {
+        return original.effectiveHostAndPort();
     }
 
     @Override

@@ -47,6 +47,11 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     }
 
     @Test
+    public void queryParameterAreEncoded() {
+        sendAndAssertResponse(get("/uris/relative?script=<foo;-/?:@=+$>"), OK, TEXT_PLAIN, "/async/text");
+    }
+
+    @Test
     public void customResponseStatus() {
         sendAndAssertNoResponse(get("/statuses/444"), HttpResponseStatus.of(444, "Three fours!"));
     }

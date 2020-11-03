@@ -51,7 +51,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
-        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar&param2=foo&emptyParam=";
+        final String formParameters = "escape%26this%3D=and%26this%25&param2=bar+&param2=foo%20&emptyParam=";
 
         final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
 
@@ -60,8 +60,8 @@ public class FormUrlEncodedHttpDeserializerTest {
                 deserialized.get("escape&this="));
 
         assertEquals("Unexpected parameter value count.", 2, deserialized.get("param2").size());
-        assertEquals("Unexpected parameter value.", "bar", deserialized.get("param2").get(0));
-        assertEquals("Unexpected parameter value.", "foo", deserialized.get("param2").get(1));
+        assertEquals("Unexpected parameter value.", "bar ", deserialized.get("param2").get(0));
+        assertEquals("Unexpected parameter value.", "foo ", deserialized.get("param2").get(1));
 
         assertEquals("Unexpected parameter value count.", 1, deserialized.get("emptyParam").size());
         assertEquals("Unexpected parameter value.", "", deserialized.get("emptyParam").get(0));

@@ -46,6 +46,7 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-data-jackson")
   testFixturesImplementation project(":servicetalk-http-netty")
+  testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-http-router-predicate")
   testFixturesImplementation project(":servicetalk-router-utils-internal")
   testFixturesImplementation project(":servicetalk-test-resources")

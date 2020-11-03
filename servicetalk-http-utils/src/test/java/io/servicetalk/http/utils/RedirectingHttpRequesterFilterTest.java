@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -68,10 +69,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
 import static io.servicetalk.http.api.TestStreamingHttpClient.from;
 import static java.lang.Integer.parseUnsignedInt;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -204,10 +207,20 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    public void traceConnectOptionsRequestsDoesNotRedirect() throws Exception {
+    public void traceOptionsRequestsDoesNotRedirect() throws Exception {
         testNoRedirectWasDone(MAX_REDIRECTS, TRACE, SEE_OTHER, "/new-location");
-        testNoRedirectWasDone(MAX_REDIRECTS, CONNECT, SEE_OTHER, "/new-location");
         testNoRedirectWasDone(MAX_REDIRECTS, OPTIONS, SEE_OTHER, "/new-location");
+    }
+
+    @Test
+    public void connectRequestsDoesNotRedirect() {
+        try {
+            testNoRedirectWasDone(MAX_REDIRECTS, CONNECT, SEE_OTHER, "/new-location");
+            fail();
+        } catch (Exception e) {
+            assertThat(e, instanceOf(ExecutionException.class));
+            assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        }
     }
 
     private void testNoRedirectWasDone(final int maxRedirects,

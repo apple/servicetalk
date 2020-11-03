@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.addAll;
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.SIZED;
@@ -65,7 +66,12 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         if (values == null) {
             return emptyIterator();
         }
-        return new ValuesIterator(values.iterator(), this::updateQueryParams);
+        return new ValuesIterator(values.iterator(), () -> {
+            if (values.isEmpty()) {
+                params.remove(key);
+            }
+            updateQueryParams();
+        });
     }
 
     public Iterable<String> values(final String key) {
@@ -214,9 +220,10 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         private final Iterator<String> listIterator;
         private final Runnable queryParamsUpdater;
 
-        private ValuesIterator(final Iterator<String> listIterator, final Runnable queryParamsUpdater) {
+        private ValuesIterator(final Iterator<String> listIterator,
+                               final Runnable removalQueryParamsUpdater) {
             this.listIterator = listIterator;
-            this.queryParamsUpdater = queryParamsUpdater;
+            this.queryParamsUpdater = removalQueryParamsUpdater;
         }
 
         @Override
@@ -242,6 +249,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         private final Runnable queryParamsUpdater;
         @Nullable
         private String key;
+        private List<String> value;
         private Iterator<String> listIterator;
 
         private QueryIterator(final Iterator<Entry<String, List<String>>> mapIterator,
@@ -249,6 +257,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
             this.mapIterator = mapIterator;
             this.queryParamsUpdater = queryParamsUpdater;
             listIterator = emptyIterator();
+            value = emptyList();
         }
 
         @Override
@@ -259,7 +268,8 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
             while (mapIterator.hasNext()) {
                 final Entry<String, List<String>> entry = mapIterator.next();
                 key = entry.getKey();
-                listIterator = entry.getValue().iterator();
+                value = entry.getValue();
+                listIterator = value.iterator();
                 if (listIterator.hasNext()) {
                     return true;
                 }
@@ -296,6 +306,9 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         @Override
         public void remove() {
             listIterator.remove();
+            if (value.isEmpty()) {
+                mapIterator.remove();
+            }
             queryParamsUpdater.run();
         }
     }

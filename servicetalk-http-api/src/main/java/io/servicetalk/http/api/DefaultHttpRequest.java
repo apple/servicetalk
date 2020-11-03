@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.nio.charset.Charset;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -55,6 +56,12 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
+    public HttpRequest requestTarget(final String requestTarget, final Charset encoding) {
+        original.requestTarget(requestTarget, encoding);
+        return this;
+    }
+
+    @Override
     public HttpRequest rawPath(final String path) {
         original.rawPath(path);
         return this;
@@ -73,8 +80,14 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpRequest rawQuery(final String query) {
+    public HttpRequest rawQuery(@Nullable final String query) {
         original.rawQuery(query);
+        return this;
+    }
+
+    @Override
+    public HttpRequest query(@Nullable final String query) {
+        original.query(query);
         return this;
     }
 

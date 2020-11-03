@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -36,6 +36,21 @@
     <Method name="equals"/>
     <LocalVariable name="name1"/>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+  </Match>
+
+  <!-- Intentional reference comparison to avoid re-parsing if no value -->
+  <Match>
+    <Class name="io.servicetalk.http.api.Uri3986"/>
+    <Or>
+      <Method name="isNullableComponent"/>
+      <Method name="unwrapNullableComponent"/>
+    </Or>
+    <Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.Uri3986"/>
+    <Method name='&lt;clinit&gt;'/>
+    <Bug pattern="DM_STRING_CTOR"/>
   </Match>
 
   <!-- Return type is designed such that each type must override the method specifically to override the return type -->

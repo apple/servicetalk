@@ -23,8 +23,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 /**
  * The equivalent of {@link HttpRequest} but provides the payload as a {@link BlockingIterable}.
@@ -219,7 +221,10 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest appendPathSegments(String... segments);
 
     @Override
-    BlockingStreamingHttpRequest rawQuery(String query);
+    BlockingStreamingHttpRequest rawQuery(@Nullable String query);
+
+    @Override
+    BlockingStreamingHttpRequest query(@Nullable String query);
 
     @Override
     BlockingStreamingHttpRequest addQueryParameter(String key, String value);
@@ -247,6 +252,9 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     BlockingStreamingHttpRequest requestTarget(String requestTarget);
+
+    @Override
+    BlockingStreamingHttpRequest requestTarget(String requestTarget, Charset encoding);
 
     @Override
     default BlockingStreamingHttpRequest addHeader(final CharSequence name, final CharSequence value) {

@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import java.nio.charset.Charset;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -58,6 +59,12 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
+    public StreamingHttpRequest requestTarget(final String requestTarget, Charset encoding) {
+        super.requestTarget(requestTarget, encoding);
+        return this;
+    }
+
+    @Override
     public StreamingHttpRequest path(final String path) {
         super.path(path);
         return this;
@@ -76,8 +83,14 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest rawQuery(final String query) {
+    public StreamingHttpRequest rawQuery(@Nullable final String query) {
         super.rawQuery(query);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpRequest query(@Nullable final String query) {
+        super.query(query);
         return this;
     }
 

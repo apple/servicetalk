@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,9 +152,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
             // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
             if (redirectSingle.onlyRelative) {
-                if (request.effectiveHost() == null ||
-                        !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
-                        request.effectivePort() != newRequest.effectivePort()) {
+                HostAndPort oldEffectiveHostAndPort = request.effectiveHostAndPort();
+                HostAndPort newEffectiveHostAndPort = newRequest.effectiveHostAndPort();
+                if (oldEffectiveHostAndPort == null || !oldEffectiveHostAndPort.equals(newEffectiveHostAndPort)) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Ignoring non-relative redirect to '{}' for original request '{}': {}",
                                 newRequest.requestTarget(), redirectSingle.originalRequest,
@@ -264,13 +265,14 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             String redirectHost = redirectRequest.host();
             if (redirectHost == null) {
                 // origin-form request-target in Location header, extract host & port info from original request
-                redirectHost = request.effectiveHost();
-                if (redirectHost == null) {
+                HostAndPort requestHostAndPort = request.effectiveHostAndPort();
+                if (requestHostAndPort == null) {
                     // abort, no HOST header found on the original request, this is typical for HTTP/1.0
                     return null;
                 }
-                final int redirectPort = request.effectivePort();
-                redirectRequest.setHeader(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);
+                final int redirectPort = requestHostAndPort.port();
+                redirectRequest.setHeader(HOST, redirectPort < 0 ? requestHostAndPort.hostName() :
+                        requestHostAndPort.hostName() + ':' + redirectPort);
             }
 
             // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
