@@ -108,7 +108,7 @@ final class UriUtils {
         }
 
         if (rawQuery == null || rawQuery.isEmpty()) {
-            return new LinkedHashMap<>(2);
+            return new LinkedHashMap<>(8);
         }
 
         final Map<String, List<String>> params = new LinkedHashMap<>();

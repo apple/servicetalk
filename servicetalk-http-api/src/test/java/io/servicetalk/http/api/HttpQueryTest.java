@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -49,22 +47,19 @@ public class HttpQueryTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    @Mock
-    private Consumer<Map<String, List<String>>> queryParamsUpdater;
-
     private final Map<String, List<String>> params = new LinkedHashMap<>();
 
     @Test
     public void testGetFirstValue() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertEquals("bar", query.get("foo"));
     }
 
     @Test
     public void testGetFirstValueNone() {
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertNull(query.get("foo"));
     }
@@ -72,14 +67,14 @@ public class HttpQueryTest {
     @Test
     public void testGetAll() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.valuesIterator("foo")));
     }
 
     @Test
     public void testGetAllEmpty() {
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertFalse(query.valuesIterator("foo").hasNext());
     }
@@ -87,7 +82,7 @@ public class HttpQueryTest {
     @Test
     public void testGetKeys() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.valuesIterator("foo")));
     }
@@ -96,7 +91,7 @@ public class HttpQueryTest {
     public void testSet() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         query.set("abc", "new");
 
         assertEquals(singletonList("new"), iteratorAsList(query.valuesIterator("abc")));
@@ -107,7 +102,7 @@ public class HttpQueryTest {
     public void testSetValues() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         query.set("abc", newList("new1", "new2"));
 
         assertEquals(asList("new1", "new2"), iteratorAsList(query.valuesIterator("abc")));
@@ -118,7 +113,7 @@ public class HttpQueryTest {
     public void testAdd() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         query.add("abc", "new");
 
         assertEquals(asList("def", "new"), iteratorAsList(query.valuesIterator("abc")));
@@ -129,7 +124,7 @@ public class HttpQueryTest {
     public void testAddValues() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         query.add("abc", newList("new1", "new2"));
 
         assertEquals(asList("def", "new1", "new2"), iteratorAsList(query.valuesIterator("abc")));
@@ -139,7 +134,7 @@ public class HttpQueryTest {
     @Test
     public void testContainsKey() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertTrue(query.keys().contains("foo"));
         assertFalse(query.keys().contains("abc"));
@@ -148,7 +143,7 @@ public class HttpQueryTest {
     @Test
     public void testContainsKeyAndValue() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertTrue(query.contains("foo", "bar"));
         assertFalse(query.contains("foo", "new"));
@@ -157,7 +152,7 @@ public class HttpQueryTest {
     @Test
     public void testRemoveKey() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         assertTrue(query.remove("foo"));
         assertFalse(query.keys().contains("foo"));
         assertFalse(query.remove("foo"));
@@ -172,7 +167,7 @@ public class HttpQueryTest {
     @Test
     public void testRemoveKeyAndValue() {
         params.put("foo", newList("bar", "baz"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
         assertTrue(query.remove("foo", "bar"));
         assertFalse(query.remove("foo", "bar"));
 
@@ -184,7 +179,7 @@ public class HttpQueryTest {
     public void testSize() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         assertEquals(4, query.size());
         query.remove("abc", "123");
@@ -201,7 +196,7 @@ public class HttpQueryTest {
     public void testIterator() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -235,7 +230,7 @@ public class HttpQueryTest {
     public void testIteratorAfterRemoval() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         query.remove("abc", "def");
         query.remove("abc", "123");
@@ -262,7 +257,7 @@ public class HttpQueryTest {
     public void testIteratorRemove() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -302,7 +297,7 @@ public class HttpQueryTest {
     public void testIteratorRemoveTwice() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final HttpQuery query = new HttpQuery(params, queryParamsUpdater);
+        final HttpQuery query = new HttpQuery(params);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 

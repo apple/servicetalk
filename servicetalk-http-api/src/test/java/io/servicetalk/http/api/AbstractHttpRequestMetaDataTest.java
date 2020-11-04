@@ -25,9 +25,7 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
@@ -36,8 +34,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static java.lang.System.lineSeparator;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -46,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -60,13 +61,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     protected T fixture;
 
-    private final Map<String, List<String>> params = new LinkedHashMap<>();
-
     protected abstract void createFixture(String uri);
 
     protected abstract void createFixture(String uri, HttpRequestMethod method);
-
-    protected abstract void setFixtureQueryParams(Map<String, List<String>> params);
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.1
     @Test
@@ -533,10 +530,33 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testAddQueryEquals() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        T oldFixture = fixture;
+        createFixture("/some/path");
+        assertNotEquals(fixture, oldFixture);
+    }
+
+    @Test
+    public void testAddQueryDecodeRequestTarget() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        assertEquals("/some/path?foo=bar", fixture.requestTarget(UTF_8));
+    }
+
+    @Test
+    public void testAddQueryEncodeRequestTarget() {
+        createFixture("/some/path");
+        fixture.addQueryParameter("foo", "bar");
+        fixture.requestTarget("/some/new/path");
+        assertEquals("/some/new/path", fixture.requestTarget(UTF_8));
+    }
+
+    @Test
     public void testParseEmptyAndEncodeQuery() {
         createFixture("/some/path");
         fixture.addQueryParameter("foo", "bar");
-
         assertEquals("/some/path?foo=bar", fixture.requestTarget());
     }
 
@@ -562,6 +582,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         fixture.addQueryParameters("foo", asList("bar", "baz"));
         assertEquals("/some/path?abc=new&foo=bar&foo=baz", fixture.requestTarget());
+        assertEquals("abc=new&foo=bar&foo=baz", fixture.query());
 
         assertTrue(fixture.removeQueryParameters("foo"));
         assertEquals("/some/path?abc=new", fixture.requestTarget());
@@ -569,9 +590,11 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         fixture.addQueryParameters("foo", "bar", "baz");
         assertEquals("/some/path?abc=new&foo=bar&foo=baz", fixture.requestTarget());
+        assertEquals("abc=new&foo=bar&foo=baz", fixture.query());
 
         assertTrue(fixture.removeQueryParameters("foo", "baz"));
         assertEquals("/some/path?abc=new&foo=bar", fixture.requestTarget());
+        assertEquals("abc=new&foo=bar", fixture.query());
 
         fixture.setQueryParameters("foo", singletonList("baz"));
         fixture.setQueryParameters("abc", "ghi", "jkl");
@@ -585,6 +608,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
             i.remove();
         }
         assertEquals("/some/path", fixture.requestTarget());
+        assertNull(fixture.query());
         assertEquals(fixture.queryParametersSize(), 0);
         assertTrue(fixture.queryParametersKeys().isEmpty());
     }
@@ -663,16 +687,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithNoParams() {
         createFixture("/some/path#fragment");
-        setFixtureQueryParams(params);
+        fixture.addQueryParameters("", emptyList());
 
-        assertEquals("/some/path#fragment", fixture.requestTarget());
+        assertEquals("/some/path?#fragment", fixture.requestTarget());
     }
 
     @Test
     public void testEncodeToRequestTargetWithParam() {
         createFixture("/some/path");
-        params.put("foo", newList("bar", "baz"));
-        setFixtureQueryParams(params);
+        fixture.addQueryParameters("foo", newList("bar", "baz"));
 
         assertEquals("/some/path?foo=bar&foo=baz", fixture.requestTarget());
     }
@@ -680,9 +703,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithMultipleParams() {
         createFixture("/some/path#fragment");
-        params.put("foo", newList("bar", "baz"));
-        params.put("abc", newList("123", "456"));
-        setFixtureQueryParams(params);
+        fixture.addQueryParameters("foo", newList("bar", "baz"));
+        fixture.addQueryParameters("abc", newList("123", "456"));
 
         assertEquals("/some/path?foo=bar&foo=baz&abc=123&abc=456#fragment", fixture.requestTarget());
     }
@@ -690,8 +712,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithSpecialCharacters() {
         createFixture("/some/path#fragment");
-        params.put("pair", newList("key1=value1", "key2=value2"));
-        setFixtureQueryParams(params);
+        fixture.addQueryParameters("pair", newList("key1=value1", "key2=value2"));
 
         assertEquals("/some/path?pair=key1%3Dvalue1&pair=key2%3Dvalue2#fragment", fixture.requestTarget());
     }
@@ -699,10 +720,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithAbsoluteForm() {
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz#fragment");
-        params.put("foo", newList("new"));
-        setFixtureQueryParams(params);
+        fixture.setQueryParameters("foo", newList("new"));
 
-        assertEquals("http://my.site.com/some/path?foo=new#fragment", fixture.requestTarget());
+        assertEquals("http://my.site.com/some/path?foo=new&abc=def#fragment", fixture.requestTarget());
 
         assertEquals("my.site.com", fixture.effectiveHost());
         assertThat(fixture.effectivePort(), lessThan(0));
@@ -711,10 +731,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithAbsoluteFormWithPort() {
         createFixture("http://my.site.com:8080/some/path?foo=bar&abc=def&foo=baz#fragment");
-        params.put("foo", newList("new"));
-        setFixtureQueryParams(params);
+        fixture.setQueryParameters("foo", newList("new"));
 
-        assertEquals("http://my.site.com:8080/some/path?foo=new#fragment", fixture.requestTarget());
+        assertEquals("http://my.site.com:8080/some/path?foo=new&abc=def#fragment", fixture.requestTarget());
 
         HostAndPort hostAndPort = fixture.effectiveHostAndPort();
         assertNotNull(hostAndPort);
@@ -725,16 +744,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     @Test
     public void testEncodeToRequestTargetWithAbsoluteFormWithUserInfo() {
         createFixture("http://user@my.site.com/some/path?foo=bar&abc=def&foo=baz#fragment");
-        params.put("foo", newList("new"));
-        setFixtureQueryParams(params);
+        fixture.setQueryParameters("foo", newList("new"));
 
-        assertEquals("http://user@my.site.com/some/path?foo=new#fragment", fixture.requestTarget());
+        assertEquals("http://user@my.site.com/some/path?foo=new&abc=def#fragment", fixture.requestTarget());
         fixture.path("");
-        assertEquals("http://user@my.site.com?foo=new#fragment", fixture.requestTarget());
+        assertEquals("http://user@my.site.com?foo=new&abc=def#fragment", fixture.requestTarget());
         assertEquals("", fixture.path());
         assertEquals("", fixture.path()); // check cached value
-        assertEquals("foo=new", fixture.query());
-        assertEquals("foo=new", fixture.query()); // check cached value
+        assertEquals("foo=new&abc=def", fixture.query());
+        assertEquals("foo=new&abc=def", fixture.query()); // check cached value
     }
 
     @Test

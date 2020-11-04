@@ -82,13 +82,14 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String requestTarget() {
+        checkDirtyQuery();
         return requestTarget;
     }
 
     @Override
     public String requestTarget(final Charset encoding) {
-        return CONNECT.equals(method) ? HttpAuthorityFormUri.decode(requestTarget, encoding) :
-                Uri3986.decode(requestTarget, encoding);
+        return CONNECT.equals(method) ? HttpAuthorityFormUri.decode(requestTarget(), encoding) :
+                Uri3986.decode(requestTarget(), encoding);
     }
 
     @Override
@@ -209,6 +210,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public final String rawQuery() {
+        checkDirtyQuery();
         return lazyParseRequestTarget().query();
     }
 
@@ -216,7 +218,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     public HttpRequestMetaData rawQuery(@Nullable final String query) {
         Uri httpUri = lazyParseRequestTarget();
         // Potentially over estimate the size of the URL to avoid resize/copy
-        StringBuilder sb = query != null ? new StringBuilder(httpUri.uri().length() + query.length()) :
+        StringBuilder sb = query != null ? new StringBuilder(httpUri.uri().length() + query.length() + 1) :
                                            new StringBuilder(httpUri.uri().length());
         appendScheme(sb, httpUri);
         appendAuthority(sb, httpUri);
@@ -233,6 +235,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Override
     public String query() {
+        checkDirtyQuery();
         if (queryDecoded != null) {
             return queryDecoded;
         }
@@ -340,10 +343,17 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         return null;
     }
 
+    private void checkDirtyQuery() {
+        if (httpQuery != null && httpQuery.isDirty()) {
+            httpQuery.resetDirty();
+            query(httpQuery.queryParameters());
+        }
+    }
+
     private HttpQuery lazyParseQueryString() {
         if (httpQuery == null) {
             httpQuery = new HttpQuery(decodeQueryParams(lazyParseRequestTarget().query(),
-                    REQUEST_TARGET_CHARSET, DEFAULT_MAX_QUERY_PARAMS), this::setQueryParams);
+                    REQUEST_TARGET_CHARSET, DEFAULT_MAX_QUERY_PARAMS));
         }
         return httpQuery;
     }
@@ -354,6 +364,79 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
                     new Uri3986(requestTarget());
         }
         return requestTargetUri;
+    }
+
+    private void query(final Map<String, List<String>> params) {
+        Uri httpUri = lazyParseRequestTarget();
+        StringBuilder sb = new StringBuilder(httpUri.uri().length() + params.size() * 8);
+
+        appendScheme(sb, httpUri);
+        appendAuthority(sb, httpUri);
+        sb.append(httpUri.path());
+
+        // Append query params
+        Iterator<Entry<String, List<String>>> itr = params.entrySet().iterator();
+        char prefixChar = '?';
+        while (itr.hasNext()) {
+            Entry<String, List<String>> next = itr.next();
+            String encodedKey = encodeComponent(QUERY, next.getKey(), REQUEST_TARGET_CHARSET, true);
+            sb.append(prefixChar).append(encodedKey);
+            List<String> values = next.getValue();
+            if (values != null) {
+                Iterator<String> valuesItr = values.iterator();
+                if (valuesItr.hasNext()) {
+                    String value = valuesItr.next();
+                    sb.append('=').append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                    while (valuesItr.hasNext()) {
+                        value = valuesItr.next();
+                        sb.append('&').append(encodedKey).append('=')
+                                .append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
+                    }
+                }
+            }
+            prefixChar = '&';
+        }
+
+        appendFragment(sb, httpUri);
+
+        requestTarget(sb.toString());
+    }
+
+    private void invalidateParsedUri() {
+        requestTargetUri = null;
+        httpQuery = null;
+        pathDecoded = null;
+        queryDecoded = null;
+    }
+
+    @Override
+    public final String toString() {
+        return method().toString() + " " + requestTarget() + " " + version();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        final DefaultHttpRequestMetaData that = (DefaultHttpRequestMetaData) o;
+
+        return method.equals(that.method) && requestTarget().equals(that.requestTarget());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + method.hashCode();
+        result = 31 * result + requestTarget().hashCode();
+        return result;
     }
 
     private static void validateFirstPathSegment(final Uri httpUri, final String path) {
@@ -418,81 +501,6 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
             }
         }
         return HostAndPort.of(parsedHost, parsedPort);
-    }
-
-    // package-private for testing.
-    void setQueryParams(final Map<String, List<String>> params) {
-        Uri httpUri = lazyParseRequestTarget();
-        StringBuilder sb = new StringBuilder(httpUri.uri().length() + params.size() * 8);
-
-        appendScheme(sb, httpUri);
-        appendAuthority(sb, httpUri);
-        sb.append(httpUri.path());
-
-        // Append query params
-        Iterator<Entry<String, List<String>>> itr = params.entrySet().iterator();
-        char prefixChar = '?';
-        while (itr.hasNext()) {
-            Entry<String, List<String>> next = itr.next();
-            String encodedKey = encodeComponent(QUERY, next.getKey(), REQUEST_TARGET_CHARSET, true);
-            sb.append(prefixChar).append(encodedKey);
-            List<String> values = next.getValue();
-            if (values == null) {
-                continue;
-            }
-            Iterator<String> valuesItr = values.iterator();
-            if (valuesItr.hasNext()) {
-                String value = valuesItr.next();
-                sb.append('=').append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
-                while (valuesItr.hasNext()) {
-                    value = valuesItr.next();
-                    sb.append('&').append(encodedKey).append('=')
-                      .append(encodeComponent(QUERY_VALUE, value, REQUEST_TARGET_CHARSET, true));
-                }
-            }
-            prefixChar = '&';
-        }
-
-        appendFragment(sb, httpUri);
-
-        requestTarget(sb.toString());
-    }
-
-    private void invalidateParsedUri() {
-        requestTargetUri = null;
-        httpQuery = null;
-        pathDecoded = null;
-        queryDecoded = null;
-    }
-
-    @Override
-    public final String toString() {
-        return method().toString() + " " + requestTarget() + " " + version();
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        final DefaultHttpRequestMetaData that = (DefaultHttpRequestMetaData) o;
-
-        return method.equals(that.method) && requestTarget.equals(that.requestTarget);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + method.hashCode();
-        result = 31 * result + requestTarget.hashCode();
-        return result;
     }
 
     private static void appendScheme(StringBuilder sb, Uri httpUri) {

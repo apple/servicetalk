@@ -24,7 +24,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.addAll;
@@ -38,17 +37,15 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
 
     private static final int DEFAULT_LIST_SIZE = 2;
 
-    private final Consumer<Map<String, List<String>>> queryParamsUpdater;
     private final Map<String, List<String>> params;
+    private boolean dirty;
 
     /**
      * Create a new instance.
      *
      * @param params Map of query parameters.
-     * @param queryParamsUpdater callback for setting the query parameters on a request.
      */
-    HttpQuery(final Map<String, List<String>> params, final Consumer<Map<String, List<String>>> queryParamsUpdater) {
-        this.queryParamsUpdater = requireNonNull(queryParamsUpdater);
+    HttpQuery(final Map<String, List<String>> params) {
         this.params = requireNonNull(params);
     }
 
@@ -70,7 +67,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
             if (values.isEmpty()) {
                 params.remove(key);
             }
-            updateQueryParams();
+            markDirty();
         });
     }
 
@@ -95,63 +92,51 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
 
     public HttpQuery add(final String key, final String value) {
         validateQueryParam(key, value);
-        if (getValues(key).add(value)) {
-            updateQueryParams();
-        }
+        getValues(key).add(value);
+        markDirty();
         return this;
     }
 
     public HttpQuery add(final String key, final Iterable<String> values) {
         final List<String> paramValues = getValues(key);
-        boolean changed = false;
         for (final String value : values) {
-            changed |= paramValues.add(value);
+            paramValues.add(value);
         }
-        if (changed) {
-            updateQueryParams();
-        }
+        markDirty();
         return this;
     }
 
     public HttpQuery add(final String key, final String... values) {
         final List<String> paramValues = getValues(key);
-        if (addAll(paramValues, values)) {
-            updateQueryParams();
-        }
+        addAll(paramValues, values);
+        markDirty();
         return this;
     }
 
     public HttpQuery set(final String key, final String value) {
         validateQueryParam(key, value);
         final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
-        final boolean changed = list.add(value);
+        list.add(value);
+        markDirty();
         params.put(key, list);
-        if (changed) {
-            updateQueryParams();
-        }
         return this;
     }
 
     public HttpQuery set(final String key, final Iterable<String> values) {
         final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
-        boolean changed = false;
         for (final String value : values) {
-            changed |= list.add(value);
+            list.add(value);
         }
         params.put(key, list);
-        if (changed) {
-            updateQueryParams();
-        }
+        markDirty();
         return this;
     }
 
     public HttpQuery set(final String key, final String... values) {
         final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
-        final boolean changed = addAll(list, values);
+        addAll(list, values);
         params.put(key, list);
-        if (changed) {
-            updateQueryParams();
-        }
+        markDirty();
         return this;
     }
 
@@ -166,12 +151,11 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     public boolean remove(final String key) {
-        final List<String> removedValues = params.remove(key);
-        boolean removed = removedValues != null && !removedValues.isEmpty();
-        if (removed) {
-            updateQueryParams();
+        if (params.remove(key) != null) {
+            markDirty();
+            return true;
         }
-        return removed;
+        return false;
     }
 
     public boolean remove(final String key, final String value) {
@@ -179,7 +163,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         while (values.hasNext()) {
             if (value.equals(values.next())) {
                 values.remove();
-                updateQueryParams();
+                markDirty();
                 return true;
             }
         }
@@ -196,11 +180,23 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
 
     @Override
     public Iterator<Entry<String, String>> iterator() {
-        return new QueryIterator(params.entrySet().iterator(), this::updateQueryParams);
+        return new QueryIterator(params.entrySet().iterator(), this::markDirty);
     }
 
-    private void updateQueryParams() {
-        queryParamsUpdater.accept(params);
+    Map<String, List<String>> queryParameters() {
+        return params;
+    }
+
+    boolean isDirty() {
+        return dirty;
+    }
+
+    void resetDirty() {
+        dirty = false;
+    }
+
+    private void markDirty() {
+        dirty = true;
     }
 
     private List<String> getValues(final String key) {
