@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource;
-
 /**
  * Used to close/shutdown a resource.
  */
@@ -26,7 +24,7 @@ public interface AsyncCloseable {
     /**
      * Used to close/shutdown a resource.
      *
-     * @return A {@link CompletableSource} that is notified once the close is complete.
+     * @return A {@link Completable} that is notified once the close is complete.
      */
     Completable closeAsync();
 
