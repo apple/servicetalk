@@ -45,7 +45,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
 import static io.servicetalk.grpc.api.GrpcStatusCode.OK;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -68,7 +68,7 @@ public final class GrpcClientValidatesContentTypeTest {
         new HttpSerializer<TesterProto.TestResponse>() {
 
             final HttpSerializer<TesterProto.TestResponse> delegate = SERIALIZATION_PROVIDER
-                    .serializerFor(none(), TesterProto.TestResponse.class);
+                    .serializerFor(identity(), TesterProto.TestResponse.class);
 
             @Override
             public Buffer serialize(final HttpHeaders headers, final TesterProto.TestResponse value,

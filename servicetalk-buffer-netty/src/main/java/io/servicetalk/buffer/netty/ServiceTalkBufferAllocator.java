@@ -134,6 +134,11 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     }
 
     @Override
+    public Buffer newBuffer(final int initialCapacity, final int maxCapacity) {
+        return new NettyBuffer<>(buffer(initialCapacity, maxCapacity));
+    }
+
+    @Override
     public Buffer newBuffer(int initialCapacity, boolean direct) {
         return new NettyBuffer<>(direct ? directBuffer(initialCapacity) : heapBuffer(initialCapacity));
     }

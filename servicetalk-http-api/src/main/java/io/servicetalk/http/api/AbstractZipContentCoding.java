@@ -52,21 +52,20 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static java.lang.Math.min;
 
-abstract class AbstractZipContentCodec implements ContentCodec {
+abstract class AbstractZipContentCoding implements StreamingContentCoding {
 
-    protected static final int ONE_KB = 1 << 10;
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCoding.class);
     private static final Object END_OF_STREAM = new Object();
 
-    private final CharSequence encoding;
+    protected final int chunkSize;
+    private final int maxPayloadSize;
 
-    AbstractZipContentCodec(final CharSequence encoding) {
-        this.encoding = encoding;
+    AbstractZipContentCoding(final int chunkSize, final int maxPayloadSize) {
+        this.chunkSize = chunkSize;
+        this.maxPayloadSize = maxPayloadSize;
     }
 
     abstract boolean supportsChecksum();
@@ -78,11 +77,9 @@ abstract class AbstractZipContentCodec implements ContentCodec {
     abstract InflaterInputStream newInflaterInputStream(InputStream in);
 
     @Override
-    public final Buffer encode(final HttpHeaders headers, final Buffer src, final int offset, final int length,
+    public final Buffer encode(final Buffer src, final int offset, final int length,
                                final BufferAllocator allocator) {
-        addContentEncoding(headers, encoding);
-
-        final Buffer dst = allocator.newBuffer(ONE_KB);
+        final Buffer dst = allocator.newBuffer(chunkSize);
         DeflaterOutputStream output = null;
         try {
             output = newDeflaterOutputStream(asOutputStream(dst));
@@ -91,7 +88,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                 output.write(src.array(), offset, length);
             } else {
                 while (src.readableBytes() > 0) {
-                    byte[] onHeap = new byte[min(src.readableBytes(), ONE_KB)];
+                    byte[] onHeap = new byte[min(src.readableBytes(), chunkSize)];
                     src.readBytes(onHeap);
                     output.write(onHeap);
                 }
@@ -108,9 +105,8 @@ abstract class AbstractZipContentCodec implements ContentCodec {
     }
 
     @Override
-    public final Publisher<Buffer> encode(final HttpHeaders headers, final Publisher<Buffer> from,
+    public final Publisher<Buffer> encode(final Publisher<Buffer> from,
                                           final BufferAllocator allocator) {
-        addContentEncoding(headers, encoding);
         return from
                 .map((it) -> (Object) it)
                 .concat(succeeded(END_OF_STREAM))
@@ -124,7 +120,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                     @Override
                     public void onSubscribe(PublisherSource.Subscription subscription) {
                         try {
-                            dst = allocator.newBuffer(ONE_KB);
+                            dst = allocator.newBuffer(chunkSize);
                             output = newDeflaterOutputStream(asOutputStream(dst));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
@@ -137,6 +133,8 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                         assert output != null;
                         assert dst != null;
 
+                        // onNext will produce AT-MOST N items (as received)
+                        // +1 for the encoding footer (ie. END_OF_STREAM)
                         try {
                             if (next == END_OF_STREAM) {
                                 try {
@@ -153,7 +151,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                                 output.write(src.array(), src.readerIndex(), src.readableBytes());
                             } else {
                                 while (src.readableBytes() > 0) {
-                                    byte[] onHeap = new byte[min(src.readableBytes(), ONE_KB)];
+                                    byte[] onHeap = new byte[min(src.readableBytes(), chunkSize)];
                                     src.readBytes(onHeap);
                                     output.write(onHeap);
                                 }
@@ -182,12 +180,12 @@ abstract class AbstractZipContentCodec implements ContentCodec {
 
     @Override
     public final Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        final Buffer dst = allocator.newBuffer(ONE_KB);
+        final Buffer dst = allocator.newBuffer(chunkSize, maxPayloadSize);
         InflaterInputStream input = null;
         try {
             input = newInflaterInputStream(asInputStream(src));
 
-            int read = dst.setBytesUntilEndStream(0, input, ONE_KB);
+            int read = dst.setBytesUntilEndStream(0, input, chunkSize);
             dst.writerIndex(read);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -208,19 +206,25 @@ abstract class AbstractZipContentCodec implements ContentCodec {
             Inflater inflater;
             @Nullable
             ZLibStreamDecoder streamDecoder;
+            @Nullable
+            PublisherSource.Subscription subscription;
 
             @Override
             public void onSubscribe(final PublisherSource.Subscription subscription) {
-                dst = allocator.newBuffer(ONE_KB);
+                dst = allocator.newBuffer(chunkSize, maxPayloadSize);
                 inflater = newRawInflater();
-                streamDecoder = new ZLibStreamDecoder(dst, inflater, supportsChecksum());
+                streamDecoder = new ZLibStreamDecoder(dst, inflater, chunkSize, supportsChecksum());
+                this.subscription = subscription;
                 subscriber.onSubscribe(subscription);
             }
 
             @Override
             public void onNext(@Nullable final Buffer src) {
                 assert streamDecoder != null;
+                assert subscription != null;
                 assert src != null;
+
+                // onNext will produce AT-MOST N items (as received)
 
                 Buffer part;
                 try {
@@ -229,7 +233,12 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                     }
 
                     part = streamDecoder.decode(src);
-                    subscriber.onNext(part != null ? part : EMPTY_BUFFER);
+                    if (part != null) {
+                        subscriber.onNext(part);
+                    }
+
+                    // Not enough data to decompress, ask for more
+                    subscription.request(1);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -291,11 +300,13 @@ abstract class AbstractZipContentCodec implements ContentCodec {
         private int flags = -1;
         private int xlen = -1;
 
+        private int chunkSize;
         private boolean finished;
 
-        ZLibStreamDecoder(Buffer destination, Inflater inflater, boolean supportsChksum) {
+        ZLibStreamDecoder(Buffer destination, Inflater inflater, int chunkSize, boolean supportsChksum) {
             this.decompressed = destination;
             this.inflater = inflater;
+            this.chunkSize = chunkSize;
             crc = supportsChksum ? new CRC32() : null;
         }
 
@@ -367,7 +378,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                         }
                         break;
                     } else {
-                        decompressed.ensureWritable(ONE_KB);
+                        decompressed.ensureWritable(chunkSize);
                     }
                 }
 
@@ -536,5 +547,12 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                         "CRC value mismatch. Expected: " + crcValue + ", Got: " + readCrc);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ContentCoding{" +
+                "name=" + name() +
+                '}';
     }
 }

@@ -51,7 +51,7 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     }
 
     @Override
-    public StreamingHttpResponse encoding(final ContentCoding encoding) {
+    public StreamingHttpResponse encoding(final StreamingContentCoding encoding) {
         super.encoding(encoding);
         return this;
     }

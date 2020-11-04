@@ -30,6 +30,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.function.BooleanSupplier;
+import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -39,6 +40,9 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * A builder for building HTTP Servers.
@@ -49,6 +53,8 @@ public abstract class HttpServerBuilder {
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilter;
+    private List<StreamingContentCoding> requestCodings = emptyList();
+    private List<StreamingContentCoding> responseCodings = emptyList();
     private HttpExecutionStrategy strategy = defaultStrategy();
     private final StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
     private boolean drainRequestPayloadBody = true;
@@ -143,6 +149,31 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     public abstract HttpServerBuilder transportObserver(TransportObserver transportObserver);
+
+    /**
+     * Sets the supported {@link StreamingContentCoding}s for the endpoint, used for both request and response handling.
+     *
+     * @param codings The list of supported {@link StreamingContentCoding}s for this endpoint.
+     * @return {@code this}
+     * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
+     */
+    public final HttpServerBuilder supportedEncodingsBiDi(final StreamingContentCoding... codings) {
+        List<StreamingContentCoding> unmodifiable = unmodifiableList(asList(codings));
+        this.requestCodings = unmodifiable;
+        this.responseCodings = unmodifiable;
+        return this;
+    }
+
+    /**
+     * Sets the supported {@link StreamingContentCoding}s for the endpoint, used for <b>responses only</b>.
+     *
+     * @param codings The list of supported {@link StreamingContentCoding}s for the responses of this endpoint.
+     * @return {@code this}
+     */
+    public final HttpServerBuilder supportedEncodings(final StreamingContentCoding... codings) {
+        this.responseCodings = unmodifiableList(asList(codings));
+        return this;
+    }
 
     /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
@@ -419,6 +450,9 @@ public abstract class HttpServerBuilder {
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
+        ContentCodingHttpServiceFilter contentCodingFilterFactory =
+                new ContentCodingHttpServiceFilter(requestCodings, responseCodings);
+
         StreamingHttpServiceFilterFactory currServiceFilter = serviceFilter;
         if (!AsyncContext.isDisabled()) {
             StreamingHttpServiceFilterFactory asyncContextFilter = new AsyncContextAwareHttpServiceFilter();
@@ -427,6 +461,8 @@ public abstract class HttpServerBuilder {
         }
         StreamingHttpService filteredService = currServiceFilter != null ?
                 currServiceFilter.create(rawService) : rawService;
-        return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
+
+        return doListen(connectionAcceptor, contentCodingFilterFactory.create(filteredService),
+                strategy, drainRequestPayloadBody);
     }
 }

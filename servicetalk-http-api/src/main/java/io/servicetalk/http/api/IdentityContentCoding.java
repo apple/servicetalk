@@ -19,19 +19,28 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
+
 /**
  * NOOP Message encoding codec.
  */
-final class IdentityContentCodec implements ContentCodec {
+final class IdentityContentCoding implements StreamingContentCoding {
+
+    private static final CharSequence NAME = newAsciiString("identity");
 
     @Override
-    public Buffer encode(final HttpHeaders headers, final Buffer src, final int offset, final int length,
+    public CharSequence name() {
+        return NAME;
+    }
+
+    @Override
+    public Buffer encode(final Buffer src, final int offset, final int length,
                          final BufferAllocator allocator) {
         return src;
     }
 
     @Override
-    public Publisher<Buffer> encode(final HttpHeaders headers, final Publisher<Buffer> from,
+    public Publisher<Buffer> encode(final Publisher<Buffer> from,
                                     final BufferAllocator allocator) {
         return from;
     }

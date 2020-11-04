@@ -32,8 +32,7 @@ final class PipelinedStreamingHttpConnection
                                      final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(new NettyPipelinedConnection<>(connection),
-                config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory(),
-                config.supportedEncodings());
+                config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory());
     }
 
     @Override

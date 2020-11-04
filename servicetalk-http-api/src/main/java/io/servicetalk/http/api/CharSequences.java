@@ -163,6 +163,15 @@ public final class CharSequences {
     }
 
     /**
+     * Returns {@code true} if there is no content on the {@link CharSequence} value.
+     * @param value the {@link CharSequence} to validate for emptyness
+     * @return {@code true} if there is no content
+     */
+    public static boolean isEmpty(final CharSequence value) {
+        return value.length() == 0;
+    }
+
+    /**
      * Find the index of {@code c} within {@code sequence} starting at index {@code fromIndex}.
      *
      * @param sequence The {@link CharSequence} to search in.

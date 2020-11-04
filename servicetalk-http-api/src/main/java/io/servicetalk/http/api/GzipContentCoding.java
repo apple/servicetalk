@@ -23,10 +23,19 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-final class GzipContentCodec extends AbstractZipContentCodec {
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 
-    GzipContentCodec() {
-        super(ContentCodings.GZIP_HEADER);
+final class GzipContentCoding extends AbstractZipContentCoding {
+
+    private static final CharSequence NAME = newAsciiString("gzip");
+
+    GzipContentCoding(final int chunkSize, final int maxSize) {
+        super(chunkSize, maxSize);
+    }
+
+    @Override
+    public CharSequence name() {
+        return NAME;
     }
 
     @Override
@@ -48,6 +57,6 @@ final class GzipContentCodec extends AbstractZipContentCodec {
     DeflaterOutputStream newDeflaterOutputStream(final OutputStream out) throws IOException {
         // TODO tk - Optimization, we could rely on the Deflater directly to avoid the intermediate
         // copy on the stream buffer
-        return new GZIPOutputStream(out, ONE_KB, true);
+        return new GZIPOutputStream(out, chunkSize, true);
     }
 }

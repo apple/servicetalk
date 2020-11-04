@@ -40,6 +40,7 @@ import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
+import io.servicetalk.http.api.StreamingContentCoding;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -445,6 +446,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             clientFilterFactory = clientFilterFactory.append(requireNonNull(function));
         }
         builderTemplate.appendToStrategyInfluencer(function);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> supportedEncodings(
+            final StreamingContentCoding... codings) {
+        builderTemplate.supportedEncodings(codings);
         return this;
     }
 

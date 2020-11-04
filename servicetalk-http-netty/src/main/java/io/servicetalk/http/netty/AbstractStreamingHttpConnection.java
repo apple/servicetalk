@@ -15,15 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientInvoker;
-import io.servicetalk.http.api.ContentCodec;
-import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
@@ -41,15 +38,11 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import java.util.Set;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.ContentCodings.none;
-import static io.servicetalk.http.api.HeaderUtils.advertiseAcceptedEncodingsIfAvailable;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNone;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
@@ -70,13 +63,11 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
-    private final Set<ContentCoding> supportedEncodings;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
                                     final HttpExecutionContext executionContext,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpHeadersFactory headersFactory,
-                                    final Set<ContentCoding> supportedEncodings) {
+                                    final HttpHeadersFactory headersFactory) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
         this.executionContext = requireNonNull(executionContext);
@@ -84,7 +75,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
         this.headersFactory = headersFactory;
-        this.supportedEncodings = supportedEncodings;
     }
 
     @Override
@@ -109,10 +99,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
-
-        advertiseAcceptedEncodingsIfAvailable(request.headers(), supportedEncodings);
-        encodePayloadContentIfAvailable(request);
-
         Publisher<Object> flatRequest;
         // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         if (canAddRequestContentLength(request)) {
@@ -125,31 +111,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             addRequestTransferEncodingIfNecessary(request);
         }
 
-        return decodePayloadContentIfEncoded(strategy.invokeClient(executionContext.executor(), flatRequest,
-                determineFlushStrategyForApi(request), this));
-    }
-
-    private void encodePayloadContentIfAvailable(final StreamingHttpRequest request) {
-        ContentCoding encoding = request.encoding();
-        if (encoding != null) {
-            ContentCodec codec = encoding.codec();
-            BufferAllocator alloc = executionContext.bufferAllocator();
-            request.transformPayloadBody(pub -> codec.encode(request.headers(), pub, alloc));
-        }
-    }
-
-    private Single<StreamingHttpResponse> decodePayloadContentIfEncoded(
-            final Single<StreamingHttpResponse> responseSingle) {
-
-        return responseSingle.map((response -> {
-            ContentCoding encoding = identifyContentEncodingOrNone(response.headers(), supportedEncodings);
-            ContentCodec codec = encoding.codec();
-            if (!encoding.equals(none())) {
-                response.transformPayloadBody(bufferPublisher ->
-                        codec.decode(bufferPublisher, executionContext.bufferAllocator()));
-            }
-            return response;
-        }));
+        return strategy.invokeClient(executionContext.executor(), flatRequest,
+                determineFlushStrategyForApi(request), this);
     }
 
     @Nullable

@@ -40,7 +40,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Arrays.asList;
@@ -60,12 +60,12 @@ public final class ProtoBufSerializationProviderBuilder {
     private final Map<Class, Map<GrpcMessageEncoding, HttpSerializer>> serializers = new HashMap<>();
     private final Map<Class, Map<GrpcMessageEncoding, HttpDeserializer>> deserializers = new HashMap<>();
 
-    private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(none()));
+    private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(identity()));
 
     /**
      * Set the supported message encodings for the serializers and deserializers.
      * The encodings will be advertised on the endpoint's headers and also used to validate each encoded message
-     * {@link GrpcMessageEncodings#none()} is always supported regardless of the config passed
+     * {@link GrpcMessageEncodings#identity()} is always supported regardless of the config passed
      *
      * @param supportedEncodings the set of allowed encodings
      * @param <T> Type of {@link MessageLite} to register.
@@ -75,7 +75,7 @@ public final class ProtoBufSerializationProviderBuilder {
     supportedMessageEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
         this.supportedEncodings.clear();
         this.supportedEncodings.addAll(supportedEncodings);
-        this.supportedEncodings.add(none()); // Always supported
+        this.supportedEncodings.add(identity()); // Always supported
         return this;
     }
 

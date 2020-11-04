@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.Set;
-
 /**
  * Defines configuration options for HTTP protocol versions.
  */
@@ -38,13 +36,4 @@ public interface HttpProtocolConfig {
      * @return {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages
      */
     HttpHeadersFactory headersFactory();
-
-    /**
-     * A collection of all {@link ContentCoding}s the endpoint supports.
-     * The list will be advertised as part of the Accept-Encoding header.
-     *
-     * @return The list of supported {@link ContentCoding}s for this endpoint.
-     * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
-     */
-    Set<ContentCoding> supportedEncodings();
 }

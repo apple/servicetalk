@@ -26,13 +26,13 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Default available encoding implementations.
- * Encoding {@link #none()} is always supported regardless of the client or server settings.
+ * Encoding {@link #identity()} is always supported regardless of the client or server settings.
  *
  * {@link #all()} is a set that includes all default encodings {@link #deflate()} and {@link #gzip()}.
  */
 public final class GrpcMessageEncodings {
 
-    private static final GrpcMessageEncoding NONE =
+    private static final GrpcMessageEncoding IDENTITY =
             new DefaultGrpcMessageEncoding("identity", new IdentityMessageCodec());
 
     private static final GrpcMessageEncoding GZIP =
@@ -42,7 +42,7 @@ public final class GrpcMessageEncodings {
             new DefaultGrpcMessageEncoding("deflate", new DeflateMessageCodec());
 
     private static final Set<GrpcMessageEncoding> ALL =
-            unmodifiableSet(new HashSet<>(asList(NONE, GZIP, DEFLATE)));
+            unmodifiableSet(new HashSet<>(asList(IDENTITY, GZIP, DEFLATE)));
 
     private GrpcMessageEncodings() {
     }
@@ -51,8 +51,8 @@ public final class GrpcMessageEncodings {
      * Returns the default, always supported 'identity' {@link GrpcMessageEncoding}.
      * @return the default, always supported 'identity' {@link GrpcMessageEncoding}
      */
-    public static GrpcMessageEncoding none() {
-        return NONE;
+    public static GrpcMessageEncoding identity() {
+        return IDENTITY;
     }
 
     /**
@@ -83,7 +83,7 @@ public final class GrpcMessageEncodings {
      * Returns a {@link GrpcMessageEncoding} that matches the {@code name}.
      * Returns {@code null} if {@code name} is {@code null} or empty.
      * If {@code name} is {@code 'identity'} this will always result in
-     * {@link GrpcMessageEncodings#NONE} regardless of its presence in the {@code allowedList}.
+     * {@link GrpcMessageEncodings#IDENTITY} regardless of its presence in the {@code allowedList}.
      *
      * @param allowedList the source list to find a matching encoding in
      * @param name the encoding name used for the matching predicate
@@ -99,8 +99,8 @@ public final class GrpcMessageEncodings {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (name.equalsIgnoreCase(NONE.name())) {
-            return NONE;
+        if (name.equalsIgnoreCase(IDENTITY.name())) {
+            return IDENTITY;
         }
 
         for (GrpcMessageEncoding enumEnc : allowedList) {

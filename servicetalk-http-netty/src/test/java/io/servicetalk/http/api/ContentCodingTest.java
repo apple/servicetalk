@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.ContentCoding;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
-import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -42,24 +30,24 @@ import org.junit.runners.Parameterized;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
-import static io.servicetalk.http.api.ContentCodings.deflate;
+import static io.servicetalk.http.api.ContentCodings.deflateDefault;
+import static io.servicetalk.http.api.ContentCodings.gzipDefault;
 import static io.servicetalk.http.api.ContentCodings.encodingFor;
-import static io.servicetalk.http.api.ContentCodings.gzip;
-import static io.servicetalk.http.api.ContentCodings.none;
+import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
@@ -67,8 +55,9 @@ import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.disjoint;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -90,8 +79,8 @@ public class ContentCodingTest {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
-                    final ContentCoding reqEncoding = options.requestEncoding;
-                    final Set<ContentCoding> clientSupportedEncodings = options.clientSupported;
+                    final StreamingContentCoding reqEncoding = options.requestEncoding;
+                    final List<StreamingContentCoding> clientSupportedEncodings = options.clientSupported;
 
                     try {
 
@@ -107,18 +96,19 @@ public class ContentCodingTest {
                         final List<String> expectedReqAcceptedEncodings = (clientSupportedEncodings == null) ?
                                 emptyList() :
                                 clientSupportedEncodings.stream()
-                                        .filter((enc) -> enc != none())
-                                        .map((ContentCoding::name))
+                                        .filter((enc) -> enc != identity())
+                                        .map((StreamingContentCoding::name))
+                                        .map(CharSequence::toString)
                                         .collect(toList());
 
-                        if (reqEncoding != none()) {
+                        if (reqEncoding != identity()) {
                             assertTrue("Request encoding should be present in the request headers",
                                     contentEquals(reqEncoding.name(),
                                             request.headers().get(ACCEPT_ENCODING, "null")));
                         }
 
                         if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
-                            assertEquals(expectedReqAcceptedEncodings, actualReqAcceptedEncodings);
+                            assertThat(actualReqAcceptedEncodings, equalTo(expectedReqAcceptedEncodings));
                         }
                     } catch (Throwable t) {
                         ASYNC_ERROR.set(true);
@@ -141,57 +131,69 @@ public class ContentCodingTest {
     protected final TestEncodingScenario testEncodingScenario;
     private final boolean expectedSuccess;
 
-    public ContentCodingTest(final Set<ContentCoding> serverSupportedEncodings,
-                             final Set<ContentCoding> clientSupportedEncodings,
-                             final ContentCoding requestEncoding, final boolean expectedSuccess,
-                             final Protocol protocol) throws Exception {
+    public ContentCodingTest(final List<StreamingContentCoding> serverSupportedEncodings,
+                             final List<StreamingContentCoding> clientSupportedEncodings,
+                             final StreamingContentCoding requestEncoding, final boolean expectedSuccess,
+                             final HttpProtocolConfig protocol) throws Exception {
         this.testEncodingScenario = new TestEncodingScenario(requestEncoding, clientSupportedEncodings,
                 serverSupportedEncodings, protocol);
         this.expectedSuccess = expectedSuccess;
 
-        httpServerBuilder = HttpServers.forAddress(localAddress(0)).enableWireLogging("server");
+        httpServerBuilder = HttpServers.forAddress(localAddress(0))
+                .supportedEncodingsBiDi(codingsAsArray(serverSupportedEncodings))
+                .enableWireLogging("server");
         serverContext = listenAndAwait();
         client = newClient();
+    }
+
+    private StreamingContentCoding[] codingsAsArray(@Nullable final List<StreamingContentCoding> codings) {
+        return codings == null ? new StreamingContentCoding[0] : codings.toArray(new StreamingContentCoding[0]);
     }
 
     @Parameterized.Parameters(name = "server-supported-encodings={0} client-supported-encodings={1} " +
             "request-encoding={2} expected-success={3} protocol={4}")
     public static Object[][] params() {
         return new Object[][] {
-                {null, null, none(), true, Protocol.H1},
-                {null, null, none(), true, Protocol.H2},
-                {null, of(gzip(), none()), gzip(), false, Protocol.H1},
-                {null, of(gzip(), none()), gzip(), false, Protocol.H2},
-                {null, of(deflate(), none()), deflate(), false, Protocol.H1},
-                {null, of(deflate(), none()), deflate(), false, Protocol.H2},
-                {of(gzip(), deflate(), none()), null, none(), true, Protocol.H1},
-                {of(gzip(), deflate(), none()), null, none(), true, Protocol.H2},
-                {of(none(), gzip(), deflate()), of(gzip(), none()), gzip(), true, Protocol.H1},
-                {of(none(), gzip(), deflate()), of(gzip(), none()), gzip(), true, Protocol.H2},
-                {of(none(), gzip(), deflate()), of(deflate(), none()), deflate(), true, Protocol.H1},
-                {of(none(), gzip(), deflate()), of(deflate(), none()), deflate(), true, Protocol.H2},
-                {of(none(), gzip()), of(deflate(), none()), deflate(), false, Protocol.H1},
-                {of(none(), gzip()), of(deflate(), none()), deflate(), false, Protocol.H2},
-                {of(none(), deflate()), of(gzip(), none()), gzip(), false, Protocol.H1},
-                {of(none(), deflate()), of(gzip(), none()), gzip(), false, Protocol.H2},
-                {of(none(), deflate()), of(deflate(), none()), deflate(), true, Protocol.H1},
-                {of(none(), deflate()), of(deflate(), none()), deflate(), true, Protocol.H2},
-                {of(none(), deflate()), null, none(), true, Protocol.H1},
-                {of(none(), deflate()), null, none(), true, Protocol.H2},
-                {of(gzip()), of(none()), none(), true, Protocol.H1},
-                {of(gzip()), of(none()), none(), true, Protocol.H2},
-                {of(gzip()), of(gzip(), none()), none(), true, Protocol.H1},
-                {of(gzip()), of(gzip(), none()), none(), true, Protocol.H2},
-                {of(gzip()), of(gzip(), none()), none(), true, Protocol.H1},
-                {of(gzip()), of(gzip(), none()), none(), true, Protocol.H2},
-                {of(gzip()), of(gzip(), none()), gzip(), true, Protocol.H1},
-                {of(gzip()), of(gzip(), none()), gzip(), true, Protocol.H2},
-                {null, of(gzip(), none()), gzip(), false, Protocol.H1},
-                {null, of(gzip(), none()), gzip(), false, Protocol.H2},
-                {null, of(gzip(), deflate(), none()), deflate(), false, Protocol.H1},
-                {null, of(gzip(), deflate(), none()), deflate(), false, Protocol.H2},
-                {null, of(gzip(), none()), none(), true, Protocol.H1},
-                {null, of(gzip(), none()), none(), true, Protocol.H2},
+                {null, null, identity(), true, h1Default()},
+                {null, null, identity(), true, h2Default()},
+                {null, of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {null, of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {null, of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {null, of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {of(gzipDefault(), deflateDefault(), identity()), null, identity(), true, h1Default()},
+                {of(gzipDefault(), deflateDefault(), identity()), null, identity(), true, h2Default()},
+                {of(identity(), gzipDefault(), deflateDefault()),
+                        of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
+                {of(identity(), gzipDefault(), deflateDefault()),
+                        of(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
+                {of(identity(), gzipDefault(), deflateDefault()),
+                        of(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
+                {of(identity(), gzipDefault(), deflateDefault()),
+                        of(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
+                {of(identity(), gzipDefault()), of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {of(identity(), gzipDefault()), of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {of(identity(), deflateDefault()), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {of(identity(), deflateDefault()), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {of(identity(), deflateDefault()),
+                        of(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
+                {of(identity(), deflateDefault()),
+                        of(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
+                {of(identity(), deflateDefault()), null, identity(), true, h1Default()},
+                {of(identity(), deflateDefault()), null, identity(), true, h2Default()},
+                {of(gzipDefault()), of(identity()), identity(), true, h1Default()},
+                {of(gzipDefault()), of(identity()), identity(), true, h2Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h1Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h2Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h1Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h2Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
+                {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
+                {null, of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {null, of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {null, of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {null, of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {null, of(gzipDefault(), identity()), identity(), true, h1Default()},
+                {null, of(gzipDefault(), identity()), identity(), true, h2Default()},
         };
     }
 
@@ -206,23 +208,28 @@ public class ContentCodingTest {
     }
 
     private ServerContext listenAndAwait() throws Exception {
-        HttpProtocolConfig config = testEncodingScenario.protocol.build(testEncodingScenario.serverSupported);
-
         StreamingHttpService service = (ctx, request, responseFactory) -> Single.succeeded(responseFactory.ok()
                 .payloadBody(from(payload((byte) 'b')), textSerializer()));
 
         StreamingHttpServiceFilterFactory filterFactory = REQ_RESP_VERIFIER.apply(testEncodingScenario);
-        return httpServerBuilder.appendServiceFilter(filterFactory)
-                .protocols(config)
-                .listenStreamingAndAwait(service);
+        HttpServerBuilder builder = httpServerBuilder.appendServiceFilter(filterFactory)
+                .protocols(testEncodingScenario.protocol);
+
+        if (testEncodingScenario.serverSupported != null) {
+            builder.supportedEncodingsBiDi(codingsAsArray(testEncodingScenario.serverSupported));
+        }
+
+        return builder.listenStreamingAndAwait(service);
     }
 
     private HttpClient newClient() {
-        HttpProtocolConfig config = testEncodingScenario.protocol.build(testEncodingScenario.clientSupported);
+        HttpClientBuilder builder = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                .protocols(testEncodingScenario.protocol);
+        if (testEncodingScenario.clientSupported != null) {
+            builder.supportedEncodings(codingsAsArray(testEncodingScenario.clientSupported));
+        }
 
-        return HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(config)
-                .build();
+        return builder.build();
     }
 
     @Test
@@ -240,7 +247,7 @@ public class ContentCodingTest {
         return new String(payload, StandardCharsets.US_ASCII);
     }
 
-    private void assertSuccessful(final ContentCoding encoding) throws Exception {
+    private void assertSuccessful(final StreamingContentCoding encoding) throws Exception {
         assertResponse(client.request(client
                 .get("/")
                 .encoding(encoding)
@@ -275,34 +282,19 @@ public class ContentCodingTest {
     }
 
     private void assertResponseHeaders(final HttpHeaders headers) {
-        final Set<ContentCoding> clientSupportedEncodings = testEncodingScenario.clientSupported;
-        final Set<ContentCoding> serverSupportedEncodings = testEncodingScenario.serverSupported;
-
-        final List<String> actualRespAcceptedEncodings = stream(headers
-                .get(ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
-                .map((String::trim)).collect(toList());
-
-        final List<String> expectedRespAcceptedEncodings = (serverSupportedEncodings == null) ?
-                emptyList() :
-                serverSupportedEncodings.stream()
-                        .filter((enc) -> enc != none())
-                        .map((ContentCoding::name))
-                        .collect(toList());
-
-        if (!expectedRespAcceptedEncodings.isEmpty() && !actualRespAcceptedEncodings.isEmpty()) {
-            assertEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings);
-        }
+        final List<StreamingContentCoding> clientSupportedEncodings = testEncodingScenario.clientSupported;
+        final List<StreamingContentCoding> serverSupportedEncodings = testEncodingScenario.serverSupported;
 
         final String respEncName = headers
                 .get(CONTENT_ENCODING, "identity").toString();
 
         if (clientSupportedEncodings == null) {
-            assertEquals(none().name(), respEncName);
+            assertEquals(identity().name().toString(), respEncName);
         } else if (serverSupportedEncodings == null) {
-            assertEquals(none().name(), respEncName);
+            assertEquals(identity().name().toString(), respEncName);
         } else {
             if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-                assertEquals(none().name(), respEncName);
+                assertEquals(identity().name().toString(), respEncName);
             } else {
                 assertNotNull("Response encoding not in the client supported list " +
                                 "[" + clientSupportedEncodings + "]",
@@ -317,7 +309,7 @@ public class ContentCodingTest {
         }
     }
 
-    private void assertNotSupported(final ContentCoding encoding) throws Exception {
+    private void assertNotSupported(final StreamingContentCoding encoding) throws Exception {
         final BlockingStreamingHttpClient blockingStreamingHttpClient = client.asBlockingStreamingClient();
         final StreamingHttpClient streamingHttpClient = client.asStreamingClient();
 
@@ -337,48 +329,26 @@ public class ContentCodingTest {
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get().status());
     }
 
-    private static Set<ContentCoding> of(ContentCoding... encodings) {
-        return new HashSet<>(asList(encodings));
+    private static List<StreamingContentCoding> of(StreamingContentCoding... encodings) {
+        return asList(encodings);
     }
 
     static class TestEncodingScenario {
-        final ContentCoding requestEncoding;
+        final StreamingContentCoding requestEncoding;
         @Nullable
-        final Set<ContentCoding> clientSupported;
+        final List<StreamingContentCoding> clientSupported;
         @Nullable
-        final Set<ContentCoding> serverSupported;
-        final Protocol protocol;
+        final List<StreamingContentCoding> serverSupported;
+        final HttpProtocolConfig protocol;
 
-        TestEncodingScenario(final ContentCoding requestEncoding,
-                             final Set<ContentCoding> clientSupported,
-                             final Set<ContentCoding> serverSupported,
-                             final Protocol protocol) {
+        TestEncodingScenario(final StreamingContentCoding requestEncoding,
+                             final List<StreamingContentCoding> clientSupported,
+                             final List<StreamingContentCoding> serverSupported,
+                             final HttpProtocolConfig protocol) {
             this.requestEncoding = requestEncoding;
             this.clientSupported = clientSupported;
             this.serverSupported = serverSupported;
             this.protocol = protocol;
-        }
-    }
-
-    enum Protocol {
-        H1((supportedEncodings) -> {
-            return HttpProtocolConfigs.h2()
-                    .supportedEncodings(supportedEncodings == null ? emptySet() : supportedEncodings)
-                    .build();
-        }),
-        H2((supportedEncodings) -> {
-            return HttpProtocolConfigs.h1()
-                    .supportedEncodings(supportedEncodings == null ? emptySet() : supportedEncodings)
-                    .build();
-        });
-
-        private final Function<Set<ContentCoding>, HttpProtocolConfig> builder;
-        Protocol(Function<Set<ContentCoding>, HttpProtocolConfig> builder) {
-            this.builder = builder;
-        }
-
-        HttpProtocolConfig build(@Nullable final Set<ContentCoding> supportedEncodings) {
-            return builder.apply(supportedEncodings);
         }
     }
 }

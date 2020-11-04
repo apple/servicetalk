@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
@@ -31,8 +30,6 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.http.api.ContentCodec;
-import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -77,17 +74,14 @@ import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
@@ -96,10 +90,6 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.ContentCodings.none;
-import static io.servicetalk.http.api.HeaderUtils.advertiseAcceptedEncodingsIfAvailable;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNone;
-import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -177,7 +167,7 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        h1Config.headersFactory(), h1Config.supportedEncodings(), drainRequestPayloadBody)),
+                        h1Config.headersFactory(), drainRequestPayloadBody)),
                         HTTP_1_1, channel);
     }
 
@@ -245,14 +235,12 @@ final class NettyHttpServer {
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
         private final SplittingFlushStrategy splittingFlushStrategy;
-        private final Set<ContentCoding> supportedEncodings;
         private final boolean drainRequestPayloadBody;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpExecutionStrategy strategy,
                                   final HttpHeadersFactory headersFactory,
-                                  final Set<ContentCoding> supportedEncodings,
                                   final boolean drainRequestPayloadBody) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator()),
@@ -267,7 +255,6 @@ final class NettyHttpServer {
                     strategy);
             this.service = service;
             this.strategy = strategy;
-            this.supportedEncodings = supportedEncodings;
             this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
                     itemWritten -> {
                         if (itemWritten instanceof HttpResponseMetaData) {
@@ -350,34 +337,24 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
-                Function<StreamingHttpRequest, Publisher<Object>> serviceFn = (req) -> {
-                    ContentCoding encoding = identifyContentEncodingOrNone(request.headers(), supportedEncodings);
-                    ContentCodec codec = encoding.codec();
-                    request.transformPayloadBody(bufferPublisher ->
-                            codec.decode(bufferPublisher, executionContext.bufferAllocator()));
-
-                    return service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
-                                .recoverWith(cause ->
-                                        succeeded(newErrorResponse(cause, executionContext.executor(),
-                                                req.version(), keepAlive)))
-                                .flatMapPublisher(response -> {
-                                    keepAlive.addConnectionHeaderIfNecessary(response);
-
-                                    final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
-                                    if (flushStrategy != null) {
-                                        splittingFlushStrategy.updateFlushStrategy(
-                                                (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
-                                    }
-
-                                    return handleResponse(requestMethod, request.headers(), supportedEncodings,
-                                            response, executionContext.bufferAllocator());
-                                });
-                };
-
                 Publisher<Object> responsePublisher = strategy
-                        .invokeService(executionContext().executor(), request, serviceFn,
+                        .invokeService(executionContext().executor(), request,
+                                req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
+                                        .recoverWith(cause ->
+                                                succeeded(newErrorResponse(cause, executionContext.executor(),
+                                                        req.version(), keepAlive)))
+                                        .flatMapPublisher(response -> {
+                                            keepAlive.addConnectionHeaderIfNecessary(response);
+
+                                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                                            if (flushStrategy != null) {
+                                                splittingFlushStrategy.updateFlushStrategy(
+                                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev, 1);
+                                            }
+                                            return handleResponse(requestMethod, response);
+                                        }),
                                 (cause, executor) -> from(newErrorResponse(cause, executor,
-                                        request.version(), keepAlive), EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE));
+                                        request.version(), keepAlive), EmptyHttpHeaders.INSTANCE));
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
@@ -396,13 +373,7 @@ final class NettyHttpServer {
 
         @Nonnull
         private static Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
-                                                        final HttpHeaders requestHeaders,
-                                                        final Set<ContentCoding> supportedEncodings,
-                                                        final StreamingHttpResponse response,
-                                                        final BufferAllocator allocator) {
-            advertiseAcceptedEncodingsIfAvailable(response.headers(), supportedEncodings);
-            encodePayloadContentIfAvailable(requestHeaders, supportedEncodings, response, allocator);
-
+                                                        final StreamingHttpResponse response) {
             // Add the content-length if necessary, falling back to transfer-encoding
             // otherwise.
             if (canAddResponseContentLength(response, requestMethod)) {
@@ -415,30 +386,6 @@ final class NettyHttpServer {
                 }
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
-            }
-        }
-
-        private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,
-                                                            final Set<ContentCoding> supportedEncodings,
-                                                            final StreamingHttpResponse response,
-                                                            final BufferAllocator allocator) {
-            if (supportedEncodings.isEmpty()) {
-                return;
-            }
-
-            ContentCodec codec;
-            if (response.encoding() != null) {
-                codec = response.encoding().codec();
-                response.transformPayloadBody(bufferPublisher ->
-                        codec.encode(response.headers(), bufferPublisher, allocator));
-            } else {
-                // Set encoding if one isn't set already and if the request Accept-Encodings match any of the server
-                // supported ones.
-                ContentCoding matching = negotiateAcceptedEncoding(requestHeaders, supportedEncodings);
-                if (!matching.equals(none())) {
-                    response.transformPayloadBody(bufferPublisher ->
-                            matching.codec().encode(response.headers(), bufferPublisher, allocator));
-                }
             }
         }
 
@@ -461,7 +408,7 @@ final class NettyHttpServer {
             }
             response.version(version)
                     .setHeader(CONTENT_LENGTH, ZERO);
-            advertiseAcceptedEncodingsIfAvailable(response.headers(), supportedEncodings);
+            // advertiseAcceptedEncodingsIfAvailable(response.headers(), supportedEncodings);
             keepAlive.addConnectionHeaderIfNecessary(response);
             return response;
         }

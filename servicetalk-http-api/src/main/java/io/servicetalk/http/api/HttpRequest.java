@@ -111,7 +111,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     HttpRequest version(HttpProtocolVersion version);
 
     @Override
-    HttpRequest encoding(ContentCoding encoding);
+    HttpRequest encoding(StreamingContentCoding encoding);
 
     @Override
     HttpRequest method(HttpRequestMethod method);

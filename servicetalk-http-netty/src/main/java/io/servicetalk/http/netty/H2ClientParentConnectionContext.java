@@ -29,7 +29,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.http.api.ContentCoding;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -67,7 +66,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -129,7 +127,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), config.headersFactory(),
-                            reqRespFactory, observer, config.supportedEncodings());
+                            reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -154,7 +152,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final Set<ContentCoding> supportedEncodings;
         private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
@@ -166,13 +163,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         boolean waitForSslHandshake,
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
-                                        ConnectionObserver observer,
-                                        Set<ContentCoding> supportedEncodings) {
+                                        ConnectionObserver observer) {
             super(connection, delayedCancellable, waitForSslHandshake, observer);
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
-            this.supportedEncodings = supportedEncodings;
             maxConcurrencyProcessor = newPublisherProcessor(16);
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
@@ -296,7 +291,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
-                            executionContext(), reqRespFactory, headersFactory, supportedEncodings)
+                            executionContext(), reqRespFactory, headersFactory)
                                 .request(strategy, request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {

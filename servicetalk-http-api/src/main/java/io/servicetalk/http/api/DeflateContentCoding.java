@@ -22,10 +22,19 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-final class DeflateContentCodec extends AbstractZipContentCodec {
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 
-    DeflateContentCodec() {
-        super(ContentCodings.DEFLATE_HEADER);
+final class DeflateContentCoding extends AbstractZipContentCoding {
+
+    private static final CharSequence NAME = newAsciiString("deflate");
+
+    DeflateContentCoding(final int chunkSize, final int maxSize) {
+        super(chunkSize, maxSize);
+    }
+
+    @Override
+    public CharSequence name() {
+        return NAME;
     }
 
     @Override
@@ -47,6 +56,6 @@ final class DeflateContentCodec extends AbstractZipContentCodec {
     DeflaterOutputStream newDeflaterOutputStream(final OutputStream out) {
         // TODO tk - Optimization, we could rely on the Deflater directly to avoid the intermediate
         // copy on the stream buffer
-        return new DeflaterOutputStream(out, new Deflater(), ONE_KB, true);
+        return new DeflaterOutputStream(out, new Deflater(), chunkSize, true);
     }
 }

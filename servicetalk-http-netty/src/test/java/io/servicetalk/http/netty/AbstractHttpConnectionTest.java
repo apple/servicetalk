@@ -47,7 +47,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.ContentCodings.none;
+import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -62,7 +62,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -95,7 +94,7 @@ public final class AbstractHttpConnectionTest {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
             super(connection, maxPipelinedRequests, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
-                    reqRespFactory, headersFactory, emptySet());
+                    reqRespFactory, headersFactory);
         }
 
         @Override
@@ -136,7 +135,7 @@ public final class AbstractHttpConnectionTest {
         HttpHeaders headers = headersFactory.newHeaders();
         headers.add(TRANSFER_ENCODING, CHUNKED);
         StreamingHttpRequest req = newTransportRequest(GET, "/foo", HTTP_1_1,
-                headers, none(),
+                headers, identity(),
                 allocator, from(chunk1, chunk2, chunk3, trailers), headersFactory);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,

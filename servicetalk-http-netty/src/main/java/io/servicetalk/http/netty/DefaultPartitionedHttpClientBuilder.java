@@ -48,6 +48,7 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
+import io.servicetalk.http.api.StreamingContentCoding;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -306,6 +307,12 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     public PartitionedHttpClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCoding... codings) {
+        builderTemplate.supportedEncodings(codings);
         return this;
     }
 
