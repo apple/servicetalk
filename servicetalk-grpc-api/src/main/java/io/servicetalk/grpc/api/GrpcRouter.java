@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute;
@@ -59,9 +60,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -76,7 +77,7 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.grpc.api.GrpcUtils.firstMatchingEncodingOrNone;
+import static io.servicetalk.grpc.api.GrpcUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
@@ -252,16 +253,16 @@ final class GrpcRouter {
                         public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
                                                            final HttpResponseFactory responseFactory) {
 
-                            GrpcMessageEncoding responseEncoding;
+                            ContentCodec responseEncoding;
                             GrpcServiceContext serviceContext = null;
                             try {
-                                final Set<GrpcMessageEncoding> supportedEncodings =
-                                        serializationProvider.supportedEncodings();
-                                responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
-                                serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
+                                final List<ContentCodec> supportedCodings =
+                                        serializationProvider.supportedMessageCodings();
+                                responseEncoding = negotiateAcceptedEncoding(request, supportedCodings);
+                                serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedCodings);
                                 final HttpDeserializer<Req> deserializer =
                                         serializationProvider.deserializerFor(
-                                                readGrpcMessageEncoding(request, supportedEncodings), requestClass);
+                                                readGrpcMessageEncoding(request, supportedCodings), requestClass);
                                 final GrpcServiceContext finalServiceContext = serviceContext;
                                 return route.handle(serviceContext, request.payloadBody(deserializer))
                                         .map(rawResp -> newResponse(responseFactory, finalServiceContext,
@@ -313,17 +314,17 @@ final class GrpcRouter {
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                 final StreamingHttpRequest request,
                                                                 final StreamingHttpResponseFactory responseFactory) {
-                        GrpcMessageEncoding responseEncoding;
+                        ContentCodec responseEncoding;
                         GrpcServiceContext serviceContext = null;
 
                         try {
-                            final Set<GrpcMessageEncoding> supportedEncodings =
-                                    serializationProvider.supportedEncodings();
-                            responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
-                            serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
+                            final List<ContentCodec> supportedCodings =
+                                    serializationProvider.supportedMessageCodings();
+                            responseEncoding = negotiateAcceptedEncoding(request, supportedCodings);
+                            serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedCodings);
                             final HttpDeserializer<Req> deserializer =
                                     serializationProvider.deserializerFor(
-                                            readGrpcMessageEncoding(request, supportedEncodings), requestClass);
+                                            readGrpcMessageEncoding(request, supportedCodings), requestClass);
                             final Publisher<Resp> response = route.handle(serviceContext,
                                     request.payloadBody(deserializer));
                             return succeeded(newResponse(responseFactory, serviceContext, response,
@@ -460,16 +461,16 @@ final class GrpcRouter {
                         @Override
                         public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
                                                    final HttpResponseFactory responseFactory) {
-                            GrpcMessageEncoding responseEncoding;
+                            ContentCodec responseEncoding;
                             GrpcServiceContext serviceContext = null;
                             try {
-                                final Set<GrpcMessageEncoding> supportedEncodings =
-                                        serializationProvider.supportedEncodings();
-                                responseEncoding = firstMatchingEncodingOrNone(request, supportedEncodings);
-                                serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
+                                final List<ContentCodec> supportedCodings =
+                                        serializationProvider.supportedMessageCodings();
+                                responseEncoding = negotiateAcceptedEncoding(request, supportedCodings);
+                                serviceContext = new DefaultGrpcServiceContext(request.path(), ctx, supportedCodings);
                                 final HttpDeserializer<Req> deserializer =
                                         serializationProvider.deserializerFor(
-                                                readGrpcMessageEncoding(request, supportedEncodings), requestClass);
+                                                readGrpcMessageEncoding(request, supportedCodings), requestClass);
                                 final Resp response = route.handle(serviceContext, request.payloadBody(deserializer));
                                 return newResponse(responseFactory, serviceContext,
                                         ctx.executionContext().bufferAllocator()).payloadBody(response,
@@ -522,14 +523,14 @@ final class GrpcRouter {
                         @Override
                         public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
                                            final BlockingStreamingHttpServerResponse response) throws Exception {
-                            final Set<GrpcMessageEncoding> supportedEncodings =
-                                    serializationProvider.supportedEncodings();
-                            final GrpcMessageEncoding responseEncoding = firstMatchingEncodingOrNone(request,
-                                    supportedEncodings);
+                            final List<ContentCodec> supportedCodings =
+                                    serializationProvider.supportedMessageCodings();
+                            final ContentCodec responseEncoding = negotiateAcceptedEncoding(request,
+                                    supportedCodings);
                             final GrpcServiceContext serviceContext =
-                                    new DefaultGrpcServiceContext(request.path(), ctx, supportedEncodings);
+                                    new DefaultGrpcServiceContext(request.path(), ctx, supportedCodings);
                             final HttpDeserializer<Req> deserializer = serializationProvider.deserializerFor(
-                                    readGrpcMessageEncoding(request, supportedEncodings), requestClass);
+                                    readGrpcMessageEncoding(request, supportedCodings), requestClass);
                             final HttpSerializer<Resp> serializer =
                                     serializationProvider.serializerFor(responseEncoding, responseClass);
                             final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =

@@ -42,7 +42,7 @@ final class DeflateContentCodec extends AbstractZipContentCodec {
 
     @Override
     InflaterInputStream newInflaterInputStream(final InputStream in) {
-        return new InflaterInputStream(in);
+        return new InflaterInputStream(in, newRawInflater(), chunkSize);
     }
 
     @Override

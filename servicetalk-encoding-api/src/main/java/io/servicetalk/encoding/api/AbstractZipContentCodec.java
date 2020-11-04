@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
@@ -60,10 +61,10 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     abstract DeflaterOutputStream newDeflaterOutputStream(OutputStream out) throws IOException;
 
-    abstract InflaterInputStream newInflaterInputStream(InputStream in);
+    abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
 
     @Override
-    public final Buffer encode(final Buffer src, final int offset, final int length,
+    public final Buffer encode(final Buffer src, final int length,
                                final BufferAllocator allocator) {
         final Buffer dst = allocator.newBuffer(chunkSize);
         DeflaterOutputStream output = null;
@@ -71,7 +72,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
             output = newDeflaterOutputStream(Buffer.asOutputStream(dst));
 
             if (src.hasArray()) {
-                output.write(src.array(), src.arrayOffset() + offset, length);
+                output.write(src.array(), src.arrayOffset() + src.readerIndex(), length);
             } else {
                 while (src.readableBytes() > 0) {
                     byte[] onHeap = new byte[Math.min(src.readableBytes(), chunkSize)];
@@ -188,11 +189,11 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public final Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+    public final Buffer decode(final Buffer src, final int length, final BufferAllocator allocator) {
         final Buffer dst = allocator.newBuffer(chunkSize, maxPayloadSize);
         InflaterInputStream input = null;
         try {
-            input = newInflaterInputStream(Buffer.asInputStream(src));
+            input = newInflaterInputStream(new BufferBoundedInputStream(src, length));
 
             int read = dst.setBytesUntilEndStream(0, input, chunkSize);
             dst.writerIndex(read);
@@ -577,6 +578,57 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         @Override
         public void write(byte[] b, int off, int len) {
             buffer.writeBytes(b, off, len);
+        }
+    }
+
+    static final class BufferBoundedInputStream extends InputStream {
+        private final Buffer buffer;
+        private final int limit;
+        private int count;
+
+        BufferBoundedInputStream(Buffer buffer, int limit) {
+            this.buffer = requireNonNull(buffer);
+            this.limit = limit;
+        }
+
+        @Override
+        public int read() {
+            if (buffer.readableBytes() == 0) {
+                return -1;
+            }
+            if (++count > limit) {
+                throw new IndexOutOfBoundsException("Buffer limit has been reached: " +
+                        count + " (expected <= " + limit + ") bytes");
+            }
+            return buffer.readByte() & 0xff;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) {
+            int readableBytes = buffer.readableBytes();
+            if (readableBytes == 0) {
+                return -1;
+            }
+            int bytes = min(readableBytes, len);
+            if (count + bytes > limit) {
+                throw new IndexOutOfBoundsException("Buffer limit has been reached: " +
+                        count + " (expected <= " + limit + ") bytes");
+            }
+            count += bytes;
+            buffer.readBytes(b, off, bytes);
+            return bytes;
+        }
+
+        @Override
+        public long skip(long n) {
+            int skipped = min(buffer.readableBytes(), (int) min(Integer.MAX_VALUE, n));
+            buffer.skipBytes(skipped);
+            return skipped;
+        }
+
+        @Override
+        public int available() {
+            return buffer.readableBytes();
         }
     }
 }

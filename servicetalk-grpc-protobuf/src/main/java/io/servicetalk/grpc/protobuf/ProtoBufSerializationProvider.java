@@ -17,8 +17,7 @@ package io.servicetalk.grpc.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
-import io.servicetalk.grpc.api.GrpcMessageEncoding;
-import io.servicetalk.grpc.api.MessageCodec;
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.SerializationProvider;
 import io.servicetalk.serialization.api.StreamingDeserializer;
@@ -40,7 +39,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -52,15 +51,15 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
     private static final byte FLAG_COMPRESSED = 0x1;
 
     private final Class<T> targetClass;
-    private final GrpcMessageEncoding messageEncoding;
+    private final ContentCodec codec;
     private final ProtoSerializer serializer;
     private final Parser<T> parser;
 
-    ProtoBufSerializationProvider(final Class<T> targetClass, final GrpcMessageEncoding messageEncoding,
+    ProtoBufSerializationProvider(final Class<T> targetClass, final ContentCodec codec,
                                   final Parser<T> parser) {
         this.targetClass = targetClass;
-        this.messageEncoding = messageEncoding;
-        this.serializer = new ProtoSerializer(messageEncoding);
+        this.codec = codec;
+        this.serializer = new ProtoSerializer(this.codec);
         this.parser = parser;
     }
 
@@ -85,7 +84,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
         }
         @SuppressWarnings("unchecked")
         Parser<X> parser = (Parser<X>) this.parser;
-        return new ProtoDeserializer<>(parser, messageEncoding);
+        return new ProtoDeserializer<>(parser, codec);
     }
 
     @Override
@@ -107,7 +106,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
     private static final class ProtoDeserializer<T> implements StreamingDeserializer<T> {
         private final Parser<T> parser;
         private final CompositeBuffer accumulate;
-        private final MessageCodec encoder;
+        private final ContentCodec codec;
         /**
          * <ul>
          *     <li>{@code < 0} - read Length-Prefixed-Message header</li>
@@ -117,10 +116,9 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
         private int lengthOfData = -1;
         private boolean compressed;
 
-        ProtoDeserializer(final Parser<T> parser,
-                          @SuppressWarnings("unused") final GrpcMessageEncoding grpcMessageEncoding) {
+        ProtoDeserializer(final Parser<T> parser, final ContentCodec codec) {
             this.parser = parser;
-            this.encoder = grpcMessageEncoding.codec();
+            this.codec = codec;
             accumulate = DEFAULT_ALLOCATOR.newCompositeBuffer(Integer.MAX_VALUE);
         }
 
@@ -160,8 +158,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                         Buffer buffer = toDeserialize;
                         int decodedLengthOfData = lengthOfData;
                         if (compressed) {
-                            buffer = encoder.decode(toDeserialize, toDeserialize.readerIndex(),
-                                    lengthOfData, DEFAULT_ALLOCATOR);
+                            buffer = codec.decode(toDeserialize, lengthOfData, DEFAULT_ALLOCATOR);
                             decodedLengthOfData = buffer.readableBytes();
                         }
 
@@ -273,12 +270,12 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
     private static final class ProtoSerializer implements StreamingSerializer {
 
-        private final MessageCodec encoder;
+        private final ContentCodec codec;
         private final boolean encode;
 
-        ProtoSerializer(final GrpcMessageEncoding encoding) {
-            this.encoder = encoding.codec();
-            this.encode = encoding != identity();
+        ProtoSerializer(final ContentCodec codec) {
+            this.codec = codec;
+            this.encode = codec != identity();
         }
 
         @Override
@@ -309,7 +306,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             Buffer serialized = DEFAULT_ALLOCATOR.newBuffer(size);
             serialize0(msg, serialized);
 
-            Buffer encoded = encoder.encode(serialized, 0, serialized.readableBytes(), DEFAULT_ALLOCATOR);
+            Buffer encoded = codec.encode(serialized, serialized.readableBytes(), DEFAULT_ALLOCATOR);
 
             destination.writeByte(FLAG_COMPRESSED);
             destination.writeInt(encoded.readableBytes());

@@ -41,19 +41,18 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content encoded
      */
     default Buffer encode(Buffer src, BufferAllocator allocator) {
-        return encode(src, src.readerIndex(), src.readableBytes(), allocator);
+        return encode(src, src.readableBytes(), allocator);
     }
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
      *
      * @param src the {@link Buffer} to encode
-     * @param offset the offset of the source to start reading from
      * @param length the total length available for reading
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
      */
-    Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
+    Buffer encode(Buffer src, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
@@ -63,19 +62,18 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     default Buffer decode(Buffer src, BufferAllocator allocator) {
-        return decode(src, src.readerIndex(), src.readableBytes(), allocator);
+        return decode(src, src.readableBytes(), allocator);
     }
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
      *
      * @param src the {@link Buffer} to decode
-     * @param offset the offset of the source to start reading from
      * @param length the total length available for reading
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
      */
-    Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
+    Buffer decode(Buffer src, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a

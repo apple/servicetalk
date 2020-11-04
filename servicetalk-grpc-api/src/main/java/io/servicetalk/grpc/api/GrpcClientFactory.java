@@ -15,12 +15,15 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.util.Set;
+import io.servicetalk.encoding.api.ContentCodec;
+
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
-import static java.util.Collections.singleton;
-import static java.util.Collections.unmodifiableSet;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,7 +46,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     @Nullable
     private FilterFactory filterFactory;
 
-    private Set<GrpcMessageEncoding> supportedEncodings = unmodifiableSet(singleton(identity()));
+    private List<ContentCodec> supportedCodings = singletonList(identity());
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>
@@ -107,23 +110,23 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
 
     /**
      * Sets the supported message encodings for this client factory.
-     * By default only {@link GrpcMessageEncodings#identity()} is supported
+     * By default only {@link io.servicetalk.encoding.api.ContentCodings#identity()} is supported
      *
-     * @param supportedEncodings {@link GrpcMessageEncoding} supported encodings for this client.
+     * @param codings {@link ContentCodec} supported encodings for this client.
      * @return {@code this}
      */
     public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
-    supportedEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
-        this.supportedEncodings = unmodifiableSet(supportedEncodings);
+    supportedMessageCodings(List<ContentCodec> codings) {
+        this.supportedCodings = unmodifiableList(new ArrayList<>(codings));
         return this;
     }
 
     /**
-     * Return the list of supported {@link GrpcMessageEncoding}s for this client factory.
-     * @return the list of supported {@link GrpcMessageEncoding}s for this client factory
+     * Return the list of supported {@link ContentCodec}s for this client factory.
+     * @return the list of supported {@link ContentCodec}s for this client factory
      */
-    protected Set<GrpcMessageEncoding> supportedEncodings() {
-        return supportedEncodings;
+    protected List<ContentCodec> supportedMessageCodings() {
+        return supportedCodings;
     }
 
     /**
