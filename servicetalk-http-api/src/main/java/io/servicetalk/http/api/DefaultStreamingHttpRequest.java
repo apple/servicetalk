@@ -32,7 +32,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
-                                @Nullable final StreamingContentCoding encoding, final BufferAllocator allocator,
+                                @Nullable final StreamingContentCodec encoding, final BufferAllocator allocator,
                                 @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
                                 final HttpHeadersFactory headersFactory) {
         super(method, requestTarget, version, headers);
@@ -50,7 +50,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public StreamingHttpRequest encoding(final StreamingContentCoding encoding) {
+    public StreamingHttpRequest encoding(final StreamingContentCodec encoding) {
         super.encoding(encoding);
         return this;
     }

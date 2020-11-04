@@ -24,7 +24,7 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 /**
  * NOOP Message encoding codec.
  */
-final class IdentityContentCoding implements StreamingContentCoding {
+final class IdentityContentCodec implements StreamingContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");
 

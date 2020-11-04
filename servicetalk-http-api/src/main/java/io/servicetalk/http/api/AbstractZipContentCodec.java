@@ -55,15 +55,15 @@ import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.lang.Math.min;
 
-abstract class AbstractZipContentCoding implements StreamingContentCoding {
+abstract class AbstractZipContentCodec implements StreamingContentCodec {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCoding.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
     private static final Object END_OF_STREAM = new Object();
 
     protected final int chunkSize;
     private final int maxPayloadSize;
 
-    AbstractZipContentCoding(final int chunkSize, final int maxPayloadSize) {
+    AbstractZipContentCodec(final int chunkSize, final int maxPayloadSize) {
         this.chunkSize = chunkSize;
         this.maxPayloadSize = maxPayloadSize;
     }

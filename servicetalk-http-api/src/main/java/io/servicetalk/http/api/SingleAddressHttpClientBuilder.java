@@ -106,7 +106,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> supportedEncodings(StreamingContentCoding... codings);
+    public abstract SingleAddressHttpClientBuilder<U, R> supportedEncodings(StreamingContentCodec... codings);
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,

@@ -24,7 +24,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
  *
  * This instance is shared therefore it must provide thread safety semantics.
  */
-public interface ContentCoding {
+public interface ContentCodec {
 
     /**
      * A unique textual representation for the coding.

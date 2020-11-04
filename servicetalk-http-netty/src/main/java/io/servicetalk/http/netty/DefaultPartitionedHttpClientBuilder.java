@@ -48,7 +48,7 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
-import io.servicetalk.http.api.StreamingContentCoding;
+import io.servicetalk.http.api.StreamingContentCodec;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -311,7 +311,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCoding... codings) {
+    public PartitionedHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCodec... codings) {
         builderTemplate.supportedEncodings(codings);
         return this;
     }

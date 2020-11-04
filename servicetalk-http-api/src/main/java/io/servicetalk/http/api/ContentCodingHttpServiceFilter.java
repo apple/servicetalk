@@ -32,11 +32,11 @@ import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
  */
 class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
 
-    private final List<StreamingContentCoding> requestCodings;
-    private final List<StreamingContentCoding> responseCodings;
+    private final List<StreamingContentCodec> requestCodings;
+    private final List<StreamingContentCodec> responseCodings;
 
-    ContentCodingHttpServiceFilter(final List<StreamingContentCoding> requestCodings,
-                                          final List<StreamingContentCoding> responseCodings) {
+    ContentCodingHttpServiceFilter(final List<StreamingContentCodec> requestCodings,
+                                          final List<StreamingContentCodec> responseCodings) {
         this.requestCodings = requestCodings;
         this.responseCodings = responseCodings;
     }
@@ -50,7 +50,7 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
                                                         final StreamingHttpResponseFactory responseFactory) {
 
                 BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                StreamingContentCoding coding = identifyContentEncodingOrNone(request.headers(), requestCodings);
+                StreamingContentCodec coding = identifyContentEncodingOrNone(request.headers(), requestCodings);
                 request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
 
                 return super.handle(ctx, request, responseFactory).map(response -> {
@@ -62,14 +62,14 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,
-                                                        final List<StreamingContentCoding> supportedEncodings,
+                                                        final List<StreamingContentCodec> supportedEncodings,
                                                         final StreamingHttpResponse response,
                                                         final BufferAllocator allocator) {
         if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers())) {
             return;
         }
 
-        StreamingContentCoding coding = codingForResponse(requestHeaders, response, supportedEncodings);
+        StreamingContentCodec coding = codingForResponse(requestHeaders, response, supportedEncodings);
         if (coding != null && !coding.equals(identity())) {
             addContentEncoding(response.headers(), coding.name());
             response.transformPayloadBody(bufferPublisher -> coding.encode(bufferPublisher, allocator));
@@ -77,9 +77,9 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
     }
 
     @Nullable
-    private static StreamingContentCoding codingForResponse(final HttpHeaders requestHeaders,
-                                                            final StreamingHttpResponse response,
-                                                            final List<StreamingContentCoding> supportedEncodings) {
+    private static StreamingContentCodec codingForResponse(final HttpHeaders requestHeaders,
+                                                           final StreamingHttpResponse response,
+                                                           final List<StreamingContentCodec> supportedEncodings) {
         if (response.encoding() != null) {
             // Enforced selection
             return response.encoding();

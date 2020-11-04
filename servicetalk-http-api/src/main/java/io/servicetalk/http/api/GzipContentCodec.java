@@ -25,11 +25,11 @@ import java.util.zip.InflaterInputStream;
 
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 
-final class GzipContentCoding extends AbstractZipContentCoding {
+final class GzipContentCodec extends AbstractZipContentCodec {
 
     private static final CharSequence NAME = newAsciiString("gzip");
 
-    GzipContentCoding(final int chunkSize, final int maxSize) {
+    GzipContentCodec(final int chunkSize, final int maxSize) {
         super(chunkSize, maxSize);
     }
 

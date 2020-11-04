@@ -139,14 +139,14 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
             StreamingHttpConnectionFilterFactory factory);
 
     /**
-     * Sets the supported {@link StreamingContentCoding}s for the endpoint.
+     * Sets the supported {@link StreamingContentCodec}s for the endpoint.
      * The list will be advertised as part of the Accept-Encoding header
      *
-     * @param codings The list of supported {@link StreamingContentCoding}s for this endpoint.
+     * @param codings The list of supported {@link StreamingContentCodec}s for this endpoint.
      * @return {@code this}
      * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> supportedEncodings(StreamingContentCoding... codings);
+    public abstract BaseHttpBuilder<ResolvedAddress> supportedEncodings(StreamingContentCodec... codings);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

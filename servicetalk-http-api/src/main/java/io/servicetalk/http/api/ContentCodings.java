@@ -32,65 +32,65 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ContentCodings {
 
-    private static final StreamingContentCoding IDENTITY = new IdentityContentCoding();
+    private static final StreamingContentCodec IDENTITY = new IdentityContentCodec();
 
-    private static final StreamingContentCoding DEFAULT_GZIP = gzip().build();
+    private static final StreamingContentCodec DEFAULT_GZIP = gzip().build();
 
-    private static final StreamingContentCoding DEFAULT_DEFLATE = deflate().build();
+    private static final StreamingContentCodec DEFAULT_DEFLATE = deflate().build();
 
     private ContentCodings() {
     }
 
     /**
-     * Returns the default, always supported 'identity' {@link StreamingContentCoding}.
-     * @return the default, always supported 'identity' {@link StreamingContentCoding}
+     * Returns the default, always supported 'identity' {@link StreamingContentCodec}.
+     * @return the default, always supported 'identity' {@link StreamingContentCodec}
      */
-    public static StreamingContentCoding identity() {
+    public static StreamingContentCodec identity() {
         return IDENTITY;
     }
 
     /**
-     * Returns a GZIP based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}.
+     * Returns a GZIP based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}.
      * The max allowed payload size for this codec is 2Mib.
      *
-     * @return a GZIP based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}
+     * @return a GZIP based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}
      */
-    public static StreamingContentCoding gzipDefault() {
+    public static StreamingContentCodec gzipDefault() {
         return DEFAULT_GZIP;
     }
 
     /**
      * Returns a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
-     * a customizable {@link StreamingContentCoding}.
+     * a customizable {@link StreamingContentCodec}.
      * @return a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
-     *          a customizable GZIP {@link StreamingContentCoding}
+     *          a customizable GZIP {@link StreamingContentCodec}
      */
     public static DefaultStreamingContentCodingBuilder gzip() {
         return new GzipStreamingContentCodingBuilder();
     }
 
     /**
-     * Returns a DEFLATE based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}.
+     * Returns a DEFLATE based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}.
      * The max allowed payload size for this codec is 2Mib.
      *
-     * @return a DEFLATE based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}
+     * @return a DEFLATE based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}
      */
-    public static StreamingContentCoding deflateDefault() {
+    public static StreamingContentCodec deflateDefault() {
         return DEFAULT_DEFLATE;
     }
 
     /**
      * Returns a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
-     * a customizable {@link StreamingContentCoding}.
+     * a customizable {@link StreamingContentCodec}.
      * @return a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
-     *          a customizable DEFLATE {@link StreamingContentCoding}
+     *          a customizable DEFLATE {@link StreamingContentCodec}
      */
     public static DefaultStreamingContentCodingBuilder deflate() {
         return new DeflateStreamingContentCodingBuilder();
     }
 
     /**
-     * Returns a {@link StreamingContentCoding} that matches the {@code name}.
+     * Returns a {@link StreamingContentCodec} that matches the {@code name}.
      * Returns {@code null} if {@code name} is {@code null} or empty.
      * If {@code name} is {@code 'identity'} this will always result in
      * {@link ContentCodings#IDENTITY} regardless of its presence in the {@code allowedList}.
@@ -101,8 +101,8 @@ public final class ContentCodings {
      *          otherwise {@code null} if {@code name} is {@code null} or empty
      */
     @Nullable
-    static StreamingContentCoding encodingFor(final Collection<StreamingContentCoding> allowedList,
-                                                     @Nullable final CharSequence name) {
+    static StreamingContentCodec encodingFor(final Collection<StreamingContentCodec> allowedList,
+                                             @Nullable final CharSequence name) {
         requireNonNull(allowedList);
         if (name == null || isEmpty(name)) {
             return null;
@@ -113,7 +113,7 @@ public final class ContentCodings {
             return IDENTITY;
         }
 
-        for (StreamingContentCoding enumEnc : allowedList) {
+        for (StreamingContentCodec enumEnc : allowedList) {
             // Encoding values can potentially included compression configurations, we only match on the type
             if (startsWith(name, enumEnc.name())) {
                 return enumEnc;

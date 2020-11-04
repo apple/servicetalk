@@ -45,7 +45,7 @@ import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
-import io.servicetalk.http.api.StreamingContentCoding;
+import io.servicetalk.http.api.StreamingContentCodec;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -114,7 +114,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
-    private List<StreamingContentCoding> supportedEncodings;
+    private List<StreamingContentCodec> supportedEncodings;
     @Nullable
     private AutoRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
@@ -483,7 +483,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCoding... codings) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCodec... codings) {
         this.supportedEncodings = unmodifiableList(asList(codings));
         return this;
     }

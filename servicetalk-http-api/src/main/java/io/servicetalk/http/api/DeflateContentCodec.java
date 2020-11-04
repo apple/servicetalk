@@ -24,11 +24,11 @@ import java.util.zip.InflaterInputStream;
 
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 
-final class DeflateContentCoding extends AbstractZipContentCoding {
+final class DeflateContentCodec extends AbstractZipContentCodec {
 
     private static final CharSequence NAME = newAsciiString("deflate");
 
-    DeflateContentCoding(final int chunkSize, final int maxSize) {
+    DeflateContentCodec(final int chunkSize, final int maxSize) {
         super(chunkSize, maxSize);
     }
 

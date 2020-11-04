@@ -150,15 +150,15 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     }
 
     /**
-     * Sets the supported {@link StreamingContentCoding}s for the endpoint.
+     * Sets the supported {@link StreamingContentCodec}s for the endpoint.
      * The list will be advertised as part of the Accept-Encoding header
      *
-     * @param codings The list of supported {@link StreamingContentCoding}s for this endpoint.
+     * @param codings The list of supported {@link StreamingContentCodec}s for this endpoint.
      * @return {@code this}
      * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
      */
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> supportedEncodings(StreamingContentCoding... codings);
+    public abstract HttpClientBuilder<U, R, SDE> supportedEncodings(StreamingContentCodec... codings);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();

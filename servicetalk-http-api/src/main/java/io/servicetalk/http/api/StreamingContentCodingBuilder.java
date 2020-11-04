@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 /**
- * Builder of {@link StreamingContentCoding}
+ * Builder for {@link StreamingContentCodec}s.
  */
 public interface StreamingContentCodingBuilder {
 
@@ -36,8 +36,8 @@ public interface StreamingContentCodingBuilder {
     StreamingContentCodingBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
 
     /**
-     * Build and return an instance of the {@link StreamingContentCoding} with the configuration of the builder.
-     * @return the {@link StreamingContentCoding} with the configuration of the builder
+     * Build and return an instance of the {@link StreamingContentCodec} with the configuration of the builder.
+     * @return the {@link StreamingContentCodec} with the configuration of the builder
      */
-    StreamingContentCoding build();
+    StreamingContentCodec build();
 }

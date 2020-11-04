@@ -237,6 +237,7 @@ public final class CharSequences {
     public static boolean startsWith(final CharSequence string, final CharSequence prefix) {
         return regionMatches(string, false, 0, prefix, 0, prefix.length());
     }
+
     /**
      * This methods make regionMatches operation correctly for any chars in strings.
      *

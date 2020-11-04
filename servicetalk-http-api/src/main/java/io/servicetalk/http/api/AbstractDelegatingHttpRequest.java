@@ -89,7 +89,7 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
-    public StreamingContentCoding encoding() {
+    public StreamingContentCodec encoding() {
         return original.encoding();
     }
 

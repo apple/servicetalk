@@ -38,8 +38,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.ContentCodings.deflateDefault;
-import static io.servicetalk.http.api.ContentCodings.gzipDefault;
 import static io.servicetalk.http.api.ContentCodings.encodingFor;
+import static io.servicetalk.http.api.ContentCodings.gzipDefault;
 import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
@@ -79,8 +79,8 @@ public class ContentCodingTest {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
-                    final StreamingContentCoding reqEncoding = options.requestEncoding;
-                    final List<StreamingContentCoding> clientSupportedEncodings = options.clientSupported;
+                    final StreamingContentCodec reqEncoding = options.requestEncoding;
+                    final List<StreamingContentCodec> clientSupportedEncodings = options.clientSupported;
 
                     try {
 
@@ -97,7 +97,7 @@ public class ContentCodingTest {
                                 emptyList() :
                                 clientSupportedEncodings.stream()
                                         .filter((enc) -> enc != identity())
-                                        .map((StreamingContentCoding::name))
+                                        .map((StreamingContentCodec::name))
                                         .map(CharSequence::toString)
                                         .collect(toList());
 
@@ -131,9 +131,9 @@ public class ContentCodingTest {
     protected final TestEncodingScenario testEncodingScenario;
     private final boolean expectedSuccess;
 
-    public ContentCodingTest(final List<StreamingContentCoding> serverSupportedEncodings,
-                             final List<StreamingContentCoding> clientSupportedEncodings,
-                             final StreamingContentCoding requestEncoding, final boolean expectedSuccess,
+    public ContentCodingTest(final List<StreamingContentCodec> serverSupportedEncodings,
+                             final List<StreamingContentCodec> clientSupportedEncodings,
+                             final StreamingContentCodec requestEncoding, final boolean expectedSuccess,
                              final HttpProtocolConfig protocol) throws Exception {
         this.testEncodingScenario = new TestEncodingScenario(requestEncoding, clientSupportedEncodings,
                 serverSupportedEncodings, protocol);
@@ -146,8 +146,8 @@ public class ContentCodingTest {
         client = newClient();
     }
 
-    private StreamingContentCoding[] codingsAsArray(@Nullable final List<StreamingContentCoding> codings) {
-        return codings == null ? new StreamingContentCoding[0] : codings.toArray(new StreamingContentCoding[0]);
+    private StreamingContentCodec[] codingsAsArray(@Nullable final List<StreamingContentCodec> codings) {
+        return codings == null ? new StreamingContentCodec[0] : codings.toArray(new StreamingContentCodec[0]);
     }
 
     @Parameterized.Parameters(name = "server-supported-encodings={0} client-supported-encodings={1} " +
@@ -247,7 +247,7 @@ public class ContentCodingTest {
         return new String(payload, StandardCharsets.US_ASCII);
     }
 
-    private void assertSuccessful(final StreamingContentCoding encoding) throws Exception {
+    private void assertSuccessful(final StreamingContentCodec encoding) throws Exception {
         assertResponse(client.request(client
                 .get("/")
                 .encoding(encoding)
@@ -282,8 +282,8 @@ public class ContentCodingTest {
     }
 
     private void assertResponseHeaders(final HttpHeaders headers) {
-        final List<StreamingContentCoding> clientSupportedEncodings = testEncodingScenario.clientSupported;
-        final List<StreamingContentCoding> serverSupportedEncodings = testEncodingScenario.serverSupported;
+        final List<StreamingContentCodec> clientSupportedEncodings = testEncodingScenario.clientSupported;
+        final List<StreamingContentCodec> serverSupportedEncodings = testEncodingScenario.serverSupported;
 
         final String respEncName = headers
                 .get(CONTENT_ENCODING, "identity").toString();
@@ -309,7 +309,7 @@ public class ContentCodingTest {
         }
     }
 
-    private void assertNotSupported(final StreamingContentCoding encoding) throws Exception {
+    private void assertNotSupported(final StreamingContentCodec encoding) throws Exception {
         final BlockingStreamingHttpClient blockingStreamingHttpClient = client.asBlockingStreamingClient();
         final StreamingHttpClient streamingHttpClient = client.asStreamingClient();
 
@@ -329,21 +329,21 @@ public class ContentCodingTest {
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get().status());
     }
 
-    private static List<StreamingContentCoding> of(StreamingContentCoding... encodings) {
+    private static List<StreamingContentCodec> of(StreamingContentCodec... encodings) {
         return asList(encodings);
     }
 
     static class TestEncodingScenario {
-        final StreamingContentCoding requestEncoding;
+        final StreamingContentCodec requestEncoding;
         @Nullable
-        final List<StreamingContentCoding> clientSupported;
+        final List<StreamingContentCodec> clientSupported;
         @Nullable
-        final List<StreamingContentCoding> serverSupported;
+        final List<StreamingContentCodec> serverSupported;
         final HttpProtocolConfig protocol;
 
-        TestEncodingScenario(final StreamingContentCoding requestEncoding,
-                             final List<StreamingContentCoding> clientSupported,
-                             final List<StreamingContentCoding> serverSupported,
+        TestEncodingScenario(final StreamingContentCodec requestEncoding,
+                             final List<StreamingContentCodec> clientSupported,
+                             final List<StreamingContentCodec> serverSupported,
                              final HttpProtocolConfig protocol) {
             this.requestEncoding = requestEncoding;
             this.clientSupported = clientSupported;

@@ -29,15 +29,15 @@ abstract class DefaultStreamingContentCodingBuilder implements StreamingContentC
 
     static class GzipStreamingContentCodingBuilder extends DefaultStreamingContentCodingBuilder {
         @Override
-        public StreamingContentCoding build() {
-            return new GzipContentCoding(CHUNK_SIZE, maxAllowedPayloadSize);
+        public StreamingContentCodec build() {
+            return new GzipContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
         }
     }
 
     static class DeflateStreamingContentCodingBuilder extends DefaultStreamingContentCodingBuilder {
         @Override
-        public StreamingContentCoding build() {
-            return new DeflateContentCoding(CHUNK_SIZE, maxAllowedPayloadSize);
+        public StreamingContentCodec build() {
+            return new DeflateContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
         }
     }
 }

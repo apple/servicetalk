@@ -53,8 +53,8 @@ public abstract class HttpServerBuilder {
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilter;
-    private List<StreamingContentCoding> requestCodings = emptyList();
-    private List<StreamingContentCoding> responseCodings = emptyList();
+    private List<StreamingContentCodec> requestCodings = emptyList();
+    private List<StreamingContentCodec> responseCodings = emptyList();
     private HttpExecutionStrategy strategy = defaultStrategy();
     private final StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
     private boolean drainRequestPayloadBody = true;
@@ -151,26 +151,26 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
-     * Sets the supported {@link StreamingContentCoding}s for the endpoint, used for both request and response handling.
+     * Sets the supported {@link StreamingContentCodec}s for the endpoint, used for both request and response handling.
      *
-     * @param codings The list of supported {@link StreamingContentCoding}s for this endpoint.
+     * @param codings The list of supported {@link StreamingContentCodec}s for this endpoint.
      * @return {@code this}
      * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
      */
-    public final HttpServerBuilder supportedEncodingsBiDi(final StreamingContentCoding... codings) {
-        List<StreamingContentCoding> unmodifiable = unmodifiableList(asList(codings));
+    public final HttpServerBuilder supportedEncodingsBiDi(final StreamingContentCodec... codings) {
+        List<StreamingContentCodec> unmodifiable = unmodifiableList(asList(codings));
         this.requestCodings = unmodifiable;
         this.responseCodings = unmodifiable;
         return this;
     }
 
     /**
-     * Sets the supported {@link StreamingContentCoding}s for the endpoint, used for <b>responses only</b>.
+     * Sets the supported {@link StreamingContentCodec}s for the endpoint, used for <b>responses only</b>.
      *
-     * @param codings The list of supported {@link StreamingContentCoding}s for the responses of this endpoint.
+     * @param codings The list of supported {@link StreamingContentCodec}s for the responses of this endpoint.
      * @return {@code this}
      */
-    public final HttpServerBuilder supportedEncodings(final StreamingContentCoding... codings) {
+    public final HttpServerBuilder supportedEncodings(final StreamingContentCodec... codings) {
         this.responseCodings = unmodifiableList(asList(codings));
         return this;
     }

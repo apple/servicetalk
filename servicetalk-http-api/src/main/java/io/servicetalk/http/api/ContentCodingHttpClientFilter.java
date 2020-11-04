@@ -30,9 +30,9 @@ import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNone;
  */
 public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterFactory {
 
-    private final List<StreamingContentCoding> supportedEncodings;
+    private final List<StreamingContentCodec> supportedEncodings;
 
-    public ContentCodingHttpClientFilter(final List<StreamingContentCoding> supportedEncodings) {
+    public ContentCodingHttpClientFilter(final List<StreamingContentCodec> supportedEncodings) {
         this.supportedEncodings = supportedEncodings;
     }
 
@@ -44,7 +44,7 @@ public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterF
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 final BufferAllocator alloc = delegate.executionContext().bufferAllocator();
-                advertiseAcceptedEncodingsIfAvailable(request.headers(), supportedEncodings);
+                advertiseAcceptedEncodingsIfAvailable(request, supportedEncodings);
                 encodePayloadContentIfAvailable(request, alloc);
 
                 return decodePayloadContentIfEncoded(super.request(delegate, strategy, request), alloc);
@@ -53,7 +53,7 @@ public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterF
     }
 
     private void encodePayloadContentIfAvailable(final StreamingHttpRequest request, final BufferAllocator allocator) {
-        StreamingContentCoding coding = request.encoding();
+        StreamingContentCodec coding = request.encoding();
         if (coding != null) {
             addContentEncoding(request.headers(), coding.name());
             request.transformPayloadBody(pub -> coding.encode(pub, allocator));
@@ -64,7 +64,7 @@ public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterF
             final Single<StreamingHttpResponse> responseSingle, final BufferAllocator allocator) {
 
         return responseSingle.map((response -> {
-            StreamingContentCoding coding = identifyContentEncodingOrNone(response.headers(), supportedEncodings);
+            StreamingContentCodec coding = identifyContentEncodingOrNone(response.headers(), supportedEncodings);
             if (!coding.equals(identity())) {
                 response.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
             }

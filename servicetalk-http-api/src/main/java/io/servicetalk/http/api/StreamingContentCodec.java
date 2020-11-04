@@ -25,7 +25,7 @@ import io.servicetalk.concurrent.api.Publisher;
  * Used to encode and decode {@link Publisher} of {@link Buffer} parts.
  * This instance is shared therefore it must provide thread safety semantics.
  */
-public interface StreamingContentCoding extends ContentCoding {
+public interface StreamingContentCodec extends ContentCodec {
 
     /**
      * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a
