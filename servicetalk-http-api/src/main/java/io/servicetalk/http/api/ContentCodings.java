@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.DefaultStreamingContentCodingBuilder.DeflateStreamingContentCodingBuilder;
-import io.servicetalk.http.api.DefaultStreamingContentCodingBuilder.GzipStreamingContentCodingBuilder;
+import io.servicetalk.http.api.DefaultStreamingContentCodecBuilder.DeflateStreamingContentCodecBuilder;
+import io.servicetalk.http.api.DefaultStreamingContentCodecBuilder.GzipStreamingContentCodecBuilder;
 
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -60,13 +60,13 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
+     * Returns a GZIP based {@link DefaultStreamingContentCodecBuilder} that allows building
      * a customizable {@link StreamingContentCodec}.
-     * @return a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
+     * @return a GZIP based {@link DefaultStreamingContentCodecBuilder} that allows building
      *          a customizable GZIP {@link StreamingContentCodec}
      */
-    public static DefaultStreamingContentCodingBuilder gzip() {
-        return new GzipStreamingContentCodingBuilder();
+    public static DefaultStreamingContentCodecBuilder gzip() {
+        return new GzipStreamingContentCodecBuilder();
     }
 
     /**
@@ -80,13 +80,13 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
+     * Returns a DEFLATE based {@link DefaultStreamingContentCodecBuilder} that allows building
      * a customizable {@link StreamingContentCodec}.
-     * @return a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
+     * @return a DEFLATE based {@link DefaultStreamingContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link StreamingContentCodec}
      */
-    public static DefaultStreamingContentCodingBuilder deflate() {
-        return new DeflateStreamingContentCodingBuilder();
+    public static DefaultStreamingContentCodecBuilder deflate() {
+        return new DeflateStreamingContentCodecBuilder();
     }
 
     /**

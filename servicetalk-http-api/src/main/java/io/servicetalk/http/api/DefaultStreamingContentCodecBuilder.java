@@ -15,26 +15,26 @@
  */
 package io.servicetalk.http.api;
 
-abstract class DefaultStreamingContentCodingBuilder implements StreamingContentCodingBuilder {
+abstract class DefaultStreamingContentCodecBuilder implements StreamingContentCodecBuilder {
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB
 
     protected int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD;
 
     @Override
-    public StreamingContentCodingBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
+    public StreamingContentCodecBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
         this.maxAllowedPayloadSize = maxAllowedPayloadSize;
         return this;
     }
 
-    static class GzipStreamingContentCodingBuilder extends DefaultStreamingContentCodingBuilder {
+    static class GzipStreamingContentCodecBuilder extends DefaultStreamingContentCodecBuilder {
         @Override
         public StreamingContentCodec build() {
             return new GzipContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
         }
     }
 
-    static class DeflateStreamingContentCodingBuilder extends DefaultStreamingContentCodingBuilder {
+    static class DeflateStreamingContentCodecBuilder extends DefaultStreamingContentCodecBuilder {
         @Override
         public StreamingContentCodec build() {
             return new DeflateContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);

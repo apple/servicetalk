@@ -18,9 +18,7 @@ package io.servicetalk.http.api;
 /**
  * Builder for {@link StreamingContentCodec}s.
  */
-public interface StreamingContentCodingBuilder {
-
-    int DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD = 2 << 20; //2MiB
+public interface StreamingContentCodecBuilder extends ContentCodecBuilder {
 
     /**
      * Sets the maximum allowed compressed payload size that the codec can process.
@@ -33,7 +31,7 @@ public interface StreamingContentCodingBuilder {
      * @return {@code this}
      * @see <a href="https://en.wikipedia.org/wiki/Zip_bomb">Zip Bomb</a>
      */
-    StreamingContentCodingBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
+    StreamingContentCodecBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
 
     /**
      * Build and return an instance of the {@link StreamingContentCodec} with the configuration of the builder.
