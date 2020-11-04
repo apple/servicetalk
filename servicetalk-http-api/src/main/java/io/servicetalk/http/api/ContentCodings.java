@@ -15,15 +15,15 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.StreamingContentCodingBuilder.DeflateStreamingContentCodingBuilder;
-import io.servicetalk.http.api.StreamingContentCodingBuilder.GzipStreamingContentCodingBuilder;
+import io.servicetalk.http.api.DefaultStreamingContentCodingBuilder.DeflateStreamingContentCodingBuilder;
+import io.servicetalk.http.api.DefaultStreamingContentCodingBuilder.GzipStreamingContentCodingBuilder;
 
 import java.util.Collection;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.isEmpty;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.CharSequences.startsWith;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -32,15 +32,11 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ContentCodings {
 
-    static final CharSequence IDENTITY_NAME = newAsciiString("identity");
-
     private static final StreamingContentCoding IDENTITY = new IdentityContentCoding();
 
     private static final StreamingContentCoding DEFAULT_GZIP = gzip().build();
 
     private static final StreamingContentCoding DEFAULT_DEFLATE = deflate().build();
-
-    private static final StreamingContentCoding[] ALL = {IDENTITY, DEFAULT_GZIP, DEFAULT_DEFLATE};
 
     private ContentCodings() {
     }
@@ -55,6 +51,8 @@ public final class ContentCodings {
 
     /**
      * Returns a GZIP based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}.
+     * The max allowed payload size for this codec is 2Mib.
+     *
      * @return a GZIP based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}
      */
     public static StreamingContentCoding gzipDefault() {
@@ -62,17 +60,19 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a GZIP based {@link StreamingContentCodingBuilder} that allows building
+     * Returns a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
      * a customizable {@link StreamingContentCoding}.
-     * @return a GZIP based {@link StreamingContentCodingBuilder} that allows building
+     * @return a GZIP based {@link DefaultStreamingContentCodingBuilder} that allows building
      *          a customizable GZIP {@link StreamingContentCoding}
      */
-    public static StreamingContentCodingBuilder gzip() {
+    public static DefaultStreamingContentCodingBuilder gzip() {
         return new GzipStreamingContentCodingBuilder();
     }
 
     /**
      * Returns a DEFLATE based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}.
+     * The max allowed payload size for this codec is 2Mib.
+     *
      * @return a DEFLATE based {@link StreamingContentCoding} backed by {@link java.util.zip.Inflater}
      */
     public static StreamingContentCoding deflateDefault() {
@@ -80,12 +80,12 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a DEFLATE based {@link StreamingContentCodingBuilder} that allows building
+     * Returns a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
      * a customizable {@link StreamingContentCoding}.
-     * @return a DEFLATE based {@link StreamingContentCodingBuilder} that allows building
+     * @return a DEFLATE based {@link DefaultStreamingContentCodingBuilder} that allows building
      *          a customizable DEFLATE {@link StreamingContentCoding}
      */
-    public static StreamingContentCodingBuilder deflate() {
+    public static DefaultStreamingContentCodingBuilder deflate() {
         return new DeflateStreamingContentCodingBuilder();
     }
 
@@ -109,13 +109,13 @@ public final class ContentCodings {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (contentEquals(name, IDENTITY_NAME)) {
+        if (contentEquals(name, IDENTITY.name())) {
             return IDENTITY;
         }
 
         for (StreamingContentCoding enumEnc : allowedList) {
             // Encoding values can potentially included compression configurations, we only match on the type
-            if (name.toString().startsWith(enumEnc.name().toString())) {
+            if (startsWith(name, enumEnc.name())) {
                 return enumEnc;
             }
         }

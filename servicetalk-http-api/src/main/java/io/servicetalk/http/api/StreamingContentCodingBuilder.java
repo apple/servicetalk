@@ -18,40 +18,26 @@ package io.servicetalk.http.api;
 /**
  * Builder of {@link StreamingContentCoding}
  */
-abstract class StreamingContentCodingBuilder {
+public interface StreamingContentCodingBuilder {
 
-    public static final int DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD = 2 << 20; //2MiB
-    private static final int CHUNK_SIZE = 1 << 10; //1KiB
-
-    protected int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD;
+    int DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD = 2 << 20; //2MiB
 
     /**
      * Sets the maximum allowed compressed payload size that the codec can process.
      * This can help prevent malicious attempts to decompress malformed payloads that can drain resources of the
      * running instance.
      *
+     * Default max allowed payload size is 2MiB.
+     *
      * @param maxAllowedPayloadSize the maximum allowed payload size
      * @return {@code this}
      * @see <a href="https://en.wikipedia.org/wiki/Zip_bomb">Zip Bomb</a>
      */
-    public StreamingContentCodingBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
-        this.maxAllowedPayloadSize = maxAllowedPayloadSize;
-        return this;
-    }
+    StreamingContentCodingBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
 
-    abstract StreamingContentCoding build();
-
-    static class GzipStreamingContentCodingBuilder extends StreamingContentCodingBuilder {
-        @Override
-        StreamingContentCoding build() {
-            return new GzipContentCoding(CHUNK_SIZE, maxAllowedPayloadSize);
-        }
-    }
-
-    static class DeflateStreamingContentCodingBuilder extends StreamingContentCodingBuilder {
-        @Override
-        StreamingContentCoding build() {
-            return new DeflateContentCoding(CHUNK_SIZE, maxAllowedPayloadSize);
-        }
-    }
+    /**
+     * Build and return an instance of the {@link StreamingContentCoding} with the configuration of the builder.
+     * @return the {@link StreamingContentCoding} with the configuration of the builder
+     */
+    StreamingContentCoding build();
 }

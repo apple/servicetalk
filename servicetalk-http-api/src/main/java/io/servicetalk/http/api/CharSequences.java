@@ -226,6 +226,18 @@ public final class CharSequences {
     }
 
     /**
+     * Tests if the string starts with the specified prefix.
+     *
+     * @param   string   the value to check the presence of the prefix in.
+     * @param   prefix   the prefix.
+     * @return  {@code true} if the character sequence represented by the
+     *          argument is a prefix of the character sequence represented by
+     *          the string; {@code false} otherwise.
+     */
+    public static boolean startsWith(final CharSequence string, final CharSequence prefix) {
+        return regionMatches(string, false, 0, prefix, 0, prefix.length());
+    }
+    /**
      * This methods make regionMatches operation correctly for any chars in strings.
      *
      * @param cs         the {@code CharSequence} to be processed
