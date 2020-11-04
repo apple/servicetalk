@@ -56,12 +56,13 @@ public class QueryAddBenchmark {
     }
 
     @Benchmark
-    public String addParam() {
+    public int addParam() {
         final String name = "name";
         for (final String value : values) {
             stMetaData.addQueryParameter(name, value);
         }
+        String beforeRemoveTarget = stMetaData.requestTarget();
         stMetaData.removeQueryParameters(name);
-        return stMetaData.requestTarget();
+        return beforeRemoveTarget.length() - stMetaData.requestTarget().length();
     }
 }
