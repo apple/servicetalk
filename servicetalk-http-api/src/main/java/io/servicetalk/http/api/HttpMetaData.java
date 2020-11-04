@@ -50,9 +50,12 @@ public interface HttpMetaData {
     /**
      * The {@link StreamingContentCodec} used to encode the payload {@link io.servicetalk.buffer.api.Buffer} of a
      * request or a response.
-     * If the endpoint protocol is setup with {@link HttpProtocolConfig#supportedEncodings()} the server will
+     * If the endpoint is setup with {@link HttpServerBuilder#supportedEncodings(StreamingContentCodec...)} ()}
+     * or {@link HttpClientBuilder#supportedEncodings(StreamingContentCodec...)}, the server will
      * auto-establish the accepted encoding for the response, unless the caller provides a specific encoding
-     * calling this method. Any encoding passed here, takes precedence. In other words, a compressed response, can
+     * calling this method.
+     *
+     * Any encoding passed here, takes precedence. In other words, a compressed response, can
      * be disabled by passing {@link ContentCodings#identity()}.
      *
      * @param encoding The {@link StreamingContentCodec} used for the encoding of the payload.
