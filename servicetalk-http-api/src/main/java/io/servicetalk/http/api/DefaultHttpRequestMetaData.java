@@ -218,7 +218,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     public HttpRequestMetaData rawQuery(@Nullable final String query) {
         Uri httpUri = lazyParseRequestTarget();
         // Potentially over estimate the size of the URL to avoid resize/copy
-        StringBuilder sb = query != null ? new StringBuilder(httpUri.uri().length() + query.length()) :
+        StringBuilder sb = query != null ? new StringBuilder(httpUri.uri().length() + query.length() + 1) :
                                            new StringBuilder(httpUri.uri().length());
         appendScheme(sb, httpUri);
         appendAuthority(sb, httpUri);

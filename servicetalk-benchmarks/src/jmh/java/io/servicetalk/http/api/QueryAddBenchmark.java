@@ -27,6 +27,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 
@@ -42,7 +43,7 @@ public class QueryAddBenchmark {
     private boolean needsEncoding;
     private String[] values;
     private DefaultHttpRequestMetaData stMetaData;
-    private final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false).newHeaders();
+    private final HttpHeaders headers = INSTANCE.newHeaders();
 
     @Setup(Level.Trial)
     public void setup() {

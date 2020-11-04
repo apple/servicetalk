@@ -31,6 +31,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -41,13 +42,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Measurement(iterations = 5, time = 5)
 @BenchmarkMode(Mode.Throughput)
 public class QueryStringEncodingBenchmark {
+    private static final String RELATIVE_URI = "/foo";
     private String value;
     @Param({"100", "1000", "10000"})
     private int length;
     @Param({"false", "true"})
     private boolean needsEncoding;
     private DefaultHttpRequestMetaData stMetaData;
-    private final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false).newHeaders();
+    private final HttpHeaders headers = INSTANCE.newHeaders();
 
     @Setup(Level.Trial)
     public void setup() {
@@ -68,7 +70,7 @@ public class QueryStringEncodingBenchmark {
             }
         }
         value = sb.toString();
-        stMetaData = new DefaultHttpRequestMetaData(GET, "", HTTP_1_1, headers);
+        stMetaData = new DefaultHttpRequestMetaData(GET, RELATIVE_URI, HTTP_1_1, headers);
     }
 
     @Benchmark
@@ -78,13 +80,13 @@ public class QueryStringEncodingBenchmark {
 
     @Benchmark
     public String jdkURLEncoder() throws UnsupportedEncodingException {
-        return jdkBuildURL("", URLEncoder.encode(value, UTF_8.name()));
+        return jdkBuildURL(RELATIVE_URI, URLEncoder.encode(value, UTF_8.name()));
     }
 
     private static String jdkBuildURL(final String uri, @Nullable String query) {
         // replicating what is done in DefaultHttpHeadersFactory to build the URI
-        StringBuilder sb = query != null ? new StringBuilder(uri.length() + query.length()) :
-                new StringBuilder(uri.length());
+        StringBuilder sb = query != null ? new StringBuilder(uri.length() + query.length() + 1) :
+                                           new StringBuilder(uri.length());
         sb.append(uri);
         if (query != null) {
             sb.append('?').append(query);
