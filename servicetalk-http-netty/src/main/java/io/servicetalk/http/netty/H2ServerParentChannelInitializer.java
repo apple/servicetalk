@@ -15,19 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.logging.api.FixedLevelLogger;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
-import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2StreamChannel;
-import io.netty.handler.logging.LogLevel;
 
 import java.util.function.BiPredicate;
 
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forServer;
-import static io.servicetalk.transport.netty.internal.NettyLoggerUtils.getNettyLogLevel;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final H2ProtocolConfig config;
@@ -54,12 +52,10 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 config.headersSensitivityDetector();
         multiplexCodecBuilder.headerSensitivityDetector(headersSensitivityDetector::test);
 
-        final String frameLoggerName = config.frameLoggerName();
-        if (frameLoggerName != null) {
-            LogLevel logLevel = getNettyLogLevel(frameLoggerName);
-            if (logLevel != null) {
-                multiplexCodecBuilder.frameLogger(new Http2FrameLogger(logLevel, frameLoggerName));
-            }
+        final FixedLevelLogger frameLogger = config.frameLogger();
+        if (frameLogger != null) {
+            multiplexCodecBuilder.frameLogger(
+                    new ServiceTalkHttp2FrameLogger(frameLogger, config.frameLoggerUserData()));
         }
 
         // TODO(scott): more configuration. header validation, settings stream, etc...

@@ -16,8 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpProtocolConfig;
-
-import org.slf4j.event.Level;
+import io.servicetalk.logging.api.FixedLevelLogger;
 
 import java.time.Duration;
 import java.util.function.BiPredicate;
@@ -46,14 +45,20 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     BiPredicate<CharSequence, CharSequence> headersSensitivityDetector();
 
     /**
-     * Logger name for HTTP/2 frames.
-     * <p>
-     * All frames will be logged at {@link Level#TRACE TRACE} level.
+     * Logger for HTTP/2 frames.
      *
-     * @return the name of the logger to log HTTP/2 frames or {@code null} to disable it
+     * @return the logger to use for HTTP/2 frames or {@code null} to disable it
      */
     @Nullable
-    String frameLoggerName();
+    FixedLevelLogger frameLogger();
+
+    /**
+     * Determine if {@link #frameLogger()} (if present) should be used to log user data (e.g. data, headers, etc.).
+     *
+     * @return {@code true} if {@link #frameLogger()} should be used to log user data (e.g. data, headers, etc.).
+     * {@code false} to exclude user data.
+     */
+    boolean frameLoggerUserData();
 
     /**
      * Configured {@link KeepAlivePolicy}.
