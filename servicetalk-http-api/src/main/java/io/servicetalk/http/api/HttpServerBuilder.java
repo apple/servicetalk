@@ -151,13 +151,13 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder transportObserver(TransportObserver transportObserver);
 
     /**
-     * Sets the supported {@link StreamingContentCodec}s for the endpoint, used for both request and response handling.
+     * Sets the supported {@link StreamingContentCodec}s for the server, used for both request and response handling.
      *
      * @param codings The list of supported {@link StreamingContentCodec}s for this endpoint.
      * @return {@code this}
      * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
      */
-    public final HttpServerBuilder supportedEncodingsBiDi(final StreamingContentCodec... codings) {
+    public final HttpServerBuilder supportedEncodings(final StreamingContentCodec... codings) {
         List<StreamingContentCodec> unmodifiable = unmodifiableList(asList(codings));
         this.requestCodings = unmodifiable;
         this.responseCodings = unmodifiable;
@@ -165,12 +165,12 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Sets the supported {@link StreamingContentCodec}s for the endpoint, used for <b>responses only</b>.
+     * Sets the supported {@link StreamingContentCodec}s for the server, used for <b>responses only</b>.
      *
      * @param codings The list of supported {@link StreamingContentCodec}s for the responses of this endpoint.
      * @return {@code this}
      */
-    public final HttpServerBuilder supportedEncodings(final StreamingContentCodec... codings) {
+    public final HttpServerBuilder supportedResponseEncodings(final StreamingContentCodec... codings) {
         this.responseCodings = unmodifiableList(asList(codings));
         return this;
     }

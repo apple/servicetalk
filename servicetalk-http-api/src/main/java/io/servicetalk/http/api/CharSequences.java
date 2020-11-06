@@ -87,7 +87,6 @@ public final class CharSequences {
         if (input.length() == 0) {
             return emptyList();
         }
-
         int startIndex = 0;
         List<CharSequence> result = new ArrayList<>();
         for (int i = 0; i < input.length(); i++) {
@@ -226,7 +225,7 @@ public final class CharSequences {
     }
 
     /**
-     * Tests if the string starts with the specified prefix.
+     * Tests if the string starts with the specified case-sensitive prefix.
      *
      * @param   string   the value to check the presence of the prefix in.
      * @param   prefix   the prefix.

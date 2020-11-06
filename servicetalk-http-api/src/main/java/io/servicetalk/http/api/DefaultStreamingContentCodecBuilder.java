@@ -19,7 +19,7 @@ abstract class DefaultStreamingContentCodecBuilder implements StreamingContentCo
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB
 
-    protected int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD;
+    protected int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD;
 
     @Override
     public StreamingContentCodecBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {

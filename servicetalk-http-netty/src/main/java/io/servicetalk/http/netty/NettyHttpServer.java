@@ -77,7 +77,6 @@ import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -167,8 +166,7 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        h1Config.headersFactory(), drainRequestPayloadBody)),
-                        HTTP_1_1, channel);
+                        h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
@@ -272,11 +270,10 @@ final class NettyHttpServer {
         void process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
-                            (BiFunction<HttpRequestMetaData, Publisher<Object>, StreamingHttpRequest>) (meta, payload)
-                                    -> newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
-                                        meta.headers(), meta.encoding(),
-                                        NettyHttpServerConnection.this.executionContext().bufferAllocator(),
-                                        payload, headersFactory)));
+                            (HttpRequestMetaData meta, Publisher<Object> payload) ->
+                                    newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
+                                            meta.headers(), executionContext().bufferAllocator(), payload,
+                                            headersFactory)));
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber());
         }
@@ -408,7 +405,6 @@ final class NettyHttpServer {
             }
             response.version(version)
                     .setHeader(CONTENT_LENGTH, ZERO);
-            // advertiseAcceptedEncodingsIfAvailable(response.headers(), supportedEncodings);
             keepAlive.addConnectionHeaderIfNecessary(response);
             return response;
         }

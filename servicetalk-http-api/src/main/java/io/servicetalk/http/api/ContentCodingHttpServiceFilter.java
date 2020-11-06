@@ -24,19 +24,19 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNone;
+import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrIdentity;
 import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
 
 /**
  * Filter responsible for encoding/decoding content according to content-codings configured.
  */
-class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactory {
+class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
     private final List<StreamingContentCodec> requestCodings;
     private final List<StreamingContentCodec> responseCodings;
 
     ContentCodingHttpServiceFilter(final List<StreamingContentCodec> requestCodings,
-                                          final List<StreamingContentCodec> responseCodings) {
+                                   final List<StreamingContentCodec> responseCodings) {
         this.requestCodings = requestCodings;
         this.responseCodings = responseCodings;
     }
@@ -50,8 +50,10 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
                                                         final StreamingHttpResponseFactory responseFactory) {
 
                 BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                StreamingContentCodec coding = identifyContentEncodingOrNone(request.headers(), requestCodings);
-                request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
+                StreamingContentCodec coding = identifyContentEncodingOrIdentity(request.headers(), requestCodings);
+                if (!coding.equals(identity())) {
+                    request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
+                }
 
                 return super.handle(ctx, request, responseFactory).map(response -> {
                     encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
@@ -59,6 +61,12 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
                 });
             }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence - no blocking
+        return strategy;
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,

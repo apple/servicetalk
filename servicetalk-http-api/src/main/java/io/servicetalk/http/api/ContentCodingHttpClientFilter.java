@@ -23,16 +23,17 @@ import java.util.List;
 import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.advertiseAcceptedEncodingsIfAvailable;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNone;
+import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrIdentity;
 
 /**
  * Filter responsible for encoding/decoding content according to content-codings configured.
  */
-public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterFactory {
+class ContentCodingHttpClientFilter
+        implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
 
     private final List<StreamingContentCodec> supportedEncodings;
 
-    public ContentCodingHttpClientFilter(final List<StreamingContentCodec> supportedEncodings) {
+    ContentCodingHttpClientFilter(final List<StreamingContentCodec> supportedEncodings) {
         this.supportedEncodings = supportedEncodings;
     }
 
@@ -52,24 +53,31 @@ public class ContentCodingHttpClientFilter implements StreamingHttpClientFilterF
         };
     }
 
-    private void encodePayloadContentIfAvailable(final StreamingHttpRequest request, final BufferAllocator allocator) {
-        StreamingContentCodec coding = request.encoding();
-        if (coding != null) {
-            addContentEncoding(request.headers(), coding.name());
-            request.transformPayloadBody(pub -> coding.encode(pub, allocator));
-        }
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 
     private Single<StreamingHttpResponse> decodePayloadContentIfEncoded(
             final Single<StreamingHttpResponse> responseSingle, final BufferAllocator allocator) {
 
-        return responseSingle.map((response -> {
-            StreamingContentCodec coding = identifyContentEncodingOrNone(response.headers(), supportedEncodings);
+        return responseSingle.map(response -> {
+            StreamingContentCodec coding = identifyContentEncodingOrIdentity(response.headers(), supportedEncodings);
             if (!coding.equals(identity())) {
                 response.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
             }
 
             return response;
-        }));
+        });
+    }
+
+    private static void encodePayloadContentIfAvailable(final StreamingHttpRequest request,
+                                                        final BufferAllocator allocator) {
+        StreamingContentCodec coding = request.encoding();
+        if (coding != null && !coding.equals(identity())) {
+            addContentEncoding(request.headers(), coding.name());
+            request.transformPayloadBody(pub -> coding.encode(pub, allocator));
+        }
     }
 }

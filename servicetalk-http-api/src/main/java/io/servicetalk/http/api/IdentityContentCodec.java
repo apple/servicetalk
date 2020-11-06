@@ -28,6 +28,11 @@ final class IdentityContentCodec implements StreamingContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");
 
+    public static final StreamingContentCodec INSTANCE = new IdentityContentCodec();
+
+    private IdentityContentCodec() {
+    }
+
     @Override
     public CharSequence name() {
         return NAME;

@@ -21,7 +21,7 @@ import io.servicetalk.http.api.DefaultStreamingContentCodecBuilder.GzipStreaming
 import java.util.Collection;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.CharSequences.contentEquals;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.isEmpty;
 import static io.servicetalk.http.api.CharSequences.startsWith;
 import static java.util.Objects.requireNonNull;
@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ContentCodings {
 
-    private static final StreamingContentCodec IDENTITY = new IdentityContentCodec();
+    private static final StreamingContentCodec IDENTITY = IdentityContentCodec.INSTANCE;
 
     private static final StreamingContentCodec DEFAULT_GZIP = gzip().build();
 
@@ -51,7 +51,7 @@ public final class ContentCodings {
 
     /**
      * Returns a GZIP based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}.
-     * The max allowed payload size for this codec is 2Mib.
+     * The max allowed payload size for this codec is 16Mib.
      *
      * @return a GZIP based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}
      */
@@ -65,13 +65,13 @@ public final class ContentCodings {
      * @return a GZIP based {@link DefaultStreamingContentCodecBuilder} that allows building
      *          a customizable GZIP {@link StreamingContentCodec}
      */
-    public static DefaultStreamingContentCodecBuilder gzip() {
+    public static StreamingContentCodecBuilder gzip() {
         return new GzipStreamingContentCodecBuilder();
     }
 
     /**
      * Returns a DEFLATE based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}.
-     * The max allowed payload size for this codec is 2Mib.
+     * The max allowed payload size for this codec is 16Mib.
      *
      * @return a DEFLATE based {@link StreamingContentCodec} backed by {@link java.util.zip.Inflater}
      */
@@ -85,7 +85,7 @@ public final class ContentCodings {
      * @return a DEFLATE based {@link DefaultStreamingContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link StreamingContentCodec}
      */
-    public static DefaultStreamingContentCodecBuilder deflate() {
+    public static StreamingContentCodecBuilder deflate() {
         return new DeflateStreamingContentCodecBuilder();
     }
 
@@ -109,7 +109,7 @@ public final class ContentCodings {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (contentEquals(name, IDENTITY.name())) {
+        if (contentEqualsIgnoreCase(name, IDENTITY.name())) {
             return IDENTITY;
         }
 

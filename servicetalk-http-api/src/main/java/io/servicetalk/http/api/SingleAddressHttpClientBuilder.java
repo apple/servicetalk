@@ -25,8 +25,13 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided unresolved
@@ -39,6 +44,9 @@ import java.util.function.Predicate;
  */
 public abstract class SingleAddressHttpClientBuilder<U, R>
         extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
+    @Nullable
+    protected List<StreamingContentCodec> supportedEncodings;
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
@@ -106,13 +114,35 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> supportedEncodings(StreamingContentCodec... codings);
+    public SingleAddressHttpClientBuilder<U, R> supportedEncodings(StreamingContentCodec... codings) {
+        this.supportedEncodings = unmodifiableList(asList(codings));
+        return this;
+    }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpClientFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
+    }
+
+    /**
+     * Terminal filter chain amendments hook.
+     * @param currClientFilterFactory Current filter factory to append new filters if needed.
+     * @return {@code this}
+     */
+    @Nullable
+    protected StreamingHttpClientFilterFactory terminalFilterAmendment(
+            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory) {
+        if (supportedEncodings != null) {
+            if (currClientFilterFactory == null) {
+                return new ContentCodingHttpClientFilter(supportedEncodings);
+            } else {
+                return currClientFilterFactory.append(new ContentCodingHttpClientFilter(supportedEncodings));
+            }
+        }
+
+        return currClientFilterFactory;
     }
 
     /**

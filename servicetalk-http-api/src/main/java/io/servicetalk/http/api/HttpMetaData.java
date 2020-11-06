@@ -48,9 +48,8 @@ public interface HttpMetaData {
     HttpHeaders headers();
 
     /**
-     * The {@link StreamingContentCodec} used to encode the payload {@link io.servicetalk.buffer.api.Buffer} of a
-     * request or a response.
-     * If the endpoint is setup with {@link HttpServerBuilder#supportedEncodings(StreamingContentCodec...)} ()}
+     * The {@link StreamingContentCodec} used to encode the payload of a request or a response.
+     * If the endpoint is setup with {@link HttpServerBuilder#supportedResponseEncodings(StreamingContentCodec...)} ()}
      * or {@link HttpClientBuilder#supportedEncodings(StreamingContentCodec...)}, the server will
      * auto-establish the accepted encoding for the response, unless the caller provides a specific encoding
      * calling this method.
@@ -65,8 +64,7 @@ public interface HttpMetaData {
     HttpMetaData encoding(StreamingContentCodec encoding);
 
     /**
-     * Returns the {@link StreamingContentCodec} used to encode the payload
-     * {@link io.servicetalk.buffer.api.Buffer} of a request or a response.
+     * Returns the {@link StreamingContentCodec} used to encode the payload of a request or a response.
      *
      * @return The {@link StreamingContentCodec} used for the encoding of the payload.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>

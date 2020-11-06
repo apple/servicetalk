@@ -34,7 +34,6 @@ import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.CharSequences.split;
 import static io.servicetalk.http.api.ContentCodings.encodingFor;
@@ -240,8 +239,8 @@ public final class HeaderUtils {
     static void addContentEncoding(final HttpHeaders headers, CharSequence encoding) {
         // H2 does not support TE / Transfer-Encoding, so we rely in the presentation encoding only.
         // https://httpwg.org/specs/rfc7540.html#n-connection-specific-header-fields
-        headers.add(CONTENT_ENCODING, encoding);
-        headers.add(VARY, CONTENT_ENCODING);
+        headers.set(CONTENT_ENCODING, encoding);
+        headers.set(VARY, CONTENT_ENCODING);
     }
 
     static boolean hasContentEncoding(final HttpHeaders headers) {
@@ -668,8 +667,8 @@ public final class HeaderUtils {
      * @param encodings the list of encodings to be used in the string representation.
      * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
      */
-    public static void advertiseAcceptedEncodingsIfAvailable(final HttpMetaData metaData,
-                                                  final Collection<StreamingContentCodec> encodings) {
+    static void advertiseAcceptedEncodingsIfAvailable(final HttpMetaData metaData,
+                                                      final Collection<StreamingContentCodec> encodings) {
         final HttpHeaders headers = metaData.headers();
         if (headers.contains(ACCEPT_ENCODING) || encodings.isEmpty()) {
             return;
@@ -688,8 +687,8 @@ public final class HeaderUtils {
             builder.append(enc.name());
         }
 
-        if (!builder.toString().isEmpty()) {
-            headers.add(ACCEPT_ENCODING, newAsciiString(builder.toString()));
+        if (builder.length() > 0) {
+            headers.add(ACCEPT_ENCODING, builder.toString());
         }
     }
 
@@ -705,10 +704,10 @@ public final class HeaderUtils {
      * @param serverSupportedEncodings The supported encodings as configured for the server
      * @return The {@link StreamingContentCodec} that satisfies both client and server needs.
      */
-    public static StreamingContentCodec negotiateAcceptedEncoding(
+    static StreamingContentCodec negotiateAcceptedEncoding(
             final HttpHeaders headers, final List<StreamingContentCodec> serverSupportedEncodings) {
 
-        // Fast path, server has no encodings configured or has only None configured as encoding
+        // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
                 (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(identity()))) {
             return identity();
@@ -721,7 +720,7 @@ public final class HeaderUtils {
 
     static StreamingContentCodec negotiateAcceptedEncoding(final List<StreamingContentCodec> clientSupportedEncodings,
                                                            final List<StreamingContentCodec> allowedEncodings) {
-        // Fast path, Client has no encodings configured, or has None as the only encoding configured
+        // Fast path, Client has no encodings configured, or has identity as the only encoding configured
         if (clientSupportedEncodings == NONE_CONTENT_ENCODING_SINGLETON ||
                 (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
             return identity();
@@ -766,7 +765,7 @@ public final class HeaderUtils {
      * @param allowedEncodings The supported encodings for this endpoint
      * @return The {@link StreamingContentCodec} that matches the name.
      */
-    public static StreamingContentCodec identifyContentEncodingOrNone(
+    static StreamingContentCodec identifyContentEncodingOrIdentity(
             final HttpHeaders headers, final List<StreamingContentCodec> allowedEncodings) {
 
         final CharSequence encoding = headers.get(CONTENT_ENCODING);
@@ -774,9 +773,9 @@ public final class HeaderUtils {
             return identity();
         }
 
-        StreamingContentCodec enc = encodingFor(allowedEncodings, encoding.toString());
+        StreamingContentCodec enc = encodingFor(allowedEncodings, encoding);
         if (enc == null) {
-            final String lowercaseEncoding = encoding.toString().toLowerCase();
+            final String lowercaseEncoding = encoding.toString();
             throw new UnsupportedContentEncodingException(lowercaseEncoding);
         }
 

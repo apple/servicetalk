@@ -47,7 +47,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -135,7 +134,7 @@ public final class AbstractHttpConnectionTest {
         HttpHeaders headers = headersFactory.newHeaders();
         headers.add(TRANSFER_ENCODING, CHUNKED);
         StreamingHttpRequest req = newTransportRequest(GET, "/foo", HTTP_1_1,
-                headers, identity(),
+                headers,
                 allocator, from(chunk1, chunk2, chunk3, trailers), headersFactory);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,

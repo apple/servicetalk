@@ -140,7 +140,7 @@ public class ContentCodingTest {
         this.expectedSuccess = expectedSuccess;
 
         httpServerBuilder = HttpServers.forAddress(localAddress(0))
-                .supportedEncodingsBiDi(codingsAsArray(serverSupportedEncodings))
+                .supportedEncodings(codingsAsArray(serverSupportedEncodings))
                 .enableWireLogging("server");
         serverContext = listenAndAwait();
         client = newClient();
@@ -216,7 +216,7 @@ public class ContentCodingTest {
                 .protocols(testEncodingScenario.protocol);
 
         if (testEncodingScenario.serverSupported != null) {
-            builder.supportedEncodingsBiDi(codingsAsArray(testEncodingScenario.serverSupported));
+            builder.supportedEncodings(codingsAsArray(testEncodingScenario.serverSupported));
         }
 
         return builder.listenStreamingAndAwait(service);

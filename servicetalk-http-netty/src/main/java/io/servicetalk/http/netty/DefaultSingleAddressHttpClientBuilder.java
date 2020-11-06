@@ -31,7 +31,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.CharSequences;
-import io.servicetalk.http.api.ContentCodingHttpClientFilter;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -45,7 +44,6 @@ import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
-import io.servicetalk.http.api.StreamingContentCodec;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -62,7 +60,6 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
-import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -78,9 +75,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.time.Duration.ofSeconds;
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -113,8 +108,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
-    @Nullable
-    private List<StreamingContentCodec> supportedEncodings;
     @Nullable
     private AutoRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
@@ -318,10 +311,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         ctx.builder.hostHeaderFilterFactoryFunction.apply(ctx.builder.address));
             }
 
-            if (ctx.builder.supportedEncodings != null) {
-                currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        new ContentCodingHttpClientFilter(ctx.builder.supportedEncodings));
-            }
+            currClientFilterFactory = ctx.builder.terminalFilterAmendment(currClientFilterFactory);
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
@@ -479,12 +469,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         clientFilterFactory = clientFilterFactory == null ? requireNonNull(factory) :
                 clientFilterFactory.append(factory);
         influencerChainBuilder.add(factory);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> supportedEncodings(final StreamingContentCodec... codings) {
-        this.supportedEncodings = unmodifiableList(asList(codings));
         return this;
     }
 

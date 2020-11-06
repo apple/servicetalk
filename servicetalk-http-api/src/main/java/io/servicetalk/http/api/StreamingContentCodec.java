@@ -20,8 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
- * API for HTTP <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.1">Content Codings</a>.
- *
  * Used to encode and decode {@link Publisher} of {@link Buffer} parts.
  * This instance is shared therefore it must provide thread safety semantics.
  */

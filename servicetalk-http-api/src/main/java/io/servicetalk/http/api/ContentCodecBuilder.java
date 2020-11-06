@@ -17,14 +17,14 @@ package io.servicetalk.http.api;
 
 interface ContentCodecBuilder {
 
-    int DEFAULT_MAX_ALLOWED_COMPRESSED_PAYLOAD = 2 << 20; //2MiB
+    int DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD = 16 << 20; //16MiB
 
     /**
-     * Sets the maximum allowed compressed payload size that the codec can process.
+     * Sets the maximum allowed decompressed payload size that the codec can process.
      * This can help prevent malicious attempts to decompress malformed payloads that can drain resources of the
      * running instance.
      *
-     * Default max allowed payload size is 2MiB.
+     * Default max allowed payload size is 16MiB.
      *
      * @param maxAllowedPayloadSize the maximum allowed payload size
      * @return {@code this}
@@ -37,5 +37,4 @@ interface ContentCodecBuilder {
      * @return the {@link ContentCodec} with the configuration of the builder
      */
     ContentCodec build();
-
 }
