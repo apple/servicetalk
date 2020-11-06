@@ -82,7 +82,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
-        return enableFrameLogging(loggerName, TRACE, true);
+        return enableFrameLogging(loggerName, TRACE, false);
     }
 
     /**
