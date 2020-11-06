@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferHolder;
 import io.servicetalk.logging.api.FixedLevelLogger;
 
 import io.netty.buffer.ByteBuf;
@@ -28,6 +30,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.appendPrettyHexDump;
 import static io.netty.util.internal.StringUtil.NEWLINE;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static java.util.Objects.requireNonNull;
 
 final class ServiceTalkWireLogger extends ChannelDuplexHandler {
@@ -187,7 +190,21 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         }
     }
 
+    private String formatBufferHolder(BufferHolder msg) {
+        Buffer content = msg.content();
+        int length = content.readableBytes();
+        if (length == 0) {
+            return msg.getClass() + " 0B";
+        } else {
+            return formatNonZeroByteBuf(msg.getClass().toString(), toByteBuf(content));
+        }
+    }
+
     private String formatByteBufHolderNoData(ByteBufHolder msg) {
+        return msg.getClass().toString() + ' ' + msg.content().readableBytes() + 'B';
+    }
+
+    private String formatBufferHolderNoData(BufferHolder msg) {
         return msg.getClass().toString() + ' ' + msg.content().readableBytes() + 'B';
     }
 
@@ -214,6 +231,12 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         } else if (msg instanceof ByteBufHolder) {
             ByteBufHolder holder = (ByteBufHolder) msg;
             return logUserData ? formatByteBufHolder(holder) : formatByteBufHolderNoData(holder);
+        } else if (msg instanceof Buffer) {
+            ByteBuf byteBuf = toByteBuf((Buffer) msg);
+            return logUserData ? formatByteBuf(byteBuf) : formatByteBufNoData(byteBuf);
+        } else if (msg instanceof BufferHolder) {
+            BufferHolder holder = (BufferHolder) msg;
+            return logUserData ? formatBufferHolder(holder) : formatBufferHolderNoData(holder);
         }
         return logUserData ? msg.toString() : msg.getClass().getName();
     }

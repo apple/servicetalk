@@ -56,6 +56,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -263,6 +264,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public PartitionedHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
+                                                                final boolean logUserData) {
+        builderTemplate.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 

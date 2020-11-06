@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -79,6 +80,13 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder enableWireLogging(final String loggerName) {
         config.tcpConfig().enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
+                                               final boolean logUserData) {
+        config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 

@@ -24,6 +24,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -58,6 +59,11 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName,
+                                                                         LogLevel logLevel,
+                                                                         boolean logUserData);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);

@@ -30,6 +30,7 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
@@ -150,7 +151,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .protocols(protocol.config)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, true)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {

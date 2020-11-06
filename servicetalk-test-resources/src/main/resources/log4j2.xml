@@ -26,6 +26,7 @@
     </Console>
   </Appenders>
   <Loggers>
+    <Logger name="foo" level="TRACE"/>
     <Logger name="servicetalk-tests-wire-logger" level="${wireLogLevel}"/>
     <Logger name="servicetalk-tests-h2-frame-logger" level="${h2FrameLogLevel}"/>
     <Root level="${rootLevel}">

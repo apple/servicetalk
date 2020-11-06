@@ -19,14 +19,13 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
-
-import org.slf4j.event.Level;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -116,13 +115,22 @@ public abstract class HttpServerBuilder {
 
     /**
      * Enables wire-logging for this server.
-     * <p>
-     * All wire events will be logged at {@link Level#TRACE TRACE} level.
      *
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
     public abstract HttpServerBuilder enableWireLogging(String loggerName);
+
+    /**
+     * Enables wire-logging for this server.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @param logLevel The level to log at.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude this
+     * data.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, boolean logUserData);
 
     /**
      * Sets a {@link TransportObserver} that provides visibility into transport events.

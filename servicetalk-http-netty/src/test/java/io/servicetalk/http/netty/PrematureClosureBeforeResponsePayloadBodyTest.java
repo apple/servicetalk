@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -112,7 +113,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 .syncUninterruptibly().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
-                .enableWireLogging("servicetalk-tests-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, true)
                 .protocols(h1()
                         .specExceptions(new H1SpecExceptions.Builder().allowPrematureClosureBeforePayloadBody().build())
                         .build())

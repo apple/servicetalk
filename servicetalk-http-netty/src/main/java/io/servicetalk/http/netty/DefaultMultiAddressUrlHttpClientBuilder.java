@@ -49,6 +49,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -359,6 +360,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName,
+                                                                                           final LogLevel logLevel,
+                                                                                           final boolean logUserData) {
+        builderTemplate.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 

@@ -24,6 +24,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportObserver;
@@ -57,6 +58,11 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
+                                                                   LogLevel logLevel,
+                                                                   boolean logUserData);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);

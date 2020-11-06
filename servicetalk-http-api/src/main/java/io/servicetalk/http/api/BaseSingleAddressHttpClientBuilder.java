@@ -20,6 +20,7 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -43,6 +44,11 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
+                                                                                    LogLevel logLevel,
+                                                                                    boolean logUserData);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
