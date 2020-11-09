@@ -150,9 +150,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     }
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> supportedEncodings(StreamingContentCodec... codings);
-
-    @Override
     public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     /**

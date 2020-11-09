@@ -24,11 +24,11 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 /**
  * NOOP Message encoding codec.
  */
-final class IdentityContentCodec implements StreamingContentCodec {
+final class IdentityContentCodec implements ContentCodec {
 
     private static final CharSequence NAME = newAsciiString("identity");
 
-    public static final StreamingContentCodec INSTANCE = new IdentityContentCodec();
+    public static final ContentCodec INSTANCE = new IdentityContentCodec();
 
     private IdentityContentCodec() {
     }
@@ -58,5 +58,10 @@ final class IdentityContentCodec implements StreamingContentCodec {
     @Override
     public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
         return from;
+    }
+
+    @Override
+    public String toString() {
+        return "ContentCoding{name=identity}";
     }
 }

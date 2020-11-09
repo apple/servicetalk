@@ -123,7 +123,7 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     }
 
     @Override
-    public BlockingStreamingHttpResponse encoding(final StreamingContentCodec encoding) {
+    public BlockingStreamingHttpResponse encoding(final ContentCodec encoding) {
         original.encoding(encoding);
         return this;
     }

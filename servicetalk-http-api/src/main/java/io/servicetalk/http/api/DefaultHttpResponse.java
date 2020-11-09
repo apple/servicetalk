@@ -43,7 +43,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     }
 
     @Override
-    public HttpResponse encoding(final StreamingContentCodec encoding) {
+    public HttpResponse encoding(final ContentCodec encoding) {
         original.encoding(encoding);
         return this;
     }

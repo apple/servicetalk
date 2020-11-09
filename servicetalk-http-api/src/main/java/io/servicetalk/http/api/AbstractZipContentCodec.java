@@ -52,13 +52,15 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.lang.Math.min;
+import static java.util.Objects.requireNonNull;
 
-abstract class AbstractZipContentCodec implements StreamingContentCodec {
+abstract class AbstractZipContentCodec implements ContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
-    private static final Object END_OF_STREAM = new Object();
+    private static final Buffer END_OF_STREAM = DEFAULT_RO_ALLOCATOR.fromAscii(" ");
 
     protected final int chunkSize;
     private final int maxPayloadSize;
@@ -108,20 +110,24 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
     public final Publisher<Buffer> encode(final Publisher<Buffer> from,
                                           final BufferAllocator allocator) {
         return from
-                .map((it) -> (Object) it)
                 .concat(succeeded(END_OF_STREAM))
-                .liftSync(subscriber -> new PublisherSource.Subscriber<Object>() {
+                .liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
+                    @Nullable
+                    SwappableBufferOutputStream stream;
 
                     @Nullable
-                    Buffer dst;
-                    @Nullable
                     DeflaterOutputStream output;
+
+                    private boolean headerWritten = false;
 
                     @Override
                     public void onSubscribe(PublisherSource.Subscription subscription) {
                         try {
-                            dst = allocator.newBuffer(chunkSize);
-                            output = newDeflaterOutputStream(asOutputStream(dst));
+                            Buffer dst = allocator.newBuffer(chunkSize);
+                            stream = new SwappableBufferOutputStream(dst);
+                            // This will write header bytes on the stream, which will be consumed along with the first
+                            // onNext part
+                            output = newDeflaterOutputStream(stream);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -129,36 +135,48 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
                     }
 
                     @Override
-                    public void onNext(Object next) {
+                    public void onNext(Buffer next) {
                         assert output != null;
-                        assert dst != null;
+                        assert stream != null;
 
                         // onNext will produce AT-MOST N items (as received)
                         // +1 for the encoding footer (ie. END_OF_STREAM)
                         try {
                             if (next == END_OF_STREAM) {
                                 try {
+                                    // ZIP footer is 10 bytes
+                                    Buffer dst = allocator.newBuffer(10);
+                                    stream.swap(dst);
                                     output.finish();
-                                    subscriber.onNext(dst.readSlice(dst.readableBytes()));
+                                    System.err.println(dst.readableBytes());
+                                    subscriber.onNext(dst);
                                 } catch (IOException e) {
                                     throw new RuntimeException(e);
                                 }
                                 return;
                             }
 
-                            Buffer src = (Buffer) next;
-                            if (src.hasArray()) {
-                                output.write(src.array(), src.readerIndex(), src.readableBytes());
+                            Buffer dst;
+                            if (headerWritten) {
+                                dst = allocator.newBuffer(chunkSize);
+                                stream.swap(dst);
                             } else {
-                                while (src.readableBytes() > 0) {
-                                    byte[] onHeap = new byte[min(src.readableBytes(), chunkSize)];
-                                    src.readBytes(onHeap);
+                                dst = stream.buffer;
+                            }
+
+                            if (next.hasArray()) {
+                                output.write(next.array(), next.readerIndex(), next.readableBytes());
+                            } else {
+                                while (next.readableBytes() > 0) {
+                                    byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
+                                    next.readBytes(onHeap);
                                     output.write(onHeap);
                                 }
                             }
 
                             output.flush();
-                            subscriber.onNext(dst.readSlice(dst.readableBytes()));
+                            headerWritten = true;
+                            subscriber.onNext(dst);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -201,8 +219,6 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
         return from.liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
 
             @Nullable
-            Buffer dst;
-            @Nullable
             Inflater inflater;
             @Nullable
             ZLibStreamDecoder streamDecoder;
@@ -211,9 +227,8 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
 
             @Override
             public void onSubscribe(final PublisherSource.Subscription subscription) {
-                dst = allocator.newBuffer(chunkSize, maxPayloadSize);
                 inflater = newRawInflater();
-                streamDecoder = new ZLibStreamDecoder(dst, inflater, chunkSize, supportsChecksum());
+                streamDecoder = new ZLibStreamDecoder(inflater, supportsChecksum(), maxPayloadSize);
                 this.subscription = subscription;
                 subscriber.onSubscribe(subscription);
             }
@@ -225,15 +240,14 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
                 assert src != null;
 
                 // onNext will produce AT-MOST N items (as received)
-
-                Buffer part;
                 try {
                     if (streamDecoder.isFinished()) {
                         throw new IllegalStateException("Stream encoder previously closed but more input arrived ");
                     }
 
-                    part = streamDecoder.decode(src);
-                    if (part != null) {
+                    Buffer part = allocator.newBuffer(chunkSize);
+                    streamDecoder.decode(src, part);
+                    if (part.readableBytes() > 0) {
                         subscriber.onNext(part);
                     }
 
@@ -283,7 +297,7 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
         @Nullable
         private final CRC32 crc;
         private final Inflater inflater;
-        private final Buffer decompressed;
+        private final int maxPayloadSize;
 
         private enum State {
             HEADER_START,
@@ -300,13 +314,12 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
         private int flags = -1;
         private int xlen = -1;
 
-        private int chunkSize;
+        private int payloadSizeAcc;
         private boolean finished;
 
-        ZLibStreamDecoder(Buffer destination, Inflater inflater, int chunkSize, boolean supportsChksum) {
-            this.decompressed = destination;
+        ZLibStreamDecoder(Inflater inflater, boolean supportsChksum, int maxPayloadSize) {
             this.inflater = inflater;
-            this.chunkSize = chunkSize;
+            this.maxPayloadSize = maxPayloadSize;
             crc = supportsChksum ? new CRC32() : null;
         }
 
@@ -315,16 +328,16 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
         }
 
         @Nullable
-        protected Buffer decode(Buffer in) throws Exception {
+        protected void decode(Buffer in, Buffer out) throws Exception {
             if (finished) {
                 // Skip data received after finished.
                 in.skipBytes(in.readableBytes());
-                return null;
+                return;
             }
 
             int readableBytes = in.readableBytes();
             if (readableBytes == 0) {
-                return null;
+                return;
             }
 
             if (crc != null) {
@@ -333,10 +346,10 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
                         if (readGZIPFooter(in)) {
                             finished = true;
                         }
-                        return null;
+                        return;
                     default:
                         if (state != State.HEADER_END && !readGZIPHeader(in)) {
-                            return null;
+                            return;
                         }
                 }
                 // Some bytes may have been consumed, and so we must re-set the number of readable bytes.
@@ -354,12 +367,17 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
             try {
                 boolean readFooter = false;
                 while (!inflater.needsInput()) {
-                    byte[] outArray = decompressed.array();
-                    int writerIndex = decompressed.writerIndex();
-                    int outIndex = decompressed.arrayOffset() + writerIndex;
-                    int outputLength = inflater.inflate(outArray, outIndex, decompressed.writableBytes());
+                    byte[] outArray = out.array();
+                    int writerIndex = out.writerIndex();
+                    int outIndex = out.arrayOffset() + writerIndex;
+                    int outputLength = inflater.inflate(outArray, outIndex, out.writableBytes());
+                    payloadSizeAcc += outputLength;
+                    if (payloadSizeAcc > maxPayloadSize) {
+                        throw new IllegalStateException("Max decompressed payload limit has been reached.");
+                    }
+
                     if (outputLength > 0) {
-                        decompressed.writerIndex(writerIndex + outputLength);
+                        out.writerIndex(writerIndex + outputLength);
                         if (crc != null) {
                             crc.update(outArray, outIndex, outputLength);
                         }
@@ -378,7 +396,7 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
                         }
                         break;
                     } else {
-                        decompressed.ensureWritable(chunkSize);
+                        out.ensureWritable(inflater.getRemaining() << 1);
                     }
                 }
 
@@ -394,12 +412,6 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
             } catch (DataFormatException e) {
                 throw new IOException("decompression failure", e);
             }
-
-            if (decompressed.readableBytes() > 0) {
-                return decompressed.readSlice(decompressed.readableBytes());
-            }
-
-            return null;
         }
 
         private boolean readGZIPHeader(Buffer in) throws IOException {
@@ -546,6 +558,33 @@ abstract class AbstractZipContentCodec implements StreamingContentCodec {
                 throw new IOException(
                         "CRC value mismatch. Expected: " + crcValue + ", Got: " + readCrc);
             }
+        }
+    }
+
+    static class SwappableBufferOutputStream extends OutputStream {
+        private Buffer buffer;
+
+        SwappableBufferOutputStream(final Buffer buffer) {
+            this.buffer = requireNonNull(buffer);
+        }
+
+        private void swap(final Buffer buffer) {
+            this.buffer = requireNonNull(buffer);
+        }
+
+        @Override
+        public void write(final int b) {
+            buffer.writeInt(b);
+        }
+
+        @Override
+        public void write(byte[] b) {
+            buffer.writeBytes(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            buffer.writeBytes(b, off, len);
         }
     }
 

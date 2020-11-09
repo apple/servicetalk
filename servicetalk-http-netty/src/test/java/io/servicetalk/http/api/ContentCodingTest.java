@@ -79,13 +79,14 @@ public class ContentCodingTest {
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                             final StreamingHttpRequest request,
                                                             final StreamingHttpResponseFactory responseFactory) {
-                    final StreamingContentCodec reqEncoding = options.requestEncoding;
-                    final List<StreamingContentCodec> clientSupportedEncodings = options.clientSupported;
+                    final ContentCodec reqEncoding = options.requestEncoding;
+                    final List<ContentCodec> clientSupportedEncodings = options.clientSupported;
 
                     try {
 
-                        String requestPayload = request.payloadBody(textDeserializer()).collect(StringBuilder::new,
-                                StringBuilder::append).toFuture().get().toString();
+                        String requestPayload = request.payloadBody(textDeserializer())
+                                .collect(StringBuilder::new, StringBuilder::append)
+                                .toFuture().get().toString();
 
                         assertEquals(payload((byte) 'a'), requestPayload);
 
@@ -93,11 +94,9 @@ public class ContentCodingTest {
                                 .get(ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
                                 .map((String::trim)).collect(toList());
 
-                        final List<String> expectedReqAcceptedEncodings = (clientSupportedEncodings == null) ?
-                                emptyList() :
-                                clientSupportedEncodings.stream()
+                        final List<String> expectedReqAcceptedEncodings = clientSupportedEncodings.stream()
                                         .filter((enc) -> enc != identity())
-                                        .map((StreamingContentCodec::name))
+                                        .map((ContentCodec::name))
                                         .map(CharSequence::toString)
                                         .collect(toList());
 
@@ -131,37 +130,32 @@ public class ContentCodingTest {
     protected final TestEncodingScenario testEncodingScenario;
     private final boolean expectedSuccess;
 
-    public ContentCodingTest(final List<StreamingContentCodec> serverSupportedEncodings,
-                             final List<StreamingContentCodec> clientSupportedEncodings,
-                             final StreamingContentCodec requestEncoding, final boolean expectedSuccess,
+    public ContentCodingTest(final List<ContentCodec> serverSupportedEncodings,
+                             final List<ContentCodec> clientSupportedEncodings,
+                             final ContentCodec requestEncoding, final boolean expectedSuccess,
                              final HttpProtocolConfig protocol) throws Exception {
         this.testEncodingScenario = new TestEncodingScenario(requestEncoding, clientSupportedEncodings,
                 serverSupportedEncodings, protocol);
         this.expectedSuccess = expectedSuccess;
 
         httpServerBuilder = HttpServers.forAddress(localAddress(0))
-                .supportedEncodings(codingsAsArray(serverSupportedEncodings))
                 .enableWireLogging("server");
         serverContext = listenAndAwait();
         client = newClient();
-    }
-
-    private StreamingContentCodec[] codingsAsArray(@Nullable final List<StreamingContentCodec> codings) {
-        return codings == null ? new StreamingContentCodec[0] : codings.toArray(new StreamingContentCodec[0]);
     }
 
     @Parameterized.Parameters(name = "server-supported-encodings={0} client-supported-encodings={1} " +
             "request-encoding={2} expected-success={3} protocol={4}")
     public static Object[][] params() {
         return new Object[][] {
-                {null, null, identity(), true, h1Default()},
-                {null, null, identity(), true, h2Default()},
-                {null, of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
-                {null, of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
-                {null, of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
-                {null, of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
-                {of(gzipDefault(), deflateDefault(), identity()), null, identity(), true, h1Default()},
-                {of(gzipDefault(), deflateDefault(), identity()), null, identity(), true, h2Default()},
+                {emptyList(), emptyList(), identity(), true, h1Default()},
+                {emptyList(), emptyList(), identity(), true, h2Default()},
+                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {emptyList(), of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {emptyList(), of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {of(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h1Default()},
+                {of(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h2Default()},
                 {of(identity(), gzipDefault(), deflateDefault()),
                         of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
                 {of(identity(), gzipDefault(), deflateDefault()),
@@ -178,8 +172,8 @@ public class ContentCodingTest {
                         of(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
                 {of(identity(), deflateDefault()),
                         of(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
-                {of(identity(), deflateDefault()), null, identity(), true, h1Default()},
-                {of(identity(), deflateDefault()), null, identity(), true, h2Default()},
+                {of(identity(), deflateDefault()), emptyList(), identity(), true, h1Default()},
+                {of(identity(), deflateDefault()), emptyList(), identity(), true, h2Default()},
                 {of(gzipDefault()), of(identity()), identity(), true, h1Default()},
                 {of(gzipDefault()), of(identity()), identity(), true, h2Default()},
                 {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h1Default()},
@@ -188,12 +182,12 @@ public class ContentCodingTest {
                 {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h2Default()},
                 {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
                 {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
-                {null, of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
-                {null, of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
-                {null, of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h1Default()},
-                {null, of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h2Default()},
-                {null, of(gzipDefault(), identity()), identity(), true, h1Default()},
-                {null, of(gzipDefault(), identity()), identity(), true, h2Default()},
+                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {emptyList(), of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {emptyList(), of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {emptyList(), of(gzipDefault(), identity()), identity(), true, h1Default()},
+                {emptyList(), of(gzipDefault(), identity()), identity(), true, h2Default()},
         };
     }
 
@@ -212,24 +206,20 @@ public class ContentCodingTest {
                 .payloadBody(from(payload((byte) 'b')), textSerializer()));
 
         StreamingHttpServiceFilterFactory filterFactory = REQ_RESP_VERIFIER.apply(testEncodingScenario);
-        HttpServerBuilder builder = httpServerBuilder.appendServiceFilter(filterFactory)
-                .protocols(testEncodingScenario.protocol);
 
-        if (testEncodingScenario.serverSupported != null) {
-            builder.supportedEncodings(codingsAsArray(testEncodingScenario.serverSupported));
-        }
-
-        return builder.listenStreamingAndAwait(service);
+        return httpServerBuilder
+                .protocols(testEncodingScenario.protocol)
+                .appendServiceFilter(new ContentCodingHttpServiceFilter(testEncodingScenario.serverSupported))
+                .appendServiceFilter(filterFactory)
+                .listenStreamingAndAwait(service);
     }
 
     private HttpClient newClient() {
-        HttpClientBuilder builder = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(testEncodingScenario.protocol);
-        if (testEncodingScenario.clientSupported != null) {
-            builder.supportedEncodings(codingsAsArray(testEncodingScenario.clientSupported));
-        }
-
-        return builder.build();
+        return HttpClients
+                .forSingleAddress(serverHostAndPort(serverContext))
+                .appendClientFilter(new ContentCodingHttpClientFilter(testEncodingScenario.clientSupported))
+                .protocols(testEncodingScenario.protocol)
+                .build();
     }
 
     @Test
@@ -247,7 +237,7 @@ public class ContentCodingTest {
         return new String(payload, StandardCharsets.US_ASCII);
     }
 
-    private void assertSuccessful(final StreamingContentCodec encoding) throws Exception {
+    private void assertSuccessful(final ContentCodec encoding) throws Exception {
         assertResponse(client.request(client
                 .get("/")
                 .encoding(encoding)
@@ -282,8 +272,8 @@ public class ContentCodingTest {
     }
 
     private void assertResponseHeaders(final HttpHeaders headers) {
-        final List<StreamingContentCodec> clientSupportedEncodings = testEncodingScenario.clientSupported;
-        final List<StreamingContentCodec> serverSupportedEncodings = testEncodingScenario.serverSupported;
+        final List<ContentCodec> clientSupportedEncodings = testEncodingScenario.clientSupported;
+        final List<ContentCodec> serverSupportedEncodings = testEncodingScenario.serverSupported;
 
         final String respEncName = headers
                 .get(CONTENT_ENCODING, "identity").toString();
@@ -309,7 +299,7 @@ public class ContentCodingTest {
         }
     }
 
-    private void assertNotSupported(final StreamingContentCodec encoding) throws Exception {
+    private void assertNotSupported(final ContentCodec encoding) throws Exception {
         final BlockingStreamingHttpClient blockingStreamingHttpClient = client.asBlockingStreamingClient();
         final StreamingHttpClient streamingHttpClient = client.asStreamingClient();
 
@@ -329,21 +319,19 @@ public class ContentCodingTest {
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get().status());
     }
 
-    private static List<StreamingContentCodec> of(StreamingContentCodec... encodings) {
+    private static List<ContentCodec> of(ContentCodec... encodings) {
         return asList(encodings);
     }
 
     static class TestEncodingScenario {
-        final StreamingContentCodec requestEncoding;
-        @Nullable
-        final List<StreamingContentCodec> clientSupported;
-        @Nullable
-        final List<StreamingContentCodec> serverSupported;
+        final ContentCodec requestEncoding;
+        final List<ContentCodec> clientSupported;
+        final List<ContentCodec> serverSupported;
         final HttpProtocolConfig protocol;
 
-        TestEncodingScenario(final StreamingContentCodec requestEncoding,
-                             final List<StreamingContentCodec> clientSupported,
-                             final List<StreamingContentCodec> serverSupported,
+        TestEncodingScenario(final ContentCodec requestEncoding,
+                             final List<ContentCodec> clientSupported,
+                             final List<ContentCodec> serverSupported,
                              final HttpProtocolConfig protocol) {
             this.requestEncoding = requestEncoding;
             this.clientSupported = clientSupported;

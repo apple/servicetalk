@@ -102,9 +102,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> supportedEncodings(StreamingContentCodec... codings);
-
-    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(
             ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
 

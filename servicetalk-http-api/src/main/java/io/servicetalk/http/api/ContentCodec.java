@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * API for HTTP <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.1">Content Codings</a>.
@@ -76,4 +77,28 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
+
+    /**
+     * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a
+     * {@link Publisher} of {@link Buffer} with the encoded contents.
+     *
+     * @param from the {@link Publisher} buffer to encode
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link Publisher} the result publisher with the buffers encoded
+     */
+    default Publisher<Buffer> encode(Publisher<Buffer> from, BufferAllocator allocator) {
+        return from.map((buffer -> encode(buffer, allocator)));
+    }
+
+    /**
+     * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a
+     * {@link Publisher} of {@link Buffer} with the decoded contents.
+     *
+     * @param from the {@link Publisher} to decoded
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link Publisher} the result publisher with the buffers decoded
+     */
+    default Publisher<Buffer> decode(Publisher<Buffer> from, BufferAllocator allocator) {
+        return from.map(buffer -> decode(buffer, allocator));
+    }
 }

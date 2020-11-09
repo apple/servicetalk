@@ -49,8 +49,8 @@ public interface HttpMetaData {
 
     /**
      * The {@link StreamingContentCodec} used to encode the payload of a request or a response.
-     * If the endpoint is setup with {@link HttpServerBuilder#supportedResponseEncodings(StreamingContentCodec...)} ()}
-     * or {@link HttpClientBuilder#supportedEncodings(StreamingContentCodec...)}, the server will
+     * If the endpoint is setup with {@link HttpServerBuilder#supportedResponseEncodings(ContentCodec...)} ()}
+     * or {@link BaseHttpBuilder#supportedEncodings(ContentCodec...)}, the server will
      * auto-establish the accepted encoding for the response, unless the caller provides a specific encoding
      * calling this method.
      *
@@ -61,16 +61,16 @@ public interface HttpMetaData {
      * @return {@code this}.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
      */
-    HttpMetaData encoding(StreamingContentCodec encoding);
+    HttpMetaData encoding(ContentCodec encoding);
 
     /**
-     * Returns the {@link StreamingContentCodec} used to encode the payload of a request or a response.
+     * Returns the {@link ContentCodec} used to encode the payload of a request or a response.
      *
-     * @return The {@link StreamingContentCodec} used for the encoding of the payload.
+     * @return The {@link ContentCodec} used for the encoding of the payload.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
      */
     @Nullable
-    StreamingContentCodec encoding();
+    ContentCodec encoding();
 
     /**
      * Adds a new header with the specified {@code name} and {@code value}.

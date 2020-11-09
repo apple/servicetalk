@@ -24,8 +24,6 @@ interface ContentCodecBuilder {
      * This can help prevent malicious attempts to decompress malformed payloads that can drain resources of the
      * running instance.
      *
-     * Default max allowed payload size is 16MiB.
-     *
      * @param maxAllowedPayloadSize the maximum allowed payload size
      * @return {@code this}
      * @see <a href="https://en.wikipedia.org/wiki/Zip_bomb">Zip Bomb</a>

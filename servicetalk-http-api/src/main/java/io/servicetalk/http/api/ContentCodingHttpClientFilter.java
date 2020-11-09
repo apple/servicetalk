@@ -20,21 +20,41 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.http.api.ContentCodings.identity;
-import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
-import static io.servicetalk.http.api.HeaderUtils.advertiseAcceptedEncodingsIfAvailable;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrIdentity;
+import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
+import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
+import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 
 /**
- * Filter responsible for encoding/decoding content according to content-codings configured.
+ * A {@link StreamingHttpClientFilter} that adds encoding / decoding functionality for requests and responses
+ * respectively, as these are specified by the spec
+ * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
+ *
+ * <p>
+ * Append this filter before others that are expected to to see compressed content for this request/response, and after
+ * other filters that expect to manipulate the payload.
  */
-class ContentCodingHttpClientFilter
-        implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
+public final class ContentCodingHttpClientFilter
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
+                   HttpExecutionStrategyInfluencer {
 
-    private final List<StreamingContentCodec> supportedEncodings;
+    private final List<ContentCodec> supportedCodings;
+    @Nullable
+    private final CharSequence acceptedEncodingsHeader;
 
-    ContentCodingHttpClientFilter(final List<StreamingContentCodec> supportedEncodings) {
-        this.supportedEncodings = supportedEncodings;
+    /**
+     * Enable support of the provided encodings for this client's requests and responses.
+     * The order of the codecs provided, matters for the presentation of the header, and may affect selection priority
+     * on the server endpoint.
+     *
+     * @param supportedCodings the codecs used to advertise to the server what this clients supports,
+     * and encode/decode requests and responses accordingly.
+     */
+    public ContentCodingHttpClientFilter(final List<ContentCodec> supportedCodings) {
+        this.supportedCodings = supportedCodings;
+        this.acceptedEncodingsHeader = buildAcceptEncodingsHeader(supportedCodings);
     }
 
     @Override
@@ -44,11 +64,18 @@ class ContentCodingHttpClientFilter
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                final BufferAllocator alloc = delegate.executionContext().bufferAllocator();
-                advertiseAcceptedEncodingsIfAvailable(request, supportedEncodings);
-                encodePayloadContentIfAvailable(request, alloc);
+                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request));
+            }
+        };
+    }
 
-                return decodePayloadContentIfEncoded(super.request(delegate, strategy, request), alloc);
+    @Override
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
+        return new StreamingHttpConnectionFilter(connection) {
+            @Override
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), strategy, request));
             }
         };
     }
@@ -59,12 +86,22 @@ class ContentCodingHttpClientFilter
         return strategy;
     }
 
+    private Single<StreamingHttpResponse> codecTransformBidirectionalIfNeeded(final StreamingHttpRequester delegate,
+                                                                              final HttpExecutionStrategy strategy,
+                                                                              final StreamingHttpRequest request) {
+        final BufferAllocator alloc = delegate.executionContext().bufferAllocator();
+        setAcceptEncoding(request.headers(), acceptedEncodingsHeader);
+        encodePayloadContentIfAvailable(request, alloc);
+
+        return decodePayloadContentIfEncoded(delegate.request(strategy, request), alloc);
+    }
+
     private Single<StreamingHttpResponse> decodePayloadContentIfEncoded(
             final Single<StreamingHttpResponse> responseSingle, final BufferAllocator allocator) {
 
         return responseSingle.map(response -> {
-            StreamingContentCodec coding = identifyContentEncodingOrIdentity(response.headers(), supportedEncodings);
-            if (!coding.equals(identity())) {
+            ContentCodec coding = identifyContentEncodingOrNullIfIdentity(response.headers(), supportedCodings);
+            if (coding != null) {
                 response.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
             }
 
@@ -72,11 +109,29 @@ class ContentCodingHttpClientFilter
         });
     }
 
+    @Nullable
+    private static CharSequence buildAcceptEncodingsHeader(final List<ContentCodec> codecs) {
+        StringBuilder builder = new StringBuilder();
+        for (ContentCodec enc : codecs) {
+            if (enc == identity()) {
+                continue;
+            }
+
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+
+            builder.append(enc.name());
+        }
+
+        return builder.length() > 0 ? builder.toString() : null;
+    }
+
     private static void encodePayloadContentIfAvailable(final StreamingHttpRequest request,
                                                         final BufferAllocator allocator) {
-        StreamingContentCodec coding = request.encoding();
+        ContentCodec coding = request.encoding();
         if (coding != null && !coding.equals(identity())) {
-            addContentEncoding(request.headers(), coding.name());
+            setContentEncoding(request.headers(), coding.name());
             request.transformPayloadBody(pub -> coding.encode(pub, allocator));
         }
     }

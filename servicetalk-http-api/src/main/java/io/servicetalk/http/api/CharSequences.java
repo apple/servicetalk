@@ -162,15 +162,6 @@ public final class CharSequences {
     }
 
     /**
-     * Returns {@code true} if there is no content on the {@link CharSequence} value.
-     * @param value the {@link CharSequence} to validate for emptyness
-     * @return {@code true} if there is no content
-     */
-    public static boolean isEmpty(final CharSequence value) {
-        return value.length() == 0;
-    }
-
-    /**
      * Find the index of {@code c} within {@code sequence} starting at index {@code fromIndex}.
      *
      * @param sequence The {@link CharSequence} to search in.
@@ -222,19 +213,6 @@ public final class CharSequences {
 
     private static boolean isUpperCase(final char value) {
         return value >= 'A' && value <= 'Z';
-    }
-
-    /**
-     * Tests if the string starts with the specified case-sensitive prefix.
-     *
-     * @param   string   the value to check the presence of the prefix in.
-     * @param   prefix   the prefix.
-     * @return  {@code true} if the character sequence represented by the
-     *          argument is a prefix of the character sequence represented by
-     *          the string; {@code false} otherwise.
-     */
-    public static boolean startsWith(final CharSequence string, final CharSequence prefix) {
-        return regionMatches(string, false, 0, prefix, 0, prefix.length());
     }
 
     /**

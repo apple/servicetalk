@@ -87,7 +87,7 @@ public final class HeaderUtils {
 
     private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
-    public static final List<StreamingContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
+    public static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
 
     static {
         CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
@@ -236,15 +236,21 @@ public final class HeaderUtils {
         }
     }
 
-    static void addContentEncoding(final HttpHeaders headers, CharSequence encoding) {
+    static void setContentEncoding(final HttpHeaders headers, CharSequence encoding) {
         // H2 does not support TE / Transfer-Encoding, so we rely in the presentation encoding only.
-        // https://httpwg.org/specs/rfc7540.html#n-connection-specific-header-fields
+        // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
         headers.set(CONTENT_ENCODING, encoding);
         headers.set(VARY, CONTENT_ENCODING);
     }
 
     static boolean hasContentEncoding(final HttpHeaders headers) {
         return headers.contains(CONTENT_ENCODING);
+    }
+
+    static void setAcceptEncoding(final HttpHeaders headers, @Nullable final CharSequence encodings) {
+        if (encodings != null && !headers.contains(ACCEPT_ENCODING)) {
+            headers.set(ACCEPT_ENCODING, encodings);
+        }
     }
 
     static void validateCookieNameAndValue(final CharSequence cookieName, final CharSequence cookieValue) {
@@ -658,95 +664,64 @@ public final class HeaderUtils {
     }
 
     /**
-     * Advertise the list of supported encodings to the request headers.
-     * The list will be advertised as part of the Accept-Encoding header
-     *
-     * If {@code headers} already contain {@code 'Accept-Encoding'} header, then this method has no effect.
-     *
-     * @param metaData the metadata headers to modify
-     * @param encodings the list of encodings to be used in the string representation.
-     * @see <a href="https://tools.ietf.org/html/rfc7231#page-41">Accept-Encodings</a>
-     */
-    static void advertiseAcceptedEncodingsIfAvailable(final HttpMetaData metaData,
-                                                      final Collection<StreamingContentCodec> encodings) {
-        final HttpHeaders headers = metaData.headers();
-        if (headers.contains(ACCEPT_ENCODING) || encodings.isEmpty()) {
-            return;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for (StreamingContentCodec enc : encodings) {
-            if (enc == identity()) {
-                continue;
-            }
-
-            if (builder.length() > 0) {
-                builder.append(", ");
-            }
-
-            builder.append(enc.name());
-        }
-
-        if (builder.length() > 0) {
-            headers.add(ACCEPT_ENCODING, builder.toString());
-        }
-    }
-
-    /**
      * Establish a commonly accepted encoding between server and client, according to the supported-encodings
      * on the server side and the {@code 'Accepted-Encoding'} incoming header on the request.
      * <p>
-     * If no supported encodings are configured then the result is always {@link ContentCodings#identity()}
-     * If no accepted encodings are present in the request then the result is always {@link ContentCodings#identity()}
-     * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred.
+     * If no supported encodings are configured then the result is always {@code null}
+     * If no accepted encodings are present in the request then the result is always {@code null}
+     * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
+     * otherwise {@code null} is returned.
      *
      * @param headers The request headers
      * @param serverSupportedEncodings The supported encodings as configured for the server
-     * @return The {@link StreamingContentCodec} that satisfies both client and server needs.
+     * @return The {@link ContentCodec} that satisfies both client and server needs,
+     * null if none found or matched to {@link ContentCodings#identity()}
      */
-    static StreamingContentCodec negotiateAcceptedEncoding(
-            final HttpHeaders headers, final List<StreamingContentCodec> serverSupportedEncodings) {
+    @Nullable
+    static ContentCodec negotiateAcceptedEncoding(
+            final HttpHeaders headers, final List<ContentCodec> serverSupportedEncodings) {
 
         // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
                 (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(identity()))) {
-            return identity();
+            return null;
         }
 
-        List<StreamingContentCodec> clientSupportedEncodings =
+        List<ContentCodec> clientSupportedEncodings =
                 readAcceptEncoding(headers, serverSupportedEncodings);
         return negotiateAcceptedEncoding(clientSupportedEncodings, serverSupportedEncodings);
     }
 
-    static StreamingContentCodec negotiateAcceptedEncoding(final List<StreamingContentCodec> clientSupportedEncodings,
-                                                           final List<StreamingContentCodec> allowedEncodings) {
+    @Nullable
+    static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
+                                                  final List<ContentCodec> allowedEncodings) {
         // Fast path, Client has no encodings configured, or has identity as the only encoding configured
         if (clientSupportedEncodings == NONE_CONTENT_ENCODING_SINGLETON ||
                 (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
-            return identity();
+            return null;
         }
 
-        for (StreamingContentCodec encoding : allowedEncodings) {
+        for (ContentCodec encoding : allowedEncodings) {
             if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }
 
-        return identity();
+        return null;
     }
 
-    static List<StreamingContentCodec> readAcceptEncoding(final HttpHeaders headers,
-                                                          final List<StreamingContentCodec> allowedEncodings) {
+    static List<ContentCodec> readAcceptEncoding(final HttpHeaders headers,
+                                                 final List<ContentCodec> allowedEncodings) {
         final CharSequence acceptEncodingsHeaderVal = headers.get(ACCEPT_ENCODING);
 
         if (acceptEncodingsHeaderVal == null || acceptEncodingsHeaderVal.length() == 0) {
             return NONE_CONTENT_ENCODING_SINGLETON;
         }
 
-        List<StreamingContentCodec> knownEncodings = new ArrayList<>();
+        List<ContentCodec> knownEncodings = new ArrayList<>();
         List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
         for (CharSequence val : acceptEncodingValues) {
-            StreamingContentCodec enc = encodingFor(allowedEncodings, val.toString().trim());
+            ContentCodec enc = encodingFor(allowedEncodings, val.toString().trim());
             if (enc != null) {
                 knownEncodings.add(enc);
             }
@@ -756,30 +731,32 @@ public final class HeaderUtils {
     }
 
     /**
-     * Attempts to identify the {@link StreamingContentCodec} from a name, as found in the {@code 'Content-Encoding'}
+     * Attempts to identify the {@link ContentCodec} from a name, as found in the {@code 'Content-Encoding'}
      * header of a request or a response.
      * If the name can not be matched to any of the supported encodings on this endpoint, then
      * a {@link UnsupportedContentEncodingException} is thrown.
+     * If the matched encoding is {@link ContentCodings#identity()} then this returns {@code null}.
      *
      * @param headers The headers to read the encoding name from
      * @param allowedEncodings The supported encodings for this endpoint
-     * @return The {@link StreamingContentCodec} that matches the name.
+     * @return The {@link ContentCodec} that matches the name or null if matches to identity
      */
-    static StreamingContentCodec identifyContentEncodingOrIdentity(
-            final HttpHeaders headers, final List<StreamingContentCodec> allowedEncodings) {
+    @Nullable
+    static ContentCodec identifyContentEncodingOrNullIfIdentity(
+            final HttpHeaders headers, final List<ContentCodec> allowedEncodings) {
 
         final CharSequence encoding = headers.get(CONTENT_ENCODING);
         if (encoding == null) {
-            return identity();
+            return null;
         }
 
-        StreamingContentCodec enc = encodingFor(allowedEncodings, encoding);
+        ContentCodec enc = encodingFor(allowedEncodings, encoding);
         if (enc == null) {
             final String lowercaseEncoding = encoding.toString();
             throw new UnsupportedContentEncodingException(lowercaseEncoding);
         }
 
-        return enc;
+        return enc == identity() ? null : enc;
     }
 
     /**

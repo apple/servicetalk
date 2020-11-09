@@ -158,7 +158,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         hostHeaderFilterFactoryFunction = from.hostHeaderFilterFactoryFunction;
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
-        supportedEncodings = from.supportedEncodings;
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
@@ -310,8 +309,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.hostHeaderFilterFactoryFunction.apply(ctx.builder.address));
             }
-
-            currClientFilterFactory = ctx.builder.terminalFilterAmendment(currClientFilterFactory);
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));

@@ -70,7 +70,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpMetaData encoding(final StreamingContentCodec encoding) {
+    public HttpMetaData encoding(final ContentCodec encoding) {
         super.encoding(encoding);
         return this;
     }

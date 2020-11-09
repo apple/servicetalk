@@ -18,27 +18,68 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.ContentCodings.identity;
-import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
+import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
+import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrIdentity;
 import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
+import static java.util.Collections.unmodifiableList;
 
 /**
- * Filter responsible for encoding/decoding content according to content-codings configured.
+ * A {@link StreamingHttpService} that adds encoding / decoding functionality for requests and responses respectively,
+ * as these are specified by the spec
+ * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
+ *
+ * <p>
+ * Append this filter before others that are expected to to see compressed content for this request/response, and after
+ * other filters that expect to manipulate the payload.
  */
-class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+public final class ContentCodingHttpServiceFilter
+        implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
-    private final List<StreamingContentCodec> requestCodings;
-    private final List<StreamingContentCodec> responseCodings;
+    private final List<ContentCodec> requestCodings;
+    private final List<ContentCodec> responseCodings;
 
-    ContentCodingHttpServiceFilter(final List<StreamingContentCodec> requestCodings,
-                                   final List<StreamingContentCodec> responseCodings) {
-        this.requestCodings = requestCodings;
-        this.responseCodings = responseCodings;
+    /**
+     * Enable support of the provided encodings for this server's requests and responses.
+     * The encodings will be used for both client request decompression where needed and server responses compression
+     * where enabled and matched.
+     * <p>
+     * To disable support of compressed requests, see {@link #ContentCodingHttpServiceFilter(List, List)}.
+     * <p>
+     * The order of the codings provided, affect selection priority alongside the order of the incoming
+     * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.4">accept-encoding</a> header from the client.
+     *
+     * @param supportedCodings the codecs used to compress server responses and decompress client requests when needed.
+     */
+    public ContentCodingHttpServiceFilter(final List<ContentCodec> supportedCodings) {
+        final List<ContentCodec> unmodifiable = unmodifiableList(supportedCodings);
+        this.requestCodings = unmodifiable;
+        this.responseCodings = unmodifiable;
+    }
+
+    /**
+     * Enable support of the provided encodings for this server's requests and responses.
+     * The encodings can differ for requests and responses, allowing a server that supports compressed responses,
+     * but allows no compressed requests.
+     * <p>
+     * To disable support of compressed requests use an {@link Collections#emptyList()} for the
+     * <code>supportedRequestCodings</code> param.
+     * <p>
+     * The order of the codecs provided, affect selection priority alongside the order of the incoming
+     * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.4">accept-encoding</a> header from the client.
+     *
+     * @param supportedRequestCodings the codecs used to decompress client requests if compressed.
+     * @param supportedResponseCodings the codecs used to compress server responses if client accepts them.
+     */
+    public ContentCodingHttpServiceFilter(final List<ContentCodec> supportedRequestCodings,
+                                          final List<ContentCodec> supportedResponseCodings) {
+        this.requestCodings = unmodifiableList(supportedRequestCodings);
+        this.responseCodings = unmodifiableList(supportedResponseCodings);
     }
 
     @Override
@@ -49,15 +90,17 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
 
-                BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                StreamingContentCodec coding = identifyContentEncodingOrIdentity(request.headers(), requestCodings);
-                if (!coding.equals(identity())) {
-                    request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
-                }
+                return Single.defer(() -> {
+                    BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+                    ContentCodec coding = identifyContentEncodingOrNullIfIdentity(request.headers(), requestCodings);
+                    if (coding != null) {
+                        request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
+                    }
 
-                return super.handle(ctx, request, responseFactory).map(response -> {
-                    encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
-                    return response;
+                    return super.handle(ctx, request, responseFactory).map(response -> {
+                        encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
+                        return response;
+                    });
                 });
             }
         };
@@ -70,30 +113,31 @@ class ContentCodingHttpServiceFilter implements StreamingHttpServiceFilterFactor
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,
-                                                        final List<StreamingContentCodec> supportedEncodings,
+                                                        final List<ContentCodec> supportedEncodings,
                                                         final StreamingHttpResponse response,
                                                         final BufferAllocator allocator) {
         if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers())) {
             return;
         }
 
-        StreamingContentCodec coding = codingForResponse(requestHeaders, response, supportedEncodings);
-        if (coding != null && !coding.equals(identity())) {
-            addContentEncoding(response.headers(), coding.name());
+        ContentCodec coding = codingForResponse(requestHeaders, response, supportedEncodings);
+        if (coding != null) {
+            setContentEncoding(response.headers(), coding.name());
             response.transformPayloadBody(bufferPublisher -> coding.encode(bufferPublisher, allocator));
         }
     }
 
     @Nullable
-    private static StreamingContentCodec codingForResponse(final HttpHeaders requestHeaders,
-                                                           final StreamingHttpResponse response,
-                                                           final List<StreamingContentCodec> supportedEncodings) {
-        if (response.encoding() != null) {
-            // Enforced selection
-            return response.encoding();
+    private static ContentCodec codingForResponse(final HttpHeaders requestHeaders,
+                                                  final StreamingHttpResponse response,
+                                                  final List<ContentCodec> supportedEncodings) {
+        // Enforced selection
+        ContentCodec encoding = response.encoding();
+        if (encoding == null) {
+            // Negotiated from client headers and server config
+            encoding = negotiateAcceptedEncoding(requestHeaders, supportedEncodings);
         }
 
-        // Negotiate encoding according to Accept-Encodings header and server supported ones.
-        return negotiateAcceptedEncoding(requestHeaders, supportedEncodings);
+        return encoding == identity() ? null : encoding;
     }
 }

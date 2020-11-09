@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  */
 abstract class AbstractHttpMetaData implements HttpMetaData {
     @Nullable
-    private StreamingContentCodec encoding;
+    private ContentCodec encoding;
     private HttpProtocolVersion version;
     private final HttpHeaders headers;
 
@@ -34,7 +34,7 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers,
-                         @Nullable final StreamingContentCodec encoding) {
+                         @Nullable final ContentCodec encoding) {
         this.version = requireNonNull(version);
         this.headers = requireNonNull(headers);
         this.encoding = encoding;
@@ -56,13 +56,13 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
-    public HttpMetaData encoding(final StreamingContentCodec encoding) {
+    public HttpMetaData encoding(final ContentCodec encoding) {
         this.encoding = requireNonNull(encoding);
         return this;
     }
 
     @Override
-    public StreamingContentCodec encoding() {
+    public ContentCodec encoding() {
         return encoding;
     }
 

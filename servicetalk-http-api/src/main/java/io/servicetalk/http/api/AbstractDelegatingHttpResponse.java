@@ -29,7 +29,7 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     }
 
     @Override
-    public StreamingContentCodec encoding() {
+    public ContentCodec encoding() {
         return original.encoding();
     }
 
