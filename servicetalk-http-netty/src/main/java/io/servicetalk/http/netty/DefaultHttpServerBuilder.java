@@ -31,13 +31,14 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
-    private SocketAddress address;
+    private final SocketAddress address;
 
     DefaultHttpServerBuilder(SocketAddress address) {
         this.address = address;
@@ -85,7 +86,7 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     @Override
     public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
-                                               final boolean logUserData) {
+                                               final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }

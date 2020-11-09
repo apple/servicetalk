@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.logging.api;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+/**
+ * Logger name + level configuration.
+ */
+public interface LoggerConfig {
+    /**
+     * Get the name of the logger to use.
+     * @return the name of the logger to use.
+     */
+    String loggerName();
 
-dependencies {
-    api project(":servicetalk-logging-api")
-
-    implementation project(":servicetalk-annotations")
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    /**
+     * Get the level to log at.
+     * @return the level to log at.
+     */
+    LogLevel logLevel();
 }

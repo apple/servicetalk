@@ -15,7 +15,6 @@
  */
 package io.servicetalk.logging.slf4j.internal;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
 import io.servicetalk.logging.api.LogLevel;
 
 import org.slf4j.Logger;

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -24,8 +24,10 @@ import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 
 import java.util.function.BiPredicate;
+import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forServer;
+import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final H2ProtocolConfig config;
@@ -52,14 +54,19 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 config.headersSensitivityDetector();
         multiplexCodecBuilder.headerSensitivityDetector(headersSensitivityDetector::test);
 
-        final FixedLevelLogger frameLogger = config.frameLogger();
-        if (frameLogger != null) {
-            multiplexCodecBuilder.frameLogger(
-                    new ServiceTalkHttp2FrameLogger(frameLogger, config.frameLoggerUserData()));
-        }
+        initFrameLogger(multiplexCodecBuilder, config.frameLoggerConfig());
 
         // TODO(scott): more configuration. header validation, settings stream, etc...
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(), new Http2MultiplexHandler(streamChannelInitializer));
+    }
+
+    static void initFrameLogger(final Http2FrameCodecBuilder multiplexCodecBuilder,
+                                        @Nullable final UserDataLoggerConfig frameLoggerConfig) {
+        if (frameLoggerConfig != null) {
+            multiplexCodecBuilder.frameLogger(
+                    new ServiceTalkHttp2FrameLogger(newLogger(frameLoggerConfig.loggerName(),
+                            frameLoggerConfig.logLevel()), frameLoggerConfig.logUserData()));
+        }
     }
 }

@@ -60,6 +60,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -357,6 +358,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return this;
     }
 
+    @Deprecated
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
@@ -364,9 +366,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(final String loggerName,
-                                                                                           final LogLevel logLevel,
-                                                                                           final boolean logUserData) {
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableWireLogging(
+            final String loggerName, final LogLevel logLevel, final BooleanSupplier logUserData) {
         builderTemplate.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }

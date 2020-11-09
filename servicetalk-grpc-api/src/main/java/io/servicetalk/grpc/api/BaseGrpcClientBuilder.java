@@ -20,11 +20,13 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 interface BaseGrpcClientBuilder<U, R> {
@@ -66,12 +68,25 @@ interface BaseGrpcClientBuilder<U, R> {
     <T> BaseGrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     /**
-     * Enable wire-logging for clients created by this builder. All wire events will be logged at trace level.
-     *
+     * Enable wire-logging for clients created by this builder.
+     * <p>
+     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
+    @Deprecated
     BaseGrpcClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    /**
+     * Enables wire-logging for connections created by this builder.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @param logLevel The level to log at.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     * @return {@code this}.
+     */
+    BaseGrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData);
 
     /**
      * Configurations of various underlying protocol versions.

@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -58,13 +59,14 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                           LogLevel logLevel,
-                                                                          boolean logUserData);
+                                                                          BooleanSupplier logUserData);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);

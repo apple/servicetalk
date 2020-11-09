@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -115,10 +116,12 @@ public abstract class HttpServerBuilder {
 
     /**
      * Enables wire-logging for this server.
-     *
+     * <p>
+     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
+    @Deprecated
     public abstract HttpServerBuilder enableWireLogging(String loggerName);
 
     /**
@@ -126,11 +129,12 @@ public abstract class HttpServerBuilder {
      *
      * @param loggerName The name of the logger to log wire events.
      * @param logLevel The level to log at.
-     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude this
-     * data.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
      * @return {@code this}.
      */
-    public abstract HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, boolean logUserData);
+    public abstract HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel,
+                                                        BooleanSupplier logUserData);
 
     /**
      * Sets a {@link TransportObserver} that provides visibility into transport events.

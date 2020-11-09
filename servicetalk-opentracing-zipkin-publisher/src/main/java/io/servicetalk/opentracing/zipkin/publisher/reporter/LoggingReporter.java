@@ -15,8 +15,8 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher.reporter;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;

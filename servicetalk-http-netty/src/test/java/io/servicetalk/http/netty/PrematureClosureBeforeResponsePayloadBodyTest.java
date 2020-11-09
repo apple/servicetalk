@@ -113,7 +113,7 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 .syncUninterruptibly().channel();
 
         client = HttpClients.forSingleAddress(HostAndPort.of(server.localAddress()))
-                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, true)
+                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .protocols(h1()
                         .specExceptions(new H1SpecExceptions.Builder().allowPrematureClosureBeforePayloadBody().build())
                         .build())

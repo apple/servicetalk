@@ -54,6 +54,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -158,7 +159,7 @@ public class MalformedDataAfterHttpMessageTest {
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .bufferAllocator(SERVER_CTX.bufferAllocator())
-                .enableWireLogging("servicetalk-tests-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(request.payloadBody(textDeserializer()), textSerializer()));
     }
@@ -168,7 +169,7 @@ public class MalformedDataAfterHttpMessageTest {
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .bufferAllocator(CLIENT_CTX.bufferAllocator())
-                .enableWireLogging("servicetalk-tests-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .buildBlocking();
     }
 }

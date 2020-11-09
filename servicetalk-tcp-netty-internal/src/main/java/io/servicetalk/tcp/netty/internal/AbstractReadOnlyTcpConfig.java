@@ -15,7 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
@@ -52,9 +52,10 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
         options = from.options() == null ? emptyMap() : unmodifiableMap(new HashMap<>(from.options()));
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
-        final FixedLevelLogger wireLogger = from.wireLogger();
-        wireLoggingInitializer = wireLogger != null ?
-                new WireLoggingInitializer(wireLogger, from.wireLoggerUserData()) : null;
+        final UserDataLoggerConfig wireLoggerConfig = from.wireLoggerConfig();
+        wireLoggingInitializer = wireLoggerConfig != null ?
+                new WireLoggingInitializer(wireLoggerConfig.loggerName(),
+                        wireLoggerConfig.logLevel(), wireLoggerConfig.logUserData()) : null;
         this.alpnConfigured = alpnConfigured;
     }
 

@@ -67,6 +67,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -128,7 +129,7 @@ public class ConnectionCloseHeaderHandlingTest {
                     HttpServers.forAddress(localAddress(0)))
                     .ioExecutor(SERVER_CTX.ioExecutor())
                     .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                    .enableWireLogging("servicetalk-tests-wire-logger")
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                         @Override
                         public Completable accept(final ConnectionContext context) {
@@ -190,7 +191,7 @@ public class ConnectionCloseHeaderHandlingTest {
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
                     .ioExecutor(CLIENT_CTX.ioExecutor())
                     .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                    .enableWireLogging("servicetalk-tests-wire-logger")
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .buildStreaming();
             connection = client.reserveConnection(client.get("/")).toFuture().get();
             connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();

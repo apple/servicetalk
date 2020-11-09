@@ -30,7 +30,6 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
@@ -75,6 +74,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -151,7 +151,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .protocols(protocol.config)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, true)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
@@ -206,7 +206,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .protocols(protocol.config)
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-wire-logger")
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .appendConnectionFactoryFilter(cf -> initiateClosureFromClient ?
                         new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf)
                 .buildStreaming();

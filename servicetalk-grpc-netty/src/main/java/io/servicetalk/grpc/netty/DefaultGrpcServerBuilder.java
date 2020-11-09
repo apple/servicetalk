@@ -31,6 +31,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -38,6 +39,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
@@ -88,6 +90,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName) {
         httpServerBuilder.enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
+                                               final BooleanSupplier logUserData) {
+        httpServerBuilder.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 

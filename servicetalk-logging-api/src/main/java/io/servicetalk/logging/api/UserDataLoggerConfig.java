@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.logging.api;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+import java.util.function.BooleanSupplier;
 
-dependencies {
-    api project(":servicetalk-logging-api")
-
-    implementation project(":servicetalk-annotations")
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+/**
+ * {@link LoggerConfig} used in areas that can filter logging output to include user data or not.
+ */
+public interface UserDataLoggerConfig extends LoggerConfig {
+    /**
+     * Determine if user data (e.g. data, headers, etc.) should be included in logs.
+     * @return {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     */
+    BooleanSupplier logUserData();
 }

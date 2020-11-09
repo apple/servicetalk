@@ -15,9 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
+import io.servicetalk.logging.api.LogLevel;
 
 import io.netty.channel.Channel;
+
+import java.util.function.BooleanSupplier;
+
+import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 
 /**
  * A {@link ChannelInitializer} that enables wire-logging for all channels.
@@ -29,12 +33,14 @@ public class WireLoggingInitializer implements ChannelInitializer {
     /**
      * Create an instance.
      *
-     * @param logger The logger to use for log wire events.
+     * @param loggerName The logger name to use for log wire events.
+     * @param logLevel The level to log at.
      * @param logUserData {@code true} to log user data. {@code false} to not log user data.
      */
-    public WireLoggingInitializer(final FixedLevelLogger logger,
-                                  final boolean logUserData) {
-        loggingHandler = new ServiceTalkWireLogger(logger, logUserData);
+    public WireLoggingInitializer(final String loggerName,
+                                  final LogLevel logLevel,
+                                  final BooleanSupplier logUserData) {
+        loggingHandler = new ServiceTalkWireLogger(newLogger(loggerName, logLevel), logUserData);
     }
 
     @Override

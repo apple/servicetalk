@@ -24,6 +24,7 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -43,12 +44,13 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract <T> BaseSingleAddressHttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
     @Override
+    @Deprecated
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
                                                                                     LogLevel logLevel,
-                                                                                    boolean logUserData);
+                                                                                    BooleanSupplier logUserData);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);

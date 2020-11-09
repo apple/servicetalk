@@ -17,7 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferHolder;
-import io.servicetalk.logging.api.FixedLevelLogger;
+import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
 import java.net.SocketAddress;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.appendPrettyHexDump;
@@ -35,11 +36,11 @@ import static java.util.Objects.requireNonNull;
 
 final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     private final FixedLevelLogger logger;
-    private final boolean logUserData;
+    private final BooleanSupplier logUserDataSupplier;
 
-    ServiceTalkWireLogger(final FixedLevelLogger logger, final boolean logUserData) {
+    ServiceTalkWireLogger(final FixedLevelLogger logger, final BooleanSupplier logUserDataSupplier) {
         this.logger = requireNonNull(logger);
-        this.logUserData = logUserData;
+        this.logUserDataSupplier = requireNonNull(logUserDataSupplier);
     }
 
     @Override
@@ -225,6 +226,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     }
 
     private String toString(Object msg) {
+        final boolean logUserData = logUserDataSupplier.getAsBoolean();
         if (msg instanceof ByteBuf) {
             ByteBuf byteBuf = (ByteBuf) msg;
             return logUserData ? formatByteBuf(byteBuf) : formatByteBufNoData(byteBuf);

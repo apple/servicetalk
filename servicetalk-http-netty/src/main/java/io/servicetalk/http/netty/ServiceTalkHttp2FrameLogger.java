@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.logging.api.FixedLevelLogger;
+import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -26,15 +26,17 @@ import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.logging.LogLevel;
 
+import java.util.function.BooleanSupplier;
+
 final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     private static final int BUFFER_LENGTH_THRESHOLD = 64;
     private final FixedLevelLogger logger;
-    private final boolean logUserData;
+    private final BooleanSupplier logUserDataSupplier;
 
-    ServiceTalkHttp2FrameLogger(final FixedLevelLogger logger, final boolean logUserData) {
+    ServiceTalkHttp2FrameLogger(final FixedLevelLogger logger, final BooleanSupplier logUserDataSupplier) {
         super(LogLevel.ERROR);
         this.logger = logger;
-        this.logUserData = logUserData;
+        this.logUserDataSupplier = logUserDataSupplier;
     }
 
     @Override
@@ -46,7 +48,7 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     public void logData(Direction direction, ChannelHandlerContext ctx, int streamId, ByteBuf data, int padding,
                         boolean endStream) {
         if (logger.isEnabled()) {
-            if (logUserData) {
+            if (logUserDataSupplier.getAsBoolean()) {
                 logger.log("{} {} DATA: streamId={} padding={} endStream={} length={} bytes={}", ctx.channel(),
                         direction.name(), streamId, padding, endStream, data.readableBytes(), toString(data));
             } else {
@@ -134,7 +136,7 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     public void logGoAway(Direction direction, ChannelHandlerContext ctx, int lastStreamId, long errorCode,
                           ByteBuf debugData) {
         if (logger.isEnabled()) {
-            if (logUserData) {
+            if (logUserDataSupplier.getAsBoolean()) {
                 logger.log("{} {} GO_AWAY: lastStreamId={} errorCode={} length={} bytes={}", ctx.channel(),
                         direction.name(), lastStreamId, errorCode, debugData.readableBytes(), toString(debugData));
             } else {
@@ -157,7 +159,7 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     public void logUnknownFrame(Direction direction, ChannelHandlerContext ctx, byte frameType, int streamId,
                                 Http2Flags flags, ByteBuf data) {
         if (logger.isEnabled()) {
-            if (logUserData) {
+            if (logUserDataSupplier.getAsBoolean()) {
                 logger.log("{} {} UNKNOWN: frameType={} streamId={} flags={} length={} bytes={}", ctx.channel(),
                         direction.name(), frameType & 0xFF, streamId, flags.value(), data.readableBytes(),
                         toString(data));
@@ -169,7 +171,7 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     }
 
     private String toString(Http2Headers headers) {
-        return logUserData ? headers.toString() : String.valueOf(headers.size());
+        return logUserDataSupplier.getAsBoolean() ? headers.toString() : String.valueOf(headers.size());
     }
 
     private String toString(ByteBuf buf) {

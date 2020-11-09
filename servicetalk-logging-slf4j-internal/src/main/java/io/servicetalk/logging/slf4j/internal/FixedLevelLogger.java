@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.logging.api;
+package io.servicetalk.logging.slf4j.internal;
+
+import io.servicetalk.logging.api.LogLevel;
 
 /**
  * A logger that logs at a fixed {@link LogLevel}.
