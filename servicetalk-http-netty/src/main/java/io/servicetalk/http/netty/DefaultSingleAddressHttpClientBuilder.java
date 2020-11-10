@@ -48,6 +48,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -58,6 +59,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Collection;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -400,9 +402,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
+    @Deprecated
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         config.tcpConfig().enableWireLogging(loggerName);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
+                                                                  final BooleanSupplier logUserData) {
+        config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 

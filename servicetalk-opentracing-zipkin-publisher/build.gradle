@@ -19,14 +19,17 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api project(":servicetalk-opentracing-inmemory-api")
   api project(":servicetalk-concurrent-api")
-  api project(":servicetalk-transport-api")
+  api project(":servicetalk-logging-api")
   api project(":servicetalk-http-api")
+  api project(":servicetalk-transport-api")
+
   api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-logging-slf4j-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "io.netty:netty-codec:$nettyVersion"
   implementation "io.netty:netty-transport:$nettyVersion"

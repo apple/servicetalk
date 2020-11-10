@@ -20,9 +20,11 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -50,8 +52,14 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
+    @Deprecated
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
+                                                                           LogLevel logLevel,
+                                                                           BooleanSupplier logUserData);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);

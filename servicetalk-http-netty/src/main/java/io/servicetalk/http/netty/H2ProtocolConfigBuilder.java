@@ -18,14 +18,17 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
-
-import org.slf4j.event.Level;
+import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
+import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 
 import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,7 +41,7 @@ public final class H2ProtocolConfigBuilder {
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
-    private String frameLoggerName;
+    private UserDataLoggerConfig frameLoggerConfig;
     @Nullable
     private KeepAlivePolicy keepAlivePolicy;
 
@@ -74,14 +77,27 @@ public final class H2ProtocolConfigBuilder {
 
     /**
      * Enables a logger for HTTP/2 frames.
-     * <p>
-     * All frames will be logged at {@link Level#TRACE TRACE} level.
      *
-     * @param loggerName the name of the logger to log HTTP/2 frames
+     * @param loggerName provides the logger to log HTTP/2 frames.
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
-        this.frameLoggerName = requireNonNull(loggerName);
+        return enableFrameLogging(loggerName, TRACE, () -> false);
+    }
+
+    /**
+     * Enables a logger for HTTP/2 frames.
+     *
+     * @param loggerName provides the logger to log HTTP/2 frames.
+     * @param logLevel the level to log HTTP/2 frames.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     * @return {@code this}
+     */
+    public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName,
+                                                      final LogLevel logLevel,
+                                                      final BooleanSupplier logUserData) {
+        frameLoggerConfig = new DefaultUserDataLoggerConfig(loggerName, logLevel, logUserData);
         return this;
     }
 
@@ -103,7 +119,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@link H2ProtocolConfig}
      */
     public H2ProtocolConfig build() {
-        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerName,
+        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerConfig,
                 keepAlivePolicy);
     }
 
@@ -112,16 +128,17 @@ public final class H2ProtocolConfigBuilder {
         private final HttpHeadersFactory headersFactory;
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
-        private final String frameLoggerName;
+        private final UserDataLoggerConfig frameLoggerConfig;
         @Nullable
         private final KeepAlivePolicy keepAlivePolicy;
 
         DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
-                                @Nullable final String frameLogger, @Nullable final KeepAlivePolicy keepAlivePolicy) {
+                                @Nullable final UserDataLoggerConfig frameLoggerConfig,
+                                @Nullable final KeepAlivePolicy keepAlivePolicy) {
             this.headersFactory = headersFactory;
             this.headersSensitivityDetector = headersSensitivityDetector;
-            this.frameLoggerName = frameLogger;
+            this.frameLoggerConfig = frameLoggerConfig;
             this.keepAlivePolicy = keepAlivePolicy;
         }
 
@@ -137,8 +154,8 @@ public final class H2ProtocolConfigBuilder {
 
         @Nullable
         @Override
-        public String frameLoggerName() {
-            return frameLoggerName;
+        public UserDataLoggerConfig frameLoggerConfig() {
+            return frameLoggerConfig;
         }
 
         @Nullable

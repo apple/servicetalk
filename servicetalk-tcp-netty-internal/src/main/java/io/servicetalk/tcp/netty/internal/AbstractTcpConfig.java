@@ -15,6 +15,9 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
+import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
@@ -26,8 +29,10 @@ import java.net.StandardSocketOptions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
@@ -47,7 +52,7 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     private Long idleTimeoutMs;
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
-    private String wireLoggerName;
+    private UserDataLoggerConfig wireLoggerConfig;
     @Nullable
     private SecurityConfig securityConfig;
 
@@ -58,7 +63,7 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
         options = from.options;
         idleTimeoutMs = from.idleTimeoutMs;
         flushStrategy = from.flushStrategy;
-        wireLoggerName = from.wireLoggerName;
+        wireLoggerConfig = from.wireLoggerConfig;
         securityConfig = from.securityConfig;
     }
 
@@ -78,8 +83,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     }
 
     @Nullable
-    final String wireLoggerName() {
-        return wireLoggerName;
+    final UserDataLoggerConfig wireLoggerConfig() {
+        return wireLoggerConfig;
     }
 
     @Nullable
@@ -125,7 +130,21 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
      * @param loggerName The name of the logger to log wire events
      */
     public final void enableWireLogging(final String loggerName) {
-        wireLoggerName = requireNonNull(loggerName);
+        enableWireLogging(loggerName, TRACE, () -> false);
+    }
+
+    /**
+     * Enable wire-logging for all connections. All wire events will be logged at trace level.
+     *
+     * @param loggerName provides the logger to log data/events to/from the wire.
+     * @param logLevel the level to log data/events to/from the wire.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     */
+    public final void enableWireLogging(final String loggerName,
+                                        final LogLevel logLevel,
+                                        final BooleanSupplier logUserData) {
+        wireLoggerConfig = new DefaultUserDataLoggerConfig(loggerName, logLevel, logUserData);
     }
 
     /**

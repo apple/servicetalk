@@ -15,84 +15,35 @@
  */
 package io.servicetalk.opentracing.zipkin.publisher.reporter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
+
 import zipkin2.Span;
 import zipkin2.reporter.Reporter;
 
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 
 /**
  * A Simple {@link Reporter} that logs the span at INFO level.
  */
 public final class LoggingReporter implements Reporter<Span> {
-    private final Logger logger;
-    private final LogLevel logLevel;
+    private final FixedLevelLogger logger;
 
-    private LoggingReporter(Builder builder) {
-        this.logger = LoggerFactory.getLogger(builder.loggerName);
-        this.logLevel = builder.logLevel;
+    /**
+     * Create a new instance.
+     * @param loggerName The name of the logger to use.
+     */
+    public LoggingReporter(String loggerName) {
+        this(loggerName, LogLevel.INFO);
     }
 
     /**
-     * A builder to create a new {@link LoggingReporter}.
+     * Create a new instance.
+     * @param loggerName The name of the logger to use.
+     * @param logLevel The level to log at.
      */
-    public static final class Builder {
-        private final String loggerName;
-        private LogLevel logLevel = LogLevel.INFO;
-
-        /**
-         * Creates a new instance.
-         *
-         * @param loggerName the name of the logger
-         */
-        public Builder(String loggerName) {
-            this.loggerName = requireNonNull(loggerName);
-        }
-
-        /**
-         * Sets the log level.
-         * <p>
-         * Logging will defaulit to {@link LogLevel#INFO} if not set.
-         *
-         * @param logLevel the {@link LogLevel} to use
-         * @return {@code this}
-         */
-        public Builder logLevel(LogLevel logLevel) {
-            this.logLevel = requireNonNull(logLevel);
-            return this;
-        }
-
-        /**
-         * Builds a new {@link LoggingReporter} instance with this builder's options.
-         *
-         * @return a new {@link LoggingReporter}
-         */
-        public LoggingReporter build() {
-            return new LoggingReporter(this);
-        }
-    }
-
-    /**
-     * Different log levels and how to log them.
-     */
-    public enum LogLevel {
-        TRACE(Logger::isTraceEnabled, Logger::trace),
-        DEBUG(Logger::isDebugEnabled, Logger::debug),
-        INFO(Logger::isInfoEnabled, Logger::info),
-        WARN(Logger::isWarnEnabled, Logger::warn),
-        ERROR(Logger::isErrorEnabled, Logger::error);
-
-        private final Predicate<Logger> isEnabled;
-        private final BiConsumer<Logger, String> log;
-
-        LogLevel(Predicate<Logger> isEnabled, BiConsumer<Logger, String> log) {
-            this.isEnabled = isEnabled;
-            this.log = log;
-        }
+    public LoggingReporter(String loggerName, LogLevel logLevel) {
+        logger = newLogger(loggerName, logLevel);
     }
 
     /**
@@ -102,8 +53,8 @@ public final class LoggingReporter implements Reporter<Span> {
      */
     @Override
     public void report(Span span) {
-        if (logLevel.isEnabled.test(logger)) {
-            logLevel.log.accept(logger, requireNonNull(span).toString());
+        if (logger.isEnabled()) {
+            logger.log(span.toString());
         }
     }
 }

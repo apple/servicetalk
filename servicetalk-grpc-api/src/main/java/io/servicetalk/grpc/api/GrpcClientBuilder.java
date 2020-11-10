@@ -31,9 +31,11 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -62,7 +64,12 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
+    @Deprecated
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
+                                                              BooleanSupplier logUserData);
 
     @Override
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);

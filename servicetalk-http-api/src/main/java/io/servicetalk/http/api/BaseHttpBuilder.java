@@ -16,13 +16,13 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
-import org.slf4j.event.Level;
-
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -74,12 +74,25 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     /**
      * Enables wire-logging for connections created by this builder.
      * <p>
-     * All wire events will be logged at {@link Level#TRACE TRACE} level.
-     *
+     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
+    @Deprecated
     public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName);
+
+    /**
+     * Enables wire-logging for connections created by this builder.
+     *
+     * @param loggerName The name of the logger to log wire events.
+     * @param logLevel The level to log at.
+     * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
+     * data and log only network events.
+     * @return {@code this}.
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName,
+                                                                       LogLevel logLevel,
+                                                                       BooleanSupplier logUserData);
 
     /**
      * Configurations of various HTTP protocol versions.

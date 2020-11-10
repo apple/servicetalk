@@ -15,36 +15,36 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.logging.api.LogLevel;
+
 import io.netty.channel.Channel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 
-import javax.annotation.Nullable;
+import java.util.function.BooleanSupplier;
 
-import static io.servicetalk.transport.netty.internal.NettyLoggerUtils.getNettyLogLevel;
+import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 
 /**
  * A {@link ChannelInitializer} that enables wire-logging for all channels.
  * All wire events will be logged at trace level.
  */
 public class WireLoggingInitializer implements ChannelInitializer {
-    @Nullable
-    private final LoggingHandler loggingHandler;
+    private final ServiceTalkWireLogger loggingHandler;
 
     /**
-     * Create an instance that logs at trace level.
+     * Create an instance.
      *
-     * @param loggerName The name of the logger to log wire events.
+     * @param loggerName The logger name to use for log wire events.
+     * @param logLevel The level to log at.
+     * @param logUserData {@code true} to log user data. {@code false} to not log user data.
      */
-    public WireLoggingInitializer(final String loggerName) {
-        LogLevel logLevel = getNettyLogLevel(loggerName);
-        loggingHandler = logLevel != null ? new LoggingHandler(loggerName, logLevel) : null;
+    public WireLoggingInitializer(final String loggerName,
+                                  final LogLevel logLevel,
+                                  final BooleanSupplier logUserData) {
+        loggingHandler = new ServiceTalkWireLogger(newLogger(loggerName, logLevel), logUserData);
     }
 
     @Override
     public void init(Channel channel) {
-        if (loggingHandler != null) {
-            channel.pipeline().addLast(loggingHandler);
-        }
+        channel.pipeline().addLast(loggingHandler);
     }
 }
