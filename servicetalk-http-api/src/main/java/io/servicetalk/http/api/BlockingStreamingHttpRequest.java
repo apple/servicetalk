@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;

@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
-interface ContentCodecBuilder {
+/**
+ * Builder for {@link ContentCodec}.
+ */
+public interface ContentCodecBuilder {
 
     int DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD = 16 << 20; //16MiB
 
     /**
      * Sets the maximum allowed decompressed payload size that the codec can process.
-     * This can help prevent malicious attempts to decompress malformed payloads that can drain resources of the
+     * This can help prevent malicious attempts to decode malformed payloads that can drain resources of the
      * running instance.
      *
      * @param maxAllowedPayloadSize the maximum allowed payload size

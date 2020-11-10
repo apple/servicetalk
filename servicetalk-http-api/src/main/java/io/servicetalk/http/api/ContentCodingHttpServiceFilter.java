@@ -17,16 +17,17 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.ContentCodings.identity;
-import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
-import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
+import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
+import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static java.util.Collections.unmodifiableList;
 
 /**

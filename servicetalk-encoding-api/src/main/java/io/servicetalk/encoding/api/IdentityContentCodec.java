@@ -13,29 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-
 /**
  * NOOP Message encoding codec.
  */
-final class IdentityContentCodec implements ContentCodec {
+final class IdentityContentCodec extends AbstractContentCodec {
 
-    private static final CharSequence NAME = newAsciiString("identity");
+    private static final CharSequence NAME = "identity";
 
     public static final ContentCodec INSTANCE = new IdentityContentCodec();
 
     private IdentityContentCodec() {
-    }
-
-    @Override
-    public CharSequence name() {
-        return NAME;
+        super(NAME);
     }
 
     @Override
@@ -58,10 +52,5 @@ final class IdentityContentCodec implements ContentCodec {
     @Override
     public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
         return from;
-    }
-
-    @Override
-    public String toString() {
-        return "ContentCoding{name=identity}";
     }
 }

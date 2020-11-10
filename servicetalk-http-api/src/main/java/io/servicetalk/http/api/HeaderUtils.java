@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.ContentCodings;
 import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
@@ -30,14 +32,13 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.CharSequences.split;
-import static io.servicetalk.http.api.ContentCodings.encodingFor;
-import static io.servicetalk.http.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -54,6 +55,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
@@ -687,8 +689,7 @@ public final class HeaderUtils {
             return null;
         }
 
-        List<ContentCodec> clientSupportedEncodings =
-                readAcceptEncoding(headers, serverSupportedEncodings);
+        List<ContentCodec> clientSupportedEncodings = readAcceptEncoding(headers, serverSupportedEncodings);
         return negotiateAcceptedEncoding(clientSupportedEncodings, serverSupportedEncodings);
     }
 
@@ -752,11 +753,47 @@ public final class HeaderUtils {
 
         ContentCodec enc = encodingFor(allowedEncodings, encoding);
         if (enc == null) {
-            final String lowercaseEncoding = encoding.toString();
-            throw new UnsupportedContentEncodingException(lowercaseEncoding);
+            throw new UnsupportedContentEncodingException(encoding.toString());
         }
 
         return enc == identity() ? null : enc;
+    }
+
+    /**
+     * Returns the {@link ContentCodec} that matches the {@code name} within the {@code allowedList}.
+     * if {@code name} is {@code null} or empty it results in {@code null} .
+     * If {@code name} is {@code 'identity'} this will always result in
+     * {@link ContentCodings#identity()} regardless of its presence in the {@code allowedList}.
+     *
+     * @param allowedList the source list to find a matching codec from.
+     * @param name the codec name used for the equality predicate.
+     * @return a codec from the allowed-list that name matches the {@code name}.
+     */
+    @Nullable
+    static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
+                                    @Nullable final CharSequence name) {
+        requireNonNull(allowedList);
+        if (name == null || name.length() == 0) {
+            return null;
+        }
+
+        // Identity is always supported, regardless of its presence in the allowed-list
+        if (contentEqualsIgnoreCase(name, identity().name())) {
+            return identity();
+        }
+
+        for (ContentCodec enumEnc : allowedList) {
+            // Encoding values can potentially included compression configurations, we only match on the type
+            if (startsWith(name, enumEnc.name())) {
+                return enumEnc;
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean startsWith(final CharSequence string, final CharSequence prefix) {
+        return regionMatches(string, true, 0, prefix, 0, prefix.length());
     }
 
     /**

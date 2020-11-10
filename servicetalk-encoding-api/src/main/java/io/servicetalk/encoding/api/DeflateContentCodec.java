@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,19 +22,12 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-
 final class DeflateContentCodec extends AbstractZipContentCodec {
 
-    private static final CharSequence NAME = newAsciiString("deflate");
+    private static final CharSequence NAME = "deflate";
 
     DeflateContentCodec(final int chunkSize, final int maxSize) {
-        super(chunkSize, maxSize);
-    }
-
-    @Override
-    public CharSequence name() {
-        return NAME;
+        super(NAME, chunkSize, maxSize);
     }
 
     @Override

@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
- * API for HTTP <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.1">Content Codings</a>.
- * Used to encode and decode {@link Buffer}s.
- *
- * This instance is shared therefore it must provide thread safety semantics.
+ * API to support encode and decode of {@link Buffer}s.
+ * <p>
+ * <em>This instance is shared therefore it must provide thread safety semantics.</em>
  */
 public interface ContentCodec {
 

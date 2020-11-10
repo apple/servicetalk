@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import java.util.function.Function;

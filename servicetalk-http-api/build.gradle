@@ -24,6 +24,7 @@ dependencies {
   api project(":servicetalk-serialization-api")
   api project(":servicetalk-transport-api")
   api project(":servicetalk-oio-api")
+  api project(":servicetalk-encoding-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-client-api-internal")

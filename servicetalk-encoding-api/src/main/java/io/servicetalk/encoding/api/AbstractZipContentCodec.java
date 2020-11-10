@@ -13,22 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * Copyright 2013 The Netty Project
- *
- * The Netty Project licenses this file to you under the Apache License,
- * version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at:
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
@@ -50,14 +35,11 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.Buffer.asInputStream;
-import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractZipContentCodec implements ContentCodec {
+abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
     private static final Buffer END_OF_STREAM = DEFAULT_RO_ALLOCATOR.fromAscii(" ");
@@ -65,7 +47,8 @@ abstract class AbstractZipContentCodec implements ContentCodec {
     protected final int chunkSize;
     private final int maxPayloadSize;
 
-    AbstractZipContentCodec(final int chunkSize, final int maxPayloadSize) {
+    AbstractZipContentCodec(final CharSequence name, final int chunkSize, final int maxPayloadSize) {
+        super(name);
         this.chunkSize = chunkSize;
         this.maxPayloadSize = maxPayloadSize;
     }
@@ -84,13 +67,13 @@ abstract class AbstractZipContentCodec implements ContentCodec {
         final Buffer dst = allocator.newBuffer(chunkSize);
         DeflaterOutputStream output = null;
         try {
-            output = newDeflaterOutputStream(asOutputStream(dst));
+            output = newDeflaterOutputStream(Buffer.asOutputStream(dst));
 
             if (src.hasArray()) {
                 output.write(src.array(), offset, length);
             } else {
                 while (src.readableBytes() > 0) {
-                    byte[] onHeap = new byte[min(src.readableBytes(), chunkSize)];
+                    byte[] onHeap = new byte[Math.min(src.readableBytes(), chunkSize)];
                     src.readBytes(onHeap);
                     output.write(onHeap);
                 }
@@ -118,7 +101,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                     @Nullable
                     DeflaterOutputStream output;
 
-                    private boolean headerWritten = false;
+                    private boolean headerWritten;
 
                     @Override
                     public void onSubscribe(PublisherSource.Subscription subscription) {
@@ -148,7 +131,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                                     Buffer dst = allocator.newBuffer(10);
                                     stream.swap(dst);
                                     output.finish();
-                                    System.err.println(dst.readableBytes());
+
                                     subscriber.onNext(dst);
                                 } catch (IOException e) {
                                     throw new RuntimeException(e);
@@ -168,7 +151,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
                                 output.write(next.array(), next.readerIndex(), next.readableBytes());
                             } else {
                                 while (next.readableBytes() > 0) {
-                                    byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
+                                    byte[] onHeap = new byte[Math.min(next.readableBytes(), chunkSize)];
                                     next.readBytes(onHeap);
                                     output.write(onHeap);
                                 }
@@ -201,7 +184,7 @@ abstract class AbstractZipContentCodec implements ContentCodec {
         final Buffer dst = allocator.newBuffer(chunkSize, maxPayloadSize);
         InflaterInputStream input = null;
         try {
-            input = newInflaterInputStream(asInputStream(src));
+            input = newInflaterInputStream(Buffer.asInputStream(src));
 
             int read = dst.setBytesUntilEndStream(0, input, chunkSize);
             dst.writerIndex(read);
@@ -586,12 +569,5 @@ abstract class AbstractZipContentCodec implements ContentCodec {
         public void write(byte[] b, int off, int len) {
             buffer.writeBytes(b, off, len);
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ContentCoding{" +
-                "name=" + name() +
-                '}';
     }
 }

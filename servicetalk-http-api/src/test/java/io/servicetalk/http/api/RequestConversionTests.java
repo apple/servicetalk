@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.http.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;

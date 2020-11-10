@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;

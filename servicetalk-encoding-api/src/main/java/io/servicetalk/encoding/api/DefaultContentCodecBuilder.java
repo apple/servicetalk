@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
-abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
+public abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB
 
@@ -27,14 +27,14 @@ abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
         return this;
     }
 
-    static class GzipContentCodecBuilder extends DefaultContentCodecBuilder {
+    static final class GzipContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
             return new GzipContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
         }
     }
 
-    static class DeflateContentCodecBuilder extends DefaultContentCodecBuilder {
+    static final class DeflateContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
             return new DeflateContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);

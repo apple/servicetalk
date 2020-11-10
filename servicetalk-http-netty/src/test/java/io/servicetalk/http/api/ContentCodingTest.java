@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.ServerContext;
@@ -31,16 +32,14 @@ import org.junit.runners.Parameterized;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
+import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
-import static io.servicetalk.http.api.ContentCodings.deflateDefault;
-import static io.servicetalk.http.api.ContentCodings.encodingFor;
-import static io.servicetalk.http.api.ContentCodings.gzipDefault;
-import static io.servicetalk.http.api.ContentCodings.identity;
+import static io.servicetalk.http.api.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
@@ -55,11 +54,11 @@ import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.disjoint;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -67,7 +66,6 @@ import static org.junit.Assert.assertTrue;
 public class ContentCodingTest {
 
     private static final int PAYLOAD_SIZE = 512;
-    private static final AtomicBoolean ASYNC_ERROR = new AtomicBoolean(false);
 
     private static final Function<TestEncodingScenario, StreamingHttpServiceFilterFactory> REQ_RESP_VERIFIER = (options)
             -> new StreamingHttpServiceFilterFactory() {
@@ -110,7 +108,6 @@ public class ContentCodingTest {
                             assertThat(actualReqAcceptedEncodings, equalTo(expectedReqAcceptedEncodings));
                         }
                     } catch (Throwable t) {
-                        ASYNC_ERROR.set(true);
                         t.printStackTrace();
                         throw new RuntimeException(t);
                     }
@@ -138,62 +135,70 @@ public class ContentCodingTest {
                 serverSupportedEncodings, protocol);
         this.expectedSuccess = expectedSuccess;
 
-        httpServerBuilder = HttpServers.forAddress(localAddress(0))
-                .enableWireLogging("server");
+        httpServerBuilder = HttpServers.forAddress(localAddress(0));
         serverContext = listenAndAwait();
         client = newClient();
     }
 
-    @Parameterized.Parameters(name = "server-supported-encodings={0} client-supported-encodings={1} " +
-            "request-encoding={2} expected-success={3} protocol={4}")
+    @Parameterized.Parameters(name =
+            "server-supported-encodings={0} " +
+            "client-supported-encodings={1} " +
+            "request-encoding={2} " +
+            "expected-success={3} " +
+            "protocol={4}")
     public static Object[][] params() {
         return new Object[][] {
                 {emptyList(), emptyList(), identity(), true, h1Default()},
                 {emptyList(), emptyList(), identity(), true, h2Default()},
-                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
-                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
-                {emptyList(), of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
-                {emptyList(), of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
-                {of(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h1Default()},
-                {of(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h2Default()},
-                {of(identity(), gzipDefault(), deflateDefault()),
-                        of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
-                {of(identity(), gzipDefault(), deflateDefault()),
-                        of(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
-                {of(identity(), gzipDefault(), deflateDefault()),
-                        of(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
-                {of(identity(), gzipDefault(), deflateDefault()),
-                        of(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
-                {of(identity(), gzipDefault()), of(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
-                {of(identity(), gzipDefault()), of(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
-                {of(identity(), deflateDefault()), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
-                {of(identity(), deflateDefault()), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
-                {of(identity(), deflateDefault()),
-                        of(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
-                {of(identity(), deflateDefault()),
-                        of(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
-                {of(identity(), deflateDefault()), emptyList(), identity(), true, h1Default()},
-                {of(identity(), deflateDefault()), emptyList(), identity(), true, h2Default()},
-                {of(gzipDefault()), of(identity()), identity(), true, h1Default()},
-                {of(gzipDefault()), of(identity()), identity(), true, h2Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h1Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h2Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h1Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), identity(), true, h2Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
-                {of(gzipDefault()), of(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
-                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
-                {emptyList(), of(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
-                {emptyList(), of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h1Default()},
-                {emptyList(), of(gzipDefault(), deflateDefault(), identity()), deflateDefault(), false, h2Default()},
-                {emptyList(), of(gzipDefault(), identity()), identity(), true, h1Default()},
-                {emptyList(), of(gzipDefault(), identity()), identity(), true, h2Default()},
+                {emptyList(), asList(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {emptyList(), asList(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {emptyList(), asList(deflateDefault(), identity()), deflateDefault(), false, h1Default()},
+                {emptyList(), asList(deflateDefault(), identity()), deflateDefault(), false, h2Default()},
+                {asList(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h1Default()},
+                {asList(gzipDefault(), deflateDefault(), identity()), emptyList(), identity(), true, h2Default()},
+                {asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
+                {asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
+                {asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
+                {asList(identity(), gzipDefault(), deflateDefault()),
+                        asList(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
+                {asList(identity(), gzipDefault()), asList(deflateDefault(), identity()),
+                        deflateDefault(), false, h1Default()},
+                {asList(identity(), gzipDefault()), asList(deflateDefault(), identity()),
+                        deflateDefault(), false, h2Default()},
+                {asList(identity(), deflateDefault()), asList(gzipDefault(), identity()),
+                        gzipDefault(), false, h1Default()},
+                {asList(identity(), deflateDefault()), asList(gzipDefault(), identity()),
+                        gzipDefault(), false, h2Default()},
+                {asList(identity(), deflateDefault()),
+                        asList(deflateDefault(), identity()), deflateDefault(), true, h1Default()},
+                {asList(identity(), deflateDefault()),
+                        asList(deflateDefault(), identity()), deflateDefault(), true, h2Default()},
+                {asList(identity(), deflateDefault()), emptyList(), identity(), true, h1Default()},
+                {asList(identity(), deflateDefault()), emptyList(), identity(), true, h2Default()},
+                {asList(gzipDefault()), asList(identity()), identity(), true, h1Default()},
+                {asList(gzipDefault()), asList(identity()), identity(), true, h2Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true, h1Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true, h2Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true, h1Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), identity(), true, h2Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), gzipDefault(), true, h1Default()},
+                {asList(gzipDefault()), asList(gzipDefault(), identity()), gzipDefault(), true, h2Default()},
+                {emptyList(), asList(gzipDefault(), identity()), gzipDefault(), false, h1Default()},
+                {emptyList(), asList(gzipDefault(), identity()), gzipDefault(), false, h2Default()},
+                {emptyList(), asList(gzipDefault(), deflateDefault(), identity()),
+                        deflateDefault(), false, h1Default()},
+                {emptyList(), asList(gzipDefault(), deflateDefault(), identity()),
+                        deflateDefault(), false, h2Default()},
+                {emptyList(), asList(gzipDefault(), identity()), identity(), true, h1Default()},
+                {emptyList(), asList(gzipDefault(), identity()), identity(), true, h2Default()},
         };
     }
 
     @After
     public void tearDown() throws Exception {
-        ASYNC_ERROR.set(false);
         try {
             client.close();
         } finally {
@@ -217,7 +222,7 @@ public class ContentCodingTest {
     private HttpClient newClient() {
         return HttpClients
                 .forSingleAddress(serverHostAndPort(serverContext))
-                .appendClientFilter(new ContentCodingHttpClientFilter(testEncodingScenario.clientSupported))
+                .appendClientFilter(new ContentCodingHttpRequesterFilter(testEncodingScenario.clientSupported))
                 .protocols(testEncodingScenario.protocol)
                 .build();
     }
@@ -247,14 +252,13 @@ public class ContentCodingTest {
         assertResponse(blockingStreamingHttpClient.request(blockingStreamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(asList(payload((byte) 'a')), textSerializer())).toStreamingResponse());
+                .payloadBody(singletonList(payload((byte) 'a')), textSerializer())).toStreamingResponse());
 
         final StreamingHttpClient streamingHttpClient = client.asStreamingClient();
         assertResponse(streamingHttpClient.request(streamingHttpClient
                 .get("/")
                 .encoding(encoding)
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get());
-        assertFalse(ASYNC_ERROR.get());
     }
 
     private void assertResponse(final StreamingHttpResponse response) {
@@ -266,7 +270,6 @@ public class ContentCodingTest {
 
             assertEquals(payload((byte) 'b'), responsePayload);
         } catch (Throwable t) {
-            ASYNC_ERROR.set(true);
             t.printStackTrace();
         }
     }
@@ -275,27 +278,18 @@ public class ContentCodingTest {
         final List<ContentCodec> clientSupportedEncodings = testEncodingScenario.clientSupported;
         final List<ContentCodec> serverSupportedEncodings = testEncodingScenario.serverSupported;
 
-        final String respEncName = headers
-                .get(CONTENT_ENCODING, "identity").toString();
+        final String respEncName = headers.get(CONTENT_ENCODING, "identity").toString();
 
-        if (clientSupportedEncodings == null) {
-            assertEquals(identity().name().toString(), respEncName);
-        } else if (serverSupportedEncodings == null) {
+        if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
             assertEquals(identity().name().toString(), respEncName);
         } else {
-            if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-                assertEquals(identity().name().toString(), respEncName);
-            } else {
-                assertNotNull("Response encoding not in the client supported list " +
-                                "[" + clientSupportedEncodings + "]",
-                        encodingFor(clientSupportedEncodings, valueOf(headers
-                                .get(CONTENT_ENCODING, "identity"))));
+            assertNotNull("Response encoding not in the client supported list " +
+                            "[" + clientSupportedEncodings + "]", encodingFor(clientSupportedEncodings,
+                    valueOf(headers.get(CONTENT_ENCODING, "identity"))));
 
-                assertNotNull("Response encoding not in the server supported list " +
-                                "[" + serverSupportedEncodings + "]",
-                        encodingFor(serverSupportedEncodings, valueOf(headers
-                                .get(CONTENT_ENCODING, "identity"))));
-            }
+            assertNotNull("Response encoding not in the server supported list " +
+                            "[" + serverSupportedEncodings + "]", encodingFor(serverSupportedEncodings,
+                    valueOf(headers.get(CONTENT_ENCODING, "identity"))));
         }
     }
 
@@ -311,16 +305,12 @@ public class ContentCodingTest {
         assertEquals(UNSUPPORTED_MEDIA_TYPE, blockingStreamingHttpClient.request(blockingStreamingHttpClient
                 .get("/")
                 .encoding(encoding)
-                .payloadBody(asList(payload((byte) 'a')), textSerializer())).status());
+                .payloadBody(singletonList(payload((byte) 'a')), textSerializer())).status());
 
         assertEquals(UNSUPPORTED_MEDIA_TYPE, streamingHttpClient.request(streamingHttpClient
                 .get("/")
                 .encoding(encoding)
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get().status());
-    }
-
-    private static List<ContentCodec> of(ContentCodec... encodings) {
-        return asList(encodings);
     }
 
     static class TestEncodingScenario {

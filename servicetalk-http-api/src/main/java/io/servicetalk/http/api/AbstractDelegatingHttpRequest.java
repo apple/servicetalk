@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.nio.charset.Charset;

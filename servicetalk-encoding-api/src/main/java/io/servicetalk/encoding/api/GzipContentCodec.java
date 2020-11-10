@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.encoding.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,19 +23,12 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-
 final class GzipContentCodec extends AbstractZipContentCodec {
 
-    private static final CharSequence NAME = newAsciiString("gzip");
+    private static final CharSequence NAME = "gzip";
 
     GzipContentCodec(final int chunkSize, final int maxSize) {
-        super(chunkSize, maxSize);
-    }
-
-    @Override
-    public CharSequence name() {
-        return NAME;
+        super(NAME, chunkSize, maxSize);
     }
 
     @Override

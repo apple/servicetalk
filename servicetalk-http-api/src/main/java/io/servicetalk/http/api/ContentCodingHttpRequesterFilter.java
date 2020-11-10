@@ -17,12 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
@@ -36,7 +36,7 @@ import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
  * other filters that expect to manipulate the payload.
  */
-public final class ContentCodingHttpClientFilter
+public final class ContentCodingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
                    HttpExecutionStrategyInfluencer {
 
@@ -45,14 +45,14 @@ public final class ContentCodingHttpClientFilter
     private final CharSequence acceptedEncodingsHeader;
 
     /**
-     * Enable support of the provided encodings for this client's requests and responses.
+     * Enable support of the provided encodings for requests and responses.
      * The order of the codecs provided, matters for the presentation of the header, and may affect selection priority
-     * on the server endpoint.
+     * on the receiving endpoint.
      *
      * @param supportedCodings the codecs used to advertise to the server what this clients supports,
      * and encode/decode requests and responses accordingly.
      */
-    public ContentCodingHttpClientFilter(final List<ContentCodec> supportedCodings) {
+    public ContentCodingHttpRequesterFilter(final List<ContentCodec> supportedCodings) {
         this.supportedCodings = supportedCodings;
         this.acceptedEncodingsHeader = buildAcceptEncodingsHeader(supportedCodings);
     }
