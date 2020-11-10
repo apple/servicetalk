@@ -22,11 +22,12 @@ import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
-import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+
+import static io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer.initWireLogger;
 
 /**
  * {@link ChannelInitializer} for TCP client.
@@ -74,11 +75,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
                     config.sslHostnameVerificationPort(), deferSslHandler));
         }
 
-        final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
-        if (wireLoggingInitializer != null) {
-            delegate = delegate.andThen(wireLoggingInitializer);
-        }
-        this.delegate = delegate;
+        this.delegate = initWireLogger(delegate, config.wireLoggerConfig());
     }
 
     @Override

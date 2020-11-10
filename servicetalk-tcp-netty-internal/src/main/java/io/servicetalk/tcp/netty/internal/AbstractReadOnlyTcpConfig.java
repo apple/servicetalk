@@ -18,7 +18,6 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
@@ -44,7 +43,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     private final Long idleTimeoutMs;
     private final FlushStrategy flushStrategy;
     @Nullable
-    private final WireLoggingInitializer wireLoggingInitializer;
+    private final UserDataLoggerConfig wireLoggerConfig;
     private final boolean alpnConfigured;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from,
@@ -52,10 +51,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
         options = from.options() == null ? emptyMap() : unmodifiableMap(new HashMap<>(from.options()));
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
-        final UserDataLoggerConfig wireLoggerConfig = from.wireLoggerConfig();
-        wireLoggingInitializer = wireLoggerConfig != null ?
-                new WireLoggingInitializer(wireLoggerConfig.loggerName(),
-                        wireLoggerConfig.logLevel(), wireLoggerConfig.logUserData()) : null;
+        wireLoggerConfig = from.wireLoggerConfig();
         this.alpnConfigured = alpnConfigured;
     }
 
@@ -89,13 +85,13 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     }
 
     /**
-     * Returns the {@link WireLoggingInitializer} if any for this client.
+     * Get the {@link UserDataLoggerConfig} for wire logging.
      *
-     * @return {@link WireLoggingInitializer} if any
+     * @return the {@link UserDataLoggerConfig} for wire logging, or {@code null}.
      */
     @Nullable
-    public final WireLoggingInitializer wireLoggingInitializer() {
-        return wireLoggingInitializer;
+    public final UserDataLoggerConfig wireLoggerConfig() {
+        return wireLoggerConfig;
     }
 
     /**

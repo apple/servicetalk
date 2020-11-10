@@ -62,7 +62,7 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
     }
 
     static void initFrameLogger(final Http2FrameCodecBuilder multiplexCodecBuilder,
-                                        @Nullable final UserDataLoggerConfig frameLoggerConfig) {
+                                @Nullable final UserDataLoggerConfig frameLoggerConfig) {
         if (frameLoggerConfig != null) {
             multiplexCodecBuilder.frameLogger(
                     new ServiceTalkHttp2FrameLogger(newLogger(frameLoggerConfig.loggerName(),

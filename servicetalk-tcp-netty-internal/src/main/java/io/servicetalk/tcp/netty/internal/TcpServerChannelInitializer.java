@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
@@ -24,6 +25,8 @@ import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
+
+import javax.annotation.Nullable;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -57,15 +60,20 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
 
-        final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
-        if (wireLoggingInitializer != null) {
-            delegate = delegate.andThen(wireLoggingInitializer);
-        }
-        this.delegate = delegate;
+        this.delegate = initWireLogger(delegate, config.wireLoggerConfig());
     }
 
     @Override
     public void init(final Channel channel) {
         delegate.init(channel);
+    }
+
+    static ChannelInitializer initWireLogger(ChannelInitializer delegate,
+                                             @Nullable UserDataLoggerConfig wireLoggerConfig) {
+        if (wireLoggerConfig == null) {
+            return delegate;
+        }
+        return delegate.andThen(new WireLoggingInitializer(wireLoggerConfig.loggerName(),
+                wireLoggerConfig.logLevel(), wireLoggerConfig.logUserData()));
     }
 }

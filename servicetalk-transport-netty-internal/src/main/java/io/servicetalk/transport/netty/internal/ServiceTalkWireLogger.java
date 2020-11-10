@@ -27,6 +27,8 @@ import io.netty.channel.ChannelPromise;
 
 import java.net.SocketAddress;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.appendPrettyHexDump;
@@ -46,7 +48,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} REGISTERED", ctx.channel());
+            logger.log(contextToString(ctx) + " REGISTERED");
         }
         ctx.fireChannelRegistered();
     }
@@ -54,7 +56,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} UNREGISTERED", ctx.channel());
+            logger.log(contextToString(ctx) + " UNREGISTERED");
         }
         ctx.fireChannelUnregistered();
     }
@@ -62,7 +64,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} ACTIVE", ctx.channel());
+            logger.log(contextToString(ctx) + " ACTIVE");
         }
         ctx.fireChannelActive();
     }
@@ -70,7 +72,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} INACTIVE", ctx.channel());
+            logger.log(contextToString(ctx) + " INACTIVE");
         }
         ctx.fireChannelInactive();
     }
@@ -78,7 +80,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (logger.isEnabled()) {
-            logger.log("{} EXCEPTION", ctx.channel(), cause);
+            logger.log(contextToString(ctx) + " EXCEPTION", cause);
         }
         ctx.fireExceptionCaught(cause);
     }
@@ -86,7 +88,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (logger.isEnabled()) {
-            logger.log("{} USER_EVENT {}", ctx.channel(), evt);
+            logger.log(contextToString(ctx) + " USER_EVENT " + evt);
         }
         ctx.fireUserEventTriggered(evt);
     }
@@ -94,7 +96,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} USER_EVENT {}", ctx.channel(), localAddress);
+            logger.log(contextToString(ctx) + " BIND " + localAddress);
         }
         ctx.bind(localAddress, promise);
     }
@@ -104,7 +106,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
             ChannelHandlerContext ctx,
             SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} CONNECT {} -> {}", ctx.channel(), localAddress, remoteAddress);
+            logger.log(contextToString(ctx) + " CONNECT " + localAddress + " -> " + remoteAddress);
         }
         ctx.connect(remoteAddress, localAddress, promise);
     }
@@ -112,7 +114,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} DISCONNECT", ctx.channel());
+            logger.log(contextToString(ctx) + " DISCONNECT");
         }
         ctx.disconnect(promise);
     }
@@ -120,7 +122,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} CLOSE", ctx.channel());
+            logger.log(contextToString(ctx) + " CLOSE");
         }
         ctx.close(promise);
     }
@@ -128,7 +130,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} DEREGISTER", ctx.channel());
+            logger.log(contextToString(ctx) + " DEREGISTER");
         }
         ctx.deregister(promise);
     }
@@ -136,7 +138,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} READ_COMPLETE", ctx.channel());
+            logger.log(contextToString(ctx) + " READ_COMPLETE");
         }
         ctx.fireChannelReadComplete();
     }
@@ -144,15 +146,23 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (logger.isEnabled()) {
-            logger.log("{} READ {}", ctx.channel(), toString(msg));
+            logger.log(format(ctx, "READ", msg));
         }
         ctx.fireChannelRead(msg);
     }
 
     @Override
+    public void read(ChannelHandlerContext ctx) {
+        if (logger.isEnabled()) {
+            logger.log(contextToString(ctx) + " READ_REQUEST");
+        }
+        ctx.read();
+    }
+
+    @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log("{} WRITE {}", ctx.channel(), toString(msg));
+            logger.log(format(ctx, "WRITE", msg));
         }
         ctx.write(msg, promise);
     }
@@ -160,7 +170,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} WRITABILITY_CHANGED", ctx.channel());
+            logger.log(contextToString(ctx) + " WRITABILITY_CHANGED");
         }
         ctx.fireChannelWritabilityChanged();
     }
@@ -168,54 +178,39 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void flush(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log("{} FLUSH", ctx.channel());
+            logger.log(contextToString(ctx) + " FLUSH");
         }
         ctx.flush();
     }
 
-    private String formatByteBuf(ByteBuf msg) {
-        return msg.readableBytes() == 0 ? "0B" : formatNonZeroByteBuf(null, msg);
+    private String formatByteBuf(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+        return formatByteBuf(ctx, eventName, null, msg);
     }
 
-    private String formatByteBufNoData(ByteBuf msg) {
-        return String.valueOf(msg.readableBytes()) + 'B';
+    private String formatByteBufNoData(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+        return contextToString(ctx) + ' ' + eventName + ' ' + msg.readableBytes() + 'B';
     }
 
-    private String formatByteBufHolder(ByteBufHolder msg) {
-        ByteBuf content = msg.content();
-        int length = content.readableBytes();
-        if (length == 0) {
-            return msg.getClass() + " 0B";
-        } else {
-            return formatNonZeroByteBuf(msg.getClass().toString(), content);
-        }
+    private <T> String formatByteBufHolder(ChannelHandlerContext ctx, String eventName, T msg,
+                                           Function<T, ByteBuf> byteBufExtractor) {
+        return formatByteBuf(ctx, eventName, msgToString(msg), byteBufExtractor.apply(msg));
     }
 
-    private String formatBufferHolder(BufferHolder msg) {
-        Buffer content = msg.content();
-        int length = content.readableBytes();
-        if (length == 0) {
-            return msg.getClass() + " 0B";
-        } else {
-            return formatNonZeroByteBuf(msg.getClass().toString(), toByteBuf(content));
-        }
+    private String formatByteBufHolderNoData(ChannelHandlerContext ctx, String eventName, Object msg,
+                                             IntSupplier readableBytes) {
+        return contextToString(ctx) + ' ' + eventName + ' ' + msgToString(msg) + ' ' + readableBytes.getAsInt() + 'B';
     }
 
-    private String formatByteBufHolderNoData(ByteBufHolder msg) {
-        return msg.getClass().toString() + ' ' + msg.content().readableBytes() + 'B';
-    }
-
-    private String formatBufferHolderNoData(BufferHolder msg) {
-        return msg.getClass().toString() + ' ' + msg.content().readableBytes() + 'B';
-    }
-
-    private String formatNonZeroByteBuf(@Nullable String prefix, ByteBuf msg) {
+    private String formatByteBuf(ChannelHandlerContext ctx, String eventName, @Nullable String prefix, ByteBuf msg) {
+        String channelString = contextToString(ctx);
         int length = msg.readableBytes();
-        int outputLength = 10 + 1;
+        int outputLength = channelString.length() + 1 + eventName.length() + 1 +
+                (prefix != null ? prefix.length() + 1 : 0) + 10 + 1;
         int rows = length / 16 + (length % 15 == 0 ? 0 : 1) + 4;
         int hexDumpLength = 2 + rows * 80;
         outputLength += hexDumpLength;
         StringBuilder buf = new StringBuilder(outputLength);
+        buf.append(channelString).append(' ').append(eventName).append(' ');
         if (prefix != null) {
             buf.append(prefix).append(' ');
         }
@@ -225,21 +220,31 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         return buf.toString();
     }
 
-    private String toString(Object msg) {
+    private String format(ChannelHandlerContext ctx, String eventName, Object msg) {
         final boolean logUserData = logUserDataSupplier.getAsBoolean();
         if (msg instanceof ByteBuf) {
             ByteBuf byteBuf = (ByteBuf) msg;
-            return logUserData ? formatByteBuf(byteBuf) : formatByteBufNoData(byteBuf);
+            return logUserData ? formatByteBuf(ctx, eventName, byteBuf) : formatByteBufNoData(ctx, eventName, byteBuf);
         } else if (msg instanceof ByteBufHolder) {
             ByteBufHolder holder = (ByteBufHolder) msg;
-            return logUserData ? formatByteBufHolder(holder) : formatByteBufHolderNoData(holder);
+            return logUserData ? formatByteBufHolder(ctx, eventName, holder, ByteBufHolder::content) :
+                    formatByteBufHolderNoData(ctx, eventName, holder, holder.content()::readableBytes);
         } else if (msg instanceof Buffer) {
             ByteBuf byteBuf = toByteBuf((Buffer) msg);
-            return logUserData ? formatByteBuf(byteBuf) : formatByteBufNoData(byteBuf);
+            return logUserData ? formatByteBuf(ctx, eventName, byteBuf) : formatByteBufNoData(ctx, eventName, byteBuf);
         } else if (msg instanceof BufferHolder) {
             BufferHolder holder = (BufferHolder) msg;
-            return logUserData ? formatBufferHolder(holder) : formatBufferHolderNoData(holder);
+            return logUserData ? formatByteBufHolder(ctx, eventName, holder, h -> toByteBuf(h.content())) :
+                    formatByteBufHolderNoData(ctx, eventName, holder, holder.content()::readableBytes);
         }
-        return logUserData ? msg.toString() : msg.getClass().getName();
+        return logUserData ? msg.toString() : msgToString(msg);
+    }
+
+    private static String contextToString(ChannelHandlerContext ctx) {
+        return ctx.channel().toString();
+    }
+
+    private static String msgToString(Object msg) {
+        return msg.getClass().toString();
     }
 }

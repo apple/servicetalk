@@ -19,7 +19,10 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.LoggerConfig;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link LoggerConfig}.
@@ -37,9 +40,9 @@ public final class DefaultUserDataLoggerConfig implements UserDataLoggerConfig {
      */
     public DefaultUserDataLoggerConfig(final String loggerName, final LogLevel logLevel,
                                        final BooleanSupplier logUserData) {
-        this.loggerName = loggerName;
-        this.logLevel = logLevel;
-        this.logUserData = logUserData;
+        this.loggerName = requireNonNull(loggerName);
+        this.logLevel = requireNonNull(logLevel);
+        this.logUserData = requireNonNull(logUserData);
     }
 
     @Override
@@ -55,5 +58,33 @@ public final class DefaultUserDataLoggerConfig implements UserDataLoggerConfig {
     @Override
     public BooleanSupplier logUserData() {
         return logUserData;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final DefaultUserDataLoggerConfig that = (DefaultUserDataLoggerConfig) o;
+        return loggerName.equals(that.loggerName) &&
+                logLevel == that.logLevel &&
+                logUserData.equals(that.logUserData);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(loggerName, logLevel, logUserData);
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultUserDataLoggerConfig{" +
+                "loggerName='" + loggerName + '\'' +
+                ", logLevel=" + logLevel +
+                ", logUserData=" + logUserData +
+                '}';
     }
 }
