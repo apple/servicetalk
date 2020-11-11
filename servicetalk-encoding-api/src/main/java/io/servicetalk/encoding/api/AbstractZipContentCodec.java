@@ -356,7 +356,8 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                     int outputLength = inflater.inflate(outArray, outIndex, out.writableBytes());
                     payloadSizeAcc += outputLength;
                     if (payloadSizeAcc > maxPayloadSize) {
-                        throw new IllegalStateException("Max decompressed payload limit has been reached.");
+                        throw new IllegalStateException("Max decompressed payload limit has been reached: " +
+                                payloadSizeAcc + " (expected <= " + maxPayloadSize + ") bytes");
                     }
 
                     if (outputLength > 0) {
