@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Publisher;
 /**
  * API to support encode and decode of {@link Buffer}s.
  * <p>
- * <em>This instance is shared therefore it must provide thread safety semantics.</em>
+ * <em>Implementations must provide thread safety semantics, since instances could be shared across threads.</em>
  */
 public interface ContentCodec {
 

@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
  *
  * <p>
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
- * other filters that expect to manipulate the payload.
+ * other filters that expect to manipulate the original payload.
  */
 public final class ContentCodingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
@@ -49,8 +49,8 @@ public final class ContentCodingHttpRequesterFilter
      * The order of the codecs provided, matters for the presentation of the header, and may affect selection priority
      * on the receiving endpoint.
      *
-     * @param supportedCodings the codecs used to advertise to the server what this clients supports,
-     * and encode/decode requests and responses accordingly.
+     * @param supportedCodings the codecs this clients supports to encode/decode requests and responses accordingly
+     * and also used to advertise to the server.
      */
     public ContentCodingHttpRequesterFilter(final List<ContentCodec> supportedCodings) {
         this.supportedCodings = supportedCodings;

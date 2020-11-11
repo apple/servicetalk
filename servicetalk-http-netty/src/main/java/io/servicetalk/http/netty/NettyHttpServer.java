@@ -44,7 +44,6 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.UnsupportedContentEncodingException;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -394,11 +393,6 @@ final class NettyHttpServer {
                 LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
                         cause);
                 response = streamingResponseFactory().serviceUnavailable();
-            } else if (cause instanceof UnsupportedContentEncodingException) {
-                LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
-                        cause);
-                // see https://tools.ietf.org/html/rfc7231#section-3.1.2.2
-                response = streamingResponseFactory().unsupportedMediaType();
             } else {
                 LOGGER.error("Internal server error service={} connection={}", service, this, cause);
                 response = streamingResponseFactory().internalServerError();

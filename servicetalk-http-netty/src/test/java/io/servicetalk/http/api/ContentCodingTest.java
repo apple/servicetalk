@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
 import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
@@ -65,7 +66,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class ContentCodingTest {
 
-    private static final int PAYLOAD_SIZE = 512;
+    private static final int PAYLOAD_SIZE = 1024;
 
     private static final Function<TestEncodingScenario, StreamingHttpServiceFilterFactory> REQ_RESP_VERIFIER = (options)
             -> new StreamingHttpServiceFilterFactory() {
@@ -107,12 +108,12 @@ public class ContentCodingTest {
                         if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
                             assertThat(actualReqAcceptedEncodings, equalTo(expectedReqAcceptedEncodings));
                         }
+
+                        return super.handle(ctx, request, responseFactory);
                     } catch (Throwable t) {
                         t.printStackTrace();
-                        throw new RuntimeException(t);
+                        return succeeded(responseFactory.badRequest());
                     }
-
-                    return super.handle(ctx, request, responseFactory);
                 }
             };
         }
@@ -261,17 +262,13 @@ public class ContentCodingTest {
                 .payloadBody(from(payload((byte) 'a')), textSerializer())).toFuture().get());
     }
 
-    private void assertResponse(final StreamingHttpResponse response) {
-        try {
-            assertResponseHeaders(response.headers());
+    private void assertResponse(final StreamingHttpResponse response) throws Exception {
+        assertResponseHeaders(response.headers());
 
-            String responsePayload = response.payloadBody(textDeserializer()).collect(StringBuilder::new,
-                    StringBuilder::append).toFuture().get().toString();
+        String responsePayload = response.payloadBody(textDeserializer()).collect(StringBuilder::new,
+                StringBuilder::append).toFuture().get().toString();
 
-            assertEquals(payload((byte) 'b'), responsePayload);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
+        assertEquals(payload((byte) 'b'), responsePayload);
     }
 
     private void assertResponseHeaders(final HttpHeaders headers) {

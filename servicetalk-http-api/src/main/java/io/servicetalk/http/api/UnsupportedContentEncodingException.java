@@ -18,7 +18,9 @@ package io.servicetalk.http.api;
 /**
  * Exception thrown when a payload was encoded with an unsupported encoder.
  */
-public final class UnsupportedContentEncodingException extends RuntimeException {
+final class UnsupportedContentEncodingException extends RuntimeException {
+
+    private static final long serialVersionUID = 5645078707423180235L;
 
     private final String encoding;
 
@@ -27,7 +29,7 @@ public final class UnsupportedContentEncodingException extends RuntimeException 
      *
      * @param encoding the name of the encoding used
      */
-    public UnsupportedContentEncodingException(String encoding) {
+    UnsupportedContentEncodingException(String encoding) {
         super("Compression " + encoding + " not supported");
         this.encoding = encoding;
     }

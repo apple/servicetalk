@@ -19,10 +19,14 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
@@ -31,16 +35,18 @@ import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static java.util.Collections.unmodifiableList;
 
 /**
- * A {@link StreamingHttpService} that adds encoding / decoding functionality for requests and responses respectively,
+ * A {@link StreamingHttpService} that adds encoding / decoding functionality for responses and requests respectively,
  * as these are specified by the spec
  * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>.
  *
  * <p>
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
- * other filters that expect to manipulate the payload.
+ * other filters that expect to see/manipulate the original payload.
  */
 public final class ContentCodingHttpServiceFilter
         implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContentCodingHttpServiceFilter.class);
 
     private final List<ContentCodec> requestCodings;
     private final List<ContentCodec> responseCodings;
@@ -93,15 +99,22 @@ public final class ContentCodingHttpServiceFilter
 
                 return Single.defer(() -> {
                     BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                    ContentCodec coding = identifyContentEncodingOrNullIfIdentity(request.headers(), requestCodings);
-                    if (coding != null) {
-                        request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
-                    }
+                    try {
+                        ContentCodec coding =
+                                identifyContentEncodingOrNullIfIdentity(request.headers(), requestCodings);
+                        if (coding != null) {
+                            request.transformPayloadBody(bufferPublisher -> coding.decode(bufferPublisher, allocator));
+                        }
 
-                    return super.handle(ctx, request, responseFactory).map(response -> {
-                        encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
-                        return response;
-                    });
+                        return super.handle(ctx, request, responseFactory).map(response -> {
+                            encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
+                            return response;
+                        });
+                    } catch (UnsupportedContentEncodingException cause) {
+                        LOGGER.error("Request failed for service={}, connection={}", service, this, cause);
+                        // see https://tools.ietf.org/html/rfc7231#section-3.1.2.2
+                        return succeeded(responseFactory.unsupportedMediaType());
+                    }
                 });
             }
         };
