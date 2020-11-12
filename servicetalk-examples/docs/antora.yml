@@ -16,6 +16,6 @@
 
 name: servicetalk-examples
 title: Examples
-version: '0.34'
+version: SNAPSHOT
 nav:
 - modules/ROOT/nav.adoc
