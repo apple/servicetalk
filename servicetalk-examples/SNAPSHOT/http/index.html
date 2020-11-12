@@ -80,6 +80,12 @@
     <a class="nav-link" href="#HTTP2">HTTP/2</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Mutual-TLS">Mutual TLS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#uds">Unix Domain Sockets</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="service-composition.html">Service Composition</a>
   </li>
 </ul>
@@ -93,6 +99,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#route-guide">Route Guide</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#protoc-options">Protoc Options</a>
   </li>
 </ul>
   </li>
@@ -182,6 +191,9 @@
           <a href="../../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-client-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-client-api/0.33/index.html">0.33</a>
         </li>
         <li class="version">
@@ -215,6 +227,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.34/index.html">0.34</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-concurrent-api/0.33/index.html">0.33</a>
@@ -270,6 +285,9 @@
           <a href="../index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
           <a href="../../0.33/index.html">0.33</a>
         </li>
         <li class="version">
@@ -321,6 +339,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.34/index.html">0.34</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-grpc-api/0.33/index.html">0.33</a>
@@ -376,6 +397,9 @@
           <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-http-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-http-api/0.33/index.html">0.33</a>
         </li>
         <li class="version">
@@ -427,6 +451,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.34/index.html">0.34</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-router-jersey/0.33/index.html">0.33</a>
@@ -482,6 +509,9 @@
           <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-data-jackson-jersey/0.33/index.html">0.33</a>
         </li>
         <li class="version">
@@ -535,6 +565,9 @@
           <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-loadbalancer/0.33/index.html">0.33</a>
         </li>
         <li class="version">
@@ -583,6 +616,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.34/index.html">0.34</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-security-jersey/0.33/index.html">0.33</a>
@@ -636,6 +672,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.34/index.html">0.34</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk/0.33/index.html">0.33</a>
@@ -703,6 +742,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="index.html">SNAPSHOT</a>
+    <a class="version" href="../../0.34/http/index.html">0.34</a>
     <a class="version" href="../../0.33/http/index.html">0.33</a>
     <a class="version" href="../../0.32/http/index.html">0.32</a>
     <a class="version" href="../../0.31/http/index.html">0.31</a>
@@ -1060,6 +1100,28 @@ builder API is the same across all the HTTP APIs.
 <div class="paragraph">
 <p>An advanced example which demonstrates a composition of various ServiceTalks services in one application.
 For more information see <a href="service-composition.html" class="page">Service Composition</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="uds"><a class="anchor" href="#uds"></a><a class="link" href="#uds">Unix Domain Sockets (UDS)</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how client and server can use unix domain sockets. See
+the <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/uds">uds example code</a> for more details.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the UDS configuration API is the
+same across all the HTTP APIs.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
