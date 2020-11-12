@@ -16,6 +16,6 @@
 
 name: servicetalk-http-security-jersey
 title: Security
-version: SNAPSHOT
+version: '0.34'
 nav:
   - modules/ROOT/nav.adoc
