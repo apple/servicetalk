@@ -125,6 +125,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             splitTrailersIfRequired();
         }
         payloadBody = transformer.apply(emptyOrRawPayload());
+        payloadInfo.setSafeToAggregate(false);
     }
 
     public <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
@@ -222,6 +223,9 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 // payloadBody() will split trailers if not yet split
                 newPayload.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody()));
         payloadInfo.setOnlyEmitsBuffer(true);
+        if (isTransform) {
+            payloadInfo.setSafeToAggregate(false);
+        }
     }
 
     @SuppressWarnings("unchecked")
