@@ -15,14 +15,23 @@
  */
 package io.servicetalk.encoding.api;
 
-public abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
+abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB
+    private static final int DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD = 16 << 20; //16MiB
 
-    protected int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD;
+    private int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD;
+
+    protected int getMaxAllowedPayloadSize() {
+        return maxAllowedPayloadSize;
+    }
 
     @Override
     public ContentCodecBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
+        if (maxAllowedPayloadSize <= 0) {
+            throw new IllegalArgumentException("maxAllowedPayloadSize: " + maxAllowedPayloadSize + " (expected > 0)");
+        }
+
         this.maxAllowedPayloadSize = maxAllowedPayloadSize;
         return this;
     }
@@ -30,14 +39,14 @@ public abstract class DefaultContentCodecBuilder implements ContentCodecBuilder 
     static final class GzipContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
-            return new GzipContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
+            return new GzipContentCodec(CHUNK_SIZE, getMaxAllowedPayloadSize());
         }
     }
 
     static final class DeflateContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
-            return new DeflateContentCodec(CHUNK_SIZE, maxAllowedPayloadSize);
+            return new DeflateContentCodec(CHUNK_SIZE, getMaxAllowedPayloadSize());
         }
     }
 }

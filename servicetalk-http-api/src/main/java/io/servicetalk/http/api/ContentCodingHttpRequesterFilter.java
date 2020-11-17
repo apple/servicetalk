@@ -19,10 +19,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
@@ -53,7 +55,7 @@ public final class ContentCodingHttpRequesterFilter
      * and also used to advertise to the server.
      */
     public ContentCodingHttpRequesterFilter(final List<ContentCodec> supportedCodings) {
-        this.supportedCodings = supportedCodings;
+        this.supportedCodings = new ArrayList<>(supportedCodings);
         this.acceptedEncodingsHeader = buildAcceptEncodingsHeader(supportedCodings);
     }
 
@@ -124,7 +126,7 @@ public final class ContentCodingHttpRequesterFilter
             builder.append(enc.name());
         }
 
-        return builder.length() > 0 ? builder.toString() : null;
+        return builder.length() > 0 ? newAsciiString(builder.toString()) : null;
     }
 
     private static void encodePayloadContentIfAvailable(final StreamingHttpRequest request,

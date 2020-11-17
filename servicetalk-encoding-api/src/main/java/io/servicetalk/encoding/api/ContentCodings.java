@@ -41,17 +41,17 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns the default GZIP {@link ContentCodec} backed by {@link java.util.zip.Inflater}.
-     * @return default GZIP based {@link ContentCodec} backed by {@link java.util.zip.Inflater}
+     * Returns the default GZIP {@link ContentCodec}.
+     * @return default GZIP based {@link ContentCodec}
      */
     public static ContentCodec gzipDefault() {
         return DEFAULT_GZIP;
     }
 
     /**
-     * Returns a GZIP based {@link DefaultContentCodecBuilder} that allows building
+     * Returns a GZIP based {@link ContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a GZIP based {@link DefaultContentCodecBuilder} that allows building
+     * @return a GZIP based {@link ContentCodecBuilder} that allows building
      *          a customizable GZIP {@link ContentCodec}
      */
     public static ContentCodecBuilder gzip() {
@@ -59,17 +59,17 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns the default DEFLATE based {@link ContentCodec} backed by {@link java.util.zip.Inflater}.
-     * @return default DEFLATE based {@link ContentCodec} backed by {@link java.util.zip.Inflater}
+     * Returns the default DEFLATE based {@link ContentCodec}.
+     * @return default DEFLATE based {@link ContentCodec}
      */
     public static ContentCodec deflateDefault() {
         return DEFAULT_DEFLATE;
     }
 
     /**
-     * Returns a DEFLATE based {@link DefaultContentCodecBuilder} that allows building
+     * Returns a DEFLATE based {@link ContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a DEFLATE based {@link DefaultContentCodecBuilder} that allows building
+     * @return a DEFLATE based {@link ContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link ContentCodec}
      */
     public static ContentCodecBuilder deflate() {

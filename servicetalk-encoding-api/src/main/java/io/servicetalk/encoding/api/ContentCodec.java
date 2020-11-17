@@ -41,7 +41,8 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content encoded
      */
     default Buffer encode(Buffer src, BufferAllocator allocator) {
-        return encode(src, src.readerIndex(), src.readableBytes(), allocator);
+        int offset = src.hasArray() ? src.arrayOffset() : 0;
+        return encode(src, offset + src.readerIndex(), src.readableBytes(), allocator);
     }
 
     /**
@@ -63,7 +64,8 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     default Buffer decode(Buffer src, BufferAllocator allocator) {
-        return decode(src, src.readerIndex(), src.readableBytes(), allocator);
+        int offset = src.hasArray() ? src.arrayOffset() : 0;
+        return decode(src, offset + src.readerIndex(), src.readableBytes(), allocator);
     }
 
     /**
@@ -85,9 +87,7 @@ public interface ContentCodec {
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Publisher} the result publisher with the buffers encoded
      */
-    default Publisher<Buffer> encode(Publisher<Buffer> from, BufferAllocator allocator) {
-        return from.map((buffer -> encode(buffer, allocator)));
-    }
+    Publisher<Buffer> encode(Publisher<Buffer> from, BufferAllocator allocator);
 
     /**
      * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a
@@ -97,7 +97,5 @@ public interface ContentCodec {
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Publisher} the result publisher with the buffers decoded
      */
-    default Publisher<Buffer> decode(Publisher<Buffer> from, BufferAllocator allocator) {
-        return from.map(buffer -> decode(buffer, allocator));
-    }
+    Publisher<Buffer> decode(Publisher<Buffer> from, BufferAllocator allocator);
 }

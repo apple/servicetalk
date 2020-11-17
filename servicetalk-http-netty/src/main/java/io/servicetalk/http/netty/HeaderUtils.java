@@ -112,6 +112,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
+        // TODO once this bug is addressed (https://github.com/apple/servicetalk/pull/1213)
+        // we should relax the check here, remove content-encoding clause
         return !hasContentHeaders(metadata.headers()) && !hasContentEncoding(metadata.headers()) &&
                 isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }

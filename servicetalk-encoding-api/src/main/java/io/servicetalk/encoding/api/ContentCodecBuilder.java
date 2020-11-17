@@ -20,8 +20,6 @@ package io.servicetalk.encoding.api;
  */
 public interface ContentCodecBuilder {
 
-    int DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD = 16 << 20; //16MiB
-
     /**
      * Sets the maximum allowed decompressed payload size that the codec can process.
      * This can help prevent malicious attempts to decode malformed payloads that can drain resources of the

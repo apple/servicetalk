@@ -215,7 +215,8 @@ public class ContentCodingTest {
 
         return httpServerBuilder
                 .protocols(testEncodingScenario.protocol)
-                .appendServiceFilter(new ContentCodingHttpServiceFilter(testEncodingScenario.serverSupported))
+                .appendServiceFilter(new ContentCodingHttpServiceFilter(testEncodingScenario.serverSupported,
+                        testEncodingScenario.serverSupported))
                 .appendServiceFilter(filterFactory)
                 .listenStreamingAndAwait(service);
     }

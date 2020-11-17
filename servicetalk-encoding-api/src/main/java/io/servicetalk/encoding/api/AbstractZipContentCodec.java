@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
@@ -70,7 +71,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
             output = newDeflaterOutputStream(Buffer.asOutputStream(dst));
 
             if (src.hasArray()) {
-                output.write(src.array(), offset, length);
+                output.write(src.array(), src.arrayOffset() + offset, length);
             } else {
                 while (src.readableBytes() > 0) {
                     byte[] onHeap = new byte[Math.min(src.readableBytes(), chunkSize)];
@@ -112,8 +113,10 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             // onNext part
                             output = newDeflaterOutputStream(stream);
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            deliverErrorFromSource(subscriber, e);
+                            return;
                         }
+
                         subscriber.onSubscribe(subscription);
                     }
 
@@ -126,16 +129,12 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                         // +1 for the encoding footer (ie. END_OF_STREAM)
                         try {
                             if (next == END_OF_STREAM) {
-                                try {
-                                    // ZIP footer is 10 bytes
-                                    Buffer dst = allocator.newBuffer(10);
-                                    stream.swap(dst);
-                                    output.finish();
+                                // ZIP footer is 10 bytes
+                                Buffer dst = allocator.newBuffer(10);
+                                stream.swap(dst);
+                                output.finish();
 
-                                    subscriber.onNext(dst);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                subscriber.onNext(dst);
                                 return;
                             }
 
@@ -148,7 +147,8 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             }
 
                             if (next.hasArray()) {
-                                output.write(next.array(), next.readerIndex(), next.readableBytes());
+                                output.write(next.array(), next.arrayOffset() + next.readerIndex(),
+                                        next.readableBytes());
                             } else {
                                 while (next.readableBytes() > 0) {
                                     byte[] onHeap = new byte[Math.min(next.readableBytes(), chunkSize)];
@@ -161,7 +161,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             headerWritten = true;
                             subscriber.onNext(dst);
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            onError(e);
                         }
                     }
 
@@ -173,7 +173,15 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
                     @Override
                     public void onComplete() {
-                        closeQuietly(output);
+                        try {
+                            if (output != null) {
+                                output.close();
+                            }
+                        } catch (IOException e) {
+                            onError(e);
+                            return;
+                        }
+
                         subscriber.onComplete();
                     }
                 });
@@ -237,7 +245,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                     // Not enough data to decompress, ask for more
                     subscription.request(1);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    onError(e);
                 }
             }
 

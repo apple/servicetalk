@@ -153,7 +153,6 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
                                         h2ServerConfig.headersFactory(),
-
                                         PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
 
                                 // ServiceTalk <-> Netty netty utilities

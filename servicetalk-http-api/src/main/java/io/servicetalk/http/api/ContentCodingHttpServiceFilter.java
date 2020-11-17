@@ -22,6 +22,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -32,7 +33,7 @@ import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
-import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.emptyList;
 
 /**
  * A {@link StreamingHttpService} that adds encoding / decoding functionality for responses and requests respectively,
@@ -52,30 +53,27 @@ public final class ContentCodingHttpServiceFilter
     private final List<ContentCodec> responseCodings;
 
     /**
-     * Enable support of the provided encodings for this server's requests and responses.
-     * The encodings will be used for both client request decompression where needed and server responses compression
-     * where enabled and matched.
+     * Enable support of the provided encodings for this server's responses.
+     * The encodings will be used for server responses compression where enabled and matched with client ones.
      * <p>
-     * To disable support of compressed requests, see {@link #ContentCodingHttpServiceFilter(List, List)}.
-     * <p>
-     * The order of the codings provided, affect selection priority alongside the order of the incoming
-     * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.4">accept-encoding</a> header from the client.
+     * Client requests that have compressed payloads will be rejected.
+     * To enable support of compressed requests, see {@link #ContentCodingHttpServiceFilter(List, List)}.
      *
-     * @param supportedCodings the codecs used to compress server responses and decompress client requests when needed.
+     * @param supportedCodings the codecs used to compress responses when allowed.
      */
     public ContentCodingHttpServiceFilter(final List<ContentCodec> supportedCodings) {
-        final List<ContentCodec> unmodifiable = unmodifiableList(supportedCodings);
-        this.requestCodings = unmodifiable;
-        this.responseCodings = unmodifiable;
+        this.requestCodings = emptyList();
+        this.responseCodings = new ArrayList<>(supportedCodings);
     }
 
     /**
-     * Enable support of the provided encodings for this server's requests and responses.
-     * The encodings can differ for requests and responses, allowing a server that supports compressed responses,
-     * but allows no compressed requests.
+     * Enable support of the provided encodings for both client requests and server responses.
+     * The encodings can differ for requests and responses, allowing a server that supports different compressions for
+     * requests and different ones for responses.
      * <p>
      * To disable support of compressed requests use an {@link Collections#emptyList()} for the
-     * <code>supportedRequestCodings</code> param.
+     * <code>supportedRequestCodings</code> param or use {@link #ContentCodingHttpServiceFilter(List)} constructor
+     * instead.
      * <p>
      * The order of the codecs provided, affect selection priority alongside the order of the incoming
      * <a href="https://tools.ietf.org/html/rfc7231#section-5.3.4">accept-encoding</a> header from the client.
@@ -85,8 +83,8 @@ public final class ContentCodingHttpServiceFilter
      */
     public ContentCodingHttpServiceFilter(final List<ContentCodec> supportedRequestCodings,
                                           final List<ContentCodec> supportedResponseCodings) {
-        this.requestCodings = unmodifiableList(supportedRequestCodings);
-        this.responseCodings = unmodifiableList(supportedResponseCodings);
+        this.requestCodings = new ArrayList<>(supportedRequestCodings);
+        this.responseCodings = new ArrayList<>(supportedResponseCodings);
     }
 
     @Override
