@@ -180,6 +180,9 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 safeOnError(target, cause);
                                 return; // hard return to avoid potential for duplicate terminal events
                             case Throw:
+                                // since we only request 1 at a time we maybe holding requestN demand, in this case we
+                                // discard the current iterator and request 1 more from upstream (if there is demand).
+                                hasNext = false;
                                 // let the exception propagate so the upstream source can do the cleanup.
                                 throw cause;
                             default:
@@ -207,7 +210,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                                 // we will not be getting an onNext call, so we write to the currentIterator variable
                                 // here before we unlock emitting so visibility to other threads should be taken care of
                                 // by the write to emitting below (and later read).
-                                this.currentIterator = EmptyIterator.instance();
+                                currentIterator = EmptyIterator.instance();
                                 sourceSubscription.request(1);
                             }
                         } finally {

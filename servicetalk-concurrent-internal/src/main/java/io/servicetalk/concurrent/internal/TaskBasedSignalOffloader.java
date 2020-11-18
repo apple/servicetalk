@@ -358,15 +358,13 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                         } catch (Throwable th) {
                             clearSignalsFromExecutorThread();
                             try {
+                                target.onError(th);
+                            } catch (Throwable throwable) {
+                                LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
+                                        target, t);
+                            } finally {
                                 assert subscription != null;
                                 subscription.cancel();
-                            } finally {
-                                try {
-                                    target.onError(th);
-                                } catch (Throwable throwable) {
-                                    LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
-                                            target, t);
-                                }
                             }
                             return; // We can't interact with the queue any more because we terminated, so bail.
                         }

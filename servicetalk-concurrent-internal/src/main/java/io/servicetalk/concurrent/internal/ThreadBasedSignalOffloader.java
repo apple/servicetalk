@@ -499,6 +499,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                         original.onNext(signal == NULL_ON_NEXT ? null : uncheckedCast(signal));
                     } catch (Throwable throwable) {
                         setTerminated();
+                        sendOnErrorToOriginal(throwable);
                         assert subscription != null;
                         // Spec https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
                         // 2.13 states that a Subscriber MUST consider its Subscription cancelled if it throws from
@@ -509,7 +510,6 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                         // Since Subscription is practically cancelled for the original Subscriber, we can assume that
                         // it is not used.
                         sendCancel(subscription, throwable);
-                        sendOnErrorToOriginal(throwable);
                     }
                 }
             }
