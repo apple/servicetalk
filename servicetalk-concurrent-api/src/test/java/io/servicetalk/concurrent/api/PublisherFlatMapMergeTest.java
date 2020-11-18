@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -30,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -40,9 +43,12 @@ import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.PublisherSource.Subscription;
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
@@ -67,6 +73,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
@@ -94,6 +103,43 @@ public class PublisherFlatMapMergeTest {
         if (executorService != null) {
             executorService.shutdown();
         }
+    }
+
+    @Test
+    public void mappedRecoverMakesProgress() throws Exception {
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
+        CountDownLatch latchOnSubscribe = new CountDownLatch(1);
+        CountDownLatch latchOnError = new CountDownLatch(1);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+        BlockingQueue<Integer> results = new ArrayBlockingQueue<>(10);
+        doAnswer(a -> {
+            Subscription s = a.getArgument(0);
+            s.request(4);
+            latchOnSubscribe.countDown();
+            return null;
+        }).when(mockSubscriber).onSubscribe(any(Subscription.class));
+        doAnswer(a -> {
+            causeRef.set(a.getArgument(0));
+            latchOnError.countDown();
+            return null;
+        }).when(mockSubscriber).onError(any());
+        doAnswer(a -> {
+            results.add(a.getArgument(0));
+            throw new DeliberateException();
+        }).when(mockSubscriber).onNext(any());
+
+        Processor<Integer, Integer> processor = newPublisherProcessor();
+        toSource(fromSource(processor).flatMapMergeDelayError(i -> from(i + 10).recoverWith(cause ->
+                from(i + 20).concat(failed(cause))))).subscribe(mockSubscriber);
+
+        latchOnSubscribe.await();
+        processor.onNext(1);
+        assertThat(results.take(), is(11));
+        processor.onError(DELIBERATE_EXCEPTION);
+        assertThat(results.take(), is(21));
+        latchOnError.await();
+        assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test

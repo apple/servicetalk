@@ -575,15 +575,24 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onNext(@Nullable final R r) {
-                parent.tryEmitItem(wrapNull(r), this);
-                final int pendingDemand = pendingDemandUpdater.decrementAndGet(this);
-                if (pendingDemand == 0) {
-                    // Emit this item to signify this Subscriber is hungry for more demand when it is available.
-                    parent.tryEmitItem(this, this);
-                } else if (pendingDemand < 0) {
-                    throw new IllegalStateException("Too many onNext signals for Subscriber: " + this +
-                            " pendingDemand: " + pendingDemand);
+                final int pendingDemand;
+                try {
+                    parent.tryEmitItem(wrapNull(r), this);
+                } finally {
+                    pendingDemand = pendingDemandUpdater.decrementAndGet(this);
+                    if (pendingDemand == 0) {
+                        // Emit this item to signify this Subscriber is hungry for more demand when it is available.
+                        parent.tryEmitItem(this, this);
+                    }
                 }
+                if (pendingDemand < 0) { // avoid putting this in finally block because it throws.
+                    throwInvalidDemand(pendingDemand);
+                }
+            }
+
+            private void throwInvalidDemand(int pendingDemand) {
+                throw new IllegalStateException("Too many onNext signals for Subscriber: " + this +
+                        " pendingDemand: " + pendingDemand);
             }
 
             @Override
