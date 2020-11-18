@@ -360,8 +360,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             try {
                                 target.onError(th);
                             } catch (Throwable throwable) {
-                                LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
-                                        target, t);
+                                LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}", target,
+                                        throwable);
                             } finally {
                                 assert subscription != null;
                                 subscription.cancel();
