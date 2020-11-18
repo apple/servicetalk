@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -145,12 +145,13 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          *
          * @param executor {@link Executor} to use for retry backoffs.
          * @param initialDelay {@link Duration} to use as initial delay for backoffs.
+         * @param jitter {@link Duration} of jitter to apply to each backoff delay.
          * @param <ResolvedAddress> The type of address after resolution.
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress> Builder<ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>>
-        withDefaults(final Executor executor, final Duration initialDelay) {
-            return new Builder<>(new IndefiniteRetryStrategy(executor, initialDelay),
+        withDefaults(final Executor executor, final Duration initialDelay, final Duration jitter) {
+            return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter),
                     evt -> new DefaultServiceDiscovererEvent<>(evt.address(), !evt.isAvailable()));
         }
 
@@ -159,12 +160,13 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          *
          * @param executor {@link Executor} to use for retry backoffs.
          * @param initialDelay {@link Duration} to use as initial delay for backoffs.
+         * @param jitter {@link Duration} of jitter to apply to each backoff delay.
          * @param <ResolvedAddress> The type of address after resolution.
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress> Builder<ResolvedAddress, PartitionedServiceDiscovererEvent<ResolvedAddress>>
-        withDefaultsForPartitions(final Executor executor, final Duration initialDelay) {
-            return new Builder<>(new IndefiniteRetryStrategy(executor, initialDelay),
+        withDefaultsForPartitions(final Executor executor, final Duration initialDelay, final Duration jitter) {
+            return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter),
                     evt -> new PartitionedServiceDiscovererEvent<ResolvedAddress>() {
                         @Override
                         public PartitionAttributes partitionAddress() {
@@ -188,6 +190,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          *
          * @param executor {@link Executor} to use for retry backoffs.
          * @param initialDelay {@link Duration} to use as initial delay for backoffs.
+         * @param jitter {@link Duration} of jitter to apply to each backoff delay.
          * @param flipAvailability {@link UnaryOperator} that returns a new {@link ServiceDiscovererEvent} that is the
          * same as the passed {@link ServiceDiscovererEvent} but with {@link ServiceDiscovererEvent#isAvailable()} value
          * flipped.
@@ -196,9 +199,15 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
          * @return A new {@link Builder}.
          */
         public static <ResolvedAddress, E extends ServiceDiscovererEvent<ResolvedAddress>> Builder<ResolvedAddress, E>
-        withDefaults(final Executor executor, final Duration initialDelay, final UnaryOperator<E> flipAvailability) {
-            return new Builder<>(new IndefiniteRetryStrategy(executor, initialDelay), flipAvailability);
+        withDefaults(final Executor executor, final Duration initialDelay, final Duration jitter,
+                     final UnaryOperator<E> flipAvailability) {
+            return new Builder<>(defaultRetryStrategy(executor, initialDelay, jitter), flipAvailability);
         }
+    }
+
+    private static BiIntFunction<Throwable, ? extends Completable> defaultRetryStrategy(
+            final Executor executor, final Duration initialDelay, final Duration jitter) {
+        return retryWithConstantBackoffDeltaJitter(__ -> true, initialDelay, jitter, executor);
     }
 
     private static final class EventsCache<R, E extends ServiceDiscovererEvent<R>> {
@@ -263,27 +272,6 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
         @SuppressWarnings("unchecked")
         private static <R, E extends ServiceDiscovererEvent<R>> Map<R, E> noneRetained() {
             return NONE_RETAINED;
-        }
-    }
-
-    private static final class IndefiniteRetryStrategy implements BiIntFunction<Throwable, Completable> {
-        private final BiIntFunction<Throwable, Completable> delegate;
-        private final int maxRetries;
-
-        IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay) {
-            this(executor, initialDelay, 8);
-        }
-
-        IndefiniteRetryStrategy(final Executor executor, final Duration initialDelay, final int maxRetries) {
-            delegate = retryWithExponentialBackoffAndJitter(maxRetries, __ -> true, initialDelay, executor);
-            this.maxRetries = maxRetries;
-        }
-
-        @Override
-        public Completable apply(final int count, final Throwable cause) {
-            // As we are retrying indefinitely (unless closed), cap the backoff on MAX_RETRIES retries to avoid
-            // impractical backoffs
-            return delegate.apply((count % (maxRetries)) + 1, cause);
         }
     }
 }

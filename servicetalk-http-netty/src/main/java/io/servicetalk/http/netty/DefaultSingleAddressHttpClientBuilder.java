@@ -58,6 +58,7 @@ import io.netty.util.NetUtil;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -89,6 +90,8 @@ import static java.util.function.Function.identity;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
+    static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
+    static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
     @Nullable
     private final U address;
     @Nullable
@@ -368,8 +371,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(serviceDiscoverer, sdStatus),
                         serviceDiscovererRetryStrategy == null ?
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(exec.executor(),
-                                        ofSeconds(60)).build()
-                                : serviceDiscovererRetryStrategy);
+                                        SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
+                                serviceDiscovererRetryStrategy);
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, sd, sdStatus, proxyAddress);
     }
 

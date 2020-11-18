@@ -34,13 +34,12 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
-import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -49,6 +48,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Duration.ofDays;
+import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -104,7 +105,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
             StreamingHttpResponse resp = awaitIndefinitelyNonNull(
                     requester.request(defaultStrategy(), request)
                             .retryWhen(
-                                    retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
+                                    retryWithExponentialBackoffFullJitter(10, t -> true, ofMillis(100), ofDays(10),
                                             CTX.executor())));
 
             assertThat(resp.status(), equalTo(OK));

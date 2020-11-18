@@ -68,7 +68,8 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static java.time.Duration.ofSeconds;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -99,7 +100,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
                         serviceDiscovererRetryStrategy == null ?
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaultsForPartitions(
-                                        buildContext.executionContext.executor(), ofSeconds(60)).build() :
+                                        buildContext.executionContext.executor(), SD_RETRY_STRATEGY_INIT_DURATION,
+                                        SD_RETRY_STRATEGY_JITTER).build() :
                                 serviceDiscovererRetryStrategy);
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {

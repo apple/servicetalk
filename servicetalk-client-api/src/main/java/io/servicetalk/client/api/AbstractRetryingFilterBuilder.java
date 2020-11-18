@@ -29,10 +29,11 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
+import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -46,7 +47,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
-
+    private static final Duration FULL_JITTER = ofDays(1024);
     private int maxRetries;
     @Nullable
     private BiPredicate<Meta, Throwable> retryForPredicate;
@@ -88,7 +89,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return a new retrying {@link Filter} which retries without delay
      */
     public final Filter buildWithImmediateRetries() {
-        return build(readOnlySettings(null, null, false, false));
+        return build(readOnlySettings(null, null, null, null, false));
     }
 
     /**
@@ -98,7 +99,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
     public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(readOnlySettings(delay, null, false, false));
+        return build(readOnlySettings(delay, null, null, null, false));
     }
 
     /**
@@ -110,7 +111,33 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * @return A new retrying {@link Filter} which adds a constant delay between retries
      */
     public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, timerExecutor, false, false));
+        return build(readOnlySettings(delay, null, null, timerExecutor, false));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a randomized delay between retries and uses the passed
+     * {@link Duration} as a maximum delay possible. This additionally adds a "Full Jitter" for the backoff as described
+     * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
+     *
+     * @param delay Maximum {@link Duration} of delay between retries
+     * @return A new retrying {@link Filter} which adds a randomized delay between retries
+     */
+    public final Filter buildWithConstantBackoffFullJitter(final Duration delay) {
+        return build(readOnlySettings(delay, FULL_JITTER, null, null, false));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a randomized delay between retries and uses the passed
+     * {@link Duration} as a maximum delay possible. This additionally adds a "Full Jitter" for the backoff as described
+     * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
+     *
+     * @param delay Maximum {@link Duration} of delay between retries
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds a randomized delay between retries
+     */
+    public final Filter buildWithConstantBackoffFullJitter(final Duration delay, final Executor timerExecutor) {
+        return build(readOnlySettings(delay, FULL_JITTER, null, timerExecutor, false));
     }
 
     /**
@@ -118,10 +145,11 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * {@link Duration} as a maximum delay possible.
      *
      * @param delay Maximum {@link Duration} of delay between retries
+     * @param jitter The jitter which is used as and offset to {@code initialDelay} on each retry
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
-    public final Filter buildWithConstantBackoffAndJitter(final Duration delay) {
-        return build(readOnlySettings(delay, null, false, true));
+    public final Filter buildWithConstantBackoffDeltaJitter(final Duration delay, final Duration jitter) {
+        return build(readOnlySettings(delay, jitter, null, null, false));
     }
 
     /**
@@ -129,42 +157,14 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * {@link Duration} as a maximum delay possible.
      *
      * @param delay Maximum {@link Duration} of delay between retries
+     * @param jitter The jitter which is used as and offset to {@code delay} on each retry
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
      * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
      * @return A new retrying {@link Filter} which adds a randomized delay between retries
      */
-    public final Filter buildWithConstantBackoffAndJitter(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, timerExecutor, false, true));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
-     * {@code initialDelay} which is increased exponentially for subsequent retries.
-     * <p>
-     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
-     * exponential delay causes {@link Long} overflow.
-     *
-     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
-     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries
-     */
-    public final Filter buildWithExponentialBackoff(final Duration initialDelay) {
-        return build(readOnlySettings(initialDelay, null, true, false));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
-     * {@code initialDelay} which is increased exponentially for subsequent retries.
-     * <p>
-     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
-     * exponential delay causes {@link Long} overflow.
-     *
-     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
-     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
-     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
-     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries
-     */
-    public final Filter buildWithExponentialBackoff(final Duration initialDelay, final Executor timerExecutor) {
-        return build(readOnlySettings(initialDelay, timerExecutor, true, false));
+    public final Filter buildWithConstantBackoffDeltaJitter(final Duration delay, final Duration jitter,
+                                                            final Executor timerExecutor) {
+        return build(readOnlySettings(delay, jitter, null, timerExecutor, false));
     }
 
     /**
@@ -172,15 +172,13 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * {@code initialDelay} which is increased exponentially for subsequent retries. This additionally adds a
      * "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
-     * <p>
-     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
-     * exponential delay causes {@link Long} overflow.
      *
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param maxDelay The maximum amount of delay that will be introduced.
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
      */
-    public final Filter buildWithExponentialBackoffAndJitter(final Duration initialDelay) {
-        return build(readOnlySettings(initialDelay, null, true, true));
+    public final Filter buildWithExponentialBackoffFullJitter(final Duration initialDelay, final Duration maxDelay) {
+        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, null, true));
     }
 
     /**
@@ -188,18 +186,46 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * {@code initialDelay} which is increased exponentially for subsequent retries. This additionally adds a
      * "Full Jitter" for the backoff as described
      * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
-     * <p>
-     * Returned {@link Filter} may not attempt to check for overflow if the retry count is high enough that an
-     * exponential delay causes {@link Long} overflow.
      *
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param maxDelay The maximum amount of delay that will be introduced.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
      * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
      * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
      */
-    public final Filter buildWithExponentialBackoffAndJitter(final Duration initialDelay,
-                                                             final Executor timerExecutor) {
-        return build(readOnlySettings(initialDelay, timerExecutor, true, true));
+    public final Filter buildWithExponentialBackoffFullJitter(final Duration initialDelay, final Duration maxDelay,
+                                                              final Executor timerExecutor) {
+        return build(readOnlySettings(initialDelay, FULL_JITTER, maxDelay, timerExecutor, true));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent retries.
+     *
+     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param jitter The jitter which is used as and offset to {@code initialDelay} on each retry
+     * @param maxDelay The maximum amount of delay that will be introduced.
+     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
+     */
+    public final Filter buildWithExponentialBackoffDeltaJitter(final Duration initialDelay, final Duration jitter,
+                                                               final Duration maxDelay) {
+        return build(readOnlySettings(initialDelay, jitter, maxDelay, null, true));
+    }
+
+    /**
+     * Creates a new retrying {@link Filter} which adds a delay between retries. For first retry, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent retries.
+     *
+     * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry
+     * @param jitter The jitter which is used as and offset to {@code initialDelay} on each retry
+     * @param maxDelay The maximum amount of delay that will be introduced.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
+     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
+     * @return A new retrying {@link Filter} which adds an exponentially increasing delay between retries with jitter
+     */
+    public final Filter buildWithExponentialBackoffDeltaJitter(final Duration initialDelay, final Duration jitter,
+                                                               final Duration maxDelay, final Executor timerExecutor) {
+        return build(readOnlySettings(initialDelay, jitter, maxDelay, timerExecutor, true));
     }
 
     /**
@@ -221,12 +247,13 @@ public abstract class AbstractRetryingFilterBuilder<Builder
     }
 
     private ReadOnlyRetryableSettings<Meta> readOnlySettings(@Nullable final Duration initialDelay,
+                                                             @Nullable final Duration jitter,
+                                                             @Nullable final Duration maxDelay,
                                                              @Nullable final Executor timerExecutor,
-                                                             final boolean exponential,
-                                                             final boolean jitter) {
+                                                             final boolean exponential) {
         return new ReadOnlyRetryableSettings<>(maxRetries > 0 ? maxRetries : (exponential ? 2 : 1),
                 retryForPredicate != null ? retryForPredicate : defaultRetryForPredicate(),
-                initialDelay, timerExecutor, exponential, jitter);
+                initialDelay, jitter, maxDelay, timerExecutor, exponential);
     }
 
     /**
@@ -241,22 +268,27 @@ public abstract class AbstractRetryingFilterBuilder<Builder
         @Nullable
         private final Duration initialDelay;
         @Nullable
+        private final Duration jitter;
+        @Nullable
+        private final Duration maxDelay;
+        @Nullable
         private final Executor timerExecutor;
         private final boolean exponential;
-        private final boolean jitter;
 
         private ReadOnlyRetryableSettings(final int maxRetries,
                                           final BiPredicate<Meta, Throwable> retryForPredicate,
                                           @Nullable final Duration initialDelay,
+                                          @Nullable final Duration jitter,
+                                          @Nullable final Duration maxDelay,
                                           @Nullable final Executor timerExecutor,
-                                          final boolean exponential,
-                                          final boolean jitter) {
+                                          final boolean exponential) {
             this.maxRetries = maxRetries;
             this.retryForPredicate = retryForPredicate;
             this.initialDelay = initialDelay;
             this.timerExecutor = timerExecutor;
             this.exponential = exponential;
             this.jitter = jitter;
+            this.maxDelay = maxDelay;
         }
 
         /**
@@ -283,22 +315,22 @@ public abstract class AbstractRetryingFilterBuilder<Builder
             if (initialDelay == null) {
                 return (count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
             } else {
+                assert jitter != null;
                 final Executor effectiveExecutor = timerExecutor == null ?
                         requireNonNull(alternativeTimerExecutor) : timerExecutor;
                 if (exponential) {
-                    if (jitter) {
-                        return retryWithExponentialBackoffAndJitter(
-                                maxRetries, t -> true, initialDelay, effectiveExecutor);
-                    } else {
-                        return retryWithExponentialBackoff(maxRetries, t -> true, initialDelay, effectiveExecutor);
-                    }
+                    assert maxDelay != null;
+                    return jitter == FULL_JITTER ?
+                            retryWithExponentialBackoffFullJitter(
+                                    maxRetries, t -> true, initialDelay, maxDelay, effectiveExecutor) :
+                            retryWithExponentialBackoffDeltaJitter(
+                                    maxRetries, t -> true, initialDelay, jitter, maxDelay, effectiveExecutor);
                 } else {
-                    if (jitter) {
-                        return retryWithConstantBackoffAndJitter(
-                                maxRetries, t -> true, initialDelay, effectiveExecutor);
-                    } else {
-                        return retryWithConstantBackoff(maxRetries, t -> true, initialDelay, effectiveExecutor);
-                    }
+                    return jitter == FULL_JITTER ?
+                            retryWithConstantBackoffFullJitter(
+                                    maxRetries, t -> true, initialDelay, effectiveExecutor) :
+                            retryWithConstantBackoffDeltaJitter(
+                                    maxRetries, t -> true, initialDelay, jitter, effectiveExecutor);
                 }
             }
         }
