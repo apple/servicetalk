@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.CompositeException.maxDelayedErrors;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
@@ -68,26 +69,35 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <R> Type of {@link Publisher} returned by the operator.
  */
 final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
+    static final int FLAT_MAP_DEFAULT_CONCURRENCY = 16;
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapMerge.class);
     private static final int MIN_MAPPED_DEMAND = 1;
     private final Function<? super T, ? extends Publisher<? extends R>> mapper;
     private final int maxConcurrency;
-    private final boolean delayError;
+    private final int maxDelayedErrors;
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
                           boolean delayError, Executor executor) {
-        this(original, mapper, delayError, 8, executor);
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
     }
 
     PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
                           boolean delayError, int maxConcurrency, Executor executor) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+    }
+
+    PublisherFlatMapMerge(Publisher<T> original, Function<? super T, ? extends Publisher<? extends R>> mapper,
+                          int maxDelayedErrors, int maxConcurrency, Executor executor) {
         super(original, executor);
-        this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
         }
+        if (maxDelayedErrors < 0) {
+            throw new IllegalArgumentException("maxConcurrency: " + maxDelayedErrors + " (expected >=0)");
+        }
+        this.mapper = requireNonNull(mapper);
         this.maxConcurrency = maxConcurrency;
-        this.delayError = delayError;
+        this.maxDelayedErrors = maxDelayedErrors;
     }
 
     @Override
@@ -383,6 +393,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                                     ++emittedCount;
                                 }
                             } catch (Throwable cause) {
+                                ++emittedCount;
                                 delayedCause = catchUnexpected(delayedCause, cause);
                             }
                         }
@@ -588,7 +599,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onError(final Throwable t) {
-                if (!parent.source.delayError) {
+                if (parent.source.maxDelayedErrors <= 0) {
                     // Make sure errors aren't delivered out of order relative to onNext signals which maybe queued.
                     try {
                         parent.doCancel(true, false);
@@ -598,7 +609,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 } else {
                     CompositeException de = parent.delayedError;
                     if (de == null) {
-                        de = new CompositeException(t);
+                        de = new CompositeException(t, parent.source.maxDelayedErrors);
                         if (!delayedErrorUpdater.compareAndSet(parent, null, de)) {
                             de = parent.delayedError;
                             assert de != null;

@@ -863,7 +863,7 @@ public class PublisherFlatMapMergeTest {
                         return i;
                     }
                     throw new DeliberateException();
-                }).toPublisher(), 1024)
+                }).toPublisher(), 1024, 500)
                 .recoverWith(t -> {
                     error.set(t);
                     return Publisher.empty();
