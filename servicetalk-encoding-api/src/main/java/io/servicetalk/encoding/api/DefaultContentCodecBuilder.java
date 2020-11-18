@@ -22,7 +22,7 @@ abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
     private int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD;
 
-    protected int getMaxAllowedPayloadSize() {
+    protected int maxAllowedPayloadSize() {
         return maxAllowedPayloadSize;
     }
 
@@ -39,14 +39,14 @@ abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
     static final class GzipContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
-            return new GzipContentCodec(CHUNK_SIZE, getMaxAllowedPayloadSize());
+            return new GzipContentCodec(CHUNK_SIZE, maxAllowedPayloadSize());
         }
     }
 
     static final class DeflateContentCodecBuilder extends DefaultContentCodecBuilder {
         @Override
         public ContentCodec build() {
-            return new DeflateContentCodec(CHUNK_SIZE, getMaxAllowedPayloadSize());
+            return new DeflateContentCodec(CHUNK_SIZE, maxAllowedPayloadSize());
         }
     }
 }

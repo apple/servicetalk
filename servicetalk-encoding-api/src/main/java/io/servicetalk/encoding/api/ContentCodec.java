@@ -41,8 +41,7 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content encoded
      */
     default Buffer encode(Buffer src, BufferAllocator allocator) {
-        int offset = src.hasArray() ? src.arrayOffset() : 0;
-        return encode(src, offset + src.readerIndex(), src.readableBytes(), allocator);
+        return encode(src, src.readerIndex(), src.readableBytes(), allocator);
     }
 
     /**
@@ -64,8 +63,7 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     default Buffer decode(Buffer src, BufferAllocator allocator) {
-        int offset = src.hasArray() ? src.arrayOffset() : 0;
-        return decode(src, offset + src.readerIndex(), src.readableBytes(), allocator);
+        return decode(src, src.readerIndex(), src.readableBytes(), allocator);
     }
 
     /**
