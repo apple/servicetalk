@@ -79,7 +79,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected > 0)");
         }
         if (maxDelayedErrors < 0) {
-            throw new IllegalArgumentException("maxConcurrency: " + maxDelayedErrors + " (expected >=0)");
+            throw new IllegalArgumentException("maxDelayedErrors: " + maxDelayedErrors + " (expected >=0)");
         }
         this.mapper = requireNonNull(mapper);
         this.maxConcurrency = maxConcurrency;
@@ -399,7 +399,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onError(Throwable t) {
-                if (source.maxDelayedErrors <= 0) {
+                if (source.maxDelayedErrors == 0) {
                     onError0(t, true, true);
                 } else {
                     CompositeException de = FlatMapSubscriber.this.delayedError;

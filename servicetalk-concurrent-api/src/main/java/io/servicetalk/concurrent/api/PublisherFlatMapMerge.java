@@ -93,7 +93,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected >0)");
         }
         if (maxDelayedErrors < 0) {
-            throw new IllegalArgumentException("maxConcurrency: " + maxDelayedErrors + " (expected >=0)");
+            throw new IllegalArgumentException("maxDelayedErrors: " + maxDelayedErrors + " (expected >=0)");
         }
         this.mapper = requireNonNull(mapper);
         this.maxConcurrency = maxConcurrency;
@@ -599,7 +599,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onError(final Throwable t) {
-                if (parent.source.maxDelayedErrors <= 0) {
+                if (parent.source.maxDelayedErrors == 0) {
                     // Make sure errors aren't delivered out of order relative to onNext signals which maybe queued.
                     try {
                         parent.doCancel(true, false);

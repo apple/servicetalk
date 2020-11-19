@@ -404,6 +404,9 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                          int maxConcurrency, int maxDelayedErrorsHint) {
+        if (maxDelayedErrorsHint <= 0) {
+            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
+        }
         return new PublisherFlatMapMerge<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
     }
 
@@ -644,6 +647,9 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency, int maxDelayedErrorsHint) {
+        if (maxDelayedErrorsHint <= 0) {
+            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
+        }
         return new PublisherFlatMapSingle<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
     }
 
