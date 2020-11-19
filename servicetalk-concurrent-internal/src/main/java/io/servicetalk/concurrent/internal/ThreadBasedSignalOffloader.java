@@ -35,6 +35,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
@@ -479,19 +483,17 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                     try {
                         original.onSubscribe(subscription);
                     } catch (Throwable throwable) {
-                        LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Subscription: {}.",
-                                original, subscription, throwable);
                         setTerminated();
-                        sendCancel(subscription, null);
-                        sendOnErrorToOriginal(throwable);
+                        safeOnError(original, throwable);
+                        safeCancel(subscription);
                     }
                 } else if (signal instanceof TerminalNotification) {
                     setTerminated();
                     TerminalNotification terminalNotification = (TerminalNotification) signal;
                     if (terminalNotification.cause() != null) {
-                        sendOnErrorToOriginal(terminalNotification.cause());
+                        safeOnError(original, terminalNotification.cause());
                     } else {
-                        sendOnCompleteToOriginal();
+                        safeOnComplete(original);
                     }
                 } else {
                     try {
@@ -499,7 +501,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                         original.onNext(signal == NULL_ON_NEXT ? null : uncheckedCast(signal));
                     } catch (Throwable throwable) {
                         setTerminated();
-                        sendOnErrorToOriginal(throwable);
+                        safeOnError(original, throwable);
                         assert subscription != null;
                         // Spec https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
                         // 2.13 states that a Subscriber MUST consider its Subscription cancelled if it throws from
@@ -509,39 +511,9 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                         // the Subscriber and keep producing data which is wasteful.
                         // Since Subscription is practically cancelled for the original Subscriber, we can assume that
                         // it is not used.
-                        sendCancel(subscription, throwable);
+                        safeCancel(subscription);
                     }
                 }
-            }
-        }
-
-        private void sendCancel(Subscription subscription, @Nullable Throwable optionalOriginalCause) {
-            try {
-                subscription.cancel();
-            } catch (Throwable throwable) {
-                if (optionalOriginalCause != null) {
-                    optionalOriginalCause.addSuppressed(throwable);
-                }
-                LOGGER.error("Ignored unexpected exception terminating subscriber: {}.", original,
-                        throwable);
-            }
-        }
-
-        private void sendOnErrorToOriginal(final Throwable throwable) {
-            try {
-                original.onError(throwable);
-            } catch (Throwable t) {
-                throwable.addSuppressed(t);
-                LOGGER.error("Ignored unexpected exception terminating subscriber: {}.", original,
-                        throwable);
-            }
-        }
-
-        private void sendOnCompleteToOriginal() {
-            try {
-                original.onComplete();
-            } catch (Throwable t) {
-                LOGGER.error("Ignored unexpected exception terminating subscriber: {}.", original, t);
             }
         }
 
@@ -656,40 +628,23 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             try {
                 original.onSubscribe(c);
             } catch (Throwable throwable) {
-                LOGGER.error("Unexpected exception sending onSubscribe {} to subscriber: {}.", c, original, throwable);
+                sendError(throwable);
                 // Cancel the Subscription as per Rule 2.13
                 // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
                 // we may be violating the no concurrency on the Subscription rule, but the Subscriber/Subscription is
                 // invalid and we make a best effort to cleanup
-                try {
-                    c.cancel();
-                } catch (Throwable t) {
-                    throwable.addSuppressed(t);
-                    LOGGER.error("Ignored unexpected exception sending cancel to cancellable: {}.", c, throwable);
-                }
-                sendError(throwable);
+                safeCancel(c);
             }
         }
 
         @Override
         void sendSuccess(@Nullable Object result) {
-            try {
-                // We do not expect uncheckedCast to fail as onSuccess makes sure we do not get a wrong type.
-                original.onSuccess(uncheckedCast(result));
-            } catch (Throwable throwable) {
-                LOGGER.error("Ignored unexpected exception sending result {} to subscriber: {}.",
-                        result, original, throwable);
-            }
+            safeOnSuccess(original, uncheckedCast(result));
         }
 
         @Override
         void sendError(Throwable t) {
-            try {
-                original.onError(t);
-            } catch (Throwable throwable) {
-                t.addSuppressed(throwable);
-                LOGGER.error("Ignored unexpected exception sending error to subscriber: {}", original, t);
-            }
+            safeOnError(original, t);
         }
     }
 
@@ -720,38 +675,23 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             try {
                 original.onSubscribe(c);
             } catch (Throwable throwable) {
-                LOGGER.error("Unexpected exception sending onSubscribe {} to subscriber: {}.", c, original, throwable);
+                sendError(throwable);
                 // Cancel the Subscription as per Rule 2.13
                 // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
                 // We may be violating the no concurrency on the Subscription rule, but the Subscriber/Subscription is
                 // invalid and we make a best effort to cleanup
-                try {
-                    c.cancel();
-                } catch (Throwable t) {
-                    throwable.addSuppressed(t);
-                    LOGGER.error("Ignored unexpected exception sending cancel to cancellable: {}.", c, throwable);
-                }
-                sendError(throwable);
+                safeCancel(c);
             }
         }
 
         @Override
         void sendSuccess(@Nullable Object signal) {
-            try {
-                original.onComplete();
-            } catch (Throwable throwable) {
-                LOGGER.error("Ignored unexpected exception sending completion to subscriber: {}.", original, throwable);
-            }
+            safeOnComplete(original);
         }
 
         @Override
         void sendError(Throwable t) {
-            try {
-                original.onError(t);
-            } catch (Throwable throwable) {
-                t.addSuppressed(throwable);
-                LOGGER.error("Ignored unexpected exception sending error to subscriber: {}", original, t);
-            }
+            safeOnError(original, t);
         }
     }
 
@@ -914,11 +854,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             }
             setTerminated();
             if (result == CANCELLED) {
-                try {
-                    c.cancel();
-                } catch (Throwable throwable) {
-                    LOGGER.error("Ignored unexpected exception sending cancel to Cancellable: {}", c, throwable);
-                }
+                safeCancel(c);
             }
         }
 
