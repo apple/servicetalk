@@ -358,6 +358,59 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Map each element of this {@link Publisher} into a {@link Publisher}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Publisher}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * This is the same as {@link #flatMapMerge(Function)} just that if any mapped {@link Publisher} returned by
+     * {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately terminate. Instead,
+     * it will wait for this {@link Publisher} and all mapped {@link Publisher}s to terminate and then terminate the
+     * returned {@link Publisher} with all errors emitted by the mapped {@link Publisher}s.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is an asynchronous stream, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 List<R> rList = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.addAll(rList);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
+     *             }
+     *         });
+     *     }
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
+     * @param mapper Convert each item emitted by this {@link Publisher} into another {@link Publisher}.
+     * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
+     * @param maxDelayedErrorsHint The maximum amount of errors that will be queued. After this point exceptions maybe
+     * discarded to reduce memory consumption.
+     * @param <R> The type of mapped {@link Publisher}.
+     * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
+                                                         int maxConcurrency, int maxDelayedErrorsHint) {
+        if (maxDelayedErrorsHint <= 0) {
+            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
+        }
+        return new PublisherFlatMapMerge<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
+    }
+
+    /**
      * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
      * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
      * {@link Publisher}&lt;{@link R}&gt;.
@@ -432,7 +485,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper,
                                                      int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, false, maxConcurrency, executor);
     }
 
     /**
@@ -539,7 +592,65 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, true, maxConcurrency, executor);
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
+     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
+     * <p>
+     * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
+     * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
+     * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
+     * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * {@code mapper}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : tResults) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 R r = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.add(r);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
+     *             }
+     *         });
+     *     }
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
+     *     }
+     *     createAndThrowACompositeException(errors);
+     * }</pre>
+     *
+     * @param mapper {@link Function} to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param maxConcurrency Maximum active {@link Single}s at any time.
+     * Even if the number of items requested by a {@link Subscriber} is more than this number,
+     * this will never request more than this number at any point.
+     * @param maxDelayedErrorsHint The maximum amount of errors that will be queued. After this point exceptions maybe
+     * discarded to reduce memory consumption.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     */
+    public final <R> Publisher<R> flatMapMergeSingleDelayError(
+            Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency, int maxDelayedErrorsHint) {
+        if (maxDelayedErrorsHint <= 0) {
+            throw new IllegalArgumentException("maxDelayedErrorsHint " + maxDelayedErrorsHint + " (expected >0)");
+        }
+        return new PublisherFlatMapSingle<>(this, mapper, maxDelayedErrorsHint, maxConcurrency, executor);
     }
 
     /**
@@ -709,6 +820,54 @@ public abstract class Publisher<T> {
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
                                                           int maxConcurrency) {
         return flatMapMergeSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
+    }
+
+    /**
+     * Map each element of this {@link Publisher} into a {@link Completable} and flatten all signals
+     * such that the returned {@link Completable} terminates when all mapped {@link Completable}s have terminated
+     * successfully or any one of them has terminated with a failure.
+     * <p>
+     * If any mapped {@link Completable} terminates with an error the returned {@link Completable} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all mapped {@link Completable}s to terminate.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : tResults) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 mapper.apply(t); // Asynchronous result is flattened by this operator.
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
+     *             }
+     *         });
+     *     }
+     *     latch.await();
+     *     if (!errors.isEmpty()) {
+     *         createAndThrowACompositeException(errors);
+     *     }
+     * }</pre>
+     *
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Completable}.
+     * @param maxConcurrency Maximum active {@link Completable}s at any time.
+     * @param maxDelayedErrorsHint The maximum amount of errors that will be queued. After this point exceptions maybe
+     * discarded to reduce memory consumption.
+     * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
+     * terminated successfully or any one of them has terminated with a failure.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     * @see #flatMapMergeSingleDelayError(Function, int)
+     */
+    public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
+                                                          int maxConcurrency, int maxDelayedErrorsHint) {
+        return flatMapMergeSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency, maxDelayedErrorsHint)
+                .ignoreElements();
     }
 
     /**

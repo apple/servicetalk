@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.CompositeException.maxDelayedErrors;
+import static io.servicetalk.concurrent.api.PublisherFlatMapMerge.FLAT_MAP_DEFAULT_CONCURRENCY;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
@@ -56,25 +58,32 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  */
 final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapSingle.class);
-
     private final Function<? super T, ? extends Single<? extends R>> mapper;
     private final int maxConcurrency;
-    private final boolean delayError;
+    private final int maxDelayedErrors;
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
                            boolean delayError, Executor executor) {
-        this(original, mapper, 16, delayError, executor);
+        this(original, mapper, delayError, FLAT_MAP_DEFAULT_CONCURRENCY, executor);
     }
 
     PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
-                           int maxConcurrency, boolean delayError, Executor executor) {
+                           boolean delayError, int maxConcurrency, Executor executor) {
+        this(original, mapper, maxDelayedErrors(delayError), maxConcurrency, executor);
+    }
+
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, ? extends Single<? extends R>> mapper,
+                           int maxDelayedErrors, int maxConcurrency, Executor executor) {
         super(original, executor);
-        this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected > 0)");
         }
+        if (maxDelayedErrors < 0) {
+            throw new IllegalArgumentException("maxDelayedErrors: " + maxDelayedErrors + " (expected >=0)");
+        }
+        this.mapper = requireNonNull(mapper);
         this.maxConcurrency = maxConcurrency;
-        this.delayError = delayError;
+        this.maxDelayedErrors = maxDelayedErrors;
     }
 
     @Override
@@ -390,12 +399,12 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onError(Throwable t) {
-                if (!source.delayError) {
+                if (source.maxDelayedErrors == 0) {
                     onError0(t, true, true);
                 } else {
                     CompositeException de = FlatMapSubscriber.this.delayedError;
                     if (de == null) {
-                        de = new CompositeException(t);
+                        de = new CompositeException(t, source.maxDelayedErrors);
                         if (!delayedErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, de)) {
                             de = FlatMapSubscriber.this.delayedError;
                             assert de != null;

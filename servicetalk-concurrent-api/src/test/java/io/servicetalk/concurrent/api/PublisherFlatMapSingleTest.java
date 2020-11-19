@@ -110,7 +110,7 @@ public class PublisherFlatMapSingleTest {
                 return x;
             }
             throw new DeliberateException();
-        }), 1024).recoverWith(t -> {
+        }), 1024, 500).recoverWith(t -> {
             error.set(t);
             return Publisher.empty();
         }).collect(ArrayList::new, (ints, s) -> {
@@ -479,7 +479,7 @@ public class PublisherFlatMapSingleTest {
         }
         PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
                 value -> Single.succeeded(Integer.toString(value)),
-                1, false, immediate());
+                false, 1, immediate());
         toSource(pub).subscribe(new Subscriber<String>() {
             private Subscription subscription;
 

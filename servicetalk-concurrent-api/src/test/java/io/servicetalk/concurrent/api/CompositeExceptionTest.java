@@ -27,7 +27,7 @@ public class CompositeExceptionTest {
 
     @Test
     public void testCauseAndSuppressed() {
-        CompositeException e = new CompositeException(DELIBERATE_EXCEPTION);
+        CompositeException e = new CompositeException(DELIBERATE_EXCEPTION, 2);
         DeliberateException suppressed1 = new DeliberateException();
         e.add(suppressed1);
         DeliberateException suppressed2 = new DeliberateException();
