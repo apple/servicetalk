@@ -65,6 +65,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,7 +127,7 @@ public class PublisherFlatMapMergeTest {
         }).when(mockSubscriber).onError(any());
         doAnswer(a -> {
             results.add(a.getArgument(0));
-            throw new DeliberateException();
+            throw DELIBERATE_EXCEPTION;
         }).when(mockSubscriber).onNext(any());
 
         Processor<Integer, Integer> processor = newPublisherProcessor();
@@ -136,10 +137,13 @@ public class PublisherFlatMapMergeTest {
         latchOnSubscribe.await();
         processor.onNext(1);
         assertThat(results.take(), is(11));
-        processor.onError(DELIBERATE_EXCEPTION);
         assertThat(results.take(), is(21));
+        assertThat(causeRef.get(), is(nullValue()));
+        processor.onComplete();
         latchOnError.await();
-        assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
+        final Throwable t = causeRef.get();
+        assertThat(t, instanceOf(CompositeException.class));
+        assertThat(t.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
