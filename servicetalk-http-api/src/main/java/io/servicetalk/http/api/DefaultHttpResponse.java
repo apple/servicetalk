@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
@@ -39,6 +40,12 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     @Override
     public HttpResponse version(final HttpProtocolVersion version) {
         original.version(version);
+        return this;
+    }
+
+    @Override
+    public HttpResponse encoding(final ContentCodec encoding) {
+        original.encoding(encoding);
         return this;
     }
 

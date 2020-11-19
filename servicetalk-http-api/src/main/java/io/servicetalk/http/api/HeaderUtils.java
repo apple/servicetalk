@@ -16,9 +16,13 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.ContentCodings;
 import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +32,19 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.CharSequences.split;
+import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.VARY;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
@@ -44,7 +53,9 @@ import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
@@ -78,6 +89,7 @@ public final class HeaderUtils {
 
     private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
+    public static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
 
     static {
         CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
@@ -223,6 +235,23 @@ public final class HeaderUtils {
     static void addChunkedEncoding(final HttpHeaders headers) {
         if (!isTransferEncodingChunked(headers)) {
             headers.add(TRANSFER_ENCODING, CHUNKED);
+        }
+    }
+
+    static void setContentEncoding(final HttpHeaders headers, CharSequence encoding) {
+        // H2 does not support TE / Transfer-Encoding, so we rely in the presentation encoding only.
+        // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
+        headers.set(CONTENT_ENCODING, encoding);
+        headers.set(VARY, CONTENT_ENCODING);
+    }
+
+    static boolean hasContentEncoding(final HttpHeaders headers) {
+        return headers.contains(CONTENT_ENCODING);
+    }
+
+    static void setAcceptEncoding(final HttpHeaders headers, @Nullable final CharSequence encodings) {
+        if (encodings != null && !headers.contains(ACCEPT_ENCODING)) {
+            headers.set(ACCEPT_ENCODING, encodings);
         }
     }
 
@@ -634,6 +663,137 @@ public final class HeaderUtils {
             }
             return null;
         }
+    }
+
+    /**
+     * Establish a commonly accepted encoding between server and client, according to the supported-encodings
+     * on the server side and the {@code 'Accepted-Encoding'} incoming header on the request.
+     * <p>
+     * If no supported encodings are configured then the result is always {@code null}
+     * If no accepted encodings are present in the request then the result is always {@code null}
+     * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
+     * otherwise {@code null} is returned.
+     *
+     * @param headers The request headers
+     * @param serverSupportedEncodings The supported encodings as configured for the server
+     * @return The {@link ContentCodec} that satisfies both client and server needs,
+     * null if none found or matched to {@link ContentCodings#identity()}
+     */
+    @Nullable
+    static ContentCodec negotiateAcceptedEncoding(
+            final HttpHeaders headers, final List<ContentCodec> serverSupportedEncodings) {
+
+        // Fast path, server has no encodings configured or has only identity configured as encoding
+        if (serverSupportedEncodings.isEmpty() ||
+                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(identity()))) {
+            return null;
+        }
+
+        List<ContentCodec> clientSupportedEncodings = readAcceptEncoding(headers, serverSupportedEncodings);
+        return negotiateAcceptedEncoding(clientSupportedEncodings, serverSupportedEncodings);
+    }
+
+    @Nullable
+    static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
+                                                  final List<ContentCodec> allowedEncodings) {
+        // Fast path, Client has no encodings configured, or has identity as the only encoding configured
+        if (clientSupportedEncodings == NONE_CONTENT_ENCODING_SINGLETON ||
+                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
+            return null;
+        }
+
+        for (ContentCodec encoding : allowedEncodings) {
+            if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
+                return encoding;
+            }
+        }
+
+        return null;
+    }
+
+    static List<ContentCodec> readAcceptEncoding(final HttpHeaders headers,
+                                                 final List<ContentCodec> allowedEncodings) {
+        final CharSequence acceptEncodingsHeaderVal = headers.get(ACCEPT_ENCODING);
+
+        if (acceptEncodingsHeaderVal == null || acceptEncodingsHeaderVal.length() == 0) {
+            return NONE_CONTENT_ENCODING_SINGLETON;
+        }
+
+        List<ContentCodec> knownEncodings = new ArrayList<>();
+        List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
+        for (CharSequence val : acceptEncodingValues) {
+            ContentCodec enc = encodingFor(allowedEncodings, val.toString().trim());
+            if (enc != null) {
+                knownEncodings.add(enc);
+            }
+        }
+
+        return knownEncodings;
+    }
+
+    /**
+     * Attempts to identify the {@link ContentCodec} from a name, as found in the {@code 'Content-Encoding'}
+     * header of a request or a response.
+     * If the name can not be matched to any of the supported encodings on this endpoint, then
+     * a {@link UnsupportedContentEncodingException} is thrown.
+     * If the matched encoding is {@link ContentCodings#identity()} then this returns {@code null}.
+     *
+     * @param headers The headers to read the encoding name from
+     * @param allowedEncodings The supported encodings for this endpoint
+     * @return The {@link ContentCodec} that matches the name or null if matches to identity
+     */
+    @Nullable
+    static ContentCodec identifyContentEncodingOrNullIfIdentity(
+            final HttpHeaders headers, final List<ContentCodec> allowedEncodings) {
+
+        final CharSequence encoding = headers.get(CONTENT_ENCODING);
+        if (encoding == null) {
+            return null;
+        }
+
+        ContentCodec enc = encodingFor(allowedEncodings, encoding);
+        if (enc == null) {
+            throw new UnsupportedContentEncodingException(encoding.toString());
+        }
+
+        return enc == identity() ? null : enc;
+    }
+
+    /**
+     * Returns the {@link ContentCodec} that matches the {@code name} within the {@code allowedList}.
+     * if {@code name} is {@code null} or empty it results in {@code null} .
+     * If {@code name} is {@code 'identity'} this will always result in
+     * {@link ContentCodings#identity()} regardless of its presence in the {@code allowedList}.
+     *
+     * @param allowedList the source list to find a matching codec from.
+     * @param name the codec name used for the equality predicate.
+     * @return a codec from the allowed-list that name matches the {@code name}.
+     */
+    @Nullable
+    static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
+                                    @Nullable final CharSequence name) {
+        requireNonNull(allowedList);
+        if (name == null || name.length() == 0) {
+            return null;
+        }
+
+        // Identity is always supported, regardless of its presence in the allowed-list
+        if (contentEqualsIgnoreCase(name, identity().name())) {
+            return identity();
+        }
+
+        for (ContentCodec enumEnc : allowedList) {
+            // Encoding values can potentially included compression configurations, we only match on the type
+            if (startsWith(name, enumEnc.name())) {
+                return enumEnc;
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean startsWith(final CharSequence string, final CharSequence prefix) {
+        return regionMatches(string, true, 0, prefix, 0, prefix.length());
     }
 
     /**

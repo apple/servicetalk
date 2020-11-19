@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
@@ -109,6 +110,9 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
 
     @Override
     HttpRequest version(HttpProtocolVersion version);
+
+    @Override
+    HttpRequest encoding(ContentCodec encoding);
 
     @Override
     HttpRequest method(HttpRequestMethod method);

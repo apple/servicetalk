@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -111,7 +112,9 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return !hasContentHeaders(metadata.headers()) &&
+        // TODO once this bug is addressed (https://github.com/apple/servicetalk/pull/1213)
+        // we should relax the check here, remove content-encoding clause
+        return !hasContentHeaders(metadata.headers()) && !hasContentEncoding(metadata.headers()) &&
                 isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }
 
@@ -228,6 +231,10 @@ final class HeaderUtils {
 
     private static boolean hasContentHeaders(final HttpHeaders headers) {
         return headers.contains(CONTENT_LENGTH) || isTransferEncodingChunked(headers);
+    }
+
+    private static boolean hasContentEncoding(final HttpHeaders headers) {
+        return headers.contains(CONTENT_ENCODING);
     }
 
     private static boolean isEmptyConnectResponse(final HttpRequestMethod requestMethod, final int statusCode) {

@@ -163,5 +163,5 @@ public final class H2ProtocolConfigBuilder {
         public KeepAlivePolicy keepAlivePolicy() {
             return keepAlivePolicy;
         }
-   }
+    }
 }

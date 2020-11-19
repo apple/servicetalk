@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import java.util.function.Function;
@@ -196,6 +197,9 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Override
     StreamingHttpRequest method(HttpRequestMethod method);
+
+    @Override
+    StreamingHttpRequest encoding(ContentCodec encoding);
 
     @Override
     StreamingHttpRequest requestTarget(String requestTarget);

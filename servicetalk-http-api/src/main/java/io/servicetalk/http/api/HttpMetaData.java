@@ -15,7 +15,11 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.ContentCodings;
+
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 
 import static java.lang.System.lineSeparator;
 
@@ -45,6 +49,30 @@ public interface HttpMetaData {
      * @return the headers.
      */
     HttpHeaders headers();
+
+    /**
+     * The {@link ContentCodec} used to encode the payload of a request or a response.
+     * If the endpoint is setup with {@link ContentCodingHttpServiceFilter}, the server will
+     * auto-establish the accepted encoding for the response, unless the caller provides a specific encoding
+     * by calling this method.
+     *
+     * Any encoding passed here, takes precedence. In other words, a compressed response, can
+     * be disabled by passing {@link ContentCodings#identity()}.
+     *
+     * @param encoding The {@link ContentCodec} used for the encoding of the payload.
+     * @return {@code this}.
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
+     */
+    HttpMetaData encoding(ContentCodec encoding);
+
+    /**
+     * Returns the {@link ContentCodec} used to encode the payload of a request or a response.
+     *
+     * @return The {@link ContentCodec} used for the encoding of the payload.
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
+     */
+    @Nullable
+    ContentCodec encoding();
 
     /**
      * Adds a new header with the specified {@code name} and {@code value}.

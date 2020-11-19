@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -39,6 +40,12 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public BlockingStreamingHttpRequest version(final HttpProtocolVersion version) {
         original.version(version);
+        return this;
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest encoding(final ContentCodec encoding) {
+        original.encoding(encoding);
         return this;
     }
 

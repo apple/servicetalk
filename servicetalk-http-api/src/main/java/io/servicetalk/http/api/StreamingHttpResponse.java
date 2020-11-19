@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -159,6 +160,9 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     StreamingHttpResponse version(HttpProtocolVersion version);
+
+    @Override
+    StreamingHttpResponse encoding(ContentCodec encoding);
 
     @Override
     default StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {

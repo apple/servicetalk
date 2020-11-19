@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
+package io.servicetalk.http.api;
 
-class DefaultGrpcMessageEncoding implements GrpcMessageEncoding {
+/**
+ * Exception thrown when a payload was encoded with an unsupported encoder.
+ */
+final class UnsupportedContentEncodingException extends RuntimeException {
+
+    private static final long serialVersionUID = 5645078707423180235L;
 
     private final String encoding;
-    private final MessageCodec codec;
 
-    DefaultGrpcMessageEncoding(final String encoding, final MessageCodec messageCodec) {
+    /**
+     * New instance.
+     *
+     * @param encoding the name of the encoding used
+     */
+    UnsupportedContentEncodingException(String encoding) {
+        super("Compression " + encoding + " not supported");
         this.encoding = encoding;
-        this.codec = messageCodec;
     }
 
-    @Override
-    public String name() {
+    /**
+     * The name of the encoding used when the Exception was thrown.
+     * @return the name of the encoding used when the Exception was thrown
+     */
+    public String encoding() {
         return encoding;
-    }
-
-    @Override
-    public MessageCodec codec() {
-        return codec;
-    }
-
-    @Override
-    public String toString() {
-        return "DefaultGrpcMessageEncoding{" +
-                "encoding='" + encoding + '\'' +
-                '}';
     }
 }

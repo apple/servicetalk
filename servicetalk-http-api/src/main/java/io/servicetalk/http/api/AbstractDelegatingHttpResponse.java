@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
+
 abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, PayloadInfo {
 
     final DefaultStreamingHttpResponse original;
@@ -26,6 +28,11 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     @Override
     public HttpProtocolVersion version() {
         return original.version();
+    }
+
+    @Override
+    public ContentCodec encoding() {
+        return original.encoding();
     }
 
     @Override

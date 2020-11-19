@@ -13,32 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
+package io.servicetalk.encoding.api;
 
-class DefaultGrpcMessageEncoding implements GrpcMessageEncoding {
+import java.util.Objects;
 
-    private final String encoding;
-    private final MessageCodec codec;
+abstract class AbstractContentCodec implements ContentCodec {
 
-    DefaultGrpcMessageEncoding(final String encoding, final MessageCodec messageCodec) {
-        this.encoding = encoding;
-        this.codec = messageCodec;
+    private final CharSequence name;
+
+    AbstractContentCodec(final CharSequence name) {
+        this.name = name;
+    }
+
+    public final CharSequence name() {
+        return name;
     }
 
     @Override
-    public String name() {
-        return encoding;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final AbstractContentCodec that = (AbstractContentCodec) o;
+        return name.equals(that.name);
     }
 
     @Override
-    public MessageCodec codec() {
-        return codec;
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override
     public String toString() {
-        return "DefaultGrpcMessageEncoding{" +
-                "encoding='" + encoding + '\'' +
+        return "ContentCodec{" +
+                "name=" + name +
                 '}';
     }
 }

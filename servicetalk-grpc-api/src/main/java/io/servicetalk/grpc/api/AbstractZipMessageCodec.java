@@ -33,21 +33,21 @@ import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static java.lang.Math.min;
 
-abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
+abstract class AbstractZipMessageCodec implements MessageCodec {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZipGrpcMessageCodec.class);
-    private static final int ONE_KB = 1 << 10;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipMessageCodec.class);
+    protected static final int ONE_KB = 1 << 10;
 
-    abstract DeflaterOutputStream newCodecOutputStream(OutputStream out) throws IOException;
+    abstract DeflaterOutputStream newDeflaterOutputStream(OutputStream out) throws IOException;
 
-    abstract InflaterInputStream newCodecInputStream(InputStream in) throws IOException;
+    abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
 
     @Override
     public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         final Buffer dst = allocator.newBuffer(ONE_KB);
         DeflaterOutputStream output = null;
         try {
-            output = newCodecOutputStream(asOutputStream(dst));
+            output = newDeflaterOutputStream(asOutputStream(dst));
 
             if (src.hasArray()) {
                 output.write(src.array(), offset, length);
@@ -74,7 +74,7 @@ abstract class ZipGrpcMessageCodec implements GrpcMessageCodec {
         final Buffer dst = allocator.newBuffer(ONE_KB);
         InflaterInputStream input = null;
         try {
-            input = newCodecInputStream(asInputStream(src));
+            input = newInflaterInputStream(asInputStream(src));
 
             int read = dst.setBytesUntilEndStream(0, input, ONE_KB);
             dst.writerIndex(read);

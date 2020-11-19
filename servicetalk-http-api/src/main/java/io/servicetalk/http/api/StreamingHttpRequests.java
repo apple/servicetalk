@@ -43,8 +43,9 @@ public final class StreamingHttpRequests {
      */
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, null,
+            final HttpHeaders headers, final BufferAllocator allocator,
+            final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, allocator, null,
                 forUserCreated(headers), headersFactory);
     }
 
@@ -66,9 +67,9 @@ public final class StreamingHttpRequests {
      */
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
-            final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, payload,
+            final HttpHeaders headers, final BufferAllocator allocator,
+            final Publisher<Object> payload, final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, allocator, payload,
                 forTransportReceive(headers), headersFactory);
     }
 }

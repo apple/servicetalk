@@ -46,6 +46,11 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
     }
 
     @Override
+    public Buffer newBuffer(final int initialCapacity, final int maxCapacity) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Buffer newBuffer(int initialCapacity, boolean direct) {
         throw new UnsupportedOperationException();
     }

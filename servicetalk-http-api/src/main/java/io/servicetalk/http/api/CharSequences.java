@@ -87,7 +87,6 @@ public final class CharSequences {
         if (input.length() == 0) {
             return emptyList();
         }
-
         int startIndex = 0;
         List<CharSequence> result = new ArrayList<>();
         for (int i = 0; i < input.length(); i++) {

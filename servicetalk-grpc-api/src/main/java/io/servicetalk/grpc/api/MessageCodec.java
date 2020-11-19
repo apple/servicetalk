@@ -19,10 +19,21 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 /**
- * Codec used to encode and decode gRPC messages.
- * This instance is shared across all requests/responses therefore it must provide thread safety semantics.
+ * Codec used to encode and decode {@link Buffer} content.
+ * This instance is shared therefore it must provide thread safety semantics.
  */
-public interface GrpcMessageCodec {
+public interface MessageCodec {
+
+    /**
+     * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
+     *
+     * @param src the {@link Buffer} to encode
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link Buffer} the result buffer with the content encoded
+     */
+    default Buffer encode(Buffer src, BufferAllocator allocator) {
+        return encode(src, src.readerIndex(), src.readableBytes(), allocator);
+    }
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
@@ -34,6 +45,17 @@ public interface GrpcMessageCodec {
      * @return {@link Buffer} the result buffer with the content encoded
      */
     Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
+
+    /**
+     * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
+     *
+     * @param src the {@link Buffer} to decode
+     * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
+     * @return {@link Buffer} the result buffer with the content decoded
+     */
+    default Buffer decode(Buffer src, BufferAllocator allocator) {
+        return decode(src, src.readerIndex(), src.readableBytes(), allocator);
+    }
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.

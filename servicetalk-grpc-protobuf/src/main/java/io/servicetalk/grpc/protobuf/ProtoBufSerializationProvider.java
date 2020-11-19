@@ -17,8 +17,8 @@ package io.servicetalk.grpc.protobuf;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
-import io.servicetalk.grpc.api.GrpcMessageCodec;
 import io.servicetalk.grpc.api.GrpcMessageEncoding;
+import io.servicetalk.grpc.api.MessageCodec;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.SerializationProvider;
 import io.servicetalk.serialization.api.StreamingDeserializer;
@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -107,7 +107,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
     private static final class ProtoDeserializer<T> implements StreamingDeserializer<T> {
         private final Parser<T> parser;
         private final CompositeBuffer accumulate;
-        private final GrpcMessageCodec encoder;
+        private final MessageCodec encoder;
         /**
          * <ul>
          *     <li>{@code < 0} - read Length-Prefixed-Message header</li>
@@ -273,12 +273,12 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
     private static final class ProtoSerializer implements StreamingSerializer {
 
-        private final GrpcMessageCodec encoder;
+        private final MessageCodec encoder;
         private final boolean encode;
 
         ProtoSerializer(final GrpcMessageEncoding encoding) {
             this.encoder = encoding.codec();
-            this.encode = encoding != none();
+            this.encode = encoding != identity();
         }
 
         @Override

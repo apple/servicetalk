@@ -15,23 +15,23 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import java.util.zip.InflaterInputStream;
 
-class GzipGrpcMessageCodec extends ZipGrpcMessageCodec {
+final class DeflateMessageCodec extends AbstractZipMessageCodec {
 
     @Override
-    InflaterInputStream newCodecInputStream(final InputStream in) throws IOException {
-        return new GZIPInputStream(in);
+    DeflaterOutputStream newDeflaterOutputStream(final OutputStream out) {
+        // TODO tk - Optimization, we could rely on the Deflater directly to avoid the intermediate
+        // copy on the stream buffer
+        return new DeflaterOutputStream(out, new Deflater(), ONE_KB, true);
     }
 
     @Override
-    DeflaterOutputStream newCodecOutputStream(final OutputStream out) throws IOException {
-        return new GZIPOutputStream(out);
+    InflaterInputStream newInflaterInputStream(final InputStream in) {
+        return new InflaterInputStream(in);
     }
 }

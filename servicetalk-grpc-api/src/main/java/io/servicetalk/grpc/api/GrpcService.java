@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import java.util.Set;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.none;
+import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
 import static java.util.Collections.singleton;
 
 /**
@@ -37,7 +37,7 @@ public interface GrpcService extends AsyncCloseable {
      * <a href="https://www.grpc.io">gRPC</a> service.
      */
     default Set<GrpcMessageEncoding> supportedEncodings() {
-        return singleton(none());
+        return singleton(identity());
     }
 
     @Override

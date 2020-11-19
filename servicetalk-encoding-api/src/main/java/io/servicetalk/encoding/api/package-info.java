@@ -13,23 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
+@ElementsAreNonnullByDefault
+package io.servicetalk.encoding.api;
 
-/**
- * NOOP Message encoding codec
- */
-final class IdentityGrpcMessageCodec implements GrpcMessageCodec {
-
-    @Override
-    public Buffer encode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
-        return src;
-    }
-
-    @Override
-    public Buffer decode(final Buffer src, final int offset, int length, final BufferAllocator allocator) {
-        return src;
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

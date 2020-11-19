@@ -51,6 +51,15 @@ public interface BufferAllocator {
     Buffer newBuffer(int initialCapacity);
 
     /**
+     * Create a new buffer with the given initial capacity and given max capacity.
+     *
+     * @param initialCapacity the initial capacity of the buffer.
+     * @param maxCapacity the maximum capacity of the buffer.
+     * @return a new buffer.
+     */
+    Buffer newBuffer(int initialCapacity, int maxCapacity);
+
+    /**
      * Create a new buffer with the given initial capacity.
      *
      * @param initialCapacity the initial capacity of the allocated buffer.

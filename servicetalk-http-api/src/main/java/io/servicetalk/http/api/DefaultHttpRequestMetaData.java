@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.nio.charset.Charset;
@@ -66,6 +67,12 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public HttpRequestMetaData version(final HttpProtocolVersion version) {
         super.version(version);
+        return this;
+    }
+
+    @Override
+    public HttpMetaData encoding(final ContentCodec encoding) {
+        super.encoding(encoding);
         return this;
     }
 

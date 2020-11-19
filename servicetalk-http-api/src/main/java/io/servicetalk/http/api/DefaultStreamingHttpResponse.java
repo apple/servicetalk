@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -47,6 +48,12 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     @Override
     public StreamingHttpResponse status(final HttpResponseStatus status) {
         super.status(status);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpResponse encoding(final ContentCodec encoding) {
+        super.encoding(encoding);
         return this;
     }
 

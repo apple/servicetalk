@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
@@ -40,6 +41,12 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     @Override
     public HttpRequest version(final HttpProtocolVersion version) {
         original.version(version);
+        return this;
+    }
+
+    @Override
+    public HttpRequest encoding(final ContentCodec encoding) {
+        original.encoding(encoding);
         return this;
     }
 
@@ -227,7 +234,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         Publisher<Object> payload = trailers != null ? from(payloadBody, trailers) : from(payloadBody);
-        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(),
+        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
                 original.payloadHolder().allocator(), payload, new DefaultPayloadInfo(this),
                 original.payloadHolder().headersFactory());
     }

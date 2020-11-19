@@ -15,12 +15,18 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
+
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
 /**
  * Abstract base class for {@link HttpMetaData}.
  */
 abstract class AbstractHttpMetaData implements HttpMetaData {
+    @Nullable
+    private ContentCodec encoding;
     private HttpProtocolVersion version;
     private final HttpHeaders headers;
 
@@ -29,8 +35,15 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
         this.headers = requireNonNull(headers);
     }
 
+    AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers,
+                         @Nullable final ContentCodec encoding) {
+        this.version = requireNonNull(version);
+        this.headers = requireNonNull(headers);
+        this.encoding = encoding;
+    }
+
     AbstractHttpMetaData(final AbstractHttpMetaData metaData) {
-        this(metaData.version, metaData.headers);
+        this(metaData.version, metaData.headers, metaData.encoding);
     }
 
     @Override
@@ -42,6 +55,17 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     public HttpMetaData version(final HttpProtocolVersion version) {
         this.version = requireNonNull(version);
         return this;
+    }
+
+    @Override
+    public HttpMetaData encoding(final ContentCodec encoding) {
+        this.encoding = requireNonNull(encoding);
+        return this;
+    }
+
+    @Override
+    public ContentCodec encoding() {
+        return encoding;
     }
 
     @Override
