@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,111 +30,153 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-import static java.util.Collections.singletonList;
+import static org.apache.directory.server.dns.messages.RecordType.A;
+import static org.apache.directory.server.dns.messages.RecordType.AAAA;
+import static org.apache.directory.server.dns.messages.RecordType.CNAME;
 
 final class TestRecordStore implements RecordStore {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
+    private static final int SRV_DEFAULT_WEIGHT = 10;
+    private static final int SRV_DEFAULT_PRIORITY = 10;
+    private final Map<String, Map<RecordType, List<ResourceRecord>>> recordsToReturnByDomain =
+            new ConcurrentHashMap<>();
 
-    public static final int DEFAULT_TTL = 1;
-
-    private final Map<String, Map<RecordType, List<Supplier<List<ResourceRecord>>>>> recordsToReturnByDomain =
-            new HashMap<>();
-    private final Map<String, Map<RecordType, Supplier<List<ResourceRecord>>>> defaultRecordsByDomain =
-            new HashMap<>();
-
-    public TestRecordStore defaultResponse(final String domain, final RecordType recordType,
-                                           final String... ipAddresses) {
-        return defaultResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
+    public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl) {
+        addSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
     }
 
-    public TestRecordStore defaultResponse(final String domain, final RecordType recordType, final int ttl,
-                                           final String... ipAddresses) {
-        final List<ResourceRecord> records = new ArrayList<>();
-        for (final String ipAddress : ipAddresses) {
-            records.add(createRecord(domain, recordType, ttl, ipAddress));
+    public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl,
+                                    final int weight, final int priority) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.SRV);
+        recordList.add(createSrvRecord(domain, targetDomain, port, ttl, weight, priority));
+    }
+
+    public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl) {
+        return removeSrv(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
+    }
+
+    public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl,
+                                          final int weight, final int priority) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.SRV);
+        return removeRecords(createSrvRecord(domain, targetDomain, port, ttl, weight, priority), recordList, typeMap);
+    }
+
+    public synchronized void addIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
+        addAddress(domain, A, ttl, ipAddresses);
+    }
+
+    public synchronized boolean removeIPv4Address(final String domain, final int ttl, final String... ipAddresses) {
+        return removeAddresses(domain, A, ttl, ipAddresses);
+    }
+
+    public synchronized void addIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
+        addAddress(domain, AAAA, ttl, ipAddresses);
+    }
+
+    public synchronized boolean removeIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
+        return removeAddresses(domain, AAAA, ttl, ipAddresses);
+    }
+
+    public synchronized void addCNAME(final String domain, final String cname, final int ttl) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.CNAME);
+        recordList.add(createCnameRecord(domain, cname, ttl));
+    }
+
+    public synchronized boolean removeCNAME(final String domain, final String cname, final int ttl) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.CNAME);
+        return removeRecords(createCnameRecord(domain, cname, ttl), recordList, typeMap);
+    }
+
+    public synchronized boolean removeRecords(ResourceRecord... records) {
+        boolean removed = false;
+        for (ResourceRecord rr : records) {
+            Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(rr.getDomainName());
+            List<ResourceRecord> recordList = getRecordList(typeMap, rr.getRecordType());
+            removed |= removeRecords(rr, recordList, typeMap);
         }
-        return defaultResponse(domain, recordType, () -> records);
+        return removed;
     }
 
-    public TestRecordStore defaultResponse(final String domain, final RecordType recordType,
-                                           final Supplier<List<ResourceRecord>> records) {
-        final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords =
-                defaultRecordsByDomain.computeIfAbsent(domain, k -> new HashMap<>());
-        defaultRecords.put(recordType, records);
-        LOGGER.debug("Set default response for {} type {} to {}", domain, recordType, records);
-        return this;
+    private Map<RecordType, List<ResourceRecord>> getTypeMap(final String domain) {
+        return recordsToReturnByDomain.computeIfAbsent(domain, d -> new HashMap<>());
     }
 
-    public TestRecordStore addSrvResponse(final String domain, String targetDomain, final int priority,
-                                          final int weight, final int port) {
-        return addSrvResponse(domain, targetDomain, priority, weight, port, DEFAULT_TTL);
+    private List<ResourceRecord> getRecordList(Map<RecordType, List<ResourceRecord>> typeMap,
+                                               final RecordType recordType) {
+        return typeMap.computeIfAbsent(recordType, t -> new ArrayList<>());
     }
 
-    public TestRecordStore addSrvResponse(final String domain, String targetDomain, final int priority,
-                                          final int weight, final int port, final int ttl) {
-        return addResponse(domain, RecordType.SRV,
-                () -> singletonList(createSrvRecord(domain, targetDomain, priority, weight, port, ttl)));
-    }
-
-    public TestRecordStore addResponse(final String domain, final RecordType recordType,
-                                       final String... ipAddresses) {
-        return addResponse(domain, recordType, DEFAULT_TTL, ipAddresses);
-    }
-
-    public TestRecordStore addResponse(final String domain, final RecordType recordType, final int ttl,
-                                       final String... ipAddresses) {
-        final List<ResourceRecord> records = new ArrayList<>();
-        for (final String ipAddress : ipAddresses) {
-            records.add(createRecord(domain, recordType, ttl, ipAddress));
+    private void addAddress(final String domain, final RecordType recordType, final int ttl,
+                            final String... ipAddresses) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, recordType);
+        for (String ipAddress : ipAddresses) {
+            recordList.add(createAddressRecord(domain, recordType, ttl, ipAddress));
         }
-        return addResponse(domain, recordType, () -> records);
     }
 
-    public TestRecordStore addResponse(final String domain, final RecordType recordType,
-                                       final Supplier<List<ResourceRecord>> records) {
-        final Map<RecordType, List<Supplier<List<ResourceRecord>>>> recordsToReturn =
-                recordsToReturnByDomain.computeIfAbsent(domain, k -> new HashMap<>());
-        final List<Supplier<List<ResourceRecord>>> records2 = recordsToReturn.computeIfAbsent(
-                recordType, k -> new ArrayList<>());
-        records2.add(records);
-        LOGGER.debug("Added response for {} type {} of {}", domain, recordType, records);
-        return this;
+    private boolean removeAddresses(final String domain, final RecordType recordType, final int ttl,
+                                    final String... ipAddresses) {
+        boolean removed = false;
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        List<ResourceRecord> recordList = getRecordList(typeMap, recordType);
+        for (String ipAddress : ipAddresses) {
+            removed |= removeRecords(createAddressRecord(domain, recordType, ttl, ipAddress), recordList, typeMap);
+        }
+        return removed;
+    }
+
+    private boolean removeRecords(ResourceRecord rr, List<ResourceRecord> recordList,
+                                  Map<RecordType, List<ResourceRecord>> typeMap) {
+        // We are in a synchronized block, so multilevel removal/cleanup is safe.
+        final boolean removed = recordList.removeIf(listRR -> TestRecordStore.equals(rr, listRR));
+        if (removed && recordList.isEmpty() &&
+                typeMap.remove(rr.getRecordType()) == recordList && typeMap.isEmpty()) {
+            recordsToReturnByDomain.remove(rr.getDomainName(), typeMap);
+        }
+        return removed;
     }
 
     @Nullable
     @Override
-    public Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) {
+    public synchronized Set<ResourceRecord> getRecords(final QuestionRecord questionRecord) {
         final String domain = questionRecord.getDomainName();
-        final Map<RecordType, List<Supplier<List<ResourceRecord>>>> recordsToReturn =
-                recordsToReturnByDomain.get(domain);
+        final Map<RecordType, List<ResourceRecord>> recordsToReturn = recordsToReturnByDomain.get(domain);
         LOGGER.debug("Getting {} records for {}", questionRecord.getRecordType(), domain);
         if (recordsToReturn != null) {
-            final List<Supplier<List<ResourceRecord>>> recordsForType = recordsToReturn.get(
-                    questionRecord.getRecordType());
-            if (recordsForType != null && !recordsForType.isEmpty()) {
-                List<ResourceRecord> records = recordsForType.remove(0).get();
-                LOGGER.debug("Found records {}", records);
-                return new HashSet<>(records);
+            final List<ResourceRecord> recordsForType = recordsToReturn.get(questionRecord.getRecordType());
+            final List<ResourceRecord> cnameRecords = questionRecord.getRecordType() != CNAME ?
+                    recordsToReturn.get(CNAME) : null;
+            if (cnameRecords != null) {
+                LOGGER.debug("Found CNAME records {}", cnameRecords);
+                final Set<ResourceRecord> results = new HashSet<>(cnameRecords);
+                if (recordsForType != null) {
+                    LOGGER.debug("Found records {}", recordsForType);
+                    results.addAll(recordsForType);
+                }
+                return results;
             }
-        }
-        final Map<RecordType, Supplier<List<ResourceRecord>>> defaultRecords = defaultRecordsByDomain.get(domain);
-        if (defaultRecords != null) {
-            final Supplier<List<ResourceRecord>> recordsForType = defaultRecords.get(questionRecord.getRecordType());
             if (recordsForType != null) {
-                List<ResourceRecord> records = recordsForType.get();
-                LOGGER.debug("Found default records {}", records);
-                return new HashSet<>(records);
+                LOGGER.debug("Found records {}", recordsForType);
+                return new HashSet<>(recordsForType);
             }
         }
         return null;
     }
 
-    static ResourceRecord createSrvRecord(final String domain, String targetDomain, final int priority,
-                                          final int weight, final int port, final int ttl) {
+    static ResourceRecord createSrvRecord(final String domain, String targetDomain, final int port, final int ttl) {
+        return createSrvRecord(domain, targetDomain, port, ttl, SRV_DEFAULT_WEIGHT, SRV_DEFAULT_PRIORITY);
+    }
+
+    static ResourceRecord createSrvRecord(final String domain, String targetDomain, final int port, final int ttl,
+                                          final int weight, final int priority) {
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(DnsAttribute.SERVICE_PRIORITY, priority);
         attributes.put(DnsAttribute.SERVICE_WEIGHT, weight);
@@ -143,11 +185,30 @@ final class TestRecordStore implements RecordStore {
         return new TestResourceRecord(domain, RecordType.SRV, RecordClass.IN, ttl, attributes);
     }
 
-    static ResourceRecord createRecord(final String domain, final RecordType recordType, final int ttl,
-                                       final String ipAddress) {
+    static ResourceRecord createAddressRecord(final String domain, final RecordType recordType, final int ttl,
+                                              final String ipAddress) {
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(DnsAttribute.IP_ADDRESS, ipAddress);
         return new TestResourceRecord(domain, recordType, RecordClass.IN, ttl, attributes);
+    }
+
+    static ResourceRecord createCnameRecord(final String domain, final String cname, final int ttl) {
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(DnsAttribute.DOMAIN_NAME, cname);
+        return new TestResourceRecord(domain, RecordType.CNAME, RecordClass.IN, ttl, attributes);
+    }
+
+    static boolean equals(final ResourceRecord lhs, final ResourceRecord rhs) {
+        if (lhs.getTimeToLive() == rhs.getTimeToLive() &&
+                lhs.getDomainName().equals(rhs.getDomainName()) &&
+                lhs.getRecordType() == rhs.getRecordType() &&
+                lhs.getRecordClass() == rhs.getRecordClass()) {
+            if (lhs instanceof TestResourceRecord && rhs instanceof TestResourceRecord) {
+                return ((TestResourceRecord) lhs).attributes.equals(((TestResourceRecord) rhs).attributes);
+            }
+            return true;
+        }
+        return false;
     }
 
     // `ResourceRecordImpl`'s hashCode/equals don't include `attributes`, so it's impossible to include multiple

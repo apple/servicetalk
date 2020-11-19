@@ -15,6 +15,8 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import java.net.InetSocketAddress;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -25,14 +27,52 @@ public final class SingletonDnsServerAddressStreamProvider implements DnsServerA
 
     /**
      * Create a new instance.
-     * @param stream The singelton to return from {@link #nameServerAddressStream(String)}.
+     * @param address The address to return from {@link #nameServerAddressStream(String)}.
      */
-    public SingletonDnsServerAddressStreamProvider(DnsServerAddressStream stream) {
-        this.stream = requireNonNull(stream);
+    public SingletonDnsServerAddressStreamProvider(InetSocketAddress address) {
+        this.stream = new SingletonDnsServerAddresses(address);
     }
 
     @Override
     public DnsServerAddressStream nameServerAddressStream(String hostname) {
         return stream;
+    }
+
+    /**
+     * A {@link DnsServerAddressStream} which always returns the same {@link InetSocketAddress}.
+     */
+    public static final class SingletonDnsServerAddresses implements DnsServerAddressStream {
+        private final InetSocketAddress address;
+
+        /**
+         * Create a new instance.
+         * @param address the address to return in {@link #next()}.
+         */
+        public SingletonDnsServerAddresses(InetSocketAddress address) {
+            if (address.isUnresolved()) {
+                throw new IllegalArgumentException("cannot use an unresolved DNS server address: " + address);
+            }
+            this.address = requireNonNull(address);
+        }
+
+        @Override
+        public InetSocketAddress next() {
+            return address;
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public DnsServerAddressStream duplicate() {
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return "singleton(" + address + ")";
+        }
     }
 }

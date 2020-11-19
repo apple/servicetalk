@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,19 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
-import io.netty.resolver.dns.DnsNameResolverTimeoutException;
-import org.apache.directory.server.dns.messages.ResourceRecord;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -39,59 +37,73 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_ONLY;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
-import static io.servicetalk.dns.discovery.netty.TestRecordStore.DEFAULT_TTL;
-import static io.servicetalk.dns.discovery.netty.TestRecordStore.createRecord;
+import static io.servicetalk.dns.discovery.netty.TestRecordStore.createCnameRecord;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static java.net.InetAddress.getByName;
 import static java.time.Duration.ofMillis;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
-import static org.apache.directory.server.dns.messages.RecordType.A;
-import static org.apache.directory.server.dns.messages.RecordType.AAAA;
-import static org.apache.directory.server.dns.messages.RecordType.SRV;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class DefaultDnsClientTest {
+    private static final int DEFAULT_TTL = 1;
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final TestRecordStore recordStore = new TestRecordStore();
     private TestDnsServer dnsServer;
+    private TestDnsServer dnsServer2;
     private DnsClient client;
 
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     @Before
     public void setup() throws Exception {
         nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
 
         dnsServer = new TestDnsServer(recordStore);
         dnsServer.start();
+
+        // Try to bind IPv6 for variety, if not fallback to IPv4
+        try {
+            dnsServer2 = new TestDnsServer(new TestRecordStore(), new InetSocketAddress("::1", 0));
+            dnsServer2.start();
+        } catch (Throwable cause) {
+            if (dnsServer2 != null) {
+                dnsServer2.stop();
+            }
+            dnsServer2 = new TestDnsServer(new TestRecordStore());
+            dnsServer2.start();
+        }
+
         client = dnsClientBuilder().build();
     }
 
@@ -99,105 +111,70 @@ public class DefaultDnsClientTest {
     public void tearDown() throws Exception {
         client.closeAsync().toFuture().get();
         dnsServer.stop();
+        dnsServer2.stop();
         nettyIoExecutor.closeAsync().toFuture().get();
     }
 
     @Test
-    public void unknownHostDiscover() throws Exception {
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("unknown.com")
-                .flatMapConcatIterable(identity());
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertThat("Unexpected exception during DNS lookup.",
-                throwableRef.get(), instanceOf(UnknownHostException.class));
-        assertThat(subscriber.activeCount(), equalTo(0));
-        assertThat(subscriber.inactiveCount(), equalTo(0));
-    }
-
-    @Test
-    public void singleSrvSingleADiscover() throws InterruptedException {
+    public void singleSrvSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
         final int targetPort = 9876;
-        recordStore.addSrvResponse(domain, targetDomain, 10, 10, targetPort);
-        recordStore.addResponse(targetDomain, A, nextIp());
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
+        final String ip = nextIp();
+        recordStore.addSrv(domain, targetDomain, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain, DEFAULT_TTL, ip);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        assertEvent(subscriber.takeOnNext(), ip, targetPort, true);
     }
 
-    @Ignore("Publisher#flatMapMerge required https://github.com/apple/servicetalk/pull/1011")
     @Test
-    public void singleSrvMultipleADiscover() throws InterruptedException {
+    public void singleSrvMultipleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain = "target.mysvc.apple.com";
         final int targetPort = 9876;
-        recordStore.addSrvResponse(domain, targetDomain, 10, 10, targetPort);
-        recordStore.addResponse(targetDomain, A, nextIp(), nextIp());
-        final int expectedActiveCount = 2;
-        final int expectedInactiveCount = 0;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        recordStore.addSrv(domain, targetDomain, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain, DEFAULT_TTL, ip1, ip2);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(2);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
     }
 
     @Test
-    public void multipleSrvSingleADiscover() throws InterruptedException {
+    public void multipleSrvSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
         final int targetPort1 = 9876;
         final int targetPort2 = 9878;
-        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
-        recordStore.addSrvResponse(domain, targetDomain2, 10, 10, targetPort2);
-        recordStore.addResponse(targetDomain1, A, nextIp());
-        recordStore.addResponse(targetDomain2, A, nextIp());
-        final int expectedActiveCount = 2;
-        final int expectedInactiveCount = 1;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort1, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort2, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL, ip2);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(2);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort1, true);
+        assertHasEvent(signals, ip2, targetPort2, true);
     }
 
     @Test
-    public void multipleSrvChangeSingleADiscover() throws InterruptedException {
+    public void multipleSrvChangeSingleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
@@ -205,531 +182,641 @@ public class DefaultDnsClientTest {
         final int targetPort1 = 9876;
         final int targetPort2 = 9877;
         final int targetPort3 = 9879;
-        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
-        List<ResourceRecord> defaultSrvRecords = new ArrayList<>();
-        defaultSrvRecords.add(createSrvRecord(domain, targetDomain2, 10, 10, targetPort2, DEFAULT_TTL));
-        defaultSrvRecords.add(createSrvRecord(domain, targetDomain3, 10, 10, targetPort3, DEFAULT_TTL));
-        recordStore.defaultResponse(domain, SRV, () -> defaultSrvRecords);
-        recordStore.addResponse(targetDomain1, A, nextIp());
-        recordStore.defaultResponse(targetDomain2, A, nextIp());
-        recordStore.defaultResponse(targetDomain3, A, nextIp());
-        final int expectedActiveCount = 3;
-        final int expectedInactiveCount = 1;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        final String ip3 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort1, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort2, 1);
+        recordStore.addSrv(domain, targetDomain3, targetPort3, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL, ip2);
+        recordStore.addIPv4Address(targetDomain3, DEFAULT_TTL, ip3);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(4);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(3);
+        assertHasEvent(signals, ip1, targetPort1, true);
+        assertHasEvent(signals, ip2, targetPort2, true);
+        assertHasEvent(signals, ip3, targetPort3, true);
+
+        recordStore.removeSrv(domain, targetDomain2, targetPort2, 1);
+        assertEvent(subscriber.takeOnNext(), ip2, targetPort2, false);
     }
 
-    @Ignore("Publisher#flatMapMerge required https://github.com/apple/servicetalk/pull/1011")
     @Test
-    public void multipleSrvMultipleADiscover() throws InterruptedException {
+    public void multipleSrvMultipleADiscover() throws Exception {
         final String domain = "mysvc.apple.com";
         final String targetDomain1 = "target1.mysvc.apple.com";
         final String targetDomain2 = "target2.mysvc.apple.com";
         final int targetPort1 = 9876;
         final int targetPort2 = 9878;
-        recordStore.addSrvResponse(domain, targetDomain1, 10, 10, targetPort1);
-        recordStore.addSrvResponse(domain, targetDomain2, 10, 10, targetPort2);
-        recordStore.addResponse(targetDomain1, A, nextIp(), nextIp());
-        recordStore.addResponse(targetDomain2, A, nextIp(), nextIp());
-        final int expectedActiveCount = 4;
-        final int expectedInactiveCount = 0;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        final String ip3 = nextIp();
+        final String ip4 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort1, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort2, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1, ip2);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL, ip3, ip4);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetSocketAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(4);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(4);
+        assertHasEvent(signals, ip1, targetPort1, true);
+        assertHasEvent(signals, ip2, targetPort1, true);
+        assertHasEvent(signals, ip3, targetPort2, true);
+        assertHasEvent(signals, ip4, targetPort2, true);
     }
 
     @Test
-    public void singleDiscover() throws InterruptedException {
-        recordStore.addResponse("apple.com", A, nextIp());
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
+    public void srvWithCNAMEEntryLowerTTLDoesNotFail() throws Exception {
+        final String domain = "sd.servicetalk.io";
+        final String srvCNAME = "sdcname.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final int ttl = DEFAULT_TTL + 3;
+        recordStore.addCNAME(domain, srvCNAME, ttl);
+        recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
+        recordStore.addSrv(srvCNAME, targetDomain1, targetPort, 1);
+        recordStore.addIPv4Address(targetDomain1, ttl, ip1);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        toSource(publisher).subscribe(subscriber);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, true);
+        recordStore.removeSrv(srvCNAME, targetDomain1, targetPort, 1);
+        assertFalse(subscriber.pollTerminal(ttl, SECONDS));
     }
 
     @Test
-    public void singleDiscoverMultipleRecords() throws InterruptedException {
-        recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
-
-        final int expectedActiveCount = 5;
-        final int expectedInactiveCount = 0;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    public void srvCNAMEDuplicateAddressesRemoveFail() throws Exception {
+        srvCNAMEDuplicateAddresses(false);
     }
 
     @Test
-    public void singleDiscoverDuplicateRecords() throws InterruptedException {
+    public void srvCNAMEDuplicateAddressesRemoveInactive() throws Exception {
+        srvCNAMEDuplicateAddresses(true);
+    }
+
+    private void srvCNAMEDuplicateAddresses(boolean inactiveEventsOnError) throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder()
+                .dnsServerAddressStreamProvider(new SequentialDnsServerAddressStreamProvider(
+                        dnsServer2.localAddress(), dnsServer.localAddress()))
+                .inactiveEventsOnError(inactiveEventsOnError)
+                .build();
+        final String domain = "sd.servicetalk.io";
+        final String srvCNAME = "sdcname.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        final int ttl = DEFAULT_TTL + 10;
+        recordStore.addCNAME(domain, srvCNAME, ttl);
+        recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
+        recordStore.addSrv(domain, targetDomain2, targetPort, ttl);
+        recordStore.addSrv(srvCNAME, targetDomain1, targetPort, 1);
+        recordStore.addSrv(srvCNAME, targetDomain2, targetPort, 1);
+        recordStore.addIPv4Address(targetDomain1, ttl, ip1);
+        recordStore.addIPv4Address(targetDomain2, ttl, ip2);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
+
+        // Atomically remove all domain records.
+        recordStore.removeRecords(
+                createCnameRecord(domain, srvCNAME, ttl),
+                createSrvRecord(domain, targetDomain1, targetPort, ttl),
+                createSrvRecord(domain, targetDomain2, targetPort, ttl));
+
+        if (inactiveEventsOnError) {
+            signals = subscriber.takeOnNext(2);
+            assertHasEvent(signals, ip1, targetPort, false);
+            assertHasEvent(signals, ip2, targetPort, false);
+        }
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void srvInactiveEventsAggregated() throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().inactiveEventsOnError(true).build();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final String targetDomain3 = "target3.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        final String ip3 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain3, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL, ip2);
+        recordStore.addIPv4Address(targetDomain3, DEFAULT_TTL, ip3);
+
+        Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> publisher = client.dnsSrvQuery(domain);
+        TestPublisherSubscriber<Collection<ServiceDiscovererEvent<InetSocketAddress>>> subscriber =
+                new TestPublisherSubscriber<>();
+        toSource(publisher).subscribe(subscriber);
+
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = new ArrayList<>();
+        do {
+            Collection<ServiceDiscovererEvent<InetSocketAddress>> next = subscriber.takeOnNext();
+            assertNotNull(next);
+            signals.addAll(next);
+        } while (signals.size() != 3);
+
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
+        assertHasEvent(signals, ip3, targetPort, true);
+
+        // Atomically remove all the SRV records, the next resolution should result in a host not found exception.
+        recordStore.removeRecords(
+                createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
+                createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL),
+                createSrvRecord(domain, targetDomain3, targetPort, DEFAULT_TTL));
+
+        Collection<ServiceDiscovererEvent<InetSocketAddress>> next = subscriber.takeOnNext();
+        assertNotNull(next);
+        assertHasEvent(next, ip1, targetPort, false);
+        assertHasEvent(next, ip2, targetPort, false);
+        assertHasEvent(next, ip3, targetPort, false);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void srvRecordRemovalPropagatesError() throws Exception {
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+        recordStore.addIPv4Address(targetDomain1, DEFAULT_TTL + 10, ip1);
+        recordStore.addIPv4Address(targetDomain2, DEFAULT_TTL + 10, ip2);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
+
+        // Atomically remove all the SRV records, the next resolution should result in a host not found exception.
+        recordStore.removeRecords(
+                createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
+                createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL));
+
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void srvDuplicateAddressesNoFilter() throws Exception {
+        srvDuplicateAddresses(false);
+    }
+
+    @Test
+    public void srvDuplicateAddressesFilter() throws Exception {
+        srvDuplicateAddresses(true);
+    }
+
+    private void srvDuplicateAddresses(boolean srvFilterDuplicateEvents) throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().srvFilterDuplicateEvents(srvFilterDuplicateEvents).build();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final int ttl = DEFAULT_TTL + 10;
+        recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
+        recordStore.addSrv(domain, targetDomain2, targetPort, 1);
+        recordStore.addIPv4Address(targetDomain1, 1, ip1);
+        recordStore.addIPv4Address(targetDomain2, 1, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, true);
+        if (srvFilterDuplicateEvents) {
+            assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+            recordStore.removeIPv4Address(targetDomain1, 1, ip1);
+            assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+        } else {
+            assertEvent(subscriber.takeOnNext(), ip1, targetPort, true);
+            recordStore.removeIPv4Address(targetDomain1, 1, ip1);
+            assertEvent(subscriber.takeOnNext(), ip1, targetPort, false);
+        }
+        recordStore.removeIPv4Address(targetDomain2, 1, ip1);
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, false);
+    }
+
+    @Test
+    public void srvAAAAFailsGeneratesInactive() throws Exception {
+        srvAAAAFailsGeneratesInactive(true);
+    }
+
+    @Test
+    public void srvAAAAFailsGeneratesInactiveEvenIfNotRequested() throws Exception {
+        srvAAAAFailsGeneratesInactive(false);
+    }
+
+    private void srvAAAAFailsGeneratesInactive(boolean inactiveEventsOnError) throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder()
+                .inactiveEventsOnError(inactiveEventsOnError)
+                .srvHostNameRepeatDelay(ofMillis(200), ofMillis(10))
+                .dnsResolverAddressTypes(IPV4_PREFERRED).build();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp6();
+        final String ip2 = nextIp();
+        final int ttl = DEFAULT_TTL + 10;
+        recordStore.addIPv6Address(targetDomain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, ttl, ip2);
+        recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
+        recordStore.addSrv(domain, targetDomain2, targetPort, ttl);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
+
+        recordStore.removeIPv6Address(targetDomain1, DEFAULT_TTL, ip1);
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, false);
+
+        recordStore.addIPv6Address(targetDomain1, DEFAULT_TTL, ip1);
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, true);
+    }
+
+    @Test
+    public void srvNoMoreSrvRecordsFails() throws Exception {
+        srvRecordFailsGeneratesInactive(false);
+    }
+
+    @Test
+    public void srvNoMoreSrvRecordsGeneratesInactive() throws Exception {
+        srvRecordFailsGeneratesInactive(true);
+    }
+
+    private void srvRecordFailsGeneratesInactive(boolean inactiveEventsOnError) throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().inactiveEventsOnError(inactiveEventsOnError).build();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+        final int targetPort = 9876;
+        final String ip1 = nextIp();
+        final String ip2 = nextIp();
+        final int ttl = DEFAULT_TTL + 10;
+        recordStore.addIPv4Address(targetDomain1, ttl, ip1);
+        recordStore.addIPv4Address(targetDomain2, ttl, ip2);
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        recordStore.addSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(10);
+
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, targetPort, true);
+        assertHasEvent(signals, ip2, targetPort, true);
+
+        recordStore.removeSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        assertEvent(subscriber.takeOnNext(), ip1, targetPort, false);
+
+        recordStore.removeSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+        if (inactiveEventsOnError) {
+            assertEvent(subscriber.takeOnNext(), ip2, targetPort, false);
+        }
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void unknownHostDiscover() {
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery("unknown.com");
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void singleADiscover() throws Exception {
         final String ip = nextIp();
-        recordStore.addResponse("apple.com", A, nextIp(), ip, ip, nextIp());
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
 
-        final int expectedActiveCount = 3;
-        final int expectedInactiveCount = 0;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
-        toSource(publisher).subscribe(subscriber);
+        assertEvent(subscriber.takeOnNext(), ip, true);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        // Remove the ip
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ip);
+        subscription.request(1);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void singleDiscoverMultipleRecords() throws Exception {
+        final String domain = "servicetalk.io";
+        final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(ips.length);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(ips.length);
+        for (String ip : ips) {
+            assertHasEvent(signals, ip, true);
+        }
+
+        // Remove all the ips
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
+        subscription.request(1);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @Test
+    public void singleDiscoverDuplicateRecords() throws Exception {
+        final String dupIp = nextIp();
+        final String domain = "servicetalk.io";
+        final String[] ips = new String[] {nextIp(), nextIp(), dupIp, dupIp, nextIp()};
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(ips.length);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(ips.length - 1);
+
+        boolean assertedDup = false;
+        for (String ip : ips) {
+            if (ip.equals(dupIp)) {
+                if (!assertedDup) {
+                    assertedDup = true;
+                    assertHasEvent(signals, ip, true);
+                }
+            } else {
+                assertHasEvent(signals, ip, true);
+            }
+        }
     }
 
     @Test
     public void repeatDiscoverMultipleRecords() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp())
-                .defaultResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
+        final String domain = "servicetalk.io";
+        final String[] ips = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ips);
 
-        final int expectedActiveCount = 10;
-        final int expectedInactiveCount = 5;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(ips.length);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(ips.length);
+        for (String ip : ips) {
+            assertHasEvent(signals, ip, true);
+        }
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
+        final String[] ips2 = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ips2);
+        subscription.request(ips2.length);
+        signals = subscriber.takeOnNext(ips2.length);
+        for (String ip : ips2) {
+            assertHasEvent(signals, ip, true);
+        }
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-    }
-
-    @Test
-    public void repeatDiscover() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp())
-                .defaultResponse("apple.com", A, nextIp());
-
-        final int expectedActiveCount = 2;
-        final int expectedInactiveCount = 1;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+        // Remove all the IPs
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips2);
+        subscription.request(1);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
     @Test
     public void repeatDiscoverMultipleHosts() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp())
-                .defaultResponse("apple.com", A, nextIp())
-                .addResponse("servicetalk.io", A, nextIp())
-                .defaultResponse("servicetalk.io", A, nextIp());
+        final String ip1 = nextIp();
+        final String domain1 = "servicetalk.io";
+        final String ip2 = nextIp();
+        final String domain2 = "backup.servicetalk.io";
+        recordStore.addIPv4Address(domain1, DEFAULT_TTL, ip1);
+        recordStore.addIPv4Address(domain2, DEFAULT_TTL, ip2);
 
-        final int expectedAppleActiveCount = 2;
-        final int expectedAppleInactiveCount = 1;
-        final int expectedStActiveCount = 2;
-        final int expectedStInactiveCount = 1;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber1 = dnsQuery(domain1);
+        Subscription subscription1 = subscriber1.awaitSubscription();
+        subscription1.request(1);
 
-        CountDownLatch appleLatch = new CountDownLatch(expectedAppleActiveCount + expectedAppleInactiveCount);
-        CountDownLatch stLatch = new CountDownLatch(expectedStActiveCount + expectedStInactiveCount);
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber2 = dnsQuery(domain2);
+        Subscription subscription2 = subscriber2.awaitSubscription();
+        subscription2.request(1);
 
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> applePublisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        Publisher<ServiceDiscovererEvent<InetAddress>> stPublisher = client.dnsQuery("servicetalk.io")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> appleSubscriber =
-                new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
-        ServiceDiscovererTestSubscriber<InetAddress> stSubscriber =
-                new ServiceDiscovererTestSubscriber<>(stLatch, throwableRef, Long.MAX_VALUE);
-        toSource(applePublisher).subscribe(appleSubscriber);
-        toSource(stPublisher).subscribe(stSubscriber);
+        assertEvent(subscriber1.takeOnNext(), ip1, true);
+        assertEvent(subscriber2.takeOnNext(), ip2, true);
 
-        appleLatch.await();
-        stLatch.await();
-        assertNull(throwableRef.get());
-        assertThat(appleSubscriber.activeCount(), equalTo(expectedAppleActiveCount));
-        assertThat(appleSubscriber.inactiveCount(), equalTo(expectedAppleInactiveCount));
-        assertThat(stSubscriber.activeCount(), equalTo(expectedStActiveCount));
-        assertThat(stSubscriber.inactiveCount(), equalTo(expectedStInactiveCount));
-    }
-
-    @Test
-    public void repeatDiscoverTtl() throws InterruptedException {
-        AtomicLong firstTime = new AtomicLong();
-        AtomicLong secondTime = new AtomicLong();
-        recordStore
-                .addResponse("apple.com", A, () -> {
-                    firstTime.set(System.currentTimeMillis());
-                    return singletonList(createRecord("apple.com", A, 2, nextIp()));
-                })
-                .defaultResponse("apple.com", A, () -> {
-                    secondTime.set(System.currentTimeMillis());
-                    return singletonList(createRecord("apple.com", A, 2, nextIp()));
-                });
-
-        final int expectedActiveCount = 2;
-        final int expectedInactiveCount = 1;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-        long timeBetweenQueries = secondTime.get() - firstTime.get();
-        assertThat(timeBetweenQueries, greaterThanOrEqualTo(2000L));
-    }
-
-    @Test
-    public void repeatDiscoverMultiTtl() throws InterruptedException {
-        final String ipA1 = nextIp();
-        final String ipA2 = nextIp();
-        final String ipB1 = nextIp();
-        final String ipB2 = nextIp();
-
-        AtomicLong firstTime = new AtomicLong();
-        AtomicLong secondTime = new AtomicLong();
-        recordStore
-                .addResponse("apple.com", A, () -> {
-                    firstTime.set(System.currentTimeMillis());
-                    return asList(createRecord("apple.com", A, 1, ipA1),
-                            createRecord("apple.com", A, 10, ipA2));
-                })
-                .defaultResponse("apple.com", A, () -> {
-                    secondTime.set(System.currentTimeMillis());
-                    return asList(createRecord("apple.com", A, 10, ipB1),
-                            createRecord("apple.com", A, 10, ipB2));
-                });
-
-        final int expectedActiveCount = 4;
-        final int expectedInactiveCount = 2;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        final TestSubscriber subscriber = new TestSubscriber(latch);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertNull(subscriber.throwableRef.get());
-        assertThat(new HashSet<>(subscriber.activeEventAddresses),
-                equalTo(new HashSet<>(asList(ipA1, ipA2, ipB1, ipB2))));
-        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
-        assertThat(new HashSet<>(subscriber.inactiveEventAddresses), equalTo(new HashSet<>(asList(ipA1, ipA2))));
-        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
-        long timeBetweenQueries = secondTime.get() - firstTime.get();
-        assertThat(timeBetweenQueries, greaterThanOrEqualTo(1000L));
-        assertThat(timeBetweenQueries, lessThan(10_000L));
-    }
-
-    @Test
-    public void repeatDiscoverNxDomain() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp());
-
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
-        final int expectedErrorCount = 1;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + expectedErrorCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertThat("Unexpected exception during DNS lookup.",
-                throwableRef.get(), instanceOf(UnknownHostException.class));
-        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-    }
-
-    @Test
-    public void repeatDiscoverNxDomainNoSendUnavailable() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp());
-
-        DnsClient customClient = dnsClientBuilder().build();
-        try {
-            final int expectedActiveCount = 1;
-            final int expectedInactiveCount = 0;
-            final int expectedErrorCount = 1;
-
-            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount + expectedErrorCount);
-            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = customClient.dnsQuery("apple.com")
-                    .flatMapConcatIterable(identity());
-            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            toSource(publisher).subscribe(subscriber);
-
-            latch.await();
-            assertThat("Unexpected exception during DNS lookup.",
-                    throwableRef.get(), instanceOf(UnknownHostException.class));
-            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-        } finally {
-            customClient.closeAsync().toFuture().get();
-        }
+        // Remove all the IPs
+        recordStore.removeIPv4Address(domain1, DEFAULT_TTL, ip1);
+        recordStore.removeIPv4Address(domain2, DEFAULT_TTL, ip2);
+        subscription1.request(1);
+        subscription2.request(1);
+        assertThat(subscriber1.awaitOnError(), instanceOf(UnknownHostException.class));
+        assertThat(subscriber2.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
     @Test
     public void repeatDiscoverNxDomainAndRecover() throws Exception {
-        recordStore.addResponse("apple.com", A, nextIp());
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilderWithRetry().inactiveEventsOnError(true).build();
+        final String ip = nextIp();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
 
-        DnsClient customClient = clientBuilderWithRetry().build();
-        try {
-            final int expectedActiveCount = 1;
-            final int expectedInactiveCount = 0;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(4);
 
-            CountDownLatch latch1 = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-            CountDownLatch latch2 = new CountDownLatch(expectedActiveCount + expectedInactiveCount + 1);
-            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = customClient.dnsQuery("apple.com")
-                    .flatMapConcatIterable(identity());
-            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                    new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
-            toSource(publisher.beforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
-
-            latch1.await();
-            assertNull(throwableRef.get());
-            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-
-            recordStore.defaultResponse("apple.com", A, nextIp());
-            latch2.await();
-            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount + 1));
-        } finally {
-            customClient.closeAsync().toFuture().get();
-        }
+        assertEvent(subscriber.takeOnNext(), ip, true);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ip);
+        assertEvent(subscriber.takeOnNext(), ip, false);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
+        assertEvent(subscriber.takeOnNext(), ip, true);
     }
 
     @Test
-    public void testTimeoutDoesNotInactivate() throws Exception {
-        CountDownLatch timeoutLatch = new CountDownLatch(2);
-        CountDownLatch responseLatch = new CountDownLatch(1);
-        recordStore.addResponse("apple.com", A, nextIp());
-        recordStore.addResponse("apple.com", A, () -> {
-            try {
-                responseLatch.await();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            return emptyList();
-        });
+    public void preferIpv4() throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV4_PREFERRED).build();
 
-        DnsClient filteredClient =
-                clientBuilderWithRetry()
-                        .queryTimeout(ofMillis(100))
-                        .appendFilter(client -> new DnsClientFilter(client) {
-                            @Override
-                            public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String s) {
-                                return super.dnsQuery(s).whenOnError(t -> {
-                                    if (t.getCause() instanceof DnsNameResolverTimeoutException) {
-                                        timeoutLatch.countDown();
-                                    } else {
-                                        throw new RuntimeException("Unexpected exception", t);
-                                    }
-                                });
-                            }
-                        }).build();
-
-        try {
-            final int expectedActiveCount = 1;
-            final int expectedInactiveCount = 0;
-
-            CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-            AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-            Publisher<ServiceDiscovererEvent<InetAddress>> publisher = filteredClient.dnsQuery("apple.com")
-                    .flatMapConcatIterable(identity());
-            ServiceDiscovererTestSubscriber<InetAddress> subscriber =
-                    new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
-            toSource(publisher).subscribe(subscriber);
-
-            latch.await();
-            assertNull(throwableRef.get());
-            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-
-            timeoutLatch.await();
-            assertNull(throwableRef.get());
-            assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
-            assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
-        } finally {
-            responseLatch.countDown();
-            filteredClient.closeAsync().toFuture().get();
-        }
-    }
-
-    @Test
-    public void preferIpv4() throws InterruptedException {
         final String ipv4 = nextIp();
-        recordStore.addResponse("apple.com", A, ipv4);
-        recordStore.addResponse("apple.com", AAAA, nextIp6());
-
-        // We at least expect 1 as we prefer ipv4 but depending on how fast we resolve we may also have 2.
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
-
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        final TestSubscriber subscriber = new TestSubscriber(latch);
-        toSource(publisher).subscribe(subscriber);
-
-        latch.await();
-        assertNull(throwableRef.get());
-
-        // We must receive at least 1 as we prefer A records.
-        assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(1));
-        assertThat(subscriber.activeEventAddresses, hasItem(ipv4));
-        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
-    }
-
-    @Test
-    public void preferIpv4ButOnlyAAAARecordIsPresent() throws InterruptedException {
         final String ipv6 = nextIp6();
-        recordStore.addResponse("apple.com", AAAA, ipv6);
+        final String domain = "servicetalk.io";
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
 
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        final TestSubscriber subscriber = new TestSubscriber(latch);
-        toSource(publisher).subscribe(subscriber);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv4, true);
+        assertHasEvent(signals, ipv6, true);
 
-        latch.await();
-        assertNull(throwableRef.get());
-
-        assertThat(subscriber.activeEventAddresses.size(), equalTo(1));
-        assertThat(subscriber.activeEventAddresses, hasItem(ipv6));
-        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+        // Remove the ipv4
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+        assertEvent(subscriber.takeOnNext(), ipv4, false);
     }
 
     @Test
-    public void acceptOnlyIpv6() throws InterruptedException {
+    public void preferIpv4ButOnlyAAAARecordIsPresent() throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().dnsResolverAddressTypes(IPV4_PREFERRED).build();
         final String ipv6 = nextIp6();
-        recordStore.defaultResponse("apple.com", AAAA, ipv6);
+        final String domain = "servicetalk.io";
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
 
-        final int expectedActiveCount = 1;
-        final int expectedInactiveCount = 0;
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
 
-        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
-        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery("apple.com")
-                .flatMapConcatIterable(identity());
-        final TestSubscriber subscriber = new TestSubscriber(latch);
-        toSource(publisher).subscribe(subscriber);
+        assertEvent(subscriber.takeOnNext(), ipv6, true);
 
-        latch.await();
-        assertNull(throwableRef.get());
-        assertThat(subscriber.activeEventAddresses.size(), equalTo(expectedActiveCount));
-        assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv6));
-        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+        // Remove all ips
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
-    @Ignore("This is failing because of https://github.com/apple/servicetalk/issues/280")
-    @SuppressWarnings("unchecked")
     @Test
-    public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
-        recordStore.defaultResponse("apple.com", A, nextIp());
-        CountDownLatch latchOnSubscribe = new CountDownLatch(1);
-        DnsClient noRetryClient = dnsClientBuilder().build();
-        Subscriber<ServiceDiscovererEvent<InetAddress>> subscriber = mock(Subscriber.class);
+    public void acceptOnlyIpv6() throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().dnsResolverAddressTypes(IPV6_ONLY).build();
+        final String ipv6 = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, nextIp());
 
-        try {
-            doAnswer(a -> {
-                Subscription s = a.getArgument(0);
-                s.request(1);
-                latchOnSubscribe.countDown();
-                return null;
-            }).when(subscriber).onSubscribe(any(Subscription.class));
-            doThrow(DELIBERATE_EXCEPTION).when(subscriber).onError(any());
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
 
-            toSource(noRetryClient.dnsQuery("apple.com").flatMapConcatIterable(identity()))
-                    .subscribe(subscriber);
-            latchOnSubscribe.await();
-        } finally {
-            try {
-                noRetryClient.closeAsync().toFuture().get();
-                fail("Expected exception");
-            } catch (ExecutionException e) {
-                assertThat(e.getCause().getCause(), equalTo(DELIBERATE_EXCEPTION));
+        assertEvent(subscriber.takeOnNext(), ipv6, true);
+    }
+
+    @Test
+    public void exceptionInSubscriberOnNext() throws Exception {
+        final String domain = "servicetalk.io";
+        final String ip = nextIp();
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
+        CountDownLatch latchOnError = new CountDownLatch(1);
+        BlockingQueue<ServiceDiscovererEvent<InetAddress>> queue = new ArrayBlockingQueue<>(10);
+        toSource(client.dnsQuery(domain).flatMapConcatIterable(identity())).subscribe(
+                mockThrowSubscriber(latchOnError, queue));
+        assertEvent(queue.take(), ip, true);
+        latchOnError.await();
+    }
+
+    @Test
+    public void srvExceptionInSubscriberOnNext() throws Exception {
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder().srvHostNameRepeatDelay(ofMillis(50), ofMillis(10)).build();
+        final String domain = "sd.servicetalk.io";
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String ip = nextIp();
+        final int targetPort = 9876;
+        final int ttl = DEFAULT_TTL + 10;
+        recordStore.addIPv4Address(targetDomain1, ttl, ip);
+        recordStore.addSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        CountDownLatch latchOnError = new CountDownLatch(1);
+        BlockingQueue<ServiceDiscovererEvent<InetSocketAddress>> queue = new ArrayBlockingQueue<>(10);
+        toSource(client.dnsSrvQuery(domain).flatMapConcatIterable(identity())).subscribe(
+                mockThrowSubscriber(latchOnError, queue));
+        assertEvent(queue.take(), ip, targetPort, true);
+        assertEvent(queue.take(), ip, targetPort, false);
+        // Remove the srv address because the mapped publishers don't propagate errors, so we want the outer SRV resolve
+        // to fail.
+        recordStore.removeSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        latchOnError.await();
+    }
+
+    private static <T> Subscriber<ServiceDiscovererEvent<T>> mockThrowSubscriber(
+            CountDownLatch latchOnError, Queue<ServiceDiscovererEvent<T>> queue) {
+        @SuppressWarnings("unchecked")
+        Subscriber<ServiceDiscovererEvent<T>> subscriber = mock(Subscriber.class);
+        AtomicInteger onNextCount = new AtomicInteger();
+        doAnswer(a -> {
+            Subscription s = a.getArgument(0);
+            s.request(Long.MAX_VALUE);
+            return null;
+        }).when(subscriber).onSubscribe(any(Subscription.class));
+        doAnswer(a -> {
+            latchOnError.countDown();
+            return null;
+        }).when(subscriber).onError(any());
+        doAnswer(a -> {
+            queue.add(a.getArgument(0));
+            if (onNextCount.getAndIncrement() == 0) {
+                throw DELIBERATE_EXCEPTION;
             }
-        }
+            return null;
+        }).when(subscriber).onNext(any());
+        return subscriber;
+    }
+
+    private TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> dnsSrvQuery(String domain) {
+        Publisher<ServiceDiscovererEvent<InetSocketAddress>> publisher = client.dnsSrvQuery(domain)
+                .flatMapConcatIterable(identity());
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber =
+                new TestPublisherSubscriber<>();
+        toSource(publisher).subscribe(subscriber);
+        return subscriber;
+    }
+
+    private TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> dnsQuery(String domain) {
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery(domain)
+                .flatMapConcatIterable(identity());
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber =
+                new TestPublisherSubscriber<>();
+        toSource(publisher).subscribe(subscriber);
+        return subscriber;
     }
 
     private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
         return new DefaultDnsServiceDiscovererBuilder()
                 .ioExecutor(nettyIoExecutor)
-                .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
+                .dnsResolverAddressTypes(IPV4_ONLY)
                 .optResourceEnabled(false)
-                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
-                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                .srvConcurrency(512)
+                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
                 .minTTL(1);
     }
 
-    private DefaultDnsServiceDiscovererBuilder clientBuilderWithRetry() {
+    private DefaultDnsServiceDiscovererBuilder dnsClientBuilderWithRetry() {
         final BiIntFunction<Throwable, ? extends Completable> retryStrategy = (i, t) -> immediate().timer(ofMillis(50));
         return dnsClientBuilder()
                 .appendFilter(client -> new DnsClientFilter(client) {
@@ -746,40 +833,27 @@ public class DefaultDnsClientTest {
                 });
     }
 
-    private static class TestSubscriber implements Subscriber<ServiceDiscovererEvent<InetAddress>> {
-        private final CountDownLatch latch;
-        private final AtomicReference<Throwable> throwableRef = new AtomicReference<>();
-        private final List<String> activeEventAddresses = new ArrayList<>();
-        private final List<String> inactiveEventAddresses = new ArrayList<>();
+    private static void assertEvent(@Nullable ServiceDiscovererEvent<InetSocketAddress> event,
+                                    String ip, int port, boolean available) throws UnknownHostException {
+        assertThat(event, is(new DefaultServiceDiscovererEvent<>(
+                new InetSocketAddress(getByName(ip), port), available)));
+    }
 
-        TestSubscriber(final CountDownLatch latch) {
-            this.latch = latch;
-        }
+    private static void assertEvent(@Nullable ServiceDiscovererEvent<InetAddress> event,
+                                    String ip, boolean available) throws UnknownHostException {
+        assertThat(event, is(new DefaultServiceDiscovererEvent<>(getByName(ip), available)));
+    }
 
-        @Override
-        public void onSubscribe(final Subscription s) {
-            s.request(Long.MAX_VALUE);
-        }
+    @SuppressWarnings("unchecked")
+    private static void assertHasEvent(Collection<ServiceDiscovererEvent<InetAddress>> events,
+                                       String ip, boolean available) throws UnknownHostException {
+        assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(getByName(ip), available)));
+    }
 
-        @Override
-        public void onNext(final ServiceDiscovererEvent<InetAddress> event) {
-            if (event.isAvailable()) {
-                activeEventAddresses.add(event.address().getHostAddress());
-            } else {
-                inactiveEventAddresses.add(event.address().getHostAddress());
-            }
-            latch.countDown();
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            throwableRef.set(t);
-            latch.countDown();
-        }
-
-        @Override
-        public void onComplete() {
-            throwableRef.set(new IllegalStateException("Unexpected completion"));
-        }
+    @SuppressWarnings("unchecked")
+    private static void assertHasEvent(Collection<ServiceDiscovererEvent<InetSocketAddress>> events,
+                                       String ip, int port, boolean available) throws UnknownHostException {
+        assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(
+                new InetSocketAddress(getByName(ip), port), available)));
     }
 }
