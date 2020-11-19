@@ -35,6 +35,10 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeCancel;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -228,11 +232,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
                 if (r == CANCELLED) {
                     requested = TERMINATED;
-                    try {
-                        target.cancel();
-                    } catch (Throwable t) {
-                        LOGGER.error("Ignoring unexpected exception from cancel(). Subscription {}.", target, t);
-                    }
+                    safeCancel(target);
                     return; // No more signals are required to be sent.
                 } else if (r == TERMINATED) {
                     return; // we want to hard return to avoid resetting state.
@@ -280,6 +280,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final int STATE_EXECUTING = 2;
         private static final int STATE_TERMINATING = 3;
         private static final int STATE_TERMINATED = 4;
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<OffloadedSubscriber> stateUpdater =
                 newUpdater(OffloadedSubscriber.class, "state");
 
@@ -335,19 +336,17 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             target.onSubscribe(subscription);
                         } catch (Throwable t) {
                             clearSignalsFromExecutorThread();
-                            LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
-                                    "Subscription: {}.", target, subscription, t);
-                            subscription.cancel();
+                            safeOnError(target, t);
+                            safeCancel(subscription);
                             return; // We can't interact with the queue any more because we terminated, so bail.
                         }
                     } else if (signal instanceof TerminalNotification) {
                         state = STATE_TERMINATED;
-                        try {
-                            ((TerminalNotification) signal).terminate(target);
-                        } catch (Throwable t) {
-                            LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
-                                    ((TerminalNotification) signal).cause() == null ? "onComplete()" :
-                                            "onError()", target, t);
+                        Throwable cause = ((TerminalNotification) signal).cause();
+                        if (cause != null) {
+                            safeOnError(target, cause);
+                        } else {
+                            safeOnComplete(target);
                         }
                         return; // We can't interact with the queue any more because we terminated, so bail.
                     } else {
@@ -357,17 +356,9 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                             target.onNext(t);
                         } catch (Throwable th) {
                             clearSignalsFromExecutorThread();
-                            try {
-                                assert subscription != null;
-                                subscription.cancel();
-                            } finally {
-                                try {
-                                    target.onError(th);
-                                } catch (Throwable throwable) {
-                                    LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
-                                            target, t);
-                                }
-                            }
+                            safeOnError(target, th);
+                            assert subscription != null;
+                            safeCancel(subscription);
                             return; // We can't interact with the queue any more because we terminated, so bail.
                         }
                     }
@@ -434,25 +425,24 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 executor.execute(this);
             } catch (Throwable t) {
                 state = STATE_TERMINATED;
+                try {
+                    // As a policy, we call the target in the calling thread when the executor is inadequately
+                    // provisioned. In the future we could make this configurable.
+                    if (signal instanceof Subscription) {
+                        // Offloading of onSubscribe was rejected.
+                        // If target throws here, we do not attempt to do anything else as spec has been violated.
+                        target.onSubscribe(EMPTY_SUBSCRIPTION);
+                    }
+                } finally {
+                    safeOnError(target, t);
+                }
                 // This is an SPSC queue; at this point we are sure that there is no other consumer of the queue
                 // because:
                 //  - We were in STATE_IDLE and hence the task isn't running.
                 //  - The Executor threw from execute(), so we assume it will not run the task.
                 signals.clear();
                 assert subscription != null;
-                subscription.cancel();
-                // As a policy, we call the target in the calling thread when the executor is inadequately
-                // provisioned. In the future we could make this configurable.
-                if (signal instanceof Subscription) {
-                    // Offloading of onSubscribe was rejected.
-                    // If target throws here, we do not attempt to do anything else as spec has been violated.
-                    target.onSubscribe(EMPTY_SUBSCRIPTION);
-                }
-                try {
-                    target.onError(t);
-                } catch (Throwable throwable) {
-                    LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", target, throwable);
-                }
+                safeCancel(subscription);
             }
         }
     }
@@ -606,19 +596,11 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof TerminalNotification) {
-                try {
-                    final Throwable error = ((TerminalNotification) terminal).cause();
-                    assert error != null : "Cause can't be null from TerminalNotification.error(..)";
-                    target.onError(error);
-                } catch (Throwable t) {
-                    LOGGER.error("Ignored unexpected exception from onError. Subscriber: {}", target, t);
-                }
+                final Throwable error = ((TerminalNotification) terminal).cause();
+                assert error != null;
+                safeOnError(target, error);
             } else {
-                try {
-                    target.onSuccess(uncheckCast(terminal));
-                } catch (Throwable t) {
-                    LOGGER.error("Ignored unexpected exception from onSuccess. Subscriber: {}", target, t);
-                }
+                safeOnSuccess(target, uncheckCast(terminal));
             }
         }
 
@@ -628,9 +610,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
-                LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Cancellable: {}.",
-                        target, cancellable, t);
-                cancellable.cancel();
+                safeOnError(target, t);
+                safeCancel(cancellable);
             }
         }
 
@@ -671,15 +652,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
-            try {
-                if (terminal instanceof Throwable) {
-                    target.onError((Throwable) terminal);
-                } else {
-                    target.onComplete();
-                }
-            } catch (Throwable t) {
-                LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
-                        terminal instanceof Throwable ? "onError" : "onComplete", target, t);
+            if (terminal instanceof Throwable) {
+                safeOnError(target, (Throwable) terminal);
+            } else {
+                safeOnComplete(target);
             }
         }
 
@@ -689,9 +665,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
-                LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, Cancellable: {}.",
-                        target, cancellable, t);
-                cancellable.cancel();
+                safeOnError(target, t);
+                safeCancel(cancellable);
             }
         }
     }
@@ -708,13 +683,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         public void cancel() {
             try {
-                executor.execute(() -> {
-                    try {
-                        cancellable.cancel();
-                    } catch (Throwable t) {
-                        LOGGER.error("Ignored unexpected exception from cancel(). Cancellable: {}", cancellable, t);
-                    }
-                });
+                executor.execute(() -> safeCancel(cancellable));
             } catch (Throwable t) {
                 LOGGER.error("Failed to execute task on the executor {}. " +
                                 "Invoking Cancellable (cancel()) in the caller thread. Cancellable {}. ",

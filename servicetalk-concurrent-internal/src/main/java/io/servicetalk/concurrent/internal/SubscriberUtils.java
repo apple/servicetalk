@@ -405,4 +405,16 @@ public final class SubscriberUtils {
             LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
         }
     }
+
+    /**
+     * Invokes {@link Cancellable#cancel()} ignoring any exceptions that are thrown.
+     * @param cancellable The {@link Cancellable} to {@link Cancellable#cancel() cancel}.
+     */
+    public static void safeCancel(Cancellable cancellable) {
+        try {
+            cancellable.cancel();
+        } catch (Throwable t) {
+            LOGGER.info("Ignoring exception from cancel {}.", cancellable, t);
+        }
+    }
 }

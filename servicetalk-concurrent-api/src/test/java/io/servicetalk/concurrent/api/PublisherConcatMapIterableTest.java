@@ -16,23 +16,35 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.PublisherSource.Processor;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
+import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -40,9 +52,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class PublisherConcatMapIterableTest {
     @Rule
@@ -52,6 +67,49 @@ public class PublisherConcatMapIterableTest {
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
+
+    @Test
+    public void upstreamRecoverWithMakesProgress() throws Exception {
+        @SuppressWarnings("unchecked")
+        Subscriber<String> mockSubscriber = mock(Subscriber.class);
+        CountDownLatch latchOnSubscribe = new CountDownLatch(1);
+        CountDownLatch latchOnError = new CountDownLatch(1);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+        AtomicInteger nextCount = new AtomicInteger();
+        List<String> results = new ArrayList<>();
+        doAnswer(a -> {
+            Subscription s = a.getArgument(0);
+            s.request(Long.MAX_VALUE);
+            latchOnSubscribe.countDown();
+            return null;
+        }).when(mockSubscriber).onSubscribe(any(Subscription.class));
+        doAnswer(a -> {
+            causeRef.set(a.getArgument(0));
+            latchOnError.countDown();
+            return null;
+        }).when(mockSubscriber).onError(eq(DELIBERATE_EXCEPTION));
+        doAnswer(a -> {
+            results.add(a.getArgument(0));
+            if (nextCount.getAndIncrement() == 0) {
+                throw new DeliberateException();
+            }
+            throw DELIBERATE_EXCEPTION; // final exception
+        }).when(mockSubscriber).onNext(any());
+
+        Processor<List<String>, List<String>> processor = newPublisherProcessor();
+        toSource(fromSource(processor).recoverWith(cause -> {
+            if (cause != DELIBERATE_EXCEPTION) { // recover!
+                return from(singletonList("two"));
+            }
+            return failed(cause);
+        }).flatMapConcatIterable(identity())).subscribe(mockSubscriber);
+
+        latchOnSubscribe.await();
+        processor.onNext(asList("one", "ignored!"));
+        latchOnError.await();
+        assertThat(results, contains("one", "two"));
+        assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
+    }
 
     @Test
     public void cancellableIterableIsCancelled() {
