@@ -226,9 +226,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 currentState = State.READ_INITIAL;
             }
             case READ_INITIAL: {
-                if (!buffer.isReadable()) {
-                    return;
-                }
                 final int lfIndex = findCRLF(buffer, maxStartLineLength);
                 if (lfIndex < 0) {
                     handlePartialInitialLine(ctx, buffer);
