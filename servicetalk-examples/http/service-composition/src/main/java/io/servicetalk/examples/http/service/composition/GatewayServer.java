@@ -41,6 +41,7 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofSeconds;
 
 /**
  * A server starter for gateway to all backends.
@@ -119,7 +120,7 @@ public final class GatewayServer {
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                                 .maxRetries(3)
-                                .buildWithExponentialBackoffAndJitter(ofMillis(100)))
+                                .buildWithExponentialBackoffDeltaJitter(ofMillis(100), ofMillis(50), ofSeconds(30)))
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
                         // Apply a filter that returns an error if any response status code is not 200 OK

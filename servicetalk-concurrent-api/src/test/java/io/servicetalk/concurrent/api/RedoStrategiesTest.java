@@ -56,7 +56,15 @@ public class RedoStrategiesTest {
         });
     }
 
-    protected void verifyDelayWithJitter(long delayNanos, int invocationCount) {
+    protected void verifyDelayWithDeltaJitter(long delayNanos, long jitterNanos, int invocationCount) {
+        ArgumentCaptor<Long> backoffWithJitter = ArgumentCaptor.forClass(Long.class);
+        verify(timerExecutor, times(invocationCount)).timer(backoffWithJitter.capture(), eq(NANOSECONDS));
+        assertThat("Unexpected backoff value.", backoffWithJitter.getValue(), greaterThanOrEqualTo(0L));
+        assertThat("Unexpected backoff value.", backoffWithJitter.getValue(),
+                lessThanOrEqualTo(delayNanos + jitterNanos));
+    }
+
+    protected void verifyDelayWithFullJitter(long delayNanos, int invocationCount) {
         ArgumentCaptor<Long> backoffWithJitter = ArgumentCaptor.forClass(Long.class);
         verify(timerExecutor, times(invocationCount)).timer(backoffWithJitter.capture(), eq(NANOSECONDS));
         assertThat("Unexpected backoff value.", backoffWithJitter.getValue(), greaterThanOrEqualTo(0L));

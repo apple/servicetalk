@@ -21,12 +21,16 @@ import java.time.Duration;
 import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.api.RepeatStrategies.TerminateRepeatException;
-import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoff;
-import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoff;
-import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoffAndJitter;
+import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffFullJitter;
+import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoffDeltaJitter;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static java.time.Duration.ofDays;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class RepeatStrategiesTest extends RedoStrategiesTest {
@@ -34,86 +38,90 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     @Test
     public void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoff(2, backoff, timerExecutor));
-        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
-        verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffDeltaJitter(2, backoff, ofNanos(1),
+                timerExecutor));
+        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithDeltaJitter(backoff.toNanos(), 1, 1);
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithConstantBackoff(1, backoff, timerExecutor), backoff);
+        testMaxRepeats(repeatWithConstantBackoffFullJitter(1, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoff(2, initialDelay, timerExecutor));
-        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
-        verify(timerExecutor).timer(initialDelay.toNanos(), NANOSECONDS);
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffFullJitter(2, initialDelay,
+                timerExecutor));
+        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithFullJitter(initialDelay.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
 
-        signalListener = strategy.invokeAndListen();
-        verify(timerExecutor).timer(initialDelay.toNanos() << 1, NANOSECONDS);
+        subscriber = strategy.invokeAndListen();
+        verifyDelayWithFullJitter(initialDelay.toNanos() << 1, 2);
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithExponentialBackoff(1, backoff, timerExecutor), backoff);
+        testMaxRepeats(repeatWithConstantBackoffFullJitter(1, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testExpBackoffWithJitter() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay,
-                timerExecutor));
-        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
-        verifyDelayWithJitter(initialDelay.toNanos(), 1);
+        Duration jitter = ofMillis(500);
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffDeltaJitter(2, initialDelay, jitter,
+                ofDays(10), timerExecutor));
+        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
 
-        signalListener = strategy.invokeAndListen();
+        subscriber = strategy.invokeAndListen();
         long nextDelay = initialDelay.toNanos() << 1;
-        verifyDelayWithJitter(nextDelay, 2);
+        verifyDelayWithDeltaJitter(nextDelay, jitter.toNanos(), 2);
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffWithJitterMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithExponentialBackoffAndJitter(1, backoff, timerExecutor),
-                () -> verifyDelayWithJitter(backoff.toNanos(), 1));
+        Duration jitter = ofMillis(500);
+        testMaxRepeats(repeatWithExponentialBackoffDeltaJitter(1, backoff, jitter, ofDays(10), timerExecutor),
+                () -> verifyDelayWithDeltaJitter(backoff.toNanos(), jitter.toNanos(), 1));
     }
 
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Duration backoff) throws Exception {
-        testMaxRepeats(actualStrategy, () -> verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS));
+        testMaxRepeats(actualStrategy, () -> verifyDelayWithFullJitter(backoff.toNanos(), 1));
     }
 
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider)
             throws Exception {
         RepeatStrategy strategy = new RepeatStrategy(actualStrategy);
-        LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
+        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
-        signalListener.verifyCompletion();
+        subscriber.awaitOnComplete();
         verifyNoMoreInteractions(timerExecutor);
 
-        signalListener = strategy.invokeAndListen();
+        subscriber = strategy.invokeAndListen();
         verifyNoMoreInteractions(timerExecutor);
-        signalListener.verifyFailure(TerminateRepeatException.class);
+        assertThat(subscriber.awaitOnError(), instanceOf(TerminateRepeatException.class));
     }
 
     private static final class RepeatStrategy {
@@ -125,10 +133,10 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
             this.actual = actual;
         }
 
-        LegacyMockedCompletableListenerRule invokeAndListen() {
-            LegacyMockedCompletableListenerRule listenerRule = new LegacyMockedCompletableListenerRule();
-            listenerRule.listen(actual.apply(++count));
-            return listenerRule;
+        TestCollectingCompletableSubscriber invokeAndListen() {
+            TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+            toSource(actual.apply(++count)).subscribe(subscriber);
+            return subscriber;
         }
     }
 }

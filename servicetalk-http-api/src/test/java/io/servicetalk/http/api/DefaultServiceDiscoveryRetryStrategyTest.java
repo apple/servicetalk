@@ -37,6 +37,7 @@ import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -180,14 +181,16 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         assertThat("Unexpected event received", state.subscriber.takeItems(), hasSize(0));
     }
 
-    private TestPublisher<Collection<ServiceDiscovererEvent<String>>> triggerRetry(final State state,
-            final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents) throws Exception {
+    private TestPublisher<Collection<ServiceDiscovererEvent<String>>> triggerRetry(
+            final State state, final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents)
+            throws Exception {
         sdEvents.onError(DELIBERATE_EXCEPTION);
         executorRule.executor().advanceTimeBy(1, MINUTES);
         return state.pubs.take();
     }
 
-    private DefaultServiceDiscovererEvent<String> sendUpAndVerifyReceive(final State state, final String addr,
+    private DefaultServiceDiscovererEvent<String> sendUpAndVerifyReceive(
+            final State state, final String addr,
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents) {
         final DefaultServiceDiscovererEvent<String> evt = new DefaultServiceDiscovererEvent<>(addr, true);
         sdEvents.onNext(singletonList(evt));
@@ -211,7 +214,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
         State(final boolean retainAddressesTillSuccess) {
             ServiceDiscoveryRetryStrategy<String, ServiceDiscovererEvent<String>> strategy =
-                    Builder.<String>withDefaults(executorRule.executor(), ofSeconds(1))
+                    Builder.<String>withDefaults(executorRule.executor(), ofSeconds(1), ofMillis(500))
                             .retainAddressesTillSuccess(retainAddressesTillSuccess)
                             .build();
             pubs = new LinkedBlockingQueue<>();
