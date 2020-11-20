@@ -110,6 +110,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     };
     private static final ByteProcessor FIND_COLON = value -> value != COLON;
     private static final ByteProcessor FIND_FIELD_VALUE = value -> {
+        // Skip preceded and/or followed OWS
         if (isWS(value)) {
             return true;
         }
@@ -164,7 +165,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                                 final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final boolean allowPrematureClosureBeforePayloadBody, final CloseHandler closeHandler) {
         super(alloc);
-        this.closeHandler = closeHandler;
+        this.closeHandler = requireNonNull(closeHandler);
         if (maxStartLineLength <= 0) {
             throw new IllegalArgumentException("maxStartLineLength: " + maxStartLineLength + " (expected >0)");
         }
@@ -850,7 +851,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     private static boolean isObsText(final byte value) {
-        return value >= (byte) 0xA0 && value <= (byte) 0xFF; // xA0-xFF
+        return value < 0; // x80-xFF
     }
 
     @Sharable
