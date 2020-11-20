@@ -256,7 +256,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 parentContext.keepAliveManager.initiateGracefulClose(parentContext.onClosing::onComplete);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
-            } else {
+            } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)
                 ctx.fireChannelRead(msg);
             }
         }
