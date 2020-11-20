@@ -23,6 +23,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.checkJitterDelta;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkMaxRetries;
 import static io.servicetalk.concurrent.api.RetryStrategies.maxShift;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.ThreadLocalRandom.current;
@@ -56,6 +57,23 @@ public final class RepeatStrategies {
     /**
      * Creates a new repeat function that adds the passed constant {@link Duration} as delay between repeats.
      *
+     * @param delay Constant {@link Duration} of delay between repeats.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for delay.
+     *
+     * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
+     */
+    public static IntFunction<Completable> repeatWithConstantBackoffFullJitter(final Duration delay,
+                                                                               final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
+        final long delayNanos = delay.toNanos();
+        return repeatCount -> timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS);
+    }
+
+    /**
+     * Creates a new repeat function that adds the passed constant {@link Duration} as delay between repeats.
+     *
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param delay Constant {@link Duration} of delay between repeats.
@@ -73,6 +91,29 @@ public final class RepeatStrategies {
         final long delayNanos = delay.toNanos();
         return repeatCount -> repeatCount <= maxRepeats ?
                 timerExecutor.timer(current().nextLong(0, delayNanos), NANOSECONDS) : terminateRepeat();
+    }
+
+    /**
+     * Creates a new repeat function that adds the passed constant {@link Duration} as delay between repeats.
+     *
+     * @param delay Constant {@link Duration} of delay between repeats.
+     * @param jitter The jitter to apply to {@code delay} on each repeat.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for delay.
+     *
+     * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
+     */
+    public static IntFunction<Completable> repeatWithConstantBackoffDeltaJitter(final Duration delay,
+                                                                                final Duration jitter,
+                                                                                final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
+        final long delayNanos = delay.toNanos();
+        final long jitterNanos = jitter.toNanos();
+        checkJitterDelta(jitterNanos, delayNanos);
+        final long lowerBound = delayNanos - jitterNanos;
+        final long upperBound = delayNanos + jitterNanos;
+        return repeatCount -> timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS);
     }
 
     /**
@@ -104,26 +145,28 @@ public final class RepeatStrategies {
     }
 
     /**
-     * Creates a new repeat function that adds the passed constant {@link Duration} as delay between repeats.
+     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent repeats.
+     * This additionally adds a "Full Jitter" for the backoff as described
+     * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.
      *
-     * @param delay Constant {@link Duration} of delay between repeats.
-     * @param jitter The jitter to apply to {@code delay} on each repeat.
-     * @param timerExecutor {@link Executor} to be used to schedule timers for delay.
+     * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
+     * @param maxDelay The maximum amount of delay that will be introduced.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
      *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
      * that terminates successfully when the source has to be repeated or terminates with error if the source should not
      * be repeated.
      */
-    public static IntFunction<Completable> repeatWithConstantBackoffDeltaJitter(final Duration delay,
-                                                                                final Duration jitter,
-                                                                                final Executor timerExecutor) {
+    public static IntFunction<Completable> repeatWithExponentialBackoffFullJitter(final Duration initialDelay,
+                                                                                  final Duration maxDelay,
+                                                                                  final Executor timerExecutor) {
         requireNonNull(timerExecutor);
-        final long delayNanos = delay.toNanos();
-        final long jitterNanos = jitter.toNanos();
-        checkJitterDelta(jitterNanos, delayNanos);
-        final long lowerBound = delayNanos - jitterNanos;
-        final long upperBound = delayNanos + jitterNanos;
-        return repeatCount -> timerExecutor.timer(current().nextLong(lowerBound, upperBound), NANOSECONDS);
+        final long initialDelayNanos = initialDelay.toNanos();
+        final long maxDelayNanos = maxDelay.toNanos();
+        final long maxInitialShift = maxShift(initialDelayNanos);
+        return repeatCount -> timerExecutor.timer(current().nextLong(0,
+                        min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1))), NANOSECONDS);
     }
 
     /**
@@ -161,6 +204,37 @@ public final class RepeatStrategies {
      * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is
      * {@code initialDelay} which is increased exponentially for subsequent repeats.
      *
+     * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
+     * @param jitter The jitter to apply to {@code initialDelay} on each repeat.
+     * @param maxDelay The maximum amount of delay that will be introduced.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
+     * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
+     */
+    public static IntFunction<Completable> repeatWithExponentialBackoffDeltaJitter(final Duration initialDelay,
+                                                                                   final Duration jitter,
+                                                                                   final Duration maxDelay,
+                                                                                   final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
+        final long initialDelayNanos = initialDelay.toNanos();
+        final long jitterNanos = jitter.toNanos();
+        final long maxDelayNanos = maxDelay.toNanos();
+        final long maxInitialShift = maxShift(initialDelayNanos);
+        return repeatCount -> {
+            final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, repeatCount - 1);
+            return timerExecutor.timer(
+                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
+                            min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
+                    NANOSECONDS);
+        };
+    }
+
+    /**
+     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent repeats.
+     *
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
@@ -189,7 +263,7 @@ public final class RepeatStrategies {
             }
             final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, repeatCount - 1);
             return timerExecutor.timer(
-                    current().nextLong(min(0, baseDelayNanos - jitterNanos),
+                    current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
                     NANOSECONDS);
         };
