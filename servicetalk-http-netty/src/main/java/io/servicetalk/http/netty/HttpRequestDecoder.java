@@ -19,10 +19,12 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import io.netty.util.ByteProcessor;
 
 import java.util.Queue;
@@ -71,14 +73,24 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
-        buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
+        try {
+            buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
+        } catch (IllegalCharacterException cause) {
+            throw newInvalidMethodException(buffer.toString(US_ASCII), cause);
+        }
+    }
+
+    private static DecoderException newInvalidMethodException(final String found,
+                                                              final IllegalCharacterException cause) {
+        return new DecoderException(
+                "Invalid start-line: HTTP request method must contain only upper case letters, found: " + found, cause);
     }
 
     private static void ensureUpperCase(final byte value) {
         // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
         // https://tools.ietf.org/html/rfc7231#section-4.1
         if (value < 'A' || value > 'Z') {
-            throw new IllegalArgumentException("HTTP request method MUST contain only upper case letters");
+            throw new IllegalCharacterException(value, "A-Z (0x41-0x5A)");
         }
     }
 
@@ -99,7 +111,11 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         if (method != null) {
             return method;
         }
-        buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
+        try {
+            buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
+        } catch (IllegalCharacterException cause) {
+            throw newInvalidMethodException(methodName, cause);
+        }
         return HttpRequestMethod.of(methodName, NONE);
     }
 

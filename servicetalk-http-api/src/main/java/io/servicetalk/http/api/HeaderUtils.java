@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.ContentCodings;
 import io.servicetalk.serialization.api.SerializationException;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -82,8 +83,8 @@ public final class HeaderUtils {
                 }
                 return "<filtered>";
             };
-    private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
-        validateHeaderNameToken(value);
+    private static final ByteProcessor TOKEN_VALIDATOR = value -> {
+        validateToken(value);
         return true;
     };
 
@@ -275,7 +276,7 @@ public final class HeaderUtils {
      */
     static void validateCookieTokenAndHeaderName(final CharSequence key) {
         if (key.getClass() == AsciiBuffer.class) {
-            ((AsciiBuffer) key).forEachByte(HEADER_NAME_VALIDATOR);
+            ((AsciiBuffer) key).forEachByte(TOKEN_VALIDATOR);
         } else {
             validateCookieTokenAndHeaderName0(key);
         }
@@ -867,6 +868,17 @@ public final class HeaderUtils {
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
+        for (int i = 0; i < key.length(); ++i) {
+            validateToken((byte) key.charAt(i));
+        }
+    }
+
+    /**
+     * Validate char is valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
+     *
+     * @param value the character to validate.
+     */
+    private static void validateToken(final byte value) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -891,50 +903,10 @@ public final class HeaderUtils {
         //                      | "," | ";" | ":" | "\" | <">
         //                      | "/" | "[" | "]" | "?" | "="
         //                      | "{" | "}" | SP | HT
-        for (int i = 0; i < key.length(); ++i) {
-            final char value = key.charAt(i);
-            // CTL = <any US-ASCII control character
-            //       (octets 0 - 31) and DEL (127)>
-            // separators     = "(" | ")" | "<" | ">" | "@"
-            //                      | "," | ";" | ":" | "\" | <">
-            //                      | "/" | "[" | "]" | "?" | "="
-            //                      | "{" | "}" | SP | HT
-            if (value <= 32 || value >= 127) {
-                throw new IllegalArgumentException("invalid token detected at index: " + i);
-            }
-            switch (value) {
-                case '(':
-                case ')':
-                case '<':
-                case '>':
-                case '@':
-                case ',':
-                case ';':
-                case ':':
-                case '\\':
-                case '"':
-                case '/':
-                case '[':
-                case ']':
-                case '?':
-                case '=':
-                case '{':
-                case '}':
-                    throw new IllegalArgumentException("invalid token detected at index: " + i);
-                default:
-                    break;
-            }
-        }
-    }
 
-    /**
-     * Validate char is valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
-     *
-     * @param value the character to validate.
-     */
-    private static void validateHeaderNameToken(final byte value) {
-        if (value <= 32) {
-            throw new IllegalArgumentException("invalid token detected: " + value);
+        if (value < '!') { // '!' is the first visible character of ascii table
+            throw new IllegalCharacterException(value,
+                    "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
         }
         switch (value) {
             case '(':
@@ -954,7 +926,8 @@ public final class HeaderUtils {
             case '=':
             case '{':
             case '}':
-                throw new IllegalArgumentException("invalid token detected: " + value);
+                throw new IllegalCharacterException(value,
+                        "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
             default:
                 break;
         }

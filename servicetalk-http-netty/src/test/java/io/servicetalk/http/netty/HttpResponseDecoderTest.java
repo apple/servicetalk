@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,92 +95,94 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void illegalPrefaceCharacter() {
-        assertDecoderException(" HTTP/1.1 200 OK" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause(" HTTP/1.1 200 OK" + "\r\n", "Invalid preface character");
     }
 
     @Test
     public void noVersion() {
-        assertDecoderException("200 OK" + "\r\n", "Invalid initial line");
+        assertDecoderException("200 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void noStatusCode() {
-        assertDecoderException("HTTP/1.1 OK" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void noSpAfterStatusCode() {
-        assertDecoderException("HTTP/1.1 200" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1 200" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidStartLineOrder() {
-        assertDecoderException("HTTP/1.1 OK 200" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1 OK 200" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void onlyVersion() {
-        assertDecoderException("HTTP/1.1" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidVersionPrefixOnly() {
-        assertDecoderException("HttP", "Invalid initial line");
+        assertDecoderExceptionWithCause("HttP", "Invalid start-line");
     }
 
     @Test
     public void invalidVersionPrefix() {
-        assertDecoderException("HttP/1.1 200 OK" + "\r\n", "Invalid http version");
+        assertDecoderException("HttP/1.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionSlash() {
-        assertDecoderException("HTTP|1.1 200 OK" + "\r\n", "Invalid http version");
+        assertDecoderException("HTTP|1.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionMajor() {
-        assertDecoderException("HTTP/5.1 200 OK" + "\r\n", "Invalid http version");
+        assertDecoderException("HTTP/5.1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionDelimiter() {
-        assertDecoderException("HTTP/1,1 200 OK" + "\r\n", "Invalid http version");
+        assertDecoderException("HTTP/1,1 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionMinorNotNumber() {
-        assertDecoderException("HTTP/1.z 200 OK" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("HTTP/1.z 200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void twoWsBetweenVersionAndStatusCode() {
-        assertDecoderException("HTTP/1.1  200 OK" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1  200 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidStatusCodeLessThan3digitInteger() {
-        assertDecoderException("HTTP/1.1 20 OK" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1 20 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidStatusCodeMoreThan3digitInteger() {
-        assertDecoderException("HTTP/1.1 2000 OK" + "\r\n", "Invalid initial line");
+        assertDecoderException("HTTP/1.1 2000 OK" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidStatusCodeNonInteger() {
-        assertDecoderException("HTTP/1.1 20K OK" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("HTTP/1.1 20K OK" + "\r\n",
+                "Invalid start-line: HTTP status-code must contain only 3 digits");
     }
 
     @Test
     public void invalidStatusCodeWithControlCharacter() {
-        assertDecoderException("HTTP/1.1 20\0 OK" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("HTTP/1.1 20\0 OK" + "\r\n",
+                "Invalid start-line: HTTP status-code must contain only 3 digits");
     }
 
     @Test
     public void invalidReasonPhraseWithControlCharacter() {
-        assertDecoderException("HTTP/1.1 200 O\fK" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("HTTP/1.1 200 O\fK" + "\r\n", "Invalid start-line");
     }
 
     @Test
@@ -235,7 +237,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void chunkedWithTrailersSplitOnNetwork() {
-        int chunkLength = 128;
+        int chunkSize = 128;
         List<String> beforeContent = new ArrayList<>();
         beforeContent.add("HTTP/");
         beforeContent.add("1.1 ");
@@ -253,7 +255,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         beforeContent.add("Transfer-Encoding: chunked\r\n");
         beforeContent.add("\r");
         beforeContent.add("\n");
-        beforeContent.add(toHexString(chunkLength));
+        beforeContent.add(toHexString(chunkSize));
         beforeContent.add(";");
         beforeContent.add("\r");
         beforeContent.add("\n");
@@ -273,12 +275,12 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
             channel.writeInbound(fromAscii(msg));
         }
         // Write single chunk on two writes
-        writeContent(chunkLength / 2);
-        writeContent(chunkLength / 2);
+        writeContent(chunkSize / 2);
+        writeContent(chunkSize / 2);
         for (String msg : afterContent) {
             channel.writeInbound(fromAscii(msg));
         }
-        validateWithContent(-chunkLength, true);
+        validateWithContent(-chunkSize, true);
     }
 
     @Test
@@ -298,7 +300,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void variableWithTrailers() {
-        int chunkLength = 128;
+        int chunkSize = 128;
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -306,14 +308,14 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         // Note that trailers are only allowed when chunked encoding is used. So the trailers in this case are
         // considered part of the payload (even the \r\n), and the response is terminated when the channel is closed.
         // https://tools.ietf.org/html/rfc7230.html#section-4.1
-        writeContent(chunkLength);
+        writeContent(chunkSize);
         String trailersMsg = "TrailerStatus: good" + "\r\n" + "\r\n";
         writeMsg(trailersMsg);
 
         // For a response, the variable length content is considered "complete" when the channel is closed.
         channel.close();
 
-        validateWithContent(-(chunkLength + trailersMsg.length()), false);
+        validateWithContent(-(chunkSize + trailersMsg.length()), false);
         assertFalse(channel.finishAndReleaseAll());
     }
 

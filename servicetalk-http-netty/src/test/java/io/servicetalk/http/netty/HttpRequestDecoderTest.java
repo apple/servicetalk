@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
@@ -78,87 +79,89 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void illegalPrefaceCharacter() {
-        assertDecoderException(' ' + startLine() + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause(' ' + startLine() + "\r\n", "Invalid preface character");
     }
 
     @Test
     public void noMethod() {
-        assertDecoderException("/ HTTP/1.1" + "\r\n", "Invalid initial line");
+        assertDecoderException("/ HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void noRequestTarget() {
-        assertDecoderException("GET HTTP/1.1" + "\r\n", "Invalid initial line");
+        assertDecoderException("GET HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void noVersion() {
-        assertDecoderException("GET / " + "\r\n", "Invalid http version");
+        assertDecoderException("GET / " + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidStartLineOrder() {
-        assertDecoderException("GET HTTP/1.1 /" + "\r\n", "Invalid http version");
+        assertDecoderException("GET HTTP/1.1 /" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void illegalEndSpCharacter() {
-        assertDecoderException("GET / HTTP/1.1 " + "\r\n", "Invalid http version");
+        assertDecoderException("GET / HTTP/1.1 " + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidMethodName() {
-        assertDecoderException("GeT / HTTP/1.1" + "\r\n", "HTTP request method MUST contain only upper case letters");
+        assertDecoderExceptionWithCause("GeT / HTTP/1.1" + "\r\n",
+                "Invalid start-line: HTTP request method must contain only upper case letters");
     }
 
     @Test
     public void invalidMethodNameNothingElse() {
-        assertDecoderException("GeT ", "HTTP request method MUST contain only upper case letters");
+        assertDecoderExceptionWithCause("GeT ",
+                "Invalid start-line: HTTP request method must contain only upper case letters");
     }
 
     @Test
     public void onlyMethodName() {
-        assertDecoderException("GET" + "\r\n", "Invalid initial line");
+        assertDecoderException("GET" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void invalidRequestTargetWithControlCharacter() {
-        assertDecoderException("GET /\f/ HTTP/1.1" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("GET /\f/ HTTP/1.1" + "\r\n", "Invalid start-line: HTTP request-target");
     }
 
     @Test
     public void invalidVersionPrefix() {
-        assertDecoderException("GET / HttP/1.1" + "\r\n", "Invalid http version");
+        assertDecoderException("GET / HttP/1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionSlash() {
-        assertDecoderException("GET / HTTP|1.1" + "\r\n", "Invalid http version");
+        assertDecoderException("GET / HTTP|1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionMajor() {
-        assertDecoderException("GET / HTTP/5.1" + "\r\n", "Invalid http version");
+        assertDecoderException("GET / HTTP/5.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionDelimiter() {
-        assertDecoderException("GET / HTTP/1,1" + "\r\n", "Invalid http version");
+        assertDecoderException("GET / HTTP/1,1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void invalidVersionMinorNotNumber() {
-        assertDecoderException("GET / HTTP/1.z" + "\r\n", "Illegal character");
+        assertDecoderExceptionWithCause("GET / HTTP/1.z" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     public void twoWsBetweenMethodAndRequestTarget() {
-        assertDecoderException("GET  / HTTP/1.1" + "\r\n", "Invalid initial line");
+        assertDecoderException("GET  / HTTP/1.1" + "\r\n", "Invalid start-line");
     }
 
     @Test
     public void twoWsBetweenRequestTargetAndVersion() {
-        assertDecoderException("GET /  HTTP/1.1" + "\r\n", "Invalid http version");
+        assertDecoderException("GET /  HTTP/1.1" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
@@ -195,7 +198,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void chunkedWithTrailersSplitOnNetwork() {
-        int chunkLength = 128;
+        int chunkSize = 128;
         List<String> beforeContent = new ArrayList<>();
         beforeContent.add("POST /so");
         beforeContent.add("me/path");
@@ -213,7 +216,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         beforeContent.add("Transfer-Encoding: chunked\r\n");
         beforeContent.add("\r");
         beforeContent.add("\n");
-        beforeContent.add(toHexString(chunkLength));
+        beforeContent.add(toHexString(chunkSize));
         beforeContent.add(";");
         beforeContent.add("\r");
         beforeContent.add("\n");
@@ -233,12 +236,12 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
             channel.writeInbound(fromAscii(msg));
         }
         // Write single chunk on two writes
-        writeContent(chunkLength / 2);
-        writeContent(chunkLength / 2);
+        writeContent(chunkSize / 2);
+        writeContent(chunkSize / 2);
         for (String msg : afterContent) {
             channel.writeInbound(fromAscii(msg));
         }
-        validateWithContent(-chunkLength, true);
+        validateWithContent(-chunkSize, true);
     }
 
     @Test
@@ -272,7 +275,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         // Note that trailers are not allowed for requests without "transfer-encoding: chunked"
         // https://tools.ietf.org/html/rfc7230#section-3.3
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg("TrailerStatus: good\r\n\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(e.getMessage(), startsWith("Invalid start-line"));
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
@@ -297,7 +300,6 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
                 "Smuggled: " + startLine() + "\r\n\r\n" +
                 "Content-Length: " + contentLength + "\r\n" +
                 "Connection: keep-alive" + "\r\n\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
 
         HttpMetaData metaData = assertStartLineForContent();
         assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.utils.internal;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+import org.junit.Test;
 
-dependencies {
-    implementation project(":servicetalk-annotations")
-    implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-    implementation "org.jctools:jctools-core:$jcToolsVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+public class IllegalCharacterExceptionTest {
 
-    testImplementation "junit:junit:$junitVersion"
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void messageCanBeGeneratedForAnyByteValue() {
+        for (int value = Byte.MIN_VALUE; value <= Byte.MAX_VALUE; ++value) {
+            new IllegalCharacterException((byte) value);
+            new IllegalCharacterException((byte) value, "something");
+        }
+    }
 }
