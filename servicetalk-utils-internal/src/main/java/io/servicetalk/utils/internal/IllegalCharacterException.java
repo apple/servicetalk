@@ -15,7 +15,10 @@
  */
 package io.servicetalk.utils.internal;
 
-import static java.lang.String.format;
+import javax.annotation.Nullable;
+
+import static java.lang.Character.toChars;
+import static java.lang.Integer.toHexString;
 
 /**
  * Exception that clarifies an illegal character and expected values.
@@ -29,7 +32,7 @@ public final class IllegalCharacterException extends IllegalArgumentException {
      * @param value value of the character
      */
     public IllegalCharacterException(final byte value) {
-        super(format("'%1$c' (0x%1$02X)", value & 0xff));
+        super(message(value, null));
     }
 
     /**
@@ -39,6 +42,16 @@ public final class IllegalCharacterException extends IllegalArgumentException {
      * @param expected definition of expected value(s)
      */
     public IllegalCharacterException(final byte value, final String expected) {
-        super(format("'%1$c' (0x%1$02X), expected [%2$s]", value & 0xff, expected));
+        super(message(value, expected));
+    }
+
+    private static String message(final byte value, @Nullable final String expected) {
+        final int codePoint = value & 0xff;
+        final StringBuilder sb = new StringBuilder(expected == null ? 10 : 23 + expected.length())
+                .append('\'')
+                .append(toChars(codePoint))
+                .append("' (0x")
+                .append(toHexString(0x100 | codePoint), 1, 3);  // to 2 digit hex number
+        return (expected == null ? sb.append(')') : sb.append("), expected [").append(expected).append(']')).toString();
     }
 }

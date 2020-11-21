@@ -88,8 +88,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         for (int i = 0; i < len; ++i) {
             final byte b = buffer.getByte(rIdx + i);
             if (b != FIRST_BYTES[i]) {
-                throw new DecoderException("Invalid start-line: HTTP response must start with HTTP-version, found: " +
-                        buffer.toString(US_ASCII) + ", expected: HTTP/", new IllegalCharacterException(b));
+                throw new StacklessDecoderException(
+                        "Invalid start-line: HTTP response must start with HTTP-version: HTTP/1.x",
+                        new IllegalCharacterException(b));
             }
         }
     }
@@ -112,8 +113,8 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         try {
             buffer.forEachByte(start, length, ENSURE_REASON_PHRASE);
         } catch (IllegalCharacterException cause) {
-            throw new DecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character: " +
-                    reasonPhrase, cause);
+            throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
+                    cause);
         }
         return reasonPhrase;
     }
@@ -149,19 +150,22 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {
-        if (length != 3) {
-            throw new DecoderException("Invalid start-line: HTTP status-code must contain only 3 digits, found: " +
-                    buffer.toString(start, length, US_ASCII));
-        }
-
+        ensureStatusCodeLength(length);
         final int medium = buffer.getUnsignedMedium(start);
         try {
             return toDecimal((medium & 0xff0000) >> 16) * 100 +
                     toDecimal((medium & 0xff00) >> 8) * 10 +
                     toDecimal(medium & 0xff);
         } catch (IllegalCharacterException cause) {
-            throw new DecoderException("Invalid start-line: HTTP status-code must contain only 3 digits, found: " +
-                    buffer.toString(start, length, US_ASCII), cause);
+            throw new StacklessDecoderException("Invalid start-line: HTTP status-code must contain only 3 digits",
+                    cause);
+        }
+    }
+
+    private static void ensureStatusCodeLength(final int length) {
+        if (length != 3) {
+            throw new DecoderException("Invalid start-line: HTTP status-code must contain only 3 digits but found: " +
+                    length + " characters");
         }
     }
 }

@@ -89,6 +89,10 @@ final class UriUtils {
     static final long HOST_NON_IP_LMASK = UNRESERVED_LMASK | SUBDELIM_LMASK;
     static final long HOST_NON_IP_HMASK = UNRESERVED_HMASK | SUBDELIM_HMASK;
 
+    // tchar       = unreserved / "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "^" / "`" / "|"
+    static final long TCHAR_LMASK = UNRESERVED_LMASK | lowMask("!#$%&'*+^`|");
+    static final long TCHAR_HMASK = UNRESERVED_HMASK | highMask("!#$%&'*+^`|");
+
     private UriUtils() {
     }
 

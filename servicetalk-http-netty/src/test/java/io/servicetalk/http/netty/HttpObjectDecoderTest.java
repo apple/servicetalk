@@ -188,7 +188,7 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     public void startLineWithoutCR() {
-        assertDecoderException(startLine() + '\n', "Found LF but no CR before");
+        assertDecoderException(startLine() + '\n', "Found LF (0x0a) but no CR (0x0d) before");
     }
 
     @Test
@@ -241,50 +241,50 @@ abstract class HttpObjectDecoderTest {
     public void tooManyPrefaceCharacters() {
         DecoderException ex = assertThrows(DecoderException.class,
                 () -> writeMsg("\r\n\r\n\r\n" + startLine() + "\r\n" + "\r\n"));
-        assertThat(ex.getMessage(), startsWith("Too many prefacing CRLF characters"));
+        assertThat(ex.getMessage(), startsWith("Too many prefacing CRLF (0x0d0a) characters"));
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
     @Test
     public void whitespaceNotAllowedBeforeHeaderFieldName() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
-                " Host: servicetalk.io" + "\r\n" + "\r\n", "Invalid header filed-name");
+                " Host: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
     public void whitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
-                "Host : servicetalk.io" + "\r\n" + "\r\n", "Invalid header filed-name");
+                "Host : servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
     public void controlCharNotAllowedBeforeHeaderFieldValue() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
-                "Host: \fservicetalk.io" + "\r\n" + "\r\n", "Invalid header filed-value");
+                "Host: \fservicetalk.io" + "\r\n" + "\r\n", "Invalid value for the header");
     }
 
     @Test
     public void noEndOfHeaderName() {
         assertDecoderException(startLine() + "\r\n" +
-                "Host" + "\r\n" + "\r\n", "Unable to find end of header field-name");
+                "Host" + "\r\n" + "\r\n", "Unable to find end of a header name");
     }
 
     @Test
     public void emptyHeaderName() {
         assertDecoderException(startLine() + "\r\n" +
-                ": some-value" + "\r\n" + "\r\n", "Empty header field-name");
+                ": some-value" + "\r\n" + "\r\n", "Empty header name");
     }
 
     @Test
     public void headerNameWithControlChar() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
-                "H\0st: servicetalk.io" + "\r\n" + "\r\n", "Invalid header filed-name");
+                "H\0st: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
     public void headerNameWithObsText() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
-                "Hóst: servicetalk.io" + "\r\n" + "\r\n", "Invalid header filed-name");
+                "Hóst: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test

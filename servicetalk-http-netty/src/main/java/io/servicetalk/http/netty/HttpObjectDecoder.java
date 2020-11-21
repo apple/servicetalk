@@ -96,8 +96,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (value == CR || value == LF) {
             return true;
         }
-        throw new DecoderException("Invalid preface character before the start-line of the HTTP message",
-                new IllegalCharacterException(value, "CR (0x0D), LF (0x0A)"));
+        throw new StacklessDecoderException("Invalid preface character before the start-line of the HTTP message",
+                new IllegalCharacterException(value, "CR (0x0d), LF (0x0a)"));
     };
     private static final ByteProcessor FIND_WS = value -> !isWS(value);
     private static final ByteProcessor FIND_VCHAR_END = value -> {
@@ -107,7 +107,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (isWS(value)) {
             return false;
         }
-        throw new IllegalCharacterException(value, "VCHAR (0x21-0x7E)");
+        throw new IllegalCharacterException(value, "VCHAR (0x21-0x7e)");
     };
     private static final ByteProcessor FIND_COLON = value -> value != COLON;
     private static final ByteProcessor FIND_FIELD_VALUE = value -> {
@@ -244,7 +244,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // Look only for a WS, other checks will be done later by request/response decoder
                 final int aEnd = buffer.forEachByte(aStart + 1, nonControlIndex - aStart, FIND_WS);
                 if (aEnd < 0) {
-                    throw newStartLineError();
+                    throw newStartLineError("first");
                 }
 
                 final int bStart = aEnd + 1;    // Expect a single WS
@@ -253,11 +253,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     bEnd = buffer.forEachByte(bStart, nonControlIndex - bStart + 1,
                             isDecodingRequest() ? FIND_VCHAR_END : FIND_WS);
                 } catch (IllegalCharacterException cause) {
-                    throw new DecoderException("Invalid start-line: HTTP request-target contains an illegal character",
-                            cause);
+                    throw new StacklessDecoderException(
+                            "Invalid start-line: HTTP request-target contains an illegal character", cause);
                 }
                 if (bEnd < 0 || bEnd == bStart) {
-                    throw newStartLineError();
+                    throw newStartLineError("second");
                 }
 
                 final int cStart = bEnd + 1;    // Expect a single WS
@@ -577,7 +577,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             skippedControls += len;
             if (skippedControls > MAX_ALLOWED_CHARS_TO_SKIP) {
                 throw new DecoderException(
-                        "Too many prefacing CRLF characters before the start-line of the HTTP message");
+                        "Too many prefacing CRLF (0x0d0a) characters before the start-line of the HTTP message");
             }
             cumulationIndex += len;
             buffer.readerIndex(cumulationIndex);
@@ -612,11 +612,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // Other checks will be done by header validator if enabled by users
         final int nameEnd = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
         if (nameEnd < 0) {
-            throw new DecoderException("Unable to find end of header field-name, while parsing line " +
-                    (parsingLine - 1));
+            throw newDecoderExceptionAtLine("Unable to find end of a header name in line ", parsingLine);
         }
         if (nameEnd == nameStart) {
-            throw new DecoderException("Empty header field-name, while parsing line " + (parsingLine - 1));
+            throw newDecoderExceptionAtLine("Empty header name in line ", parsingLine);
         }
 
         // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
@@ -634,16 +633,30 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 value = newAsciiString(newBufferFrom(buffer.retainedSlice(valueStart, valueEnd - valueStart + 1)));
             }
         } catch (IllegalCharacterException cause) {
-            throw new DecoderException("Invalid header filed-value, while parsing line " + (parsingLine - 1), cause);
+            throw invalidHeaderValue(name, parsingLine, cause);
         }
         try {
             headers.add(name, value);
         } catch (IllegalCharacterException cause) {
-            throw new DecoderException("Invalid header filed-name: " + name + ", while parsing line " +
-                    (parsingLine - 1), cause);
+            throw invalidHeaderName(name, parsingLine, cause);
         }
         // Consume the header line bytes from the buffer.
         consumeCRLF(buffer, lfIndex);
+    }
+
+    private static DecoderException newDecoderExceptionAtLine(final String message, final int parsingLine) {
+        return new DecoderException(message + (parsingLine - 1));
+    }
+
+    private static DecoderException invalidHeaderName(final CharSequence name, final int parsingLine,
+                                                      final IllegalCharacterException cause) {
+        throw new StacklessDecoderException("Invalid header name in line " + (parsingLine - 1) + ": " + name, cause);
+    }
+
+    private static DecoderException invalidHeaderValue(final CharSequence name, final int parsingLine,
+                                                       final IllegalCharacterException cause) {
+        throw new StacklessDecoderException("Invalid value for the header '" + name + "' in line " + (parsingLine - 1),
+                cause);
     }
 
     @Nullable
@@ -741,8 +754,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         try {
             return parseUnsignedLong(hex, 16);
         } catch (NumberFormatException cause) {
-            throw new DecoderException("Cannot parse chunk-size: " + hex + ", expected a valid HEXDIG", cause);
+            throw invalidChunkSize(hex, cause);
         }
+    }
+
+    private static DecoderException invalidChunkSize(final String hex, final NumberFormatException cause) {
+        return new StacklessDecoderException("Cannot parse chunk-size: " + hex + ", expected a valid HEXDIG", cause);
     }
 
     private void consumeCRLF(final ByteBuf buffer, final int lfIndex) {
@@ -775,7 +792,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             final int lfIndex = findLF(buffer, startIndex, toIndex);
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
-                    throw new DecoderException("Could not find CRLF within " + maxLineSize +
+                    throw new DecoderException("Could not find CRLF (0x0d0a) within " + maxLineSize +
                             " bytes, while parsing line " + parsingLine);
                 }
                 return -2;
@@ -785,7 +802,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             } else if (buffer.getByte(lfIndex - 1) == CR) {
                 return lfIndex;
             } else if (lfIndex != maxToIndex) {
-                throw new DecoderException("Found LF but no CR before, while parsing line " + parsingLine);
+                throw new DecoderException("Found LF (0x0a) but no CR (0x0d) before, while parsing line " +
+                        parsingLine);
             } else {
                 throw new TooLongFrameException("An HTTP line " + parsingLine + " is larger than " + maxLineSize +
                         " bytes");
@@ -800,10 +818,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return buffer.forEachByte(fromIndex, toIndex - fromIndex, FIND_LF);
     }
 
-    private DecoderException newStartLineError() {
-        throw new DecoderException("Invalid start-line: incorrect number of components, expected: " +
-                (isDecodingRequest() ? "method SP request-target SP HTTP-version" :
-                        "HTTP-version SP status-code SP reason-phrase"));
+    private DecoderException newStartLineError(final String place) {
+        throw new DecoderException("Invalid start-line: incorrect number of components, cannot find the " + place +
+                " SP, expected: " + (isDecodingRequest() ? "method SP request-target SP HTTP-version" :
+                "HTTP-version SP status-code SP reason-phrase"));
     }
 
     private static int getWebSocketContentLength(final HttpMetaData message) {
@@ -867,8 +885,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static DecoderException newHttpVersionError(final ByteBuf buffer, final int start, final int length,
                                                         @Nullable final Throwable cause) {
-        return new DecoderException("Invalid HTTP version: '" + buffer.toString(start, length, US_ASCII) +
-                "', expected: HTTP/1.x", cause);
+        final String message = "Invalid HTTP version: '" + buffer.toString(start, length, US_ASCII) +
+                "', expected: HTTP/1.x";
+        return cause == null ? new DecoderException(message) : new StacklessDecoderException(message, cause);
     }
 
     static int toDecimal(final int value) {
@@ -901,6 +920,19 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final Object msg) {
             // noop
+        }
+    }
+
+    static final class StacklessDecoderException extends DecoderException {
+        private static final long serialVersionUID = 7611225180490304156L;
+
+        StacklessDecoderException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
         }
     }
 }

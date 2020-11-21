@@ -43,7 +43,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 
@@ -262,8 +261,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
         // Content is not expected for requests if no "content-length" nor "transfer-encoding: chunked" is present
-        DecoderException e = assertThrows(DecoderException.class, () -> writeContent(128));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThrows(DecoderException.class, () -> writeContent(128));
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 

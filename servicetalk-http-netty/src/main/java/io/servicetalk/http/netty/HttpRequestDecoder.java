@@ -76,21 +76,20 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         try {
             buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
         } catch (IllegalCharacterException cause) {
-            throw newInvalidMethodException(buffer.toString(US_ASCII), cause);
+            throw newInvalidMethodException(cause);
         }
     }
 
-    private static DecoderException newInvalidMethodException(final String found,
-                                                              final IllegalCharacterException cause) {
-        return new DecoderException(
-                "Invalid start-line: HTTP request method must contain only upper case letters, found: " + found, cause);
+    private static DecoderException newInvalidMethodException(final IllegalCharacterException cause) {
+        return new StacklessDecoderException(
+                "Invalid start-line: HTTP request method must contain only upper case letters", cause);
     }
 
     private static void ensureUpperCase(final byte value) {
         // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
         // https://tools.ietf.org/html/rfc7231#section-4.1
         if (value < 'A' || value > 'Z') {
-            throw new IllegalCharacterException(value, "A-Z (0x41-0x5A)");
+            throw new IllegalCharacterException(value, "A-Z (0x41-0x5a)");
         }
     }
 
@@ -114,7 +113,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         try {
             buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
         } catch (IllegalCharacterException cause) {
-            throw newInvalidMethodException(methodName, cause);
+            throw newInvalidMethodException(cause);
         }
         return HttpRequestMethod.of(methodName, NONE);
     }

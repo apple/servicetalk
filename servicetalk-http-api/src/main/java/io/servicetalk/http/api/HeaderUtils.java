@@ -49,6 +49,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.VARY;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
+import static io.servicetalk.http.api.UriUtils.TCHAR_HMASK;
+import static io.servicetalk.http.api.UriUtils.TCHAR_LMASK;
+import static io.servicetalk.http.api.UriUtils.isBitSet;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
@@ -903,33 +906,16 @@ public final class HeaderUtils {
         //                      | "," | ";" | ":" | "\" | <">
         //                      | "/" | "[" | "]" | "?" | "="
         //                      | "{" | "}" | SP | HT
-
-        if (value < '!') { // '!' is the first visible character of ascii table
+        //
+        // field-name's token is equivalent to cookie-name's token, we can reuse the tchar mask for both:
+        if (!isTchar(value)) {
             throw new IllegalCharacterException(value,
                     "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
         }
-        switch (value) {
-            case '(':
-            case ')':
-            case '<':
-            case '>':
-            case '@':
-            case ',':
-            case ';':
-            case ':':
-            case '\\':
-            case '"':
-            case '/':
-            case '[':
-            case ']':
-            case '?':
-            case '=':
-            case '{':
-            case '}':
-                throw new IllegalCharacterException(value,
-                        "! / # / $ / % / & / ' / * / + / - / . / ^ / _ / ` / | / ~ / DIGIT / ALPHA");
-            default:
-                break;
-        }
+    }
+
+    // visible for testing
+    static boolean isTchar(final byte value) {
+        return isBitSet(value, TCHAR_LMASK, TCHAR_HMASK);
     }
 }
