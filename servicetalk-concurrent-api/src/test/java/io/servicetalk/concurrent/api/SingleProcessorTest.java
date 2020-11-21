@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.ref.ReferenceQueue;
@@ -26,23 +26,12 @@ import java.lang.ref.WeakReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 public class SingleProcessorTest {
-    @Rule
-    public final LegacyMockedSingleListenerRule<?> rule = new LegacyMockedSingleListenerRule<>();
-    @Rule
-    public final LegacyMockedSingleListenerRule<?> rule2 = new LegacyMockedSingleListenerRule<>();
-
-    @SuppressWarnings("unchecked")
-    private <T> LegacyMockedSingleListenerRule<T> rule() {
-        return (LegacyMockedSingleListenerRule<T>) rule;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> LegacyMockedSingleListenerRule<T> rule2() {
-        return (LegacyMockedSingleListenerRule<T>) rule2;
-    }
 
     @Test
     public void testSuccessBeforeListen() {
@@ -62,14 +51,18 @@ public class SingleProcessorTest {
     private <T> void testSuccessBeforeListen(@Nullable T expected) {
         SingleProcessor<T> processor = new SingleProcessor<>();
         processor.onSuccess(expected);
-        rule().listen(processor).verifySuccess(expected);
+        TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.awaitOnSuccess(), is(expected));
     }
 
     @Test
     public void testErrorBeforeListen() {
         SingleProcessor<String> processor = new SingleProcessor<>();
         processor.onError(DELIBERATE_EXCEPTION);
-        rule().listen(processor).verifyFailure(DELIBERATE_EXCEPTION);
+        TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -89,17 +82,21 @@ public class SingleProcessorTest {
 
     private <T> void testSuccessAfterListen(@Nullable T expected) {
         SingleProcessor<T> processor = new SingleProcessor<>();
-        rule().listen(processor).verifyNoEmissions();
+        TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         processor.onSuccess(expected);
-        rule().verifySuccess(expected);
+        assertThat(subscriber.awaitOnSuccess(), is(expected));
     }
 
     @Test
     public void testErrorAfterListen() {
         SingleProcessor<String> processor = new SingleProcessor<>();
-        rule().listen(processor).verifyNoEmissions();
+        TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         processor.onError(DELIBERATE_EXCEPTION);
-        rule().verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -121,7 +118,9 @@ public class SingleProcessorTest {
         SingleProcessor<T> processor = new SingleProcessor<>();
         processor.onSuccess(expected);
         processor.onError(DELIBERATE_EXCEPTION);
-        rule().listen(processor).verifySuccess(expected);
+        TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.awaitOnSuccess(), is(expected));
     }
 
     @Test
@@ -143,7 +142,9 @@ public class SingleProcessorTest {
         SingleProcessor<T> processor = new SingleProcessor<>();
         processor.onError(DELIBERATE_EXCEPTION);
         processor.onSuccess(expected);
-        rule().listen(processor).verifyFailure(DELIBERATE_EXCEPTION);
+        TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -163,12 +164,16 @@ public class SingleProcessorTest {
 
     private <T> void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified(@Nullable T expected) {
         SingleProcessor<T> processor = new SingleProcessor<>();
-        rule().listen(processor).verifyNoEmissions();
-        rule2().listen(processor).verifyNoEmissions();
-        rule().cancel();
+        TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
+        TestSingleSubscriber<T> subscriber2 = new TestSingleSubscriber<>();
+        processor.subscribe(subscriber);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        processor.subscribe(subscriber2);
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
         processor.onSuccess(expected);
-        rule().verifyNoEmissions();
-        rule2().verifySuccess(expected);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.awaitOnSuccess(), is(expected));
     }
 
     @Test

@@ -17,26 +17,30 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenSubscriberTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private CompletableSource.Subscriber subscriber;
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @SuppressWarnings("unchecked")
     @Before
@@ -46,15 +50,16 @@ public abstract class AbstractWhenSubscriberTest {
 
     @Test
     public void testOnWithOnComplete() {
-        listener.listen(doSubscriber(Completable.completed(), () -> subscriber)).verifyCompletion();
+        toSource(doSubscriber(Completable.completed(), () -> subscriber)).subscribe(listener);
+        listener.awaitOnComplete();
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onComplete();
     }
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Completable.failed(DELIBERATE_EXCEPTION), () -> subscriber))
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doSubscriber(Completable.failed(DELIBERATE_EXCEPTION), () -> subscriber)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }

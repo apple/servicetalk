@@ -15,19 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class TestCompletableTest {
 
@@ -44,10 +44,10 @@ public class TestCompletableTest {
                 .build();
 
         source.subscribe(subscriber1);
-        assertTrue(subscriber1.cancellableReceived());
+        subscriber1.awaitSubscription();
 
         source.onComplete();
-        assertThat(subscriber1.takeTerminal(), is(complete()));
+        subscriber1.awaitOnComplete();
 
         source.subscribe(subscriber2);
         expected.expect(RuntimeException.class);
@@ -64,12 +64,12 @@ public class TestCompletableTest {
 
         source.subscribe(subscriber1);
         source.onComplete();
-        assertThat(subscriber1.takeTerminal(), is(complete()));
+        subscriber1.awaitOnComplete();
 
         source.subscribe(subscriber2);
-        assertThat(subscriber2.takeTerminal(), nullValue());
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
         source.onComplete();
-        assertThat(subscriber2.takeTerminal(), is(complete()));
+        subscriber2.awaitOnComplete();
     }
 
     @Test
@@ -82,11 +82,11 @@ public class TestCompletableTest {
 
         source.subscribe(subscriber2);
 
-        assertThat(subscriber1.takeTerminal(), nullValue());
-        assertThat(subscriber2.takeTerminal(), nullValue());
+        assertThat(subscriber1.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
 
         source.onComplete();
-        assertThat(subscriber1.takeTerminal(), is(complete()));
-        assertThat(subscriber2.takeTerminal(), is(complete()));
+        subscriber1.awaitOnComplete();
+        subscriber2.awaitOnComplete();
     }
 }

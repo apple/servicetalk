@@ -20,9 +20,9 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,8 +36,8 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -64,73 +64,72 @@ public final class SingleFlatMapPublisherTest {
     public void testFirstAndSecondPropagate() {
         toSource(succeeded(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
                 .subscribe(subscriber);
-        subscriber.request(2);
-        assertThat(subscriber.takeItems(), contains("Hello11", "Hello21"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(2);
+        assertThat(subscriber.takeOnNext(2), contains("Hello11", "Hello21"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSuccess() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         publisher.onNext("Hello1", "Hello2");
         publisher.onComplete();
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testPublisherEmitsError() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSingleEmitsError() {
         toSource(failed(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertFalse(publisher.isSubscribed());
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeNextPublisher() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(2);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(2);
+        subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", single.isCancelled(), is(true));
     }
 
     @Test
     public void testCancelNoRequest() {
         toSource(single.flatMapPublisher(s -> publisher)).subscribe(subscriber);
-        subscriber.cancel();
-        subscriber.request(1);
+        subscriber.awaitSubscription().cancel();
+        subscriber.awaitSubscription().request(1);
         single.verifyListenNotCalled();
     }
 
     @Test
     public void testCancelBeforeOnSubscribe() {
         toSource(single.flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
         publisher.onSubscribe(subscription);
         assertTrue(subscription.isCancelled());
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testCancelPostOnSubscribe() {
         toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         publisher.onSubscribe(subscription);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
     }
 
@@ -139,17 +138,17 @@ public final class SingleFlatMapPublisherTest {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
         toSource(succeeded(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         single.onSuccess("Hello");
-        assertThat(subscriber.takeError(), instanceOf(NullPointerException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(NullPointerException.class));
     }
 
     @Test

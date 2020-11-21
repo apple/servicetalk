@@ -17,9 +17,9 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,8 +35,11 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -47,10 +50,8 @@ public class LimitingConnectionFactoryFilterTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public final LegacyMockedSingleListenerRule<ListenableAsyncCloseable> connectlistener =
-            new LegacyMockedSingleListenerRule<>();
 
+    private final TestSingleSubscriber<ListenableAsyncCloseable> connectlistener = new TestSingleSubscriber<>();
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
     private BlockingQueue<Processor> connectionOnClose;
 
@@ -99,9 +100,10 @@ public class LimitingConnectionFactoryFilterTest {
         when(o.newConnection(any(), any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
-        connectlistener.listen(cf.newConnection("c1", null)).verifyNoEmissions();
+        toSource(cf.newConnection("c1", null)).subscribe(connectlistener);
+        assertThat(connectlistener.pollTerminal(10, MILLISECONDS), is(false));
         connectAndVerifyFailed(cf);
-        connectlistener.cancel();
+        connectlistener.awaitSubscription().cancel();
 
         ListenableAsyncCloseable c = mock(ListenableAsyncCloseable.class);
         when(c.onClose()).thenReturn(Completable.never());

@@ -16,25 +16,25 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenSubscriberTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     private SingleSource.Subscriber<String> subscriber;
 
@@ -46,15 +46,16 @@ public abstract class AbstractWhenSubscriberTest {
 
     @Test
     public void testOnWithOnSuccess() {
-        listener.listen(doSubscriber(Single.succeeded("Hello"), () -> subscriber)).verifySuccess("Hello");
+        toSource(doSubscriber(Single.succeeded("Hello"), () -> subscriber)).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is("Hello"));
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onSuccess("Hello");
     }
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Single.failed(DELIBERATE_EXCEPTION), () -> subscriber))
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doSubscriber(Single.failed(DELIBERATE_EXCEPTION), () -> subscriber)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);
     }

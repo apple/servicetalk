@@ -15,15 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class TakeWhilePublisherTest {
@@ -37,10 +38,10 @@ public class TakeWhilePublisherTest {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(4);
+        subscriber.awaitSubscription().request(4);
         publisher.onNext("Hello1", "Hello2", "Hello3");
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
+        subscriber.awaitOnComplete();
         assertTrue(subscription.isCancelled());
     }
 
@@ -48,21 +49,21 @@ public class TakeWhilePublisherTest {
     public void testWhileError() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello1");
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains("Hello1"));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(), is("Hello1"));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testWhileComplete() {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello1");
         publisher.onComplete();
-        assertThat(subscriber.takeItems(), contains("Hello1"));
+        assertThat(subscriber.takeOnNext(), is("Hello1"));
     }
 
     @Test
@@ -70,10 +71,10 @@ public class TakeWhilePublisherTest {
         Publisher<String> p = publisher.takeWhile(s -> !s.equals("Hello3"));
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         publisher.onNext("Hello1", "Hello2");
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
+        subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
     }
 }

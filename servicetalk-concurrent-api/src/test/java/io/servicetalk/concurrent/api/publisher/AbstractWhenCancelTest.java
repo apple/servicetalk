@@ -18,18 +18,17 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,10 +47,10 @@ public abstract class AbstractWhenCancelTest {
         Runnable onCancel = mock(Runnable.class);
         doCancel(publisher, onCancel).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitSubscription().cancel();
         verify(onCancel).run();
         assertTrue(subscription.isCancelled());
     }
@@ -61,7 +60,7 @@ public abstract class AbstractWhenCancelTest {
         Runnable onCancel = mock(Runnable.class);
         doCancel(publisher, onCancel).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         verify(onCancel).run();
         assertTrue(subscription.isCancelled());
     }
@@ -75,7 +74,7 @@ public abstract class AbstractWhenCancelTest {
                 throw DELIBERATE_EXCEPTION;
             }).subscribe(subscriber);
             publisher.onSubscribe(subscription);
-            subscriber.cancel();
+            subscriber.awaitSubscription().cancel();
         } finally {
             assertTrue(subscription.isCancelled());
         }

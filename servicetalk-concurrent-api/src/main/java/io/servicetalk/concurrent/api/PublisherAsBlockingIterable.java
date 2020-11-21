@@ -24,15 +24,13 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
@@ -50,9 +48,6 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by the {@link Publisher} from which this {@link BlockingIterable} is created.
  */
 final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherAsBlockingIterable.class);
-
     private final Publisher<T> original;
     private final int queueCapacityHint;
 
@@ -79,11 +74,15 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<SubscriberAndIterator> onNextQueuedUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(SubscriberAndIterator.class, "onNextQueued");
 
         private final BlockingQueue<Object> data;
         private final int maxBufferedItems;
         private final DelayedSubscription subscription = new DelayedSubscription();
         private final int queueCapacity;
+        private volatile int onNextQueued;
         /**
          * Number of items to emit from {@link #next()} till we request more.
          * Alternatively we can {@link Subscription#request(long) request(1)} every time we emit an item.
@@ -106,9 +105,8 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         SubscriberAndIterator(int queueCapacity) {
             maxBufferedItems = queueCapacity;
             itemsToNextRequest = max(1, maxBufferedItems / 2);
-            // max items => queueCapacityHint + 1 terminal + 1 CANCELLED_SIGNAL
-            this.queueCapacity = queueCapacity + 2;
-            data = new LinkedBlockingQueue<>(this.queueCapacity);
+            this.queueCapacity = queueCapacity;
+            data = new LinkedBlockingQueue<>();
         }
 
         @Override
@@ -121,35 +119,38 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void close() {
-            subscription.cancel();
-            if (!terminated && !data.offer(CANCELLED_SIGNAL)) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
-                        data.size(), queueCapacity);
-                throw new QueueFullException("publisher-iterator", queueCapacity);
+            try {
+                subscription.cancel();
+            } finally {
+                if (!terminated) {
+                    offer(CANCELLED_SIGNAL);
+                }
             }
         }
 
         @Override
         public void onNext(@Nullable T t) {
-            if (!data.offer(wrapNull(t))) { // We have received more data than we requested.
+            // optimistically increment. there is no concurrency allowed in onNext.
+            if (onNextQueuedUpdater.incrementAndGet(this) > queueCapacity) {
+                onNextQueuedUpdater.decrementAndGet(this);
                 throw new QueueFullException("publisher-iterator", queueCapacity);
             }
+            offer(wrapNull(t));
         }
 
         @Override
         public void onError(final Throwable t) {
-            if (!data.offer(error(t))) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
-                        data.size(), queueCapacity, t);
-            }
+            offer(error(t));
         }
 
         @Override
         public void onComplete() {
-            if (!data.offer(COMPLETE_NOTIFICATION)) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: {}, capacity: {}",
-                        data.size(), queueCapacity);
-            }
+            offer(COMPLETE_NOTIFICATION);
+        }
+
+        private void offer(Object o) {
+            boolean offered = data.offer(o);
+            assert offered;
         }
 
         @Override
@@ -254,6 +255,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 }
                 throw new RuntimeException(cause);
             }
+            onNextQueuedUpdater.decrementAndGet(this);
             return unwrapNullUnchecked(signal);
         }
     }

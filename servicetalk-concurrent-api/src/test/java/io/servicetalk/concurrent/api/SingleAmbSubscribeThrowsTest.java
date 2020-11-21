@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,7 +31,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 @RunWith(Parameterized.class)
@@ -73,7 +74,6 @@ public class SingleAmbSubscribeThrowsTest {
         assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
 
         second.onSuccess(2);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -84,18 +84,11 @@ public class SingleAmbSubscribeThrowsTest {
         assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
 
         first.onSuccess(1);
-        verifyNoMoreResult();
     }
 
     private void subscribeToAmbAndVerifyFail() {
         toSource(amb).subscribe(subscriber);
-        assertThat("Cancellable not received.", subscriber.cancellableReceived(), is(true));
-        assertThat("Unexpected error result.", subscriber.takeError(), is(sameInstance(DELIBERATE_EXCEPTION)));
-        assertThat("Unexpected result.", subscriber.takeResult(), is(nullValue()));
-    }
-
-    private void verifyNoMoreResult() {
-        assertThat("Unexpected error result.", subscriber.takeError(), is(nullValue()));
-        assertThat("Unexpected result.", subscriber.takeResult(), is(nullValue()));
+        subscriber.awaitSubscription();
+        assertThat("Unexpected error result.", subscriber.awaitOnError(), is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 }

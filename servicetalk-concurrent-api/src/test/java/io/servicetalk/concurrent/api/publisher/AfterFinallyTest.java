@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -50,7 +49,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
             publisher.onComplete();
             fail();
         } finally {
-            assertThat(subscriber.takeTerminal(), is(complete()));
+            subscriber.awaitOnComplete();
             verify(mock).onComplete();
             verifyNoMoreInteractions(mock);
             assertFalse(subscription.isCancelled());
@@ -68,7 +67,7 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
             publisher.onError(DELIBERATE_EXCEPTION);
             fail();
         } finally {
-            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
             verify(mock).onError(DELIBERATE_EXCEPTION);
             verifyNoMoreInteractions(mock);
             assertFalse(subscription.isCancelled());

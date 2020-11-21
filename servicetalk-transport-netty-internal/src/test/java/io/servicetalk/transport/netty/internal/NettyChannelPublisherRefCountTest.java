@@ -16,8 +16,8 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
@@ -69,10 +69,10 @@ public class NettyChannelPublisherRefCountTest {
     @Test
     public void testRefCountedLeaked() {
         toSource(publisher).subscribe(subscriber);
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         ByteBuf buffer = channel.alloc().buffer();
         channel.writeInbound(buffer);
-        assertThat(subscriber.takeError(), instanceOf(IllegalArgumentException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
         assertThat("Buffer not released.", buffer.refCnt(), is(0));
         assertThat("Channel not closed post ref count leaked.", channel.closeFuture().isDone(), is(true));
     }

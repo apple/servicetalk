@@ -17,47 +17,49 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenSubscriberTest {
-
-    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber.Builder<String>()
-            .disableDemandCheck().build();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @SuppressWarnings("unchecked")
+    private final Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);
     private final TestPublisherSubscriber<String> finalSubscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void testOnWithOnComplete() {
         toSource(doSubscriber(from("Hello"), () -> subscriber)).subscribe(finalSubscriber);
-        finalSubscriber.request(1);
-        assertThat(finalSubscriber.takeItems(), contains("Hello"));
-        assertThat(finalSubscriber.takeTerminal(), is(complete()));
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        finalSubscriber.awaitSubscription().request(1);
+        assertThat(finalSubscriber.takeOnNext(), is("Hello"));
+        finalSubscriber.awaitOnComplete();
+        verify(subscriber).onNext(eq("Hello"));
+        verify(subscriber).onComplete();
     }
 
     @Test
     public void testOnWithOnError() {
         toSource(doSubscriber(Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
                 .subscribe(finalSubscriber);
-        assertThat(finalSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(finalSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        verify(subscriber).onError(eq(DELIBERATE_EXCEPTION));
     }
 
     protected abstract <T> Publisher<T> doSubscriber(Publisher<T> publisher,

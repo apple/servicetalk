@@ -16,27 +16,25 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnErrorTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
     public void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
-        listener.listen(doError(Completable.failed(DELIBERATE_EXCEPTION), onError));
+        toSource(doError(Completable.failed(DELIBERATE_EXCEPTION), onError)).subscribe(listener);
         verify(onError).accept(DELIBERATE_EXCEPTION);
     }
 

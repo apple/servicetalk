@@ -15,17 +15,18 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class TestSingleTest {
 
@@ -42,10 +43,10 @@ public class TestSingleTest {
                 .build();
 
         source.subscribe(subscriber1);
-        assertTrue(subscriber1.cancellableReceived());
+        subscriber1.awaitSubscription();
 
         source.onSuccess("a");
-        assertThat(subscriber1.takeResult(), is("a"));
+        assertThat(subscriber1.awaitOnSuccess(), is("a"));
 
         source.subscribe(subscriber2);
         expected.expect(RuntimeException.class);
@@ -62,11 +63,11 @@ public class TestSingleTest {
 
         source.subscribe(subscriber1);
         source.onSuccess("a");
-        assertThat(subscriber1.takeResult(), is("a"));
+        assertThat(subscriber1.awaitOnSuccess(), is("a"));
 
         source.subscribe(subscriber2);
         source.onSuccess("b");
-        assertThat(subscriber2.takeResult(), is("b"));
+        assertThat(subscriber2.awaitOnSuccess(), is("b"));
     }
 
     @Test
@@ -80,7 +81,7 @@ public class TestSingleTest {
         source.subscribe(subscriber2);
 
         source.onSuccess("a");
-        assertThat(subscriber1.takeResult(), is("a"));
-        assertThat(subscriber2.takeResult(), is("a"));
+        assertThat(subscriber1.awaitOnSuccess(), is("a"));
+        assertThat(subscriber2.awaitOnSuccess(), is("a"));
     }
 }

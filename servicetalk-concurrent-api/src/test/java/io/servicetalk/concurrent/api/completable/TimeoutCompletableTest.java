@@ -21,11 +21,11 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,11 +36,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,10 +52,8 @@ public class TimeoutCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-    @Rule
     public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
-
+    private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TestSingle<Integer> source = new TestSingle<>();
     private TestExecutor testExecutor;
 
@@ -63,14 +64,14 @@ public class TimeoutCompletableTest {
 
     @Test
     public void executorScheduleThrows() {
-        listener.listen(source.ignoreElement().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+        toSource(source.ignoreElement().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
             }
-        }));
+        })).subscribe(listener);
 
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         TestCancellable cancellable = new TestCancellable();
         source.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
@@ -81,7 +82,7 @@ public class TimeoutCompletableTest {
         init();
 
         source.onSuccess(1);
-        listener.verifyCompletion();
+        listener.awaitOnComplete();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -92,7 +93,7 @@ public class TimeoutCompletableTest {
         init();
 
         source.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -102,7 +103,7 @@ public class TimeoutCompletableTest {
     public void subscriptionCancelAlsoCancelsTimer() {
         init();
 
-        listener.cancel();
+        listener.awaitSubscription().cancel();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -113,7 +114,7 @@ public class TimeoutCompletableTest {
         init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
-        listener.verifyFailure(TimeoutException.class);
+        assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(1));
@@ -134,7 +135,7 @@ public class TimeoutCompletableTest {
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
-        listener.verifyFailure(TimeoutException.class);
+        assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     private void init() {
@@ -142,10 +143,10 @@ public class TimeoutCompletableTest {
     }
 
     private void init(Completable source, boolean expectOnSubscribe) {
-        listener.listen(source.idleTimeout(1, NANOSECONDS, testExecutor), expectOnSubscribe);
+        toSource(source.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(listener);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
-            listener.verifyNoEmissions();
+            assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
         }
     }
 

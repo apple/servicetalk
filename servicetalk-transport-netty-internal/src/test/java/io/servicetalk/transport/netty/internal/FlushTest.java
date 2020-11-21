@@ -16,8 +16,8 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 
 import org.junit.Before;
@@ -25,13 +25,12 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -84,13 +83,12 @@ public class FlushTest extends AbstractFlushTest {
     public void testCancel() {
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
 
         verify(channel).eventLoop();
         verifyZeroInteractions(channel);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
 
         assertTrue(subscription.isCancelled());
         strategy.verifyWriteCancelled();
@@ -99,14 +97,14 @@ public class FlushTest extends AbstractFlushTest {
     @Test
     public void testSourceComplete() {
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
         strategy.verifyWriteTerminated();
     }
 
     @Test
     public void testSourceEmitError() {
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         strategy.verifyWriteTerminated();
     }
 
@@ -114,7 +112,7 @@ public class FlushTest extends AbstractFlushTest {
         if (items.length == 0) {
             return;
         }
-        subscriber.request(items.length);
+        subscriber.awaitSubscription().request(items.length);
         source.onNext(items);
         flushSender.flush();
     }
@@ -122,7 +120,7 @@ public class FlushTest extends AbstractFlushTest {
     @Override
     void verifyWriteAndFlushAfter(final String... items) {
         super.verifyWriteAndFlushAfter(items);
-        assertThat(subscriber.takeItems(), contains(items));
+        assertThat(subscriber.takeOnNext(items.length), contains(items));
         strategy.verifyItemWritten(items.length);
     }
 }

@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.After;
 import org.junit.Test;
@@ -34,9 +34,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 public class PublisherProcessorConcurrencyTest {
 
@@ -70,7 +67,7 @@ public class PublisherProcessorConcurrencyTest {
         Future<Object> requesterFuture = executorService.submit(() -> {
             barrier.await();
             for (int i = 0; i < items; i++) {
-                subscriber.request(1);
+                subscriber.awaitSubscription().request(1);
             }
             return null;
         });
@@ -79,9 +76,7 @@ public class PublisherProcessorConcurrencyTest {
         requesterFuture.get();
         done.await();
 
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(expected.toArray()));
-        TerminalNotification terminal = subscriber.takeTerminal();
-        assertThat("Unexpected terminal.", terminal, is(notNullValue()));
-        assertThat("Unexpected terminal.", terminal.cause(), is(nullValue()));
+        assertThat(subscriber.takeOnNext(expected.size()), contains(expected.toArray()));
+        subscriber.awaitOnComplete();
     }
 }

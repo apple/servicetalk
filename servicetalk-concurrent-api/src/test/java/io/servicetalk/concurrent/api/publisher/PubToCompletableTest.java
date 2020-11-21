@@ -18,10 +18,10 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,34 +31,37 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 public class PubToCompletableTest {
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final LegacyMockedCompletableListenerRule listenerRule = new LegacyMockedCompletableListenerRule();
-    @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
+    private final TestCompletableSubscriber listenerRule = new TestCompletableSubscriber();
 
     @Test
     public void testSuccess() {
-        listen(from("Hello")).verifyCompletion();
+        listen(from("Hello"));
+        listenerRule.awaitOnComplete();
     }
 
     @Test
     public void testError() {
-        listen(Publisher.failed(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
+        listen(Publisher.failed(DELIBERATE_EXCEPTION));
+        assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testEmpty() {
-        listen(Publisher.empty()).verifyCompletion();
+        listen(Publisher.empty());
+        listenerRule.awaitOnComplete();
     }
 
     @Test
@@ -68,7 +71,8 @@ public class PubToCompletableTest {
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
                 subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, complete()));
             }
-        }).verifyCompletion();
+        });
+        listenerRule.awaitOnComplete();
     }
 
     @Test
@@ -79,7 +83,8 @@ public class PubToCompletableTest {
                 subscriber.onSubscribe(new DeferredEmptySubscription(subscriber,
                         TerminalNotification.error(DELIBERATE_EXCEPTION)));
             }
-        }).verifyFailure(DELIBERATE_EXCEPTION);
+        });
+        assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -98,7 +103,7 @@ public class PubToCompletableTest {
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
-    private LegacyMockedCompletableListenerRule listen(Publisher<String> src) {
-        return listenerRule.listen(src.ignoreElements());
+    private void listen(Publisher<String> src) {
+        toSource(src.ignoreElements()).subscribe(listenerRule);
     }
 }

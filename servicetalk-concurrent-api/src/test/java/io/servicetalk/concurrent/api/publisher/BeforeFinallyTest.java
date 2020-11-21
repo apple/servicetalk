@@ -45,9 +45,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
         doFinally(publisher, mock).subscribe(subscriber);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertThat(subscriber.isCompleted(), is(false));
-        assertThat(subscriber.isErrored(), is(true));
-        Throwable receivedError = subscriber.takeError();
+        Throwable receivedError = subscriber.awaitOnError();
         assertThat(receivedError, is(notNullValue()));
         assertThat(receivedError, sameInstance(DELIBERATE_EXCEPTION));
         verify(mock).onComplete();
@@ -62,7 +60,7 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
         TerminalSignalConsumer mock = throwableMock(exception);
         doFinally(publisher, mock).subscribe(subscriber);
         publisher.onError(DELIBERATE_EXCEPTION);
-        Throwable receivedError = subscriber.takeError();
+        Throwable receivedError = subscriber.awaitOnError();
         assertThat(receivedError, is(notNullValue()));
         assertThat(receivedError, sameInstance(exception));
         assertThat(receivedError.getSuppressed()[0], sameInstance(DELIBERATE_EXCEPTION));

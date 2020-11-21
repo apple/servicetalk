@@ -122,12 +122,16 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
     @SafeVarargs
     public final void onNext(@Nullable final T... items) {
         final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
-        if (items == null) {
-            subscriber.onNext(null);
-        } else {
-            for (final T item : items) {
-                subscriber.onNext(item);
+        try {
+            if (items == null) {
+                subscriber.onNext(null);
+            } else {
+                for (final T item : items) {
+                    subscriber.onNext(item);
+                }
             }
+        } catch (Throwable cause) {
+            onError(cause);
         }
     }
 

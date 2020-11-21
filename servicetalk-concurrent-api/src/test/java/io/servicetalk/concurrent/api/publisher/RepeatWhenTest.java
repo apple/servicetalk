@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.After;
 import org.junit.Test;
@@ -34,14 +34,13 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -80,49 +79,49 @@ public class RepeatWhenTest {
     @Test
     public void testError() {
         init();
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains(1, 2));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         verifyZeroInteractions(shouldRepeat);
     }
 
     @Test
     public void testRepeatCount() {
         init();
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
         repeatSignal.onError(DELIBERATE_EXCEPTION); // stop repeat
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
         verify(shouldRepeat).apply(1);
     }
 
     @Test
     public void testRequestAcrossRepeat() {
         init();
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(1, 2));
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
         repeatSignal.onComplete(); // trigger repeat
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onNext(3);
-        assertThat(subscriber.takeItems(), contains(3));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.takeOnNext(), is(3));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testTwoCompletes() {
         init();
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(1, 2));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRepeat).apply(1);
         repeatSignal.onComplete(); // trigger repeat
         assertTrue(source.isSubscribed());
@@ -131,24 +130,24 @@ public class RepeatWhenTest {
         verify(shouldRepeat).apply(2);
         repeatSignal.onComplete(); // trigger repeat
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains(3));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(), is(3));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testMaxRepeats() {
         init();
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         source.onNext(1, 2);
         source.onComplete();
         repeatSignal.onComplete(); // trigger repeat
-        assertThat(subscriber.takeItems(), contains(1, 2));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onComplete();
         repeatSignal.verifyListenCalled().onError(DELIBERATE_EXCEPTION); // stop repeat
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -158,12 +157,12 @@ public class RepeatWhenTest {
         init(new TestPublisher.Builder<Integer>()
                 .sequentialSubscribers(sequentialPublisherSubscriberFunction)
                 .build());
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
         source.onComplete();
         repeatSignal.verifyListenCalled();
-        assertThat(subscriber.takeItems(), contains(1, 2));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        subscriber.awaitSubscription().cancel();
         repeatSignal.verifyCancelled();
         assertFalse(sequentialPublisherSubscriberFunction.isSubscribed());
         verify(shouldRepeat).apply(1);
@@ -174,10 +173,10 @@ public class RepeatWhenTest {
         init();
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         source.onNext(1, 2);
-        assertThat(subscriber.takeItems(), contains(1, 2));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        subscriber.awaitSubscription().cancel();
         source.onComplete();
         assertTrue(subscription.isCancelled());
     }

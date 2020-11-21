@@ -15,15 +15,15 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class ConcatPublisherTest {
 
@@ -35,36 +35,36 @@ public class ConcatPublisherTest {
     public void testEnoughRequests() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         first.onNext("Hello1", "Hello2");
         first.onComplete();
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         second.onNext("Hello3", "Hello4");
         second.onComplete();
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2", "Hello3", "Hello4"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(4), contains("Hello1", "Hello2", "Hello3", "Hello4"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFirstEmitsError() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         first.onNext("Hello1", "Hello2");
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSecondEmitsError() {
         Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         first.onNext("Hello1", "Hello2");
         first.onComplete();
         second.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains("Hello1", "Hello2"));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 }

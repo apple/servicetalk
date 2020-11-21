@@ -16,18 +16,17 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class FromSingleItemPublisherTest {
 
@@ -38,16 +37,16 @@ public class FromSingleItemPublisherTest {
         toSource(from("foo").afterOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalSucceeds() {
         toSource(Publisher.from((String) null)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(new String[]{null}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(nullValue()));
+        subscriber.awaitOnComplete();
     }
 }

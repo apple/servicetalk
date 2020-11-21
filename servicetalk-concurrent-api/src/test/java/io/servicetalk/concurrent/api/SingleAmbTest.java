@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,7 +30,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 @RunWith(Parameterized.class)
@@ -41,7 +42,7 @@ public class SingleAmbTest {
 
     public SingleAmbTest(final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
         toSource(ambSupplier.apply(first, second)).subscribe(subscriber);
-        assertThat("Cancellable not received.", subscriber.cancellableReceived(), is(true));
+        subscriber.awaitSubscription();
         assertThat("First source not subscribed.", first.isSubscribed(), is(true));
         assertThat("Second source not subscribed.", second.isSubscribed(), is(true));
     }
@@ -82,7 +83,6 @@ public class SingleAmbTest {
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onSuccess(2);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -90,7 +90,6 @@ public class SingleAmbTest {
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onSuccess(2);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -98,7 +97,6 @@ public class SingleAmbTest {
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -106,7 +104,6 @@ public class SingleAmbTest {
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -114,7 +111,6 @@ public class SingleAmbTest {
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -122,7 +118,6 @@ public class SingleAmbTest {
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -130,7 +125,6 @@ public class SingleAmbTest {
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onSuccess(2);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -138,28 +132,20 @@ public class SingleAmbTest {
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onSuccess(2);
-        verifyNoMoreResult();
     }
 
     private void sendSuccessToAndVerify(final TestSingle<Integer> source) {
         source.onSuccess(1);
-        assertThat("Unexpected error result.", subscriber.takeError(), is(nullValue()));
-        assertThat("Unexpected result.", subscriber.takeResult(), is(1));
+        assertThat("Unexpected result.", subscriber.awaitOnSuccess(), is(1));
     }
 
     private void sendErrorToAndVerify(final TestSingle<Integer> source) {
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat("Unexpected error result.", subscriber.takeError(), is(sameInstance(DELIBERATE_EXCEPTION)));
-        assertThat("Unexpected result.", subscriber.takeResult(), is(nullValue()));
+        assertThat("Unexpected error result.", subscriber.awaitOnError(), is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     private void verifyCancelled(final TestSingle<Integer> other) {
         other.onSubscribe(cancellable);
         assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
-    }
-
-    private void verifyNoMoreResult() {
-        assertThat("Unexpected error result.", subscriber.takeError(), is(nullValue()));
-        assertThat("Unexpected result.", subscriber.takeResult(), is(nullValue()));
     }
 }

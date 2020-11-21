@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
@@ -77,13 +78,13 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.CombinableMatcher.either;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -91,12 +92,9 @@ import static org.mockito.Mockito.when;
 
 @RunWith(Parameterized.class)
 public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-    @Rule
-    public final LegacyMockedCompletableListenerRule completableListenerRule =
-            new LegacyMockedCompletableListenerRule();
+    private final TestCompletableSubscriber completableListenerRule = new TestCompletableSubscriber();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
 
@@ -344,7 +342,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
-        LegacyMockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
+        toSource(serverContext().onClose()).subscribe(completableListenerRule);
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
@@ -352,11 +350,11 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
         closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
-        onCloseListener.verifyNoEmissions();
+        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(false));
 
         closeAsyncGracefully(serverContext(), 10, MILLISECONDS).toFuture().get();
 
-        onCloseListener.verifyCompletion();
+        completableListenerRule.awaitOnComplete();
 
         assertConnectionClosed();
     }
@@ -365,7 +363,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Test
     public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisher);
-        LegacyMockedCompletableListenerRule onCloseListener = completableListenerRule.listen(serverContext().onClose());
+        toSource(serverContext().onClose()).subscribe(completableListenerRule);
 
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         makeRequest(request1);
@@ -373,11 +371,11 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
         closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
-        onCloseListener.verifyNoEmissions();
+        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(false));
 
         serverContext().closeAsync().toFuture().get();
 
-        onCloseListener.verifyCompletion();
+        completableListenerRule.awaitOnComplete();
 
         assertConnectionClosed();
     }

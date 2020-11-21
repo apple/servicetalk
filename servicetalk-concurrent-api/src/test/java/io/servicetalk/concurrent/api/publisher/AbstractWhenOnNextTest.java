@@ -16,7 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,10 +25,9 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,9 +43,9 @@ public abstract class AbstractWhenOnNextTest {
         @SuppressWarnings("unchecked")
         Consumer<String> onNext = mock(Consumer.class);
         toSource(doNext(Publisher.from("Hello"), onNext)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
         verify(onNext).accept("Hello");
     }
 
@@ -55,9 +54,9 @@ public abstract class AbstractWhenOnNextTest {
         @SuppressWarnings("unchecked")
         Consumer<String> onNext = mock(Consumer.class);
         toSource(doNext(Publisher.from("Hello", "Hello1"), onNext)).subscribe(subscriber);
-        subscriber.request(2);
-        assertThat(subscriber.takeItems(), contains("Hello", "Hello1"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(2);
+        assertThat(subscriber.takeOnNext(2), contains("Hello", "Hello1"));
+        subscriber.awaitOnComplete();
         verify(onNext).accept("Hello");
         verify(onNext).accept("Hello1");
     }

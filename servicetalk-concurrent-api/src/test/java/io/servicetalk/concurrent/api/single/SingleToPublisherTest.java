@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,17 +33,15 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertTrue;
 
 public class SingleToPublisherTest {
 
@@ -57,67 +55,67 @@ public class SingleToPublisherTest {
     @Test
     public void testSuccessBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
-        verifier.request(1);
-        assertThat(verifier.takeItems(), contains("Hello"));
-        assertThat(verifier.takeTerminal(), is(complete()));
+        verifier.awaitSubscription().request(1);
+        assertThat(verifier.takeOnNext(), is("Hello"));
+        verifier.awaitOnComplete();
     }
 
     @Test
     public void testFailureBeforeRequest() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
-        verifier.request(1);
-        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        verifier.awaitSubscription().request(1);
+        assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSuccessAfterRequest() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
-        verifier.request(1);
+        verifier.awaitSubscription().request(1);
         single.onSuccess("Hello");
-        assertThat(verifier.takeItems(), contains("Hello"));
-        assertThat(verifier.takeTerminal(), is(complete()));
+        assertThat(verifier.takeOnNext(), is("Hello"));
+        verifier.awaitOnComplete();
     }
 
     @Test
     public void testFailedFuture() {
         toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
-        verifier.request(1);
-        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        verifier.awaitSubscription().request(1);
+        assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
-        assertTrue(verifier.subscriptionReceived());
-        assertThat(verifier.takeItems(), hasSize(0));
-        assertThat(verifier.takeTerminal(), nullValue());
+        verifier.awaitSubscription();
+        assertThat(verifier.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(verifier.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testCancelAfterRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
-        verifier.request(1);
-        assertThat(verifier.takeItems(), contains("Hello"));
-        assertThat(verifier.takeTerminal(), is(complete()));
-        verifier.cancel();
+        verifier.awaitSubscription().request(1);
+        assertThat(verifier.takeOnNext(), is("Hello"));
+        verifier.awaitOnComplete();
+        verifier.awaitSubscription().cancel();
     }
 
     @Test
     public void testInvalidRequestN() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
-        verifier.request(-1);
-        assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
+        verifier.awaitSubscription().request(-1);
+        assertThat(verifier.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
     public void testSuccessAfterInvalidRequestN() {
         TestSingle<String> single = new TestSingle<>();
         toSource(single.toPublisher()).subscribe(verifier);
-        verifier.request(-1);
-        assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
+        verifier.awaitSubscription().request(-1);
+        assertThat(verifier.awaitOnError(), instanceOf(IllegalArgumentException.class));
         single.onSuccess("Hello");
-        assertThat(verifier.takeTerminal(), is(nullValue()));
+        assertThat(verifier.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
@@ -126,9 +124,9 @@ public class SingleToPublisherTest {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
-        verifier.request(1);
-        assertThat(verifier.takeItems(), contains("Hello"));
-        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        verifier.awaitSubscription().request(1);
+        assertThat(verifier.takeOnNext(), is("Hello"));
+        assertThat(verifier.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -147,8 +145,7 @@ public class SingleToPublisherTest {
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable); // waits till subscribed.
         assertThat("Single not subscribed.", single.isSubscribed(), is(true));
-        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         analyzed.await();
         assertThat("Single did not get a cancel.", cancellable.isCancelled(), is(true));
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
@@ -157,43 +154,46 @@ public class SingleToPublisherTest {
     @Test
     public void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
+                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         CountDownLatch receivedOnSuccess = new CountDownLatch(1);
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, receivedOnSuccess);
         single.onSuccess("Hello");
         receivedOnSuccess.await();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        assertThat("No terminal received.", subscriber.takeItems(), contains("Hello"));
-        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+        assertThat("No terminal received.", subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
+                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         single.onSuccess("Hello");
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        assertThat("No terminal received.", subscriber.takeItems(), contains("Hello"));
-        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+        assertThat("No terminal received.", subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void publishOnOriginalIsPreservedOnError() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber = new
+                io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
         single.onError(DELIBERATE_EXCEPTION);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        Throwable err = subscriber.takeError();
+        Throwable err = subscriber.awaitOnError();
         assertThat("No error received.", err, is(notNullValue()));
         assertThat("Wrong error received.", err, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
@@ -201,22 +201,23 @@ public class SingleToPublisherTest {
     @Test
     public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber =
+                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
-        subscriber.request(-1);
+        subscriber.awaitSubscription().request(-1);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        Throwable err = subscriber.takeError();
+        Throwable err = subscriber.awaitOnError();
         assertThat("No error received.", err, is(notNullValue()));
         assertThat("Wrong error received.", err, is(instanceOf(IllegalArgumentException.class)));
     }
 
-    private CountDownLatch publishOnOriginalIsPreserved0(final ConcurrentLinkedQueue<AssertionError> errors,
-                                                         final TestPublisherSubscriber<String> subscriber,
-                                                         final TestSingle<String> single,
-                                                         @Nullable final CountDownLatch receivedOnSuccessFromSingle)
-            throws Exception {
+    private CountDownLatch publishOnOriginalIsPreserved0(
+            final ConcurrentLinkedQueue<AssertionError> errors,
+            final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<String> subscriber,
+            final TestSingle<String> single,
+            @Nullable final CountDownLatch receivedOnSuccessFromSingle) throws Exception {
         final Thread testThread = currentThread();
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);

@@ -17,11 +17,11 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
-import io.servicetalk.concurrent.api.TestCollectingPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -42,7 +43,7 @@ public class SingleConcatWithPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private TestCollectingPublisherSubscriber<Integer> subscriber;
+    private TestPublisherSubscriber<Integer> subscriber;
     private TestSingle<Integer> source;
     private TestPublisher<Integer> next;
     private TestSubscription subscription;
@@ -50,7 +51,7 @@ public class SingleConcatWithPublisherTest {
 
     @Before
     public void setUp() throws Exception {
-        subscriber = new TestCollectingPublisherSubscriber<>();
+        subscriber = new TestPublisherSubscriber<>();
         cancellable = new TestCancellable();
         source = new TestSingle.Builder<Integer>().disableAutoOnSubscribe().build();
         next = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
@@ -61,20 +62,19 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void bothCompletion() throws InterruptedException {
+    public void bothCompletion() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         subscriber.awaitSubscription().request(2);
         assertThat("Unexpected items requested.", subscription.requested(), is(2L));
         next.onNext(2);
-        assertThat(subscriber.takeOnNext(), is(1));
-        assertThat(subscriber.takeOnNext(), is(2));
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
         next.onComplete();
         subscriber.awaitOnComplete();
     }
 
     @Test
-    public void sourceCompletionNextError() throws InterruptedException {
+    public void sourceCompletionNextError() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         next.onError(DELIBERATE_EXCEPTION);
@@ -83,54 +83,54 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribeNegative1() throws InterruptedException {
+    public void invalidRequestBeforeNextSubscribeNegative1() {
         invalidRequestBeforeNextSubscribe(-1);
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribeZero() throws InterruptedException {
+    public void invalidRequestBeforeNextSubscribeZero() {
         invalidRequestBeforeNextSubscribe(0);
     }
 
-    private void invalidRequestBeforeNextSubscribe(long invalidN) throws InterruptedException {
+    private void invalidRequestBeforeNextSubscribe(long invalidN) {
         subscriber.awaitSubscription().request(invalidN);
         source.onSuccess(1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void invalidRequestNWithInlineSourceCompletion() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    public void invalidRequestNWithInlineSourceCompletion() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(Single.succeeded(1).concat(empty())).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void invalidRequestAfterNextSubscribe() throws InterruptedException {
+    public void invalidRequestAfterNextSubscribe() {
         triggerNextSubscribe();
         subscriber.awaitSubscription().request(-1);
         assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
     }
 
     @Test
-    public void multipleInvalidRequest() throws InterruptedException {
+    public void multipleInvalidRequest() {
         subscriber.awaitSubscription().request(-1);
         subscriber.awaitSubscription().request(-10);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void invalidThenValidRequestNegative1() throws InterruptedException {
+    public void invalidThenValidRequestNegative1() {
         invalidThenValidRequest(-1);
     }
 
     @Test
-    public void invalidThenValidRequestZero() throws InterruptedException {
+    public void invalidThenValidRequestZero() {
         invalidThenValidRequest(0);
     }
 
-    private void invalidThenValidRequest(long invalidN) throws InterruptedException {
+    private void invalidThenValidRequest(long invalidN) {
         subscriber.awaitSubscription().request(invalidN);
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
@@ -138,7 +138,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void request0PropagatedAfterSuccess() throws InterruptedException {
+    public void request0PropagatedAfterSuccess() {
         source.onSuccess(1);
         subscriber.awaitSubscription().request(1); // get the success from the Single
         subscriber.awaitSubscription().request(0);
@@ -148,14 +148,14 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void sourceError() throws InterruptedException {
+    public void sourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat("Unexpected subscriber termination.", subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
     @Test
-    public void cancelSource() throws InterruptedException {
+    public void cancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
@@ -163,7 +163,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void cancelSourcePostRequest() throws InterruptedException {
+    public void cancelSourcePostRequest() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
@@ -172,7 +172,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void cancelNext() throws InterruptedException {
+    public void cancelNext() {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         subscriber.awaitSubscription().cancel();
@@ -181,7 +181,7 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void zeroIsNotRequestedOnTransitionToSubscription() throws InterruptedException {
+    public void zeroIsNotRequestedOnTransitionToSubscription() {
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
         next.onSubscribe(subscription);
@@ -189,7 +189,7 @@ public class SingleConcatWithPublisherTest {
                 is(false));
     }
 
-    private void triggerNextSubscribe() throws InterruptedException {
+    private void triggerNextSubscribe() {
         subscriber.awaitSubscription().request(1);
         source.onSuccess(1);
         next.onSubscribe(subscription);

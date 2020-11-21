@@ -18,8 +18,8 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -468,7 +468,7 @@ public class ErrorHandlingTest {
         TestPublisherSubscriber<TestResponse> subscriber = new TestPublisherSubscriber<>();
         CountDownLatch terminationLatch = new CountDownLatch(1);
         toSource(resp.afterFinally(terminationLatch::countDown)).subscribe(subscriber);
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         terminationLatch.await();
         Throwable cause;
         switch (testMode) {
@@ -476,10 +476,10 @@ public class ErrorHandlingTest {
             case ServiceEmitsDataThenGrpcException:
             case BlockingServiceWritesThenThrows:
             case BlockingServiceWritesThenThrowsGrpcException:
-                List<TestResponse> items = subscriber.takeItems();
+                List<TestResponse> items = subscriber.takeOnNext(1);
                 assertThat("Unexpected response.", items, hasSize(1));
                 assertThat("Unexpected response.", items, contains(cannedResponse));
-                cause = subscriber.takeError();
+                cause = subscriber.awaitOnError();
                 assertThat("Unexpected termination.", cause, is(notNullValue()));
                 verifyException(cause);
                 break;
@@ -501,7 +501,7 @@ public class ErrorHandlingTest {
             case ServiceEmitsGrpcException:
             case BlockingServiceThrows:
             case BlockingServiceThrowsGrpcException:
-                cause = subscriber.takeError();
+                cause = subscriber.awaitOnError();
                 assertThat("Unexpected termination.", cause, is(notNullValue()));
                 verifyException(cause);
                 break;

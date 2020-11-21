@@ -16,15 +16,18 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.BiIntPredicate;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,8 +40,7 @@ import static org.mockito.Mockito.when;
 
 public class RetryTest {
 
-    @Rule
-    public LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
     private BiIntPredicate<Throwable> shouldRetry;
@@ -47,23 +49,27 @@ public class RetryTest {
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
+        setUp(subscriber);
+    }
+
+    private void setUp(TestSingleSubscriber<Integer> subscriberRule) {
         source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntPredicate<Throwable>) mock(BiIntPredicate.class);
         when(shouldRetry.test(anyInt(), any())).thenAnswer(invocation -> shouldRetryValue);
-        subscriberRule.listen(source.retry(shouldRetry));
+        toSource(source.retry(shouldRetry)).subscribe(subscriberRule);
     }
 
     @Test
     public void testComplete() {
         source.onSuccess(1);
-        subscriberRule.verifySuccess(1);
+        assertThat(subscriber.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
     public void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(shouldRetry);
     }
@@ -72,29 +78,29 @@ public class RetryTest {
     public void testTwoFailures() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyNoEmissions();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         source.onError(DELIBERATE_EXCEPTION);
         verify(shouldRetry).test(2, DELIBERATE_EXCEPTION);
         source.onSuccess(1);
-        subscriberRule.verifySuccess(1);
+        assertThat(subscriber.awaitOnSuccess(), is(1));
     }
 
     @Test
     public void testMaxRetries() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyNoEmissions();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         shouldRetryValue = false;
         DeliberateException fatal = new DeliberateException();
         source.onError(fatal);
-        subscriberRule.verifyFailure(fatal);
+        assertThat(subscriber.awaitOnError(), is(fatal));
     }
 
     @Test
     public void testCancel() {
-        subscriberRule.cancel();
+        subscriber.awaitSubscription().cancel();
         source.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(shouldRetry);
     }
@@ -102,13 +108,13 @@ public class RetryTest {
     @Test
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
-        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);
-        subscriberRule.resetSubscriberMock().listen(source.retry((times, cause) -> {
+        toSource(source.retry((times, cause) -> {
             throw ex;
-        }));
+        })).subscribe(subscriberRule);
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyFailure(ex);
+        assertThat(subscriberRule.awaitOnError(), is(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }

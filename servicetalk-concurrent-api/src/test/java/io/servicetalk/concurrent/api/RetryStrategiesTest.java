@@ -41,7 +41,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration backoff = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true, backoff,
                 ofNanos(1), timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithDeltaJitter(backoff.toNanos(), 1, 1);
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -54,7 +55,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration jitter = ofMillis(10);
         RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoffDeltaJitter(2, cause -> true,
                 backoff, jitter, timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithDeltaJitter(backoff.toNanos(), jitter.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -79,7 +81,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration initialDelay = ofSeconds(1);
         RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffFullJitter(2, cause -> true, initialDelay,
                 ofDays(10), timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithFullJitter(initialDelay.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -111,7 +114,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         Duration jitter = ofMillis(10);
         RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffDeltaJitter(2, cause -> true,
                 initialDelay, jitter, ofDays(10), timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
@@ -142,7 +146,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
 
     private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) throws Exception {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(timerExecutor);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -155,7 +160,8 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider)
             throws Exception {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -176,8 +182,9 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
             this.actual = actual;
         }
 
-        TestCollectingCompletableSubscriber invokeAndListen(Throwable cause) {
-            TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber invokeAndListen(Throwable cause) {
+            io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                    new io.servicetalk.concurrent.test.internal.TestCompletableSubscriber();
             toSource(actual.apply(++count, cause)).subscribe(subscriber);
             return subscriber;
         }

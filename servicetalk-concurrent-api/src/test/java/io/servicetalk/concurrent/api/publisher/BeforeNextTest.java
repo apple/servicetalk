@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class BeforeNextTest extends AbstractWhenOnNextTest {
     @Override
@@ -39,9 +39,9 @@ public class BeforeNextTest extends AbstractWhenOnNextTest {
             toSource(doNext(Publisher.from("Hello"), s1 -> {
                 throw DELIBERATE_EXCEPTION;
             })).subscribe(subscriber);
-            subscriber.request(1);
+            subscriber.awaitSubscription().request(1);
         } finally {
-            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         }
     }
 }

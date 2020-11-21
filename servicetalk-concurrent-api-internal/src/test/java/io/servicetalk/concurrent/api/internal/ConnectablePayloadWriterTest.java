@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.After;
 import org.junit.Before;
@@ -44,18 +44,18 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -88,7 +88,7 @@ public class ConnectablePayloadWriterTest {
     public void subscribeDeliverDataSynchronously() throws Exception {
         AtomicReference<Future<?>> futureRef = new AtomicReference<>();
         toSource(cpw.connect().afterOnSubscribe(subscription -> {
-            subscriber.request(1); // request from the TestPublisherSubscriber!
+            subscriber.awaitSubscription().request(1); // request from the TestPublisherSubscriber!
             // We want to increase the chance that the writer thread has to wait for the Subscriber to become
             // available, instead of waiting for the requestN demand.
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -108,8 +108,8 @@ public class ConnectablePayloadWriterTest {
         Future<?> f = futureRef.get();
         assertNotNull(f);
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ConnectablePayloadWriterTest {
         Future<?> f = futureRef.get();
         assertNotNull(f);
         f.get();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -143,8 +143,8 @@ public class ConnectablePayloadWriterTest {
         cpw.write("foo");
 
         // Make sure the Subscription thread isn't blocked.
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
     }
 
     @Test
@@ -158,7 +158,7 @@ public class ConnectablePayloadWriterTest {
         }));
 
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         try {
             f.get();
             fail();
@@ -166,18 +166,18 @@ public class ConnectablePayloadWriterTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
 
         // Make sure the Subscription thread isn't blocked.
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
     }
 
     @Test
     public void connectMultipleWriteAfterCloseShouldThrow() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -193,12 +193,12 @@ public class ConnectablePayloadWriterTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
 
         // Make sure the Subscription thread isn't blocked.
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
     }
 
     @Test
@@ -213,9 +213,9 @@ public class ConnectablePayloadWriterTest {
         }));
 
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         afterFlushBarrier.await();
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         try {
             f.get();
             fail();
@@ -223,19 +223,19 @@ public class ConnectablePayloadWriterTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
         cpw.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
     }
 
     @Test
     public void connectCancelUnblocksWrite() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
 
         try {
@@ -245,13 +245,13 @@ public class ConnectablePayloadWriterTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), is(empty()));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitOnComplete();
         cpw.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
     }
 
     @Test
@@ -263,10 +263,10 @@ public class ConnectablePayloadWriterTest {
         }));
 
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
         cpw.close(); // should be idempotent
     }
 
@@ -307,7 +307,7 @@ public class ConnectablePayloadWriterTest {
         onSubscribe.await();
         assertThat(errorRef.get(), instanceOf(IllegalArgumentException.class));
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalStateException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalStateException.class)));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -340,7 +340,7 @@ public class ConnectablePayloadWriterTest {
         cpw.close();
         onNext.await();
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalStateException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalStateException.class)));
         onComplete.await();
     }
 
@@ -370,7 +370,7 @@ public class ConnectablePayloadWriterTest {
         cpw.close();
         onSubscribe.await();
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalStateException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalStateException.class)));
         onComplete.await();
     }
 
@@ -414,7 +414,7 @@ public class ConnectablePayloadWriterTest {
         cpw.close();
         onError.await();
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalStateException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalStateException.class)));
         assertThat(onComplete.getCount(), equalTo(1L));
     }
 
@@ -427,25 +427,25 @@ public class ConnectablePayloadWriterTest {
         }));
 
         toSource(cpw.connect()).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void connectSubscribeRequestWriteFlushClose() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
             cpw.close();
         }));
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -456,18 +456,18 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
             cpw.close();
         }));
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(1);
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("foo"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void requestWriteSingleWriteSingleFlushClose() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(2);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.write("bar");
@@ -475,15 +475,15 @@ public class ConnectablePayloadWriterTest {
             cpw.close();
         }));
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo", "bar"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(2), contains("foo", "bar"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void requestWriteSingleFlushWriteSingleFlushClose() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(2);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -492,15 +492,15 @@ public class ConnectablePayloadWriterTest {
             cpw.close();
         }));
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo", "bar"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(2), contains("foo", "bar"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void writeSingleFlushWriteSingleFlushRequestClose() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -508,10 +508,10 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
             cpw.close();
         }));
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo", "bar"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(2), contains("foo", "bar"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -580,8 +580,8 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void cancelCloses() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.cancel();
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(is(instanceOf(RuntimeException.class)));
@@ -591,16 +591,16 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void cancelCloseAfterWrite() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
         }));
         f.get();
-        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeOnNext(), is("foo"));
 
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         expectedException.expect(is(instanceOf(IOException.class)));
         cpw.write("foo");
     }
@@ -608,8 +608,8 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void requestNegativeWrite() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
-        subscriber.request(-1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(-1);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cpw.write("foo");
             cpw.flush();
@@ -620,13 +620,13 @@ public class ConnectablePayloadWriterTest {
         } catch (ExecutionException e) {
             verifyCheckedRunnableException(e, IOException.class);
         }
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
     public void writeRequestNegative() throws Exception {
         toSource(cpw.connect()).subscribe(subscriber);
-        assertThat(subscriber.takeItems(), is(empty()));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         CyclicBarrier cb = new CyclicBarrier(2);
         Future<?> f = executorService.submit(toRunnable(() -> {
             cb.await();
@@ -634,14 +634,14 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
         }));
         cb.await();
-        subscriber.request(-1);
+        subscriber.awaitSubscription().request(-1);
         try {
             f.get();
             fail();
         } catch (ExecutionException e) {
             verifyCheckedRunnableException(e, IOException.class);
         }
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -654,10 +654,10 @@ public class ConnectablePayloadWriterTest {
         final Publisher<String> connect = cpw.connect();
         cb.await();
         toSource(connect).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         f.get();
-        assertThat(subscriber.takeItems(), is(empty()));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitOnComplete();
     }
 
     @Test

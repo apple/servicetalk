@@ -18,9 +18,9 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.channel.Channel;
@@ -40,8 +40,12 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -51,8 +55,7 @@ import static org.mockito.Mockito.when;
 public class NettyServerContextTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
-    @Rule
-    public final LegacyMockedCompletableListenerRule subscriberRule = new LegacyMockedCompletableListenerRule();
+    private final TestCompletableSubscriber subscriberRule = new TestCompletableSubscriber();
 
     LegacyTestCompletable closeBeforeCloseAsyncCompletable = new LegacyTestCompletable();
     LegacyTestCompletable closeBeforeCloseAsyncGracefulCompletable = new LegacyTestCompletable();
@@ -149,11 +152,11 @@ public class NettyServerContextTest {
         // ensure we're not calling the graceful one
         channelSetCloseAsyncGracefulCompletable.verifyListenNotCalled();
 
-        subscriberRule.listen(fixture.onClose());
-        subscriberRule.verifyNoEmissions();
+        toSource(fixture.onClose()).subscribe(subscriberRule);
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
 
         channelSetCloseAsyncCompletable.onComplete();
-        subscriberRule.verifyCompletion();
+        subscriberRule.awaitOnComplete();
     }
 
     @Test
@@ -170,11 +173,11 @@ public class NettyServerContextTest {
 
         channelSetCloseAsyncCompletable.verifyListenNotCalled();
 
-        subscriberRule.listen(fixture.onClose());
-        subscriberRule.verifyNoEmissions();
+        toSource(fixture.onClose()).subscribe(subscriberRule);
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
 
         channelSetCloseAsyncGracefulCompletable.onComplete();
-        subscriberRule.verifyCompletion();
+        subscriberRule.awaitOnComplete();
     }
 
     @Test
@@ -199,10 +202,10 @@ public class NettyServerContextTest {
 
         channelSetCloseAsyncGracefulCompletable.verifyListenNotCalled();
 
-        subscriberRule.listen(fixture.onClose());
-        subscriberRule.verifyNoEmissions();
+        toSource(fixture.onClose()).subscribe(subscriberRule);
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
 
         channelSetCloseAsyncCompletable.onComplete();
-        subscriberRule.verifyCompletion();
+        subscriberRule.awaitOnComplete();
     }
 }

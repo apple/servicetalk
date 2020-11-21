@@ -23,8 +23,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
-import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,14 +37,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -73,7 +72,7 @@ public class TimeoutSingleTest {
             }
         })).subscribe(subscriber);
 
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         TestCancellable cancellable = new TestCancellable();
         source.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
@@ -83,10 +82,9 @@ public class TimeoutSingleTest {
     public void noDataOnCompletionNoTimeout() {
         init();
 
-        assertFalse(subscriber.hasResult());
-        assertThat(subscriber.error(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         source.onSuccess(1);
-        assertThat(subscriber.takeResult(), is(1));
+        assertThat(subscriber.awaitOnSuccess(), is(1));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -96,10 +94,9 @@ public class TimeoutSingleTest {
     public void noDataOnErrorNoTimeout() {
         init();
 
-        assertFalse(subscriber.hasResult());
-        assertThat(subscriber.error(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -109,7 +106,7 @@ public class TimeoutSingleTest {
     public void subscriptionCancelAlsoCancelsTimer() {
         init();
 
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -121,7 +118,7 @@ public class TimeoutSingleTest {
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
         testExecutor.advanceTimeBy(1, NANOSECONDS);
-        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(1));
@@ -142,7 +139,7 @@ public class TimeoutSingleTest {
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
-        assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(this.subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     private void init() {
@@ -153,7 +150,7 @@ public class TimeoutSingleTest {
         toSource(source.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
-            assertTrue(subscriber.cancellableReceived());
+            subscriber.awaitSubscription();
         }
     }
 

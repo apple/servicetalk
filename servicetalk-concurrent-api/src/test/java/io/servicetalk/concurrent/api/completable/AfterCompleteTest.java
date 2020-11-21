@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class AfterCompleteTest extends AbstractWhenOnCompleteTest {
@@ -35,8 +36,9 @@ public class AfterCompleteTest extends AbstractWhenOnCompleteTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doComplete(Completable.completed(), () -> {
+        toSource(doComplete(Completable.completed(), () -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyCompletion();
+        })).subscribe(listener);
+        listener.awaitOnComplete();
     }
 }

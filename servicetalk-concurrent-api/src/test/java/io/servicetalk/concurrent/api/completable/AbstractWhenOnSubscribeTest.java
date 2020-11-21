@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,18 +26,15 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnSubscribeTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private Consumer<Cancellable> doOnListen;
 
     @SuppressWarnings("unchecked")
@@ -48,7 +45,8 @@ public abstract class AbstractWhenOnSubscribeTest {
 
     @Test
     public void testOnSubscribe() {
-        listener.listen(doSubscribe(Completable.completed(), doOnListen)).verifyCompletion();
+        toSource(doSubscribe(Completable.completed(), doOnListen)).subscribe(listener);
+        listener.awaitOnComplete();
         verify(doOnListen).accept(any(Cancellable.class));
     }
 

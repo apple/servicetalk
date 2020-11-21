@@ -19,17 +19,15 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
@@ -55,10 +53,10 @@ abstract class AbstractWhenFinallyTest {
     public void testForCancelPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitSubscription().cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         assertTrue(subscription.isCancelled());
@@ -68,7 +66,7 @@ abstract class AbstractWhenFinallyTest {
     public void testForCancelNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
         assertTrue(subscription.isCancelled());
@@ -79,7 +77,7 @@ abstract class AbstractWhenFinallyTest {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         publisher.onError(DELIBERATE_EXCEPTION);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
         assertTrue(subscription.isCancelled());
@@ -91,7 +89,7 @@ abstract class AbstractWhenFinallyTest {
         publisher.onSubscribe(subscription);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
         assertTrue(subscription.isCancelled());
@@ -101,12 +99,12 @@ abstract class AbstractWhenFinallyTest {
     public void testForCompletePostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
         assertFalse(subscription.isCancelled());
@@ -116,10 +114,10 @@ abstract class AbstractWhenFinallyTest {
     public void testForCompleteNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertFalse(subscription.isCancelled());
         publisher.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
         assertFalse(subscription.isCancelled());
@@ -129,11 +127,11 @@ abstract class AbstractWhenFinallyTest {
     public void testForErrorPostEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
         assertFalse(subscription.isCancelled());
@@ -143,9 +141,9 @@ abstract class AbstractWhenFinallyTest {
     public void testForErrorNoEmissions() {
         doFinally(publisher, doFinally).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
         assertFalse(subscription.isCancelled());
@@ -158,7 +156,7 @@ abstract class AbstractWhenFinallyTest {
             doFinally(publisher, mock).subscribe(subscriber);
             publisher.onSubscribe(subscription);
             thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            subscriber.cancel();
+            subscriber.awaitSubscription().cancel();
             fail();
         } finally {
             verify(mock).cancel();

@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.util.concurrent.BlockingQueue;
@@ -27,12 +27,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
@@ -104,50 +102,49 @@ public class PublisherProcessorTest {
     public void itemBeforeSubscriber() {
         processor.onNext(1);
         toSource(processor).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void itemBeforeRequest() {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void terminalBeforeSubscriber() {
         processor.onComplete();
         toSource(processor).subscribe(subscriber);
-        assertThat("Unexpected items received.", subscriber.takeItems(), hasSize(0));
-        verifyTerminal(is(nullValue()), subscriber);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void terminalAfterSubscriber() {
         toSource(processor).subscribe(subscriber);
         processor.onComplete();
-        verifyTerminal(is(nullValue()), subscriber);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void terminalErrorBeforeSubscriber() {
         processor.onError(DELIBERATE_EXCEPTION);
         toSource(processor).subscribe(subscriber);
-        assertThat("Unexpected items received.", subscriber.takeItems(), hasSize(0));
-        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void terminalErrorAfterSubscriber() {
         toSource(processor).subscribe(subscriber);
         processor.onError(DELIBERATE_EXCEPTION);
-        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -155,10 +152,10 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onComplete();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        verifyTerminal(is(nullValue()), subscriber);
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -166,12 +163,12 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onComplete();
-        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
 
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        verifyTerminal(is(nullValue()), subscriber);
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -179,10 +176,10 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onError(DELIBERATE_EXCEPTION);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -190,12 +187,12 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onError(DELIBERATE_EXCEPTION);
-        assertThat("Unexpected terminal received.", subscriber.takeTerminal(), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
 
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
-        assertThat("Unexpected items received.", subscriber.takeItems(), contains(1));
-        verifyTerminal(sameInstance(DELIBERATE_EXCEPTION), subscriber);
+        assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -203,23 +200,17 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(processor).subscribe(subscriber2);
-        verifyTerminal(instanceOf(DuplicateSubscribeException.class), subscriber2);
-        assertThat("Unexpected terminal.", subscriber.takeTerminal(), is(nullValue()));
+        assertThat(subscriber2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void duplicateSubscriberPostCancel() {
         toSource(processor).subscribe(subscriber);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(processor).subscribe(subscriber2);
-        verifyTerminal(instanceOf(DuplicateSubscribeException.class), subscriber2);
-        assertThat("Unexpected terminal.", subscriber.takeTerminal(), is(nullValue()));
-    }
-
-    private void verifyTerminal(final Matcher<Object> causeMatcher, final TestPublisherSubscriber<Integer> subscriber) {
-        TerminalNotification terminal = subscriber.takeTerminal();
-        assertThat("Unexpected terminal.", terminal, is(notNullValue()));
-        assertThat("Unexpected terminal.", terminal.cause(), causeMatcher);
+        assertThat(subscriber2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 }

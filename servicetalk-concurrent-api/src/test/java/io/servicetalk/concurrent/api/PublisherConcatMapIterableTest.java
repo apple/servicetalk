@@ -20,11 +20,13 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -41,20 +42,17 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -63,6 +61,8 @@ import static org.mockito.Mockito.mock;
 public class PublisherConcatMapIterableTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<List<String>> publisher = new TestPublisher<>();
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();
@@ -116,16 +116,14 @@ public class PublisherConcatMapIterableTest {
     public void cancellableIterableIsCancelled() {
         toSource(cancellablePublisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         cancellablePublisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         AtomicBoolean cancelled = new AtomicBoolean();
         cancellablePublisher.onNext(new TestIterableToBlockingIterable<>(asList("one", "two"),
                 (time, unit) -> { }, (time, unit) -> { }, () -> cancelled.set(true)));
-        assertThat(subscriber.takeItems(), contains("one"));
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(), is("one"));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
         assertTrue(cancelled.get());
     }
 
@@ -133,7 +131,7 @@ public class PublisherConcatMapIterableTest {
     public void justComplete() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
+        subscriber.awaitSubscription();
         verifyTermination(true);
     }
 
@@ -141,7 +139,7 @@ public class PublisherConcatMapIterableTest {
     public void justFail() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
+        subscriber.awaitSubscription();
         verifyTermination(false);
     }
 
@@ -158,13 +156,11 @@ public class PublisherConcatMapIterableTest {
     private void singleElementSingleValue(boolean success) {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(singletonList("one"));
-        assertThat(subscriber.takeItems(), contains("one"));
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.takeOnNext(), is("one"));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
 
         verifyTermination(success);
     }
@@ -182,10 +178,9 @@ public class PublisherConcatMapIterableTest {
     private void singleElementMultipleValuesDelayedRequest(boolean success) {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.takeItems(), contains("one"));
+        assertThat(subscriber.takeOnNext(), is("one"));
 
         if (success) {
             publisher.onComplete();
@@ -193,13 +188,13 @@ public class PublisherConcatMapIterableTest {
             publisher.onError(DELIBERATE_EXCEPTION);
         }
 
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("two"));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("two"));
 
         if (success) {
-            assertThat(subscriber.takeTerminal(), is(complete()));
+            subscriber.awaitOnComplete();
         } else {
-            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         }
         assertFalse(subscription.isCancelled());
     }
@@ -217,14 +212,13 @@ public class PublisherConcatMapIterableTest {
     private void multipleElementsSingleValue(boolean success) {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(singletonList("one"));
-        assertThat(subscriber.takeItems(), contains("one"));
+        assertThat(subscriber.takeOnNext(), is("one"));
 
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(singletonList("two"));
-        assertThat(subscriber.takeItems(), contains("two"));
+        assertThat(subscriber.takeOnNext(), is("two"));
 
         verifyTermination(success);
     }
@@ -242,20 +236,19 @@ public class PublisherConcatMapIterableTest {
     private void multipleElementsMultipleValues(boolean success) {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.takeItems(), contains("one"));
+        assertThat(subscriber.takeOnNext(), is("one"));
 
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("two"));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("two"));
 
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("three", "four"));
-        assertThat(subscriber.takeItems(), contains("three"));
+        assertThat(subscriber.takeOnNext(), is("three"));
 
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("four"));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("four"));
 
         verifyTermination(success);
     }
@@ -264,11 +257,10 @@ public class PublisherConcatMapIterableTest {
     public void cancelIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two"));
-        assertThat(subscriber.takeItems(), contains("one"));
-        subscriber.cancel();
+        assertThat(subscriber.takeOnNext(), is("one"));
+        subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
     }
 
@@ -285,18 +277,17 @@ public class PublisherConcatMapIterableTest {
     private void requestWithEmptyIterable(boolean success) {
         toSource(publisher.flatMapConcatIterable(identity())).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
-        subscriber.request(1);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().request(1);
 
         publisher.onNext(asList("one", "two", "three"));
-        assertThat(subscriber.takeItems(), contains("one", "two"));
+        assertThat(subscriber.takeOnNext(2), contains("one", "two"));
 
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("three"));
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("three"));
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(singletonList("four"));
-        assertThat(subscriber.takeItems(), contains("four"));
+        assertThat(subscriber.takeOnNext(), is("four"));
         verifyTermination(success);
     }
 
@@ -306,23 +297,13 @@ public class PublisherConcatMapIterableTest {
                 .afterOnError(t -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        subscriber.awaitSubscription();
         expectedException.expect(is(DELIBERATE_EXCEPTION));
         publisher.onError(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void exceptionFromBufferedOnNextThenOnErrorIsPropagated() {
-        testExceptionFromBufferedOnNextThenTerminalIsPropagated(publisher::onError);
-    }
-
-    @Ignore("fixed in https://github.com/apple/servicetalk/pull/1229")
-    @Test
-    public void exceptionFromBufferedOnNextThenOnCompleteIsPropagated() {
-        testExceptionFromBufferedOnNextThenTerminalIsPropagated(__ -> publisher.onComplete());
-    }
-
-    private void testExceptionFromBufferedOnNextThenTerminalIsPropagated(Consumer<DeliberateException> emitTerminal) {
+    public void testExceptionFromBufferedOnNextThenTerminalIsPropagated() {
         final DeliberateException ex2 = new DeliberateException();
         final AtomicBoolean errored = new AtomicBoolean();
         toSource(publisher.flatMapConcatIterable(identity())
@@ -332,14 +313,9 @@ public class PublisherConcatMapIterableTest {
                     }
                     throw ex2;
                 })).subscribe(subscriber);
-        subscriber.request(3);
-        try {
-            publisher.onNext(asList("one", "two", "three"));
-            fail("Failure not propagated from onNext");
-        } catch (DeliberateException de) {
-            emitTerminal.accept(de);
-            assertThat(subscriber.takeError(), is(de));
-        }
+        subscriber.awaitSubscription().request(3);
+        publisher.onNext(asList("one", "two", "three"));
+        assertThat(subscriber.awaitOnError(), is(ex2));
     }
 
     @Test
@@ -348,7 +324,7 @@ public class PublisherConcatMapIterableTest {
                 .afterOnComplete(() -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
+        subscriber.awaitSubscription();
         expectedException.expect(is(DELIBERATE_EXCEPTION));
         publisher.onComplete();
     }
@@ -359,9 +335,9 @@ public class PublisherConcatMapIterableTest {
                 .map((Function<String, String>) s -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
-        subscriber.request(1);
-        expectedException.expect(is(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two", "three"));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -371,11 +347,9 @@ public class PublisherConcatMapIterableTest {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        assertTrue(subscriber.subscriptionReceived());
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two", "three"));
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
-        assertThat("Subscription was not cancelled.", subscription.isCancelled(), is(true));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -392,20 +366,20 @@ public class PublisherConcatMapIterableTest {
                     }
                 })).subscribe(subscriber);
         publisher.onNext(singletonList("one"));
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("two", "three"));
-        assertThat(subscriber.takeItems(), is(empty()));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
     private void verifyTermination(boolean success) {
         if (success) {
             publisher.onComplete();
-            assertThat(subscriber.takeTerminal(), is(complete()));
+            subscriber.awaitOnComplete();
         } else {
             publisher.onError(DELIBERATE_EXCEPTION);
-            assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         }
         assertFalse(subscription.isCancelled());
     }

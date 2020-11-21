@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class AfterErrorTest extends AbstractWhenOnErrorTest {
 
@@ -47,6 +47,6 @@ public class AfterErrorTest extends AbstractWhenOnErrorTest {
         doError(Publisher.<String>failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
-        assertThat(subscriber.takeError(), sameInstance(srcEx));
+        assertThat(subscriber.awaitOnError(), sameInstance(srcEx));
     }
 }

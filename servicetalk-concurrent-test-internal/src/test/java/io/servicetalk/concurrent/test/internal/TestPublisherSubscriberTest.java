@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.test.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
@@ -21,52 +21,51 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class TestCollectingPublisherSubscriberTest {
+public class TestPublisherSubscriberTest {
     @Test
-    public void onSubscribe() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
-
+    public void onSubscribe() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber);
-
         assertThat(subscriber.pollAllOnNext(), is(empty()));
         assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
     }
 
     @Test
-    public void onSubscribeOnComplete() throws InterruptedException {
+    public void onSubscribeOnComplete() {
         onSubscribeOnTerminal(true);
     }
 
     @Test
-    public void onSubscribeOnError() throws InterruptedException {
+    public void onSubscribeOnError() {
         onSubscribeOnTerminal(false);
     }
 
     @Test
-    public void onSubscribeOnNextOnComplete() throws InterruptedException {
+    public void onSubscribeOnNextOnComplete() {
         onSubscribeOnNextOnComplete(true);
     }
 
     @Test
-    public void onSubscribeOnNextOnError() throws InterruptedException {
+    public void onSubscribeOnNextOnError() {
         onSubscribeOnNextOnComplete(false);
     }
 
     @Test
-    public void multipleOnNextWithTake() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
-        doOnSubscribe(subscriber);
+    public void multipleOnNextWithTake() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        doOnSubscribe(subscriber).request(2);
         subscriber.onNext(null);
         subscriber.onNext(2);
         Integer next = subscriber.takeOnNext();
@@ -78,9 +77,9 @@ public class TestCollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void multipleOnNextWithPollAll() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
-        doOnSubscribe(subscriber);
+    public void multipleOnNextWithPollAll() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        doOnSubscribe(subscriber).request(2);
         subscriber.onNext(null);
         subscriber.onNext(2);
 
@@ -90,36 +89,36 @@ public class TestCollectingPublisherSubscriberTest {
     }
 
     @Test
-    public void onNextNotConsumedWhenOnCompleteAllowedIfOptIn() throws InterruptedException {
+    public void onNextNotConsumedWhenOnCompleteAllowedIfOptIn() {
         onNextNotConsumedWhenOnCompleteThrows(true, false);
     }
 
     @Test
-    public void onNextNotConsumedWhenOnErrorAllowedIfOptIn() throws InterruptedException {
+    public void onNextNotConsumedWhenOnErrorAllowedIfOptIn() {
         onNextNotConsumedWhenOnCompleteThrows(false, false);
     }
 
     @Test(expected = IllegalStateException.class)
     public void onNextNoOnSubscribeThrows() {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         subscriber.onNext(2);
     }
 
     @Test(expected = IllegalStateException.class)
     public void onCompleteNoOnSubscribeThrows() {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         subscriber.onComplete();
     }
 
     @Test(expected = IllegalStateException.class)
     public void onErrorNoOnSubscribeThrows() {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         subscriber.onError(DELIBERATE_EXCEPTION);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onErrorAwaitOnCompleteThrows() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    public void onErrorAwaitOnCompleteThrows() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
         subscriber.onError(DELIBERATE_EXCEPTION);
@@ -128,7 +127,7 @@ public class TestCollectingPublisherSubscriberTest {
 
     @Test(expected = IllegalStateException.class)
     public void onCompleteAwaitOnErrorThrows() throws Throwable {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
         subscriber.onComplete();
@@ -136,55 +135,55 @@ public class TestCollectingPublisherSubscriberTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnSubscribeThrows() throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    public void onSubscribeAfterOnSubscribeThrows() {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
         doOnSubscribe(subscriber);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnCompleteThrows() throws InterruptedException {
+    public void onSubscribeAfterOnCompleteThrows() {
         onSubscribeAfterTerminal(true);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onSubscribeAfterOnErrorThrows() throws InterruptedException {
+    public void onSubscribeAfterOnErrorThrows() {
         onSubscribeAfterTerminal(false);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onCompleteAfterOnCompleteThrows() throws InterruptedException {
+    public void onCompleteAfterOnCompleteThrows() {
         onCompleteAfterOnCompleteThrows(true, true);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onCompleteAfterOnErrorThrows() throws InterruptedException {
+    public void onCompleteAfterOnErrorThrows() {
         onCompleteAfterOnCompleteThrows(true, false);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onErrorAfterOnCompleteThrows() throws InterruptedException {
+    public void onErrorAfterOnCompleteThrows() {
         onCompleteAfterOnCompleteThrows(false, true);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onErrorAfterOnErrorThrows() throws InterruptedException {
+    public void onErrorAfterOnErrorThrows() {
         onCompleteAfterOnCompleteThrows(false, false);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onNextNotConsumedWhenOnCompleteThrows() throws InterruptedException {
+    public void onNextNotConsumedWhenOnCompleteThrows() {
         onNextNotConsumedWhenOnCompleteThrows(true, true);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void onNextNotConsumedWhenOnErrorThrows() throws InterruptedException {
+    public void onNextNotConsumedWhenOnErrorThrows() {
         onNextNotConsumedWhenOnCompleteThrows(false, true);
     }
 
-    private static void onSubscribeOnTerminal(boolean onComplete) throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    private static void onSubscribeOnTerminal(boolean onComplete) {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
 
@@ -193,10 +192,10 @@ public class TestCollectingPublisherSubscriberTest {
         doTerminalSignal(subscriber, onComplete);
     }
 
-    private static void onSubscribeOnNextOnComplete(boolean onComplete) throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    private static void onSubscribeOnNextOnComplete(boolean onComplete) {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
-        doOnSubscribe(subscriber);
+        doOnSubscribe(subscriber).request(1);
 
         subscriber.onNext(2);
         Integer next = subscriber.takeOnNext();
@@ -206,20 +205,20 @@ public class TestCollectingPublisherSubscriberTest {
         doTerminalSignal(subscriber, onComplete);
     }
 
-    private static void doOnSubscribe(TestCollectingPublisherSubscriber<Integer> subscriber)
-            throws InterruptedException {
+    private static Subscription doOnSubscribe(TestPublisherSubscriber<Integer> subscriber) {
         Subscription subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
-        assertSame(subscription, subscriber.awaitSubscription());
+        Subscription realSubscription = subscriber.awaitSubscription();
+        assertThat(realSubscription, notNullValue());
+        return realSubscription;
     }
 
-    private static void doTerminalSignal(TestCollectingPublisherSubscriber<Integer> subscriber, boolean onComplete)
-            throws InterruptedException {
+    private static void doTerminalSignal(TestPublisherSubscriber<Integer> subscriber, boolean onComplete) {
         doTerminalSignal(subscriber, onComplete, true);
     }
 
-    private static void doTerminalSignal(TestCollectingPublisherSubscriber<Integer> subscriber, boolean onComplete,
-                                         boolean verifyOnNextConsumed) throws InterruptedException {
+    private static void doTerminalSignal(TestPublisherSubscriber<Integer> subscriber, boolean onComplete,
+                                         boolean verifyOnNextConsumed) {
         if (onComplete) {
             subscriber.onComplete();
             subscriber.awaitOnComplete(verifyOnNextConsumed);
@@ -229,24 +228,22 @@ public class TestCollectingPublisherSubscriberTest {
         }
     }
 
-    private static void onNextNotConsumedWhenOnCompleteThrows(boolean onComplete, boolean verifyOnNextConsumed)
-            throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
-        doOnSubscribe(subscriber);
+    private static void onNextNotConsumedWhenOnCompleteThrows(boolean onComplete, boolean verifyOnNextConsumed) {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        doOnSubscribe(subscriber).request(1);
         subscriber.onNext(2);
         doTerminalSignal(subscriber, onComplete, verifyOnNextConsumed);
     }
 
-    private static void onCompleteAfterOnCompleteThrows(boolean firstOnComplete, boolean secondOnComplete)
-            throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    private static void onCompleteAfterOnCompleteThrows(boolean firstOnComplete, boolean secondOnComplete) {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber);
         doTerminalSignal(subscriber, firstOnComplete);
         doTerminalSignal(subscriber, secondOnComplete);
     }
 
-    private static void onSubscribeAfterTerminal(boolean onComplete) throws InterruptedException {
-        TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    private static void onSubscribeAfterTerminal(boolean onComplete) {
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
         doOnSubscribe(subscriber);
         doTerminalSignal(subscriber, onComplete);

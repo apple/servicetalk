@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.After;
 import org.junit.Before;
@@ -102,7 +103,7 @@ public final class PublisherGroupByConcurrencyTest {
         source.onSubscribe(subscription);
         Task requestNs = requestAndDrainGroupSubscribers(subs).awaitStart();
         sendRangeToSource(0, itemCount);
-        groupsSubscriber.cancel();
+        groupsSubscriber.awaitSubscription().cancel();
         requestNs.awaitCompletion();
         assertThat("Unexpected items received.", allItemsReceivedOnAllGroups, hasSize(itemCount));
         assertTrue(subscription.isCancelled());
@@ -120,7 +121,7 @@ public final class PublisherGroupByConcurrencyTest {
             subs.add(sub);
             return grp.key();
         })).subscribe(groupsSubscriber);
-        groupsSubscriber.request(Long.MAX_VALUE);
+        groupsSubscriber.awaitSubscription().request(Long.MAX_VALUE);
         return subs;
     }
 

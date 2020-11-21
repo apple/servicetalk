@@ -21,7 +21,10 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class BeforeSuccessTest extends AbstractWhenOnSuccessTest {
     @Override
@@ -32,8 +35,9 @@ public class BeforeSuccessTest extends AbstractWhenOnSuccessTest {
     @Test
     @Override
     public void testCallbackThrowsError() {
-        listener.listen(doSuccess(Single.succeeded("Hello"), t -> {
+        toSource(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }

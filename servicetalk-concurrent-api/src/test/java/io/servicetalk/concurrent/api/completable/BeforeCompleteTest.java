@@ -19,7 +19,10 @@ import io.servicetalk.concurrent.api.Completable;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
     @Override
@@ -29,9 +32,9 @@ public class BeforeCompleteTest extends AbstractWhenOnCompleteTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doComplete(Completable.completed(), () -> {
+        toSource(doComplete(Completable.completed(), () -> {
             throw DELIBERATE_EXCEPTION;
-        }));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }

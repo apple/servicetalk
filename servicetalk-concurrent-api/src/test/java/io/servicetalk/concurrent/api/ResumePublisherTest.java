@@ -16,21 +16,20 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class ResumePublisherTest {
@@ -42,37 +41,35 @@ public final class ResumePublisherTest {
     @Test
     public void testFirstComplete() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onNext(1);
         first.onComplete();
-        assertThat(subscriber.takeItems(), contains(1));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFirstErrorSecondComplete() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onNext(1);
         second.onComplete();
-        assertThat(subscriber.takeItems(), contains(1));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFirstErrorSecondError() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(new DeliberateException());
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -80,55 +77,52 @@ public final class ResumePublisherTest {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         first.onSubscribe(subscription);
-        subscriber.request(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testCancelSecondActive() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         second.onSubscribe(subscription);
         assertTrue(second.isSubscribed());
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.cancel();
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
     }
 
     @Test
     public void testDemandAcrossPublishers() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         first.onNext(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains(1));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.takeOnNext(), is(1));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onNext(2);
         second.onComplete();
-        assertThat(subscriber.takeItems(), contains(2));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testDuplicateOnError() {
         toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onNext(1);
         second.onComplete();
-        assertThat(subscriber.takeItems(), contains(1));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -137,9 +131,9 @@ public final class ResumePublisherTest {
         toSource(first.recoverWith(throwable -> {
             throw ex;
         })).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(ex));
+        assertThat(subscriber.awaitOnError(), sameInstance(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }
@@ -147,8 +141,8 @@ public final class ResumePublisherTest {
     @Test
     public void nullInTerminalCallsOnError() {
         toSource(first.recoverWith(throwable -> null)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), instanceOf(NullPointerException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(NullPointerException.class));
     }
 }

@@ -22,15 +22,19 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class AfterSubscribeTest extends AbstractWhenOnSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doSubscribe(Completable.completed(), __ -> {
+        toSource(doSubscribe(Completable.completed(), __ -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Override

@@ -71,9 +71,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -87,7 +85,8 @@ public class PublisherFlatMapMergeTest {
     @Nullable
     private static Executor executor;
 
-    private final TestCollectingPublisherSubscriber<Integer> subscriber = new TestCollectingPublisherSubscriber<>();
+    private final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<Integer> subscriber =
+            new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
     private TestPublisher<Integer> publisher = new TestPublisher<>();
 
     @BeforeClass
@@ -147,26 +146,26 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleConcurrencyComplete() throws InterruptedException {
+    public void singleConcurrencyComplete() {
         singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1), 1));
     }
 
     @Test
-    public void defaultConcurrencyComplete() throws InterruptedException {
+    public void defaultConcurrencyComplete() {
         singleConcurrencyComplete(publisher.flatMapMerge(i -> from(i + 1)));
     }
 
     @Test
-    public void singleConcurrencyDelayErrorComplete() throws InterruptedException {
+    public void singleConcurrencyDelayErrorComplete() {
         singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1), 1));
     }
 
     @Test
-    public void defaultConcurrencyDelayErrorComplete() throws InterruptedException {
+    public void defaultConcurrencyDelayErrorComplete() {
         singleConcurrencyComplete(publisher.flatMapMergeDelayError(i -> from(i + 1)));
     }
 
-    private void singleConcurrencyComplete(Publisher<Integer> flatMappedPublisher) throws InterruptedException {
+    private void singleConcurrencyComplete(Publisher<Integer> flatMappedPublisher) {
         toSource(flatMappedPublisher).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -178,7 +177,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleConcurrencyNullComplete() throws InterruptedException {
+    public void singleConcurrencyNullComplete() {
         toSource(publisher.flatMapMerge(i -> from((Integer) null), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -189,7 +188,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemSourceCompleteFirst() throws InterruptedException {
+    public void singleItemSourceCompleteFirst() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -208,7 +207,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedCompleteFirst() throws InterruptedException {
+    public void singleItemMappedCompleteFirst() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -227,7 +226,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedError() throws InterruptedException {
+    public void singleItemMappedError() {
         toSource(publisher.flatMapMerge(i -> Publisher.<Integer>failed(DELIBERATE_EXCEPTION), 1))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -236,7 +235,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedErrorPostSourceComplete() throws InterruptedException {
+    public void singleItemMappedErrorPostSourceComplete() {
         TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
         toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -253,7 +252,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorNoOnNext() throws InterruptedException {
+    public void sourceEmitsErrorNoOnNext() {
         toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription();
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -261,7 +260,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorPostOnNexts() throws InterruptedException {
+    public void sourceEmitsErrorPostOnNexts() {
         toSource(publisher.flatMapMerge(i -> from(i + 1), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
@@ -274,7 +273,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceEmitsErrorPostOnNextsMappedNotCompleted() throws InterruptedException {
+    public void sourceEmitsErrorPostOnNextsMappedNotCompleted() {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
@@ -289,7 +288,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void sourceCancelAlsoCancelMapped() throws InterruptedException {
+    public void sourceCancelAlsoCancelMapped() {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
@@ -304,16 +303,16 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mappedCompletePostCancel() throws InterruptedException {
+    public void mappedCompletePostCancel() {
         mappedTerminalPostCancel(false);
     }
 
     @Test
-    public void mappedErrorPostCancel() throws InterruptedException {
+    public void mappedErrorPostCancel() {
         mappedTerminalPostCancel(true);
     }
 
-    private void mappedTerminalPostCancel(boolean onError) throws InterruptedException {
+    private void mappedTerminalPostCancel(boolean onError) {
         TestSubscription mappedSubscription = new TestSubscription();
         TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build();
@@ -404,7 +403,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void mapperThrows() throws InterruptedException {
+    public void mapperThrows() {
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -416,16 +415,7 @@ public class PublisherFlatMapMergeTest {
         }, 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
 
-        try {
-            publisher.onNext(1);
-            fail();
-        } catch (Throwable cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-
-            // Now simulate failing the publisher by emit onError(...)
-            publisher.onError(cause);
-        }
-
+        publisher.onNext(1);
         assertFalse(upstreamSubscription.isCancelled());
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -615,7 +605,7 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void multipleMappedErrors() throws InterruptedException {
+    public void multipleMappedErrors() {
         List<DeliberateException> errors = new ArrayList<>();
         toSource(publisher.<Integer>flatMapMergeDelayError(i -> {
             DeliberateException de = new DeliberateException();
@@ -721,8 +711,8 @@ public class PublisherFlatMapMergeTest {
         firstEmitFuture.get();
         secondEmitFuture.get();
 
-        subscriber.awaitOnComplete(false);
-        assertThat(subscriber.pollAllOnNext(), containsInAnyOrder(1, 2, 3, 4, 5, 6));
+        assertThat(subscriber.takeOnNext(6), containsInAnyOrder(1, 2, 3, 4, 5, 6));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -775,11 +765,12 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void concurrentMappedDeliveryOrderPreserved() throws InterruptedException {
+    public void concurrentMappedDeliveryOrderPreserved() {
         assert executor != null;
         final int upstreamItems = 10000;
         final int mappedItems = 5;
-        final TestCollectingPublisherSubscriber<IntPair> subscriber = new TestCollectingPublisherSubscriber<>();
+        final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<IntPair> subscriber =
+                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
         Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
                 .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems);
         toSource(publisher).subscribe(subscriber);
@@ -787,8 +778,8 @@ public class PublisherFlatMapMergeTest {
 
         // Wait until completion, and then verify that for each mapped source its elements are delivered in order
         // despite concurrent emission from the mapped sources.
-        subscriber.awaitOnComplete(false);
-        List<IntPair> emissionList = subscriber.pollAllOnNext();
+        List<IntPair> emissionList = subscriber.takeOnNext(upstreamItems * mappedItems);
+        subscriber.awaitOnComplete();
         assertThat(emissionList, hasSize(upstreamItems * mappedItems));
         Map<Integer, List<Integer>> emissionMap = new HashMap<>();
         for (IntPair intPair : emissionList) {

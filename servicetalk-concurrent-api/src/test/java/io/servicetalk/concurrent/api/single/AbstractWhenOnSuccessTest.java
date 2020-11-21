@@ -15,33 +15,33 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnSuccessTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
+    final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
     public void testSuccess() {
         @SuppressWarnings("unchecked")
         Consumer<String> onSuccess = Mockito.mock(Consumer.class);
-        listener.listen(doSuccess(Single.succeeded("Hello"), onSuccess));
+        toSource(doSuccess(Single.succeeded("Hello"), onSuccess)).subscribe(listener);
         verify(onSuccess).accept("Hello");
-        listener.verifySuccess("Hello");
+        assertThat(listener.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
-    public abstract void testCallbackThrowsError();
+    public abstract void testCallbackThrowsError() throws InterruptedException;
 
     protected abstract <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer);
 }

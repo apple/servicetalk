@@ -15,8 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Test;
 
@@ -140,13 +142,13 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
 
     @Test
     public void requestNRejects() {
-        TestSubscription subscription = subscriptionRejects(s -> s.request(1));
+        TestSubscription subscription = subscriptionRejects(s -> s.awaitSubscription().request(1));
         assertThat("Unexpected items requested from Subscription.", subscription.requested(), is(1L));
     }
 
     @Test
     public void publisherCancelRejects() {
-        TestSubscription subscription = subscriptionRejects(Cancellable::cancel);
+        TestSubscription subscription = subscriptionRejects(sub -> sub.awaitSubscription().cancel());
         assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
     }
 
@@ -159,7 +161,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable);
         rejectNextTask.set(true);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         assertThat("Unexpected cancelled state.", cancellable.isCancelled(), is(true));
         verifyRejectedTasks(2, 1);
     }
@@ -173,7 +175,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable);
         rejectNextTask.set(true);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         assertThat("Unexpected cancelled state.", cancellable.isCancelled(), is(true));
         verifyRejectedTasks(2, 1);
     }
@@ -184,7 +186,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         toSource(publisher.subscribeOn(executor)).subscribe(subscriber);
         TestSubscription subscription = new TestSubscription();
         publisher.onSubscribe(subscription);
-        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
+        subscriber.awaitSubscription();
         rejectNextTask.set(true);
 
         invokeMethodThatRejects.accept(subscriber);
@@ -197,23 +199,21 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         TestPublisher<Integer> publisher = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         toSource(publisher.publishOn(executor)).subscribe(subscriber);
-        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         rejectNextTask.set(true);
         invokeMethodThatRejects.accept(publisher);
-        assertThat("Subscriber did not get a rejection error.", subscriber.isErrored(), is(true));
-        assertThat("Unexpected error received by subscriber.", subscriber.error(),
-                instanceOf(RejectedExecutionException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(RejectedExecutionException.class));
         verifyRejectedTasks(2, 1);
     }
 
     private void singlePublishOnThrows(Consumer<TestSingle<Integer>> invokeMethodThatRejects) {
         TestSingle<Integer> single = new TestSingle<>();
-        TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+        TestSingleSubscriber<Integer> subscriber =
+                new TestSingleSubscriber<>();
         toSource(single.publishOn(executor)).subscribe(subscriber);
         rejectNextTask.set(true);
         invokeMethodThatRejects.accept(single);
-        assertThat("Unexpected failure.", subscriber.takeError(), instanceOf(RejectedExecutionException.class));
+        assertThat("Unexpected failure.", subscriber.awaitOnError(), instanceOf(RejectedExecutionException.class));
         verifyRejectedTasks(2, 1);
     }
 
@@ -223,7 +223,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         toSource(completable.publishOn(executor)).subscribe(subscriber);
         rejectNextTask.set(true);
         invokeMethodThatRejects.accept(completable);
-        assertThat("Unexpected failure.", subscriber.takeError(), instanceOf(RejectedExecutionException.class));
+        assertThat("Unexpected failure.", subscriber.awaitOnError(), instanceOf(RejectedExecutionException.class));
         verifyRejectedTasks(2, 1);
     }
 

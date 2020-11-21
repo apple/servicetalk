@@ -16,12 +16,11 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -31,29 +30,26 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 
 public class ReduceSingleTest {
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listenerRule = new LegacyMockedSingleListenerRule<>();
-
     @Rule
     public final ReducerRule reducerRule = new ReducerRule();
 
+    private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
 
@@ -62,14 +58,14 @@ public class ReduceSingleTest {
         reducerRule.listen(publisher, listenerRule);
         publisher.onNext("Hello");
         publisher.onComplete();
-        listenerRule.verifySuccess("Hello");
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
     public void testEmpty() {
         reducerRule.listen(publisher, listenerRule);
         publisher.onComplete();
-        listenerRule.verifySuccess(""); // Empty string as exactly one item is required.
+        assertThat(listenerRule.awaitOnSuccess(), is("")); // Empty string as exactly one item is required.
     }
 
     @Test
@@ -77,36 +73,36 @@ public class ReduceSingleTest {
         reducerRule.listen(publisher, listenerRule);
         publisher.onNext("Hello1", "Hello2", "Hello3");
         publisher.onComplete();
-        listenerRule.verifySuccess("Hello1Hello2Hello3");
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello1Hello2Hello3"));
     }
 
     @Test
     public void testError() {
         reducerRule.listen(publisher, listenerRule);
         publisher.onError(DELIBERATE_EXCEPTION);
-        listenerRule.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testFactoryReturnsNull() {
-        listenerRule.listen(publisher.collect(() -> null, (o, s) -> o));
+        toSource(publisher.<String>collect(() -> null, (o, s) -> o)).subscribe(listenerRule);
         publisher.onNext("foo");
         publisher.onComplete();
-        listenerRule.verifySuccess(null);
+        assertThat(listenerRule.awaitOnSuccess(), is(nullValue()));
     }
 
     @Test
     public void testAggregatorReturnsNull() {
-        listenerRule.listen(publisher.collect(() -> "", (o, s) -> null));
+        toSource(publisher.collect(() -> "", (o, s) -> null)).subscribe(listenerRule);
         publisher.onNext("foo");
         publisher.onComplete();
-        listenerRule.verifySuccess(null);
+        assertThat(listenerRule.awaitOnSuccess(), is(nullValue()));
     }
 
     @Test
     public void testReducerExceptionCleanup() {
         final RuntimeException testException = new RuntimeException("fake exception");
-        listenerRule.listen(publisher.collect(() -> "", new BiFunction<String, String, String>() {
+        toSource(publisher.collect(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
 
             @Override
@@ -116,9 +112,12 @@ public class ReduceSingleTest {
                 }
                 return o + s;
             }
-        }));
+        })).subscribe(listenerRule);
 
-        verifyThrows(cause -> assertSame(testException, cause));
+        publisher.onSubscribe(subscription);
+        publisher.onNext("Hello1", "Hello2", "Hello3");
+        assertThat(listenerRule.awaitOnError(), is(testException));
+        assertFalse(subscription.isCancelled());
     }
 
     @Test
@@ -137,27 +136,13 @@ public class ReduceSingleTest {
             return objects;
         }).toFuture().get();
         analyzed.await();
-        MatcherAssert.assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-    }
-
-    private void verifyThrows(Consumer<Throwable> assertFunction) {
-        publisher.onSubscribe(subscription);
-        try {
-            publisher.onNext("Hello1", "Hello2", "Hello3");
-            fail();
-        } catch (Throwable cause) {
-            assertFunction.accept(cause);
-            assertFalse(subscription.isCancelled());
-            // Now simulate failing the publisher by emit onError(...)
-            publisher.onError(cause);
-            listenerRule.verifyFailure(cause);
-        }
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
     private static class ReducerRule extends Verifier {
 
-        ReducerRule listen(TestPublisher<String> testPublisher, LegacyMockedSingleListenerRule<String> listenerRule) {
-            listenerRule.listen(testPublisher.collect(() -> "", (r, s) -> r + s));
+        ReducerRule listen(TestPublisher<String> testPublisher, TestSingleSubscriber<String> listenerRule) {
+            toSource(testPublisher.collect(() -> "", (r, s) -> r + s)).subscribe(listenerRule);
             return this;
         }
     }

@@ -16,19 +16,19 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public final class ResumeCompletableTest {
@@ -48,39 +48,39 @@ public final class ResumeCompletableTest {
     @Test
     public void testFirstComplete() {
         first.onComplete();
-        assertThat(subscriber.terminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onComplete();
-        assertThat(subscriber.terminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         second.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelFirstActive() {
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
         first.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.cancel();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
 
         TestCancellable secondCancellable = new TestCancellable();
         second.onSubscribe(secondCancellable);
@@ -101,7 +101,7 @@ public final class ResumeCompletableTest {
         })).subscribe(subscriber);
 
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.error(), is(ex));
+        assertThat(subscriber.awaitOnError(), is(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }

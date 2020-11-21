@@ -18,9 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +39,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -60,7 +58,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -232,7 +229,7 @@ public class StreamingHttpPayloadHolderTest {
         Publisher<Object> bodyAndTrailers = payloadHolder.payloadBodyAndTrailers();
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
         simulateAndVerifyPayloadRead(payloadAndTrailersSubscriber);
-        payloadAndTrailersSubscriber.request(2);
+        payloadAndTrailersSubscriber.awaitSubscription().request(2);
         payloadSource.onNext(mock(HttpHeaders.class));
         if (sourceType == SourceType.Trailers &&
                 (updateMode == UpdateMode.Set || updateMode == UpdateMode.SetWithSerializer)) {
@@ -243,13 +240,10 @@ public class StreamingHttpPayloadHolderTest {
                 headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED)) {
             verifyTrailersReceived();
         } else {
-            TerminalNotification actual = payloadAndTrailersSubscriber.takeTerminal();
-            assert actual != null;
-            Throwable cause = actual.cause();
-            if (cause != null) {
-                cause.printStackTrace();
+            if (sourceType == SourceType.Trailers || updateMode == UpdateMode.TransformWithTrailer) {
+                assertThat(payloadAndTrailersSubscriber.takeOnNext(), instanceOf(HttpHeaders.class));
             }
-            assertThat("Expected payload completion.", actual, is(complete()));
+            payloadAndTrailersSubscriber.awaitOnComplete();
         }
     }
 
@@ -272,8 +266,7 @@ public class StreamingHttpPayloadHolderTest {
         simulateAndVerifyPayloadRead(payloadAndTrailersSubscriber);
 
         getPayloadSource().onError(DELIBERATE_EXCEPTION);
-        assertThat("Unexpected termination.", payloadAndTrailersSubscriber.takeError(),
-                equalTo(DELIBERATE_EXCEPTION));
+        assertThat(payloadAndTrailersSubscriber.awaitOnError(), equalTo(DELIBERATE_EXCEPTION));
 
         switch (updateMode) {
             case TransformWithTrailer:
@@ -300,7 +293,8 @@ public class StreamingHttpPayloadHolderTest {
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
         simulateAndVerifyPayloadRead(payloadAndTrailersSubscriber);
 
-        payloadAndTrailersSubscriber.request(1); // We are swallowing error so let trailers be emitted with terminal.
+        // We are swallowing error so let trailers be emitted with terminal.
+        payloadAndTrailersSubscriber.awaitSubscription().request(1);
         if (sourceType == SourceType.Trailers) {
             payloadSource.onNext(mock(HttpHeaders.class));
         }
@@ -311,11 +305,10 @@ public class StreamingHttpPayloadHolderTest {
             swallowPayloadErrorInTransformer(updateMode, secondRawTransformFunctions.trailerTransformer);
         }
         payloadSource.onError(DELIBERATE_EXCEPTION);
-        List<Object> items = payloadAndTrailersSubscriber.takeItems();
+        List<Object> items = payloadAndTrailersSubscriber.takeOnNext(1);
         assertThat("Unexpected trailer", items, hasSize(1));
         assertThat("Unexpected trailer", items.get(0), is(instanceOf(HttpHeaders.class)));
-        assertThat("Expected payload completion", payloadAndTrailersSubscriber.takeTerminal(), is(complete()));
-        assertThat("Unexpected termination.", payloadAndTrailersSubscriber.takeError(), is(nullValue()));
+        payloadAndTrailersSubscriber.awaitOnComplete();
 
         switch (updateMode) {
             case TransformWithTrailer:
@@ -337,9 +330,9 @@ public class StreamingHttpPayloadHolderTest {
             return;
         }
         Buffer buf = DEFAULT_ALLOCATOR.fromAscii("foo");
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         getPayloadSource().onNext(buf);
-        assertThat("Unexpected payload", subscriber.takeItems(),
+        assertThat("Unexpected payload", subscriber.takeOnNext(1),
                 contains((subscriber == bufferPayloadSubscriber || subscriber == payloadAndTrailersSubscriber) ?
                         buf : "foo"));
     }
@@ -349,28 +342,35 @@ public class StreamingHttpPayloadHolderTest {
             simulateAndVerifyPayloadComplete(payloadAndTrailersSubscriber);
             return;
         }
-         payloadAndTrailersSubscriber.request(1);
+         payloadAndTrailersSubscriber.awaitSubscription().request(1);
         if (sourceType == SourceType.Trailers) {
             assert payloadSource != null;
             payloadSource.onNext(mock(HttpHeaders.class));
             payloadSource.onComplete();
-            getPayloadSource().onComplete();
+            tryCompletePayloadSource();
         } else {
             if (payloadSource != null) {
                 payloadSource.onComplete();
             }
             if (canControlPayload()) {
-                getPayloadSource().onComplete(); // Force trailer emission
+                tryCompletePayloadSource();
             }
         }
         verifyTrailersReceived();
     }
 
+    private void tryCompletePayloadSource() {
+        TestPublisher tp = getPayloadSource();
+        if (tp != payloadSource) {
+            tp.onComplete(); // Force trailer emission
+        }
+    }
+
     private void verifyTrailersReceived() {
-        List<Object> items = payloadAndTrailersSubscriber.takeItems();
+        List<Object> items = payloadAndTrailersSubscriber.takeOnNext(1);
         assertThat("Unexpected trailer", items, hasSize(1));
         assertThat("Unexpected trailer", items.get(0), is(instanceOf(HttpHeaders.class)));
-        assertThat("Expected payload completion", payloadAndTrailersSubscriber.takeTerminal(), is(complete()));
+        payloadAndTrailersSubscriber.awaitOnComplete();
         if (updateMode == UpdateMode.TransformWithTrailer) {
             verify(transformFunctions.trailerTransformer).payloadComplete(any(), any());
         } else if (updateMode == UpdateMode.TransformRawWithTrailer) {
@@ -382,7 +382,7 @@ public class StreamingHttpPayloadHolderTest {
         if (canControlPayload()) {
             getPayloadSource().onComplete();
         }
-        assertThat("Expected payload completion", subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     private TestPublisher getPayloadSource() {

@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
@@ -47,6 +47,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -120,7 +121,7 @@ public class PipelinedHttpConnectionTest {
         when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
         Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo"));
         toSource(request).subscribe(dataSubscriber1);
-        assertTrue(dataSubscriber1.isSuccess());
+        assertNotNull(dataSubscriber1.awaitOnSuccess());
     }
 
     @Test
@@ -145,11 +146,11 @@ public class PipelinedHttpConnectionTest {
         writePublisher2.onComplete();
 
         readPublisher1.onComplete();
-        assertTrue(dataSubscriber1.hasResult());
+        assertNotNull(dataSubscriber1.awaitOnSuccess());
 
         assertTrue(readPublisher2.isSubscribed());
         readPublisher2.onNext(mockResp);
         readPublisher2.onComplete();
-        assertTrue(dataSubscriber2.hasResult());
+        assertNotNull(dataSubscriber2.awaitOnSuccess());
     }
 }
