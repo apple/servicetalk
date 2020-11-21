@@ -291,7 +291,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     @Test
     public void smuggleBeforeNonZeroContentLengthHeader() {
         int contentLength = 128;
-        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
                 // framing terminating the request with no content-length or transfer-encoding, or with known zero
