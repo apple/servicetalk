@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -315,6 +316,7 @@ public class PublisherConcatMapIterableTest {
         testExceptionFromBufferedOnNextThenTerminalIsPropagated(publisher::onError);
     }
 
+    @Ignore("fixed in https://github.com/apple/servicetalk/pull/1229")
     @Test
     public void exceptionFromBufferedOnNextThenOnCompleteIsPropagated() {
         testExceptionFromBufferedOnNextThenTerminalIsPropagated(__ -> publisher.onComplete());
