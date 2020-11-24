@@ -120,20 +120,22 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                 if (oldVal == REQUESTED || oldVal == CANCELLED) {
                     super.request(n);
                     break;
+                } else if (!isRequestNValid(n)) {
+                    mayBeResult = CANCELLED;
+                    try {
+                        target.onError(newExceptionForInvalidRequestN(n));
+                    } finally {
+                        super.cancel();
+                    }
+                    break;
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
                     if (oldVal != INITIAL) {
-                        if (!isRequestNValid(n)) {
-                            target.onError(newExceptionForInvalidRequestN(n));
-                            return;
-                        } else {
-                            @SuppressWarnings("unchecked")
-                            final T tVal = (T) oldVal;
-                            emitSingleSuccessToTarget(tVal);
-                        }
+                        @SuppressWarnings("unchecked")
+                        final T tVal = (T) oldVal;
+                        emitSingleSuccessToTarget(tVal);
                     }
-                    // forward any invalid requestN on to the super class so it can propagate an error if necessary.
                     if (n != 1) {
-                        super.request(n > 0 ? n - 1 : n);
+                        super.request(n - 1);
                     }
                     break;
                 }
