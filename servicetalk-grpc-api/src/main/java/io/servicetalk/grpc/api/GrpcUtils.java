@@ -64,7 +64,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
@@ -270,7 +269,7 @@ final class GrpcUtils {
             return GRPC_ACCEPT_ENCODING_NONE;
         }
 
-        List<ContentCodec> knownEncodings = new ArrayList<>();
+        List<ContentCodec> knownEncodings = new ArrayList<>(allowedCodings.size());
         List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
         for (CharSequence val : acceptEncodingValues) {
             ContentCodec enc = encodingFor(allowedCodings, val);
@@ -295,7 +294,6 @@ final class GrpcUtils {
      * @param allowedCodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs, identity otherwise.
      */
-    @Nullable
     static ContentCodec negotiateAcceptedEncoding(
             final HttpMetaData httpMetaData,
             final List<ContentCodec> allowedCodings) {
@@ -311,7 +309,6 @@ final class GrpcUtils {
         return negotiateAcceptedEncoding(clientSupportedEncodings, allowedCodings);
     }
 
-    @Nullable
     static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
                                                   final List<ContentCodec> allowedEncodings) {
         // Fast path, Client has no codings configured, or has identity as the only encoding configured
@@ -342,7 +339,6 @@ final class GrpcUtils {
     @Nullable
     static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
                                     @Nullable final CharSequence name) {
-        requireNonNull(allowedList);
         if (name == null || name.length() == 0) {
             return null;
         }

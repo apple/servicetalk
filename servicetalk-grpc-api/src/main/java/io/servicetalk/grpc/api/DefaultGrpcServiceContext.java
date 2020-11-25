@@ -36,8 +36,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     private final ConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
     private final GrpcProtocol protocol;
-
-    final List<ContentCodec> supportedMessageCodings;
+    private final List<ContentCodec> supportedMessageCodings;
 
     DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
                               final List<ContentCodec> supportedMessageCodings) {

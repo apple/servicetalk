@@ -67,7 +67,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
 import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.grpc.api.GrpcUtils.encodingFor;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
@@ -116,7 +115,8 @@ public class GrpcMessageEncodingTest {
             DeflaterOutputStream output = null;
             try {
                 output = new GZIPOutputStream(asOutputStream(dst));
-                output.write(src.array(), src.readerIndex(), length);
+                output.write(src.array(), src.arrayOffset() + src.readerIndex(), length);
+                src.readerIndex(src.readerIndex() + length);
                 output.finish();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -410,20 +410,15 @@ public class GrpcMessageEncodingTest {
         StreamingHttpServiceFilterFactory filterFactory = REQ_RESP_VERIFIER.apply(encodingOptions);
         if (encodingOptions.serverSupported == null) {
             return grpcServerBuilder.appendHttpServiceFilter(filterFactory)
-                    .enableWireLogging("server")
-                                             .listenAndAwait(new ServiceFactory(new TesterServiceImpl()));
+                    .listenAndAwait(new ServiceFactory(new TesterServiceImpl()));
         } else {
             return grpcServerBuilder.appendHttpServiceFilter(filterFactory)
-                    .enableWireLogging("server")
-                                             .listenAndAwait(new ServiceFactory(new TesterServiceImpl(),
-                                                     encodingOptions.serverSupported));
+                    .listenAndAwait(new ServiceFactory(new TesterServiceImpl(), encodingOptions.serverSupported));
         }
     }
 
     private TesterClient newClient(@Nullable final List<ContentCodec> supportedCodings) {
         return GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .executionStrategy(noOffloadsStrategy())
-                .enableWireLogging("client")
                 .build(supportedCodings != null ?
                         new ClientFactory().supportedMessageCodings(supportedCodings) :
                         new ClientFactory());

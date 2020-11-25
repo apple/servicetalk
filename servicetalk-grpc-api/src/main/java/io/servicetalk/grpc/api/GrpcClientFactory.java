@@ -112,7 +112,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * Sets the supported message encodings for this client factory.
      * By default only {@link io.servicetalk.encoding.api.ContentCodings#identity()} is supported
      *
-     * @param codings {@link ContentCodec} supported encodings for this client.
+     * @param codings The supported encodings {@link ContentCodec}s for this client.
      * @return {@code this}
      */
     public GrpcClientFactory<Client, BlockingClient, Filter, FilterableClient, FilterFactory>
@@ -122,8 +122,8 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     }
 
     /**
-     * Return the list of supported {@link ContentCodec}s for this client factory.
-     * @return the list of supported {@link ContentCodec}s for this client factory
+     * Return the supported {@link ContentCodec}s for this client factory.
+     * @return the supported {@link ContentCodec}s for this client factory
      */
     protected List<ContentCodec> supportedMessageCodings() {
         return supportedCodings;

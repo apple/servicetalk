@@ -33,11 +33,9 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
     GrpcProtocol protocol();
 
     /**
-     * The set of {@link ContentCodec} codings available for this
-     * <a href="https://www.grpc.io">gRPC</a> call.
+     * The {@link ContentCodec} codings available for this <a href="https://www.grpc.io">gRPC</a> call.
      *
-     * @return the set of {@link ContentCodec} codings available for this
-     * <a href="https://www.grpc.io">gRPC</a> call
+     * @return the {@link ContentCodec} codings available for this <a href="https://www.grpc.io">gRPC</a> call.
      */
     List<ContentCodec> supportedMessageCodings();
 
