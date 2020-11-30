@@ -15,21 +15,24 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
+import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 public final class SingleFlatMapSingleTest {
 
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<String> first;
     private LegacyTestSingle<String> second;
@@ -42,57 +45,57 @@ public final class SingleFlatMapSingleTest {
 
     @Test
     public void testFirstAndSecondPropagate() {
-        listener.listen(succeeded(1).flatMap(s -> succeeded("Hello" + s)));
-        listener.verifySuccess("Hello1");
+        toSource(succeeded(1).flatMap(s -> succeeded("Hello" + s))).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is("Hello1"));
     }
 
     @Test
     public void testSuccess() {
-        listener.listen(succeeded(1).flatMap(s -> succeeded("Hello")));
-        listener.verifySuccess("Hello");
+        toSource(succeeded(1).flatMap(s -> succeeded("Hello"))).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
     public void testFirstEmitsError() {
-        listener.listen(failed(DELIBERATE_EXCEPTION).flatMap(s -> succeeded("Hello")));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(failed(DELIBERATE_EXCEPTION).flatMap(s -> succeeded("Hello"))).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSecondEmitsError() {
-        listener.listen(succeeded(1).flatMap(s -> failed(DELIBERATE_EXCEPTION)));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        SourceAdapters.<String>toSource(succeeded(1).flatMap(s -> failed(DELIBERATE_EXCEPTION))).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeFirst() {
-        listener.listen(first.flatMap(s -> second));
-        listener.cancel();
+        toSource(first.flatMap(s -> second)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         first.verifyCancelled();
     }
 
     @Test
     public void testCancelBeforeSecond() {
-        listener.listen(first.flatMap(s -> second));
+        toSource(first.flatMap(s -> second)).subscribe(listener);
         first.onSuccess("Hello");
-        listener.cancel();
+        listener.awaitSubscription().cancel();
         first.verifyNotCancelled();
         second.verifyCancelled();
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(first.flatMap(s -> {
+        SourceAdapters.<String>toSource(first.flatMap(s -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        })).subscribe(listener);
         first.onSuccess("Hello");
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
-        listener.listen(first.flatMap(s -> null));
+        SourceAdapters.<String>toSource(first.flatMap(s -> null)).subscribe(listener);
         first.onSuccess("Hello");
-        listener.verifyFailure(NullPointerException.class);
+        assertThat(listener.awaitOnError(), instanceOf(NullPointerException.class));
     }
 }

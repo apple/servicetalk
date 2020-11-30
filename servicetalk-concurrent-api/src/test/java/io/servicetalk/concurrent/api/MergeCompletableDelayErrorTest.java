@@ -15,16 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Rule;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class MergeCompletableDelayErrorTest {
-    @Rule
-    public final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
+    private final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new MergeCompletable(true, completables[0], immediate(),
@@ -34,32 +37,53 @@ public class MergeCompletableDelayErrorTest {
 
     @Test
     public void testCompletion() {
-        holder.init(2).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testCompletionFew() {
-        holder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).complete(1, 2);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.complete(0);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFailFirstEvent() {
-        holder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2).verifyFailure(DELIBERATE_EXCEPTION);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).fail(1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.complete(0, 2);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testFailLastEvent() {
-        holder.init(2).listen().complete(0, 2).verifyNoEmissions().fail(1).verifyFailure(DELIBERATE_EXCEPTION);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).complete(0, 2);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.fail(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testFailMiddleEvent() {
-        holder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2)
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).complete(0);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.fail(1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.complete(2);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testMergeWithOne() {
-        holder.init(1).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(1).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 }

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -44,7 +45,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -61,16 +61,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class PublisherFlatMapSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private final TestPublisher<Integer> source = new TestPublisher<>();
+    private TestPublisher<Integer> source = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
     private static ExecutorService executorService;
     private static Executor executor;
@@ -132,145 +130,138 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSingleItemSyncSingle() {
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(2));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSingleItemCompletesWithNull() {
         toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.succeeded(null), 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(new Integer[]{null}));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(nullValue()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSingleItemSourceCompleteFirst() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
         single.onSuccess(2);
-        assertThat(subscriber.takeItems(), contains(2));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSingleItemSingleCompleteFirst() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         single.onSuccess(2);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(2));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSingleItemSingleError() {
         toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.failed(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSingleErrorPostSourceComplete() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
         single.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorNoOnNexts() {
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorPostOnNexts() {
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeItems(), contains(2));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.takeOnNext(), is(2));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         single.verifyCancelled();
         single.onError(new DeliberateException());
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
     }
 
     @Test
     public void testSubscriberCancel() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testSingleCompletePostCancel() {
-        final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
-                .disableDemandCheck().build();
+        final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         single.onSuccess(4);
-        assertThat(subscriber.takeItems(), contains(4));
+        assertThat(subscriber.takeOnNext(), is(4));
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSingleErrorPostCancel() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
         toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1);
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         single.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -282,26 +273,26 @@ public class PublisherFlatMapSingleTest {
             return s;
         }, 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         // Should not request more than max concurrency.
         assertThat(subscription.requested(), is(2L));
 
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeOnNext(), is(2));
 
         // Total requested must equal actual requested.
         assertThat(subscription.requested(), is(3L));
 
         emittedSingles.remove(0).onSuccess(3);
-        assertThat(subscriber.takeItems(), contains(3));
+        assertThat(subscriber.takeOnNext(), is(3));
         source.onNext(1);
         source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        assertThat(subscriber.takeItems(), contains(4));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(4));
+        subscriber.awaitOnComplete();
 
         // Total requested must equal actual requested.
         assertThat(subscription.requested(), is(3L));
@@ -313,19 +304,11 @@ public class PublisherFlatMapSingleTest {
             throw DELIBERATE_EXCEPTION;
         }, 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
 
-        try {
-            source.onNext(1);
-            fail();
-        } catch (Throwable cause) {
-            assertSame(DELIBERATE_EXCEPTION, cause);
-
-            // Now simulate failing the publisher by emit onError(...)
-            source.onError(cause);
-        }
+        source.onNext(1);
         assertFalse(subscription.isCancelled());
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -337,14 +320,14 @@ public class PublisherFlatMapSingleTest {
             return s1;
         }, 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         // Should not request more than max concurrency.
         assertThat(subscription.requested(), is(2L));
 
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
         emittedSingles.remove(0).onSuccess(2);
-        assertThat(subscriber.takeItems(), contains(2));
+        assertThat(subscriber.takeOnNext(), is(2));
 
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(3L));
@@ -352,14 +335,14 @@ public class PublisherFlatMapSingleTest {
         emittedSingles.remove(0).onSuccess(3);
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(4L));
-        assertThat(subscriber.takeItems(), contains(3));
+        assertThat(subscriber.takeOnNext(), is(3));
 
         source.onNext(1);
         source.onComplete();
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(1));
         emittedSingles.remove(0).onSuccess(4);
-        assertThat(subscriber.takeItems(), contains(4));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(), is(4));
+        subscriber.awaitOnComplete();
 
         // Request enough on completion to reach max concurrency.
         assertThat(subscription.requested(), is(6L));
@@ -370,44 +353,43 @@ public class PublisherFlatMapSingleTest {
         toSource(source.<Integer>flatMapMergeSingleDelayError(integer1 -> Single.failed(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1); // Request no more than max concurrency.
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         assertThat(subscription.requested(), is(3L));
         source.onNext(1); // Request more with 1 single completion.
         assertThat(subscription.requested(), is(3L));
         source.onComplete(); // Stop requesting more.
-        verifySuppressed(subscriber.takeError(), DELIBERATE_EXCEPTION);
+        verifySuppressed(subscriber.awaitOnError(), DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testRequestMultipleTimes() {
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 10)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1, 1);
-        assertThat(subscriber.takeItems(), contains(2, 2));
-        subscriber.request(2);
+        assertThat(subscriber.takeOnNext(2), contains(2, 2));
+        subscriber.awaitSubscription().request(2);
         source.onNext(1, 1);
-        assertThat(subscriber.takeItems(), contains(2, 2));
+        assertThat(subscriber.takeOnNext(2), contains(2, 2));
     }
 
     @Test
     public void testRequestMultipleTimesBreachMaxConcurrency() {
         toSource(source.flatMapMergeSingle(integer -> Single.succeeded(2), 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(2);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
+        subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1, 1);
         source.onNext(1, 1);
         source.onComplete();
-        assertThat(subscriber.takeItems(), contains(2, 2, 2, 2));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.takeOnNext(4), contains(2, 2, 2, 2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -418,13 +400,13 @@ public class PublisherFlatMapSingleTest {
             errors.add(de);
             return Single.<Integer>failed(de);
         }, 2)).subscribe(subscriber);
-        subscriber.request(3);
+        subscriber.awaitSubscription().request(3);
         source.onNext(1, 1);
         source.onComplete();
         assertThat("Unexpected emitted error count.", errors, hasSize(2));
         DeliberateException first = errors.remove(0);
         for (DeliberateException error : errors) {
-            verifyOriginalAndSuppressedCauses(subscriber.takeError(), first, error);
+            verifyOriginalAndSuppressedCauses(subscriber.awaitOnError(), first, error);
         }
     }
 
@@ -433,11 +415,11 @@ public class PublisherFlatMapSingleTest {
         int maxConcurrency = 2;
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         assertThat(subscription.requested(), is((long) maxConcurrency));
         source.onNext(2);
         assertThat(subscription.requested(), is((long) (maxConcurrency + 1)));
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         assertThat(subscription.requested(), is((long) (maxConcurrency + 1)));
     }
 
@@ -446,9 +428,9 @@ public class PublisherFlatMapSingleTest {
         int maxConcurrency = 2;
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(Long.MAX_VALUE - 1);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is((long) maxConcurrency));
         source.onNext(1, 2);
         assertThat(subscription.requested(), is((long) (maxConcurrency + 2)));
@@ -459,9 +441,9 @@ public class PublisherFlatMapSingleTest {
         int maxConcurrency = 2;
         toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        subscriber.request(Integer.MAX_VALUE - 1);
+        subscriber.awaitSubscription().request(Integer.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is((long) maxConcurrency));
         source.onNext(1, 2);
         assertThat(subscription.requested(), is((long) (maxConcurrency + 2)));
@@ -518,15 +500,19 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testEmitFromQueue() throws Exception {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
-        TestCollectingPublisherSubscriber<Integer> blockingSubscriber = new TestCollectingPublisherSubscriber<>();
-        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
-                .lastSubscriber(blockingSubscriber).build();
+        io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<Integer> subscriber =
+                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
+        TestSubscription upstreamSubscription = new TestSubscription();
+        source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
+            subscriber1.onSubscribe(upstreamSubscription);
+            return subscriber1;
+        });
         toSource(source.flatMapMergeSingle(integer -> {
             TestSingle<Integer> s = new TestSingle<>();
             emittedSingles.add(s);
             return s;
         }, 2)).subscribe(subscriber);
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
 
@@ -538,16 +524,16 @@ public class PublisherFlatMapSingleTest {
             single2.onSuccess(3);
         });
 
-        Integer nextItem = blockingSubscriber.takeOnNext();
+        Integer nextItem = subscriber.takeOnNext();
         assertNotNull(nextItem);
         assertEquals(2, nextItem.intValue());
-        nextItem = blockingSubscriber.takeOnNext();
+        nextItem = subscriber.takeOnNext();
         assertNotNull(nextItem);
         assertEquals(3, nextItem.intValue());
-        assertFalse(blockingSubscriber.pollTerminal(200, MILLISECONDS));
+        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
 
         source.onComplete();
-        blockingSubscriber.awaitOnComplete();
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -560,7 +546,7 @@ public class PublisherFlatMapSingleTest {
         Future<?> submitFuture = executorService.submit(() -> {
             requestingStarting.countDown();
             for (int i = 0; i < totalToRequest; i++) {
-                subscriber.request(1);
+                subscriber.awaitSubscription().request(1);
             }
         });
         // Just to make sure we have both threads running concurrently.

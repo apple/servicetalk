@@ -18,12 +18,12 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,38 +34,41 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertTrue;
 
 public class PubToSingleFirstOrElseTest {
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listenerRule = new LegacyMockedSingleListenerRule<>();
-
+    private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
 
     @Test
     public void testSuccess() {
-        listen(from("Hello")).verifySuccess("Hello");
+        listen(from("Hello"));
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
     }
 
     @Test
     public void testError() {
-        listen(Publisher.failed(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
+        listen(Publisher.failed(DELIBERATE_EXCEPTION));
+        assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testEmpty() {
-        listen(Publisher.empty()).verifyFailure(NoSuchElementException.class);
+        listen(Publisher.empty());
+        assertThat(listenerRule.awaitOnError(), instanceOf(NoSuchElementException.class));
     }
 
     @Test
@@ -73,7 +76,7 @@ public class PubToSingleFirstOrElseTest {
         listen(publisher);
         publisher.onSubscribe(subscription);
         publisher.onNext("Hello");
-        listenerRule.verifySuccess("Hello");
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
         assertTrue(subscription.isCancelled());
     }
 
@@ -82,18 +85,16 @@ public class PubToSingleFirstOrElseTest {
         listen(publisher);
         publisher.onSubscribe(subscription);
         publisher.onNext("Hello");
-        listenerRule.verifySuccess("Hello");
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
         assertTrue(subscription.isCancelled());
-        listenerRule.noMoreInteractions();
     }
 
     @Test
     public void testCompletePostEmit() {
         listen(publisher);
         publisher.onNext("Hello");
-        listenerRule.verifySuccess("Hello");
+        assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
         publisher.onComplete();
-        listenerRule.noMoreInteractions();
     }
 
     @Test
@@ -103,7 +104,8 @@ public class PubToSingleFirstOrElseTest {
             protected void handleSubscribe(final Subscriber<? super String> subscriber) {
                 subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, complete()));
             }
-        }).verifyFailure(NoSuchElementException.class);
+        });
+        assertThat(listenerRule.awaitOnError(), instanceOf(NoSuchElementException.class));
     }
 
     @Test
@@ -114,7 +116,8 @@ public class PubToSingleFirstOrElseTest {
                 subscriber.onSubscribe(new DeferredEmptySubscription(subscriber,
                         TerminalNotification.error(DELIBERATE_EXCEPTION)));
             }
-        }).verifyFailure(DELIBERATE_EXCEPTION);
+        });
+        assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -135,9 +138,9 @@ public class PubToSingleFirstOrElseTest {
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
-    private LegacyMockedSingleListenerRule<String> listen(Publisher<String> src) {
-        return listenerRule.listen(src.firstOrElse(() -> {
+    private void listen(Publisher<String> src) {
+        toSource(src.firstOrElse(() -> {
             throw new NoSuchElementException();
-        }));
+        })).subscribe(listenerRule);
     }
 }

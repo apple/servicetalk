@@ -15,9 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
 import io.netty.channel.Channel;

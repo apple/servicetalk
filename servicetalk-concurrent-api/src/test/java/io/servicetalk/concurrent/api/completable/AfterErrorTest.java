@@ -24,7 +24,10 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class AfterErrorTest extends AbstractWhenOnErrorTest {
 
@@ -40,8 +43,9 @@ public class AfterErrorTest extends AbstractWhenOnErrorTest {
     @Override
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Completable.failed(srcEx), __ -> {
+        toSource(doError(Completable.failed(srcEx), __ -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(srcEx);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(srcEx));
     }
 }

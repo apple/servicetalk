@@ -21,7 +21,10 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -35,8 +38,8 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     @Override
     public void testCallbackThrowsErrorOnComplete() {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
-        listener.listen(doFinally(Completable.completed(), mock))
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doFinally(Completable.completed(), mock)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(mock).onComplete();
         verifyNoMoreInteractions(mock);
     }
@@ -46,9 +49,9 @@ public class BeforeFinallyTest extends AbstractWhenFinallyTest {
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
         TerminalSignalConsumer mock = throwableMock(exception);
-        listener.listen(doFinally(Completable.failed(DELIBERATE_EXCEPTION), mock))
-                .verifyFailure(exception)
-                .verifySuppressedFailure(DELIBERATE_EXCEPTION);
+        toSource(doFinally(Completable.failed(DELIBERATE_EXCEPTION), mock)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(exception));
+        assertThat(listener.awaitOnError().getSuppressed()[0], is(DELIBERATE_EXCEPTION));
         verify(mock).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(mock);
     }

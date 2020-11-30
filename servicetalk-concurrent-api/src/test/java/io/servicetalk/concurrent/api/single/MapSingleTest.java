@@ -15,28 +15,31 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SourceAdapters;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class MapSingleTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<Void> listener = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(Single.succeeded("foo").map(v -> {
+        SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(DELIBERATE_EXCEPTION);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalSucceeds() {
-        listener.listen(Single.succeeded("foo").map(v -> null)).verifySuccess(null);
+        SourceAdapters.<String>toSource(Single.succeeded("foo").map(v -> null)).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is(nullValue()));
     }
 }

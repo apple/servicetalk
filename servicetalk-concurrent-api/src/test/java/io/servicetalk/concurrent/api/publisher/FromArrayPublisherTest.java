@@ -22,10 +22,6 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
@@ -39,12 +35,11 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
         };
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testEmptyInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(0);
         toSource(source.publisher()).subscribe(subscriber);
-        assertThat(subscriber.takeTerminal(), is(complete()));
-        subscriber.request(-1);
-        assertThat(subscriber.takeError(), nullValue());
+        subscriber.awaitOnComplete();
+        subscriber.awaitSubscription().request(-1);
     }
 }

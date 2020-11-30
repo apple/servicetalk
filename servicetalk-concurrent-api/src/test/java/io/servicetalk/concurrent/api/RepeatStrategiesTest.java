@@ -40,7 +40,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         Duration backoff = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffDeltaJitter(2, backoff, ofNanos(1),
                 timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyDelayWithDeltaJitter(backoff.toNanos(), 1, 1);
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -58,7 +58,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         Duration initialDelay = ofSeconds(1);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoffFullJitter(2, initialDelay,
                 timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyDelayWithFullJitter(initialDelay.toNanos(), 1);
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -83,7 +83,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         Duration jitter = ofMillis(500);
         RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffDeltaJitter(2, initialDelay, jitter,
                 ofDays(10), timerExecutor));
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
@@ -113,7 +113,7 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider)
             throws Exception {
         RepeatStrategy strategy = new RepeatStrategy(actualStrategy);
-        TestCollectingCompletableSubscriber subscriber = strategy.invokeAndListen();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         subscriber.awaitOnComplete();
@@ -133,8 +133,9 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
             this.actual = actual;
         }
 
-        TestCollectingCompletableSubscriber invokeAndListen() {
-            TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber invokeAndListen() {
+            io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                    new io.servicetalk.concurrent.test.internal.TestCompletableSubscriber();
             toSource(actual.apply(++count)).subscribe(subscriber);
             return subscriber;
         }

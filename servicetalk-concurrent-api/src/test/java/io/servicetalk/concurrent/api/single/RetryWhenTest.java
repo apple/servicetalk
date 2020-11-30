@@ -18,11 +18,11 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +34,10 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -51,8 +54,7 @@ public class RetryWhenTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
     private BiIntFunction<Throwable, Completable> shouldRetry;
@@ -69,7 +71,7 @@ public class RetryWhenTest {
             retrySignal = new LegacyTestCompletable();
             return retrySignal;
         });
-        subscriberRule.listen(source.retryWhen(shouldRetry));
+        toSource(source.retryWhen(shouldRetry)).subscribe(subscriberRule);
     }
 
     @After
@@ -101,17 +103,17 @@ public class RetryWhenTest {
     @Test
     public void testComplete() {
         source.onSuccess(1);
-        subscriberRule.verifySuccess(1);
+        assertThat(subscriberRule.awaitOnSuccess(), is(1));
         verifyZeroInteractions(shouldRetry);
     }
 
     @Test
     public void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyNoEmissions();
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
         DeliberateException fatal = new DeliberateException();
         retrySignal.onError(fatal); // stop retry
-        subscriberRule.verifyFailure(fatal);
+        assertThat(subscriberRule.awaitOnError(), is(fatal));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(shouldRetry);
     }
@@ -119,7 +121,7 @@ public class RetryWhenTest {
     @Test
     public void testTwoError() {
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyNoEmissions();
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         source.verifyListenCalled();
@@ -127,26 +129,26 @@ public class RetryWhenTest {
         verify(shouldRetry).apply(2, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         source.onSuccess(1);
-        subscriberRule.verifySuccess(1);
+        assertThat(subscriberRule.awaitOnSuccess(), is(1));
     }
 
     @Test
     public void testMaxRetries() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
-        subscriberRule.verifyNoEmissions();
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         source.verifyListenCalled().onError(DELIBERATE_EXCEPTION);
         DeliberateException fatal = new DeliberateException();
         retrySignal.verifyListenCalled().onError(fatal); // stop retry
-        subscriberRule.verifyFailure(fatal);
+        assertThat(subscriberRule.awaitOnError(), is(fatal));
     }
 
     @Test
     public void testCancelPostErrorButBeforeRetryStart() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.verifyListenCalled();
-        subscriberRule.cancel();
+        subscriberRule.awaitSubscription().cancel();
         retrySignal.verifyCancelled();
         source.onSuccess(1);
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
@@ -155,7 +157,7 @@ public class RetryWhenTest {
 
     @Test
     public void testCancelBeforeRetry() {
-        subscriberRule.cancel();
+        subscriberRule.awaitSubscription().cancel();
         source.onSuccess(1);
         verifyZeroInteractions(shouldRetry);
     }
@@ -164,23 +166,23 @@ public class RetryWhenTest {
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
 
-        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);
-        subscriberRule.resetSubscriberMock().listen(source.retryWhen((times, cause) -> {
+        toSource(source.retryWhen((times, cause) -> {
             throw ex;
-        }));
+        })).subscribe(subscriberRule);
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyFailure(ex);
+        assertThat(subscriberRule.awaitOnError(), is(ex));
         assertEquals(1, ex.getSuppressed().length);
         assertSame(DELIBERATE_EXCEPTION, ex.getSuppressed()[0]);
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
-        subscriberRule = new LegacyMockedSingleListenerRule<>();
+        TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
         source = new LegacyTestSingle<>(false, false);
-        subscriberRule.resetSubscriberMock().listen(source.retryWhen((times, cause) -> null));
+        toSource(source.retryWhen((times, cause) -> null)).subscribe(subscriberRule);
         source.onError(DELIBERATE_EXCEPTION);
-        subscriberRule.verifyFailure(NullPointerException.class);
+        assertThat(subscriberRule.awaitOnError(), instanceOf(NullPointerException.class));
     }
 }

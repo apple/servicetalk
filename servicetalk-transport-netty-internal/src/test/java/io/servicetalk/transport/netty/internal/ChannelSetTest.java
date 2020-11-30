@@ -18,8 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.TestCollectingCompletableSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -101,10 +101,10 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsync() throws InterruptedException {
+    public void closeAsync() {
         Completable completable = fixture.closeAsync();
         verify(channel, never()).close();
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);
         verify(channel).close();
         subscriber.awaitOnComplete();
@@ -114,7 +114,7 @@ public class ChannelSetTest {
     public void closeAsyncGracefullyWithNettyConnectionChannelHandler() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(nettyConnection, never()).closeAsyncGracefully();
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
         verify(channel, never()).close();
@@ -126,11 +126,11 @@ public class ChannelSetTest {
     }
 
     @Test
-    public void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() throws InterruptedException {
+    public void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() {
         when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(channel, never()).close();
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);
         verify(channel).close();
         subscriber.awaitOnComplete();
@@ -141,11 +141,11 @@ public class ChannelSetTest {
         Completable gracefulCompletable = closeAsyncGracefully(fixture, 100, SECONDS);
         Completable closeCompletable = fixture.closeAsync();
 
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(gracefulCompletable).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
 
-        TestCollectingCompletableSubscriber subscriber2 = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(closeCompletable).subscribe(subscriber2);
         verify(channel).close();
         // once closeCompletable being subscribed to closes the channel, the Completable returned from
@@ -163,11 +163,11 @@ public class ChannelSetTest {
         Completable closeCompletable = fixture.closeAsync();
         Completable gracefulCompletable = closeAsyncGracefully(fixture, 100, SECONDS);
 
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(closeCompletable).subscribe(subscriber);
         verify(channel).close();
 
-        TestCollectingCompletableSubscriber subscriber2 = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(gracefulCompletable).subscribe(subscriber2);
         verify(nettyConnection, never()).closeAsyncGracefully();
 
@@ -182,11 +182,11 @@ public class ChannelSetTest {
         Completable gracefulCompletable1 = closeAsyncGracefully(fixture, 60, SECONDS);
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 60, SECONDS);
 
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(gracefulCompletable1).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
 
-        TestCollectingCompletableSubscriber subscriber2 = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(gracefulCompletable2).subscribe(subscriber2);
         verify(nettyConnection, times(1)).closeAsyncGracefully();
 
@@ -207,11 +207,11 @@ public class ChannelSetTest {
         Completable gracefulCompletable1 = closeAsyncGracefully(fixture, 100, MILLISECONDS);
         Completable gracefulCompletable2 = closeAsyncGracefully(fixture, 1000, MILLISECONDS);
 
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(gracefulCompletable1).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
 
-        TestCollectingCompletableSubscriber subscriber2 = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(gracefulCompletable2).subscribe(subscriber2);
         verify(nettyConnection, times(1)).closeAsyncGracefully();
 
@@ -226,11 +226,11 @@ public class ChannelSetTest {
         Completable closeCompletable1 = fixture.closeAsync();
         Completable closeCompletable2 = fixture.closeAsync();
 
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(closeCompletable1).subscribe(subscriber);
         verify(channel).close();
 
-        TestCollectingCompletableSubscriber subscriber2 = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber2 = new TestCompletableSubscriber();
         toSource(closeCompletable2).subscribe(subscriber2);
         verify(channel, times(1)).close();
 
@@ -243,7 +243,7 @@ public class ChannelSetTest {
     @Test
     public void closeAsyncGracefullyClosesAfterTimeout() throws Exception {
         Completable completable = closeAsyncGracefully(fixture, 100, MILLISECONDS);
-        TestCollectingCompletableSubscriber subscriber = new TestCollectingCompletableSubscriber();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         toSource(completable).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
         fixture.onClose().toFuture().get();

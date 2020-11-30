@@ -15,10 +15,10 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +26,9 @@ import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
@@ -36,20 +38,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @SuppressWarnings("unchecked")
     private final SingleTerminalSignalConsumer<String> doFinally = mock(SingleTerminalSignalConsumer.class);
 
     @Test
     public void testForCancel() {
-        listener.listen(Single.<String>never().afterFinally(doFinally));
-        listener.cancel();
+        toSource(Single.<String>never().afterFinally(doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
     }
@@ -57,16 +56,16 @@ abstract class AbstractWhenFinallyTest {
     @Test
     public void testForCancelPostSuccess() {
         String result = "Hello";
-        listener.listen(doFinally(Single.succeeded(result), doFinally));
-        listener.cancel();
+        toSource(doFinally(Single.succeeded(result), doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).onSuccess(result);
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForCancelPostError() {
-        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
-        listener.cancel();
+        toSource(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
@@ -74,16 +73,17 @@ abstract class AbstractWhenFinallyTest {
     @Test
     public void testForSuccess() {
         String result = "Hello";
-        listener.listen(doFinally(Single.succeeded(result), doFinally));
-        listener.verifySuccess(result).cancel();
+        toSource(doFinally(Single.succeeded(result), doFinally)).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is(result));
+        listener.awaitSubscription().cancel();
         verify(doFinally).onSuccess(result);
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForError() {
-        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
@@ -93,9 +93,9 @@ abstract class AbstractWhenFinallyTest {
         SingleTerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
-            listener.listen(doFinally(single, mock));
+            toSource(doFinally(single, mock)).subscribe(listener);
             thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            listener.cancel();
+            listener.awaitSubscription().cancel();
             fail();
         } finally {
             single.verifyCancelled();
@@ -105,10 +105,10 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsErrorOnSuccess();
+    public abstract void testCallbackThrowsErrorOnSuccess() throws InterruptedException;
 
     @Test
-    public abstract void testCallbackThrowsErrorOnError();
+    public abstract void testCallbackThrowsErrorOnError() throws InterruptedException;
 
     protected abstract <T> Single<T> doFinally(Single<T> single, SingleTerminalSignalConsumer<T> signalConsumer);
 

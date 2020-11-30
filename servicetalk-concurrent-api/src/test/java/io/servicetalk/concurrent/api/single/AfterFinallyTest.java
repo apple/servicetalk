@@ -21,7 +21,10 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -36,8 +39,8 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
     public void testCallbackThrowsErrorOnSuccess() {
         SingleTerminalSignalConsumer<String> mock = throwableMock(DELIBERATE_EXCEPTION);
         String result = "Hello";
-        listener.listen(doFinally(Single.succeeded(result), mock))
-                .verifySuccess(result);
+        toSource(doFinally(Single.succeeded(result), mock)).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is(result));
         verify(mock).onSuccess(result);
         verifyNoMoreInteractions(mock);
     }
@@ -46,8 +49,8 @@ public class AfterFinallyTest extends AbstractWhenFinallyTest {
     @Override
     public void testCallbackThrowsErrorOnError() {
         SingleTerminalSignalConsumer<String> mock = throwableMock(new DeliberateException());
-        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), mock))
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doFinally(Single.failed(DELIBERATE_EXCEPTION), mock)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(mock).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(mock);
     }

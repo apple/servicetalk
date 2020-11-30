@@ -17,6 +17,9 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+
 /**
  * A {@link Subscription} implementation, which does not do anything.
  */
@@ -25,7 +28,9 @@ public final class EmptySubscription implements Subscription {
 
     @Override
     public void request(long n) {
-        // No op
+        if (!isRequestNValid(n)) {
+            throw newExceptionForInvalidRequestN(n);
+        }
     }
 
     @Override

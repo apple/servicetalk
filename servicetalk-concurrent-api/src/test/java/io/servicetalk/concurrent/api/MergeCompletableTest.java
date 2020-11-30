@@ -17,16 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -36,8 +37,7 @@ import static org.mockito.Mockito.verify;
 
 public class MergeCompletableTest {
 
-    @Rule
-    public final CompletableHolder holder = new CompletableHolder() {
+    private final CompletableHolder holder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new MergeCompletable(false, completables[0], immediate(),
@@ -52,26 +52,36 @@ public class MergeCompletableTest {
 
     @Test
     public void testCompletion() {
-        holder.init(2).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testCompletionFew() {
-        holder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).complete(1, 2);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        holder.complete(0);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testFail() {
-        holder.init(2).listen().fail(1).verifyFailure(DELIBERATE_EXCEPTION).verifyCancelled(0, 2);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(2).listen(subscriber).fail(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        holder.verifyCancelled(0, 2);
     }
 
     @Test
     public void testMergeWithOne() {
-        holder.init(1).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(1).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
-    abstract static class CompletableHolder extends LegacyMockedCompletableListenerRule {
-
+    abstract static class CompletableHolder {
         Cancellable[] cancellables;
         Subscriber[] subscribers;
         private Completable mergeCompletable;
@@ -80,11 +90,10 @@ public class MergeCompletableTest {
         protected abstract Completable createCompletable(Completable[] completables);
 
         CompletableHolder init(int count) {
-            return init(count, null, null);
+            return init(count, null);
         }
 
-        CompletableHolder init(int count, @Nullable java.util.concurrent.Executor executor,
-                               @Nullable CountDownLatch doneLatch) {
+        CompletableHolder init(int count, @Nullable java.util.concurrent.Executor executor) {
             completables = new Completable[count + 1];
             cancellables = new Cancellable[count + 1];
             subscribers = new Subscriber[count + 1];
@@ -101,23 +110,9 @@ public class MergeCompletableTest {
                                  subscriber.onComplete();
                              } else {
                                  try {
-                                     executor.execute(() -> {
-                                         try {
-                                             subscriber.onComplete();
-                                         } finally {
-                                             if (doneLatch != null) {
-                                                 doneLatch.countDown();
-                                             }
-                                         }
-                                     });
+                                     executor.execute(subscriber::onComplete);
                                  } catch (Throwable cause) {
-                                     try {
-                                         subscriber.onError(cause);
-                                     } finally {
-                                         if (doneLatch != null) {
-                                             doneLatch.countDown();
-                                         }
-                                     }
+                                     subscriber.onError(cause);
                                  }
                              }
                         }
@@ -128,8 +123,8 @@ public class MergeCompletableTest {
             return this;
         }
 
-        CompletableHolder listen() {
-            super.listen(mergeCompletable);
+        CompletableHolder listen(Subscriber subscriber) {
+            toSource(mergeCompletable).subscribe(subscriber);
             return this;
         }
 
@@ -159,24 +154,6 @@ public class MergeCompletableTest {
                 validateListenerIndex(cancellableIndex);
                 verify(cancellables[cancellableIndex]).cancel();
             }
-            return this;
-        }
-
-        @Override
-        public CompletableHolder verifyCompletion() {
-            super.verifyCompletion();
-            return this;
-        }
-
-        @Override
-        public CompletableHolder verifyFailure(Throwable cause) {
-            super.verifyFailure(cause);
-            return this;
-        }
-
-        @Override
-        public CompletableHolder verifyNoEmissions() {
-            super.verifyNoEmissions();
             return this;
         }
 

@@ -285,7 +285,8 @@ public final class SequentialSubscriptionTest {
     private void invalidRequestNAlwaysDirectedTowardSwitchedSubscription(long n,
                                                                          Matcher<? super CountingSubscription> matcher)
             throws Exception {
-        final SequentialSubscription subscription = new SequentialSubscription();
+        CountingSubscription firstSourceSubscription = new CountingSubscription(true);
+        final SequentialSubscription subscription = new SequentialSubscription(firstSourceSubscription);
         final CyclicBarrier allStarted = new CyclicBarrier(3);
         Future<Void> requester = executor.submit(() -> {
             allStarted.await();

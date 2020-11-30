@@ -15,39 +15,39 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenCancelTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
     public void testCancelAfterSuccess() {
         Runnable onCancel = Mockito.mock(Runnable.class);
-        listener.listen(doCancel(Single.succeeded("Hello"), onCancel)).cancel();
+        toSource(doCancel(Single.succeeded("Hello"), onCancel)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(onCancel).run();
     }
 
     @Test
     public void testCancelNoEmissions() {
         Runnable onCancel = Mockito.mock(Runnable.class);
-        listener.listen(doCancel(Single.never(), onCancel)).cancel();
+        toSource(doCancel(Single.<String>never(), onCancel)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(onCancel).run();
     }
 
@@ -57,9 +57,10 @@ public abstract class AbstractWhenCancelTest {
 
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
-            listener.listen(doCancel(single, () -> {
+            toSource(doCancel(single, () -> {
                 throw DELIBERATE_EXCEPTION;
-            })).cancel();
+            })).subscribe(listener);
+            listener.awaitSubscription().cancel();
         } finally {
             single.verifyCancelled();
         }

@@ -16,8 +16,8 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,10 +29,12 @@ import org.mockito.junit.MockitoRule;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.annotation.Nonnull;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,8 +43,7 @@ import static org.mockito.Mockito.when;
 public class ConnectionAcceptorTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
+    private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Mock
     private ConnectionContext context;
@@ -69,7 +70,7 @@ public class ConnectionAcceptorTest {
         setFilterResult(second, Completable.completed());
 
         applyFilters();
-        listener.verifyCompletion();
+        listener.awaitOnComplete();
 
         verify(first).accept(context);
         verify(second).accept(context);
@@ -81,7 +82,7 @@ public class ConnectionAcceptorTest {
         setFilterResult(second, Completable.failed(DELIBERATE_EXCEPTION));
 
         applyFilters();
-        listener.verifyFailure(DeliberateException.class);
+        assertThat(listener.awaitOnError(), instanceOf(DeliberateException.class));
 
         verify(first).accept(context);
         verify(second).accept(context);
@@ -92,7 +93,7 @@ public class ConnectionAcceptorTest {
         setFilterResult(first, Completable.failed(DELIBERATE_EXCEPTION));
 
         applyFilters();
-        listener.verifyFailure(DeliberateException.class);
+        assertThat(listener.awaitOnError(), instanceOf(DeliberateException.class));
 
         verify(first).accept(context);
         verify(second, never()).accept(any(ConnectionContext.class));
@@ -106,7 +107,7 @@ public class ConnectionAcceptorTest {
     protected void applyFilters() {
         ConnectionAcceptorFactory f = (original -> original.append(ctx -> second.accept(ctx)));
         f = f.append(original -> original.append(ctx -> first.accept(ctx)));
-        listener.listen(f.create(ACCEPT_ALL).accept(context));
+        toSource(f.create(ACCEPT_ALL).accept(context)).subscribe(listener);
     }
 
     private static class OrderVerifyingConnectionAcceptor extends DelegatingConnectionAcceptor {

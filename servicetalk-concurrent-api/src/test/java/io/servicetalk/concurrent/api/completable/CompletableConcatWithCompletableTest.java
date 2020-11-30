@@ -17,18 +17,17 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestCompletableSubscriber;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CompletableConcatWithCompletableTest {
@@ -48,33 +47,33 @@ public class CompletableConcatWithCompletableTest {
     public void testSourceSuccessNextSuccess() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         next.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testSourceSuccessNextError() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), nullValue());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         next.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSourceError() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertFalse(next.isSubscribed());
     }
 
     @Test
     public void testCancelSource() {
         toSource(source.concat(next)).subscribe(subscriber);
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.cancel();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
         source.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
@@ -85,8 +84,8 @@ public class CompletableConcatWithCompletableTest {
     public void testCancelNext() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.cancel();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().cancel();
 
         TestCancellable sourceCancellable = new TestCancellable();
         source.onSubscribe(sourceCancellable);

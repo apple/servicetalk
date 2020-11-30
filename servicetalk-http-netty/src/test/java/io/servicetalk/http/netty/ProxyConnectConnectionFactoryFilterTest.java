@@ -16,10 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestSingleSubscriber;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -49,6 +50,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -149,8 +151,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         when(connection.connect(any())).thenThrow(DELIBERATE_EXCEPTION);
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(connection).connect(any());
         verify(connection, never()).request(any(), any());
         assertConnectionClosed();
@@ -163,8 +164,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
@@ -179,9 +179,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        Throwable error = subscriber.error();
-        assertThat(error, is(notNullValue()));
+        Throwable error = subscriber.awaitOnError();
         assertThat(error, instanceOf(ProxyResponseException.class));
         assertThat(((ProxyResponseException) error).status(), is(INTERNAL_SERVER_ERROR));
         assertConnectPayloadConsumed(false);
@@ -197,10 +195,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        Throwable error = subscriber.error();
-        assertThat(error, is(notNullValue()));
-        assertThat(error, instanceOf(ClassCastException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(ClassCastException.class));
         assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
@@ -214,8 +209,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        Throwable error = subscriber.error();
+        Throwable error = subscriber.awaitOnError();
         assertThat(error, is(notNullValue()));
         assertThat(error, instanceOf(IllegalStateException.class));
         assertThat(error.getMessage(), containsString(DeferSslHandler.class.getSimpleName()));
@@ -233,8 +227,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
@@ -249,8 +242,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isErrored(), is(true));
-        assertThat(subscriber.error(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
@@ -266,11 +258,10 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.cancellableReceived(), is(true));
-        assertThat(subscriber.isErrored(), is(false));
-        assertThat(subscriber.isSuccess(), is(false));
+        Cancellable cancellable = subscriber.awaitSubscription();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         assertThat(connectionClose.isSubscribed(), is(false));
-        subscriber.cancel();
+        cancellable.cancel();
         assertConnectPayloadConsumed(true);
         assertConnectionClosed();
     }
@@ -284,8 +275,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
-        assertThat(subscriber.isSuccess(), is(true));
-        assertThat(subscriber.result(), is(sameInstance(this.connection)));
+        assertThat(subscriber.awaitOnSuccess(), is(sameInstance(this.connection)));
         assertConnectPayloadConsumed(true);
         assertThat("Connection closed", connectionClose.isSubscribed(), is(false));
     }

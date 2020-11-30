@@ -23,7 +23,10 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class AfterSuccessTest extends AbstractWhenOnSuccessTest {
     @Rule
@@ -37,8 +40,9 @@ public class AfterSuccessTest extends AbstractWhenOnSuccessTest {
     @Test
     @Override
     public void testCallbackThrowsError() {
-        listener.listen(doSuccess(Single.succeeded("Hello"), t -> {
+        toSource(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifySuccess("Hello");
+        })).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is("Hello"));
     }
 }

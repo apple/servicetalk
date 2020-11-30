@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,13 +31,11 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class CompletableToPublisherTest {
@@ -54,16 +52,16 @@ public class CompletableToPublisherTest {
         toSource(completable.<String>toPublisher()).subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
         completable.onSubscribe(cancellable);
-        subscriber.request(-1);
-        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+        subscriber.awaitSubscription().request(-1);
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
         assertThat("Completable not cancelled for invalid request-n", cancellable.isCancelled(), is(true));
     }
 
     @Test
     public void noTerminalSucceeds() {
         toSource(Completable.completed().<String>toPublisher()).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -86,8 +84,7 @@ public class CompletableToPublisherTest {
         TestCancellable cancellable = new TestCancellable();
         completable.onSubscribe(cancellable); // waits till subscribed.
         assertThat("Completable not subscribed.", completable.isSubscribed(), is(true));
-        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         analyzed.await();
         assertThat("Completable did not get a cancel.", cancellable.isCancelled(), is(true));
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
@@ -102,7 +99,7 @@ public class CompletableToPublisherTest {
         completable.onComplete();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -114,8 +111,7 @@ public class CompletableToPublisherTest {
         completable.onError(DELIBERATE_EXCEPTION);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        Throwable err = subscriber.takeError();
-        assertThat("No error received.", err, is(notNullValue()));
+        Throwable err = subscriber.awaitOnError();
         assertThat("Wrong error received.", err, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
@@ -125,11 +121,10 @@ public class CompletableToPublisherTest {
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestCompletable completable = new TestCompletable();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
-        subscriber.request(-1);
+        subscriber.awaitSubscription().request(-1);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        Throwable err = subscriber.takeError();
-        assertThat("No error received.", err, is(notNullValue()));
+        Throwable err = subscriber.awaitOnError();
         assertThat("Wrong error received.", err, is(instanceOf(IllegalArgumentException.class)));
     }
 

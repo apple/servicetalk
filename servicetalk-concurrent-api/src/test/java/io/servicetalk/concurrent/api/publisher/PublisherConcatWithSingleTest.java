@@ -15,71 +15,60 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
+import static org.hamcrest.Matchers.nullValue;
 
 public class PublisherConcatWithSingleTest {
-
     private final TestSubscription subscription = new TestSubscription();
     private final TestCancellable cancellable = new TestCancellable();
     private final TestPublisher<Long> source = new TestPublisher<>();
-    @SuppressWarnings("unchecked")
-    private Subscriber<Long> mockSubscriber = (Subscriber<Long>) mock(Subscriber.class);
-    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber.Builder<Long>()
-            .lastSubscriber(mockSubscriber).build();
+    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber<>();
     private final TestSingle<Long> single = new TestSingle<>();
 
     public PublisherConcatWithSingleTest() {
         toSource(source.concat(single)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        assertThat("Unexpected termination.", subscriber.isTerminated(), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         assertThat("Next source subscribed before termination.", single.isSubscribed(), is(false));
     }
 
     @Test
     public void subscriberDemandThenOnNextThrowsSendsOnError() {
-        completeSource();
-        subscriber.request(1);
-        doAnswer((Answer<Void>) invocation -> {
+        subscriber.onNextConsumer(l -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(mockSubscriber).onNext(any(Long.class));
+        });
+        subscriber.awaitSubscription().request(1);
+        source.onSubscribe(subscription);
+        source.onComplete();
         single.onSuccess(1L);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
-        verifySubscriberErrored();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void subscriberOnNextThenDemandThrowsSendsOnError() {
-        completeSource();
-        doAnswer((Answer<Void>) invocation -> {
+        subscriber.onNextConsumer(l -> {
             throw DELIBERATE_EXCEPTION;
-        }).when(mockSubscriber).onNext(any(Long.class));
+        });
+        source.onSubscribe(subscription);
+        source.onComplete();
         single.onSuccess(1L);
-        subscriber.request(1);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
-        verifySubscriberErrored();
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -90,7 +79,7 @@ public class PublisherConcatWithSingleTest {
     @Test
     public void publisherEmpty() {
         completeSource();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         single.onSuccess(1L);
         verifySingleSuccessTerminatesSubscriber(1L);
     }
@@ -102,28 +91,28 @@ public class PublisherConcatWithSingleTest {
 
     @Test
     public void sourceError() {
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertThat("Next source subscribed on error.", single.isSubscribed(), is(false));
         verifySubscriberErrored();
     }
 
     @Test
     public void nextError() {
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1L);
         source.onComplete();
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
+        assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(1L));
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
-        assertThat("Unexpected termination.", subscriber.isTerminated(), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         single.onError(DELIBERATE_EXCEPTION);
         verifySubscriberErrored();
     }
 
     @Test
     public void sourceCancel() {
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
         assertThat("Next source subscribed on cancellation.", single.isSubscribed(), is(false));
         source.onComplete();
@@ -136,7 +125,7 @@ public class PublisherConcatWithSingleTest {
     public void nextCancel() {
         source.onComplete();
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
         single.onSubscribe(cancellable);
         assertThat("Next cancellable not cancelled.", cancellable.isCancelled(), is(true));
     }
@@ -214,28 +203,28 @@ public class PublisherConcatWithSingleTest {
     private void validRequestNAfterInvalidRequestNWhenProcessingSingle(long n, boolean requestNBeforeSuccess) {
         completeSource();
         if (requestNBeforeSuccess) {
-            subscriber.request(n);
-            subscriber.request(Long.MAX_VALUE);
+            subscriber.awaitSubscription().request(n);
+            subscriber.awaitSubscription().request(Long.MAX_VALUE);
         }
         single.onSuccess(10L);
         if (!requestNBeforeSuccess) {
-            subscriber.request(n);
-            subscriber.request(Long.MAX_VALUE);
+            subscriber.awaitSubscription().request(n);
+            subscriber.awaitSubscription().request(Long.MAX_VALUE);
         }
-        assertThat("Unexpected termination (expected error).", subscriber.takeError(),
+        assertThat("Unexpected termination (expected error).", subscriber.awaitOnError(),
                 is(instanceOf(IllegalArgumentException.class)));
     }
 
     private void invalidRequestNWhenProcessingSingle(long n, boolean requestNBeforeSuccess) {
         completeSource();
         if (requestNBeforeSuccess) {
-            subscriber.request(n);
+            subscriber.awaitSubscription().request(n);
         }
         single.onSuccess(10L);
         if (!requestNBeforeSuccess) {
-            subscriber.request(n);
+            subscriber.awaitSubscription().request(n);
         }
-        assertThat("Unexpected termination (expected error).", subscriber.takeError(),
+        assertThat("Unexpected termination (expected error).", subscriber.awaitOnError(),
                 is(instanceOf(IllegalArgumentException.class)));
     }
 
@@ -243,39 +232,37 @@ public class PublisherConcatWithSingleTest {
         emitOneItemFromSource();
         completeSource();
         single.onSuccess(nextResult);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), hasSize(0));
-        subscriber.request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().request(1);
         verifySingleSuccessTerminatesSubscriber(nextResult);
     }
 
     private void testBothComplete(@Nullable final Long nextResult) {
         emitOneItemFromSource();
         completeSource();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         single.onSuccess(nextResult);
         verifySingleSuccessTerminatesSubscriber(nextResult);
     }
 
     private void verifySingleSuccessTerminatesSubscriber(@Nullable Long result) {
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(result));
-        assertThat("Unexpected termination (expected completed).", subscriber.isCompleted(), is(true));
+        assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(result));
+        subscriber.awaitOnComplete();
     }
 
     private void completeSource() {
         source.onComplete();
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
-        assertThat("Unexpected termination.", subscriber.isTerminated(), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     private void emitOneItemFromSource() {
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         source.onNext(1L);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
+        assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(1L));
     }
 
     private void verifySubscriberErrored() {
-        TerminalNotification terminal = subscriber.takeTerminal();
-        assertThat("Unexpected termination.", terminal, is(notNullValue()));
-        assertThat("Unexpected termination (expected error).", terminal.cause(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }

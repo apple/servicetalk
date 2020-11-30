@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.test.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
@@ -24,9 +24,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * A {@link Subscriber} that enqueues signals and provides blocking methods to consume them.
  */
-public final class TestCollectingCompletableSubscriber implements Subscriber {
-    private final TestCollectingPublisherSubscriber<Void> publisherSubscriber =
-            new TestCollectingPublisherSubscriber<>();
+public final class TestCompletableSubscriber implements Subscriber {
+    private final TestPublisherSubscriber<Void> publisherSubscriber = new TestPublisherSubscriber<>();
     @Override
     public void onSubscribe(final Cancellable cancellable) {
         publisherSubscriber.onSubscribe(new PublisherSource.Subscription() {
@@ -55,10 +54,8 @@ public final class TestCollectingCompletableSubscriber implements Subscriber {
      * Block until {@link #onSubscribe(Cancellable)}.
      *
      * @return The {@link PublisherSource.Subscription} from {@link #onSubscribe(Cancellable)}.
-     * @throws InterruptedException if an interrupt occurs while blocking for waiting for
-     * {@link #onSubscribe(Cancellable)}.
      */
-    public Cancellable awaitSubscription() throws InterruptedException {
+    public Cancellable awaitSubscription() {
         return publisherSubscriber.awaitSubscription();
     }
 
@@ -67,19 +64,16 @@ public final class TestCollectingCompletableSubscriber implements Subscriber {
      * {@link #onError(Throwable)}.
      *
      * @return the exception received by {@link #onError(Throwable)}.
-     * @throws InterruptedException If an interrupt occurs while blocking for the terminal event.
      */
-    public Throwable awaitOnError() throws InterruptedException {
+    public Throwable awaitOnError() {
         return publisherSubscriber.awaitOnError();
     }
 
     /**
      * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
      * {@link #onComplete()}.
-     *
-     * @throws InterruptedException If an interrupt occurs while blocking for the terminal event.
      */
-    public void awaitOnComplete() throws InterruptedException {
+    public void awaitOnComplete() {
         publisherSubscriber.awaitOnComplete();
     }
 
@@ -89,9 +83,8 @@ public final class TestCollectingCompletableSubscriber implements Subscriber {
      * @param timeout The duration of time to wait.
      * @param unit The unit of time to apply to the duration.
      * @return {@code true} if a terminal event has been received before the timeout duration.
-     * @throws InterruptedException If an interrupt occurs while blocking for the terminal event.
      */
-    public boolean pollTerminal(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean pollTerminal(long timeout, TimeUnit unit) {
         return publisherSubscriber.pollTerminal(timeout, unit);
     }
 }

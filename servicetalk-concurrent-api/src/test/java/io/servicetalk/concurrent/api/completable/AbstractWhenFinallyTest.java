@@ -16,15 +16,17 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
@@ -34,51 +36,48 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TerminalSignalConsumer doFinally = mock(TerminalSignalConsumer.class);
 
     @Test
     public void testForCancel() {
-        listener.listen(doFinally(Completable.never(), doFinally));
-        listener.cancel();
+        toSource(doFinally(Completable.never(), doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).cancel();
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForCancelPostSuccess() {
-        listener.listen(doFinally(Completable.completed(), doFinally));
-        listener.cancel();
+        toSource(doFinally(Completable.completed(), doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForCancelPostError() {
-        listener.listen(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally));
-        listener.cancel();
+        toSource(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForSuccess() {
-        listener.listen(doFinally(Completable.completed(), doFinally));
-        listener.verifyCompletion().cancel();
+        toSource(doFinally(Completable.completed(), doFinally)).subscribe(listener);
+        listener.awaitOnComplete();
+        listener.awaitSubscription().cancel();
         verify(doFinally).onComplete();
         verifyNoMoreInteractions(doFinally);
     }
 
     @Test
     public void testForError() {
-        listener.listen(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
         verify(doFinally).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(doFinally);
     }
@@ -88,9 +87,9 @@ abstract class AbstractWhenFinallyTest {
         TerminalSignalConsumer mock = throwableMock(DELIBERATE_EXCEPTION);
         LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
-            listener.listen(doFinally(completable, mock));
+            toSource(doFinally(completable, mock)).subscribe(listener);
             thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            listener.cancel();
+            listener.awaitSubscription().cancel();
             fail();
         } finally {
             completable.verifyCancelled();

@@ -15,16 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Rule;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class IterableMergeCompletableTest {
-    @Rule
-    public final MergeCompletableTest.CompletableHolder collectionHolder =
+    private final MergeCompletableTest.CompletableHolder collectionHolder =
             new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
@@ -32,9 +35,7 @@ public class IterableMergeCompletableTest {
                     asList(completables).subList(1, completables.length), immediate());
         }
     };
-
-    @Rule
-    public final MergeCompletableTest.CompletableHolder iterableHolder = new MergeCompletableTest.CompletableHolder() {
+    private final MergeCompletableTest.CompletableHolder iterableHolder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],
@@ -44,41 +45,63 @@ public class IterableMergeCompletableTest {
 
     @Test
     public void testCollectionCompletion() {
-        collectionHolder.init(2).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        collectionHolder.init(2).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testCollectionCompletionFew() {
-        collectionHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        collectionHolder.init(2).listen(subscriber).complete(1, 2);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        collectionHolder.complete(0);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testCollectionFail() {
-        collectionHolder.init(2).listen().fail(1).verifyFailure(DELIBERATE_EXCEPTION).verifyCancelled(0, 2);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        collectionHolder.init(2).listen(subscriber).fail(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        collectionHolder.verifyCancelled(0, 2);
     }
 
     @Test
     public void testCollectionMergeWithOne() {
-        collectionHolder.init(1).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        collectionHolder.init(1).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testIterableCompletion() {
-        iterableHolder.init(2).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        iterableHolder.init(2).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testIterableCompletionFew() {
-        iterableHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        iterableHolder.init(2).listen(subscriber).complete(1, 2);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        iterableHolder.complete(0);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testIterableFail() {
-        iterableHolder.init(2).listen().fail(1).verifyFailure(DELIBERATE_EXCEPTION).verifyCancelled(0, 2);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        iterableHolder.init(2).listen(subscriber).fail(1);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        iterableHolder.verifyCancelled(0, 2);
     }
 
     @Test
     public void testIterableMergeWithOne() {
-        iterableHolder.init(1).listen().completeAll().verifyCompletion();
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        iterableHolder.init(1).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 }

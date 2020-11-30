@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,10 +28,8 @@ import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -53,9 +51,9 @@ public abstract class AbstractWhenOnSubscribeTest {
     @Test
     public void testOnSubscribe() {
         toSource(doSubscribe(from("Hello"), doOnSubscribe)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
         verify(doOnSubscribe).accept(any());
     }
 

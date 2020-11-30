@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,32 +26,33 @@ import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnErrorTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
     public void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
-        listener.listen(doError(Single.failed(DELIBERATE_EXCEPTION), onError));
+        toSource(doError(Single.<String>failed(DELIBERATE_EXCEPTION), onError)).subscribe(listener);
         verify(onError).accept(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Single.failed(srcEx), t -> {
+        toSource(doError(Single.<String>failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyFailure(srcEx);
+        })).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(srcEx));
     }
 
     protected abstract <T> Single<T> doError(Single<T> single, Consumer<Throwable> consumer);

@@ -25,7 +25,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -34,6 +33,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.After;
@@ -100,10 +100,8 @@ public class RoundRobinLoadBalancerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    @Rule
-    public final LegacyMockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener =
-            new LegacyMockedSingleListenerRule<>();
-
+    private final TestSingleSubscriber<TestLoadBalancedConnection> selectConnectionListener =
+            new TestSingleSubscriber<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
 
@@ -259,8 +257,8 @@ public class RoundRobinLoadBalancerTest {
 
     @Test
     public void noServiceDiscoveryEvent() {
-        selectConnectionListener.listen(lb.selectConnection(any()));
-        selectConnectionListener.verifyFailure(NoAvailableHostException.class);
+        toSource(lb.selectConnection(any())).subscribe(selectConnectionListener);
+        assertThat(selectConnectionListener.awaitOnError(), instanceOf(NoAvailableHostException.class));
 
         assertThat(connectionsCreated, is(empty()));
     }

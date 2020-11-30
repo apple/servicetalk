@@ -20,8 +20,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy.Builder;
 
 import org.junit.Rule;
@@ -41,6 +41,7 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,6 +49,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class DefaultServiceDiscoveryRetryStrategyTest {
     @Rule
@@ -77,7 +79,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         final DefaultServiceDiscovererEvent<String> evt2 = new DefaultServiceDiscovererEvent<>("addr2", true);
         sdEvents.onNext(singletonList(evt2));
 
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0), containsInAnyOrder(flipAvailable(evt1), evt2));
     }
@@ -97,7 +99,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         final DefaultServiceDiscovererEvent<String> evt3 = new DefaultServiceDiscovererEvent<>("addr3", true);
         sdEvents.onNext(asList(evt2, evt3));
 
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0),
                 containsInAnyOrder(flipAvailable(evt1), evt2, evt3));
@@ -109,7 +111,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
         sdEvents.onNext(singletonList(flipAvailable(evt1)));
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0), contains(flipAvailable(evt1)));
 
@@ -130,7 +132,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
         sdEvents.onNext(asList(evt1, flipAvailable(evt1)));
 
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0), contains(flipAvailable(evt1)));
     }
@@ -146,7 +148,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         verifyNoEventsReceived(state);
 
         sdEvents.onNext(asList(evt1, flipAvailable(evt1)));
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0),
                 containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2)));
@@ -160,7 +162,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
         final DefaultServiceDiscovererEvent<String> evt2 = sendUpAndVerifyReceive(state, "addr2", sdEvents);
 
         triggerRetry(state, sdEvents);
-        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeItems();
+        final List<Collection<ServiceDiscovererEvent<String>>> items = state.subscriber.takeOnNext(1);
         assertThat("Unexpected items received.", items, hasSize(1));
         assertThat("Unexpected event received", items.get(0),
                 containsInAnyOrder(flipAvailable(evt1), flipAvailable(evt2)));
@@ -178,7 +180,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     private void verifyNoEventsReceived(final State state) {
-        assertThat("Unexpected event received", state.subscriber.takeItems(), hasSize(0));
+        assertThat("Unexpected event received", state.subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
     private TestPublisher<Collection<ServiceDiscovererEvent<String>>> triggerRetry(
@@ -194,7 +196,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
             final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents) {
         final DefaultServiceDiscovererEvent<String> evt = new DefaultServiceDiscovererEvent<>(addr, true);
         sdEvents.onNext(singletonList(evt));
-        final Collection<ServiceDiscovererEvent<String>> received = state.subscriber.takeItems()
+        final Collection<ServiceDiscovererEvent<String>> received = state.subscriber.takeOnNext(1)
                 .stream()
                 .flatMap(Collection::stream)
                 .collect(toList());
@@ -224,7 +226,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
                 pubs.add(pub);
                 return pub;
             }))).subscribe(subscriber);
-            subscriber.request(MAX_VALUE);
+            subscriber.awaitSubscription().request(MAX_VALUE);
         }
     }
 }

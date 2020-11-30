@@ -16,32 +16,31 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenCancelTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
     public void testCancelNoEmissions() {
         Runnable onCancel = Mockito.mock(Runnable.class);
         LegacyTestCompletable completable = new LegacyTestCompletable();
-        listener.listen(doCancel(completable, onCancel)).cancel();
+        toSource(doCancel(completable, onCancel)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         verify(onCancel).run();
         completable.verifyCancelled();
     }
@@ -52,9 +51,10 @@ public abstract class AbstractWhenCancelTest {
 
         LegacyTestCompletable completable = new LegacyTestCompletable();
         try {
-            listener.listen(doCancel(completable, () -> {
+            toSource(doCancel(completable, () -> {
                 throw DELIBERATE_EXCEPTION;
-            })).cancel();
+            })).subscribe(listener);
+            listener.awaitSubscription().cancel();
         } finally {
             completable.verifyCancelled();
         }

@@ -16,8 +16,8 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,17 +26,17 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnSubscribeTest {
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
-
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     private Consumer<Cancellable> doOnListen;
 
@@ -48,7 +48,8 @@ public abstract class AbstractWhenOnSubscribeTest {
 
     @Test
     public void testSubscribe() {
-        listener.listen(doSubscribe(Single.succeeded("Hello"), doOnListen)).verifySuccess("Hello");
+        toSource(doSubscribe(Single.succeeded("Hello"), doOnListen)).subscribe(listener);
+        assertThat(listener.awaitOnSuccess(), is("Hello"));
         verify(doOnListen).accept(any(Cancellable.class));
     }
 

@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,11 +37,9 @@ import java.util.function.IntUnaryOperator;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -115,17 +113,17 @@ public class DefaultSerializerSerializationTest {
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, String.class, sizeEstimator);
         TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
         toSource(serialized).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
 
         verify(provider).getSerializer(String.class);
 
         Buffer expected1 = verifySerializedBufferWithSizes(source, "Hello", 1);
-        assertThat(subscriber.takeItems(), contains(expected1));
+        assertThat(subscriber.takeOnNext(), is(expected1));
         Buffer expected2 = verifySerializedBufferWithSizes(source, "Hello", 2);
-        assertThat(subscriber.takeItems(), contains(expected2));
+        assertThat(subscriber.takeOnNext(), is(expected2));
 
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -135,17 +133,17 @@ public class DefaultSerializerSerializationTest {
         final Publisher<Buffer> serialized = factory.serialize(source, allocator, TYPE_FOR_LIST, sizeEstimator);
         TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
         toSource(serialized).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
 
         verify(provider).getSerializer(TYPE_FOR_LIST);
 
         Buffer expected1 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 1);
-        assertThat(subscriber.takeItems(), contains(expected1));
+        assertThat(subscriber.takeOnNext(), is(expected1));
         Buffer expected2 = verifySerializedBufferWithSizes(source, singletonList("Hello"), 2);
-        assertThat(subscriber.takeItems(), contains(expected2));
+        assertThat(subscriber.takeOnNext(), is(expected2));
 
         source.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test

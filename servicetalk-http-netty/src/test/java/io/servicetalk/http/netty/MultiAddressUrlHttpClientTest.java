@@ -20,8 +20,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -173,7 +173,7 @@ public class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get("/200?param=value");
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -181,7 +181,7 @@ public class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get("/200?param=value");
         request.headers().set(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.get(format("%s/200?param=value#tag", hostHeader));
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -238,7 +238,7 @@ public class MultiAddressUrlHttpClientTest {
     public void requestWithIncorrectPortInAbsoluteFormRequestTarget() {
         StreamingHttpRequest request = client.get(format("http://%s:-1/200?param=value#tag", serverHost));
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
@@ -246,7 +246,7 @@ public class MultiAddressUrlHttpClientTest {
         StreamingHttpRequest request = client.newRequest(OPTIONS, "*")
                 .setHeader(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test

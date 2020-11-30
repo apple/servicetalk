@@ -16,49 +16,52 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ConcatWithCompletableTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
-    @Rule
-    public final LegacyMockedSingleListenerRule<String> listener = new LegacyMockedSingleListenerRule<>();
+    private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
     private LegacyTestSingle<String> single = new LegacyTestSingle<>();
     private LegacyTestCompletable completable = new LegacyTestCompletable();
 
     @Test
     public void concatWaitsForCompletableSuccess() {
-        listener.listen(single.concat(completable));
+        toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
-        listener.verifyNoEmissions();
+        assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
         completable.onComplete();
-        listener.verifySuccess("foo");
+        assertThat(listener.awaitOnSuccess(), is("foo"));
     }
 
     @Test
     public void concatPropagatesCompletableFailure() {
-        listener.listen(single.concat(completable));
+        toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
-        listener.verifyNoEmissions();
+        assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
         completable.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void concatPropagatesSingleFailure() {
-        listener.listen(single.concat(completable));
+        toSource(single.concat(completable)).subscribe(listener);
         single.onError(DELIBERATE_EXCEPTION);
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 }

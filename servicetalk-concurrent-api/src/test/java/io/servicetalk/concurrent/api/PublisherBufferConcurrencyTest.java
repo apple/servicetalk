@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,13 +34,11 @@ import static io.servicetalk.concurrent.api.ExecutorRule.withNamePrefix;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.fail;
@@ -123,29 +121,27 @@ public class PublisherBufferConcurrencyTest {
                 return 8;
             }
         })).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         boundaries.onNext(accumulator); // initial boundary
-        assertThat("Unexpected result.", subscriber.takeItems(), hasSize(0));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
 
         CountDownLatch waitForOnNextReturn = new CountDownLatch(1);
         executorRule.executor().submit(() -> original.onNext(1))
                 .beforeFinally(waitForOnNextReturn::countDown).subscribe();
         waitForAdd.await();
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         boundaries.onNext(new SummingAccumulator());
         waitForBoundary.countDown();
         waitForOnNextReturn.await();
 
         boundaries.onNext(new SummingAccumulator()); // Last accumulator will be overwritten by add()
-        assertThat("Unexpected result.", subscriber.takeItems(), contains(1));
+        assertThat("Unexpected result.", subscriber.takeOnNext(), is(1));
 
         original.onComplete();
         boundaries.onNext(new SummingAccumulator()); // Boundary has to complete for terminal to be emitted
-        assertThat("Unexpected result.", subscriber.takeItems(), contains(0)); // empty accumulator
+        assertThat("Unexpected result.", subscriber.takeOnNext(), is(0)); // empty accumulator
 
-        TerminalNotification term = subscriber.takeTerminal();
-        assertThat("Unexpected result.", term, is(notNullValue()));
-        assertThat("Unexpected result.", term.cause(), is(nullValue()));
+        subscriber.awaitOnComplete();
     }
 
     private void runTest(final UnaryOperator<Publisher<Integer>> beforeBuffer,

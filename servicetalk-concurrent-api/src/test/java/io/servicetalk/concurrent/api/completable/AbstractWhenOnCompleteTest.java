@@ -16,23 +16,21 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnCompleteTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
+    final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
     public void testComplete() {
         Runnable onComplete = mock(Runnable.class);
-        listener.listen(doComplete(Completable.completed(), onComplete));
+        toSource(doComplete(Completable.completed(), onComplete)).subscribe(listener);
         verify(onComplete).run();
     }
 

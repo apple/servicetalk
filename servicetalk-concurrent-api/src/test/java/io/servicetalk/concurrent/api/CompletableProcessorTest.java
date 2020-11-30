@@ -17,51 +17,56 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 public class CompletableProcessorTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule rule = new LegacyMockedCompletableListenerRule();
-    @Rule
-    public final LegacyMockedCompletableListenerRule rule2 = new LegacyMockedCompletableListenerRule();
+    private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
+    private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
 
     @Test
     public void testCompleteBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
-        rule.listen(processor).verifyCompletion();
+        toSource(processor).subscribe(rule);
+        rule.awaitOnComplete();
     }
 
     @Test
     public void testErrorBeforeListen() {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
-        rule.listen(processor).verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(processor).subscribe(rule);
+        assertThat(rule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCompleteAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
-        rule.listen(processor).verifyNoEmissions();
+        toSource(processor).subscribe(rule);
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
         processor.onComplete();
-        rule.verifyCompletion();
+        rule.awaitOnComplete();
     }
 
     @Test
     public void testErrorAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
-        rule.listen(processor).verifyNoEmissions();
+        toSource(processor).subscribe(rule);
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
         processor.onError(DELIBERATE_EXCEPTION);
-        rule.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(rule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -69,7 +74,8 @@ public class CompletableProcessorTest {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onComplete();
         processor.onError(DELIBERATE_EXCEPTION);
-        rule.listen(processor).verifyCompletion();
+        toSource(processor).subscribe(rule);
+        rule.awaitOnComplete();
     }
 
     @Test
@@ -77,18 +83,21 @@ public class CompletableProcessorTest {
         CompletableProcessor processor = new CompletableProcessor();
         processor.onError(DELIBERATE_EXCEPTION);
         processor.onComplete();
-        rule.listen(processor).verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(processor).subscribe(rule);
+        assertThat(rule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
         CompletableProcessor processor = new CompletableProcessor();
-        rule.listen(processor).verifyNoEmissions();
-        rule2.listen(processor).verifyNoEmissions();
-        rule.cancel();
+        toSource(processor).subscribe(rule);
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        toSource(processor).subscribe(rule2);
+        assertThat(rule2.pollTerminal(10, MILLISECONDS), is(false));
+        rule.awaitSubscription().cancel();
         processor.onComplete();
-        rule.verifyNoEmissions();
-        rule2.verifyCompletion();
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        rule2.awaitOnComplete();
     }
 
     @Test

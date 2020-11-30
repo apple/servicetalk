@@ -26,8 +26,8 @@ import java.util.function.Consumer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 
 public class BeforeErrorTest extends AbstractWhenOnErrorTest {
 
@@ -43,8 +43,8 @@ public class BeforeErrorTest extends AbstractWhenOnErrorTest {
         this.<String>doError(Publisher.failed(srcEx), t1 -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.error(), sameInstance(srcEx));
-        verifySuppressed(subscriber.takeError(), DELIBERATE_EXCEPTION);
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), sameInstance(srcEx));
+        verifySuppressed(subscriber.awaitOnError(), DELIBERATE_EXCEPTION);
     }
 }

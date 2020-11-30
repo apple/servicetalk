@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,13 +27,11 @@ import org.junit.rules.ExpectedException;
 import java.util.function.LongConsumer;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,10 +49,10 @@ public abstract class AbstractWhenRequestTest {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
         publisher.onComplete();
-        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeOnNext(), is("Hello"));
         verify(onRequest).accept(1L);
     }
 
@@ -63,12 +61,12 @@ public abstract class AbstractWhenRequestTest {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
-        subscriber.request(1);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitSubscription().request(1);
         publisher.onNext("Hello");
-        assertThat(subscriber.takeItems(), contains("Hello"));
+        assertThat(subscriber.takeOnNext(), is("Hello"));
         publisher.onNext("Hello1");
-        assertThat(subscriber.takeItems(), contains("Hello1"));
+        assertThat(subscriber.takeOnNext(), is("Hello1"));
         verify(onRequest, times(2)).accept(1L);
     }
 
@@ -77,10 +75,9 @@ public abstract class AbstractWhenRequestTest {
         LongConsumer onRequest = mock(LongConsumer.class);
 
         doRequest(publisher, onRequest).subscribe(subscriber);
-        subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         verify(onRequest).accept(10L);
     }
 
@@ -91,7 +88,7 @@ public abstract class AbstractWhenRequestTest {
         doRequest(Publisher.from("Hello"), n -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
     }
 
     protected abstract <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer);

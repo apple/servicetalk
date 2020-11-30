@@ -15,13 +15,14 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class MapPublisherTest {
 
@@ -38,11 +39,9 @@ public class MapPublisherTest {
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
 
-        assertTrue(subscriber.subscriptionReceived());
-
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is((long) 2));
         source.onNext(1, 2);
-        assertThat(subscriber.takeItems(), contains((Integer) null, null));
+        assertThat(subscriber.takeOnNext(2), contains((Integer) null, null));
     }
 }

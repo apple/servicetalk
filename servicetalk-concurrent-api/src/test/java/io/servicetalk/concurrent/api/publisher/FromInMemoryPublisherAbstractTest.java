@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
@@ -31,12 +31,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -55,19 +54,19 @@ public abstract class FromInMemoryPublisherAbstractTest {
     public void testRequestAllValues() {
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(source.values().length);
-        assertThat(subscriber.takeItems(), contains(source.values()));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(source.values().length);
+        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testRequestInChunks() {
         InMemorySource source = newSource(10);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(2);
-        subscriber.request(2);
-        subscriber.request(6);
-        assertThat(subscriber.takeItems(), contains(source.values()));
+        subscriber.awaitSubscription().request(2);
+        subscriber.awaitSubscription().request(2);
+        subscriber.awaitSubscription().request(6);
+        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
     }
 
     @Test
@@ -75,9 +74,9 @@ public abstract class FromInMemoryPublisherAbstractTest {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(2);
-        assertThat(subscriber.takeItems(), contains("Hello", null));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(2);
+        assertThat(subscriber.takeOnNext(2), contains("Hello", null));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -85,13 +84,10 @@ public abstract class FromInMemoryPublisherAbstractTest {
         // Due to race between on* and request-n, request-n may arrive after onComplete/onError.
         InMemorySource source = newSource(5);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(source.values().length);
-        assertThat(subscriber.takeItems(), contains(source.values()));
-        assertThat(subscriber.takeTerminal(), is(complete()));
-        subscriber.request(1);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(source.values().length);
+        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
+        subscriber.awaitOnComplete();
+        subscriber.awaitSubscription().request(1);
     }
 
     @Test
@@ -103,22 +99,20 @@ public abstract class FromInMemoryPublisherAbstractTest {
                 throw DELIBERATE_EXCEPTION;
             }
         })).subscribe(subscriber);
-        subscriber.request(2);
-        assertThat(subscriber.takeItems(), contains("Hello", null));
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        subscriber.request(1);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(2);
+        assertThat(subscriber.takeOnNext(2), contains("Hello", null));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
     public void testReentrant() {
         InMemorySource source = newSource(6);
-        Publisher<String> p = source.publisher().beforeOnNext(s -> subscriber.request(5));
+        Publisher<String> p = source.publisher().beforeOnNext(s -> subscriber.awaitSubscription().request(5));
         toSource(p).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(source.values()));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
     }
 
     @Test
@@ -128,8 +122,8 @@ public abstract class FromInMemoryPublisherAbstractTest {
             throw DELIBERATE_EXCEPTION;
         });
         toSource(p).subscribe(subscriber);
-        subscriber.request(6);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(6);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -142,28 +136,25 @@ public abstract class FromInMemoryPublisherAbstractTest {
     public void testCancel() {
         InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
-        subscriber.cancel();
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.request(1);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().cancel();
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
     public void testCancelFromInOnNext() {
         InMemorySource source = newSource(2);
         toSource(source.publisher().afterOnNext(n -> {
-            subscriber.cancel();
+            subscriber.awaitSubscription().cancel();
         })).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("Hello0"));
-        subscriber.request(1);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("Hello0"));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
@@ -218,22 +209,19 @@ public abstract class FromInMemoryPublisherAbstractTest {
     public void testInvalidRequestNZeroLengthArrayNoMultipleTerminal() {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(-1);
-        assertThat(subscriber.takeError(), instanceOf(IllegalArgumentException.class));
-        subscriber.request(1);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(-1);
+        assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+        subscriber.awaitSubscription().request(1);
     }
 
     @Test
     public void testInvalidRequestAfterCompleteDoesNotDeliverOnError() {
         InMemorySource source = newSource(1);
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeTerminal(), is(complete()));
-        subscriber.request(-1);
-        assertThat(subscriber.takeError(), nullValue());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("Hello0"));
+        subscriber.awaitOnComplete();
+        subscriber.awaitSubscription().request(-1);
     }
 
     @Test
@@ -296,9 +284,9 @@ public abstract class FromInMemoryPublisherAbstractTest {
 
     private void requestItemsAndVerifyEmissions(InMemorySource source) {
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(3);
-        assertThat(subscriber.takeItems(), contains(copyOf(source.values(), 3)));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(3);
+        assertThat(subscriber.takeOnNext(3), contains(copyOf(source.values(), 3)));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     final InMemorySource newSource(int size) {

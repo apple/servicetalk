@@ -15,24 +15,25 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 public final class SingleFlatMapCompletableTest {
-
-    @Rule
-    public final LegacyMockedCompletableListenerRule listener = new LegacyMockedCompletableListenerRule();
+    private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     private LegacyTestSingle<String> single;
     private LegacyTestCompletable completable;
@@ -45,51 +46,51 @@ public final class SingleFlatMapCompletableTest {
 
     @Test
     public void testSuccess() {
-        listener.listen(succeeded(1).flatMapCompletable(s -> completed()));
-        listener.verifyCompletion();
+        toSource(succeeded(1).flatMapCompletable(s -> completed())).subscribe(listener);
+        listener.awaitOnComplete();
     }
 
     @Test
     public void testFirstEmitsError() {
-        listener.listen(Single.failed(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(Single.failed(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable)).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testSecondEmitsError() {
-        listener.listen(succeeded(1).flatMapCompletable(s -> failed(DELIBERATE_EXCEPTION)));
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(succeeded(1).flatMapCompletable(s -> failed(DELIBERATE_EXCEPTION))).subscribe(listener);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeFirst() {
-        listener.listen(single.flatMapCompletable(s -> completable));
-        listener.cancel();
+        toSource(single.flatMapCompletable(s -> completable)).subscribe(listener);
+        listener.awaitSubscription().cancel();
         single.verifyCancelled();
     }
 
     @Test
     public void testCancelBeforeSecond() {
-        listener.listen(single.flatMapCompletable(s -> completable));
+        toSource(single.flatMapCompletable(s -> completable)).subscribe(listener);
         single.onSuccess("Hello");
-        listener.cancel();
+        listener.awaitSubscription().cancel();
         single.verifyNotCancelled();
         completable.verifyCancelled();
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(single.flatMapCompletable(s -> {
+        toSource(single.flatMapCompletable(s -> {
             throw DELIBERATE_EXCEPTION;
-        }));
+        })).subscribe(listener);
         single.onSuccess("Hello");
-        listener.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void nullInTerminalCallsOnError() {
-        listener.listen(single.flatMapCompletable(s -> null));
+        toSource(single.flatMapCompletable(s -> null)).subscribe(listener);
         single.onSuccess("Hello");
-        listener.verifyFailure(NullPointerException.class);
+        assertThat(listener.awaitOnError(), instanceOf(NullPointerException.class));
     }
 }

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,9 +30,6 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 
 @RunWith(Parameterized.class)
 public class CompletableAmbTest {
@@ -44,7 +41,7 @@ public class CompletableAmbTest {
 
     public CompletableAmbTest(final BiFunction<Completable, Completable, Completable> ambSupplier) {
         toSource(ambSupplier.apply(first, second)).subscribe(subscriber);
-        assertThat("Cancellable not received.", subscriber.cancellableReceived(), is(true));
+        subscriber.awaitSubscription();
         assertThat("First source not subscribed.", first.isSubscribed(), is(true));
         assertThat("Second source not subscribed.", second.isSubscribed(), is(true));
     }
@@ -85,7 +82,6 @@ public class CompletableAmbTest {
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
-        verifyNoMoreResult();
     }
 
     @Test
@@ -93,7 +89,6 @@ public class CompletableAmbTest {
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();
-        verifyNoMoreResult();
     }
 
     @Test
@@ -101,7 +96,6 @@ public class CompletableAmbTest {
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -109,7 +103,6 @@ public class CompletableAmbTest {
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -117,7 +110,6 @@ public class CompletableAmbTest {
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -125,7 +117,6 @@ public class CompletableAmbTest {
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
-        verifyNoMoreResult();
     }
 
     @Test
@@ -133,7 +124,6 @@ public class CompletableAmbTest {
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
-        verifyNoMoreResult();
     }
 
     @Test
@@ -141,30 +131,20 @@ public class CompletableAmbTest {
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();
-        verifyNoMoreResult();
     }
 
     private void sendSuccessToAndVerify(final TestCompletable source) {
         source.onComplete();
-        TerminalNotification term = subscriber.takeTerminal();
-        assertThat("Unexpected termination.", term, is(notNullValue()));
-        assertThat("Unexpected error termination.", term.cause(), is(nullValue()));
+        subscriber.awaitOnComplete();
     }
 
     private void sendErrorToAndVerify(final TestCompletable source) {
         source.onError(DELIBERATE_EXCEPTION);
-        TerminalNotification term = subscriber.takeTerminal();
-        assertThat("Unexpected termination.", term, is(notNullValue()));
-        assertThat("Unexpected error termination.", term.cause(), is(sameInstance(DELIBERATE_EXCEPTION)));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     private void verifyCancelled(final TestCompletable other) {
         other.onSubscribe(cancellable);
         assertThat("Other source not cancelled.", cancellable.isCancelled(), is(true));
-    }
-
-    private void verifyNoMoreResult() {
-        TerminalNotification term = subscriber.takeTerminal();
-        assertThat("Unexpected termination.", term, is(nullValue()));
     }
 }

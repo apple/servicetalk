@@ -39,10 +39,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractFutureToSingleTest {

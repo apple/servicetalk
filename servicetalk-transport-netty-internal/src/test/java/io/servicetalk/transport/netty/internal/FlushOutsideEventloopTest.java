@@ -17,7 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 
@@ -44,7 +44,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
         Publisher<Integer> composedFlush = composeFlushes(channel, src, strategy, NoopWriteObserver.INSTANCE)
                 .beforeOnNext(integer -> channel.write(integer));
         toSource(composedFlush).subscribe(subscriber);
-        subscriber.request(Long.MAX_VALUE);
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
         flushSender = strategy.verifyApplied();
     }
 

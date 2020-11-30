@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -217,14 +217,14 @@ public class DefaultSerializerDeserializationTest {
         final Publisher<String> deserialized = factory.deserialize(from(first, second), String.class);
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         toSource(deserialized).subscribe(subscriber);
-        subscriber.request(2);
+        subscriber.awaitSubscription().request(2);
 
         verify(provider).getDeserializer(String.class);
         verify(deSerializer).deserialize(first);
         verify(deSerializer).deserialize(second);
 
-        assertThat(subscriber.takeItems(), contains("Hello1"));
-        assertThat(subscriber.takeError(), sameInstance(e));
+        assertThat(subscriber.takeOnNext(), is("Hello1"));
+        assertThat(subscriber.awaitOnError(), sameInstance(e));
     }
 
     @Test

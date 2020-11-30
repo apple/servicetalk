@@ -15,20 +15,19 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class RangeIntPublisherTest {
     final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -36,90 +35,88 @@ public class RangeIntPublisherTest {
     @Test
     public void zeroElements() {
         toSource(range(Integer.MAX_VALUE, Integer.MAX_VALUE)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), is(empty()));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void zeroElementsStride() {
         toSource(range(-1, -1, 2)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), is(empty()));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(1);
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void singleElement() {
         toSource(range(-1, 0)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(-1));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(-1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void singleElementStride() {
         toSource(range(0, 1, 2)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(0));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(0));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void multipleElements() {
         toSource(range(0, 5)).subscribe(subscriber);
-        subscriber.request(5);
-        assertThat(subscriber.takeItems(), contains(0, 1, 2, 3, 4));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(5);
+        assertThat(subscriber.takeOnNext(5), contains(0, 1, 2, 3, 4));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void multipleElementsStride() {
         toSource(range(0, 10, 3)).subscribe(subscriber);
-        subscriber.request(4);
-        assertThat(subscriber.takeItems(), contains(0, 3, 6, 9));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(4);
+        assertThat(subscriber.takeOnNext(4), contains(0, 3, 6, 9));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void overflowStride() {
         int begin = Integer.MAX_VALUE - 1;
         toSource(range(begin, Integer.MAX_VALUE, 10)).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(begin));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(begin));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void negativeToPositive() {
         toSource(range(-2, 3)).subscribe(subscriber);
-        subscriber.request(5);
-        assertThat(subscriber.takeItems(), contains(-2, -1, 0, 1, 2));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(5);
+        assertThat(subscriber.takeOnNext(5), contains(-2, -1, 0, 1, 2));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void negativeToPositiveStride() {
         toSource(range(-1, Integer.MAX_VALUE, Integer.MAX_VALUE)).subscribe(subscriber);
-        subscriber.request(2);
-        assertThat(subscriber.takeItems(), contains(-1, Integer.MAX_VALUE - 1));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(2);
+        assertThat(subscriber.takeOnNext(2), contains(-1, Integer.MAX_VALUE - 1));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void allNegative() {
         toSource(range(-10, -5)).subscribe(subscriber);
-        subscriber.request(5);
-        assertThat(subscriber.takeItems(), contains(-10, -9, -8, -7, -6));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(5);
+        assertThat(subscriber.takeOnNext(5), contains(-10, -9, -8, -7, -6));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void allNegativeStride() {
         toSource(range(-20, -10, 2)).subscribe(subscriber);
-        subscriber.request(5);
-        assertThat(subscriber.takeItems(), contains(-20, -18, -16, -14, -12));
-        assertTrue(subscriber.isCompleted());
+        subscriber.awaitSubscription().request(5);
+        assertThat(subscriber.takeOnNext(5), contains(-20, -18, -16, -14, -12));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -136,24 +133,24 @@ public class RangeIntPublisherTest {
         toSource((stride ? range(0, 5, 2) : range(0, 5)).whenOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void reentrantDeliversInOrder() {
-        toSource(range(0, 5).whenOnNext(n -> subscriber.request(1))).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(0, 1, 2, 3, 4));
-        assertTrue(subscriber.isCompleted());
+        toSource(range(0, 5).whenOnNext(n -> subscriber.awaitSubscription().request(1))).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(5), contains(0, 1, 2, 3, 4));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void reentrantDeliversInOrderStride() {
-        toSource(range(5, 15, 4).whenOnNext(n -> subscriber.request(1))).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(5, 9, 13));
-        assertTrue(subscriber.isCompleted());
+        toSource(range(5, 15, 4).whenOnNext(n -> subscriber.awaitSubscription().request(1))).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(3), contains(5, 9, 13));
+        subscriber.awaitOnComplete();
     }
 
     @Test
@@ -169,12 +166,12 @@ public class RangeIntPublisherTest {
     private void reentrantCancelStopsDelivery(boolean stride) {
         toSource((stride ? range(0, 5, 2) : range(0, 5)).whenOnNext(n -> {
             if (n != null && n == 0) {
-                subscriber.cancel();
+                subscriber.awaitSubscription().cancel();
             }
         })).subscribe(subscriber);
-        subscriber.request(5);
-        assertThat(subscriber.takeItems(), contains(0));
-        assertFalse(subscriber.isTerminated());
+        subscriber.awaitSubscription().request(5);
+        assertThat(subscriber.takeOnNext(), is(0));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     @Test
@@ -190,13 +187,12 @@ public class RangeIntPublisherTest {
     private void requestNAfterCancelIsNoop(boolean stride) {
         toSource((stride ? range(0, 5, 2) : range(0, 5)).whenOnNext(n -> {
             if (n != null && n == 0) {
-                subscriber.cancel();
+                subscriber.awaitSubscription().cancel();
             }
         })).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(0));
-        subscriber.request(Long.MAX_VALUE);
-        assertThat(subscriber.takeItems(), is(empty()));
-        assertFalse(subscriber.isTerminated());
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(0));
+        subscriber.awaitSubscription().request(Long.MAX_VALUE);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 }

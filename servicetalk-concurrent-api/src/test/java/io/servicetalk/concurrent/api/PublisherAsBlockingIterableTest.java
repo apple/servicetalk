@@ -385,14 +385,17 @@ public final class PublisherAsBlockingIterableTest {
 
     @Test
     public void onNextMoreThanRequested() {
-        source.toIterable(1).iterator();
+        Iterator<Integer> itr = source.toIterable(1).iterator();
         TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);
         assertTrue(source.isSubscribed());
         assertThat(subscription.requested(), is((long) 1));
         source.onNext(1);
-        expected.expect(instanceOf(QueueFullException.class));
         source.onNext(2, 3, 4); // queue is capacity + 2
+        expected.expect(instanceOf(QueueFullException.class));
+        while (itr.hasNext()) {
+            itr.next();
+        }
     }
 
     @Test

@@ -17,17 +17,15 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -41,7 +39,7 @@ public abstract class AbstractWhenOnCompleteTest {
         Runnable onComplete = mock(Runnable.class);
         toSource(doComplete(publisher, onComplete)).subscribe(subscriber);
         publisher.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
         verify(onComplete).run();
     }
 
@@ -52,8 +50,8 @@ public abstract class AbstractWhenOnCompleteTest {
             throw DELIBERATE_EXCEPTION;
         });
         toSource(src).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), sameInstance(srcEx));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), sameInstance(srcEx));
     }
 
     protected abstract <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable);

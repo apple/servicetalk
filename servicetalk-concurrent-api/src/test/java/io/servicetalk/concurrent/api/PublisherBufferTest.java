@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
@@ -30,12 +30,10 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
@@ -61,11 +59,9 @@ public class PublisherBufferTest {
                 return BUFFER_SIZE_HINT;
             }
         })).subscribe(bufferSubscriber);
-        assertThat("Subscription not received for buffer subscriber.", bufferSubscriber.subscriptionReceived(),
-                is(true));
-        bufferSubscriber.request(1); // get first boundary
+        bufferSubscriber.awaitSubscription().request(1); // get first boundary
         boundaries.onNext(new SumAccumulator(boundaries));
-        assertThat("Unexpected boundary received.", bufferSubscriber.takeItems(), hasSize(0));
+        assertThat(bufferSubscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -83,17 +79,13 @@ public class PublisherBufferTest {
                         return 0;
                     }
                 })).subscribe(bufferSubscriber);
-        assertThat("Subscription not received for buffer subscriber.", bufferSubscriber.subscriptionReceived(),
-                is(true));
-        TerminalNotification term = bufferSubscriber.takeTerminal();
-        assertThat("Unexpected termination of buffer subscriber.", term, is(notNullValue()));
-        assertThat("Unexpected termination of buffer subscriber.", term.cause(),
-                instanceOf(IllegalArgumentException.class));
+        bufferSubscriber.awaitSubscription();
+        assertThat(bufferSubscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
     public void emptyBuffer() {
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
         verifyNoBuffersNoTerminal();
 
         emitBoundary();
@@ -106,7 +98,7 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
 
         original.onComplete();
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
 
         emitBoundary();
         verifyEmptyBufferReceived();
@@ -118,7 +110,7 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
 
         original.onError(DELIBERATE_EXCEPTION);
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
 
         emitBoundary();
         verifyEmptyBufferReceived();
@@ -130,10 +122,10 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
 
         emitBoundary();
-        verifyBufferReceived(contains(1 + 2 + 3 + 4));
+        assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
     }
 
     @Test
@@ -141,6 +133,7 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
         original.onComplete();
         emitBoundary();
+        assertThat(bufferSubscriber.takeOnNext(), is(-1));
         verifyBufferSubCompleted();
         verifyCancelled(boundaries);
     }
@@ -150,6 +143,7 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
         original.onError(DELIBERATE_EXCEPTION);
         emitBoundary();
+        assertThat(bufferSubscriber.takeOnNext(), is(-1));
         verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
         verifyCancelled(boundaries);
     }
@@ -157,12 +151,12 @@ public class PublisherBufferTest {
     @Test
     public void multipleBoundaries() {
         verifyNoBuffersNoTerminal();
-        bufferSubscriber.request(2);
+        bufferSubscriber.awaitSubscription().request(2);
 
         original.onNext(1, 2, 3, 4);
 
         emitBoundary();
-        verifyBufferReceived(contains(1 + 2 + 3 + 4));
+        assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
 
         original.onNext(1, 2, 3, 4);
         original.onComplete();
@@ -172,7 +166,7 @@ public class PublisherBufferTest {
 
     @Test
     public void bufferSubCancel() {
-        bufferSubscriber.cancel();
+        bufferSubscriber.awaitSubscription().cancel();
         verifyCancelled(original);
         verifyCancelled(boundaries);
     }
@@ -182,9 +176,9 @@ public class PublisherBufferTest {
         verifyNoBuffersNoTerminal();
 
         original.onNext(1, 2, 3, 4);
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
         emitBoundary();
-        verifyBufferReceived(contains(1 + 2 + 3 + 4));
+        assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
     }
 
     @Test
@@ -193,9 +187,9 @@ public class PublisherBufferTest {
 
         original.onNext(1, 2, 3, 4);
         original.onComplete();
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
         emitBoundary();
-        verifyBufferReceived(contains(1 + 2 + 3 + 4));
+        assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
         verifyBufferSubCompleted();
         verifyCancelled(boundaries);
     }
@@ -206,9 +200,9 @@ public class PublisherBufferTest {
 
         original.onNext(1, 2, 3, 4);
         original.onError(DELIBERATE_EXCEPTION);
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
         emitBoundary();
-        verifyBufferReceived(contains(1 + 2 + 3 + 4));
+        assertThat(bufferSubscriber.takeOnNext(), is(1 + 2 + 3 + 4));
         verifyBufferSubFailed(sameInstance(DELIBERATE_EXCEPTION));
         verifyCancelled(boundaries);
     }
@@ -237,11 +231,11 @@ public class PublisherBufferTest {
     @Ignore("Accumulator will not emit boundary ATM")
     @Test
     public void accumulateEmitsBoundary() {
-        bufferSubscriber.request(1);
+        bufferSubscriber.awaitSubscription().request(1);
         boundaries.onNext(new SumAccumulator(boundaries, true));
         verifyEmptyBufferReceived();
         original.onNext(1);
-        verifyBufferReceived(contains(1));
+        assertThat(bufferSubscriber.takeOnNext(), is(1));
     }
 
     private void verifyCancelled(TestPublisher<?> source) {
@@ -250,17 +244,13 @@ public class PublisherBufferTest {
         assertThat("Original source not cancelled.", subscription.isCancelled(), is(true));
     }
 
-    private void verifyBufferReceived(final Matcher<Iterable<? extends Integer>> bufferMatcher) {
-        assertThat("Unexpected buffers received.", bufferSubscriber.takeItems(), bufferMatcher);
-    }
-
     private void verifyEmptyBufferReceived() {
-        assertThat("Unexpected buffers received.", bufferSubscriber.takeItems(), contains(EMPTY_ACCUMULATOR_VAL));
+        assertThat("Unexpected buffers received.", bufferSubscriber.takeOnNext(), is(EMPTY_ACCUMULATOR_VAL));
     }
 
     private void verifyNoBuffersNoTerminal() {
-        assertThat("Unexpected buffers received.", bufferSubscriber.items(), hasSize(0));
-        assertThat("Unexpected termination of buffer subscriber.", bufferSubscriber.isTerminated(), is(false));
+        assertThat(bufferSubscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(bufferSubscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 
     private void emitBoundary() {
@@ -268,15 +258,11 @@ public class PublisherBufferTest {
     }
 
     private void verifyBufferSubCompleted() {
-        TerminalNotification term = bufferSubscriber.takeTerminal();
-        assertThat("Unexpected termination of buffer subscriber.", term, is(notNullValue()));
-        assertThat("Unexpected termination of buffer subscriber.", term.cause(), is(nullValue()));
+        bufferSubscriber.awaitOnComplete();
     }
 
     private void verifyBufferSubFailed(final Matcher<Throwable> causeMatcher) {
-        TerminalNotification term = bufferSubscriber.takeTerminal();
-        assertThat("Unexpected termination of buffer subscriber.", term, is(notNullValue()));
-        assertThat("Unexpected termination of buffer subscriber.", term.cause(), causeMatcher);
+        assertThat(bufferSubscriber.awaitOnError(), causeMatcher);
     }
 
     private static final class SumAccumulator implements Accumulator<Integer, Integer> {

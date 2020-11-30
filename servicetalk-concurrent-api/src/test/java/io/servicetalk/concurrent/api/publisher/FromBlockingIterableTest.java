@@ -31,9 +31,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest {
@@ -78,9 +77,8 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(subscriber.takeItems(), hasSize(0));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(cancelled.get());
     }
 
@@ -94,9 +92,8 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
         AtomicBoolean cancelled = new AtomicBoolean();
         InMemorySource source = newSource(1, hashNextConsumer, nextConsumer, () -> cancelled.set(true));
         toSource(source.publisher()).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat(subscriber.takeItems(), hasSize(0));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(cancelled.get());
     }
 }

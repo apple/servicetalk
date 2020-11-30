@@ -16,21 +16,17 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ScalarResultPublisherTest {
 
@@ -39,28 +35,28 @@ public class ScalarResultPublisherTest {
     @Test
     public void testJust() {
         toSource(from("Hello")).subscribe(subscriber);
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains("Hello"));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is("Hello"));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testError() {
         toSource(Publisher.<String>failed(DELIBERATE_EXCEPTION)).subscribe(subscriber);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testEmpty() {
         toSource(Publisher.<String>empty()).subscribe(subscriber);
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testNever() {
         toSource(Publisher.<String>never()).subscribe(subscriber);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription();
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
     }
 }

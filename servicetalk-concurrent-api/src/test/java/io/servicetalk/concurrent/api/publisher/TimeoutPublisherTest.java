@@ -25,9 +25,9 @@ import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,18 +45,16 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -87,7 +85,7 @@ public class TimeoutPublisherTest {
         })).subscribe(subscriber);
         publisher.onSubscribe(subscription);
 
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscription.isCancelled());
     }
 
@@ -95,11 +93,11 @@ public class TimeoutPublisherTest {
     public void noDataOnCompletionNoTimeout() {
         init();
 
-        subscriber.request(10);
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         publisher.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -109,13 +107,13 @@ public class TimeoutPublisherTest {
     public void dataOnCompletionNoTimeout() {
         init();
 
-        subscriber.request(10);
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.takeItems(), contains(1, 2, 3));
+        assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
         publisher.onComplete();
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        subscriber.awaitOnComplete();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -125,11 +123,11 @@ public class TimeoutPublisherTest {
     public void noDataOnErrorNoTimeout() {
         init();
 
-        subscriber.request(10);
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -139,13 +137,13 @@ public class TimeoutPublisherTest {
     public void dataOnErrorNoTimeout() {
         init();
 
-        subscriber.request(10);
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.takeItems(), contains(1, 2, 3));
+        assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
         publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -155,7 +153,7 @@ public class TimeoutPublisherTest {
     public void subscriptionCancelAlsoCancelsTimer() {
         init();
 
-        subscriber.cancel();
+        subscriber.awaitSubscription().cancel();
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -166,7 +164,7 @@ public class TimeoutPublisherTest {
         init();
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
-        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(1));
@@ -176,15 +174,14 @@ public class TimeoutPublisherTest {
     public void dataAndTimeout() {
         init();
 
-        subscriber.request(10);
-        assertTrue(subscriber.subscriptionReceived());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
+        subscriber.awaitSubscription().request(10);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
         publisher.onNext(1, 2, 3);
-        assertThat(subscriber.takeItems(), contains(1, 2, 3));
+        assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
-        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(1));
@@ -205,7 +202,7 @@ public class TimeoutPublisherTest {
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockSubscription);
         verify(mockSubscription).cancel();
-        assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(this.subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     @Test
@@ -285,7 +282,7 @@ public class TimeoutPublisherTest {
 
         latch.await();
         assertNull(causeRef.get());
-        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     private void init() {
@@ -296,7 +293,7 @@ public class TimeoutPublisherTest {
         toSource(publisher.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
-            assertTrue(subscriber.subscriptionReceived());
+            subscriber.awaitSubscription();
         }
     }
 

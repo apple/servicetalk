@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import java.util.concurrent.CancellationException;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -40,17 +40,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class SpliceFlatStreamToMetaSingleTest {
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final LegacyMockedSingleListenerRule<Data> dataSubscriber = new LegacyMockedSingleListenerRule<>();
-
+    private final TestSingleSubscriber<Data> dataSubscriber = new TestSingleSubscriber<>();
     private final TestPublisher<Object> upstream = new TestPublisher<>();
     private final MetaData metaData = new MetaData("foo");
     private final Payload one = new Payload();
@@ -65,16 +61,16 @@ public class SpliceFlatStreamToMetaSingleTest {
     public void streamWithHeaderAndPayloadShouldProduceDataWithEmbeddedPayload() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(2);
+        payloadSubscriber.awaitSubscription().request(2);
         upstream.onNext(one, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeItems(), contains(one, last));
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        assertThat(payloadSubscriber.takeOnNext(2), contains(one, last));
+        payloadSubscriber.awaitOnComplete();
     }
 
     @Test
@@ -82,9 +78,9 @@ public class SpliceFlatStreamToMetaSingleTest {
             throws Exception {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         upstream.onComplete();
         assertThat(data.getPayload().toFuture().get(), empty());
@@ -94,149 +90,149 @@ public class SpliceFlatStreamToMetaSingleTest {
     public void emptyStreamShouldCompleteDataWithError() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onComplete();
-        dataSubscriber.verifyFailure(IllegalStateException.class);
+        assertThat(dataSubscriber.awaitOnError(), instanceOf(IllegalStateException.class));
     }
 
     @Test
     public void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
-        dataSubscriber.cancel();
+        toSource(op).subscribe(dataSubscriber);
+        dataSubscriber.awaitSubscription().cancel();
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.takeError(), instanceOf(CancellationException.class));
+        assertThat(payloadSubscriber.awaitOnError(), instanceOf(CancellationException.class));
     }
 
     @Test
     public void cancelDataAfterDataCompleteShouldIgnoreCancelAndDeliverPublisherOnComplete() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
-        dataSubscriber.cancel();
+        dataSubscriber.awaitSubscription().cancel();
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(3);
+        payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        payloadSubscriber.awaitOnComplete();
     }
 
     @Test
     public void cancelDataBeforeDataCompleteShouldDeliverError() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
-        dataSubscriber.cancel();
+        dataSubscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
-        dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertThat(dataSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void streamErrorAfterPublisherSubscribeShouldDeliverError() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(1);
+        payloadSubscriber.awaitSubscription().request(1);
         upstream.onNext(one);
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
-        assertThat(payloadSubscriber.takeItems(), contains(one));
-        assertThat(payloadSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(payloadSubscriber.takeOnNext(), is(one));
+        assertThat(payloadSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void streamCompleteAfterPublisherSubscribeShouldDeliverComplete() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(3);
+        payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        payloadSubscriber.awaitOnComplete();
     }
 
     @Test
     public void streamCompleteBeforePublisherSubscribeShouldDeliverCompleteOnSubscribe() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         upstream.onComplete();
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        payloadSubscriber.awaitOnComplete();
     }
 
     @Test
     public void streamErrorBeforePublisherSubscribeShouldDeliverErrorOnSubscribe() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         assertFalse(subscription.isCancelled());
         upstream.onError(DELIBERATE_EXCEPTION);
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        assertThat(payloadSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        assertThat(payloadSubscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void publisherSubscribeTwiceShouldFailSecondSubscriber() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(3);
+        payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
         toSource(data.getPayload()).subscribe(dupePayloadSubscriber);
-        assertThat(dupePayloadSubscriber.takeError(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(dupePayloadSubscriber.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        payloadSubscriber.awaitOnComplete();
     }
 
     @Test
     public void publisherSubscribeAgainAfterCompletingInitialSubscriberShouldFailSecondSubscriber() {
         Publisher<Object> stream = upstream;
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
-        dataSubscriber.listen(op);
+        toSource(op).subscribe(dataSubscriber);
         upstream.onNext(metaData);
-        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        Data data = dataSubscriber.awaitOnSuccess();
         assertThat(data.meta(), equalTo(data.meta()));
         toSource(data.getPayload()).subscribe(payloadSubscriber);
-        payloadSubscriber.request(3);
+        payloadSubscriber.awaitSubscription().request(3);
         upstream.onNext(one, two, last);
         upstream.onComplete();
-        assertThat(payloadSubscriber.takeItems(), contains(one, two, last));
-        assertThat(payloadSubscriber.takeTerminal(), is(complete()));
+        assertThat(payloadSubscriber.takeOnNext(3), contains(one, two, last));
+        payloadSubscriber.awaitOnComplete();
         toSource(data.getPayload()).subscribe(dupePayloadSubscriber);
-        assertThat(dupePayloadSubscriber.takeError(), instanceOf(DuplicateSubscribeException.class));
+        assertThat(dupePayloadSubscriber.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
     }
 
     @Test
@@ -248,8 +244,8 @@ public class SpliceFlatStreamToMetaSingleTest {
         Single<Data> op = stream.liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>((metaData, payload) -> {
                     throw DELIBERATE_EXCEPTION;
                 }));
-        dataSubscriber.listen(op);
-        dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(op).subscribe(dataSubscriber);
+        assertThat(dataSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     private static class MetaData {

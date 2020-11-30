@@ -19,11 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
@@ -36,7 +36,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
@@ -51,7 +50,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
@@ -61,8 +59,8 @@ import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrateg
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -80,12 +78,9 @@ public class DefaultNettyConnectionTest {
     private static final String TRAILER_MSG = "Trailer";
     private static final Buffer TRAILER = DEFAULT_ALLOCATOR.fromAscii(TRAILER_MSG);
     private TestPublisher<Buffer> publisher;
-    @Rule
-    public final LegacyMockedCompletableListenerRule writeListener = new LegacyMockedCompletableListenerRule();
-    @Rule
-    public final LegacyMockedCompletableListenerRule secondWriteListener = new LegacyMockedCompletableListenerRule();
-    @Rule
-    public final LegacyMockedCompletableListenerRule closeListener = new LegacyMockedCompletableListenerRule();
+    private TestCompletableSubscriber writeListener = new TestCompletableSubscriber();
+    private final TestCompletableSubscriber secondWriteListener = new TestCompletableSubscriber();
+    private final TestCompletableSubscriber closeListener = new TestCompletableSubscriber();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private final TestPublisherSubscriber<Buffer> subscriber = new TestPublisherSubscriber<>();
@@ -139,46 +134,50 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testWritePublisher() {
-        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())))
-                .verifyCompletion();
+        toSource(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())))
+                .subscribe(writeListener);
+        writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG);
     }
 
     @Test
     public void testConcurrentWritePubAndPub() {
-        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never())).verifyFailure(IllegalStateException.class);
+        toSource(conn.write(Publisher.never())).subscribe(writeListener);
+        assertThat(writeListener.pollTerminal(10, MILLISECONDS), is(false));
+        toSource(conn.write(Publisher.never())).subscribe(secondWriteListener);
+        assertThat(secondWriteListener.awaitOnError(), instanceOf(IllegalStateException.class));
     }
 
     @Test
     public void testSequentialPubAndPub() {
         testWritePublisher();
-        writeListener.reset();
+        writeListener = new TestCompletableSubscriber();
         testWritePublisher();
     }
 
     @Test
     public void testWriteActiveWithPublisher() {
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
         publisher.onNext(newBuffer("Hello"));
         publisher.onNext(TRAILER.duplicate());
         publisher.onComplete();
-        writeListener.verifyCompletion();
+        writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello", TRAILER_MSG);
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(false));
     }
 
     @Test
     public void testPublisherErrorFailsWrite() {
-        writeListener.listen(conn.write(Publisher.failed(DELIBERATE_EXCEPTION)))
-                .verifyFailure(DELIBERATE_EXCEPTION);
+        toSource(conn.write(Publisher.failed(DELIBERATE_EXCEPTION))).subscribe(writeListener);
+        assertThat(writeListener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testPublisherWithPredictor() {
         requestNext = 1;
-        writeListener.listen(conn.write(publisher, FlushStrategies::defaultFlushStrategy, () -> demandEstimator));
+        toSource(conn.write(publisher, FlushStrategies::defaultFlushStrategy, () -> demandEstimator))
+                .subscribe(writeListener);
         requestNext = 0;
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
@@ -192,31 +191,31 @@ public class DefaultNettyConnectionTest {
         publisher.onComplete();
         pollChannelAndVerifyWrites("Hello2", TRAILER_MSG);
         verifyPredictorCalled(1, hello1, hello2, TRAILER);
-        writeListener.verifyCompletion();
+        writeListener.awaitOnComplete();
     }
 
     @Test
     public void testUpdateFlushStrategy() {
-        writeListener.listen(conn.write(from(newBuffer("Hello"), TRAILER.duplicate())));
-        writeListener.verifyCompletion();
+        toSource(conn.write(from(newBuffer("Hello"), TRAILER.duplicate()))).subscribe(writeListener);
+        writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello", TRAILER_MSG); // Flush on each (default)
 
-        writeListener.reset();
+        writeListener = new TestCompletableSubscriber();
         Cancellable c = conn.updateFlushStrategy((old, __) -> batchFlush(3, never()));
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
         publisher.onNext(newBuffer("Hello1"));
         pollChannelAndVerifyWrites(); // No flush
         publisher.onNext(newBuffer("Hello2"));
         publisher.onNext(TRAILER.duplicate());
         pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG); // Batch flush of 2
         publisher.onComplete();
-        writeListener.verifyCompletion();
+        writeListener.awaitOnComplete();
 
         c.cancel();
 
-        writeListener.reset();
-        writeListener.listen(conn.write(from(newBuffer("Hello3"), TRAILER.duplicate())));
-        writeListener.verifyCompletion();
+        writeListener = new TestCompletableSubscriber();
+        toSource(conn.write(from(newBuffer("Hello3"), TRAILER.duplicate()))).subscribe(writeListener);
+        writeListener.awaitOnComplete();
         pollChannelAndVerifyWrites("Hello3", TRAILER_MSG); // Reverted to flush on each
     }
 
@@ -225,50 +224,50 @@ public class DefaultNettyConnectionTest {
         toSource(conn.read()).subscribe(subscriber);
         Buffer expected = allocator.fromAscii("data");
         channel.writeInbound(expected.duplicate());
-        assertThat(subscriber.takeItems(), hasSize(0));
-        assertThat(subscriber.takeTerminal(), nullValue());
-        subscriber.request(1);
-        assertThat(subscriber.takeItems(), contains(expected));
-        assertThat(subscriber.takeTerminal(), is(complete()));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        subscriber.awaitSubscription().request(1);
+        assertThat(subscriber.takeOnNext(), is(expected));
+        subscriber.awaitOnComplete();
     }
 
     @Test
     public void testCloseAsync() {
         conn.updateFlushStrategy((__, ___) -> flushOnEnd());
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
         publisher.onNext(hello1);
         publisher.onNext(hello2);
         publisher.onNext(TRAILER.duplicate());
-        closeListener.listen(conn.closeAsync());
+        toSource(conn.closeAsync()).subscribe(closeListener);
         assertThat(channel.isOpen(), is(false));
-        writeListener.verifyFailure(ClosedChannelException.class);
+        assertThat(writeListener.awaitOnError(), instanceOf(ClosedChannelException.class));
         pollChannelAndVerifyWrites();
     }
 
     @Test
     public void testOnClosingWithGracefulClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
-        closeListener.listen(conn.onClosing());
+        toSource(conn.onClosing()).subscribe(closeListener);
         conn.closeAsyncGracefully().toFuture().get();
-        closeListener.verifyCompletion();
+        closeListener.awaitOnComplete();
     }
 
     @Test
     public void testOnClosingWithHardClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
-        closeListener.listen(conn.onClosing());
+        toSource(conn.onClosing()).subscribe(closeListener);
         conn.closeAsync().toFuture().get();
-        closeListener.verifyCompletion();
+        closeListener.awaitOnComplete();
     }
 
     @Test
     public void testOnClosingWithoutUserInitiatedClose() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
-        closeListener.listen(conn.onClosing());
+        toSource(conn.onClosing()).subscribe(closeListener);
         channel.close().get(); // Close and await closure.
-        closeListener.verifyCompletion();
+        closeListener.awaitOnComplete();
     }
 
     private Buffer newBuffer(String data) {
@@ -305,17 +304,14 @@ public class DefaultNettyConnectionTest {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         channel.shutdownOutput().sync();
         assertThat(channel.isActive(), is(false));
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
 
-        ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
         toSource(conn.read()).subscribe(subscriber);
-        writeListener.verifyFailure(exCaptor); // ClosedChannelException was translated
-
-        exCaptor.getValue().printStackTrace();
+        Throwable cause = writeListener.awaitOnError(); // ClosedChannelException was translated
         // Exception should be of type CloseEventObservedException
-        assertThat(exCaptor.getValue(), instanceOf(RetryableClosureException.class));
-        assertThat(exCaptor.getValue().getCause(), instanceOf(ClosedChannelException.class));
-        assertThat(exCaptor.getValue().getCause().getMessage(), equalTo(
+        assertThat(cause, instanceOf(RetryableClosureException.class));
+        assertThat(cause.getCause(), instanceOf(ClosedChannelException.class));
+        assertThat(cause.getCause().getMessage(), equalTo(
                 "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) " +
                         "[id: 0xembedded, L:embedded ! R:embedded]"));
         assertThat(channel.isOpen(), is(false));
@@ -325,25 +321,22 @@ public class DefaultNettyConnectionTest {
     public void testTerminalPredicateThrowTerminatesReadPublisher() throws Exception {
         setupWithCloseHandler(ch -> forPipelinedRequestResponse(true, ch.config()));
         toSource(conn.read()).subscribe(subscriber);
-        subscriber.request(1);
+        subscriber.awaitSubscription().request(1);
         channel.writeInbound(allocator.fromAscii("DELIBERATE_EXCEPTION"));
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertThat(channel.isOpen(), is(false));
     }
 
     @Test
     public void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
         channel.close().syncUninterruptibly();
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
 
-        ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
-        writeListener.verifyFailure(exCaptor);
-
+        Throwable cause = writeListener.awaitOnError();
         // Exception should NOT be of type CloseEventObservedException
-        assertThat(exCaptor.getValue(), instanceOf(StacklessClosedChannelException.class));
-        assertThat(exCaptor.getValue().getCause(), nullValue());
-        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(),
-                equalTo(DefaultNettyConnection.class.getName()));
+        assertThat(cause, instanceOf(StacklessClosedChannelException.class));
+        assertThat(cause.getCause(), nullValue());
+        assertThat(cause.getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));
     }
 
     @Test
@@ -365,7 +358,7 @@ public class DefaultNettyConnectionTest {
     public void testExceptionWithNoSubscriberIsQueued() throws Exception {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         conn.onClose().toFuture().get();
     }
 
@@ -373,13 +366,13 @@ public class DefaultNettyConnectionTest {
     public void testChannelInactiveWithNoSubscriberIsQueued() throws Exception {
         channel.close().get();
         toSource(conn.read()).subscribe(subscriber);
-        assertThat(subscriber.takeError(), instanceOf(ClosedChannelException.class));
+        assertThat(subscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
         conn.onClose().toFuture().get();
     }
 
     @Test
     public void testChannelCloseBeforeWriteComplete() {
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);
         publisher.onNext(TRAILER.duplicate());
@@ -389,12 +382,12 @@ public class DefaultNettyConnectionTest {
         channel.close();
         publisher.onComplete();
 
-        writeListener.verifyCompletion();
+        writeListener.awaitOnComplete();
     }
 
     @Test
     public void testChannelCloseAfterWriteComplete() {
-        writeListener.listen(conn.write(publisher));
+        toSource(conn.write(publisher)).subscribe(writeListener);
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);
         publisher.onNext(TRAILER.duplicate());
@@ -405,6 +398,6 @@ public class DefaultNettyConnectionTest {
         publisher.onComplete();
 
         channel.close();
-        writeListener.verifyCompletion();
+        writeListener.awaitOnComplete();
     }
 }
