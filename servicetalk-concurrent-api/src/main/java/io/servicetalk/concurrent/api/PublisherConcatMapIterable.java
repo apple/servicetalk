@@ -137,11 +137,15 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             final Iterator<? extends U> currentIterator = this.currentIterator;
             this.currentIterator = EmptyIterator.instance();
             try {
-                if (currentIterator instanceof AutoCloseable) {
-                    closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
-                }
+                tryClose(currentIterator);
             } finally {
                 sourceSubscription.cancel();
+            }
+        }
+
+        private static <U> void tryClose(final Iterator<? extends U> currentIterator) {
+            if (currentIterator instanceof AutoCloseable) {
+                closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
             }
         }
 
@@ -154,6 +158,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         private void tryDrainIterator(ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
             assert sourceSubscription != null;
             boolean hasNext = false;
+            boolean thrown = false;
             boolean terminated = false;
             boolean releasedLock = false;
             do {
@@ -172,17 +177,22 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         switch (errorHandlingStrategyInDrain) {
                             case PropagateAndCancel:
                                 terminated = true;
-                                doCancel();
                                 safeOnError(target, cause);
+                                doCancel();
                                 return; // hard return to avoid potential for duplicate terminal events
                             case Propagate:
                                 terminated = true;
                                 safeOnError(target, cause);
+                                tryClose(currentIterator);
                                 return; // hard return to avoid potential for duplicate terminal events
                             case Throw:
                                 // since we only request 1 at a time we maybe holding requestN demand, in this case we
                                 // discard the current iterator and request 1 more from upstream (if there is demand).
                                 hasNext = false;
+                                thrown = true;
+                                final Iterator<? extends U> currentIterator = this.currentIterator;
+                                this.currentIterator = EmptyIterator.instance();
+                                tryClose(currentIterator);
                                 // let the exception propagate so the upstream source can do the cleanup.
                                 throw cause;
                             default:
@@ -205,7 +215,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                     } else if (!terminated) {
                         try {
                             if (terminalNotification == null && !hasNext && currRequestN > 0 &&
-                                    currentIterator != EmptyIterator.instance()) {
+                                    (currentIterator != EmptyIterator.instance() || thrown)) {
                                 // We only request 1 at a time, and therefore we don't have any outstanding demand, so
                                 // we will not be getting an onNext call, so we write to the currentIterator variable
                                 // here before we unlock emitting so visibility to other threads should be taken care of
