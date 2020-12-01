@@ -35,7 +35,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
-    private final Executor timeoutExecutor;
+    private final io.servicetalk.concurrent.Executor timeoutExecutor;
     private final long durationNs;
 
     TimeoutPublisher(final Publisher<T> original,
@@ -54,7 +54,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     TimeoutPublisher(final Publisher<T> original,
                      final Executor publisherExecutor,
                      final Duration duration,
-                     final Executor timeoutExecutor) {
+                     final io.servicetalk.concurrent.Executor timeoutExecutor) {
         this(original, publisherExecutor, duration.toNanos(), timeoutExecutor);
     }
 
@@ -62,14 +62,14 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                      final Executor publisherExecutor,
                      final long duration,
                      final TimeUnit unit,
-                     final Executor timeoutExecutor) {
+                     final io.servicetalk.concurrent.Executor timeoutExecutor) {
         this(original, publisherExecutor, unit.toNanos(duration), timeoutExecutor);
     }
 
     private TimeoutPublisher(final Publisher<T> original,
                              final Executor publisherExecutor,
                              final long durationNs,
-                             final Executor timeoutExecutor) {
+                             final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(publisherExecutor);
         this.original = requireNonNull(original);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
@@ -100,8 +100,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          */
         private static final Cancellable TIMER_PROCESSING = () -> { };
         private static final Cancellable TIMER_FIRED = () -> { };
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Cancellable> timerCancellableUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Cancellable.class, "timerCancellable");
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Subscription> subscriptionUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Subscription.class, "subscription");
         private final TimeoutPublisher<X> parent;

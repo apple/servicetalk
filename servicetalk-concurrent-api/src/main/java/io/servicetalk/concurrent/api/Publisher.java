@@ -1117,7 +1117,7 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #idleTimeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
         return new TimeoutPublisher<>(this, executor, duration, unit);
@@ -1135,7 +1135,7 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #idleTimeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> idleTimeout(Duration duration) {
         return new TimeoutPublisher<>(this, executor, duration);
@@ -1156,7 +1156,8 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
+                                          io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
     }
 
@@ -1174,7 +1175,7 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
     }
 

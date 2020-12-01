@@ -33,12 +33,12 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Single<T> original;
-    private final Executor timeoutExecutor;
+    private final io.servicetalk.concurrent.Executor timeoutExecutor;
     private final long durationNs;
 
     TimeoutSingle(final Single<T> original,
                   final Duration duration,
-                  final Executor timeoutExecutor) {
+                  final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(original.executor());
         this.original = original;
         this.durationNs = duration.toNanos();
@@ -48,7 +48,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     TimeoutSingle(final Single<T> original,
                   final long duration,
                   final TimeUnit unit,
-                  final Executor timeoutExecutor) {
+                  final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(original.executor());
         this.original = original;
         this.durationNs = unit.toNanos(duration);
@@ -71,8 +71,10 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         private static final int STATE_ON_WAITING_FOR_SUBSCRIBE = 0;
         private static final int STATE_ON_SUBSCRIBE_DONE = 1;
         private static final int STATE_TIMED_OUT_ERROR = 2;
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Cancellable>
                 cancellableUpdater = newUpdater(TimeoutSubscriber.class, Cancellable.class, "cancellable");
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<TimeoutSubscriber> subscriberStateUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(TimeoutSubscriber.class, "subscriberState");
         @Nullable
