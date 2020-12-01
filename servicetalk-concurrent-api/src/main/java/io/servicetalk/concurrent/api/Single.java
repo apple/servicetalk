@@ -430,7 +430,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(long duration, TimeUnit unit,
+                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
     }
 
@@ -466,7 +467,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
 

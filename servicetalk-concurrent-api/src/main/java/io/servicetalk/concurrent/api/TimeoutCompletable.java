@@ -33,12 +33,12 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
-    private final Executor timeoutExecutor;
+    private final io.servicetalk.concurrent.Executor timeoutExecutor;
     private final long durationNs;
 
     TimeoutCompletable(final Completable original,
                        final Duration duration,
-                       final Executor timeoutExecutor) {
+                       final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(original.executor());
         this.original = original;
         this.durationNs = duration.toNanos();
@@ -48,7 +48,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
     TimeoutCompletable(final Completable original,
                        final long duration,
                        final TimeUnit unit,
-                       final Executor timeoutExecutor) {
+                       final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(original.executor());
         this.original = original;
         this.durationNs = unit.toNanos(duration);

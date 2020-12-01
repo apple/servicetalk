@@ -307,7 +307,8 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Completable idleTimeout(long duration, TimeUnit unit,
+                                         io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
     }
 
@@ -342,7 +343,7 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable idleTimeout(Duration duration, Executor timeoutExecutor) {
+    public final Completable idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
 
