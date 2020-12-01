@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -30,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -46,9 +46,9 @@ import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -90,12 +90,12 @@ abstract class HttpObjectDecoderTest {
                 channel().writeInbound(content(length)), is(true));
     }
 
-    final void writeChunkLength(int length) {
+    final void writeChunkSize(int length) {
         writeMsg(toHexString(length) + "\r\n");
     }
 
     final void writeChunk(int length) {
-        writeChunkLength(length);
+        writeChunkSize(length);
         writeContent(length);
         writeMsg("\r\n");
     }
@@ -104,12 +104,17 @@ abstract class HttpObjectDecoderTest {
         writeMsg("0\r\n\r\n");
     }
 
-    final void assertDecoderException(String msg, @Nullable String expectedExceptionMsg) {
+    final void assertDecoderException(String msg, String expectedExceptionMsg) {
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
-        if (expectedExceptionMsg != null) {
-            assertThat(e.getCause().getMessage(), startsWith(expectedExceptionMsg));
-        }
+        assertThat(e.getMessage(), startsWith(expectedExceptionMsg));
+        assertThat(channel().inboundMessages(), is(empty()));
+    }
+
+    final void assertDecoderExceptionWithCause(String msg, String expectedExceptionMsg) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg));
+        assertThat(e.getMessage(), startsWith(expectedExceptionMsg));
+        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
+        assertThat(e.getCause().getMessage(), not(isEmptyString()));
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
@@ -183,7 +188,7 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     public void startLineWithoutCR() {
-        assertDecoderException(startLine() + '\n', "Found LF but no CR before");
+        assertDecoderException(startLine() + '\n', "Found LF (0x0a) but no CR (0x0d) before");
     }
 
     @Test
@@ -236,32 +241,32 @@ abstract class HttpObjectDecoderTest {
     public void tooManyPrefaceCharacters() {
         DecoderException ex = assertThrows(DecoderException.class,
                 () -> writeMsg("\r\n\r\n\r\n" + startLine() + "\r\n" + "\r\n"));
-        assertThat(ex.getMessage(), equalTo("Too many prefacing CRLF characters"));
+        assertThat(ex.getMessage(), startsWith("Too many prefacing CRLF (0x0d0a) characters"));
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
     @Test
     public void whitespaceNotAllowedBeforeHeaderFieldName() {
-        assertDecoderException(startLine() + "\r\n" +
-                " Host: servicetalk.io" + "\r\n" + "\r\n", "invalid token detected: 32");
+        assertDecoderExceptionWithCause(startLine() + "\r\n" +
+                " Host: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
     public void whitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
-        assertDecoderException(startLine() + "\r\n" +
-                "Host : servicetalk.io" + "\r\n" + "\r\n", "invalid token detected: 32");
+        assertDecoderExceptionWithCause(startLine() + "\r\n" +
+                "Host : servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
     public void controlCharNotAllowedBeforeHeaderFieldValue() {
-        assertDecoderException(startLine() + "\r\n" +
-                "Host: \fservicetalk.io" + "\r\n" + "\r\n", "Illegal character: 0x0C");
+        assertDecoderExceptionWithCause(startLine() + "\r\n" +
+                "Host: \fservicetalk.io" + "\r\n" + "\r\n", "Invalid value for the header");
     }
 
     @Test
     public void noEndOfHeaderName() {
         assertDecoderException(startLine() + "\r\n" +
-                "Host" + "\r\n" + "\r\n", "Unable to find end of header name");
+                "Host" + "\r\n" + "\r\n", "Unable to find end of a header name");
     }
 
     @Test
@@ -271,15 +276,15 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
-    public void headValueWithControlChar() {
-        assertDecoderException(startLine() + "\r\n" +
-                "H\0st: servicetalk.io" + "\r\n" + "\r\n", "invalid token detected");
+    public void headerNameWithControlChar() {
+        assertDecoderExceptionWithCause(startLine() + "\r\n" +
+                "H\0st: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
-    public void headValueWithObsText() {
-        assertDecoderException(startLine() + "\r\n" +
-                "Hóst: servicetalk.io" + "\r\n" + "\r\n", "invalid token detected");
+    public void headerNameWithObsText() {
+        assertDecoderExceptionWithCause(startLine() + "\r\n" +
+                "Hóst: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");
     }
 
     @Test
@@ -383,31 +388,31 @@ abstract class HttpObjectDecoderTest {
     }
 
     private void chunkedNoTrailers(boolean addSemicolon) {
-        int chunkLength = 128;
+        int chunkSize = 128;
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" +
                 "Transfer-Encoding: chunked" + "\r\n" + "\r\n");
-        writeMsg(toHexString(chunkLength) + (addSemicolon ? ";" : "") + "\r\n");
-        writeContent(chunkLength);
+        writeMsg(toHexString(chunkSize) + (addSemicolon ? ";" : "") + "\r\n");
+        writeContent(chunkSize);
         writeMsg("\r\n");
         writeLastChunk();
-        validateWithContent(-chunkLength, false);
+        validateWithContent(-chunkSize, false);
     }
 
     @Test
     public void chunkedNoTrailersMultipleLargeContent() {
-        int chunkLength = 4096;
+        int chunkSize = 4096;
         int numChunks = 5;
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" +
                 "Transfer-Encoding: chunked" + "\r\n" + "\r\n");
         for (int i = 0; i < numChunks; ++i) {
-            writeChunk(chunkLength);
+            writeChunk(chunkSize);
         }
         writeLastChunk();
-        validateWithContent(-(chunkLength * numChunks), false);
+        validateWithContent(-(chunkSize * numChunks), false);
     }
 
     @Test
@@ -436,17 +441,16 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     public void chunkedNoTrailersNoChunkCRLF() {
-        int chunkLength = 128;
+        int chunkSize = 128;
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" +
                 "Transfer-Encoding: chunked" + "\r\n" + "\r\n");
-        writeChunkLength(chunkLength);
-        writeContent(chunkLength);
+        writeChunkSize(chunkSize);
+        writeContent(chunkSize);
         // we omit writing the "\r\n" after chunk-data intentionally
         DecoderException e = assertThrows(DecoderException.class, this::writeLastChunk);
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
-        assertThat(e.getCause().getMessage(), startsWith("Could not find CRLF"));
+        assertThat(e.getMessage(), startsWith("Could not find CRLF"));
         assertThat(channel().inboundMessages(), is(not(empty())));
     }
 
@@ -463,14 +467,14 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     public void chunkedContentWithTrailers() {
-        int chunkLength = 128;
+        int chunkSize = 128;
         writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" +
                 "Transfer-Encoding: chunked" + "\r\n" + "\r\n");
-        writeChunk(chunkLength);
+        writeChunk(chunkSize);
         writeMsg("0\r\n" + "TrailerStatus: good" + "\r\n" + "\r\n");
-        validateWithContent(-chunkLength, true);
+        validateWithContent(-chunkSize, true);
     }
 
     @Test
@@ -499,7 +503,7 @@ abstract class HttpObjectDecoderTest {
         // https://tools.ietf.org/html/rfc7230#section-3.3
         DecoderException e = assertThrows(DecoderException.class,
                 () -> writeMsg("TrailerStatus: good" + "\r\n" + "\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(e.getMessage(), startsWith("Invalid start-line"));
         assertThat(channel().inboundMessages(), is(not(empty())));
     }
 
@@ -524,7 +528,7 @@ abstract class HttpObjectDecoderTest {
                         "Smuggled: " + startLine() + "\r\n\r\n" + "Content-Length: 0" + "\r\n" :
                         "Content-Length: 0" + "\r\n" + "Smuggled: " + startLine() + "\r\n\r\n") +
                 "Connection: keep-alive" + "\r\n\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(e.getMessage(), startsWith("Invalid start-line"));
 
         HttpMetaData metaData = assertStartLine();
         assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
@@ -538,7 +542,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     protected void smuggleTransferEncoding(boolean smuggleBeforeTransferEncoding) {
-        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 // Smuggled requests injected into a header will terminate the current request due to valid \r\n\r\n
                 // framing terminating the request with no content-length or transfer-encoding, or with known zero
@@ -548,7 +552,6 @@ abstract class HttpObjectDecoderTest {
                         "Smuggled: " + startLine() + "\r\n\r\n" + TRANSFER_ENCODING + ":" + CHUNKED + "\r\n" :
                         TRANSFER_ENCODING + ":" + CHUNKED + "\r\n" + "Smuggled: " + startLine() + "\r\n\r\n") +
                 "Connection: keep-alive" + "\r\n\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
 
         HttpMetaData metaData = assertStartLineForContent();
         assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");
@@ -566,12 +569,11 @@ abstract class HttpObjectDecoderTest {
     }
 
     private void smuggleNameZeroContentLengthHeader(boolean smuggleBeforeContentLength) {
-        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                         (smuggleBeforeContentLength ?
                                 startLine() + "\r\n\r\n" + "Content-Length: 0" + "\r\n" :
                                 "Content-Length: 0" + "\r\n" + startLine() + "\r\n\r\n") +
                 "Connection: keep-alive" + "\r\n\r\n"));
-        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
     }
 }

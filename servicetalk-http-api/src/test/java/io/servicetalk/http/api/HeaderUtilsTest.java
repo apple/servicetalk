@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import static io.netty.util.AsciiString.of;
 import static io.servicetalk.http.api.HeaderUtils.checkContentType;
+import static io.servicetalk.http.api.HeaderUtils.isTchar;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -260,5 +261,44 @@ public class HeaderUtilsTest {
     private static void assertOneTransferEncodingChunked(final HttpHeaders headers) {
         assertEquals(1, headers.size());
         assertTrue(isTransferEncodingChunked(headers));
+    }
+
+    @Test
+    public void validateToken() {
+        // Make sure the old and new validation logic is equivalent:
+        for (int b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; ++b) {
+            final byte value = (byte) (b & 0xff);
+            assertEquals("Unexpected result for byte: " + value,
+                    originalValidateTokenLogic(value), isTchar(value));
+        }
+    }
+
+    private static boolean originalValidateTokenLogic(final byte value) {
+        if (value < '!') {
+            return false;
+        }
+        switch (value) {
+            case '(':
+            case ')':
+            case '<':
+            case '>':
+            case '@':
+            case ',':
+            case ';':
+            case ':':
+            case '\\':
+            case '"':
+            case '/':
+            case '[':
+            case ']':
+            case '?':
+            case '=':
+            case '{':
+            case '}':
+            case 127:   // DEL
+                return false;
+            default:
+                return true;
+        }
     }
 }

@@ -20,10 +20,12 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import io.netty.util.ByteProcessor;
 
 import java.util.Queue;
@@ -53,7 +55,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     private static final ByteProcessor ENSURE_REASON_PHRASE = value -> {
         // Any control character (0x00-0x1F) except HT
         if (((value & 0xE0) == 0 && value != HT) || value == DEL) {
-            throw newIllegalCharacter(value);
+            throw new IllegalCharacterException(value, "HTAB / SP / VCHAR / obs-text");
         }
         return true;
     };
@@ -82,11 +84,13 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
         final int len = min(FIRST_BYTES.length, buffer.readableBytes());
+        final int rIdx = buffer.readerIndex();
         for (int i = 0; i < len; ++i) {
-            byte b = buffer.getByte(buffer.readerIndex() + i);
+            final byte b = buffer.getByte(rIdx + i);
             if (b != FIRST_BYTES[i]) {
-                // Illegal response if it doesn't start with 'HTTP'
-                splitInitialLineError();
+                throw new StacklessDecoderException(
+                        "Invalid start-line: HTTP response must start with HTTP-version: HTTP/1.x",
+                        new IllegalCharacterException(b));
             }
         }
     }
@@ -105,9 +109,14 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         if (length <= 0) {
             return EMPTY_STRING;
         }
-        // Verify reason-phrase = *( HTAB / SP / VCHAR / obs-text )
-        buffer.forEachByte(start, length, ENSURE_REASON_PHRASE);
-        return buffer.toString(start, length, US_ASCII);
+        final String reasonPhrase = buffer.toString(start, length, US_ASCII);
+        try {
+            buffer.forEachByte(start, length, ENSURE_REASON_PHRASE);
+        } catch (IllegalCharacterException cause) {
+            throw new StacklessDecoderException("Invalid start-line: HTTP reason-phrase contains an illegal character",
+                    cause);
+        }
+        return reasonPhrase;
     }
 
     @Override
@@ -141,13 +150,22 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {
-        if (length != 3) {
-            splitInitialLineError();
-        }
-
+        ensureStatusCodeLength(length);
         final int medium = buffer.getUnsignedMedium(start);
-        return toDecimal((medium & 0xff0000) >> 16) * 100 +
-                toDecimal((medium & 0xff00) >> 8) * 10 +
-                toDecimal(medium & 0xff);
+        try {
+            return toDecimal((medium & 0xff0000) >> 16) * 100 +
+                    toDecimal((medium & 0xff00) >> 8) * 10 +
+                    toDecimal(medium & 0xff);
+        } catch (IllegalCharacterException cause) {
+            throw new StacklessDecoderException("Invalid start-line: HTTP status-code must contain only 3 digits",
+                    cause);
+        }
+    }
+
+    private static void ensureStatusCodeLength(final int length) {
+        if (length != 3) {
+            throw new DecoderException("Invalid start-line: HTTP status-code must contain only 3 digits but found: " +
+                    length + " characters");
+        }
     }
 }
