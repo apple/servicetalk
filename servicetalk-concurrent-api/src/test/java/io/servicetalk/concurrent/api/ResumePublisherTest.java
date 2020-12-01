@@ -54,7 +54,7 @@ public final class ResumePublisherTest {
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onNext(1);
         second.onComplete();
         assertThat(subscriber.takeOnNext(), is(1));
@@ -67,7 +67,7 @@ public final class ResumePublisherTest {
         subscriber.awaitSubscription().request(1);
         first.onError(new DeliberateException());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -81,7 +81,7 @@ public final class ResumePublisherTest {
         subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -93,7 +93,7 @@ public final class ResumePublisherTest {
         second.onSubscribe(subscription);
         assertTrue(second.isSubscribed());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
     }
@@ -105,7 +105,7 @@ public final class ResumePublisherTest {
         first.onNext(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(), is(1));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onNext(2);
         second.onComplete();
         assertThat(subscriber.takeOnNext(), is(2));
@@ -118,7 +118,7 @@ public final class ResumePublisherTest {
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onNext(1);
         second.onComplete();
         assertThat(subscriber.takeOnNext(), is(1));

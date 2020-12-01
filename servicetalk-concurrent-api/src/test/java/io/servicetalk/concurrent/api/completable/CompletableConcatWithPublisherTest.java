@@ -32,6 +32,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -61,7 +62,7 @@ public class CompletableConcatWithPublisherTest {
     @Test
     public void bothCompletion() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested.", subscription.requested(), is(1L));
         next.onNext(1);
@@ -73,7 +74,7 @@ public class CompletableConcatWithPublisherTest {
     @Test
     public void sourceCompletionNextError() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -147,7 +148,7 @@ public class CompletableConcatWithPublisherTest {
 
     @Test
     public void cancelSource() {
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertTrue("Original completable not cancelled.", cancellable.isCancelled());
         assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
@@ -157,7 +158,7 @@ public class CompletableConcatWithPublisherTest {
 
     @Test
     public void cancelSourcePostRequest() {
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
         assertTrue("Original completable not cancelled.", cancellable.isCancelled());
@@ -167,7 +168,7 @@ public class CompletableConcatWithPublisherTest {
     @Test
     public void cancelNext() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertFalse("Original completable cancelled unexpectedly.", cancellable.isCancelled());
         assertTrue("Next source not cancelled.", subscription.isCancelled());

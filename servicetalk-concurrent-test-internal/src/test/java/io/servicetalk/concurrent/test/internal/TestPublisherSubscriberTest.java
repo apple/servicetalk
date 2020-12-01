@@ -26,8 +26,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -39,7 +39,7 @@ public class TestPublisherSubscriberTest {
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
         doOnSubscribe(subscriber);
         assertThat(subscriber.pollAllOnNext(), is(empty()));
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
     }
 
     @Test

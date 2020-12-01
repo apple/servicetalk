@@ -89,7 +89,7 @@ public class SingleToPublisherTest {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.awaitSubscription();
         assertThat(verifier.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(verifier.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(verifier.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

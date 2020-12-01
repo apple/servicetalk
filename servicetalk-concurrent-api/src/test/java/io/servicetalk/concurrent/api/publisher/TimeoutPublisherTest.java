@@ -95,7 +95,7 @@ public class TimeoutPublisherTest {
 
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         publisher.onComplete();
         subscriber.awaitOnComplete();
 
@@ -109,7 +109,7 @@ public class TimeoutPublisherTest {
 
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
         publisher.onComplete();
@@ -125,7 +125,7 @@ public class TimeoutPublisherTest {
 
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
 
@@ -139,7 +139,7 @@ public class TimeoutPublisherTest {
 
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
         publisher.onError(DELIBERATE_EXCEPTION);
@@ -176,7 +176,7 @@ public class TimeoutPublisherTest {
 
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         publisher.onNext(1, 2, 3);
         assertThat(subscriber.takeOnNext(3), contains(1, 2, 3));
 

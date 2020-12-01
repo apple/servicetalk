@@ -111,7 +111,7 @@ public class CompletableMergeWithPublisherTest {
         assertTrue(subscription.isCancelled());
         completable.verifyCancelled();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -126,7 +126,7 @@ public class CompletableMergeWithPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains("one", "two"));
         assertTrue(subscription.isCancelled());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -139,7 +139,7 @@ public class CompletableMergeWithPublisherTest {
         subscriber.awaitSubscription().cancel();
         assertThat(subscriber.takeOnNext(2), contains("one", "two"));
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         completable.verifyCancelled();
     }
 

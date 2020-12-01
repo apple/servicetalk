@@ -23,22 +23,21 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link Subscriber} that enqueues {@link #onNext(Object)} and terminal signals while providing blocking methods
@@ -62,8 +61,8 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     private static final Object NULL_ON_NEXT = new Object();
     private final AtomicLong outstandingDemand;
     private final BlockingQueue<Object> items = new LinkedBlockingQueue<>();
-    private final CountDownLatch onTerminalLatch = new CountDownLatch(1);
     private final CountDownLatch onSubscribeLatch = new CountDownLatch(1);
+    private final CountDownLatch onTerminalLatch = new CountDownLatch(1);
     @Nullable
     private TerminalNotification onTerminal;
     @Nullable
@@ -151,6 +150,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     public void onError(final Throwable t) {
         verifyOnSubscribedAndNoTerminal("onError", t, true);
         onTerminal = error(t);
+        items.add(onTerminal);
         onTerminalLatch.countDown();
     }
 
@@ -158,6 +158,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     public void onComplete() {
         verifyOnSubscribedAndNoTerminal("onComplete", null, false);
         onTerminal = complete();
+        items.add(onTerminal);
         onTerminalLatch.countDown();
     }
 
@@ -189,6 +190,35 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     }
 
     /**
+     * Block until {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
+     *
+     * @return The {@link Subscription} from {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public Subscription awaitSubscriptionInterruptible() throws InterruptedException {
+        onSubscribeLatch.await();
+        assert subscription != null;
+        return subscription;
+    }
+
+    /**
+     * Block until {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return The {@link Subscription} from {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public Subscription awaitSubscriptionInterruptible(long timeout, TimeUnit unit) throws InterruptedException,
+            TimeoutException {
+        if (!onSubscribeLatch.await(timeout, unit)) {
+            throwTimeoutException(timeout, unit);
+        }
+        assert subscription != null;
+        return subscription;
+    }
+
+    /**
      * Blocks until the next {@link #onNext(Object)} method invocation.
      *
      * @return item delivered to {@link #onNext(Object)}.
@@ -197,6 +227,17 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     public T takeOnNext() {
         Object item = takeUninterruptibly(items);
         return unwrapNull(item);
+    }
+
+    /**
+     * Blocks until the next {@link #onNext(Object)} method invocation.
+     *
+     * @return item delivered to {@link #onNext(Object)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    @Nullable
+    public T takeOnNextInterruptible() throws InterruptedException {
+        return unwrapNull(items.take());
     }
 
     /**
@@ -231,14 +272,18 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     }
 
     /**
-     * Consume all currently available {@link #onNext(Object)} signals.
+     * Blocks until {@code n} {@link #onNext(Object)} method invocations.
      *
-     * @return {@link List} containing all currently available {@link #onNext(Object)} signals.
+     * @param n The number of {@link #onNext(Object)} to consume.
+     * @return A {@link List} containing {@code n} {@link #onNext(Object)} signals.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
      */
-    public List<T> pollAllOnNext() {
-        List<Object> consumedItems = new ArrayList<>();
-        items.drainTo(consumedItems);
-        return consumedItems.stream().map((Function<Object, T>) TestPublisherSubscriber::unwrapNull).collect(toList());
+    public List<T> takeOnNextInterruptible(final int n) throws InterruptedException {
+        List<T> list = new ArrayList<>(n);
+        for (int i = 0; i < n; ++i) {
+            list.add(unwrapNull(items.take()));
+        }
+        return list;
     }
 
     /**
@@ -247,11 +292,116 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      * @param timeout The amount of time to wait.
      * @param unit The units of {@code timeout}.
      * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred.
+     * @throws TimeoutException if a timeout occurs while waiting.
      */
     @Nullable
-    public Optional<T> pollOnNext(long timeout, TimeUnit unit) {
+    public T takeOnNext(long timeout, TimeUnit unit) throws TimeoutException {
         Object item = pollUninterruptibly(items, timeout, unit);
-        return item == null ? null : ofNullable(unwrapNull(item));
+        if (item == null) {
+            throwTimeoutException(timeout, unit);
+        }
+        return unwrapNull(item);
+    }
+
+    /**
+     * Blocks for at most {@code timeout} time until the next {@link #onNext(Object)} method invocation.
+     *
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    @Nullable
+    public T takeOnNextInterruptible(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+        Object item = items.poll(timeout, unit);
+        if (item == null) {
+            throwTimeoutException(timeout, unit);
+        }
+        return unwrapNull(item);
+    }
+
+    /**
+     * Blocks until {@code n} {@link #onNext(Object)} method invocations.
+     *
+     * @param n The number of {@link #onNext(Object)} to consume.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return A {@link List} containing {@code n} {@link #onNext(Object)} signals.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public List<T> takeOnNextInterruptible(final int n, final long timeout, final TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        List<T> list = new ArrayList<>(n);
+        final long startTime = nanoTime();
+        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
+        long waitTime = timeout;
+        for (int i = 0; i < n; ++i) {
+            Object next = items.poll(waitTime, NANOSECONDS);
+            if (next == null) {
+                throw new TimeoutException("timeout after: " + timeout + " " + unit +
+                        ". pending signals: " + list);
+            }
+            list.add(unwrapNull(next));
+            waitTime = timeoutNanos - (nanoTime() - startTime);
+        }
+        return list;
+    }
+
+    /**
+     * Consume all currently available {@link #onNext(Object)} signals.
+     *
+     * @return {@link List} containing all currently available {@link #onNext(Object)} signals.
+     */
+    public List<T> pollAllOnNext() {
+        List<T> filteredItems = new ArrayList<>();
+        Object item;
+        while ((item = items.peek()) != null) {
+            if (item instanceof TerminalNotification) {
+                break;
+            }
+            item = items.poll();
+            assert item != null;
+            filteredItems.add(unwrapNull(item));
+        }
+        return filteredItems;
+    }
+
+    /**
+     * Blocks for at most {@code timeout} time until the next {@link #onNext(Object)} method invocation.
+     *
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred or a terminal signal
+     * has been received.
+     */
+    @Nullable
+    public Supplier<T> pollOnNext(long timeout, TimeUnit unit) {
+        return pollOnNextFilter(pollUninterruptibly(items, timeout, unit));
+    }
+
+    /**
+     * Blocks for at most {@code timeout} time until the next {@link #onNext(Object)} method invocation.
+     *
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred or a terminal signal
+     * has been received.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    @Nullable
+    public Supplier<T> pollOnNextInterruptible(long timeout, TimeUnit unit) throws InterruptedException {
+        return pollOnNextFilter(items.poll(timeout, unit));
+    }
+
+    @Nullable
+    private Supplier<T> pollOnNextFilter(@Nullable Object item) {
+        if (item instanceof TerminalNotification) {
+            items.add(item);
+            return null;
+        }
+        return pollWrapSupplier(item);
     }
 
     /**
@@ -277,13 +427,100 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         awaitUninterruptibly(onTerminalLatch);
         assert onTerminal != null;
         if (onTerminal == complete()) {
-            throw new IllegalStateException("wanted onError but Subscriber terminated with onComplete");
+            throw new IllegalStateException("expected onError, actual onComplete");
         }
-        assert onTerminal.cause() != null;
+        final Throwable cause = onTerminal.cause();
+        assert cause != null;
         if (verifyOnNextConsumed) {
             verifyAllOnNextProcessed();
         }
-        return onTerminal.cause();
+        return cause;
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onComplete()} and returns normally if
+     * {@link #onError(Throwable)}. This method will verify that all {@link #onNext(Object)} signals have been
+     * consumed.
+     *
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public Throwable takeOnErrorInterruptible() throws InterruptedException {
+        return takeOnErrorInterruptible(true);
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onComplete()} and returns normally if
+     * {@link #onError(Throwable)}. This method will verify that all {@link #onNext(Object)} signals have been
+     * consumed.
+     *
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public Throwable takeOnErrorInterruptible(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        return takeOnErrorInterruptible(true, timeout, unit);
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onComplete()} and returns normally if
+     * {@link #onError(Throwable)}.
+     * @param verifyOnNextConsumed {@code true} to verify that all {@link #onNext(Object)} signals have been consumed
+     * and throw if not. {@code false} to ignore if {@link #onNext(Object)} signals have been consumed or not.
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public Throwable takeOnErrorInterruptible(boolean verifyOnNextConsumed) throws InterruptedException {
+        if (verifyOnNextConsumed) {
+            return takeOnErrorAssertConditions(items.take(), true);
+        }
+        onTerminalLatch.await();
+        assert onTerminal != null;
+        return takeOnErrorAssertConditions(onTerminal, false);
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onComplete()} and returns normally if
+     * {@link #onError(Throwable)}.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @param verifyOnNextConsumed {@code true} to verify that all {@link #onNext(Object)} signals have been consumed
+     * and throw if not. {@code false} to ignore if {@link #onNext(Object)} signals have been consumed or not.
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public Throwable takeOnErrorInterruptible(boolean verifyOnNextConsumed, long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        if (verifyOnNextConsumed) {
+            Object item = items.poll(timeout, unit);
+            if (item == null) {
+                throwTimeoutException(timeout, unit);
+            }
+            return takeOnErrorAssertConditions(item, true);
+        }
+        if (!onTerminalLatch.await(timeout, unit)) {
+            throwTimeoutException(timeout, unit);
+        }
+        assert onTerminal != null;
+        return takeOnErrorAssertConditions(onTerminal, false);
+    }
+
+    private Throwable takeOnErrorAssertConditions(Object item, boolean verifyOnNextConsumed) {
+        if (item == complete()) {
+            throw new IllegalStateException("expected onError, actual onComplete");
+        } else if (!(item instanceof TerminalNotification)) {
+            throw new IllegalStateException("expected onError, actual onNext: " + item);
+        }
+        final Throwable cause = ((TerminalNotification) item).cause();
+        assert cause != null;
+        if (verifyOnNextConsumed) {
+            verifyAllOnNextProcessed();
+        }
+        return cause;
     }
 
     /**
@@ -305,9 +542,87 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         awaitUninterruptibly(onTerminalLatch);
         assert onTerminal != null;
         if (onTerminal != complete()) {
-            throw new IllegalStateException("wanted onComplete but Subscriber terminated with onError",
-                    onTerminal.cause());
+            throw new IllegalStateException("expected onComplete, actual onError", onTerminal.cause());
         }
+        if (verifyOnNextConsumed) {
+            verifyAllOnNextProcessed();
+        }
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onComplete()}. This method will verify that all {@link #onNext(Object)} signals have been consumed.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public void takeOnCompleteInterruptible() throws InterruptedException {
+        takeOnCompleteInterruptible(true);
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onComplete()}. This method will verify that all {@link #onNext(Object)} signals have been consumed.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public void takeOnCompleteInterruptible(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        takeOnCompleteInterruptible(true, timeout, unit);
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onComplete()}. This method will verify that all {@link #onNext(Object)} signals have been consumed.
+     * @param verifyOnNextConsumed {@code true} to verify that all {@link #onNext(Object)} signals have been consumed
+     * and throw if not. {@code false} to ignore if {@link #onNext(Object)} signals have been consumed or not.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public void takeOnCompleteInterruptible(boolean verifyOnNextConsumed) throws InterruptedException {
+        if (verifyOnNextConsumed) {
+            takeOnCompleteInterruptible(items.take(), true);
+        } else {
+            onTerminalLatch.await();
+            assert onTerminal != null;
+            takeOnCompleteInterruptible(onTerminal, false);
+        }
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onComplete()}.
+     * @param verifyOnNextConsumed {@code true} to verify that all {@link #onNext(Object)} signals have been consumed
+     * and throw if not. {@code false} to ignore if {@link #onNext(Object)} signals have been consumed or not.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public void takeOnCompleteInterruptible(boolean verifyOnNextConsumed, long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        if (verifyOnNextConsumed) {
+            Object item = items.poll(timeout, unit);
+            if (item == null) {
+                throwTimeoutException(timeout, unit);
+            }
+            takeOnCompleteInterruptible(item, true);
+        } else {
+            if (!onTerminalLatch.await(timeout, unit)) {
+                throwTimeoutException(timeout, unit);
+            }
+            assert onTerminal != null;
+            takeOnCompleteInterruptible(onTerminal, false);
+        }
+    }
+
+    private void takeOnCompleteInterruptible(Object item, boolean verifyOnNextConsumed) {
+        if (!(item instanceof TerminalNotification)) {
+            throw new IllegalStateException("expected onComplete, actual onNext: " + item);
+        } else if (item != complete()) {
+            throw new IllegalStateException("expected onComplete, actual onError",
+                    ((TerminalNotification) item).cause());
+        }
+
         if (verifyOnNextConsumed) {
             verifyAllOnNextProcessed();
         }
@@ -318,23 +633,54 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      *
      * @param timeout The duration of time to wait.
      * @param unit The unit of time to apply to the duration.
-     * @return {@code true} if a terminal event has been received before the timeout duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onComplete()}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
      */
-    public boolean pollTerminal(long timeout, TimeUnit unit) {
-        return awaitUninterruptibly(onTerminalLatch, timeout, unit);
+    @Nullable
+    public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
+        return awaitUninterruptibly(onTerminalLatch, timeout, unit) ? wrapTerminal() : null;
+    }
+
+    /**
+     * Block for a terminal event.
+     *
+     * @param timeout The duration of time to wait.
+     * @param unit The unit of time to apply to the duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onComplete()}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    @Nullable
+    public Supplier<Throwable> pollTerminalInterruptible(long timeout, TimeUnit unit) throws InterruptedException {
+        return onTerminalLatch.await(timeout, unit) ? wrapTerminal() : null;
+    }
+
+    private Supplier<Throwable> wrapTerminal() {
+        assert onTerminal != null;
+        return onTerminal == complete() ? () -> null : onTerminal::cause;
     }
 
     private void verifyAllOnNextProcessed() {
-        if (!items.isEmpty()) {
+        if (!items.isEmpty() && !(items.peek() instanceof TerminalNotification)) {
             StringBuilder b = new StringBuilder();
             int itemCount = 0;
             Object item;
             while ((item = items.poll()) != null) {
+                if (item instanceof TerminalNotification) {
+                    continue;
+                }
                 ++itemCount;
                 b.append("[").append(TestPublisherSubscriber.<T>unwrapNull(item)).append("] ");
             }
             throw new IllegalStateException(itemCount + " onNext items were not processed: " + b.toString());
         }
+    }
+
+    @Nullable
+    private static <T> Supplier<T> pollWrapSupplier(@Nullable Object item) {
+        return item == null ? null : () -> unwrapNull(item);
     }
 
     private static Object wrapNull(@Nullable Object item) {
@@ -344,6 +690,12 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     @Nullable
     @SuppressWarnings("unchecked")
     private static <T> T unwrapNull(Object item) {
+        if (item instanceof TerminalNotification) {
+            if (item == complete()) {
+                throw new IllegalStateException("expecting onNext, actual onComplete");
+            }
+            throw new IllegalStateException("expecting onNext, actual onError", ((TerminalNotification) item).cause());
+        }
         return item == NULL_ON_NEXT ? null : (T) item;
     }
 
@@ -366,7 +718,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     }
 
     private static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
+        final long startTime = nanoTime();
         final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
         long waitTime = timeoutNanos;
         boolean interrupted = false;
@@ -377,7 +729,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                 } catch (InterruptedException e) {
                     interrupted = true;
                 }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
+                waitTime = timeoutNanos - (nanoTime() - startTime);
                 if (waitTime <= 0) {
                     return true;
                 }
@@ -408,7 +760,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
 
     @Nullable
     private static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
+        final long startTime = nanoTime();
         final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
         long waitTime = timeout;
         boolean interrupted = false;
@@ -419,7 +771,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                 } catch (InterruptedException e) {
                     interrupted = true;
                 }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
+                waitTime = timeoutNanos - (nanoTime() - startTime);
                 if (waitTime <= 0) {
                     return null;
                 }
@@ -429,5 +781,9 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private static void throwTimeoutException(long timeout, TimeUnit unit) throws TimeoutException {
+        throw new TimeoutException("timeout after: " + timeout + " " + unit);
     }
 }

@@ -40,6 +40,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,7 +111,7 @@ public class RetryWhenTest {
     @Test
     public void testRetryCount() {
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         DeliberateException fatal = new DeliberateException();
         retrySignal.onError(fatal); // stop retry
         assertThat(subscriberRule.awaitOnError(), is(fatal));
@@ -121,7 +122,7 @@ public class RetryWhenTest {
     @Test
     public void testTwoError() {
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         source.verifyListenCalled();
@@ -136,7 +137,7 @@ public class RetryWhenTest {
     public void testMaxRetries() {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         source.verifyListenCalled().onError(DELIBERATE_EXCEPTION);
         DeliberateException fatal = new DeliberateException();

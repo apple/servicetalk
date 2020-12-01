@@ -39,6 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -111,7 +112,7 @@ public class RepeatWhenTest {
         assertTrue(source.isSubscribed());
         source.onNext(3);
         assertThat(subscriber.takeOnNext(), is(3));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -121,7 +122,7 @@ public class RepeatWhenTest {
         source.onNext(1, 2);
         source.onComplete();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRepeat).apply(1);
         repeatSignal.onComplete(); // trigger repeat
         assertTrue(source.isSubscribed());
@@ -142,7 +143,7 @@ public class RepeatWhenTest {
         source.onComplete();
         repeatSignal.onComplete(); // trigger repeat
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRepeat).apply(1);
         assertTrue(source.isSubscribed());
         source.onComplete();

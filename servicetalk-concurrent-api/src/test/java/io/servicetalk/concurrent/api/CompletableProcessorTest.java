@@ -29,6 +29,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 
 public class CompletableProcessorTest {
@@ -55,7 +56,7 @@ public class CompletableProcessorTest {
     public void testCompleteAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
-        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         processor.onComplete();
         rule.awaitOnComplete();
     }
@@ -64,7 +65,7 @@ public class CompletableProcessorTest {
     public void testErrorAfterListen() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
-        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         processor.onError(DELIBERATE_EXCEPTION);
         assertThat(rule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -91,12 +92,12 @@ public class CompletableProcessorTest {
     public void cancelRemovesListenerAndStillAllowsOtherListenersToBeNotified() {
         CompletableProcessor processor = new CompletableProcessor();
         toSource(processor).subscribe(rule);
-        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         toSource(processor).subscribe(rule2);
-        assertThat(rule2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(rule2.pollTerminal(10, MILLISECONDS), is(nullValue()));
         rule.awaitSubscription().cancel();
         processor.onComplete();
-        assertThat(rule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
         rule2.awaitOnComplete();
     }
 

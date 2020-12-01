@@ -46,6 +46,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -153,7 +154,7 @@ public class NettyServerContextTest {
         channelSetCloseAsyncGracefulCompletable.verifyListenNotCalled();
 
         toSource(fixture.onClose()).subscribe(subscriberRule);
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         channelSetCloseAsyncCompletable.onComplete();
         subscriberRule.awaitOnComplete();
@@ -174,7 +175,7 @@ public class NettyServerContextTest {
         channelSetCloseAsyncCompletable.verifyListenNotCalled();
 
         toSource(fixture.onClose()).subscribe(subscriberRule);
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         channelSetCloseAsyncGracefulCompletable.onComplete();
         subscriberRule.awaitOnComplete();
@@ -203,7 +204,7 @@ public class NettyServerContextTest {
         channelSetCloseAsyncGracefulCompletable.verifyListenNotCalled();
 
         toSource(fixture.onClose()).subscribe(subscriberRule);
-        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriberRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         channelSetCloseAsyncCompletable.onComplete();
         subscriberRule.awaitOnComplete();

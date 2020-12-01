@@ -25,6 +25,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class IterableMergeCompletableTest {
     private final MergeCompletableTest.CompletableHolder collectionHolder =
@@ -54,7 +55,7 @@ public class IterableMergeCompletableTest {
     public void testCollectionCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         collectionHolder.init(2).listen(subscriber).complete(1, 2);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         collectionHolder.complete(0);
         subscriber.awaitOnComplete();
     }
@@ -85,7 +86,7 @@ public class IterableMergeCompletableTest {
     public void testIterableCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(2).listen(subscriber).complete(1, 2);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         iterableHolder.complete(0);
         subscriber.awaitOnComplete();
     }

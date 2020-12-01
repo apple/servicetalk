@@ -123,7 +123,7 @@ public class PublisherGroupByTest {
         assertThat(subscriber.takeOnNext(), is(Boolean.FALSE));
         source.onNext(2);
         subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(2));
         assertThat(subscriber.takeOnNext(), is(Boolean.TRUE));
@@ -142,7 +142,7 @@ public class PublisherGroupByTest {
         assertThat(subscriber.takeOnNext(), is(Boolean.FALSE));
         source.onNext(2);
         subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onNext(3);
         assertThat(groupSubs.get(0).takeOnNext(), is(3));
@@ -166,11 +166,11 @@ public class PublisherGroupByTest {
         source.onNext(2);
         source.onNext(3);
         subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onComplete();
         groupSubs.get(0).awaitSubscription();
-        assertThat(groupSubs.get(0).pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(groupSubs.get(0).pollTerminal(10, MILLISECONDS), is(nullValue()));
         groupSubs.get(0).awaitSubscription().request(1);
         assertThat(groupSubs.get(0).takeOnNext(), is(3));
         subscriber.awaitSubscription().request(1);
@@ -195,11 +195,11 @@ public class PublisherGroupByTest {
         source.onNext(2);
         source.onNext(3);
         subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Unexpected group subscribers.", groupSubs, hasSize(1));
         source.onError(DELIBERATE_EXCEPTION);
         groupSubs.get(0).awaitSubscription();
-        assertThat(groupSubs.get(0).pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(groupSubs.get(0).pollTerminal(10, MILLISECONDS), is(nullValue()));
         groupSubs.get(0).awaitSubscription().request(1);
         assertThat(groupSubs.get(0).takeOnNext(), is(3));
         subscriber.awaitSubscription().request(1);
@@ -267,7 +267,7 @@ public class PublisherGroupByTest {
         assertThat(groupSubs.get(1).awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
         subscriber.awaitSubscription();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -307,7 +307,7 @@ public class PublisherGroupByTest {
             groupSubRef.set(groupSub);
             groupSub.awaitSubscription();
             assertThat(groupSub.pollOnNext(10, MILLISECONDS), is(nullValue()));
-            assertThat(groupSub.pollTerminal(10, MILLISECONDS), is(false));
+            assertThat(groupSub.pollTerminal(10, MILLISECONDS), is(nullValue()));
             latch2.countDown();
 
             // writerThread
@@ -344,7 +344,7 @@ public class PublisherGroupByTest {
         sub.awaitSubscription().request(requestFromGroupOnSubscribe);
         assertThat(sub.takeOnNext(), is(1));
         sub.awaitSubscription().cancel();
-        assertThat(sub.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(sub.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

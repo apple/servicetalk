@@ -121,7 +121,7 @@ public final class SingleFlatMapPublisherTest {
         publisher.onSubscribe(subscription);
         assertTrue(subscription.isCancelled());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

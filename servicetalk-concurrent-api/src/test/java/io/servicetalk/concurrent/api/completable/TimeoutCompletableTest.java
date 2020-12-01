@@ -43,6 +43,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -146,7 +147,7 @@ public class TimeoutCompletableTest {
         toSource(source.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(listener);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
-            assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
+            assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         }
     }
 

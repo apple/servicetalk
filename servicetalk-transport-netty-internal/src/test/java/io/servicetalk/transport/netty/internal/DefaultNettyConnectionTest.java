@@ -143,7 +143,7 @@ public class DefaultNettyConnectionTest {
     @Test
     public void testConcurrentWritePubAndPub() {
         toSource(conn.write(Publisher.never())).subscribe(writeListener);
-        assertThat(writeListener.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(writeListener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         toSource(conn.write(Publisher.never())).subscribe(secondWriteListener);
         assertThat(secondWriteListener.awaitOnError(), instanceOf(IllegalStateException.class));
     }
@@ -225,7 +225,7 @@ public class DefaultNettyConnectionTest {
         Buffer expected = allocator.fromAscii("data");
         channel.writeInbound(expected.duplicate());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.takeOnNext(), is(expected));
         subscriber.awaitOnComplete();

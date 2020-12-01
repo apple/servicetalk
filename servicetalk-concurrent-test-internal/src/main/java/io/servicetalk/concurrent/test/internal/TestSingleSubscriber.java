@@ -20,7 +20,12 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A {@link Subscriber} that enqueues signals and provides blocking methods to consume them.
@@ -61,10 +66,33 @@ public final class TestSingleSubscriber<T> implements Subscriber<T> {
     /**
      * Block until {@link #onSubscribe(Cancellable)}.
      *
-     * @return The {@link PublisherSource.Subscription} from {@link #onSubscribe(Cancellable)}.
+     * @return The {@link Cancellable} from {@link #onSubscribe(Cancellable)}.
      */
     public Cancellable awaitSubscription() {
         return publisherSubscriber.awaitSubscription();
+    }
+
+    /**
+     * Block until {@link Subscriber#onSubscribe(Cancellable)}.
+     *
+     * @return The {@link Cancellable} from {@link #onSubscribe(Cancellable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public Cancellable awaitSubscriptionInterruptible() throws InterruptedException {
+        return publisherSubscriber.awaitSubscriptionInterruptible();
+    }
+
+    /**
+     * Block until {@link Subscriber#onSubscribe(Cancellable)}.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return The {@link Cancellable} from {@link #onSubscribe(Cancellable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public Cancellable awaitSubscriptionInterruptible(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        return publisherSubscriber.awaitSubscriptionInterruptible(timeout, unit);
     }
 
     /**
@@ -75,6 +103,31 @@ public final class TestSingleSubscriber<T> implements Subscriber<T> {
      */
     public Throwable awaitOnError() {
         return publisherSubscriber.awaitOnError();
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onSuccess(Object)} and returns normally if
+     * {@link #onError(Throwable)}.
+     *
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    public Throwable takeOnErrorInterruptible() throws InterruptedException {
+        return publisherSubscriber.takeOnErrorInterruptible();
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onSuccess(Object)} and returns normally if
+     * {@link #onError(Throwable)}.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return the exception received by {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    public Throwable takeOnErrorInterruptible(long timeout, TimeUnit unit)
+            throws InterruptedException, TimeoutException {
+        return publisherSubscriber.takeOnErrorInterruptible(timeout, unit);
     }
 
     /**
@@ -91,13 +144,63 @@ public final class TestSingleSubscriber<T> implements Subscriber<T> {
     }
 
     /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onSuccess(Object)}.
+     *
+     * @return The value delivered to {@link #onSuccess(Object)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    @Nullable
+    public T takeOnSuccessInterruptible() throws InterruptedException {
+        final T next = publisherSubscriber.takeOnNextInterruptible();
+        publisherSubscriber.takeOnCompleteInterruptible();
+        return next;
+    }
+
+    /**
+     * Block until a terminal signal is received, throws if {@link #onError(Throwable)} and returns normally if
+     * {@link #onSuccess(Object)}.
+     * @param timeout The amount of time to wait.
+     * @param unit The units of {@code timeout}.
+     * @return The value delivered to {@link #onSuccess(Object)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     * @throws TimeoutException if a timeout occurs while waiting.
+     */
+    @Nullable
+    public T takeOnSuccessInterruptible(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+        final long startTime = nanoTime();
+        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
+        final T next = publisherSubscriber.takeOnNextInterruptible(timeout, unit);
+        publisherSubscriber.takeOnCompleteInterruptible(timeoutNanos - (nanoTime() - startTime), NANOSECONDS);
+        return next;
+    }
+
+    /**
      * Block for a terminal event.
      *
      * @param timeout The duration of time to wait.
      * @param unit The unit of time to apply to the duration.
-     * @return {@code true} if a terminal event has been received before the timeout duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onSuccess(Object)}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
      */
-    public boolean pollTerminal(long timeout, TimeUnit unit) {
+    @Nullable
+    public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
         return publisherSubscriber.pollTerminal(timeout, unit);
+    }
+
+    /**
+     * Block for a terminal event.
+     *
+     * @param timeout The duration of time to wait.
+     * @param unit The unit of time to apply to the duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onSuccess(Object)}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
+     * @throws InterruptedException if the calling thread is interrupted while waiting for signals.
+     */
+    @Nullable
+    public Supplier<Throwable> pollTerminalInterruptible(long timeout, TimeUnit unit) throws InterruptedException {
+        return publisherSubscriber.pollTerminalInterruptible(timeout, unit);
     }
 }

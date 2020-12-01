@@ -195,7 +195,7 @@ public class PublisherFlatMapMergeTest {
         publisher.onNext(1);
         publisher.onComplete();
         assertThat(subscriber.pollAllOnNext(), is(empty()));
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         mappedPublisher.onNext(2);
         Integer nextItem = subscriber.takeOnNext();
@@ -219,7 +219,7 @@ public class PublisherFlatMapMergeTest {
         assertEquals(2, nextItem.intValue());
 
         mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         publisher.onComplete();
         subscriber.awaitOnComplete();
@@ -334,7 +334,7 @@ public class PublisherFlatMapMergeTest {
         }
         // Since FlatMap needs to track the requestN amount leased to mapped Publishers, the cancel state is
         // aggressive in suppressing onNext signals (tck tests fail if signals are delivered after cancel).
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -462,7 +462,7 @@ public class PublisherFlatMapMergeTest {
         assertThat(subscriber.pollAllOnNext(), contains(6, 7, 8));
 
         first.mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         verifyCumulativeDemand(upstreamSubscription, 4);
 
@@ -475,7 +475,7 @@ public class PublisherFlatMapMergeTest {
 
         // terminate the Publisher, verify mapped items still emitted and termination delayed.
         publisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         // terminate the outstanding mapped publisher and verify the Publisher terminates
         third.mappedPublisher.onComplete();
@@ -547,7 +547,7 @@ public class PublisherFlatMapMergeTest {
         verifyCumulativeDemand(upstreamSubscription, 2);
 
         publisher.onNext(1, 2);
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
         publisher.onComplete();
         verifySuppressed(subscriber.awaitOnError(), DELIBERATE_EXCEPTION);
     }
@@ -966,7 +966,7 @@ public class PublisherFlatMapMergeTest {
 
         third.mappedPublisher.onComplete();
         first.mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         publisher.onComplete();
         subscriber.awaitOnComplete();
@@ -1008,7 +1008,7 @@ public class PublisherFlatMapMergeTest {
         assertThat(subscriber.pollAllOnNext(), contains(1, 2, 3, 4));
         first.mappedPublisher.onComplete();
         second.mappedPublisher.onComplete();
-        assertFalse(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
 
         publisher.onComplete();
         subscriber.awaitOnComplete();

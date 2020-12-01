@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class PublisherConcatWithCompletableTest {
 
@@ -40,7 +41,7 @@ public class PublisherConcatWithCompletableTest {
     public PublisherConcatWithCompletableTest() {
         toSource(source.concat(completable)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Next source subscribed before termination.", completable.isSubscribed(), is(false));
     }
 
@@ -51,7 +52,7 @@ public class PublisherConcatWithCompletableTest {
         source.onComplete();
         assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(1));
         assertThat("Next source not subscribed.", completable.isSubscribed(), is(true));
-        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         completable.onComplete();
         subscriber.awaitOnComplete();
     }
@@ -72,7 +73,7 @@ public class PublisherConcatWithCompletableTest {
         source.onComplete();
         assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(1));
         assertThat("Next source not subscribed.", completable.isSubscribed(), is(true));
-        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat("Unexpected termination.", subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         completable.onError(DELIBERATE_EXCEPTION);
         verifySubscriberErrored();
     }

@@ -26,6 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -55,7 +56,7 @@ public final class ResumeSingleTest {
     @Test
     public void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onSuccess(1);
         assertThat(subscriber.awaitOnSuccess(), is(1));
     }
@@ -63,7 +64,7 @@ public final class ResumeSingleTest {
     @Test
     public void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -74,13 +75,13 @@ public final class ResumeSingleTest {
         TestCancellable cancellable = new TestCancellable();
         first.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
     public void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         TestCancellable firstCancellable = new TestCancellable();
         TestCancellable secondCancellable = new TestCancellable();

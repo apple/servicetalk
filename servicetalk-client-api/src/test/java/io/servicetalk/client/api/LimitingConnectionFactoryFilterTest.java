@@ -40,6 +40,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -101,7 +102,7 @@ public class LimitingConnectionFactoryFilterTest {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
         toSource(cf.newConnection("c1", null)).subscribe(connectlistener);
-        assertThat(connectlistener.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(connectlistener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         connectAndVerifyFailed(cf);
         connectlistener.awaitSubscription().cancel();
 

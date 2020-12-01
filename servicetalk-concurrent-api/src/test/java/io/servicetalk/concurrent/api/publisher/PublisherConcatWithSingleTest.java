@@ -43,7 +43,7 @@ public class PublisherConcatWithSingleTest {
     public PublisherConcatWithSingleTest() {
         toSource(source.concat(single)).subscribe(subscriber);
         source.onSubscribe(subscription);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Next source subscribed before termination.", single.isSubscribed(), is(false));
     }
 
@@ -105,7 +105,7 @@ public class PublisherConcatWithSingleTest {
         source.onComplete();
         assertThat("Unexpected items emitted.", subscriber.takeOnNext(), is(1L));
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         single.onError(DELIBERATE_EXCEPTION);
         verifySubscriberErrored();
     }
@@ -253,7 +253,7 @@ public class PublisherConcatWithSingleTest {
     private void completeSource() {
         source.onComplete();
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     private void emitOneItemFromSource() {

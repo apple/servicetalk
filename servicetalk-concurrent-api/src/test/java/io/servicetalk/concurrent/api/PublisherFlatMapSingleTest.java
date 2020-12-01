@@ -230,7 +230,7 @@ public class PublisherFlatMapSingleTest {
         subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -242,8 +242,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1);
         subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         single.onSuccess(4);
         assertThat(subscriber.takeOnNext(), is(4));
         source.onComplete();
@@ -258,8 +258,8 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1);
         subscriber.awaitSubscription().cancel();
         single.verifyCancelled();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         single.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -356,8 +356,8 @@ public class PublisherFlatMapSingleTest {
         subscriber.awaitSubscription().request(3);
         assertThat(subscription.requested(), is(2L));
         source.onNext(1); // Request no more than max concurrency.
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat(subscription.requested(), is(3L));
         source.onNext(1); // Request more with 1 single completion.
         assertThat(subscription.requested(), is(3L));
@@ -530,7 +530,7 @@ public class PublisherFlatMapSingleTest {
         nextItem = subscriber.takeOnNext();
         assertNotNull(nextItem);
         assertEquals(3, nextItem.intValue());
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
 
         source.onComplete();
         subscriber.awaitOnComplete();

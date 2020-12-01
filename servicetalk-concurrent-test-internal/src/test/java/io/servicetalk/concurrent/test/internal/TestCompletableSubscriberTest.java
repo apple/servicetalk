@@ -23,8 +23,9 @@ import org.junit.Test;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
@@ -33,7 +34,7 @@ public class TestCompletableSubscriberTest {
     public void onSubscribe() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         doOnSubscribe(subscriber);
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -49,7 +50,7 @@ public class TestCompletableSubscriberTest {
     private static void onSubscribeOnTerminal(boolean onComplete) {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         doOnSubscribe(subscriber);
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
         doTerminalSignal(subscriber, onComplete);
     }
 
