@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.test.StepVerifiers.create;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
@@ -53,30 +54,32 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testRequestAllValues() {
         InMemorySource source = newSource(5);
-        toSource(source.publisher()).subscribe(subscriber);
-        subscriber.awaitSubscription().request(source.values().length);
-        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
-        subscriber.awaitOnComplete();
+        create(source.publisher())
+                .expectNext(source.values())
+                .expectComplete()
+                .verify();
     }
 
     @Test
     public void testRequestInChunks() {
         InMemorySource source = newSource(10);
-        toSource(source.publisher()).subscribe(subscriber);
-        subscriber.awaitSubscription().request(2);
-        subscriber.awaitSubscription().request(2);
-        subscriber.awaitSubscription().request(6);
-        assertThat(subscriber.takeOnNext(source.values().length), contains(source.values()));
+        create(source.publisher())
+                .thenRequest(2)
+                .thenRequest(2)
+                .thenRequest(6)
+                .expectNext(source.values())
+                .expectComplete()
+                .verify();
     }
 
     @Test
     public void testNullAsValue() {
         String[] values = {"Hello", null};
         InMemorySource source = newPublisher(immediate(), values);
-        toSource(source.publisher()).subscribe(subscriber);
-        subscriber.awaitSubscription().request(2);
-        assertThat(subscriber.takeOnNext(2), contains("Hello", null));
-        subscriber.awaitOnComplete();
+        create(source.publisher())
+                .expectNext(source.values())
+                .expectComplete()
+                .verify();
     }
 
     @Test
