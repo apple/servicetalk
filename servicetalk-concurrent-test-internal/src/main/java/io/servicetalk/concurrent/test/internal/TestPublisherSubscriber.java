@@ -29,7 +29,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -67,10 +66,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     private TerminalNotification onTerminal;
     @Nullable
     private Subscription subscription;
-    @Nullable
-    private Consumer<T> onNextConsumer;
-    @Nullable
-    private Consumer<Subscription> onSubscribeConsumer;
 
     /**
      * Create a new instance.
@@ -81,23 +76,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
 
     TestPublisherSubscriber(long initialDemand) {
         outstandingDemand = new AtomicLong(initialDemand);
-    }
-
-    /**
-     * Set a {@link Consumer} that is invoked in {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
-     * @param onSubscribeConsumer a {@link Consumer} that is invoked in
-     * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
-     */
-    public void onSubscribeConsumer(@Nullable Consumer<Subscription> onSubscribeConsumer) {
-        this.onSubscribeConsumer = onSubscribeConsumer;
-    }
-
-    /**
-     * Set a {@link Consumer} that is invoked in {@link #onNext(Object)}.
-     * @param onNextConsumer a {@link Consumer} that is invoked in {@link #onNext(Object)}.
-     */
-    public void onNextConsumer(@Nullable Consumer<T> onNextConsumer) {
-        this.onNextConsumer = onNextConsumer;
     }
 
     @Override
@@ -127,9 +105,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                 subscription.cancel();
             }
         };
-        if (onSubscribeConsumer != null) {
-            onSubscribeConsumer.accept(this.subscription);
-        }
         onSubscribeLatch.countDown();
     }
 
@@ -139,9 +114,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         if (outstandingDemand.decrementAndGet() < 0) {
             throw new IllegalStateException("Too many onNext signals relative to Subscription request(n). " +
                     "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.1");
-        }
-        if (onNextConsumer != null) {
-            onNextConsumer.accept(t);
         }
         items.add(wrapNull(t));
     }

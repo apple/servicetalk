@@ -34,24 +34,41 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class PublisherConcatWithSingleTest {
-    private final TestSubscription subscription = new TestSubscription();
-    private final TestCancellable cancellable = new TestCancellable();
-    private final TestPublisher<Long> source = new TestPublisher<>();
-    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber<>();
-    private final TestSingle<Long> single = new TestSingle<>();
+    private TestSubscription subscription;
+    private TestCancellable cancellable;
+    private TestPublisher<Long> source;
+    private TestPublisherSubscriber<Long> subscriber;
+    private TestSingle<Long> single;
 
     public PublisherConcatWithSingleTest() {
+        initState();
         toSource(source.concat(single)).subscribe(subscriber);
         source.onSubscribe(subscription);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat("Next source subscribed before termination.", single.isSubscribed(), is(false));
     }
 
+    private void initState() {
+        subscription = new TestSubscription();
+        cancellable = new TestCancellable();
+        source = new TestPublisher<>();
+        subscriber = new TestPublisherSubscriber<>();
+        single = new TestSingle<>();
+    }
+
+    private void initStateOnNextThrows() {
+        initState();
+        toSource(source.concat(single)
+                .beforeOnNext(n -> {
+                    throw DELIBERATE_EXCEPTION;
+                })
+        ).subscribe(subscriber);
+    }
+
     @Test
     public void subscriberDemandThenOnNextThrowsSendsOnError() {
-        subscriber.onNextConsumer(l -> {
-            throw DELIBERATE_EXCEPTION;
-        });
+        initStateOnNextThrows();
+        source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
         source.onSubscribe(subscription);
         source.onComplete();
@@ -61,9 +78,7 @@ public class PublisherConcatWithSingleTest {
 
     @Test
     public void subscriberOnNextThenDemandThrowsSendsOnError() {
-        subscriber.onNextConsumer(l -> {
-            throw DELIBERATE_EXCEPTION;
-        });
+        initStateOnNextThrows();
         source.onSubscribe(subscription);
         source.onComplete();
         single.onSuccess(1L);
