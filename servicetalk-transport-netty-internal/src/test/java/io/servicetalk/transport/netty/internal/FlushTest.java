@@ -88,7 +88,7 @@ public class FlushTest extends AbstractFlushTest {
         verify(channel).eventLoop();
         verifyZeroInteractions(channel);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         assertTrue(subscription.isCancelled());
         strategy.verifyWriteCancelled();

@@ -77,7 +77,7 @@ public abstract class AbstractWhenRequestTest {
         doRequest(publisher, onRequest).subscribe(subscriber);
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(onRequest).accept(10L);
     }
 

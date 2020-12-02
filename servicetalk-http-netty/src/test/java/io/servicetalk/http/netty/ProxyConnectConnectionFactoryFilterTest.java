@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -259,7 +260,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         subscribeToProxyConnectionFactory();
 
         Cancellable cancellable = subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat(connectionClose.isSubscribed(), is(false));
         cancellable.cancel();
         assertConnectPayloadConsumed(true);

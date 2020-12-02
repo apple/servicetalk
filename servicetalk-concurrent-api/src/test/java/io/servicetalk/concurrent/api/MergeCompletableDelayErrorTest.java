@@ -23,6 +23,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.copyOfRange;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -46,7 +47,7 @@ public class MergeCompletableDelayErrorTest {
     public void testCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(1, 2);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.complete(0);
         subscriber.awaitOnComplete();
     }
@@ -55,7 +56,7 @@ public class MergeCompletableDelayErrorTest {
     public void testFailFirstEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).fail(1);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.complete(0, 2);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -64,7 +65,7 @@ public class MergeCompletableDelayErrorTest {
     public void testFailLastEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(0, 2);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.fail(1);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -73,9 +74,9 @@ public class MergeCompletableDelayErrorTest {
     public void testFailMiddleEvent() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(0);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.fail(1);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.complete(2);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }

@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ConcatWithCompletableTest {
     @Rule
@@ -44,7 +45,7 @@ public class ConcatWithCompletableTest {
     public void concatWaitsForCompletableSuccess() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
-        assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         completable.onComplete();
         assertThat(listener.awaitOnSuccess(), is("foo"));
     }
@@ -53,7 +54,7 @@ public class ConcatWithCompletableTest {
     public void concatPropagatesCompletableFailure() {
         toSource(single.concat(completable)).subscribe(listener);
         single.onSuccess("foo");
-        assertThat(listener.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(listener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         completable.onError(DELIBERATE_EXCEPTION);
         assertThat(listener.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }

@@ -42,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -137,7 +138,7 @@ public class RetryWhenTest {
         assertTrue(source.isSubscribed());
         source.onNext(3);
         assertThat(subscriber.takeOnNext(), is(3));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -146,7 +147,7 @@ public class RetryWhenTest {
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         assertTrue(source.isSubscribed());
@@ -166,7 +167,7 @@ public class RetryWhenTest {
         source.onError(DELIBERATE_EXCEPTION);
         retrySignal.onComplete(); // trigger retry
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).apply(1, DELIBERATE_EXCEPTION);
         assertTrue(source.isSubscribed());
         source.onError(DELIBERATE_EXCEPTION);

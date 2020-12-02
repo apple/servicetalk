@@ -30,6 +30,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -90,7 +91,7 @@ public class RetryTest {
         assertTrue(source.isSubscribed());
         source.onNext(3);
         assertThat(subscriber.takeOnNext(), is(3));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -100,7 +101,7 @@ public class RetryTest {
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         assertTrue(source.isSubscribed());
         source.onNext(3);
@@ -118,7 +119,7 @@ public class RetryTest {
         source.onNext(1, 2);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         shouldRetryValue = false;
         DeliberateException fatal = new DeliberateException();

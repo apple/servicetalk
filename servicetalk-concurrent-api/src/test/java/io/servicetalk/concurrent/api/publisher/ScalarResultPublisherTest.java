@@ -26,6 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class ScalarResultPublisherTest {
@@ -56,7 +57,7 @@ public class ScalarResultPublisherTest {
     public void testNever() {
         toSource(Publisher.<String>never()).subscribe(subscriber);
         subscriber.awaitSubscription();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 }

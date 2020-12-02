@@ -35,6 +35,7 @@ import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.IsNull.nullValue;
 
 public class DefaultAutoRetryStrategyProviderTest {
     private static final RetryableConnectException RETRYABLE_EXCEPTION =
@@ -75,7 +76,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
     }
@@ -85,7 +86,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
@@ -121,7 +122,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
     }
@@ -131,7 +132,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         sdStatus.onError(UNKNOWN_HOST_EXCEPTION);
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
@@ -141,7 +142,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         sdStatus.onError(DELIBERATE_EXCEPTION);
         verifyRetryResultError(DELIBERATE_EXCEPTION);
     }
@@ -152,7 +153,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
     }
@@ -162,7 +163,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
-        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         sdStatus.onComplete();
         verifyRetryResultCompleted();
     }

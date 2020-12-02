@@ -123,7 +123,7 @@ public class MulticastPublisherTest {
         assertThat(subscriber1.takeOnNext(2), contains(1, 2));
         subscriber2.awaitSubscription();
         assertThat(subscriber2.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 public class TestCompletableTest {
@@ -67,7 +68,7 @@ public class TestCompletableTest {
         subscriber1.awaitOnComplete();
 
         source.subscribe(subscriber2);
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
         source.onComplete();
         subscriber2.awaitOnComplete();
     }
@@ -82,8 +83,8 @@ public class TestCompletableTest {
 
         source.subscribe(subscriber2);
 
-        assertThat(subscriber1.pollTerminal(10, MILLISECONDS), is(false));
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber1.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         source.onComplete();
         subscriber1.awaitOnComplete();

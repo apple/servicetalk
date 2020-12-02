@@ -28,7 +28,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
@@ -37,7 +37,7 @@ public class TestSingleSubscriberTest {
     public void onSubscribe() {
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         doOnSubscribe(subscriber);
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -53,7 +53,7 @@ public class TestSingleSubscriberTest {
     private static void onSubscribeOnTerminal(boolean onComplete) {
         TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
         doOnSubscribe(subscriber);
-        assertFalse(subscriber.pollTerminal(200, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(200, MILLISECONDS), is(nullValue()));
         doTerminalSignal(subscriber, onComplete);
     }
 

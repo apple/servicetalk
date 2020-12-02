@@ -122,7 +122,7 @@ public class PublisherConcatMapIterableTest {
                 (time, unit) -> { }, (time, unit) -> { }, () -> cancelled.set(true)));
         assertThat(subscriber.takeOnNext(), is("one"));
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertTrue(cancelled.get());
     }
@@ -160,7 +160,7 @@ public class PublisherConcatMapIterableTest {
         publisher.onNext(singletonList("one"));
         assertThat(subscriber.takeOnNext(), is("one"));
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         verifyTermination(success);
     }

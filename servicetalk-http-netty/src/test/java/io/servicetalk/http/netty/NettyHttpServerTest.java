@@ -80,6 +80,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.CombinableMatcher.either;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -350,7 +351,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
         closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
-        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         closeAsyncGracefully(serverContext(), 10, MILLISECONDS).toFuture().get();
 
@@ -371,7 +372,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
         closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
-        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(completableListenerRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         serverContext().closeAsync().toFuture().get();
 

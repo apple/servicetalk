@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,7 +79,7 @@ public class RetryTest {
     public void testTwoFailures() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         source.onError(DELIBERATE_EXCEPTION);
         verify(shouldRetry).test(2, DELIBERATE_EXCEPTION);
@@ -90,7 +91,7 @@ public class RetryTest {
     public void testMaxRetries() {
         shouldRetryValue = true;
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRetry).test(1, DELIBERATE_EXCEPTION);
         shouldRetryValue = false;
         DeliberateException fatal = new DeliberateException();
