@@ -60,7 +60,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ContentLengthTest extends AbstractNettyHttpServerTest {
+public class
+ContentLengthTest extends AbstractNettyHttpServerTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
 
@@ -167,7 +168,8 @@ public class ContentLengthTest extends AbstractNettyHttpServerTest {
     @Test
     public void shouldCalculateResponseContentLengthFromTransformedMultipleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().payloadBody("Hello", textSerializer())
-                .toStreamingResponse().transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),
+                .toStreamingResponse()
+                .transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),
                         textDeserializer(), textSerializer());
         setResponseContentLengthAndVerify(response, is("12"));
     }
