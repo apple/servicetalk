@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -42,8 +43,8 @@ final class GzipContentCodec extends AbstractZipContentCodec {
     }
 
     @Override
-    InflaterInputStream newInflaterInputStream(final InputStream in) {
-        return new InflaterInputStream(in);
+    InflaterInputStream newInflaterInputStream(final InputStream in) throws IOException {
+        return new GZIPInputStream(in, chunkSize);
     }
 
     @Override

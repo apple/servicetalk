@@ -15,9 +15,11 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
+
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
@@ -27,7 +29,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Nullable
     private final GrpcExecutionStrategy strategy;
 
-    private final GrpcMessageEncoding requestEncoding;
+    private final ContentCodec requestEncoding;
 
     /**
      * Creates a new instance.
@@ -38,7 +40,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
         this(path, (GrpcExecutionStrategy) null);
     }
 
-    protected DefaultGrpcClientMetadata(final String path, final GrpcMessageEncoding requestEncoding) {
+    protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
         this(path, null, requestEncoding);
     }
 
@@ -56,7 +58,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
 
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
-                                        final GrpcMessageEncoding requestEncoding) {
+                                        final ContentCodec requestEncoding) {
         super(path);
         this.strategy = strategy;
         this.requestEncoding = requestEncoding;
@@ -68,7 +70,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     }
 
     @Override
-    public GrpcMessageEncoding requestEncoding() {
+    public ContentCodec requestEncoding() {
         return requestEncoding;
     }
 }

@@ -93,7 +93,7 @@ public final class HeaderUtils {
 
     private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
-    public static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
+    private static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
 
     static {
         CHARSET_PATTERNS = unmodifiableMap(availableCharsets().entrySet().stream()
@@ -678,14 +678,14 @@ public final class HeaderUtils {
      * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
      * otherwise {@code null} is returned.
      *
-     * @param headers The request headers
-     * @param serverSupportedEncodings The supported encodings as configured for the server
+     * @param headers The headers to extract the relevant encoding info from.
+     * @param serverSupportedEncodings The server supported codings as configured.
      * @return The {@link ContentCodec} that satisfies both client and server needs,
      * null if none found or matched to {@link ContentCodings#identity()}
      */
     @Nullable
-    static ContentCodec negotiateAcceptedEncoding(
-            final HttpHeaders headers, final List<ContentCodec> serverSupportedEncodings) {
+    static ContentCodec negotiateAcceptedEncoding(final HttpHeaders headers,
+                                                  final List<ContentCodec> serverSupportedEncodings) {
 
         // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
@@ -726,7 +726,7 @@ public final class HeaderUtils {
         List<ContentCodec> knownEncodings = new ArrayList<>();
         List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
         for (CharSequence val : acceptEncodingValues) {
-            ContentCodec enc = encodingFor(allowedEncodings, val.toString().trim());
+            ContentCodec enc = encodingFor(allowedEncodings, val);
             if (enc != null) {
                 knownEncodings.add(enc);
             }

@@ -16,17 +16,19 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static java.util.Collections.unmodifiableSet;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements GrpcServiceContext {
@@ -34,15 +36,15 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     private final ConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
     private final GrpcProtocol protocol;
-    final Set<GrpcMessageEncoding> supportedEncodings;
+    private final List<ContentCodec> supportedMessageCodings;
 
     DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
-                              final Set<GrpcMessageEncoding> supportedEncodings) {
+                              final List<ContentCodec> supportedMessageCodings) {
         super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
-        this.supportedEncodings = unmodifiableSet(supportedEncodings);
+        this.supportedMessageCodings = unmodifiableList(new ArrayList<>(supportedMessageCodings));
     }
 
     @Override
@@ -67,8 +69,8 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
-    public Set<GrpcMessageEncoding> supportedEncodings() {
-        return supportedEncodings;
+    public List<ContentCodec> supportedMessageCodings() {
+        return supportedMessageCodings;
     }
 
     @Nullable

@@ -15,36 +15,43 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpSerializer;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * A provider for <a href="https://www.grpc.io">gRPC</a> serialization/deserialization.
  */
 public interface GrpcSerializationProvider {
 
-    Set<GrpcMessageEncoding> supportedEncodings();
+    /**
+     * Supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}.
+     * Content codings will be used to encoded and decode gRPC messages according to configuration of client and server.
+     *
+     * @return supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}
+     */
+    List<ContentCodec> supportedMessageCodings();
 
     /**
      * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.
      *
      * @param <T> The type of object to serialize.
-     * @param encoding {@link GrpcMessageEncoding} for the serializer.
+     * @param coding {@link ContentCodec} for the serializer.
      * @param type The {@link Class} type that the returned {@link HttpSerializer} can serialize.
      * @return a {@link HttpSerializer} for a {@link Class} of type {@link T}.
      */
-    <T> HttpSerializer<T> serializerFor(GrpcMessageEncoding encoding, Class<T> type);
+    <T> HttpSerializer<T> serializerFor(ContentCodec coding, Class<T> type);
 
     /**
      * Get a {@link HttpDeserializer} for a {@link Class} of type {@link T}.
      *
-     * @param messageEncoding {@link GrpcMessageEncoding} for the deserializer.
+     * @param coding {@link ContentCodec} for the deserializer.
      * @param type The {@link Class} type that the return value will deserialize.
      * @param <T> The type of object to deserialize.
      *
      * @return a {@link HttpDeserializer} for a {@link Class} of type {@link T}.
      */
-    <T> HttpDeserializer<T> deserializerFor(GrpcMessageEncoding messageEncoding, Class<T> type);
+    <T> HttpDeserializer<T> deserializerFor(ContentCodec coding, Class<T> type);
 }

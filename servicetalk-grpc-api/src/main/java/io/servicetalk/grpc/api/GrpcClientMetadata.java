@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.encoding.api.ContentCodec;
+
 import javax.annotation.Nullable;
 
 /**
@@ -33,11 +35,11 @@ public interface GrpcClientMetadata extends GrpcMetadata {
     GrpcExecutionStrategy strategy();
 
     /**
-     * {@link GrpcMessageEncoding} to use for the associated
+     * {@link ContentCodec} to use for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
      *
-     * @return {@link GrpcMessageEncoding} to use for the associated
+     * @return {@link ContentCodec} to use for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
      */
-    GrpcMessageEncoding requestEncoding();
+    ContentCodec requestEncoding();
 }

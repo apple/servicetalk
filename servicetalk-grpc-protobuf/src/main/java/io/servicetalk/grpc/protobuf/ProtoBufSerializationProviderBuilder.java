@@ -19,8 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.grpc.api.GrpcMessageEncoding;
-import io.servicetalk.grpc.api.GrpcMessageEncodings;
+import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcSerializationProvider;
 import io.servicetalk.grpc.api.MessageEncodingException;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -35,17 +34,17 @@ import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncodings.identity;
+import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * A builder for building a {@link GrpcSerializationProvider} that can serialize and deserialize
@@ -57,25 +56,27 @@ public final class ProtoBufSerializationProviderBuilder {
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence APPLICATION_GRPC_PROTO = newAsciiString("application/grpc+proto");
 
-    private final Map<Class, Map<GrpcMessageEncoding, HttpSerializer>> serializers = new HashMap<>();
-    private final Map<Class, Map<GrpcMessageEncoding, HttpDeserializer>> deserializers = new HashMap<>();
+    private final Map<Class<? extends MessageLite>, Parser<? extends MessageLite>> types = new HashMap<>();
+    private final Map<Class, Map<ContentCodec, HttpSerializer>> serializers = new HashMap<>();
+    private final Map<Class, Map<ContentCodec, HttpDeserializer>> deserializers = new HashMap<>();
 
-    private final Set<GrpcMessageEncoding> supportedEncodings = new HashSet<>(asList(identity()));
+    private List<ContentCodec> supportedCodings = singletonList(identity());
 
     /**
      * Set the supported message encodings for the serializers and deserializers.
      * The encodings will be advertised on the endpoint's headers and also used to validate each encoded message
-     * {@link GrpcMessageEncodings#identity()} is always supported regardless of the config passed
+     * {@link io.servicetalk.encoding.api.ContentCodings#identity()} is always supported regardless of the config passed
      *
-     * @param supportedEncodings the set of allowed encodings
+     * @param supportedCodings the set of allowed encodings
      * @param <T> Type of {@link MessageLite} to register.
      * @return {@code this}
      */
     public <T extends MessageLite> ProtoBufSerializationProviderBuilder
-    supportedMessageEncodings(final Set<GrpcMessageEncoding> supportedEncodings) {
-        this.supportedEncodings.clear();
-        this.supportedEncodings.addAll(supportedEncodings);
-        this.supportedEncodings.add(identity()); // Always supported
+    supportedMessageCodings(final List<ContentCodec> supportedCodings) {
+        this.supportedCodings = new ArrayList<>(supportedCodings);
+        if (!this.supportedCodings.contains(identity())) {
+            this.supportedCodings.add(identity()); // Always supported
+        }
         return this;
     }
 
@@ -89,35 +90,45 @@ public final class ProtoBufSerializationProviderBuilder {
      */
     public <T extends MessageLite> ProtoBufSerializationProviderBuilder
     registerMessageType(Class<T> messageType, Parser<T> parser) {
-        Map<GrpcMessageEncoding, HttpSerializer> serializersForType = new HashMap<>();
-        Map<GrpcMessageEncoding, HttpDeserializer> deserializersForType = new HashMap<>();
-        for (GrpcMessageEncoding grpcMessageEncoding : supportedEncodings) {
-            DefaultSerializer serializer = new DefaultSerializer(
-                    new ProtoBufSerializationProvider<>(messageType, grpcMessageEncoding, parser));
-            HttpSerializer<T> httpSerializer = new ProtoHttpSerializer<>(serializer, grpcMessageEncoding, messageType);
-            serializersForType.put(grpcMessageEncoding, httpSerializer);
-            deserializersForType.put(grpcMessageEncoding, new HttpDeserializer<T>() {
-                @Override
-                public T deserialize(final HttpHeaders headers, final Buffer payload) {
-                    return serializer.deserializeAggregatedSingle(payload, messageType);
-                }
-
-                @Override
-                public BlockingIterable<T> deserialize(final HttpHeaders headers,
-                                                       final BlockingIterable<Buffer> payload) {
-                    return serializer.deserialize(payload, messageType);
-                }
-
-                @Override
-                public Publisher<T> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
-                    return serializer.deserialize(payload, messageType);
-                }
-            });
-        }
-
-        serializers.put(messageType, serializersForType);
-        deserializers.put(messageType, deserializersForType);
+        this.types.put(messageType, parser);
         return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void build0() {
+        for (Map.Entry<Class<? extends MessageLite>, Parser<? extends MessageLite>> entry : types.entrySet()) {
+            Class<MessageLite> messageType = (Class<MessageLite>) entry.getKey();
+            Parser<MessageLite> parser = (Parser<MessageLite>) entry.getValue();
+
+            Map<ContentCodec, HttpSerializer> serializersForType = new HashMap<>();
+            Map<ContentCodec, HttpDeserializer> deserializersForType = new HashMap<>();
+            for (ContentCodec codec : supportedCodings) {
+                DefaultSerializer serializer = new DefaultSerializer(
+                        new ProtoBufSerializationProvider<>(messageType, codec, parser));
+                HttpSerializer<MessageLite> httpSerializer = new ProtoHttpSerializer<>(serializer, codec, messageType);
+                serializersForType.put(codec, httpSerializer);
+                deserializersForType.put(codec, new HttpDeserializer<MessageLite>() {
+                    @Override
+                    public MessageLite deserialize(final HttpHeaders headers, final Buffer payload) {
+                        return serializer.deserializeAggregatedSingle(payload, messageType);
+                    }
+
+                    @Override
+                    public BlockingIterable<MessageLite> deserialize(final HttpHeaders headers,
+                                                                     final BlockingIterable<Buffer> payload) {
+                        return serializer.deserialize(payload, messageType);
+                    }
+
+                    @Override
+                    public Publisher<MessageLite> deserialize(final HttpHeaders headers,
+                                                              final Publisher<Buffer> payload) {
+                        return serializer.deserialize(payload, messageType);
+                    }
+                });
+            }
+            serializers.put(messageType, serializersForType);
+            deserializers.put(messageType, deserializersForType);
+        }
     }
 
     /**
@@ -127,51 +138,52 @@ public final class ProtoBufSerializationProviderBuilder {
      * registered to this builder.
      */
     public GrpcSerializationProvider build() {
-        return new ProtoSerializationProvider(serializers, deserializers, supportedEncodings);
+        build0();
+        return new ProtoSerializationProvider(serializers, deserializers, supportedCodings);
     }
 
     private static class ProtoSerializationProvider implements GrpcSerializationProvider {
-        private final Map<Class, Map<GrpcMessageEncoding, HttpSerializer>> serializers;
-        private final Map<Class, Map<GrpcMessageEncoding, HttpDeserializer>> deserializers;
-        private final Set<GrpcMessageEncoding> supportedEncodings;
+        private final Map<Class, Map<ContentCodec, HttpSerializer>> serializers;
+        private final Map<Class, Map<ContentCodec, HttpDeserializer>> deserializers;
+        private final List<ContentCodec> supportedCodings;
 
-        ProtoSerializationProvider(final Map<Class, Map<GrpcMessageEncoding, HttpSerializer>> serializers,
-                                   final Map<Class, Map<GrpcMessageEncoding, HttpDeserializer>> deserializers,
-                                   final Set<GrpcMessageEncoding> supportedEncodings) {
+        ProtoSerializationProvider(final Map<Class, Map<ContentCodec, HttpSerializer>> serializers,
+                                   final Map<Class, Map<ContentCodec, HttpDeserializer>> deserializers,
+                                   final List<ContentCodec> supportedCodings) {
             this.serializers = unmodifiableMap(serializers);
             this.deserializers = unmodifiableMap(deserializers);
-            this.supportedEncodings = unmodifiableSet(supportedEncodings);
+            this.supportedCodings = unmodifiableList(supportedCodings);
         }
 
         @Override
-        public Set<GrpcMessageEncoding> supportedEncodings() {
-            return supportedEncodings;
+        public List<ContentCodec> supportedMessageCodings() {
+            return supportedCodings;
         }
 
         @Override
-        public <T> HttpSerializer<T> serializerFor(final GrpcMessageEncoding encoding, final Class<T> type) {
-            Map<GrpcMessageEncoding, HttpSerializer> serializersForType = serializers.get(type);
+        public <T> HttpSerializer<T> serializerFor(final ContentCodec codec, final Class<T> type) {
+            Map<ContentCodec, HttpSerializer> serializersForType = serializers.get(type);
             if (serializersForType == null) {
                 throw new SerializationException("Unknown class to serialize: " + type.getName());
             }
             @SuppressWarnings("unchecked")
-            HttpSerializer<T> httpSerializer = serializersForType.get(encoding);
+            HttpSerializer<T> httpSerializer = serializersForType.get(codec);
             if (httpSerializer == null) {
-                throw new MessageEncodingException("Unknown encoding: " + encoding.name());
+                throw new MessageEncodingException("Unknown encoding: " + codec.name());
             }
             return httpSerializer;
         }
 
         @Override
-        public <T> HttpDeserializer<T> deserializerFor(final GrpcMessageEncoding messageEncoding, final Class<T> type) {
-            Map<GrpcMessageEncoding, HttpDeserializer> deserializersForType = deserializers.get(type);
+        public <T> HttpDeserializer<T> deserializerFor(final ContentCodec codec, final Class<T> type) {
+            Map<ContentCodec, HttpDeserializer> deserializersForType = deserializers.get(type);
             if (deserializersForType == null) {
                 throw new SerializationException("Unknown class to deserialize: " + type.getName());
             }
             @SuppressWarnings("unchecked")
-            HttpDeserializer<T> httpSerializer = deserializersForType.get(messageEncoding);
+            HttpDeserializer<T> httpSerializer = deserializersForType.get(codec);
             if (httpSerializer == null) {
-                throw new MessageEncodingException("Unknown encoding: " + messageEncoding);
+                throw new MessageEncodingException("Unknown encoding: " + codec.name());
             }
             return httpSerializer;
         }
@@ -181,12 +193,12 @@ public final class ProtoBufSerializationProviderBuilder {
         private static final int METADATA_SIZE = 5; // 1 byte for compression flag and 4 bytes for length of data
 
         private final Serializer serializer;
-        private final GrpcMessageEncoding grpcMessageEncoding;
+        private final ContentCodec codec;
         private final Class<T> type;
-        ProtoHttpSerializer(final Serializer serializer, final GrpcMessageEncoding grpcMessageEncoding,
+        ProtoHttpSerializer(final Serializer serializer, final ContentCodec codec,
                             final Class<T> type) {
             this.serializer = serializer;
-            this.grpcMessageEncoding = grpcMessageEncoding;
+            this.codec = codec;
             this.type = type;
         }
 
@@ -241,7 +253,9 @@ public final class ProtoBufSerializationProviderBuilder {
 
         private void addContentHeaders(final HttpHeaders headers) {
             headers.set(CONTENT_TYPE, APPLICATION_GRPC_PROTO);
-            headers.set(GRPC_MESSAGE_ENCODING_KEY, grpcMessageEncoding.name());
+            if (codec != identity()) {
+                headers.set(GRPC_MESSAGE_ENCODING_KEY, codec.name());
+            }
         }
     }
 }

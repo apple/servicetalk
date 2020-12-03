@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
@@ -60,31 +61,37 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     abstract DeflaterOutputStream newDeflaterOutputStream(OutputStream out) throws IOException;
 
-    abstract InflaterInputStream newInflaterInputStream(InputStream in);
+    abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
 
     @Override
-    public final Buffer encode(final Buffer src, final int offset, final int length,
-                               final BufferAllocator allocator) {
+    public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
+        }
+
         final Buffer dst = allocator.newBuffer(chunkSize);
         DeflaterOutputStream output = null;
         try {
+            src.readerIndex(src.readerIndex() + offset);
             output = newDeflaterOutputStream(Buffer.asOutputStream(dst));
 
             if (src.hasArray()) {
-                output.write(src.array(), src.arrayOffset() + offset, length);
+                output.write(src.array(), src.arrayOffset() + src.readerIndex(), length);
+                src.readerIndex(src.readerIndex() + length);
             } else {
                 while (src.readableBytes() > 0) {
-                    byte[] onHeap = new byte[Math.min(src.readableBytes(), chunkSize)];
+                    byte[] onHeap = new byte[min(src.readableBytes(), min(chunkSize, length))];
                     src.readBytes(onHeap);
                     output.write(onHeap);
                 }
             }
 
             output.finish();
-        } catch (IOException e) {
+        } catch (Exception e) {
+            LOGGER.error("Error while encoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
-            closeQuietly(output);
+            close(output);
         }
 
         return dst;
@@ -112,7 +119,9 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             // This will write header bytes on the stream, which will be consumed along with the first
                             // onNext part
                             output = newDeflaterOutputStream(stream);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            close(output);
+                            LOGGER.error("Error while encoding with {}", name(), e);
                             deliverErrorFromSource(subscriber, e);
                             return;
                         }
@@ -151,7 +160,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                                         next.readableBytes());
                             } else {
                                 while (next.readableBytes() > 0) {
-                                    byte[] onHeap = new byte[Math.min(next.readableBytes(), chunkSize)];
+                                    byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
                                     next.readBytes(onHeap);
                                     output.write(onHeap);
                                 }
@@ -160,14 +169,15 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             output.flush();
                             headerWritten = true;
                             subscriber.onNext(dst);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            LOGGER.error("Error while encoding with {}", name(), e);
                             onError(e);
                         }
                     }
 
                     @Override
                     public void onError(Throwable t) {
-                        closeQuietly(output);
+                        close(output);
                         subscriber.onError(t);
                     }
 
@@ -189,17 +199,23 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     @Override
     public final Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
+        }
+
+        src.readerIndex(src.readerIndex() + offset);
         final Buffer dst = allocator.newBuffer(chunkSize, maxPayloadSize);
         InflaterInputStream input = null;
         try {
-            input = newInflaterInputStream(Buffer.asInputStream(src));
+            input = newInflaterInputStream(new BufferBoundedInputStream(src, length));
 
             int read = dst.setBytesUntilEndStream(0, input, chunkSize);
             dst.writerIndex(read);
-        } catch (IOException e) {
+        } catch (Exception e) {
+            LOGGER.error("Error while decoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
-            closeQuietly(input);
+            close(input);
         }
 
         return dst;
@@ -218,9 +234,20 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
             @Override
             public void onSubscribe(final PublisherSource.Subscription subscription) {
-                inflater = newRawInflater();
-                streamDecoder = new ZLibStreamDecoder(inflater, supportsChecksum(), maxPayloadSize);
-                this.subscription = subscription;
+                try {
+                    inflater = newRawInflater();
+                    streamDecoder = new ZLibStreamDecoder(inflater, supportsChecksum(), maxPayloadSize);
+                    this.subscription = subscription;
+                } catch (Exception e) {
+                    if (inflater != null) {
+                        inflater.end();
+                    }
+
+                    LOGGER.error("Error while decoding with {}", name(), e);
+                    deliverErrorFromSource(subscriber, e);
+                    return;
+                }
+
                 subscriber.onSubscribe(subscription);
             }
 
@@ -245,6 +272,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                     // Not enough data to decompress, ask for more
                     subscription.request(1);
                 } catch (Exception e) {
+                    LOGGER.error("Error while decoding with {}", name(), e);
                     onError(e);
                 }
             }
@@ -267,7 +295,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         });
     }
 
-    private void closeQuietly(@Nullable final Closeable closeable) {
+    private void close(@Nullable final Closeable closeable) {
         try {
             if (closeable != null) {
                 closeable.close();
@@ -577,6 +605,54 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         @Override
         public void write(byte[] b, int off, int len) {
             buffer.writeBytes(b, off, len);
+        }
+    }
+
+    static final class BufferBoundedInputStream extends InputStream {
+        private final Buffer buffer;
+        private int count;
+
+        BufferBoundedInputStream(Buffer buffer, int limit) {
+            this.buffer = requireNonNull(buffer);
+            this.count = limit;
+        }
+
+        @Override
+        public int read() {
+            if (buffer.readableBytes() == 0 || --count <= 0) {
+                return -1;
+            }
+
+            return buffer.readByte() & 0xff;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) {
+            int bytes = min(buffer.readableBytes(), min(count, len));
+            if (bytes <= 0) {
+                return -1;
+            }
+
+            count -= bytes;
+            buffer.readBytes(b, off, bytes);
+            return bytes;
+        }
+
+        @Override
+        public long skip(long n) {
+            int skipped = (int) min(buffer.readableBytes(), n);
+            if (skipped <= 0) {
+                return 0;
+            }
+
+            count -= skipped;
+            buffer.skipBytes(skipped);
+            return skipped;
+        }
+
+        @Override
+        public int available() {
+            return buffer.readableBytes();
         }
     }
 }

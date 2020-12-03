@@ -26,12 +26,14 @@ final class Types {
     private static final String concurrentPkg = basePkg + ".concurrent";
     private static final String concurrentApiPkg = basePkg + ".concurrent.api";
     private static final String grpcBasePkg = basePkg + ".grpc";
+    private static final String encodingBasePkg = basePkg + ".encoding";
+    private static final String encodingApiPkg = encodingBasePkg + ".api";
     private static final String grpcApiPkg = grpcBasePkg + ".api";
     private static final String grpcRoutesFqcn = grpcApiPkg + ".GrpcRoutes";
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
     private static final String routerApiPkg = basePkg + ".router.api";
 
-    static final ClassName Set = ClassName.get("java.util", "Set");
+    static final ClassName List = ClassName.get("java.util", "List");
 
     private static final ClassName RouteExecutionStrategyFactory =
             bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
@@ -53,8 +55,8 @@ final class Types {
     static final ClassName FilterableGrpcClient = bestGuess(grpcApiPkg + ".FilterableGrpcClient");
     static final ClassName GrpcExecutionContext = bestGuess(grpcApiPkg + ".GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
-    static final ClassName GrpcMessageEncoding = bestGuess(grpcApiPkg + ".GrpcMessageEncoding");
-    static final TypeName GrpcSupportedEncodings = ParameterizedTypeName.get(Set, GrpcMessageEncoding);
+    static final ClassName ContentCodec = bestGuess(encodingApiPkg + ".ContentCodec");
+    static final TypeName GrpcSupportedCodings = ParameterizedTypeName.get(List, ContentCodec);
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");
     static final ClassName GrpcRoutes = bestGuess(grpcApiPkg + ".GrpcRoutes");
     static final ClassName GrpcSerializationProvider = bestGuess(grpcApiPkg + ".GrpcSerializationProvider");
