@@ -148,7 +148,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
     public final int read() throws IOException {
         checkAlreadyClosed();
         if (hasLeftOver()) {
-            return leftOverReadSingleByte();
+            return leftOverReadSingleByte() & 0xff;
         }
         for (;;) {
             if (!iterator.hasNext()) {
@@ -157,7 +157,7 @@ public abstract class AbstractCloseableIteratorAsInputStream<T> extends InputStr
             nextLeftOver(iterator);
             if (hasLeftOver()) {
                 if (leftOverReadableBytes() != 0) {
-                    return leftOverReadSingleByte();
+                    return leftOverReadSingleByte() & 0xff;
                 }
                 leftOverReset();
             }

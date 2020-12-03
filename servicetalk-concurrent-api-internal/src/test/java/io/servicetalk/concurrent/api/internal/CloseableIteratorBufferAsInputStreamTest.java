@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
@@ -146,6 +147,24 @@ public class CloseableIteratorBufferAsInputStreamTest {
         try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
             int read = stream.read();
             assertThat("Unexpected bytes read.", (char) read, equalTo('1'));
+            assertThat("Bytes read after complete.", stream.read(), is(-1));
+        }
+    }
+
+    @Test
+    public void singleByteReadWithingRange() throws IOException {
+        singleByteReadWithingRange((byte) 0, 0);
+        singleByteReadWithingRange((byte) 255, 255);
+        singleByteReadWithingRange((byte) -1, 255);
+        singleByteReadWithingRange((byte) -117, 139);
+    }
+
+    private static void singleByteReadWithingRange(byte actual, int expected) throws IOException {
+        Buffer src = DEFAULT_ALLOCATOR.newBuffer(1)
+                .writeByte(actual);
+        try (InputStream stream = new CloseableIteratorBufferAsInputStream(createIterator(src))) {
+            int read = stream.read();
+            assertThat("Unexpected bytes read.", read, is(expected));
             assertThat("Bytes read after complete.", stream.read(), is(-1));
         }
     }
