@@ -27,10 +27,10 @@ import java.util.List;
 public interface GrpcSerializationProvider {
 
     /**
-     * List of supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}.
+     * Supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}.
      * Content codings will be used to encoded and decode gRPC messages according to configuration of client and server.
      *
-     * @return list of supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}
+     * @return supported {@link ContentCodec}s for this {@link GrpcSerializationProvider}
      */
     List<ContentCodec> supportedMessageCodings();
 

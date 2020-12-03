@@ -64,10 +64,15 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
 
     @Override
-    public final Buffer encode(final Buffer src, final int length, final BufferAllocator allocator) {
+    public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
+        }
+
         final Buffer dst = allocator.newBuffer(chunkSize);
         DeflaterOutputStream output = null;
         try {
+            src.readerIndex(src.readerIndex() + offset);
             output = newDeflaterOutputStream(Buffer.asOutputStream(dst));
 
             if (src.hasArray()) {
@@ -83,7 +88,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
             output.finish();
         } catch (Exception e) {
-            LOGGER.error("Error while encoding with " + name(), e);
+            LOGGER.error("Error while encoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
             close(output);
@@ -116,7 +121,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             output = newDeflaterOutputStream(stream);
                         } catch (Exception e) {
                             close(output);
-                            LOGGER.error("Error while encoding with " + name(), e);
+                            LOGGER.error("Error while encoding with {}", name(), e);
                             deliverErrorFromSource(subscriber, e);
                             return;
                         }
@@ -165,7 +170,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                             headerWritten = true;
                             subscriber.onNext(dst);
                         } catch (Exception e) {
-                            LOGGER.error("Error while encoding with " + name(), e);
+                            LOGGER.error("Error while encoding with {}", name(), e);
                             onError(e);
                         }
                     }
@@ -193,7 +198,12 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public final Buffer decode(final Buffer src, final int length, final BufferAllocator allocator) {
+    public final Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        if (offset < 0) {
+            throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
+        }
+
+        src.readerIndex(src.readerIndex() + offset);
         final Buffer dst = allocator.newBuffer(chunkSize, maxPayloadSize);
         InflaterInputStream input = null;
         try {
@@ -202,7 +212,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
             int read = dst.setBytesUntilEndStream(0, input, chunkSize);
             dst.writerIndex(read);
         } catch (Exception e) {
-            LOGGER.error("Error while decoding with " + name(), e);
+            LOGGER.error("Error while decoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
             close(input);
@@ -233,7 +243,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                         inflater.end();
                     }
 
-                    LOGGER.error("Error while decoding with " + name(), e);
+                    LOGGER.error("Error while decoding with {}", name(), e);
                     deliverErrorFromSource(subscriber, e);
                     return;
                 }
@@ -262,7 +272,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                     // Not enough data to decompress, ask for more
                     subscription.request(1);
                 } catch (Exception e) {
-                    LOGGER.error("Error while decoding with " + name(), e);
+                    LOGGER.error("Error while decoding with {}", name(), e);
                     onError(e);
                 }
             }
@@ -630,7 +640,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
         @Override
         public long skip(long n) {
-            int skipped = min(buffer.readableBytes(), (int) min(Integer.MAX_VALUE, n));
+            int skipped = (int) min(buffer.readableBytes(), n);
             if (skipped <= 0) {
                 return 0;
             }

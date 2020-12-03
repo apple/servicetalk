@@ -43,7 +43,7 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content encoded
      */
     default Buffer encode(Buffer src, BufferAllocator allocator) {
-        return encode(src, src.readableBytes(), allocator);
+        return encode(src, 0, src.readableBytes(), allocator);
     }
 
     /**
@@ -51,11 +51,12 @@ public interface ContentCodec {
      * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to encode
-     * @param length the total length available for reading
+     * @param offset the offset after the current {@link Buffer}'s {@code readerInde  }to start reading from
+     * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
      */
-    Buffer encode(Buffer src, int length, BufferAllocator allocator);
+    Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
@@ -67,7 +68,7 @@ public interface ContentCodec {
      * @return {@link Buffer} the result buffer with the content decoded
      */
     default Buffer decode(Buffer src, BufferAllocator allocator) {
-        return decode(src, src.readableBytes(), allocator);
+        return decode(src, 0, src.readableBytes(), allocator);
     }
 
     /**
@@ -75,11 +76,12 @@ public interface ContentCodec {
      * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to decode
-     * @param length the total length available for reading
+     * @param offset the offset after the current {@link Buffer}'s {@code readerIndex} to start reading from
+     * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
      */
-    Buffer decode(Buffer src, int length, BufferAllocator allocator);
+    Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Publisher} of {@link Buffer} and encode its contents resulting in a

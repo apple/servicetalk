@@ -33,7 +33,7 @@ final class IdentityContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public Buffer encode(final Buffer src, final int length, final BufferAllocator allocator) {
+    public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         return src;
     }
 
@@ -43,7 +43,7 @@ final class IdentityContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public Buffer decode(final Buffer src, final int length, final BufferAllocator allocator) {
+    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         return src;
     }
 

@@ -109,8 +109,10 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public Buffer encode(final Buffer src, final int length,
+        public Buffer encode(final Buffer src, final int offset, final int length,
                              final BufferAllocator allocator) {
+            src.readerIndex(src.readerIndex() + offset);
+
             final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
             DeflaterOutputStream output = null;
             try {
@@ -128,8 +130,10 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public Buffer decode(final Buffer src, final int length,
+        public Buffer decode(final Buffer src, final int offset, final int length,
                              final BufferAllocator allocator) {
+            src.readerIndex(src.readerIndex() + offset);
+
             final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
             InflaterInputStream input = null;
             try {
