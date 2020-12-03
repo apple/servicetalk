@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
@@ -185,10 +186,12 @@ final class HeaderUtils {
                 flatRequest = from(metadata, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof List) {
                 final List<?> items = (List<?>) reduction;
-                for (int i = 0; i < items.size(); i++) {
-                    contentLength += calculateContentLength(items.get(i));
+                for (Object item : items) {
+                    contentLength += calculateContentLength(item);
                 }
-                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
+                flatRequest = Publisher.<Object>from(metadata)
+                        .concat(fromIterable(items))
+                        .concat(succeeded(EmptyHttpHeaders.INSTANCE));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
