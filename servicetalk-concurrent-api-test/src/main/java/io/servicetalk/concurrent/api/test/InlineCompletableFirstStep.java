@@ -28,8 +28,8 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThread
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadRunEvent;
 
 import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -39,12 +39,12 @@ import static java.util.Objects.requireNonNull;
 public class InlineCompletableFirstStep implements CompletableFirstStep {
     private final CompletableSource source;
     private final NormalizedTimeSource timeSource;
-    private final Queue<PublisherEvent> events;
+    private final List<PublisherEvent> events;
 
     public InlineCompletableFirstStep(CompletableSource source, NormalizedTimeSource timeSource) {
         this.source = requireNonNull(source);
         this.timeSource = requireNonNull(timeSource);
-        this.events = new ArrayDeque<>();
+        this.events = new ArrayList<>();
     }
 
     @Override
@@ -123,12 +123,12 @@ public class InlineCompletableFirstStep implements CompletableFirstStep {
     private static final class CompletableInlineStepVerifier extends
             InlineStepVerifier<CompletableSource, InlineCompletableSubscriber> {
         CompletableInlineStepVerifier(CompletableSource completableSource, NormalizedTimeSource timeSource,
-                                      Queue<PublisherEvent> events) {
+                                      List<PublisherEvent> events) {
             super(completableSource, timeSource, events);
         }
 
         @Override
-        InlineCompletableSubscriber newSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events) {
+        InlineCompletableSubscriber newSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events) {
             return new InlineCompletableSubscriber(timeSource, events, exceptionPrefixFilter());
         }
 

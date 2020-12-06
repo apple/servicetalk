@@ -26,6 +26,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

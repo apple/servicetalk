@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.AfterClass;
@@ -34,6 +36,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
@@ -44,10 +47,12 @@ import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -83,16 +88,39 @@ public class PublisherStepVerifierTest {
 
     @Test(expected = AssertionError.class)
     public void expectSubscriptionTimeout() {
+        assert executor != null;
+        CountDownLatch latch = new CountDownLatch(1);
+        try {
+            verifyException(() -> create(from("foo").publishAndSubscribeOn(executor))
+                    .expectSubscription(subscription -> {
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .expectNext("foo")
+                    .expectComplete()
+                    .verify(ofNanos(10)));
+        } finally {
+            latch.countDown();
+        }
+    }
+
+    @Test(expected = AssertionError.class)
+    public void emptyItemsNonEmptyPublisher() {
         verifyException(() -> create(from("foo"))
-                .expectSubscription(subscription -> {
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
+                .expectNext(emptyList())
                 .expectComplete()
-                .verify(ofNanos(10)));
+                .verify());
+    }
+
+    @Test
+    public void emptyItemsEmptyPublisher() {
+        create(empty())
+                .expectNext(emptyList())
+                .expectComplete()
+                .verify();
     }
 
     @Test
@@ -375,10 +403,15 @@ public class PublisherStepVerifierTest {
     public void noSignalsSubscriptionCancelSucceeds() {
         // expectNoSignals and subscription event are dequeued/processed sequentially on the Subscriber thread
         // and the scenario isn't instructed to expect the subscription so we pass the test.
-        create(never())
+        TestSubscription subscription = new TestSubscription();
+        TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build();
+        create(publisher)
+                .then(() -> publisher.onSubscribe(subscription))
                 .expectNoSignals(ofDays(1))
                 .thenCancel()
                 .verify();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test(expected = AssertionError.class)
@@ -444,21 +477,40 @@ public class PublisherStepVerifierTest {
 
     @Test
     public void multipleRequests() {
-        create(from("foo", "bar"))
+        TestSubscription subscription = new TestSubscription();
+        TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build();
+        create(publisher)
+                .then(() -> publisher.onSubscribe(subscription))
                 .thenRequest(1)
                 .thenRequest(2)
+                .then(() -> {
+                    assertThat(subscription.requested(), greaterThanOrEqualTo(3L));
+                    publisher.onNext("foo", "bar");
+                    publisher.onComplete();
+                })
                 .expectNext("foo", "bar")
                 .expectComplete()
                 .verify();
+        assertThat(subscription.requested(), greaterThanOrEqualTo(5L));
     }
 
     @Test
     public void requestThenCancel() {
-        create(from("foo", "bar"))
+        TestSubscription subscription = new TestSubscription();
+        TestPublisher<String> publisher = new TestPublisher.Builder<String>()
+                .disableAutoOnSubscribe().build();
+        create(publisher)
+                .then(() -> publisher.onSubscribe(subscription))
                 .thenRequest(100)
+                .then(() -> {
+                    assertThat(subscription.requested(), greaterThanOrEqualTo(100L));
+                    publisher.onNext("foo", "bar");
+                })
                 .expectNext("foo", "bar")
                 .thenCancel()
                 .verify();
+        assertTrue(subscription.isCancelled());
     }
 
     @Test

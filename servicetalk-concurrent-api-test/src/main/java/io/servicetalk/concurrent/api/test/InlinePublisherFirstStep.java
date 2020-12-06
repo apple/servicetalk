@@ -33,10 +33,9 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThread
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 
 import java.time.Duration;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -47,12 +46,12 @@ import static java.util.Objects.requireNonNull;
 final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     private final PublisherSource<T> source;
     private final NormalizedTimeSource timeSource;
-    private final Queue<PublisherEvent> events;
+    private final List<PublisherEvent> events;
 
     InlinePublisherFirstStep(final PublisherSource<T> source, final NormalizedTimeSource timeSource) {
         this.source = requireNonNull(source);
         this.timeSource = requireNonNull(timeSource);
-        this.events = new ArrayDeque<>();
+        this.events = new ArrayList<>();
     }
 
     @Override
@@ -98,10 +97,7 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
 
     @Override
     public PublisherStep<T> expectNext(Iterable<? extends T> signals) {
-        final Iterator<? extends T> iterator = signals.iterator();
-        if (iterator.hasNext()) {
-            events.add(new OnNextIterableEvent<T>(iterator));
-        }
+        events.add(new OnNextIterableEvent<T>(signals));
         return this;
     }
 
@@ -219,12 +215,12 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     private static final class PublisherInlineStepVerifier<T> extends
             InlineStepVerifier<PublisherSource<T>, InlinePublisherSubscriber<T>> {
         PublisherInlineStepVerifier(PublisherSource<T> source, NormalizedTimeSource timeSource,
-                                    Queue<PublisherEvent> events) {
+                                    List<PublisherEvent> events) {
             super(source, timeSource, events);
         }
 
         @Override
-        InlinePublisherSubscriber<T> newSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events) {
+        InlinePublisherSubscriber<T> newSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events) {
             return new InlinePublisherSubscriber<>(0, timeSource, events, exceptionPrefixFilter());
         }
 

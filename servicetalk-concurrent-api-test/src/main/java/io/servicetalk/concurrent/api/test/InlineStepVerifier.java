@@ -21,8 +21,7 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThread
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadRunEvent;
 
 import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -34,16 +33,16 @@ import static java.util.function.Function.identity;
 
 abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber> implements StepVerifier {
     private final Source source;
-    private final Queue<PublisherEvent> events;
+    private final List<PublisherEvent> events;
     private final NormalizedTimeSource timeSource;
 
-    InlineStepVerifier(final Source source, final NormalizedTimeSource timeSource, final Queue<PublisherEvent> events) {
+    InlineStepVerifier(final Source source, final NormalizedTimeSource timeSource, final List<PublisherEvent> events) {
         this.source = source;
         this.events = events;
         this.timeSource = timeSource;
     }
 
-    abstract Sub newSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events);
+    abstract Sub newSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events);
 
     abstract void subscribe(Source source, Sub subscriber);
 
@@ -55,7 +54,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
     }
 
     private Duration verify(Function<Source, Source> operators) throws AssertionError {
-        Sub subscriber = newSubscriber(timeSource, copyEventQueue());
+        Sub subscriber = newSubscriber(timeSource, events);
         final long startTime = timeSource.currentTime();
         subscribe(operators.apply(source), subscriber);
         try {
@@ -74,7 +73,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
 
     @Override
     public final Duration verify(Duration duration) throws AssertionError {
-        Sub subscriber = newSubscriber(timeSource, copyEventQueue());
+        Sub subscriber = newSubscriber(timeSource, events);
         final long startTime = timeSource.currentTime();
         subscribe(source, subscriber);
         try {
@@ -124,10 +123,6 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         } else {
             throw new IllegalStateException("unsupported event type: " + event.getClass());
         }
-    }
-
-    private Queue<PublisherEvent> copyEventQueue() {
-        return new ArrayDeque<>(events);
     }
 
     abstract static class PublisherEvent {

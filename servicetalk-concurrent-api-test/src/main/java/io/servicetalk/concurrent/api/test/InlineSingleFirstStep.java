@@ -31,8 +31,8 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThread
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 
 import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -43,12 +43,12 @@ import static java.util.Objects.requireNonNull;
 final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     private final SingleSource<T> source;
     private final NormalizedTimeSource timeSource;
-    private final Queue<PublisherEvent> events;
+    private final List<PublisherEvent> events;
 
     InlineSingleFirstStep(SingleSource<T> source, NormalizedTimeSource timeSource) {
         this.source = requireNonNull(source);
         this.timeSource = requireNonNull(timeSource);
-        this.events = new ArrayDeque<>();
+        this.events = new ArrayList<>();
     }
 
     @Override
@@ -169,12 +169,12 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     private static final class SingleInlineStepVerifier<T> extends
             InlineStepVerifier<SingleSource<T>, InlineSingleSubscriber<T>> {
         SingleInlineStepVerifier(SingleSource<T> source, NormalizedTimeSource timeSource,
-                                 Queue<PublisherEvent> events) {
+                                 List<PublisherEvent> events) {
             super(source, timeSource, events);
         }
 
         @Override
-        InlineSingleSubscriber<T> newSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events) {
+        InlineSingleSubscriber<T> newSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events) {
             return new InlineSingleSubscriber<>(timeSource, events, exceptionPrefixFilter());
         }
 

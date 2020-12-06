@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadEvent;
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 
-import java.util.Queue;
+import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.CompletableSource.Subscriber;
@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.CompletableSource.Subscriber;
 final class InlineCompletableSubscriber implements Subscriber, InlineVerifiableSubscriber {
     private final InlinePublisherSubscriber<Void> publisherSubscriber;
 
-    InlineCompletableSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events,
+    InlineCompletableSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events,
                                 String exceptionClassNamePrefix) {
         publisherSubscriber = new InlinePublisherSubscriber<>(0, timeSource, events, exceptionClassNamePrefix);
     }

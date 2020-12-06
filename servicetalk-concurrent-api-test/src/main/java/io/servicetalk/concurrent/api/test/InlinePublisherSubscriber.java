@@ -30,55 +30,70 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.notEqualsOnNext;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifiableSubscriber {
     @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<InlinePublisherSubscriber> outstandingDemandUpdater =
             AtomicLongFieldUpdater.newUpdater(InlinePublisherSubscriber.class, "outstandingDemand");
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<InlinePublisherSubscriber, PublisherEvent> eventRef =
-            newUpdater(InlinePublisherSubscriber.class, PublisherEvent.class, "currEvent");
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<InlinePublisherSubscriber, PublisherEvent> lastNoSignalsEventRef =
-            newUpdater(InlinePublisherSubscriber.class, PublisherEvent.class, "lastNoSignalsEvent");
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<InlinePublisherSubscriber, PublisherEvent>
-            lastSubscriptionEventRef = newUpdater(InlinePublisherSubscriber.class, PublisherEvent.class,
-            "lastSubscriptionEvent");
+    private static final AtomicIntegerFieldUpdater<InlinePublisherSubscriber> eventIndexUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(InlinePublisherSubscriber.class, "eventIndex");
     private final NormalizedTimeSource timeSource;
-    private final Queue<PublisherEvent> events;
+    private final List<PublisherEvent> events;
     private final Processor<VerifyThreadEvent, VerifyThreadEvent> verifyThreadProcessor =
             newPublisherProcessor(Integer.MAX_VALUE);
     private final String exceptionClassNamePrefix;
+    /**
+     * Used for {@link OnSubscriptionEvent}s.
+     */
+    @Nullable
+    private List<Long> currSubscriptionIndexes;
+    /**
+     * Used for: {@link OnNextIterableEvent} and {@link OnNextIgnoreEvent}.
+     */
+    private long currCount;
+    /**
+     * Used for: {@link OnNextIterableEvent}.
+     */
+    @Nullable
+    private Iterator<? extends T> currIterator;
+    /**
+     * Used for: {@link OnNextAggregateEvent}.
+     */
+    @Nullable
+    private List<T> currAggregateSignals;
+    /**
+     * Used for: {@link NoSignalForDurationEvent}s.
+     */
+    @Nullable
+    private Long noSignalsUntil;
+    /**
+     * Used for {@link NoSignalForDurationEvent}
+     */
+    private int prevNoSignalsEventIndex;
+    @Nullable
+    private PublisherEvent currEvent;
+
     @Nullable
     private Subscription subscription;
     @Nullable
-    private Long noSignalsUntil;
-    @Nullable
     private TerminalNotification terminal;
-    @Nullable
-    private SubscriptionEventAggregate subscriptionAggregate;
     private volatile long outstandingDemand;
-    @Nullable
-    private volatile PublisherEvent currEvent;
-    @Nullable
-    private volatile PublisherEvent lastNoSignalsEvent;
-    @Nullable
-    private volatile PublisherEvent lastSubscriptionEvent;
+    private volatile int eventIndex = -1;
 
-    InlinePublisherSubscriber(long initialDemand, NormalizedTimeSource timeSource, Queue<PublisherEvent> events,
+    InlinePublisherSubscriber(long initialDemand, NormalizedTimeSource timeSource, List<PublisherEvent> events,
                               String exceptionClassNamePrefix) {
         outstandingDemand = initialDemand;
         this.timeSource = timeSource;
@@ -119,7 +134,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             }
         };
 
-        PublisherEvent event = eventRef.get(this);
+        PublisherEvent event = currEvent();
         event = checkNoSignalsExpectation("onSubscribe", subscription, event);
         if (event instanceof OnSubscriptionEvent) {
             try {
@@ -141,7 +156,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                             "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.1");
         }
 
-        PublisherEvent event = eventRef.get(this);
+        PublisherEvent event = currEvent();
         event = checkNoSignalsExpectation("onNext", t, event);
         if (event instanceof OnNextEvent) {
             @SuppressWarnings("unchecked")
@@ -155,38 +170,51 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         } else if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
             final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
-            if (castEvent.add(t) == castEvent.maxOnNext()) {
+            if (currAggregateSignals == null) {
+                currAggregateSignals = new ArrayList<>(castEvent.minOnNext());
+            }
+            currAggregateSignals.add(t);
+            if (currAggregateSignals.size() == castEvent.maxOnNext()) {
                 try {
-                    castEvent.doVerify();
+                    List<T> tmp = currAggregateSignals;
+                    currAggregateSignals = null;
+                    castEvent.signalsConsumer.accept(tmp);
                     event = pollNextEvent();
                 } catch (Throwable cause) {
                     event = failVerification(cause, event);
                 }
             }
         } else if (event instanceof OnNextIterableEvent) {
-            @SuppressWarnings("unchecked")
-            final OnNextIterableEvent<T> castEvent = ((OnNextIterableEvent<T>) event);
-            castEvent.onNext(t);
-            if (castEvent.hasNext()) {
-                assert subscription != null;
-                subscription.request(1);
-            } else {
-                event = pollNextEvent();
+            assert currIterator != null;
+            try {
+                final T iterNext = currIterator.next();
+                if (notEqualsOnNext(iterNext, t)) {
+                    event = failVerification(new AssertionError(event.description() + " iterator " + currIterator
+                            + " failed at index " + currCount + ". expected: " + iterNext + " actual: " + t), event);
+                } else if (currIterator.hasNext()) {
+                    ++currCount;
+                    assert subscription != null;
+                    subscription.request(1);
+                } else {
+                    event = pollNextEvent();
+                }
+            } catch (Throwable cause) {
+                event = failVerification(cause, event);
             }
         } else if (event instanceof OnNextIgnoreEvent) {
-            if (((OnNextIgnoreEvent) event).incOnNext()) {
+            if (++currCount >= ((OnNextIgnoreEvent) event).ignoreCount()) {
                 event = pollNextEvent();
             }
         } else if (event != null) {
-            failVerification(new IllegalStateException("expected " + event.description() + ", actual onNext: " +
-                    t), event);
+            failVerification(new IllegalStateException("expected " + event.description() + ", actual onNext: " + t),
+                    event);
         }
     }
 
     @Override
     public void onError(Throwable t) {
         verifyOnSubscribedAndNoTerminal("onError", t, true);
-        PublisherEvent event = eventRef.get(this);
+        PublisherEvent event = currEvent();
         terminal = error(t);
         event = checkNoSignalsExpectation("onError", t, event);
         event = checkOnNextEventsFromTerminal("onError", event);
@@ -206,7 +234,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     @Override
     public void onComplete() {
         verifyOnSubscribedAndNoTerminal("onComplete", null, false);
-        PublisherEvent event = eventRef.get(this);
+        PublisherEvent event = currEvent();
         terminal = complete();
         event = checkNoSignalsExpectation("onComplete", null, event);
         event = checkOnNextEventsFromTerminal("onComplete", event);
@@ -231,10 +259,14 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     @Override
     @Nullable
     public PublisherEvent externalTimeout() {
-        PublisherEvent event = lastNoSignalsEventRef.getAndSet(this, null);
-        PublisherEvent event2 = lastSubscriptionEventRef.getAndSet(this, null);
-        PublisherEvent event3 = eventRef.getAndSet(this, null);
-        return event == null ? event2 == null ? event3 : event2 : event;
+        // called from a different thread, use the volatile index to get the current value.
+        final int i = eventIndex;
+        return i >= 0 && i < events.size() ? events.get(i) : null;
+    }
+
+    @Nullable
+    private PublisherEvent currEvent() {
+        return currEvent;
     }
 
     @Nullable
@@ -242,16 +274,20 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
             final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
-            if (castEvent.size() >= castEvent.minOnNext()) {
+            if (currAggregateSignals != null && currAggregateSignals.size() >= castEvent.minOnNext()) {
                 try {
-                    castEvent.doVerify();
+                    List<T> tmp = currAggregateSignals;
+                    currAggregateSignals = null;
+                    castEvent.signalsConsumer.accept(tmp);
                     event = pollNextEvent();
                 } catch (Throwable cause) {
                     event = failVerification(cause, event);
                 }
             } else {
-                event = failVerification(new IllegalStateException("expected " + event.description() + ", actual " +
+                event = failVerification(new IllegalStateException("expected " + event.description() + " signals: " +
+                        currAggregateSignals + ", actual " +
                         signalName), event);
+                currAggregateSignals = null;
             }
         } else if (event instanceof OnNextIgnoreEvent) {
             event = pollNextEvent();
@@ -261,37 +297,57 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
 
     @Nullable
     private PublisherEvent pollNextEvent() {
-        PublisherEvent event;
         Queue<VerifyThreadEvent> verifyThreadEvents = null;
+        int subscriptionBeginIndex = -1;
         do {
-            event = events.poll();
-            eventRef.set(this, event);
-            if (event == null) {
+            final int eventIndex = eventIndexUpdater.incrementAndGet(this);
+            if (eventIndex >= events.size()) {
                 // try to execute any remaining events before completing
+                currEvent = null;
+                subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
                 processSubscriptionAggregate();
                 processVerifyThreadAggregate(verifyThreadEvents);
                 verifyThreadProcessor.onComplete();
                 break;
-            } else if (event instanceof NoSignalForDurationEvent) {
-                lastNoSignalsEventRef.set(this, event);
-                Duration duration = ((NoSignalForDurationEvent) event).duration();
+            }
+            currEvent = events.get(eventIndex);
+            if (currEvent instanceof NoSignalForDurationEvent) {
+                subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
+                prevNoSignalsEventIndex = eventIndex;
+                Duration duration = ((NoSignalForDurationEvent) currEvent).duration();
                 noSignalsUntil = noSignalsUntil == null ?
                         timeSource.timeStampFromNow(duration) :
                         timeSource.timeStampFrom(noSignalsUntil, duration);
-            } else if (event instanceof SubscriptionEvent) {
-                lastSubscriptionEventRef.set(this, event);
-                if (subscriptionAggregate == null) {
-                    subscriptionAggregate = new SubscriptionEventAggregate();
+            } else if (currEvent instanceof SubscriptionEvent) {
+                if (subscriptionBeginIndex < 0) {
+                    subscriptionBeginIndex = eventIndex;
                 }
-                subscriptionAggregate.add(((SubscriptionEvent) event));
-            } else if (event instanceof VerifyThreadEvent) {
+            } else if (currEvent instanceof VerifyThreadEvent) {
+                subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
                 if (verifyThreadEvents == null) {
                     verifyThreadEvents = new ArrayDeque<>();
                 }
-                verifyThreadEvents.add((VerifyThreadEvent) event);
+                verifyThreadEvents.add((VerifyThreadEvent) currEvent);
             } else {
+                subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
+                if (currEvent instanceof OnNextIgnoreEvent) {
+                    currCount = 0;
+                } else if (currEvent instanceof OnNextIterableEvent) {
+                    @SuppressWarnings("unchecked")
+                    final OnNextIterableEvent<T> castEvent = (OnNextIterableEvent<T>) currEvent;
+                    Iterator<? extends T> iterable = castEvent.iterable.iterator();
+                    if (iterable == null) {
+                        throw new NullPointerException(currEvent.description() + " returned a null " +
+                                Iterator.class.getSimpleName());
+                    }
+                    if (!iterable.hasNext()) {
+                        continue; // there is nothing to verify, skip this event and get the next one.
+                    }
+                    currIterator = iterable;
+                    currCount = 0;
+                }
                 if (subscription != null) {
-                    requestIfNecessary(event);
+                    requestIfNecessary(currEvent);
                 }
                 break;
             }
@@ -299,7 +355,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
 
         processVerifyThreadAggregate(verifyThreadEvents);
 
-        return event;
+        return currEvent;
     }
 
     private void requestIfNecessary(@Nullable PublisherEvent event) {
@@ -327,29 +383,41 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         }
     }
 
-    private void processSubscriptionAggregate() {
-        if (subscription != null && subscriptionAggregate != null) {
-            try {
-                subscriptionAggregate.subscription(subscription);
-            } catch (Throwable cause) {
-                failVerification(cause, subscriptionAggregate.currentEvent());
+    private int addSubscriptionIndexRange(int beginIndex, int currEventIndex) {
+        if (beginIndex >= 0) {
+            if (currSubscriptionIndexes == null) {
+                currSubscriptionIndexes = new ArrayList<>(2);
             }
+            currSubscriptionIndexes.add((((long) beginIndex) << 32) | currEventIndex);
+        }
+        return -1;
+    }
+
+    private void processSubscriptionAggregate() {
+        if (subscription != null && currSubscriptionIndexes != null) {
+            for (Long indexes : currSubscriptionIndexes) {
+                final int end = indexes.intValue();
+                for (int i = (int) (indexes >>> 32); i < end; ++i) {
+                    PublisherEvent event = events.get(i);
+                    try {
+                        ((SubscriptionEvent) event).subscription(subscription);
+                    } catch (Throwable cause) {
+                        failVerification(cause, event);
+                    }
+                }
+            }
+            currSubscriptionIndexes.clear();
         }
     }
 
     @Nullable
     private PublisherEvent checkNoSignalsExpectation(String signalName, @Nullable Object signal,
                                                      @Nullable PublisherEvent event) {
-        if (subscriptionAggregate != null && subscriptionAggregate.currentEvent() == null) {
-            lastSubscriptionEventRef.set(this, null);
-        }
         while (noSignalsUntil != null) {
             if (timeSource.isExpired(noSignalsUntil)) {
-                event = failVerification(new IllegalStateException("expectNoSignals expired by " +
-                        timeSource.duration(noSignalsUntil).negated() + ". " + signalName + "(" + signal + ")"),
-                        lastSubscriptionEventRef.getAndSet(this, null));
-            } else {
-                lastSubscriptionEventRef.set(this, null);
+                event = failVerification(new IllegalStateException("Received " + signalName + "(" +
+                        signal + ") with " + timeSource.duration(noSignalsUntil).negated() +
+                        " time remaining."), events.get(prevNoSignalsEventIndex));
             }
             noSignalsUntil = null;
         }
@@ -360,9 +428,8 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     private PublisherEvent failVerification(Throwable cause, @Nullable PublisherEvent event) {
         if (event != null) {
             verifyThreadProcessor.onError(event.newException(cause.getMessage(), cause, exceptionClassNamePrefix));
-            eventRef.set(this, null);
         } else {
-            event = lastNoSignalsEventRef.getAndSet(this, null);
+            event = currEvent();
             if (event != null) {
                 verifyThreadProcessor.onError(event.newException(cause.getMessage(), cause,
                         exceptionClassNamePrefix));
@@ -370,7 +437,6 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 verifyThreadProcessor.onError(new AssertionError("unexpected failure!", cause));
             }
         }
-        events.clear();
         return null;
     }
 
@@ -387,37 +453,6 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         if (subscription == null) {
             throw new IllegalStateException("onSubscribe must be called before any other signals. " +
                     "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9");
-        }
-    }
-
-    private static final class SubscriptionEventAggregate extends SubscriptionEvent {
-        @Nullable
-        private SubscriptionEvent currentEvent;
-        private final Queue<SubscriptionEvent> subscriptionEvents;
-
-        SubscriptionEventAggregate() {
-            subscriptionEvents = new ArrayDeque<>();
-        }
-
-        @Override
-        String description() {
-            return currentEvent == null ? "SubscriptionEventAggregate[empty]" : currentEvent.description();
-        }
-
-        void add(SubscriptionEvent e) {
-            subscriptionEvents.add(e);
-        }
-
-        @Nullable
-        SubscriptionEvent currentEvent() {
-            return currentEvent;
-        }
-
-        @Override
-        void subscription(Subscription subscription) {
-            while ((currentEvent = subscriptionEvents.poll()) != null) {
-                currentEvent.subscription(subscription);
-            }
         }
     }
 
@@ -460,7 +495,6 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
 
     static final class OnNextIgnoreEvent extends PublisherEvent {
         private final long ignoreCount;
-        private long onNextCount;
 
         OnNextIgnoreEvent(long n) {
             if (n <= 0) {
@@ -473,39 +507,21 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             return ignoreCount;
         }
 
-        boolean incOnNext() {
-            return ++onNextCount == ignoreCount;
-        }
-
         @Override
         String description() {
-            return "expectNextCount(" + ignoreCount + ") onNextCount: " + onNextCount;
+            return "expectNextCount(" + ignoreCount + ")";
         }
     }
 
     static final class OnNextIterableEvent<T> extends PublisherEvent {
-        private long i;
-        private final Iterator<? extends T> iterator;
+        private final Iterable<? extends T> iterable;
 
-        OnNextIterableEvent(Iterator<? extends T> iterator) {
-            this.iterator = requireNonNull(iterator);
-        }
-
-        void onNext(@Nullable T next) {
-            final T iterNext = iterator.next();
-            if (notEqualsOnNext(iterNext, next)) {
-                throw new AssertionError("expectNext(Iterable<T>) failed at index " + i + ". expected: " + iterNext +
-                        " actual: " + next);
-            }
-            ++i;
-        }
-
-        boolean hasNext() {
-            return iterator.hasNext();
+        OnNextIterableEvent(Iterable<? extends T> iterable) {
+            this.iterable = requireNonNull(iterable);
         }
 
         String description() {
-            return "expectNext(" + iterator + ") index: " + i;
+            return "expectNext(" + iterable + ")";
         }
     }
 
@@ -534,8 +550,6 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         private final int maxOnNext;
         private final int minOnNext;
         private final Consumer<? super Collection<? extends T>> signalsConsumer;
-        @Nullable
-        private List<T> nexts;
 
         OnNextAggregateEvent(int minOnNext, int maxOnNext, Consumer<? super Collection<? extends T>> signalsConsumer) {
             if (minOnNext <= 0) { // at least 1 element is required
@@ -557,27 +571,9 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             return minOnNext;
         }
 
-        int add(@Nullable T next) {
-            if (nexts == null) {
-                nexts = new ArrayList<>();
-            }
-            nexts.add(next);
-            return nexts.size();
-        }
-
-        void doVerify() {
-            assert nexts != null;
-            signalsConsumer.accept(nexts);
-        }
-
-        int size() {
-            return nexts == null ? 0 : nexts.size();
-        }
-
         @Override
         String description() {
-            return "expectNext(" + minOnNext + "," + maxOnNext + "," + signalsConsumer + ") nexts: " +
-                    (nexts == null ? null : (nexts.size() + " " + nexts));
+            return "expectNext(" + minOnNext + "," + maxOnNext + "," + signalsConsumer + ")";
         }
     }
 

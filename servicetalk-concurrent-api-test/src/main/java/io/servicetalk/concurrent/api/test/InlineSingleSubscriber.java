@@ -22,13 +22,13 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadEvent;
 import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 
-import java.util.Queue;
+import java.util.List;
 import javax.annotation.Nullable;
 
 final class InlineSingleSubscriber<T> implements Subscriber<T>, InlineVerifiableSubscriber {
     private final InlinePublisherSubscriber<T> publisherSubscriber;
 
-    InlineSingleSubscriber(NormalizedTimeSource timeSource, Queue<PublisherEvent> events,
+    InlineSingleSubscriber(NormalizedTimeSource timeSource, List<PublisherEvent> events,
                            String exceptionClassNamePrefix) {
         publisherSubscriber = new InlinePublisherSubscriber<>(1, timeSource, events, exceptionClassNamePrefix);
     }
