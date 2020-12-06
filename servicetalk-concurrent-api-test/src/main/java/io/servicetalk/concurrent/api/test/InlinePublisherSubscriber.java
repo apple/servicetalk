@@ -170,9 +170,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         } else if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
             final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
-            if (currAggregateSignals == null) {
-                currAggregateSignals = new ArrayList<>(castEvent.minOnNext());
-            }
+            assert currAggregateSignals != null;
             currAggregateSignals.add(t);
             if (currAggregateSignals.size() == castEvent.maxOnNext()) {
                 try {
@@ -274,7 +272,8 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         if (event instanceof OnNextAggregateEvent) {
             @SuppressWarnings("unchecked")
             final OnNextAggregateEvent<T> castEvent = ((OnNextAggregateEvent<T>) event);
-            if (currAggregateSignals != null && currAggregateSignals.size() >= castEvent.minOnNext()) {
+            assert currAggregateSignals != null;
+            if (currAggregateSignals.size() >= castEvent.minOnNext()) {
                 try {
                     List<T> tmp = currAggregateSignals;
                     currAggregateSignals = null;
@@ -285,8 +284,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 }
             } else {
                 event = failVerification(new IllegalStateException("expected " + event.description() + " signals: " +
-                        currAggregateSignals + ", actual " +
-                        signalName), event);
+                        currAggregateSignals + ", actual " + signalName), event);
                 currAggregateSignals = null;
             }
         } else if (event instanceof OnNextIgnoreEvent) {
@@ -345,6 +343,10 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                     }
                     currIterator = iterable;
                     currCount = 0;
+                } else if (currEvent instanceof OnNextAggregateEvent) {
+                    @SuppressWarnings("unchecked")
+                    final OnNextAggregateEvent<T> castEvent = (OnNextAggregateEvent<T>) currEvent;
+                    currAggregateSignals = new ArrayList<>(castEvent.minOnNext());
                 }
                 if (subscription != null) {
                     requestIfNecessary(currEvent);
