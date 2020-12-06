@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -356,6 +357,14 @@ public class PublisherStepVerifierTest {
         create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
                 .expectNext(1, 2, nextIterable -> assertThat(nextIterable, contains("foo")))
                 .expectError(DeliberateException.class)
+                .verify();
+    }
+
+    @Test
+    public void expectNextMultiConsumerZero() {
+        create(empty())
+                .expectNext(0, 2, nextIterable -> assertThat(nextIterable, Matchers.empty()))
+                .expectComplete()
                 .verify();
     }
 

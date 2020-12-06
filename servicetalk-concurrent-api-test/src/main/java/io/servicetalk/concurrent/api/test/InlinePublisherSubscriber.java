@@ -554,8 +554,8 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         private final Consumer<? super Collection<? extends T>> signalsConsumer;
 
         OnNextAggregateEvent(int minOnNext, int maxOnNext, Consumer<? super Collection<? extends T>> signalsConsumer) {
-            if (minOnNext <= 0) { // at least 1 element is required
-                throw new IllegalArgumentException("minOnNext " + minOnNext + " (expected >0)");
+            if (minOnNext < 0) {
+                throw new IllegalArgumentException("minOnNext " + minOnNext + " (expected >=0)");
             }
             if (maxOnNext < minOnNext) {
                 throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " < minOnNext" + minOnNext);
