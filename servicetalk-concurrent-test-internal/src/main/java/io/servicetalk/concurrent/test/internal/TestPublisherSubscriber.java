@@ -217,8 +217,8 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      *
      * @param timeout The amount of time to wait.
      * @param unit The units of {@code timeout}.
-     * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred or a terminal signal
-     * has been received.
+     * @return A {@link Supplier} that returns the signal delivered to {@link #onNext(Object)},
+     * or {@code null} if a timeout occurred or a terminal signal has been received.
      */
     @Nullable
     public Supplier<T> pollOnNext(long timeout, TimeUnit unit) {
