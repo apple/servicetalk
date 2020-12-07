@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
@@ -53,8 +54,12 @@ import javax.ws.rs.core.SecurityContext;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
@@ -202,9 +207,23 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
             requestUriBuilder.append(requestTarget);
         }
 
+        final URI baseURI;
+        final URI requestURI;
+        try {
+            baseURI = URI.create(baseUri.toString());
+            requestURI = URI.create(requestUriBuilder.toString());
+        } catch (Throwable cause) {
+            Buffer message = serviceCtx.executionContext().bufferAllocator().fromAscii(cause.getMessage());
+            StreamingHttpResponse response = factory.badRequest().payloadBody(from(message));
+            response.headers().add(CONTENT_LENGTH, Integer.toString(message.readableBytes()));
+            response.headers().add(CONTENT_TYPE, TEXT_PLAIN);
+            subscriber.onSuccess(response);
+            return;
+        }
+
         final ContainerRequest containerRequest = new ContainerRequest(
-                URI.create(baseUri.toString()),
-                URI.create(requestUriBuilder.toString()),
+                baseURI,
+                requestURI,
                 req.method().name(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate(), null);

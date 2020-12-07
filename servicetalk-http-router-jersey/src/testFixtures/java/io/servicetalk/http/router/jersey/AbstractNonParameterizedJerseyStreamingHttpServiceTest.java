@@ -30,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.http.utils.RequestTargetEncoderHttpServiceFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -138,7 +137,6 @@ public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
                 String.class).toLowerCase().contains("servicetalk");
 
         HttpServerBuilder httpServerBuilder = serverBuilder
-                .appendServiceFilter(new RequestTargetEncoderHttpServiceFilter())
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator());
 
