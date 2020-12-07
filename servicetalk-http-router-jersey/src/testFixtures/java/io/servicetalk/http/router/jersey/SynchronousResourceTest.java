@@ -23,6 +23,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PARTIAL_CONTENT;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
@@ -48,7 +49,8 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void queryParameterAreEncoded() {
-        sendAndAssertResponse(get("/uris/relative?script=<foo;-/?:@=+$>"), OK, TEXT_PLAIN, "/async/text");
+        sendAndAssertResponse(get("/uris/relative?script=<foo;-/?:@=+$>"), BAD_REQUEST, TEXT_PLAIN,
+            "Illegal character in query at index 49: http://" + host() + "/sync/uris/relative?script=<foo;-/?:@=+$>");
     }
 
     @Test
