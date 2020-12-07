@@ -67,8 +67,8 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -251,7 +251,7 @@ public class DefaultDnsClientTest {
 
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, true);
         recordStore.removeSrv(srvCNAME, targetDomain1, targetPort, 1);
-        assertFalse(subscriber.pollTerminal(ttl, SECONDS));
+        assertNull(subscriber.pollTerminal(ttl, SECONDS));
     }
 
     @Test
