@@ -29,6 +29,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 
 public class SingleProcessorTest {
@@ -84,7 +85,7 @@ public class SingleProcessorTest {
         SingleProcessor<T> processor = new SingleProcessor<>();
         TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
         processor.subscribe(subscriber);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         processor.onSuccess(expected);
         assertThat(subscriber.awaitOnSuccess(), is(expected));
     }
@@ -94,7 +95,7 @@ public class SingleProcessorTest {
         SingleProcessor<String> processor = new SingleProcessor<>();
         TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
         processor.subscribe(subscriber);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         processor.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -167,12 +168,12 @@ public class SingleProcessorTest {
         TestSingleSubscriber<T> subscriber = new TestSingleSubscriber<>();
         TestSingleSubscriber<T> subscriber2 = new TestSingleSubscriber<>();
         processor.subscribe(subscriber);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         processor.subscribe(subscriber2);
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         processor.onSuccess(expected);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         assertThat(subscriber2.awaitOnSuccess(), is(expected));
     }
 

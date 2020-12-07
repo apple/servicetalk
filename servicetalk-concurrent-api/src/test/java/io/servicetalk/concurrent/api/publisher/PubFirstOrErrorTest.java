@@ -33,6 +33,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class PubFirstOrErrorTest {
     @Rule
@@ -78,7 +79,7 @@ public class PubFirstOrErrorTest {
     public void singleItemNoComplete() {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
         publisher.onNext("hello");
-        assertThat(listenerRule.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(listenerRule.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

@@ -138,10 +138,10 @@ public abstract class FromInMemoryPublisherAbstractTest {
         requestItemsAndVerifyEmissions(source);
         subscriber.awaitSubscription().cancel();
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -154,7 +154,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         assertThat(subscriber.takeOnNext(), is("Hello0"));
         subscriber.awaitSubscription().request(1);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -286,7 +286,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
         toSource(source.publisher()).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         assertThat(subscriber.takeOnNext(3), contains(copyOf(source.values(), 3)));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     final InMemorySource newSource(int size) {

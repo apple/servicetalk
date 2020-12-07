@@ -26,6 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -54,7 +55,7 @@ public final class ResumeCompletableTest {
     @Test
     public void testFirstErrorSecondComplete() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onComplete();
         subscriber.awaitOnComplete();
     }
@@ -62,7 +63,7 @@ public final class ResumeCompletableTest {
     @Test
     public void testFirstErrorSecondError() {
         first.onError(new DeliberateException());
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         second.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -73,13 +74,13 @@ public final class ResumeCompletableTest {
         TestCancellable cancellable = new TestCancellable();
         first.onSubscribe(cancellable);
         assertTrue(cancellable.isCancelled());
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
     public void testCancelSecondActive() {
         first.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
 
         TestCancellable secondCancellable = new TestCancellable();

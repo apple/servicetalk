@@ -28,6 +28,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +50,7 @@ public class SingleConcatWithCompletableTest {
     @Test
     public void testSourceSuccessNextComplete() {
         source.onSuccess(1);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onComplete();
         assertThat(subscriber.awaitOnSuccess(), is(1));
     }
@@ -57,7 +58,7 @@ public class SingleConcatWithCompletableTest {
     @Test
     public void testSourceSuccessNextError() {
         source.onSuccess(1);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
@@ -71,7 +72,7 @@ public class SingleConcatWithCompletableTest {
 
     @Test
     public void testCancelSource() {
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
         source.onSubscribe(cancellable);
@@ -82,7 +83,7 @@ public class SingleConcatWithCompletableTest {
     @Test
     public void testCancelNext() {
         source.onSuccess(1);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         TestCancellable sourceCancellable = new TestCancellable();
         source.onSubscribe(sourceCancellable);

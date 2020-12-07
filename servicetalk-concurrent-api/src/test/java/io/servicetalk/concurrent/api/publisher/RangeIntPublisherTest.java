@@ -171,7 +171,7 @@ public class RangeIntPublisherTest {
         })).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         assertThat(subscriber.takeOnNext(), is(0));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test

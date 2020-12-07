@@ -45,7 +45,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -118,9 +120,9 @@ public class ChannelSetTest {
         toSource(completable).subscribe(subscriber);
         verify(nettyConnection).closeAsyncGracefully();
         verify(channel, never()).close();
-        assertFalse(subscriber.pollTerminal(10, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         closeAsyncGracefullyCompletable.onComplete();
-        assertFalse(subscriber.pollTerminal(10, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         listener.operationComplete(channelCloseFuture);
         subscriber.awaitOnComplete();
     }
@@ -190,9 +192,9 @@ public class ChannelSetTest {
         toSource(gracefulCompletable2).subscribe(subscriber2);
         verify(nettyConnection, times(1)).closeAsyncGracefully();
 
-        assertFalse(subscriber.pollTerminal(10, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         closeAsyncGracefullyCompletable.onComplete();
-        assertFalse(subscriber.pollTerminal(10, MILLISECONDS));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         listener.operationComplete(channelCloseFuture);
 

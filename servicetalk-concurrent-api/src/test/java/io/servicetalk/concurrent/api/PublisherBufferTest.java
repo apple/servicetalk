@@ -250,7 +250,7 @@ public class PublisherBufferTest {
 
     private void verifyNoBuffersNoTerminal() {
         assertThat(bufferSubscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        assertThat(bufferSubscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(bufferSubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     private void emitBoundary() {

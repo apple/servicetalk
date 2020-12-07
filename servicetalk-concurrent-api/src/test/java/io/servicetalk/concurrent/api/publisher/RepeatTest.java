@@ -30,6 +30,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -84,7 +85,7 @@ public class RepeatTest {
         assertTrue(source.isSubscribed());
         source.onNext(3);
         assertThat(subscriber.takeOnNext(), is(3));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -94,7 +95,7 @@ public class RepeatTest {
         source.onNext(1, 2);
         source.onComplete();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRepeat).test(1);
         assertTrue(source.isSubscribed());
         source.onNext(3);
@@ -112,7 +113,7 @@ public class RepeatTest {
         source.onNext(1, 2);
         source.onComplete();
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         verify(shouldRepeat).test(1);
         shouldRepeatValue = false;
         source.onComplete();

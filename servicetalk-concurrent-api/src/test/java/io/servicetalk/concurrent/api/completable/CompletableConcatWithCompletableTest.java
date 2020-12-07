@@ -27,6 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -47,7 +48,7 @@ public class CompletableConcatWithCompletableTest {
     public void testSourceSuccessNextSuccess() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onComplete();
         subscriber.awaitOnComplete();
     }
@@ -56,7 +57,7 @@ public class CompletableConcatWithCompletableTest {
     public void testSourceSuccessNextError() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -72,7 +73,7 @@ public class CompletableConcatWithCompletableTest {
     @Test
     public void testCancelSource() {
         toSource(source.concat(next)).subscribe(subscriber);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         TestCancellable cancellable = new TestCancellable();
         source.onSubscribe(cancellable);
@@ -84,7 +85,7 @@ public class CompletableConcatWithCompletableTest {
     public void testCancelNext() {
         toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
 
         TestCancellable sourceCancellable = new TestCancellable();

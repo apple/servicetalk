@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Subscriber} that enqueues signals and provides blocking methods to consume them.
@@ -82,9 +84,12 @@ public final class TestCompletableSubscriber implements Subscriber {
      *
      * @param timeout The duration of time to wait.
      * @param unit The unit of time to apply to the duration.
-     * @return {@code true} if a terminal event has been received before the timeout duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onComplete()}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
      */
-    public boolean pollTerminal(long timeout, TimeUnit unit) {
+    @Nullable
+    public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
         return publisherSubscriber.pollTerminal(timeout, unit);
     }
 }

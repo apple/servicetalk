@@ -105,7 +105,7 @@ public class PublisherProcessorTest {
         subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
         assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -115,7 +115,7 @@ public class PublisherProcessorTest {
         subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
         assertThat("Unexpected items received.", subscriber.takeOnNext(), is(1));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -163,7 +163,7 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onComplete();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
@@ -187,7 +187,7 @@ public class PublisherProcessorTest {
         toSource(processor).subscribe(subscriber);
         processor.onNext(1);
         processor.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         subscriber.awaitSubscription().request(1);
         assertThat("Unexpected items requested from subscription.", subscription.requested(), is(1L));
@@ -201,7 +201,7 @@ public class PublisherProcessorTest {
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(processor).subscribe(subscriber2);
         assertThat(subscriber2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
@@ -211,6 +211,6 @@ public class PublisherProcessorTest {
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(processor).subscribe(subscriber2);
         assertThat(subscriber2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 }

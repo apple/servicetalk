@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class SingleConcatWithPublisherTest {
@@ -64,7 +65,7 @@ public class SingleConcatWithPublisherTest {
     @Test
     public void bothCompletion() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(2);
         assertThat("Unexpected items requested.", subscription.requested(), is(2L));
         next.onNext(2);
@@ -76,7 +77,7 @@ public class SingleConcatWithPublisherTest {
     @Test
     public void sourceCompletionNextError() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         next.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(), is(1));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -156,7 +157,7 @@ public class SingleConcatWithPublisherTest {
 
     @Test
     public void cancelSource() {
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
@@ -164,7 +165,7 @@ public class SingleConcatWithPublisherTest {
 
     @Test
     public void cancelSourcePostRequest() {
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
@@ -174,7 +175,7 @@ public class SingleConcatWithPublisherTest {
     @Test
     public void cancelNext() {
         triggerNextSubscribe();
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertThat("Original single cancelled unexpectedly.", cancellable.isCancelled(), is(false));
         assertThat("Next source not cancelled.", subscription.isCancelled(), is(true));

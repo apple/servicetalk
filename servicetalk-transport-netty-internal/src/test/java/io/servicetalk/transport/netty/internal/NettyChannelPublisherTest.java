@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -436,13 +437,13 @@ public class NettyChannelPublisherTest {
         toSource(publisher).subscribe(subscriber2);
         subscriber2.awaitSubscription();
         assertThat(subscriber2.pollAllOnNext(), hasSize(0));
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
         firstSubscription.request(3);
 
         subscriber2.awaitSubscription();
         assertThat(subscriber2.pollAllOnNext(), hasSize(0));
-        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber2.awaitSubscription().request(1);
         assertThat(subscriber2.takeOnNext(), is(2));
         subscriber2.awaitOnComplete();

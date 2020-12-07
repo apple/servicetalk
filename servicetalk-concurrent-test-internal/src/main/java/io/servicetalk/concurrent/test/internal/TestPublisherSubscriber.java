@@ -23,20 +23,18 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -68,10 +66,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     private TerminalNotification onTerminal;
     @Nullable
     private Subscription subscription;
-    @Nullable
-    private Consumer<T> onNextConsumer;
-    @Nullable
-    private Consumer<Subscription> onSubscribeConsumer;
 
     /**
      * Create a new instance.
@@ -82,23 +76,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
 
     TestPublisherSubscriber(long initialDemand) {
         outstandingDemand = new AtomicLong(initialDemand);
-    }
-
-    /**
-     * Set a {@link Consumer} that is invoked in {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
-     * @param onSubscribeConsumer a {@link Consumer} that is invoked in
-     * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
-     */
-    public void onSubscribeConsumer(@Nullable Consumer<Subscription> onSubscribeConsumer) {
-        this.onSubscribeConsumer = onSubscribeConsumer;
-    }
-
-    /**
-     * Set a {@link Consumer} that is invoked in {@link #onNext(Object)}.
-     * @param onNextConsumer a {@link Consumer} that is invoked in {@link #onNext(Object)}.
-     */
-    public void onNextConsumer(@Nullable Consumer<T> onNextConsumer) {
-        this.onNextConsumer = onNextConsumer;
     }
 
     @Override
@@ -128,9 +105,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
                 subscription.cancel();
             }
         };
-        if (onSubscribeConsumer != null) {
-            onSubscribeConsumer.accept(this.subscription);
-        }
         onSubscribeLatch.countDown();
     }
 
@@ -140,9 +114,6 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
         if (outstandingDemand.decrementAndGet() < 0) {
             throw new IllegalStateException("Too many onNext signals relative to Subscription request(n). " +
                     "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.1");
-        }
-        if (onNextConsumer != null) {
-            onNextConsumer.accept(t);
         }
         items.add(wrapNull(t));
     }
@@ -246,12 +217,13 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      *
      * @param timeout The amount of time to wait.
      * @param unit The units of {@code timeout}.
-     * @return item delivered to {@link #onNext(Object)}, or {@code null} if a timeout occurred.
+     * @return A {@link Supplier} that returns the signal delivered to {@link #onNext(Object)},
+     * or {@code null} if a timeout occurred or a terminal signal has been received.
      */
     @Nullable
-    public Optional<T> pollOnNext(long timeout, TimeUnit unit) {
+    public Supplier<T> pollOnNext(long timeout, TimeUnit unit) {
         Object item = pollUninterruptibly(items, timeout, unit);
-        return item == null ? null : ofNullable(unwrapNull(item));
+        return item == null ? null : () -> unwrapNull(item);
     }
 
     /**
@@ -318,10 +290,17 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
      *
      * @param timeout The duration of time to wait.
      * @param unit The unit of time to apply to the duration.
-     * @return {@code true} if a terminal event has been received before the timeout duration.
+     * @return {@code null} if a the timeout expires before a terminal event is received. A non-{@code null}
+     * {@link Supplier} that returns {@code null} if {@link #onComplete()}, or the {@link Throwable} from
+     * {@link #onError(Throwable)}.
      */
-    public boolean pollTerminal(long timeout, TimeUnit unit) {
-        return awaitUninterruptibly(onTerminalLatch, timeout, unit);
+    @Nullable
+    public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
+        if (awaitUninterruptibly(onTerminalLatch, timeout, unit)) {
+            assert onTerminal != null;
+            return onTerminal == complete() ? () -> null : onTerminal::cause;
+        }
+        return null;
     }
 
     private void verifyAllOnNextProcessed() {

@@ -32,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -61,7 +62,7 @@ public class MergeCompletableTest {
     public void testCompletionFew() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         holder.init(2).listen(subscriber).complete(1, 2);
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(false));
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         holder.complete(0);
         subscriber.awaitOnComplete();
     }
