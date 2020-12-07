@@ -212,7 +212,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         try {
             baseURI = URI.create(baseUri.toString());
             requestURI = URI.create(requestUriBuilder.toString());
-        } catch (Throwable cause) {
+        } catch (IllegalArgumentException cause) {
             Buffer message = serviceCtx.executionContext().bufferAllocator().fromAscii(cause.getMessage());
             StreamingHttpResponse response = factory.badRequest().payloadBody(from(message));
             response.headers().add(CONTENT_LENGTH, Integer.toString(message.readableBytes()));
