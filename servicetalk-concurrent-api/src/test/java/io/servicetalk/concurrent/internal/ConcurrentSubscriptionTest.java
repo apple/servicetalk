@@ -34,7 +34,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.Executors.newFixedThreadPool;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -196,10 +195,10 @@ public class ConcurrentSubscriptionTest {
             try {
                 f.get();
                 // don't fail, if cancel happens first then the Subscription is terminated.
+                cancelledLatch.await();
             } catch (ExecutionException e) {
                 assertSame(DELIBERATE_EXCEPTION, e.getCause());
             }
-            assertFalse(cancelledLatch.await(10, MILLISECONDS));
         } finally {
             executorService.shutdown();
         }
