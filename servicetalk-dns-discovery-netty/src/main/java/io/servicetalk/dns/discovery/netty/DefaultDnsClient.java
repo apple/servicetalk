@@ -185,6 +185,7 @@ final class DefaultDnsClient implements DnsClient {
         //  hostname has CNAME entries which map to SRV entries with lower TTLs. We should be able to use the same
         //  resolver for A* and SRV records after this is resolved.
         //  See DefaultDnsClientTest#srvWithCNAMEEntryLowerTTLDoesNotFail.
+        //  See https://github.com/netty/netty/pull/10808
         builder.cnameCache(NoopDnsCnameCache.INSTANCE);
         srvResolver = builder.build();
     }
@@ -217,7 +218,7 @@ final class DefaultDnsClient implements DnsClient {
         requireNonNull(serviceName);
         return defer(() -> {
         // State per subscribe requires defer so each subscribe gets independent state.
-        final Map<HostAndPort, ARecordPublisher> aRecordMap = new HashMap<>(8);
+        final Map<String, ARecordPublisher> aRecordMap = new HashMap<>(8);
         final Map<InetSocketAddress, Integer> availableAddresses = srvFilterDuplicateEvents ?
                 new HashMap<>(8) : emptyMap();
         final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(serviceName);
@@ -232,9 +233,10 @@ final class DefaultDnsClient implements DnsClient {
                     return defer(() -> {
                         final ARecordPublisher aPublisher =
                                 new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);
-                        final ARecordPublisher prevAPublisher = aRecordMap.putIfAbsent(srvEvent.address(), aPublisher);
+                        final ARecordPublisher prevAPublisher = aRecordMap.putIfAbsent(srvEvent.address().hostName(),
+                                aPublisher);
                         if (prevAPublisher != null) {
-                            return newDuplicateSrv(serviceName, srvEvent.address().toString(), prevAPublisher.name);
+                            return newDuplicateSrv(serviceName, srvEvent.address().hostName());
                         }
 
                         Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
@@ -248,14 +250,14 @@ final class DefaultDnsClient implements DnsClient {
                         // If this error is because the SRV entry was detected as inactive, then propagate the error and
                         // don't retry. Otherwise this is a resolution exception (e.g. UnknownHostException), and retry.
                         return cause == SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED ||
-                                aRecordMap.remove(srvEvent.address()) == null ?
+                                aRecordMap.remove(srvEvent.address().hostName()) == null ?
                                 Completable.failed(cause) : srvHostNameRepeater.apply(i);
                     }).recoverWith(cause -> empty()); // retryWhen will propagate onError, but we don't want this.
                 } else if (srvEvent instanceof SrvInactiveEvent) {
                     // Unwrap the list so we can use it in SrvInactiveCombinerOperator below.
                     return from(((SrvInactiveEvent<HostAndPort, InetSocketAddress>) srvEvent).aggregatedEvents);
                 } else {
-                    final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address());
+                    final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address().hostName());
                     if (aPublisher != null) {
                         aPublisher.cancelAndFail0(SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED);
                     }
@@ -779,10 +781,9 @@ final class DefaultDnsClient implements DnsClient {
         });
     }
 
-    private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress, String existingName) {
-        return failed(new IllegalStateException("Duplicate SRV entry. " +
-                resolvedAddress + " corresponding to SRV name " + serviceName +
-                " had a pre-existing record:" + existingName));
+    private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
+        return failed(new IllegalStateException("Duplicate SRV entry for SRV name " + serviceName + " for address " +
+                resolvedAddress));
     }
 
     private static ResolvedAddressTypes toNettyType(final DnsResolverAddressTypes dnsResolverAddressTypes) {
@@ -841,7 +842,7 @@ final class DefaultDnsClient implements DnsClient {
                     } else if (evts instanceof SrvAggregateList) {
                         aggregatedEvents = (List<ServiceDiscovererEvent<InetSocketAddress>>) evts;
                         subscription.request(1);
-                    } else {
+                    } else { // if there hasn't been an SrvAggregateList event, we should just pass through.
                         subscriber.onNext(evts);
                     }
                 }
@@ -870,7 +871,7 @@ final class DefaultDnsClient implements DnsClient {
         private final List<ServiceDiscovererEvent<A>> aggregatedEvents = new SrvAggregateList<>();
         @Override
         public T address() {
-            throw new UnsupportedOperationException();
+            throw new IllegalStateException("address method should not be called when isAvailable is false!");
         }
 
         @Override
@@ -880,6 +881,7 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private static final class SrvAggregateList<T> extends ArrayList<T> {
+        private static final long serialVersionUID = -6105010311426084245L;
     }
 
     private static final class ServiceTalkToNettyDnsServerAddressStream
@@ -908,12 +910,15 @@ final class DefaultDnsClient implements DnsClient {
 
     private static final class ClosedServiceDiscovererException extends RuntimeException
             implements RejectedSubscribeError {
+        private static final long serialVersionUID = 1411660766942024081L;
+
         ClosedServiceDiscovererException(final String message) {
             super(message);
         }
     }
 
     private static final class SrvAddressRemovedException extends RuntimeException {
+        private static final long serialVersionUID = -4083873869084533456L;
         private static final SrvAddressRemovedException DNS_SRV_ADDR_REMOVED =
                 unknownStackTrace(new SrvAddressRemovedException(), DefaultDnsClient.class, "dnsSrvQuery");
 

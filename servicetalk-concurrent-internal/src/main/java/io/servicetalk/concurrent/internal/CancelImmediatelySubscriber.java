@@ -16,10 +16,15 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link PublisherSource.Subscriber} that invokes {@link Subscription#cancel()} in
+ * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
+ */
 public final class CancelImmediatelySubscriber implements PublisherSource.Subscriber<Object> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
     public static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
@@ -29,7 +34,7 @@ public final class CancelImmediatelySubscriber implements PublisherSource.Subscr
     }
 
     @Override
-    public void onSubscribe(final PublisherSource.Subscription s) {
+    public void onSubscribe(final Subscription s) {
         // Cancel immediately so that the connection can handle this as required.
         s.cancel();
     }
@@ -41,7 +46,7 @@ public final class CancelImmediatelySubscriber implements PublisherSource.Subscr
 
     @Override
     public void onError(final Throwable t) {
-        LOGGER.debug("Ignoring error from response payload, since subscriber has already cancelled.", t);
+        LOGGER.debug("Ignoring error, since subscriber has already cancelled.", t);
     }
 
     @Override

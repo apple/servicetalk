@@ -41,14 +41,14 @@ public final class SingletonDnsServerAddressStreamProvider implements DnsServerA
     /**
      * A {@link DnsServerAddressStream} which always returns the same {@link InetSocketAddress}.
      */
-    public static final class SingletonDnsServerAddresses implements DnsServerAddressStream {
+    private static final class SingletonDnsServerAddresses implements DnsServerAddressStream {
         private final InetSocketAddress address;
 
         /**
          * Create a new instance.
          * @param address the address to return in {@link #next()}.
          */
-        public SingletonDnsServerAddresses(InetSocketAddress address) {
+        SingletonDnsServerAddresses(InetSocketAddress address) {
             if (address.isUnresolved()) {
                 throw new IllegalArgumentException("cannot use an unresolved DNS server address: " + address);
             }
