@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
@@ -30,6 +31,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class PubCompletableOrErrorTest {
     @Rule
@@ -49,8 +51,18 @@ public class PubCompletableOrErrorTest {
     }
 
     @Test
-    public void onElementAlwaysFails() {
+    public void oneElementsAlwaysFails() {
         toSource(from("foo").completableOrError()).subscribe(subscriber);
+        assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    public void twoElementsAlwaysFails() {
+        // Use TestPublisher to force deliver two items, and verify the operator doesn't duplicate terminate.
+        TestPublisher<String> publisher = new TestPublisher<>();
+        toSource(publisher.completableOrError()).subscribe(subscriber);
+        assertTrue(publisher.isSubscribed());
+        publisher.onNext("foo", "bar");
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 }

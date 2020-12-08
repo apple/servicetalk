@@ -69,12 +69,12 @@ abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeComp
         }
 
         @Override
-        public final void onError(final Throwable t) {
+        public void onError(final Throwable t) {
             subscriber.onError(t);
         }
 
         @Override
-        public final void onComplete() {
+        public void onComplete() {
             subscriber.onComplete();
         }
     }

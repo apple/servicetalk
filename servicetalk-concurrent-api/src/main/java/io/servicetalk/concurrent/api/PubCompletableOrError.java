@@ -30,13 +30,40 @@ final class PubCompletableOrError<T> extends AbstractPubToCompletable<T> {
     }
 
     private static final class PubToCompletableOrErrorSubscriber<T> extends AbstractPubToCompletableSubscriber<T> {
+        private boolean terminated;
+
         PubToCompletableOrErrorSubscriber(final Subscriber subscriber) {
             super(subscriber);
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            throw new IllegalArgumentException("No onNext signals expected, but got: " + t);
+            if (!terminated) {
+                terminated = true;
+                try {
+                    // Instead of throwing an exception directly we propagate here an cancel upstream. This is so
+                    // upstream operators aren't exposed to the conversion error.
+                    super.onError(new IllegalArgumentException("No onNext signals expected, but got: " + t));
+                } finally {
+                    cancel();
+                }
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            if (!terminated) {
+                terminated = true;
+                super.onError(t);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            if (!terminated) {
+                terminated = true;
+                super.onComplete();
+            }
         }
     }
 }
