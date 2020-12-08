@@ -67,6 +67,7 @@ configured when users create a _Client_ instance.
 
 This implementation is backed by `io.netty:netty-resolver-dns` and provides non-blocking DNS resolutions.
 
-IMPORTANT: _macOS_ users may experience problems with resolving host addresses in certain environments. In this case,
-users need to add the additional dependency on the classpath which will ensure the right nameservers are selected when
-running on macOS: `io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64`.
+NOTE: By default, ServiceTalk implementation adds `io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64`
+dependency to support native _macOS_ API for retrieving the current nameserver configuration of the system. Users who
+never use _macOS_ may safely exclude this dependency from the classpath. _macOS_ users may experience problems with
+resolving host addresses in certain environments without this dependency.
