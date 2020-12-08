@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -49,6 +50,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     private int minTTLSeconds = 10;
+    private int srvConcurrency = 2048;
+    private boolean inactiveEventsOnError;
+    private boolean completeOncePreferredResolved = true;
+    private boolean srvFilterDuplicateEvents;
+    private Duration srvHostNameRepeatInitialDelay = ofSeconds(10);
+    private Duration srvHostNameRepeatJitter = ofSeconds(5);
     @Nullable
     private DnsClientFilterFactory filterFactory;
     @Nullable
@@ -145,31 +152,6 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link ServiceDiscoverer} created by this
-     * builder.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters
-     * will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
-     * </pre>
-     *
-     * @param factory {@link DnsClientFilterFactory} to decorate a {@link DnsClient} for the purpose of
-     * filtering.
-     * @return {@code this}
-     */
-    DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
-        filterFactory = filterFactory == null ? requireNonNull(factory) : filterFactory.append(factory);
-        return this;
-    }
-
-    /**
      * Sets the {@link IoExecutor}.
      *
      * @param ioExecutor {@link IoExecutor} to use.
@@ -202,7 +184,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
      */
     public ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-            buildSrvDiscoverer() {
+    buildSrvDiscoverer() {
         return asSrvDiscoverer(build());
     }
 
@@ -215,8 +197,63 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * a fixed port derived from the {@link HostAndPort}.
      */
     public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-            buildARecordDiscoverer() {
+    buildARecordDiscoverer() {
         return asHostAndPortDiscoverer(build());
+    }
+
+    DefaultDnsServiceDiscovererBuilder inactiveEventsOnError(boolean inactiveEventsOnError) {
+        this.inactiveEventsOnError = inactiveEventsOnError;
+        return this;
+    }
+
+    DefaultDnsServiceDiscovererBuilder srvConcurrency(int srvConcurrency) {
+        if (srvConcurrency <= 0) {
+            throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
+        }
+        this.srvConcurrency = srvConcurrency;
+        return this;
+    }
+
+    DefaultDnsServiceDiscovererBuilder completeOncePreferredResolved(boolean completeOncePreferredResolved) {
+        this.completeOncePreferredResolved = completeOncePreferredResolved;
+        return this;
+    }
+
+    DefaultDnsServiceDiscovererBuilder srvHostNameRepeatDelay(
+            Duration initialDelay, Duration jitter) {
+        this.srvHostNameRepeatInitialDelay = requireNonNull(initialDelay);
+        this.srvHostNameRepeatJitter = requireNonNull(jitter);
+        return this;
+    }
+
+    DefaultDnsServiceDiscovererBuilder srvFilterDuplicateEvents(boolean srvFilterDuplicateEvents) {
+        this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
+        return this;
+    }
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link ServiceDiscoverer} created by this
+     * builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build()} before it is returned to the user.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a service discoverer wrapped by this filter chain the order of invocation of these filters
+     * will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service discoverer
+     * </pre>
+     *
+     * @param factory {@link DnsClientFilterFactory} to decorate a {@link DnsClient} for the purpose of
+     * filtering.
+     * @return {@code this}
+     */
+    DefaultDnsServiceDiscovererBuilder appendFilter(final DnsClientFilterFactory factory) {
+        filterFactory = filterFactory == null ? requireNonNull(factory) : filterFactory.append(factory);
+        return this;
     }
 
     /**
@@ -226,10 +263,10 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
-                maxUdpPayloadSize, ndots,
-                optResourceEnabled, queryTimeout, dnsResolverAddressTypes,
-                dnsServerAddressStreamProvider, observer);
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, srvConcurrency,
+                inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
+                srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
+                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

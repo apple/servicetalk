@@ -39,11 +39,6 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
-import static io.servicetalk.dns.discovery.netty.TestRecordStore.DEFAULT_TTL;
-import static io.servicetalk.dns.discovery.netty.TestRecordStore.createSrvRecord;
-import static java.util.Collections.singletonList;
-import static org.apache.directory.server.dns.messages.RecordType.A;
-import static org.apache.directory.server.dns.messages.RecordType.SRV;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -66,6 +61,7 @@ public class DnsServiceDiscovererObserverTest {
     private static final String HOST_NAME = "servicetalk.io";
     private static final String SERVICE_NAME = "servicetalk";
     private static final String INVALID = "invalid.";
+    private static final int DEFAULT_TTL = 1;
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -76,9 +72,8 @@ public class DnsServiceDiscovererObserverTest {
 
     @Before
     public void setUp() throws Exception {
-        recordStore.defaultResponse(HOST_NAME, A, nextIp(), nextIp());
-        recordStore.defaultResponse(SERVICE_NAME, SRV, () -> singletonList(
-                createSrvRecord(SERVICE_NAME, HOST_NAME, 10, 10, 443, DEFAULT_TTL)));
+        recordStore.addIPv4Address(HOST_NAME, DEFAULT_TTL, nextIp(), nextIp());
+        recordStore.addSrv(SERVICE_NAME, HOST_NAME, 443, DEFAULT_TTL);
         dnsServer.start();
     }
 
@@ -96,8 +91,7 @@ public class DnsServiceDiscovererObserverTest {
                 .observer(observer)
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
-                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
-                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
                 .minTTL(1)
                 .build());

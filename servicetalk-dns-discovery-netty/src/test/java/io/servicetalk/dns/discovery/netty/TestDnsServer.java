@@ -47,17 +47,24 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 class TestDnsServer extends DnsServer {
     private final DelegateRecordStore store;
+    private final InetSocketAddress bindAddress;
 
     TestDnsServer(RecordStore store) {
+        this(store, AddressUtils.localAddress(0));
+    }
+
+    TestDnsServer(RecordStore store, InetSocketAddress bindAddress) {
         this.store = new DelegateRecordStore(store);
+        this.bindAddress = requireNonNull(bindAddress);
     }
 
     @Override
     public void start() throws IOException {
-        InetSocketAddress address = AddressUtils.localAddress(0);
-        UdpTransport transport = new UdpTransport(address.getHostString(), address.getPort());
+        UdpTransport transport = new UdpTransport(bindAddress.getHostString(), bindAddress.getPort());
         setTransports(transport);
 
         DatagramAcceptor acceptor = transport.getAcceptor();

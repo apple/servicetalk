@@ -24,11 +24,10 @@ import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Utilities methods and conversion routines for {@link DnsClient}.
@@ -48,7 +47,7 @@ final class DnsClients {
      * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a>
      */
     static ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-            asSrvDiscoverer(DnsClient dns) {
+    asSrvDiscoverer(DnsClient dns) {
         return new ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Completable closeAsync() {
@@ -82,7 +81,7 @@ final class DnsClients {
      * resolved address to {@link HostAndPort} to {@link InetSocketAddress}.
      */
     static ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-            asHostAndPortDiscoverer(DnsClient dns) {
+    asHostAndPortDiscoverer(DnsClient dns) {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>() {
             @Override
             public Completable closeAsync() {
@@ -111,8 +110,10 @@ final class DnsClients {
 
     static <T, R> List<ServiceDiscovererEvent<R>> mapEventList(final Collection<ServiceDiscovererEvent<T>> original,
                                                                final Function<T, R> mapper) {
-        return original.stream()
-                .map(evt -> new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.isAvailable()))
-                .collect(toList());
+        List<ServiceDiscovererEvent<R>> result = new ArrayList<>(original.size());
+        for (ServiceDiscovererEvent<T> evt : original) {
+            result.add(new DefaultServiceDiscovererEvent<>(mapper.apply(evt.address()), evt.isAvailable()));
+        }
+        return result;
     }
 }

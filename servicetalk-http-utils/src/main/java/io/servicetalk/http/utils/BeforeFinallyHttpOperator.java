@@ -23,11 +23,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -221,36 +219,6 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 return;
             }
             subscriber.onSuccess(null);
-        }
-    }
-
-    private static final class CancelImmediatelySubscriber implements Subscriber<Object> {
-        private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
-        static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
-
-        private CancelImmediatelySubscriber() {
-            // Singleton
-        }
-
-        @Override
-        public void onSubscribe(final Subscription s) {
-            // Cancel immediately so that the connection can handle this as required.
-            s.cancel();
-        }
-
-        @Override
-        public void onNext(final Object obj) {
-            // Can not be here since we never request.
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            LOGGER.debug("Ignoring error from response payload, since subscriber has already cancelled.", t);
-        }
-
-        @Override
-        public void onComplete() {
-            // Ignore.
         }
     }
 }

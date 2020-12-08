@@ -18,11 +18,14 @@ package io.servicetalk.dns.discovery.netty;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.DnsDiscoveryObserver;
@@ -42,6 +45,7 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.NoopDnsCnameCache;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -60,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.decodeName;
@@ -68,14 +73,17 @@ import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculat
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -83,6 +91,8 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static java.lang.System.nanoTime;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -95,24 +105,39 @@ final class DefaultDnsClient implements DnsClient {
     private static final Comparator<HostAndPort> HOST_AND_PORT_COMPARATOR = comparing(HostAndPort::hostName)
             .thenComparingInt(HostAndPort::port);
     private static final Cancellable TERMINATED = () -> { };
-    private static final Cancellable TERMINATE_ON_NEXT_REQUEST_N = () -> { };
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
+    private final DnsNameResolver srvResolver;
     private final MinTtlCache ttlCache;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
+    private final IntFunction<? extends Completable> srvHostNameRepeater;
+    private final int srvConcurrency;
+    private final boolean srvFilterDuplicateEvents;
+    private final boolean inactiveEventsOnError;
     private boolean closed;
 
-    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL,
+    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, int srvConcurrency, boolean inactiveEventsOnError,
+                     final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
+                     Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
                      @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer) {
+        if (srvConcurrency <= 0) {
+            throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
+        }
+        this.srvConcurrency = srvConcurrency;
+        this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
+        this.inactiveEventsOnError = inactiveEventsOnError;
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
+        // We must use nettyIoExecutor for the repeater for thread safety!
+        srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
+                srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor.asExecutor());
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.observer = observer;
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -134,7 +159,7 @@ final class DefaultDnsClient implements DnsClient {
                 .socketChannelType(socketChannelClass)
                 // We should complete once the preferred address types could be resolved to ensure we always
                 // respond as fast as possible.
-                .completeOncePreferredResolved(true);
+                .completeOncePreferredResolved(completeOncePreferredResolved);
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }
@@ -155,6 +180,14 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         resolver = builder.build();
+
+        // TODO(scott): SRV records aren't cached, this may result in unexpected failures for SRV queries if the
+        //  hostname has CNAME entries which map to SRV entries with lower TTLs. We should be able to use the same
+        //  resolver for A* and SRV records after this is resolved.
+        //  See DefaultDnsClientTest#srvWithCNAMEEntryLowerTTLDoesNotFail.
+        //  See https://github.com/netty/netty/pull/10808
+        builder.cnameCache(NoopDnsCnameCache.INSTANCE);
+        srvResolver = builder.build();
     }
 
     @Nullable
@@ -174,57 +207,64 @@ final class DefaultDnsClient implements DnsClient {
     @Override
     public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
         requireNonNull(address);
-        return defer(() -> new ARecordPublisher(true, address, newDiscoveryObserver(address)));
+        return defer(() -> {
+            ARecordPublisher pub = new ARecordPublisher(address, newDiscoveryObserver(address));
+            return inactiveEventsOnError ? recoverWithInactiveEvents(pub, false) : pub;
+        });
     }
 
     @Override
     public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(final String serviceName) {
         requireNonNull(serviceName);
         return defer(() -> {
-            // State per subscribe requires defer so each subscribe gets independent state.
-            final Map<HostAndPort, ARecordPublisher> aRecordMap = new HashMap<>(8);
-            final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(serviceName);
-            return new SrvRecordPublisher(serviceName, discoveryObserver).flatMapConcatIterable(identity())
-                    .flatMapMergeSingle(srvEvent -> {
+        // State per subscribe requires defer so each subscribe gets independent state.
+        final Map<String, ARecordPublisher> aRecordMap = new HashMap<>(8);
+        final Map<InetSocketAddress, Integer> availableAddresses = srvFilterDuplicateEvents ?
+                new HashMap<>(8) : emptyMap();
+        final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(serviceName);
+        // We "recover" unconditionally to force inactive events to propagate to all mapped A* publishers to cancel
+        // any pending scheduled tasks. SrvInactiveCombinerOperator is used to filter the aggregated collection of
+        // inactive events if necessary.
+        return recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
+                .flatMapConcatIterable(identity())
+                .flatMapMerge(srvEvent -> {
                 assertInEventloop();
                 if (srvEvent.isAvailable()) {
-                    final ARecordPublisher aPublisher =
-                            new ARecordPublisher(false, srvEvent.address().hostName(), discoveryObserver);
-                    final ARecordPublisher prevAPublisher = aRecordMap.putIfAbsent(srvEvent.address(), aPublisher);
-                    if (prevAPublisher != null) {
-                        return failed(new IllegalStateException("Only 1 A* record per SRV record is supported. " +
-                                srvEvent.address() + " corresponding to SRV name " + serviceName +
-                                " had a pre-existing A* record:" + prevAPublisher.name +
-                                " when new A* record arrived: " + aPublisher.name));
-                    }
-
-                    return srvARecordPubToSingle(aPublisher, srvEvent, serviceName);
-                } else {
-                    final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address());
-                    if (aPublisher != null) {
-                        final List<ServiceDiscovererEvent<InetAddress>> list = aPublisher.close0();
-                        if (list != null) {
-                            return srvARecordPubToSingle(Publisher.from(list), srvEvent, serviceName);
+                    return defer(() -> {
+                        final ARecordPublisher aPublisher =
+                                new ARecordPublisher(srvEvent.address().hostName(), discoveryObserver);
+                        final ARecordPublisher prevAPublisher = aRecordMap.putIfAbsent(srvEvent.address().hostName(),
+                                aPublisher);
+                        if (prevAPublisher != null) {
+                            return newDuplicateSrv(serviceName, srvEvent.address().hostName());
                         }
+
+                        Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub =
+                                recoverWithInactiveEvents(aPublisher, false);
+                        return srvFilterDuplicateEvents ?
+                                srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
+                                returnPub.map(events -> mapEventList(events, inetAddress ->
+                                        new InetSocketAddress(inetAddress, srvEvent.address().port())));
+                    }).retryWhen((i, cause) -> {
+                        assertInEventloop();
+                        // If this error is because the SRV entry was detected as inactive, then propagate the error and
+                        // don't retry. Otherwise this is a resolution exception (e.g. UnknownHostException), and retry.
+                        return cause == SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED ||
+                                aRecordMap.remove(srvEvent.address().hostName()) == null ?
+                                Completable.failed(cause) : srvHostNameRepeater.apply(i);
+                    }).recoverWith(cause -> empty()); // retryWhen will propagate onError, but we don't want this.
+                } else if (srvEvent instanceof SrvInactiveEvent) {
+                    // Unwrap the list so we can use it in SrvInactiveCombinerOperator below.
+                    return from(((SrvInactiveEvent<HostAndPort, InetSocketAddress>) srvEvent).aggregatedEvents);
+                } else {
+                    final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address().hostName());
+                    if (aPublisher != null) {
+                        aPublisher.cancelAndFail0(SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED);
                     }
-
-                    return failed(new IllegalStateException("Received an SRV inactive event for " +
-                            srvEvent.address() + " corresponding to SRV name " + serviceName +
-                            " but failed to find the corresponding A* record Publisher."));
+                    return empty();
                 }
-            });
-        });
-    }
-
-    private static Single<List<ServiceDiscovererEvent<InetSocketAddress>>> srvARecordPubToSingle(
-            Publisher<List<ServiceDiscovererEvent<InetAddress>>> aRecordPublisher,
-            ServiceDiscovererEvent<HostAndPort> srvEvent, String serviceName) {
-        return aRecordPublisher
-                .map(events -> mapEventList(events, inetAddress ->
-                        new InetSocketAddress(inetAddress, srvEvent.address().port())))
-                .firstOrElse(() -> {
-            LOGGER.info("No A* records found for {} corresponding to SRV name {}", srvEvent.address(), serviceName);
-            return null;
+            }, srvConcurrency)
+            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
         });
     }
 
@@ -251,15 +291,15 @@ final class DefaultDnsClient implements DnsClient {
         }
         closed = true;
         resolver.close();
+        srvResolver.close();
         ttlCache.clear();
     }
 
     private void assertInEventloop() {
-        assert nettyIoExecutor.isCurrentThreadEventLoop() : "Must be called from the associated eventloop.";
+        assert nettyIoExecutor.isCurrentThreadEventLoop();
     }
 
     private final class SrvRecordPublisher extends AbstractDnsPublisher<HostAndPort> {
-
         private SrvRecordPublisher(final String serviceName, @Nullable final DnsDiscoveryObserver discoveryObserver) {
             super(serviceName, discoveryObserver);
         }
@@ -272,11 +312,11 @@ final class DefaultDnsClient implements DnsClient {
         @Override
         protected AbstractDnsSubscription newSubscription(
                 final Subscriber<? super List<ServiceDiscovererEvent<HostAndPort>>> subscriber) {
-            return new AbstractDnsSubscription(true, subscriber) {
+            return new AbstractDnsSubscription(subscriber) {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery() {
                     Promise<DnsAnswer<HostAndPort>> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
+                    srvResolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
@@ -331,12 +371,8 @@ final class DefaultDnsClient implements DnsClient {
     }
 
     private class ARecordPublisher extends AbstractDnsPublisher<InetAddress> {
-        private final boolean cancelClearsSubscription;
-
-        ARecordPublisher(final boolean cancelClearsSubscription, final String inetHost,
-                         @Nullable final DnsDiscoveryObserver discoveryObserver) {
+        ARecordPublisher(final String inetHost, @Nullable final DnsDiscoveryObserver discoveryObserver) {
             super(inetHost, discoveryObserver);
-            this.cancelClearsSubscription = cancelClearsSubscription;
         }
 
         @Override
@@ -347,7 +383,7 @@ final class DefaultDnsClient implements DnsClient {
         @Override
         protected AbstractDnsSubscription newSubscription(
                 final Subscriber<? super List<ServiceDiscovererEvent<InetAddress>>> subscriber) {
-            return new AbstractDnsSubscription(cancelClearsSubscription, subscriber) {
+            return new AbstractDnsSubscription(subscriber) {
                 @Override
                 protected Future<DnsAnswer<InetAddress>> doDnsQuery() {
                     ttlCache.prepareForResolution(name);
@@ -400,7 +436,6 @@ final class DefaultDnsClient implements DnsClient {
 
     private abstract class AbstractDnsPublisher<T>
             extends SubscribablePublisher<List<ServiceDiscovererEvent<T>>> {
-
         /**
          * Name of the DNS record to query.
          */
@@ -411,7 +446,7 @@ final class DefaultDnsClient implements DnsClient {
         @Nullable
         protected final DnsDiscoveryObserver discoveryObserver;
         @Nullable
-        private AbstractDnsSubscription subscription;
+        AbstractDnsSubscription subscription;
 
         AbstractDnsPublisher(final String name, @Nullable final DnsDiscoveryObserver discoveryObserver) {
             this.name = name;
@@ -445,7 +480,7 @@ final class DefaultDnsClient implements DnsClient {
                 deliverErrorFromSource(subscriber, new DuplicateSubscribeException(subscription, subscriber));
             } else if (closed) {
                 deliverErrorFromSource(subscriber, new ClosedServiceDiscovererException(DefaultDnsClient.this +
-                                " has been closed!"));
+                        " has been closed!"));
             } else {
                 subscription = newSubscription(subscriber);
                 try {
@@ -456,31 +491,17 @@ final class DefaultDnsClient implements DnsClient {
             }
         }
 
-        @Nullable
-        final List<ServiceDiscovererEvent<T>> close0() {
+        final void cancelAndFail0(Throwable cause) {
             assertInEventloop();
-
             if (subscription != null) {
-                List<ServiceDiscovererEvent<T>> events = subscription.cancelClearsSubscription ? null :
-                        subscription.generateInactiveEvent();
-
-                // this method call will null out the subscription reference after it is terminated.
-                subscription.closeAndTerminate0();
-
-                return events;
+                subscription.cancelAndTerminate0(cause);
+            } else {
+                subscription = newSubscription(CancelImmediatelySubscriber.INSTANCE);
             }
-            return null;
         }
 
         abstract class AbstractDnsSubscription implements Subscription {
             private final Subscriber<? super List<ServiceDiscovererEvent<T>>> subscriber;
-            /**
-             * A record resolution for SRV uses flatMapSingle and firstOnOrError which will cancel inline with the
-             * first onNext signal. However when we encounter a SRV in-active event we need to manually generate a A*
-             * record in-active event corresponding for the currently active A* addresses. This means when the cancel
-             * occurs we need to preserve the {@link #activeAddresses} state for {@link #generateInactiveEvent()}.
-             */
-            private final boolean cancelClearsSubscription;
             private long pendingRequests;
             private List<T> activeAddresses;
             private long resolveDoneNoScheduleTime;
@@ -488,9 +509,7 @@ final class DefaultDnsClient implements DnsClient {
             private Cancellable cancellableForQuery;
             private long ttlNanos;
 
-            AbstractDnsSubscription(final boolean cancelClearsSubscription,
-                                    final Subscriber<? super List<ServiceDiscovererEvent<T>>> subscriber) {
-                this.cancelClearsSubscription = cancelClearsSubscription;
+            AbstractDnsSubscription(final Subscriber<? super List<ServiceDiscovererEvent<T>>> subscriber) {
                 this.subscriber = subscriber;
                 activeAddresses = emptyList();
                 ttlNanos = -1;
@@ -548,9 +567,6 @@ final class DefaultDnsClient implements DnsClient {
                             scheduleQuery0(ttlNanos - durationNs);
                         }
                     }
-                } else if (cancellableForQuery == TERMINATE_ON_NEXT_REQUEST_N) {
-                    assert pendingRequests > 0;
-                    tryTerminateOnComplete(); // we were waiting for demand, and got it. time to deliver the data.
                 }
             }
 
@@ -592,40 +608,18 @@ final class DefaultDnsClient implements DnsClient {
 
             private void cancel0() {
                 assertInEventloop();
-                if (cancellableForQuery != null) {
-                    cancellableForQuery.cancel();
-                }
-                if (cancelClearsSubscription) {
-                    clearState();
-                }
-            }
-
-            private void clearState() {
+                Cancellable oldCancellable = cancellableForQuery;
                 cancellableForQuery = TERMINATED;
-                subscription = null;
-            }
-
-            private void closeAndTerminate0() {
-                if (cancellableForQuery != null) {
-                    cancellableForQuery.cancel();
+                if (oldCancellable != null) {
+                    oldCancellable.cancel();
                 }
-                tryTerminateOnComplete();
             }
 
-            private void tryTerminateOnComplete() {
-                final boolean deliverTerminal;
+            private void cancelAndTerminate0(Throwable cause) {
                 try {
-                    deliverTerminal = clearAddressesAndPropagateRemovalEvents();
-                } catch (Throwable cause) {
-                    clearState(); // must null out subscription before terminating to allow for re-subscribe.
+                    cancel0();
+                } finally {
                     safeOnError(subscriber, cause);
-                    return;
-                }
-                if (deliverTerminal) {
-                    clearState(); // must null out subscription before terminating to allow for re-subscribe.
-                    safeOnComplete(subscriber);
-                } else {
-                    cancellableForQuery = TERMINATE_ON_NEXT_REQUEST_N;
                 }
             }
 
@@ -647,15 +641,11 @@ final class DefaultDnsClient implements DnsClient {
                 assert pendingRequests > 0;
                 if (cancellableForQuery == TERMINATED) {
                     return;
-                } else if (cancellableForQuery == TERMINATE_ON_NEXT_REQUEST_N) {
-                    tryTerminateOnComplete();
-                    return;
                 }
                 final Throwable cause = addressFuture.cause();
                 if (cause != null) {
                     reportResolutionFailed(resolutionObserver, cause);
-                    cancel0();
-                    safeOnError(subscriber, cause);
+                    cancelAndTerminate0(cause);
                 } else {
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
@@ -720,22 +710,8 @@ final class DefaultDnsClient implements DnsClient {
             private void handleTerminalError0(final Throwable cause) {
                 assertInEventloop();
                 if (cancellableForQuery != TERMINATED) {
-                    cancel0();
-                    safeOnError(subscriber, cause);
+                    cancelAndTerminate0(cause);
                 }
-            }
-
-            private boolean clearAddressesAndPropagateRemovalEvents() {
-                assertInEventloop();
-
-                if (activeAddresses.isEmpty()) {
-                    return true;
-                } else if (pendingRequests > 0) {
-                    --pendingRequests;
-                    subscriber.onNext(generateInactiveEvent());
-                    return true;
-                }
-                return false;
             }
 
             @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -756,6 +732,60 @@ final class DefaultDnsClient implements DnsClient {
         }
     }
 
+    private static Publisher<? extends Collection<ServiceDiscovererEvent<InetSocketAddress>>> srvFilterDups(
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> returnPub,
+            Map<InetSocketAddress, Integer> availableAddresses, int port) {
+        return returnPub.map(events -> {
+            ArrayList<ServiceDiscovererEvent<InetSocketAddress>> mappedEvents = new ArrayList<>(events.size());
+            for (ServiceDiscovererEvent<InetAddress> event : events) {
+                InetSocketAddress addr = new InetSocketAddress(event.address(), port);
+                if (event.isAvailable()) {
+                    Integer count = availableAddresses.get(addr);
+                    if (count == null) {
+                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, true));
+                        availableAddresses.put(addr, 1);
+                    } else {
+                        availableAddresses.put(addr, count + 1);
+                    }
+                } else {
+                    Integer count = availableAddresses.get(addr);
+                    if (count == null) {
+                        throw new IllegalStateException("null count for: " + addr);
+                    }
+                    if (count == 1) {
+                        mappedEvents.add(new DefaultServiceDiscovererEvent<>(addr, false));
+                        availableAddresses.remove(addr);
+                    } else {
+                        availableAddresses.put(addr, count - 1);
+                    }
+                }
+            }
+            return mappedEvents;
+        }).filter(events -> !events.isEmpty());
+    }
+
+    private static <T, A> Publisher<? extends Collection<ServiceDiscovererEvent<T>>> recoverWithInactiveEvents(
+            AbstractDnsPublisher<T> pub, boolean generateAggregateEvent) {
+        return pub.recoverWith(cause -> {
+            AbstractDnsPublisher<T>.AbstractDnsSubscription subscription = pub.subscription;
+            if (subscription != null) {
+                List<ServiceDiscovererEvent<T>> events = subscription.generateInactiveEvent();
+                if (!events.isEmpty()) {
+                    return (generateAggregateEvent ?
+                            Publisher.<List<ServiceDiscovererEvent<T>>>from(
+                                    singletonList(new SrvInactiveEvent<T, A>()), events) : from(events))
+                            .concat(failed(cause));
+                }
+            }
+            return failed(cause);
+        });
+    }
+
+    private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
+        return failed(new IllegalStateException("Duplicate SRV entry for SRV name " + serviceName + " for address " +
+                resolvedAddress));
+    }
+
     private static ResolvedAddressTypes toNettyType(final DnsResolverAddressTypes dnsResolverAddressTypes) {
         switch (dnsResolverAddressTypes) {
             case IPV4_ONLY:
@@ -774,6 +804,84 @@ final class DefaultDnsClient implements DnsClient {
     private static io.netty.resolver.dns.DnsServerAddressStreamProvider toNettyType(
             final DnsServerAddressStreamProvider provider) {
         return hostname -> new ServiceTalkToNettyDnsServerAddressStream(provider.nameServerAddressStream(hostname));
+    }
+
+    private static final class SrvInactiveCombinerOperator implements
+                            PublisherOperator<Collection<ServiceDiscovererEvent<InetSocketAddress>>,
+                                              Collection<ServiceDiscovererEvent<InetSocketAddress>>> {
+        static final SrvInactiveCombinerOperator EMIT = new SrvInactiveCombinerOperator(true);
+        static final SrvInactiveCombinerOperator NO_EMIT = new SrvInactiveCombinerOperator(false);
+        private final boolean emitAggregatedEvents;
+
+        private SrvInactiveCombinerOperator(boolean emitAggregatedEvents) {
+            this.emitAggregatedEvents = emitAggregatedEvents;
+        }
+
+        @Override
+        public Subscriber<? super Collection<ServiceDiscovererEvent<InetSocketAddress>>> apply(
+                final Subscriber<? super Collection<ServiceDiscovererEvent<InetSocketAddress>>> subscriber) {
+            return new Subscriber<Collection<ServiceDiscovererEvent<InetSocketAddress>>>() {
+                @Nullable
+                private List<ServiceDiscovererEvent<InetSocketAddress>> aggregatedEvents;
+                @Nullable
+                private Subscription subscription;
+                @Override
+                public void onSubscribe(final Subscription s) {
+                    this.subscription = s;
+                    subscriber.onSubscribe(s);
+                }
+
+                @Override
+                public void onNext(@Nullable final Collection<ServiceDiscovererEvent<InetSocketAddress>> evts) {
+                    assert subscription != null;
+                    if (aggregatedEvents != null) {
+                        if (evts != null && emitAggregatedEvents) {
+                            aggregatedEvents.addAll(evts);
+                        }
+                        subscription.request(1);
+                    } else if (evts instanceof SrvAggregateList) {
+                        aggregatedEvents = (List<ServiceDiscovererEvent<InetSocketAddress>>) evts;
+                        subscription.request(1);
+                    } else { // if there hasn't been an SrvAggregateList event, we should just pass through.
+                        subscriber.onNext(evts);
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    try {
+                        if (aggregatedEvents != null && emitAggregatedEvents) {
+                            // requestN is OK. We previously didn't deliver the item which gave us inactiveEvents.
+                            subscriber.onNext(aggregatedEvents);
+                        }
+                    } finally {
+                        subscriber.onError(t);
+                    }
+                }
+
+                @Override
+                public void onComplete() {
+                    subscriber.onComplete();
+                }
+            };
+        }
+    }
+
+    private static final class SrvInactiveEvent<T, A> implements ServiceDiscovererEvent<T> {
+        private final List<ServiceDiscovererEvent<A>> aggregatedEvents = new SrvAggregateList<>();
+        @Override
+        public T address() {
+            throw new IllegalStateException("address method should not be called when isAvailable is false!");
+        }
+
+        @Override
+        public boolean isAvailable() {
+            return false;
+        }
+    }
+
+    private static final class SrvAggregateList<T> extends ArrayList<T> {
+        private static final long serialVersionUID = -6105010311426084245L;
     }
 
     private static final class ServiceTalkToNettyDnsServerAddressStream
@@ -802,8 +910,19 @@ final class DefaultDnsClient implements DnsClient {
 
     private static final class ClosedServiceDiscovererException extends RuntimeException
             implements RejectedSubscribeError {
+        private static final long serialVersionUID = 1411660766942024081L;
+
         ClosedServiceDiscovererException(final String message) {
             super(message);
+        }
+    }
+
+    private static final class SrvAddressRemovedException extends RuntimeException {
+        private static final long serialVersionUID = -4083873869084533456L;
+        private static final SrvAddressRemovedException DNS_SRV_ADDR_REMOVED =
+                unknownStackTrace(new SrvAddressRemovedException(), DefaultDnsClient.class, "dnsSrvQuery");
+
+        private SrvAddressRemovedException() {
         }
     }
 }
