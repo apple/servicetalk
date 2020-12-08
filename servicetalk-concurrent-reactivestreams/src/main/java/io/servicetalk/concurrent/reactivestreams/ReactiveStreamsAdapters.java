@@ -15,12 +15,19 @@
  */
 package io.servicetalk.concurrent.reactivestreams;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 
@@ -73,6 +80,54 @@ public final class ReactiveStreamsAdapters {
         return new StToRsPublisher<>(source);
     }
 
+    /**
+     * Converts the passed {@link Single} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
+     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link Single}.
+     */
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Single<T> source) {
+        return toReactiveStreamsPublisher(source.toPublisher());
+    }
+
+    /**
+     * Converts the passed {@link SingleSource} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
+     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link SingleSource}.
+     */
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(SingleSource<T> source) {
+        return toReactiveStreamsPublisher(fromSource(source).toPublisher());
+    }
+
+    /**
+     * Converts the passed {@link Completable} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
+     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link Completable}.
+     */
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Completable source) {
+        return toReactiveStreamsPublisher(source.toPublisher());
+    }
+
+    /**
+     * Converts the passed {@link CompletableSource} to a
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
+     * {@link org.reactivestreams.Publisher}.
+     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link CompletableSource}.
+     */
+    public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(CompletableSource source) {
+        return toReactiveStreamsPublisher(fromSource(source).toPublisher());
+    }
+
     private static final class StToRsPublisher<T> implements org.reactivestreams.Publisher<T> {
         private final PublisherSource<T> source;
 
@@ -109,7 +164,7 @@ public final class ReactiveStreamsAdapters {
         }
 
         @Override
-        public void onNext(final T t) {
+        public void onNext(@Nullable final T t) {
             subscriber.onNext(t);
         }
 
