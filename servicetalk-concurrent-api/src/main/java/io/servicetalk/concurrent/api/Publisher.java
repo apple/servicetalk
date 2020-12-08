@@ -2498,7 +2498,18 @@ public abstract class Publisher<T> {
      *     ReactiveX ignoreElements operator.</a>
      */
     public final Completable ignoreElements() {
-        return new PubToCompletable<>(this);
+        return new PubToCompletableIgnore<>(this);
+    }
+
+    /**
+     * Converts this {@link Publisher} to a {@link Completable}. If this {@link Publisher} emits any
+     * {@link Subscriber#onNext(Object)} signals the resulting {@link Completable} will be terminated with a
+     * {@link IllegalArgumentException}.
+     * @return A {@link Completable} that mirrors the terminal signal from this {@code Publisher}, and terminates in
+     * error if an {@link Subscriber#onNext(Object)} signals.
+     */
+    public final Completable completableOrError() {
+        return new PubCompletableOrError<>(this);
     }
 
     /**

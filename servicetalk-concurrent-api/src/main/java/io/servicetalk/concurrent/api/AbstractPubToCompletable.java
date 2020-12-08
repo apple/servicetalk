@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -25,7 +24,7 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
  *
  * @param <T> Item type emitted from the original {@link Publisher}.
  */
-final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
+abstract class AbstractPubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Publisher<T> source;
 
     /**
@@ -33,53 +32,49 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
      *
      * @param source {@link Publisher} from which this {@link Completable} is created.
      */
-    PubToCompletable(Publisher<T> source) {
+    AbstractPubToCompletable(Publisher<T> source) {
         super(source.executor());
         this.source = source;
     }
 
+    abstract PublisherSource.Subscriber<T> newSubscriber(Subscriber original);
+
     @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+    final void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
         // Using the special subscribe() method means it will not offload the Subscription (done in the public
         // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
         PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
-                        contextProvider.wrapSubscription(new PubToCompletableSubscriber<>(subscriber), contextMap));
+                contextProvider.wrapSubscription(newSubscriber(subscriber), contextMap));
         // Since this is converting a Publisher to a Completable, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
         // Completable, there is no additional risk of deadlock.
         source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class PubToCompletableSubscriber<T> extends DelayedCancellable
+    abstract static class AbstractPubToCompletableSubscriber<T> extends DelayedCancellable
             implements PublisherSource.Subscriber<T> {
-
         private final Subscriber subscriber;
 
-        PubToCompletableSubscriber(final Subscriber subscriber) {
+        AbstractPubToCompletableSubscriber(final Subscriber subscriber) {
             this.subscriber = subscriber;
         }
 
         @Override
-        public void onSubscribe(final Subscription s) {
+        public final void onSubscribe(final PublisherSource.Subscription s) {
             subscriber.onSubscribe(this);
             s.request(Long.MAX_VALUE);
             delayedCancellable(s);
         }
 
         @Override
-        public void onNext(final T t) {
-            // Ignore elements
-        }
-
-        @Override
-        public void onError(final Throwable t) {
+        public final void onError(final Throwable t) {
             subscriber.onError(t);
         }
 
         @Override
-        public void onComplete() {
+        public final void onComplete() {
             subscriber.onComplete();
         }
     }

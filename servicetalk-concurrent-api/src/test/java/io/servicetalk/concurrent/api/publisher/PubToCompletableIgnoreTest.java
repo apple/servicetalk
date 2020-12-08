@@ -39,7 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-public class PubToCompletableTest {
+public class PubToCompletableIgnoreTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
