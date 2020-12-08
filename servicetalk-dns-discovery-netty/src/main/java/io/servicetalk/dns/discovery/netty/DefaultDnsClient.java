@@ -45,7 +45,6 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
-import io.netty.resolver.dns.NoopDnsCnameCache;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -108,7 +107,6 @@ final class DefaultDnsClient implements DnsClient {
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
-    private final DnsNameResolver srvResolver;
     private final MinTtlCache ttlCache;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
@@ -180,14 +178,6 @@ final class DefaultDnsClient implements DnsClient {
         }
 
         resolver = builder.build();
-
-        // TODO(scott): SRV records aren't cached, this may result in unexpected failures for SRV queries if the
-        //  hostname has CNAME entries which map to SRV entries with lower TTLs. We should be able to use the same
-        //  resolver for A* and SRV records after this is resolved.
-        //  See DefaultDnsClientTest#srvWithCNAMEEntryLowerTTLDoesNotFail.
-        //  See https://github.com/netty/netty/pull/10808
-        builder.cnameCache(NoopDnsCnameCache.INSTANCE);
-        srvResolver = builder.build();
     }
 
     @Nullable
@@ -291,7 +281,6 @@ final class DefaultDnsClient implements DnsClient {
         }
         closed = true;
         resolver.close();
-        srvResolver.close();
         ttlCache.clear();
     }
 
@@ -316,7 +305,7 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery() {
                     Promise<DnsAnswer<HostAndPort>> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-                    srvResolver.resolveAll(new DefaultDnsQuestion(name, SRV))
+                    resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
