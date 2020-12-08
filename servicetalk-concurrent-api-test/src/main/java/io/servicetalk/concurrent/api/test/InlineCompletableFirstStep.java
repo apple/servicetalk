@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalCo
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorPredicate;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.SubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadAwaitEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadRunEvent;
 
@@ -106,7 +107,7 @@ public class InlineCompletableFirstStep implements CompletableFirstStep {
 
     @Override
     public StepVerifier thenCancel() {
-        events.add(new InlinePublisherSubscriber.SubscriptionEvent() {
+        events.add(new SubscriptionEvent() {
             @Override
             void subscription(Subscription subscription) {
                 subscription.cancel();

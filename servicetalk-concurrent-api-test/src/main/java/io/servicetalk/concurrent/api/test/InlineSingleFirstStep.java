@@ -121,6 +121,7 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
 
     @Override
     public StepVerifier expectSuccess(Consumer<? super T> onSuccessConsumer) {
+        requireNonNull(onSuccessConsumer);
         events.add(new OnNextEvent<T>() {
             @Override
             void onNext(@Nullable T next) {
