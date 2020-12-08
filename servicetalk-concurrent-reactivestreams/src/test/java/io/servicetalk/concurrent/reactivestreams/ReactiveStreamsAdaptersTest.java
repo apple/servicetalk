@@ -15,8 +15,15 @@
  */
 package io.servicetalk.concurrent.reactivestreams;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
@@ -33,8 +40,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.fromReactiveStreamsPublisher;
@@ -88,26 +97,84 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
+    public void singleToRSSuccess() {
+        verifyRSSuccess(toRSPublisherAndSubscribe(succeeded(1)), true);
+    }
+
+    @Test
+    public void singleToRSFromSourceSuccess() {
+        SingleSource<Integer> source = s -> {
+            s.onSubscribe(IGNORE_CANCEL);
+            s.onSuccess(1);
+        };
+        verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source), true);
+    }
+
+    @Test
+    public void completableToRSSuccess() {
+        verifyRSSuccess(toRSPublisherAndSubscribe(Completable.completed()), false);
+    }
+
+    @Test
+    public void completableToRSFromSourceSuccess() {
+        CompletableSource source = s -> {
+            s.onSubscribe(IGNORE_CANCEL);
+            s.onComplete();
+        };
+        verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source), false);
+    }
+
+    @Test
     public void toRSSuccess() {
-        verifyRSSuccess(toRSPublisherAndSubscribe(from(1)));
+        verifyRSSuccess(toRSPublisherAndSubscribe(from(1)), true);
     }
 
     @Test
     public void toRSFromSourceSuccess() {
         PublisherSource<Integer> source = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
-        verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source));
+        verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source), true);
     }
 
-    private void verifyRSSuccess(final Subscriber<Integer> subscriber) {
+    private void verifyRSSuccess(final Subscriber<Integer> subscriber, boolean onNext) {
         verify(subscriber).onSubscribe(any());
-        verify(subscriber).onNext(1);
+        if (onNext) {
+            verify(subscriber).onNext(1);
+        }
         verify(subscriber).onComplete();
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
+    public void singleToRSError() {
+        verifyRSError(toRSPublisherAndSubscribe(Single.failed(DELIBERATE_EXCEPTION)));
+    }
+
+    @Test
+    public void completableToRSError() {
+        verifyRSError(toRSPublisherAndSubscribe(Completable.failed(DELIBERATE_EXCEPTION)));
+    }
+
+    @Test
     public void toRSError() {
         verifyRSError(toRSPublisherAndSubscribe(failed(DELIBERATE_EXCEPTION)));
+    }
+
+    @Test
+    public void singleToRSFromSourceError() {
+        SingleSource<Integer> source = s -> {
+            s.onSubscribe(IGNORE_CANCEL);
+            s.onError(DELIBERATE_EXCEPTION);
+        };
+        verifyRSError(toRSPublisherFromSourceAndSubscribe(source));
+    }
+
+    @Test
+    public void completableToRSFromSourceError() {
+        CompletableSource source = s -> {
+            s.onSubscribe(EMPTY_SUBSCRIPTION);
+            s.onError(DELIBERATE_EXCEPTION);
+        };
+        verifyRSError(toRSPublisherFromSourceAndSubscribe(source));
     }
 
     @Test
@@ -126,6 +193,32 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
+    public void singleToRSCancel() {
+        TestSingle<Integer> stSingle = new TestSingle<>();
+        Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stSingle);
+        TestSubscription subscription = new TestSubscription();
+        stSingle.onSubscribe(subscription);
+        assertThat("Source not subscribed.", stSingle.isSubscribed(), is(true));
+        ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
+        verify(subscriber).onSubscribe(subscriptionCaptor.capture());
+        subscriptionCaptor.getValue().cancel();
+        assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
+    }
+
+    @Test
+    public void completableToRSCancel() {
+        TestCompletable stCompletable = new TestCompletable();
+        Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stCompletable);
+        TestSubscription subscription = new TestSubscription();
+        stCompletable.onSubscribe(subscription);
+        assertThat("Source not subscribed.", stCompletable.isSubscribed(), is(true));
+        ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
+        verify(subscriber).onSubscribe(subscriptionCaptor.capture());
+        subscriptionCaptor.getValue().cancel();
+        assertThat("Subscription not cancelled.", subscription.isCancelled(), is(true));
+    }
+
+    @Test
     public void toRSCancel() {
         TestPublisher<Integer> stPublisher = new TestPublisher<>();
         Subscriber<Integer> subscriber = toRSPublisherAndSubscribe(stPublisher);
@@ -139,6 +232,28 @@ public class ReactiveStreamsAdaptersTest {
     }
 
     @Test
+    public void singleToRSFromSourceCancel() {
+        Cancellable srcCancellable = mock(Cancellable.class);
+        SingleSource<Integer> source = s -> s.onSubscribe(srcCancellable);
+        Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);
+        ArgumentCaptor<Subscription> rsSubscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
+        verify(subscriber).onSubscribe(rsSubscriptionCaptor.capture());
+        rsSubscriptionCaptor.getValue().cancel();
+        verify(srcCancellable).cancel();
+    }
+
+    @Test
+    public void completableToRSFromSourceCancel() {
+        Cancellable srcCancellable = mock(Cancellable.class);
+        CompletableSource source = s -> s.onSubscribe(srcCancellable);
+        Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);
+        ArgumentCaptor<Subscription> rsSubscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
+        verify(subscriber).onSubscribe(rsSubscriptionCaptor.capture());
+        rsSubscriptionCaptor.getValue().cancel();
+        verify(srcCancellable).cancel();
+    }
+
+    @Test
     public void toRSFromSourceCancel() {
         PublisherSource.Subscription srcSubscription = mock(PublisherSource.Subscription.class);
         PublisherSource<Integer> source = s -> s.onSubscribe(srcSubscription);
@@ -149,28 +264,53 @@ public class ReactiveStreamsAdaptersTest {
         verify(srcSubscription).cancel();
     }
 
-    private Subscriber<Integer> toRSPublisherAndSubscribe(
+    private static Subscriber<Integer> toRSPublisherAndSubscribe(
+            final io.servicetalk.concurrent.api.Single<Integer> stSingle) {
+        Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(stSingle);
+        return subscribeToRSPublisher(rsPublisher, true);
+    }
+
+    private static Subscriber<Integer> toRSPublisherAndSubscribe(
+            final io.servicetalk.concurrent.api.Completable stCompletable) {
+        Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(stCompletable);
+        return subscribeToRSPublisher(rsPublisher, false);
+    }
+
+    private static Subscriber<Integer> toRSPublisherAndSubscribe(
             final io.servicetalk.concurrent.api.Publisher<Integer> stPublisher) {
         Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(stPublisher);
-        return subscribeToRSPublisher(rsPublisher);
+        return subscribeToRSPublisher(rsPublisher, true);
     }
 
-    private Subscriber<Integer> toRSPublisherFromSourceAndSubscribe(final PublisherSource<Integer> source) {
+    private static Subscriber<Integer> toRSPublisherFromSourceAndSubscribe(final SingleSource<Integer> source) {
         Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(source);
-        return subscribeToRSPublisher(rsPublisher);
+        return subscribeToRSPublisher(rsPublisher, true);
     }
 
-    private Subscriber<Integer> subscribeToRSPublisher(final Publisher<Integer> rsPublisher) {
+    private static Subscriber<Integer> toRSPublisherFromSourceAndSubscribe(final CompletableSource source) {
+        Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(source);
+        return subscribeToRSPublisher(rsPublisher, false);
+    }
+
+    private static Subscriber<Integer> toRSPublisherFromSourceAndSubscribe(final PublisherSource<Integer> source) {
+        Publisher<Integer> rsPublisher = toReactiveStreamsPublisher(source);
+        return subscribeToRSPublisher(rsPublisher, true);
+    }
+
+    private static Subscriber<Integer> subscribeToRSPublisher(final Publisher<Integer> rsPublisher,
+                                                              final boolean forceRequest) {
         @SuppressWarnings("unchecked")
         Subscriber<Integer> subscriber = mock(Subscriber.class);
         rsPublisher.subscribe(subscriber);
-        ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
-        verify(subscriber).onSubscribe(subscriptionCaptor.capture());
-        subscriptionCaptor.getValue().request(1);
+        if (forceRequest) {
+            ArgumentCaptor<Subscription> subscriptionCaptor = ArgumentCaptor.forClass(Subscription.class);
+            verify(subscriber).onSubscribe(subscriptionCaptor.capture());
+            subscriptionCaptor.getValue().request(1);
+        }
         return subscriber;
     }
 
-    private Publisher<Integer> newMockRsPublisher(
+    private static Publisher<Integer> newMockRsPublisher(
             BiConsumer<Subscriber<? super Integer>, Subscription> subscriberTerminator) {
         @SuppressWarnings("unchecked")
         Publisher<Integer> rsPublisher = mock(Publisher.class);
