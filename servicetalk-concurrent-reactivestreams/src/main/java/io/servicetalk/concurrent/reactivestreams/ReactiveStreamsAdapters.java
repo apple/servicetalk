@@ -96,7 +96,7 @@ public final class ReactiveStreamsAdapters {
      * Converts the passed {@link SingleSource} to a
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
      * {@link org.reactivestreams.Publisher}.
-     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param source {@link SingleSource} to convert to a {@link org.reactivestreams.Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
      * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link SingleSource}.
      */
@@ -108,7 +108,7 @@ public final class ReactiveStreamsAdapters {
      * Converts the passed {@link Completable} to a
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
      * {@link org.reactivestreams.Publisher}.
-     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param source {@link Completable} to convert to a {@link org.reactivestreams.Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
      * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link Completable}.
      */
@@ -120,7 +120,7 @@ public final class ReactiveStreamsAdapters {
      * Converts the passed {@link CompletableSource} to a
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a>
      * {@link org.reactivestreams.Publisher}.
-     * @param source {@link Single} to convert to a {@link org.reactivestreams.Publisher}.
+     * @param source {@link CompletableSource} to convert to a {@link org.reactivestreams.Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link org.reactivestreams.Publisher}.
      * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link CompletableSource}.
      */
