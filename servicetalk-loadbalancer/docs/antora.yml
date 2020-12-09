@@ -16,6 +16,6 @@
 
 name: servicetalk-loadbalancer
 title: Load balancing
-version: SNAPSHOT
+version: '0.35'
 nav:
   - modules/ROOT/nav.adoc

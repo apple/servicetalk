@@ -16,6 +16,6 @@
 
 name: servicetalk-data-jackson-jersey
 title: JSON (Jackson)
-version: SNAPSHOT
+version: '0.35'
 nav:
   - modules/ROOT/nav.adoc
