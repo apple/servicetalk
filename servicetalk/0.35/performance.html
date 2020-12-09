@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Performance :: ServiceTalk Docs</title>
+    <meta name="generator" content="Antora 2.0.0">
+    <link rel="stylesheet" href="../../_/css/site.css">
+<meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
+<meta name="keywords" content="servicetalk, java, reactive, reactive-streams, microservices, framework, http, http2, rpc, grpc, netty">
+<link rel="stylesheet" href="../../_/css/site-extra.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-151504011-1"></script>
+<script>function gtag(){dataLayer.push(arguments)};window.dataLayer=window.dataLayer||[];gtag('js',new Date());gtag('config','UA-151504011-1')</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="navbar-item">
+        <a href="https://github.com/apple/servicetalk">ServiceTalk</a>
+        <span class="separator">//</span>
+        <a href="../..">Docs</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="main-wrapper">
+    <div class="navigation-container"
+      data-component="servicetalk" data-version="0.35">
+    <aside class="navigation">
+        <div class="panels">
+            <div class="navigation-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html">ServiceTalk</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concepts</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="programming-paradigms.html">Programming Paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="async-context.html">Async context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="performance.html">Performance</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Examples</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#Serialization">Serialization</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#JAXRS">JAX-RS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#MetaData">MetaData</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#HTTP2">HTTP/2</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#Mutual-TLS">Mutual TLS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/index.html#uds">Unix Domain Sockets</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/http/service-composition.html">Service Composition</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-examples/0.35/grpc/index.html">gRPC</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/grpc/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/grpc/index.html#route-guide">Route Guide</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.35/grpc/index.html#protoc-options">Protoc Options</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concurrent API</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.35/asynchronous-primitives.html">Asynchronous primitives</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.35/blocking-safe-by-default.html">Blocking safe by default</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.35/blocking-implementation.html">Implementation details</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.35/async-context.html">Async Context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-http-api/0.35/index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.35/programming-paradigms.html">Programming paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.35/blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-http-api/0.35/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../servicetalk-http-router-jersey/0.35/index.html">JAX-RS Router (Jersey)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-http-router-jersey/0.35/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-http-security-jersey/0.35/index.html">Security</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-data-jackson-jersey/0.35/index.html">JSON (Jackson)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-grpc-api/0.35/index.html">gRPC</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-loadbalancer/0.35/index.html">Load Balancing</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-client-api/0.35/service-discovery.html">Service Discovery</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="javadoc/index.html">Javadoc</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="contributing.html">Contributing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+            <div class="navigation-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">ServiceTalk</span>
+    <span class="version">0.35</span>
+  </div>
+  <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-client-api/0.25/index.html">0.25</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Concurrent API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Examples</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">gRPC</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">HTTP</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JAX-RS Router (Jersey)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JSON (Jackson)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Load balancing</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Security</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component is-current">
+      <span class="title">ServiceTalk</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version is-current">
+          <a href="index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+        </div>
+    </aside>
+</div>
+    <main class="main">
+        <div class="toolbar" role="navigation">
+  <button class="navigation-toggle"></button>
+  <a href="../SNAPSHOT/index.html" class="home-link"></a>
+<nav class="crumbs" aria-label="breadcrumbs">
+        <ul>
+                    <li class="crumb"><a href="index.html">ServiceTalk</a></li>
+                <li class="crumb"><a href="performance.html">Performance</a></li>
+        </ul>
+</nav>
+<div class="page-versions">
+  <button class="versions-menu-toggle" title="Show other versions of page">0.35</button>
+  <div class="versions-menu">
+    <a class="version" href="../SNAPSHOT/performance.html">SNAPSHOT</a>
+    <a class="version is-current" href="performance.html">0.35</a>
+    <a class="version" href="../0.34/performance.html">0.34</a>
+    <a class="version" href="../0.33/performance.html">0.33</a>
+    <a class="version" href="../0.32/performance.html">0.32</a>
+    <a class="version" href="../0.31/performance.html">0.31</a>
+    <a class="version" href="../0.30/performance.html">0.30</a>
+    <a class="version" href="../0.29/performance.html">0.29</a>
+    <a class="version" href="../0.28/performance.html">0.28</a>
+    <a class="version" href="../0.27/performance.html">0.27</a>
+    <a class="version" href="../0.26/performance.html">0.26</a>
+    <a class="version" href="../0.25/performance.html">0.25</a>
+    <a class="version" href="../0.24/performance.html">0.24</a>
+    <a class="version" href="../0.23/performance.html">0.23</a>
+    <a class="version" href="../0.22/performance.html">0.22</a>
+    <a class="version" href="../0.21/performance.html">0.21</a>
+    <a class="version" href="../0.20/performance.html">0.20</a>
+    <a class="version" href="../0.19/performance.html">0.19</a>
+  </div>
+</div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/blob/0.35.0/docs/modules/ROOT/pages/performance.adoc">Edit this Page</a></div>
+</div>
+        <article class="doc">
+<h1>Performance</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section will discuss the design, trade-offs, and performance tuning options and recommendations for your
+ServiceTalk applications.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="design-goal"><a class="anchor" href="#design-goal"></a><a class="link" href="#design-goal">Design goal</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ServiceTalk grew out of the need for a Java networking library with the benefits of async-IO<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup> which can
+hide the complexities of lower level networking libraries such as <a href="https://netty.io">Netty</a>. We also learned that
+although asynchronous programming offers scaling benefits it comes with some complexity around control flow,
+error propagation, debugging, and visibility. In practice there was a desire to mix synchronous
+(for simplicity and developer velocity) with asynchronous (for improved utilization and vertical scalability) in the
+same application.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk aims to hit a sweet spot by enabling applications to start simple with a traditional synchronous/blocking
+programming model and evolve to async-IO as necessary. The value-proposition ServiceTalk offers, is an extensible
+networking library with out of the box support for commonly used protocols (e.g. HTTP/1.x, HTTP/2.0, etc..) with APIs
+tailored to each protocol layered in a way to promote evolving programming models (blocking/synchronous &#8594; asynchronous)
+without sacrificing on performance nor forcing you to rewrite your application when you reach the next level of scale.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk recognizes the complexities of use (back-pressure, error propagation, RPC, EventLoop threading model, etc…​)
+and duplication (pooling, load balancing, resiliency, request/response correlation, etc…​) that comes with Netty. We aim
+to provide a lightweight networking library, with the best possible performance and minimal overhead in compute and GC
+pressure over Netty (which is the
+<a href="https://netty.io/wiki/adopters.html">networking core for many large scale JVM deployments</a>). That said, we may be
+making performance trade-offs in some areas to favor usability and/or safety. For example more advanced concepts
+such as <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html">Java Memory Model</a>, reference counting,
+non-blocking and asynchronous control flow.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="trade-offs"><a class="anchor" href="#trade-offs"></a><a class="link" href="#trade-offs">Trade-offs</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As stated in the design goals, ServiceTalk aims to strike a balance between performance and usability, all while being
+safe out of the box. This section clarifies some aspects, considerations and choices.</p>
+</div>
+<div class="sect2">
+<h3 id="blocking-api-on-top-of-async"><a class="anchor" href="#blocking-api-on-top-of-async"></a><a class="link" href="#blocking-api-on-top-of-async">Blocking API on top of async</a></h3>
+<div class="paragraph">
+<p>In order to build a library that supports both blocking and asynchronous APIs, we use an asynchronous core and build
+blocking APIs on top. In case of our blocking APIs, it means there is some overhead involved to orchestrate the hand-off
+(aka <a href="blocking-safe-by-default.html" class="page">offloading</a>) between EventLoop threads and application worker
+threads.</p>
+</div>
+<div class="paragraph">
+<p>Network libraries that dedicate a single thread per connection to do IO and execute user code from that thread may have
+better throughput and latency as long as the concurrent connection count is low<sup class="footnote">[<a id="_footnoteref_2" class="footnote" href="#_footnotedef_2" title="View footnote.">2</a>]</sup>. However there is an inflection point as concurrency increases to vertically scale which
+may require rewriting the application to take advantage of end-to-end async-IO, or horizontally scale which requires
+more capital investment. For this reason ServiceTalk may not be optimal in the low concurrency blocking user code
+scenario, although our benchmarks have shown results within an acceptable threshold for most use cases despite this
+architecture.</p>
+</div>
+<div class="paragraph">
+<p>A strategy to avoid the thread hopping is to opt-in to executing user code on the EventLoop thread. However this will
+have an adverse effect on latency and responsiveness if you execute
+<a href="blocking-safe-by-default.html" class="page">blocking</a> code. See
+<a href="../../servicetalk-http-api/0.35/evolve-to-async.html" class="page">Evolving to Asynchronous docs</a> for more details.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reference-counting"><a class="anchor" href="#reference-counting"></a><a class="link" href="#reference-counting">Reference Counting</a></h3>
+<div class="paragraph">
+<p>At the core of <a href="https://netty.io/wiki/using-as-a-generic-library.html#buffer-api">Netty&#8217;s Buffer APIs</a> is
+<a href="https://netty.io/wiki/reference-counted-objects.html">reference counting</a> which reduces the cost of allocation and
+collection of direct buffers.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/ref-counting.png" alt="GC overhead caused by DirectByteBuffers">
+</div>
+</div>
+<div class="paragraph">
+<p>However, it comes with an overhead of managing lifecycle of these reference counted objects. This complexity is passed
+to the users as they have to explicitly define the lifetime of these objects. ServiceTalk focuses on ease of usage and
+safety. Manual memory management conflicts with that promise, making ServiceTalk hard to use and potentially unsafe.
+<strong>For this reason in ServiceTalk we&#8217;ve decided not to expose reference counted buffers in user facing APIs</strong> and deal with
+this low level complexity internally by copying to heap buffers at the user-facing API boundaries.</p>
+</div>
+<div class="paragraph">
+<p>This is a conscious decision understanding that this may make some extremely high throughput, low latency use cases
+almost impossible to implement with ServiceTalk. Benchmarks indicate this is a good trade-off for most use cases and
+providing safe, easy to use APIs will be a differentiating feature of ServiceTalk. If your benchmarks indicate the lack
+of reference counting and buffer pooling is the culprit why you cannot meet your performance SLA we suggest users to
+look into directly building on top of <a href="https://netty.io">Netty</a> instead.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reactive-core"><a class="anchor" href="#reactive-core"></a><a class="link" href="#reactive-core">Reactive core</a></h3>
+<div class="paragraph">
+<p>ServiceTalk&#8217;s core design principles aim to enable large scale <a href="https://www.reactivemanifesto.org">reactive system</a>.
+Responsiveness is an essential part of building a reactive system. ServiceTalk implements
+<a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification">Reactive Streams APIs</a>
+to provide flow controlled, responsive networking abstractions. Such flow controlled systems express a well coordinated
+upper bound on resources (e.g. memory) providing a high level of resiliency in presence of unexpected data spikes.</p>
+</div>
+<div class="paragraph">
+<p>Concepts such as <a href="https://en.wikipedia.org/wiki/Futures_and_promises"><code>Future</code>/<code>Promise</code></a> provide a nice abstraction
+for single-item asynchronous operations. <code>Future</code>/<code>Promise</code> implementations (e.g.
+<a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html">CompletableFuture</a>,
+<a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html">CompletionStage</a>)
+leverage
+<a href="https://en.wikipedia.org/wiki/Function_composition">function composition</a> to streamline asynchronous control flow
+and error propagation. This concept can be extended to multi-item asynchronous operations represented using
+<code>Reactive Streams</code> (aka
+<a href="https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html">JDK9 Flow</a>). Such functions on
+asynchronous sources are typically referred to as <a href="https://reactivex.io/documentation/operators.html">operators</a> in
+ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
+control. This streamlined control flow and end-to-end back-pressure with operators comes with a trade-off which in
+practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
+ServiceTalk we implement our own <a href="../../servicetalk-concurrent-api/0.35/asynchronous-primitives.html" class="page">operators</a>
+in order to keep allocation and minimize synchronization while strictly enforcing back-pressure.</p>
+</div>
+<div class="paragraph">
+<p>We believe that using function composition increases readability for complex asynchronous systems as compared to
+callbacks, thus following ServiceTalk&#8217;s design philosophy of favoring ease of use. However, if your benchmarks indicate
+operator implementations to be a bottleneck why you cannot meet your SLA please
+<a href="https://github.com/apple/servicetalk/issues/new">file an issue</a> describing your use case and we will work to improve
+the operators in question.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="safe-to-block"><a class="anchor" href="#safe-to-block"></a><a class="link" href="#safe-to-block">Safe-to-block (aka Offloading)</a></h3>
+<div class="paragraph">
+<p>Because ServiceTalk is asynchronous and non-blocking at the core it needs to defend against user or third party code
+that potentially blocks IO EventLoop threads. Read the chapter on
+<a href="blocking-safe-by-default.html" class="page">blocking code safe by default</a> for more details.</p>
+</div>
+<div class="paragraph">
+<p><code>ServiceTalk</code> has
+<a href="../../servicetalk-concurrent-api/0.35/blocking-safe-by-default.html#executor-affinity" class="page">Executor Affinity</a> which
+ensures that the same <code>Executor</code> is used for each <code>Subscriber</code> chain on asynchronous operator boundaries. By default
+when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
+additional thread hops between <code>Executor</code>s (and even if <code>Executor</code> happens to be the same). Depending upon the use
+case, performance costs maybe relatively high but we have the following compensatory strategies in place:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs</p>
+</li>
+<li>
+<p>choosing the appropriate <a href="#offloading-and-flushing">programming model</a>
+for your use case allows us to be more optimal and reduce offloading</p>
+</li>
+<li>
+<p>you can opt-out of (some or all) offloading via
+<a href="#ExecutionStrategy">ExecutionStrategy</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="tuning-options-and-recommendations"><a class="anchor" href="#tuning-options-and-recommendations"></a><a class="link" href="#tuning-options-and-recommendations">Tuning options and recommendations</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Below sections will offer suggestions that may improve performance depending on your use-case.</p>
+</div>
+<div class="sect2">
+<h3 id="offloading-and-flushing"><a class="anchor" href="#offloading-and-flushing"></a><a class="link" href="#offloading-and-flushing">Programming model (offloading &amp; flushing)</a></h3>
+<div class="paragraph">
+<p>ServiceTalk offers APIs for various programming paradigms, to allow users to decide which programming model works best
+for their use case. Different APIs also provide opportunities to optimize the amount of offloading and control when
+flushing is required. Optimizations related to flushing and offloading can have a non-negligible impact on your
+application&#8217;s performance.</p>
+</div>
+<div class="sect3">
+<h4 id="flushstrategy"><a class="anchor" href="#flushstrategy"></a><a class="link" href="#flushstrategy">FlushStrategy</a></h4>
+<div class="paragraph">
+<p>Flushing is the act of writing data that is queued in the Netty <code>Channel</code> pipeline to the network socket, typically
+via <a href="https://pubs.opengroup.org/onlinepubs/9699919799/utilities/write.html">write</a> or
+<a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/writev.html">writev</a>
+<a href="https://en.wikipedia.org/wiki/System_call">syscall</a> on POSIX operating systems. Syscalls typically involve a user to
+kernel-space context-switch which is relatively expensive. To compensate for this Netty introduces and intermediate
+write queue to batch write operations triggered by flushing. This reduces the syscall frequency and if done effectively
+should not have a negative impact on latency.</p>
+</div>
+<div class="paragraph">
+<p>For example in benchmarks that involve a small number of writes (e.g. HTTP server responding to a <code>GET</code> request with
+in memory content) reducing from 3 flushes to 1 flush almost tripled the throughput of the application. The general rule
+of thumb is to try to batch writes as much as possible. We suggest to evaluate this according to your use case, when
+data is generated asynchronously (e.g. as a result to a call to another service) you may want to flush more frequently
+to avoid introducing latency/responsiveness.</p>
+</div>
+<div class="paragraph">
+<p>Exposing flush controls on the public API is non-trivial when you have asynchronous control flow. The flush signals must
+be ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
+ServiceTalk currently doesn&#8217;t expose a way to control flush strategies in the public API but may be able to infer a more
+optimal strategy if you select the appropriate programming paradigm for the
+<a href="../../servicetalk-http-api/0.35/programming-paradigms.html#client-programming-paradigms" class="page">client</a> and
+<a href="../../servicetalk-http-api/0.35/programming-paradigms.html#service-programming-paradigms" class="page">service</a>. If you are willing to use an
+<strong><em>advanced, internal, experimental, subject to change at any time</em></strong> API there is also
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java">FlushStrategies</a>
+that provides control over flushing. Here is a quick summary of this internal API.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 42.8572%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Strategy</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Use-case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>flushOnEach()</code> <strong>(default)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flushes after every item emitted on the write stream of a request/response (eg after the HTTP metadata, after every
+payload chunk and after HTTP trailers)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typically what you want for a streaming application where every write needs to be delivered immediately.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>flushOnEnd()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flushes only after the last item emitted on the write stream of a request/response (eg don&#8217;t flush until the last HTTP
+payload chunk or HTTP trailers)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When your payload is aggregated, you most likely want to perform a single flush of the metadata + payload.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>batchFlush(n, timeSource)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flush after <code>n</code> number of items are emitted or some time has elapsed (driven by the <code>timeSource</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This may be interesting if you have a high velocity streaming API, where you don&#8217;t necessarily need to emit every item
+individually and thus can batch a set of writes, with some control over the latency between flushes.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p><code>FlushStrategies</code> and related APIs are experimental and only exposed on the internal API by casting a
+<code>ConnectionContext</code> to a <code>NettyConnectionContext</code> on a <code>Connection</code>. For example to update the strategy for an HTTP
+client, for a single request one can do:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming();
+StreamingHttpRequest request = client.post("/foo")
+        .payloadBody(Publisher.from("first-chunk", "second-chunk"), textSerializer());
+
+// Reserve a connection from the load-balancer to update its strategy prior to requesting
+ReservedStreamingHttpConnection connection = client.reserveConnection(request)
+        .toFuture().get(); // this blocks, for brevity in this example
+
+// Update the strategy to "flush on end"
+NettyConnectionContext nettyConnectionCtx = (NettyConnectionContext) connection.connectionContext();
+nettyConnectionCtx.updateFlushStrategy((current, isOrig) -&gt; FlushStrategies.flushOnEnd());
+
+StreamingHttpResponse response = connection.request(request);
+// consume response.payloadBody()
+
+// Release the connection back to the load-balancer (possibly restore the strategy before returning)
+connection.releaseAsync().toFuture().get(); // this blocks, for brevity in this example</code></pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<em>`FlushStrategies` and related APIs are advanced, internal, and subject to change.</em>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>On the server side the strategy can be updated as part of the request/response, again by casting the context, or using a
+<code>ConnectionAcceptorFilter</code> to set it once for all future requests on the same connection.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+        .appendConnectionAcceptorFilter(delegate -&gt; new ConnectionAcceptor() {
+            @Override
+            public Completable accept(final ConnectionContext ctx) {
+
+                ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -&gt; FlushStrategies.flushOnEnd());
+
+                return delegate.accept(ctx);
+            }
+        })
+        .listenStreamingAndAwait((ctx, request, responseFactory) -&gt; {
+
+            ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -&gt; FlushStrategies.flushOnEnd());
+
+            return Single.succeeded(responseFactory.ok()
+                    .payloadBody(Publisher.from("first-chunk", "second-chunk"), textSerializer()));
+        });</code></pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<em>`FlushStrategies` and related APIs are advanced, internal, and subject to change.</em>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="ExecutionStrategy"><a class="anchor" href="#ExecutionStrategy"></a><a class="link" href="#ExecutionStrategy">ExecutionStrategy (offloading)</a></h4>
+<div class="paragraph">
+<p><a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">ExecutionStrategy</a>
+is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.
+For HTTP there is
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java">HttpExecutionStrategy</a>
+which adds protocol specific offload points to be used by the clients and services. See
+<a href="#safe-to-block">Safe to Block</a> for more context into offloading and
+threading models.</p>
+</div>
+<div class="paragraph">
+<p>It is possible to override the <code>ExecutionStrategy</code>, but first make sure you are using the appropriate programming
+paradigm for <a href="../../servicetalk-http-api/0.35/programming-paradigms.html#client-programming-paradigms" class="page">client</a> and
+<a href="../../servicetalk-http-api/0.35/programming-paradigms.html#service-programming-paradigms" class="page">service</a>. Depending upon your
+protocol it is likely there are higher level constructs such as
+<a href="../../servicetalk-http-api/0.35/index.html#routers" class="page">routers</a> that provide a per-route API customization (e.g.
+<a href="../../servicetalk-http-router-jersey/0.35/evolve-to-async.html" class="page">JAX-RS via Jersey</a> and
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-http-router-predicate">Predicate Router</a>).</p>
+</div>
+<div class="paragraph">
+<p>If you are using the appropriate programming model,
+have reviewed <a href="../../servicetalk-http-api/0.35/evolve-to-async.html" class="page">the docs on Evolving to Asynchronous</a>, and
+are confident you (or a library you use) will <strong>not</strong> execute blocking code in control flow in question, then ServiceTalk
+allows you to override <code>ExecutionStrategy</code> at multiple levels:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>per request (see <a href="../../servicetalk-http-api/0.35/evolve-to-async.html#client" class="page">client</a> and
+<a href="../../servicetalk-http-api/0.35/evolve-to-async.html#server" class="page">server</a>)</p>
+</li>
+<li>
+<p>per client/server (see <a href="../../servicetalk-http-api/0.35/evolve-to-async.html#client" class="page">client</a> and
+<a href="../../servicetalk-http-api/0.35/evolve-to-async.html#server" class="page">server</a>)</p>
+</li>
+<li>
+<p>Filters implement
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java"><code>HttpExecutionStrategyInfluencer</code></a>
+(or similar for your protocol) APIs</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Disabling offloading entirely is an option that gives the best performance when you are 100% sure that none of your
+code, library code or any ServiceTalk filters <sup class="footnote">[<a id="_footnoteref_3" class="footnote" href="#_footnotedef_3" title="View footnote.">3</a>]</sup> that are applied will block.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="programming-models"><a class="anchor" href="#programming-models"></a><a class="link" href="#programming-models">Choosing the optimal programming model</a></h4>
+<div class="paragraph">
+<p>Selecting the appropriate programming paradigm can help simplify your application logic (see
+<a href="../../servicetalk-http-api/0.35/programming-paradigms.html#client-programming-paradigms" class="page">client programming paradigms</a> and
+<a href="../../servicetalk-http-api/0.35/programming-paradigms.html#service-programming-paradigms" class="page">service programming paradigms</a>) and
+also enable ServiceTalk to apply optimizations behind the scenes (e.g.
+<a href="#flushstrategy">flushing</a> and
+<a href="#ExecutionStrategy">offloading</a>). A paradigm is chosen when constructing
+the client or server, transforming a client on demand on a per-request basis (e.g.
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79">HttpClient#asBlockingClient()</a>
+), or leveraging a service <a href="../../servicetalk-http-api/0.35/index.html#routers" class="page">router&#8217;s</a> per-route ability to
+support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
+offloading. Please consider reading the detailed documentation on
+<a href="../../servicetalk-http-api/0.35/blocking-safe-by-default.html#programming-models" class="page">HTTP Programming models</a>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 7.6923%;">
+<col style="width: 23.0769%;">
+<col style="width: 23.0769%;">
+<col style="width: 23.0769%;">
+<col style="width: 23.077%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Model</th>
+<th class="tableblock halign-left valign-top">Flush</th>
+<th class="tableblock halign-left valign-top">Offload Server</th>
+<th class="tableblock halign-left valign-top">Offload Client</th>
+<th class="tableblock halign-left valign-top">Use-case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Async Aggregated</strong></p>
+<p class="tableblock"><code>cb.build()</code></p>
+<p class="tableblock"><code>sb.listen()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single Flush</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offload handling the request (Meta + payload combined)</p>
+<p class="tableblock">Offload the response control signals</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offload handling the response (Meta + payload combined)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">you have aggregated data and your code uses <code>Single&lt;T&gt;</code> or <code>Future&lt;T&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Async Streaming</strong></p>
+<p class="tableblock"><code>cb.buildStreaming()</code></p>
+<p class="tableblock"><code>sb.listenStreaming()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flush Meta<br>
+Flush Each Item</p></td>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">Offloads receipt of Meta, every payload item and all control signals</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">you have streaming data and your code uses <code>Single&lt;T&gt;</code> or <code>Future&lt;T&gt;</code> and <code>Publisher&lt;T&gt;</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Blocking Aggregated</strong></p>
+<p class="tableblock"><code>cb.buildBlocking()</code></p>
+<p class="tableblock"><code>sb.listenBlocking()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single Flush</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offload handling the request (Meta + payload combined)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">you have aggregated data and blocking code</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Blocking Streaming</strong></p>
+<p class="tableblock"><code>cb.buildBlockingStreaming()</code></p>
+<p class="tableblock"><code>sb.listenBlockingStreaming()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flush Meta<br>
+Flush Each Item</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offload receipt of Meta</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offload control signals</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">you have streaming data and blocking code</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This table clarifies how merely choosing the <em>programming model</em> depending on your use-case can improve efficiency. If
+you can in addition completely opt-out of the offloading (consult with
+<a href="#ExecutionStrategy">offloading</a>), you will get the best possible
+performance.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="jersey-programming-models"><a class="anchor" href="#jersey-programming-models"></a><a class="link" href="#jersey-programming-models">JAX-RS Jersey Router Programming Model</a></h4>
+<div class="paragraph">
+<p>Choosing the right programming model can have significant performance benefits when deploying Jersey routes as well. All
+Jersey APIs are supported under all models, however there may be some unexpected side-effects, for example when choosing
+an <em>Aggregated</em> router implementation. You would still be able to use streaming data types <sup class="footnote">[<a id="_footnoteref_4" class="footnote" href="#_footnotedef_4" title="View footnote.">4</a>]</sup> as input and output for JAX-RS endpoints, but need to realize that there will be buffering
+behind the scenes to aggregate and deliver the data in a single payload when the stream completes.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+There is no API-wise need for the Jersey router to be implemented in the 4 different programming models, however it
+currently offers the most effective way to benefit from these performance optimizations and may improve this in the
+future.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Model</th>
+<th class="tableblock halign-left valign-top">Optimal use-case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Async Aggregated</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Single&lt;T&gt;</code>, <code>Publisher&lt;T&gt;</code>, <code>Completable</code> data types in endpoints with aggregated data.</p>
+<p class="tableblock">best performance with offloading disabled for aggregated use-cases, optionally using ServiceTalk
+serializers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Async Streaming</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Publisher&lt;T&gt;</code> data type in endpoints with streaming data</p>
+<p class="tableblock">best performance with offloading disabled for streaming use-cases, optionally using ServiceTalk serializers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blocking Aggregated</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">typical primitive and aggregated JAX-RS data types, <code>Buffer</code>, <code>byte[]</code> or POJOs with serialization</p>
+<p class="tableblock">best performance in general when endpoints have aggregated data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blocking Streaming</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">best performance when endpoint depend on <code>InputStream</code> and <code>OutputStream</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+When in doubt using <em>Blocking Aggregated</em> or <em>Blocking Streaming</em> is a safe bet to get good performance, especially if
+you are converting an existing vanilla JAX-RS application.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>If you need to mix <code>Reactive Streams</code> routes with typical JAX-RS <em>Blocking Aggregated</em> routes, you have 2 options.
+Either you&#8217;ll fall back to the <em>Async Streaming</em> model to avoid aggregating your streams and lose some optimizations for
+your Blocking Aggregated routes. Or if your paths allow it, you can front-load your Jersey Router with the ServiceTalk
+Predicate Router and compose 2 Jersey routes behind the Predicate Router, each in their respective optimal programming
+model.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="io-thread-pool-sizing"><a class="anchor" href="#io-thread-pool-sizing"></a><a class="link" href="#io-thread-pool-sizing">IO Thread pool sizing</a></h3>
+<div class="paragraph">
+<p>By default ServiceTalk size the IO Thread-pool as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">2 * Runtime.getRuntime().availableProcessors()</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Available processors: CPU cores (logical
+<a href="https://en.wikipedia.org/wiki/Hyper-threading">Simultaneous Multithreading (SMT)</a> cores if available) or container
+compute units as defined by <a href="https://en.wikipedia.org/wiki/Cgroups">Linux cgroups</a></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The number of IO threads generally correlates to the number of available processors because this is how much logical
+concurrency available to your application. The IO threads are shared across connections and even requests the number of
+IO threads is not directly related to the number of requests. If you read and understand the consequences of disabling
+<a href="#ExecutionStrategy">offloading</a> then your business logic will execution
+directly on an IO thread. As your business logic consumes more processing time (e.g. CPU cycles, blocking calls, etc&#8230;&#8203;)
+it may be beneficial to have more than just <code>Runtime.getRuntime().availableProcessors()</code> threads. However the more
+processing time you take for a single request/connection, the more latency is incurred by other connections which share
+the same IO thread. You should also consider that more threads generally means more context switches. Like anything
+performance related your mileage may vary and you should benchmark your specific use case.</p>
+</div>
+<div class="paragraph">
+<p>In benchmarks which deal in memory data and consume minimal processing time (e.g. HTTP/1.x server responding to <code>GET</code>
+request with in memory payload, no compression, encryption, etc&#8230;&#8203;) setting the number of IO threads the equal to number
+of logical SMT cores gave the best performance and was ~10% better than <code>2 * Runtime.getRuntime().availableProcessors()</code></p>
+</div>
+<div class="paragraph">
+<p>For example, to override the IO Thread pool on an HTTP client builder (equivalent on the server builder):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">IoExecutor ioExecutor = NettyIoExecutors.createIoExecutor(
+                Runtime.getRuntime().availableProcessors(),
+                new IoThreadFactory("io-pool"));
+
+HttpClients.forSingleAddress("localhost", 8080)
+                .ioExecutor(ioExecutor)
+                .buildStreaming();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="socket-and-transport-options"><a class="anchor" href="#socket-and-transport-options"></a><a class="link" href="#socket-and-transport-options">Socket and Transport Options</a></h3>
+<div class="paragraph">
+<p>ServiceTalk exposes configuration knobs at various layers of the stack. At the lowest layer there are the TCP
+<code>SocketOptions</code> and ServiceTalk options, both exposed on the client builder.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+        .socketOption(StandardSocketOptions.SO_RCVBUF, 1234567)
+        .socketOption(StandardSocketOptions.SO_SNDBUF, 1234567)
+        .socketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, 12345)
+        .socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, 12345L)
+        .socketOption(ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD, 12345)
+        .buildBlocking();
+HttpResponse resp = client.request(client.get("/"));</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="http-service-auto-payload-draining"><a class="anchor" href="#http-service-auto-payload-draining"></a><a class="link" href="#http-service-auto-payload-draining">HTTP Service auto payload-draining</a></h3>
+<div class="paragraph">
+<p>If a user forgets to consume the request payload (e.g. returns an <code>HTTP 4xx</code> status code and doesn&#8217;t care about the
+request payload) this may have negative impacts on subsequent requests on the same connection:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>HTTP/1.x connections may have multiple serial requests and we cannot read the next request until the current request
+is consumed.</p>
+</li>
+<li>
+<p>HTTP/2.0 connections have flow control on each stream, and we want to consume the payload to return the bytes to flow
+control</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To avoid these issues, ServiceTalk HTTP servers will automatically drain the request payload content after the response
+is sent. However this adds some additional complexity to the HTTP service control flow in ServiceTalk and adds some
+overhead. If you know for sure that the payload is always consumed <sup class="footnote">[<a id="_footnoteref_5" class="footnote" href="#_footnotedef_5" title="View footnote.">5</a>]</sup>, or you are not using the streaming APIs, this mechanism can be
+disabled to save some CPU and memory as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
+                .disableDrainingRequestPayloadBody()
+                .listenStreamingAndAwait((ctx, request, responseFactory) -&gt; ..);</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="http-header-validation"><a class="anchor" href="#http-header-validation"></a><a class="link" href="#http-header-validation">HTTP Header validation</a></h3>
+<div class="paragraph">
+<p>ServiceTalk aims to be safe by default, hence it validates HTTP headers (including cookies) in accordance to the
+<a href="https://tools.ietf.org/html/rfc7230">HTTP RFCs</a>. However validation is not for free and comes with some overhead. If
+you know that your headers will always be valid or are willing to forgo validation, then you can disable header
+validation as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false /* names */,
+                                                                         false /* cookies */);
+
+HttpClients.forSingleAddress("localhost", 8080)
+                .protocols(HttpProtocolConfigs.h1().headersFactory(headersFactory).build())
+                .buildBlocking();</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="asynccontext"><a class="anchor" href="#asynccontext"></a><a class="link" href="#asynccontext">AsyncContext</a></h3>
+<div class="paragraph">
+<p>In traditional sequential programming where each request gets its own dedicated thread Java users may rely upon
+<code>ThreadLocal</code> to implicitly pass state across API boundaries. This is a convenient feature to take care of cross
+cutting concerns that do not have corresponding provisions throughout all layers of APIs (e.g.
+<a href="http://www.slf4j.org/manual.html#mdc">MDC</a>, auth, etc&#8230;&#8203;). However when moving to an asynchronous execution model
+you are no longer guaranteed to be the sole occupant of a thread over the lifetime of your request/response processing,
+and therefore <code>ThreadLocal</code> is not directly usable in the same way. For this reason ServiceTalk offers
+<a href="../../servicetalk-concurrent-api/0.35/async-context.html" class="page"><code>AsyncContext</code></a> which provides a static API similar
+to what <code>ThreadLocal</code> provides in one-request-per-thread execution model.</p>
+</div>
+<div class="paragraph">
+<p>This convenience and safety comes at a performance cost. Intercepting all the code paths in the asynchronous control
+flow (e.g. async operators) requires wrapping to <em>save</em> and <em>restore</em> the current context before/after the
+asynchronous control flow boundary. In order to provide a static API <code>ThreadLocal</code> is also required, although an
+optimization (e.g.
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java">AsyncContextMapHolder</a>
+) is used to minimize this cost. This <code>ThreadLocal</code> optimization is enabled by default and can be enabled by using our
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java">DefaultThreadFactory</a>
+if you use a custom <code>Executor</code>.</p>
+</div>
+<div class="paragraph">
+<p>In benchmarks with high throughput and asynchronous operators you will likely see a drop in throughput.
+Like most common features in ServiceTalk this is enabled by default and can be opted-out of as follows:</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+Some ServiceTalk features such as <code>OpenTracing</code> may depend on <code>AsyncContext</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">static {
+    // place this at the entrypoitn of your application
+    AsyncContext.disable();
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="netty-pooledbytebufallocator"><a class="anchor" href="#netty-pooledbytebufallocator"></a><a class="link" href="#netty-pooledbytebufallocator">Netty PooledByteBufAllocator</a></h3>
+<div class="paragraph">
+<p>ServiceTalk leverages Netty&#8217;s
+<a href="https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator</a> internally
+in cases where we have scope on the
+<a href="#reference-counting">reference counted</a> objects and can ensure they
+won&#8217;t leak into user code. The <code>PooledByteBufAllocator</code> itself has some configuration options that we currently don&#8217;t
+expose. There are some internal system properties exposed by Netty which can be used to tweak the default configuration.
+Note these are not a public API from ServiceTalk&#8217;s perspective and are subject to change at any time. For more info
+checkout the <a href="https://jemalloc.net">jemalloc inspired buffer pool</a> and the
+<a href="https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator source</a>.
+Here are a few options for motivation:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.netty.allocator.numHeapArenas</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Number or arenas for HEAP buffers, this impacts how much system memory is reserved for buffer pooling.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Unused by <code>ServiceTalk</code>, set this to <code>0</code>, unless it can&#8217;t use Direct Buffers and needs to fall back to HEAP
+</td>
+</tr>
+</table>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>io.netty.allocator.numDirectArenas</code></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Number or arenas for Direct buffers, this impacts how much system memory is reserved for buffer pooling</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="netty-tcnative-openssl-engine"><a class="anchor" href="#netty-tcnative-openssl-engine"></a><a class="link" href="#netty-tcnative-openssl-engine">netty-tcnative OpenSSL engine</a></h3>
+<div class="paragraph">
+<p>SSL encryption can cause significant compute overhead over non-encrypted traffic. The
+<a href="https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/SSLEngine.html">SSLEngine</a> for commonly used JDK8
+distributions are not known for having the best performance characteristics relative to alternative SSL implementations
+available in other languages (e.g. OpenSSL). The
+<a href="https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/SSLEngine.html">SSLEngine</a> OpenJDK performance has improved
+in JDK11 but still may not give comparable performance relative to alternative SSL implementations (e.g. OpenSSL). For
+this reason the Netty team created
+<a href="https://netty.io/wiki/forked-tomcat-native.html">netty-tcnative</a>
+based upon OpenSSL <sup class="footnote">[<a id="_footnoteref_6" class="footnote" href="#_footnotedef_6" title="View footnote.">6</a>]</sup> which is a production
+ready <code>SSLEngine</code> implementation. Using <code>netty-tcnative</code> with ServiceTalk is as easy as dropping in the
+<a href="https://netty.io/wiki/forked-tomcat-native.html#artifacts">JAR</a> of the SSL implementation on your classpath.</p>
+</div>
+<div class="paragraph">
+<p>You should also investigate the configuration of SSL which may impact performance. For example selecting the cipher
+suite and encryption/<a href="https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake">handshake</a>/
+<a href="https://en.wikipedia.org/wiki/Message_authentication_code">MAC</a> algorithms may have an impact on performance if you
+are able to <a href="https://en.wikipedia.org/wiki/AES_instruction_set">hardware acceleration</a>. Performance shouldn&#8217;t be the
+only consideration here as you must consider the security characteristics and what protocols your peers are likely to
+support (if they are out of your control). It is recommended to consult reputable resources (such as
+<a href="https://wiki.mozilla.org/Security/Server_Side_TLS">Mozilla Server Side TLS</a>) to learn more.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
+
+BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
+        .secure().provider(SecurityConfigurator.SslProvider.OPENSSL).commit()
+        .buildBlocking();
+HttpResponse resp = client.request(client.get("/"));</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="netty-leak-detection"><a class="anchor" href="#netty-leak-detection"></a><a class="link" href="#netty-leak-detection">Netty LEAK-detection</a></h3>
+<div class="paragraph">
+<p>ServiceTalk is built on top of Netty. Netty supports
+<a href="#reference-counting">reference counting</a> of <code>ByteBuf</code> objects (reference
+counting is <a href="#reference-counting">not exposed</a> by ServiceTalk). To help
+debug reference counting related bugs Netty provides a
+<a href="https://netty.io/wiki/reference-counted-objects.html#leak-detection-levels">leak detector for <code>DirectByteBuffers</code></a>.
+The default <code>SIMPLE</code> detector has a relatively small overhead (intended to be used in production) by sampling a small
+subset of buffer allocations and add additional tracking information. This overhead can be avoided at the risk of
+less visibility into reference counting bugs as follows:</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+This reduces visibility on reference counting bugs in ServiceTalk and Netty. This is not a public API exposed by
+ServiceTalk and is subject to change at any time.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code>-Dio.netty.leakDetection.level=DISABLED</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="skip-zero-initialization-for-allocated-memory"><a class="anchor" href="#skip-zero-initialization-for-allocated-memory"></a><a class="link" href="#skip-zero-initialization-for-allocated-memory">Skip zero initialization for allocated memory</a></h3>
+<div class="paragraph">
+<p>When Java allocates memory it sets all values in the allocated region to 0, according to the
+<a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html#jls-4.12.5">JLS, Initial Values of Variables</a>.
+This ensures you never have to worry about reading uninitialized memory, however in ServiceTalk the allocated memory
+is wrapped in a <a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>
+that maintains read and write indices to prevent reading uninitialized memory. Therefore zeroing of `Buffer`s is not
+necessary and adds considerable overhead while allocating which affects throughput.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk bypasses this zeroing for the default direct
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocator</a>
+on JDK8. On JDK9+ due to the additional protections put in place, one needs to provide additional system properties to
+take advantage of this optimization.</p>
+</div>
+<div class="paragraph">
+<p>To bypass zeroing direct buffers on JDK9+, use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code>-Dio.servicetalk.tryReflectionSetAccessible=true</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Bypassing zeroing for heap buffers works only in JDK9+, to enable it use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code>-Dio.netty.tryReflectionSetAccessible=true
+--add-exports java.base/jdk.internal.misc=ALL-UNNAMED</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These flags do not bypass zeroing when memory is allocated directly through <code>new byte[]</code>,
+<code>ByteBuffer.allocate(int)</code>, or <code>ByteBuffer.allocateDirect(int)</code>, this only optimizes the buffers created with the ServiceTalk
+<a href="https://github.com/apple/servicetalk/blob/0.35.0/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocators</a>.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="internal-performance-evaluation"><a class="anchor" href="#internal-performance-evaluation"></a><a class="link" href="#internal-performance-evaluation">Internal performance evaluation</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>While we are careful in not adding unnecessary performance overhead during the development of ServiceTalk, we can&#8217;t
+claim we deliver on this goal unless we measure. Therefore we evaluate ServiceTalk&#8217;s performance periodically.
+The following sections will outline the performance evaluations we do internally. You can use this information to
+determine whether we have covered the areas of your interest. Every environment and use-case is different which may
+perform differently and require different tuning strategies, so we would suggest you do your evaluations if performance
+is critical to your use case.</p>
+</div>
+<div class="sect2">
+<h3 id="test-scenarios"><a class="anchor" href="#test-scenarios"></a><a class="link" href="#test-scenarios">Test scenarios</a></h3>
+<div class="paragraph">
+<p>We obviously can&#8217;t test all scenarios, but our aim is to continuously monitor performance of a set of use cases that
+are representative of real world use cases while also isolating ServiceTalk as much as possible (e.g. minimize business
+logic). In addition, we also compare how well other libraries and frameworks in the Java ecosystem perform,
+for example it&#8217;s interesting for us to compare against Netty, as it shows us exactly how much overhead we are adding on
+top.</p>
+</div>
+<div class="sect3">
+<h4 id="clients-and-server-types"><a class="anchor" href="#clients-and-server-types"></a><a class="link" href="#clients-and-server-types">Clients and Server types</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>HTTP Clients and Servers in all programming models (see
+<a href="#programming-models">programming models</a> for performance implications)</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Async Aggregated</p>
+</li>
+<li>
+<p>Async Streaming</p>
+</li>
+<li>
+<p>Blocking Aggregated</p>
+</li>
+<li>
+<p>Blocking Streaming</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>JAX-RS Jersey router performance</p>
+<div class="ulist">
+<ul>
+<li>
+<p>all <a href="#jersey-programming-models">Jersey Router programming models</a></p>
+</li>
+<li>
+<p>common JAX-RS data types (<code>String</code>, <code>byte[]</code>, <code>InputStream</code>, <code>OutputStream</code>)</p>
+</li>
+<li>
+<p>Reactive Streams types (<code>Single&lt;T&gt;</code>, <code>Publisher&lt;T&gt;</code>, <code>Publisher&lt;Buffer&gt;</code>)</p>
+</li>
+<li>
+<p>JSON with Jersey Jackson module &amp; <code>ServiceTalk</code> Jersey Jackson module</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="features-and-dimensions"><a class="anchor" href="#features-and-dimensions"></a><a class="link" href="#features-and-dimensions">Features and dimensions</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>PLAIN vs SSL</p>
+</li>
+<li>
+<p>offloading (default) vs not-offloading</p>
+</li>
+<li>
+<p>HTTP Methods</p>
+<div class="ulist">
+<ul>
+<li>
+<p>GET</p>
+</li>
+<li>
+<p>POST</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Payload sizes</p>
+<div class="ulist">
+<ul>
+<li>
+<p>0</p>
+</li>
+<li>
+<p>256</p>
+</li>
+<li>
+<p>16KB</p>
+</li>
+<li>
+<p>256KB</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>AsyncContext enable/disable</p>
+</li>
+<li>
+<p>Header validation enable/disable</p>
+</li>
+<li>
+<p>IO Thread count</p>
+</li>
+<li>
+<p>Connection count</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="conclusion"><a class="anchor" href="#conclusion"></a><a class="link" href="#conclusion">Conclusion</a></h3>
+<div class="paragraph">
+<p>These test scenarios and benchmarks have helped us convince ourselves that ServiceTalk performs as expected compared
+to other libraries in the industry for the use cases that interests us. We are interested in improving ServiceTalk in
+general and would add more benchmarks as necessary.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. serving 10s to 100s of thousands of concurrent connections with a single application with small number of threads. This is impractical to achieve with typical Java, Blocking-IO libraries that follow the 1 thread per connection networking model.
+</div>
+<div class="footnote" id="_footnotedef_2">
+<a href="#_footnoteref_2">2</a>. overhead of kernel/user-space thread context switching will dominate CPU usage and there are limits in the 1000s of threads the OS wil allow an application to start
+</div>
+<div class="footnote" id="_footnotedef_3">
+<a href="#_footnoteref_3">3</a>. Filters shipped with ServiceTalk, unless explicitly mentioned, can be considered non-blocking
+</div>
+<div class="footnote" id="_footnotedef_4">
+<a href="#_footnoteref_4">4</a>. <code>Reactive Streams</code> or <code>Input|OutputStream</code>
+</div>
+<div class="footnote" id="_footnotedef_5">
+<a href="#_footnoteref_5">5</a>. typically compose the response with <code>request.payloadBodyAndTrailers().ignoreElements()</code>
+</div>
+<div class="footnote" id="_footnotedef_6">
+<a href="#_footnoteref_6">6</a>. BoringSSL is a drop-in replacement for OpenSSL maintained by Google
+</div>
+</div>
+</article>
+    </main>
+</div>
+<footer class="footer">
+  <p></p>
+</footer>
+<script src="../../_/js/site.js"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
