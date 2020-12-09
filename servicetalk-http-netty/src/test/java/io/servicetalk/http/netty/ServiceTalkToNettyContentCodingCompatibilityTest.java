@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -34,7 +33,6 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.HttpUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -43,13 +41,11 @@ import org.junit.runners.Parameterized;
 import java.net.InetSocketAddress;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static io.netty.handler.codec.http.HttpHeaderNames.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpHeaderValues.CLOSE;
-import static io.netty.handler.codec.http.HttpHeaderValues.KEEP_ALIVE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -63,10 +59,13 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
 
     private EventLoopGroup serverEventLoopGroup;
     private Channel serverAcceptorChannel;
-    private HttpClient client;
+    private BlockingHttpClient client;
 
-    public ServiceTalkToNettyContentCodingCompatibilityTest(Scenario scenario) {
-        super(scenario);
+    public ServiceTalkToNettyContentCodingCompatibilityTest(final HttpProtocol protocol,
+                                                            final Codings serverCodings, final Codings clientCodings,
+                                                            final Compression compression,
+                                                            final boolean valid) {
+        super(protocol, serverCodings, clientCodings, compression, valid);
     }
 
     @Before
@@ -74,7 +73,7 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
         serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
-        client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario);
+        client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
     }
 
     @After
@@ -105,8 +104,8 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
     }
 
     @Override
-    public void testCompatibility() throws Exception {
-        assumeFalse("Only testing H1 scenarios yet.", scenario.isH2);
+    public void testCompatibility() throws Throwable {
+        assumeFalse("Only testing H1 scenarios yet.", scenario.protocol.version.equals(HTTP_2_0));
         assumeTrue("Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.", scenario.valid);
 
@@ -114,7 +113,7 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
     }
 
     @Override
-    protected HttpClient client() {
+    protected BlockingHttpClient client() {
         return client;
     }
 
@@ -133,8 +132,6 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
         public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
             if (msg instanceof io.netty.handler.codec.http.HttpRequest) {
                 io.netty.handler.codec.http.HttpRequest req = (io.netty.handler.codec.http.HttpRequest) msg;
-
-                boolean keepAlive = HttpUtil.isKeepAlive(req);
                 FullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(),
                         OK, wrappedBuffer(CONTENT));
 
@@ -142,19 +139,7 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
                         .set(CONTENT_TYPE, TEXT_PLAIN)
                         .setInt(CONTENT_LENGTH, response.content().readableBytes());
 
-                if (keepAlive) {
-                    if (!req.protocolVersion().isKeepAliveDefault()) {
-                        response.headers().set(CONNECTION, KEEP_ALIVE);
-                    }
-                } else {
-                    response.headers().set(CONNECTION, CLOSE);
-                }
-
-                ChannelFuture f = ctx.write(response);
-
-                if (!keepAlive) {
-                    f.addListener(ChannelFutureListener.CLOSE);
-                }
+                ctx.write(response);
             }
         }
 
