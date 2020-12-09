@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnSubscripti
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalCompleteEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorNonNullChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorPredicate;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.SubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadAwaitEvent;
@@ -37,19 +38,19 @@ import java.util.function.Predicate;
 import static io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 import static java.util.Objects.requireNonNull;
 
-public class InlineCompletableFirstStep implements CompletableFirstStep {
+final class InlineCompletableFirstStep implements CompletableFirstStep {
     private final CompletableSource source;
     private final NormalizedTimeSource timeSource;
     private final List<PublisherEvent> events;
 
-    public InlineCompletableFirstStep(CompletableSource source, NormalizedTimeSource timeSource) {
+    InlineCompletableFirstStep(CompletableSource source, NormalizedTimeSource timeSource) {
         this.source = requireNonNull(source);
         this.timeSource = requireNonNull(timeSource);
         this.events = new ArrayList<>();
     }
 
     @Override
-    public CompletableLastStep expectCancellable(Consumer<? super Cancellable> consumer) {
+    public CompletableLastStep expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
         requireNonNull(consumer);
         events.add(new OnSubscriptionEvent() {
             @Override
@@ -84,17 +85,22 @@ public class InlineCompletableFirstStep implements CompletableFirstStep {
     }
 
     @Override
-    public StepVerifier expectError(Predicate<Throwable> errorPredicate) {
-        return expectError(new OnTerminalErrorPredicate(errorPredicate));
+    public StepVerifier expectError() {
+        return expectErrorConsumed(new OnTerminalErrorNonNullChecker());
+    }
+
+    @Override
+    public StepVerifier expectErrorMatches(Predicate<Throwable> errorPredicate) {
+        return expectErrorConsumed(new OnTerminalErrorPredicate(errorPredicate));
     }
 
     @Override
     public StepVerifier expectError(Class<? extends Throwable> errorClass) {
-        return expectError(new OnTerminalErrorClassChecker(errorClass));
+        return expectErrorConsumed(new OnTerminalErrorClassChecker(errorClass));
     }
 
     @Override
-    public StepVerifier expectError(Consumer<Throwable> errorConsumer) {
+    public StepVerifier expectErrorConsumed(Consumer<Throwable> errorConsumer) {
         events.add(new OnTerminalErrorEvent(errorConsumer));
         return new CompletableInlineStepVerifier(source, timeSource, events);
     }

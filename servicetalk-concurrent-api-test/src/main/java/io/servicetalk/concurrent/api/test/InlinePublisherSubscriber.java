@@ -26,13 +26,14 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -41,6 +42,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.notEqualsOnNext;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifiableSubscriber {
@@ -61,7 +63,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     @Nullable
     private List<Long> currSubscriptionIndexes;
     /**
-     * Used for: {@link OnNextIterableEvent} and {@link OnNextIgnoreEvent}.
+     * Used for: {@link OnNextIterableEvent} and {@link OnNextExpectCountEvent}.
      */
     private long currCount;
     /**
@@ -73,7 +75,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
      * Used for: {@link OnNextAggregateEvent}.
      */
     @Nullable
-    private List<T> currAggregateSignals;
+    private AppendOnlyLongIterable<T> currAggregateSignals;
     /**
      * Used for: {@link NoSignalForDurationEvent}s.
      */
@@ -174,7 +176,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             currAggregateSignals.add(t);
             if (currAggregateSignals.size() == castEvent.maxOnNext()) {
                 try {
-                    List<T> tmp = currAggregateSignals;
+                    AppendOnlyLongIterable<T> tmp = currAggregateSignals;
                     currAggregateSignals = null;
                     castEvent.signalsConsumer.accept(tmp);
                     event = pollNextEvent();
@@ -199,8 +201,8 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             } catch (Throwable cause) {
                 event = failVerification(cause, event);
             }
-        } else if (event instanceof OnNextIgnoreEvent) {
-            if (++currCount >= ((OnNextIgnoreEvent) event).ignoreCount()) {
+        } else if (event instanceof OnNextExpectCountEvent) {
+            if (++currCount == ((OnNextExpectCountEvent) event).maxOnNext()) {
                 event = pollNextEvent();
             }
         } else if (event != null) {
@@ -275,7 +277,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
             assert currAggregateSignals != null;
             if (currAggregateSignals.size() >= castEvent.minOnNext()) {
                 try {
-                    List<T> tmp = currAggregateSignals;
+                    AppendOnlyLongIterable<T> tmp = currAggregateSignals;
                     currAggregateSignals = null;
                     castEvent.signalsConsumer.accept(tmp);
                     event = pollNextEvent();
@@ -287,8 +289,14 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                         currAggregateSignals + ", actual " + signalName), event);
                 currAggregateSignals = null;
             }
-        } else if (event instanceof OnNextIgnoreEvent) {
-            event = pollNextEvent();
+        } else if (event instanceof OnNextExpectCountEvent) {
+            final OnNextExpectCountEvent castEvent = (OnNextExpectCountEvent) event;
+            if (currCount >= castEvent.minOnNext()) {
+                event = pollNextEvent();
+            } else {
+                event = failVerification(new IllegalStateException("expected " + event.description() +
+                        " onNext count: " + currCount + ", actual signal: " + signalName), event);
+            }
         }
         return event;
     }
@@ -328,7 +336,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 verifyThreadEvents.add((VerifyThreadEvent) currEvent);
             } else {
                 subscriptionBeginIndex = addSubscriptionIndexRange(subscriptionBeginIndex, eventIndex);
-                if (currEvent instanceof OnNextIgnoreEvent) {
+                if (currEvent instanceof OnNextExpectCountEvent) {
                     currCount = 0;
                 } else if (currEvent instanceof OnNextIterableEvent) {
                     @SuppressWarnings("unchecked")
@@ -346,7 +354,9 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 } else if (currEvent instanceof OnNextAggregateEvent) {
                     @SuppressWarnings("unchecked")
                     final OnNextAggregateEvent<T> castEvent = (OnNextAggregateEvent<T>) currEvent;
-                    currAggregateSignals = new ArrayList<>(castEvent.minOnNext());
+                    currAggregateSignals = new AppendOnlyLongIterable<>(size -> size > castEvent.minOnNext() ?
+                            new ArrayList<>() :
+                            new ArrayList<>((int) min(Integer.MAX_VALUE, castEvent.minOnNext() - size)));
                 }
                 if (subscription != null) {
                     requestIfNecessary(currEvent);
@@ -366,8 +376,8 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         if (event instanceof OnNextEvent || event instanceof OnNextIterableEvent ||
                 event instanceof NoSignalForDurationEvent) {
             subscription.request(1);
-        } else if (event instanceof OnNextIgnoreEvent) {
-            subscription.request(((OnNextIgnoreEvent) event).ignoreCount());
+        } else if (event instanceof OnNextExpectCountEvent) {
+            subscription.request(((OnNextExpectCountEvent) event).maxOnNext());
         } else if (event instanceof OnNextAggregateEvent) {
             subscription.request(((OnNextAggregateEvent<?>) event).maxOnNext());
         } else if (event instanceof OnTerminalEvent) {
@@ -495,26 +505,6 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
     abstract static class VerifyThreadEvent extends PublisherEvent {
     }
 
-    static final class OnNextIgnoreEvent extends PublisherEvent {
-        private final long ignoreCount;
-
-        OnNextIgnoreEvent(long n) {
-            if (n <= 0) {
-                throw new IllegalArgumentException("n: " + n + " (expected >0)");
-            }
-            this.ignoreCount = n;
-        }
-
-        long ignoreCount() {
-            return ignoreCount;
-        }
-
-        @Override
-        String description() {
-            return "expectNextCount(" + ignoreCount + ")";
-        }
-    }
-
     static final class OnNextIterableEvent<T> extends PublisherEvent {
         private final Iterable<? extends T> iterable;
 
@@ -548,28 +538,57 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         abstract void onNext(@Nullable T next);
     }
 
-    static final class OnNextAggregateEvent<T> extends PublisherEvent {
-        private final int maxOnNext;
-        private final int minOnNext;
-        private final Consumer<? super Collection<? extends T>> signalsConsumer;
+    static final class OnNextExpectCountEvent extends PublisherEvent {
+        private final long maxOnNext;
+        private final long minOnNext;
 
-        OnNextAggregateEvent(int minOnNext, int maxOnNext, Consumer<? super Collection<? extends T>> signalsConsumer) {
-            if (minOnNext < 0) {
-                throw new IllegalArgumentException("minOnNext " + minOnNext + " (expected >=0)");
+        OnNextExpectCountEvent(long minOnNext, long maxOnNext) {
+            if (maxOnNext <= 0) {
+                throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " (expected >0)");
             }
             if (maxOnNext < minOnNext) {
-                throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " < minOnNext" + minOnNext);
+                throw new IllegalArgumentException("maxOnNext " + maxOnNext + " < minOnNext" + minOnNext);
+            }
+            this.maxOnNext = maxOnNext;
+            this.minOnNext = minOnNext;
+        }
+
+        long maxOnNext() {
+            return maxOnNext;
+        }
+
+        long minOnNext() {
+            return minOnNext;
+        }
+
+        @Override
+        String description() {
+            return "expectNextCount(" + minOnNext + "," + maxOnNext + ")";
+        }
+    }
+
+    static final class OnNextAggregateEvent<T> extends PublisherEvent {
+        private final long maxOnNext;
+        private final long minOnNext;
+        private final Consumer<? super Iterable<? extends T>> signalsConsumer;
+
+        OnNextAggregateEvent(long minOnNext, long maxOnNext, Consumer<? super Iterable<? extends T>> signalsConsumer) {
+            if (maxOnNext <= 0) {
+                throw new IllegalArgumentException("maxOnNext: " + maxOnNext + " (expected >0)");
+            }
+            if (maxOnNext < minOnNext) {
+                throw new IllegalArgumentException("maxOnNext " + maxOnNext + " < minOnNext" + minOnNext);
             }
             this.signalsConsumer = requireNonNull(signalsConsumer);
             this.maxOnNext = maxOnNext;
             this.minOnNext = minOnNext;
         }
 
-        int maxOnNext() {
+        long maxOnNext() {
             return maxOnNext;
         }
 
-        int minOnNext() {
+        long minOnNext() {
             return minOnNext;
         }
 
@@ -600,6 +619,18 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         @Override
         public String toString() {
             return "==" + errorClass.getName();
+        }
+    }
+
+    static final class OnTerminalErrorNonNullChecker implements Consumer<Throwable> {
+        @Override
+        public void accept(Throwable throwable) {
+            requireNonNull(throwable);
+        }
+
+        @Override
+        public String toString() {
+            return "requireNonNull";
         }
     }
 
@@ -670,5 +701,83 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
 
     abstract static class SubscriptionEvent extends PublisherEvent {
         abstract void subscription(Subscription subscription);
+    }
+
+    private static final class AppendOnlyLongIterable<T> implements Iterable<T> {
+        private long size;
+        private final ListNode<T> head;
+        private ListNode<T> tail;
+        private final LongFunction<List<T>> listFactory;
+
+        AppendOnlyLongIterable(LongFunction<List<T>> listFactory) {
+            this.listFactory = requireNonNull(listFactory);
+            head = tail = new ListNode<>(listFactory.apply(0));
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return new AppendOnlyLongIterator<>(head);
+        }
+
+        void add(@Nullable T item) {
+            if (tail.list.size() == Integer.MAX_VALUE) {
+                ListNode<T> oldTail = tail;
+                tail = new ListNode<>(listFactory.apply(size));
+                oldTail.next = tail;
+            } else {
+                tail.list.add(item);
+            }
+            ++size;
+        }
+
+        long size() {
+            return size;
+        }
+
+        private static final class AppendOnlyLongIterator<T> implements Iterator<T> {
+            @Nullable
+            private ListNode<T> node;
+            @Nullable
+            private Iterator<T> iterator;
+
+            AppendOnlyLongIterator(ListNode<T> node) {
+                this.node = node;
+                iterator = node.list.iterator();
+                tryAdvance();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iterator != null;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                T next = iterator.next();
+                tryAdvance();
+                return next;
+            }
+
+            private void tryAdvance() {
+                while (iterator != null && !iterator.hasNext()) {
+                    assert node != null;
+                    node = node.next;
+                    iterator = node == null ? null : node.list.iterator();
+                }
+            }
+        }
+
+        private static final class ListNode<T> {
+            final List<T> list;
+            @Nullable
+            ListNode<T> next;
+
+            ListNode(List<T> list) {
+                this.list = list;
+            }
+        }
     }
 }

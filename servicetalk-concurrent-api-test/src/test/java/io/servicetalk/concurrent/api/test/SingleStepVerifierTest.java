@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.test;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Single;
@@ -34,13 +35,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.api.test.StepVerifiers.create;
+import static io.servicetalk.concurrent.api.test.FirstSteps.create;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
@@ -73,26 +73,26 @@ public class SingleStepVerifierTest {
     @Test
     public void expectCancellable() {
         create(succeeded("foo"))
-                .expectCancellable(Assert::assertNotNull)
+                .expectCancellableConsumed(Assert::assertNotNull)
                 .expectSuccess("foo")
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectCancellableTimeout() {
         assert executor != null;
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> create(completed().publishAndSubscribeOn(executor))
-                    .expectCancellable(cancellable -> {
+            verifyException(() -> create(succeeded("foo").publishAndSubscribeOn(executor))
+                    .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
                     })
-                    .expectComplete()
-                    .verify(ofNanos(10)));
+                    .expectSuccess("foo")
+                    .verify(ofNanos(10)), "expectCancellableConsumed");
         } finally {
             latch.countDown();
         }
@@ -102,7 +102,7 @@ public class SingleStepVerifierTest {
     public void onSuccessDuplicateVerify() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         StepVerifier verifier = create(succeeded("foo"))
-                .expectCancellable(cancellable -> {
+                .expectCancellableConsumed(cancellable -> {
                     assertNotNull(cancellable);
                     latch.countDown();
                 })
@@ -113,6 +113,20 @@ public class SingleStepVerifierTest {
     }
 
     @Test
+    public void onSuccessIgnore() {
+        create(succeeded("foo"))
+                .expectSuccess()
+                .verify();
+    }
+
+    @Test
+    public void onSuccessIgnoreFail() {
+        verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
+                .expectSuccess()
+                .verify(), "expectSuccess");
+    }
+
+    @Test
     public void onSuccess() {
         assertNotNull(create(succeeded("foo"))
                 .expectSuccess("foo")
@@ -120,9 +134,44 @@ public class SingleStepVerifierTest {
     }
 
     @Test
+    public void onSuccessFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectSuccess("bar")
+                .verify(), "expectSuccess");
+    }
+
+    @Test
+    public void onSuccessPredicate() {
+        create(succeeded("foo"))
+                .expectSuccessMatches("foo"::equals)
+                .verify();
+    }
+
+    @Test
+    public void onSuccessPredicateFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectSuccessMatches("bar"::equals)
+                .verify(), "expectSuccessMatches");
+    }
+
+    @Test
+    public void onSuccessConsumer() {
+        create(succeeded("foo"))
+                .expectSuccessConsumed(t -> assertEquals("foo", t))
+                .verify();
+    }
+
+    @Test
+    public void onSuccessConsumerFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectSuccessConsumed(t -> assertEquals("bar", t))
+                .verify(), "expectSuccessConsumed");
+    }
+
+    @Test
     public void onSuccessNull() {
         assertNotNull(create(succeeded(null))
-                .expectSuccess((String) null)
+                .expectSuccess(null)
                 .verify());
     }
 
@@ -133,11 +182,25 @@ public class SingleStepVerifierTest {
                 .verify(ofDays(1)));
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void onSuccessTimeout() {
         verifyException(() -> create(never())
                 .expectSuccess("foo")
-                .verify(ofNanos(10)));
+                .verify(ofNanos(10)), "expectSuccess");
+    }
+
+    @Test
+    public void onError() {
+        create(failed(DELIBERATE_EXCEPTION))
+                .expectError()
+                .verify();
+    }
+
+    @Test
+    public void onErrorFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectError()
+                .verify(), "expectError");
     }
 
     @Test
@@ -148,33 +211,45 @@ public class SingleStepVerifierTest {
     }
 
     @Test
+    public void onErrorClassFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectError(DeliberateException.class)
+                .verify(), "expectError");
+    }
+
+    @Test
     public void onErrorPredicate() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(error -> error instanceof DeliberateException)
+                .expectErrorMatches(error -> error instanceof DeliberateException)
                 .verify();
+    }
+
+    @Test
+    public void onErrorPredicateFail() {
+        verifyException(() -> create(succeeded("foo"))
+                .expectErrorMatches(error -> error instanceof DeliberateException)
+                .verify(), "expectErrorMatches");
     }
 
     @Test
     public void onErrorConsumer() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(error -> {
-                    assertThat(error, is(DELIBERATE_EXCEPTION));
-                })
+                .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
-    public void expectOnErrorWhenOnSuccess() {
+    @Test
+    public void onErrorConsumerFail() {
         verifyException(() -> create(succeeded("foo"))
-                .expectError(DeliberateException.class)
-                .verify());
+                .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
+                .verify(), "expectErrorConsumed");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectOnSuccessWhenOnError() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
                     .expectSuccess("foo")
-                    .verify());
+                    .verify(), "expectSuccess");
     }
 
     @Test
@@ -187,36 +262,43 @@ public class SingleStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsSuccessFail() {
         verifyException(() -> create(succeeded("foo"))
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(1))
                 .expectSuccess("foo")
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsErrorFails() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
         create(Single.never())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
                 .verify();
     }
 
     @Test
-    public void thenCancel() {
+    public void thenCancelSucceeded() {
         create(succeeded("foo"))
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void thenCancelFailed() {
+        create(Completable.failed(DELIBERATE_EXCEPTION))
                 .thenCancel()
                 .verify();
     }
@@ -230,11 +312,11 @@ public class SingleStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DeliberateException.class)
     public void thenRunThrows() {
         create(succeeded("foo"))
                 .then(() -> {
-                    throw new IllegalStateException();
+                    throw DELIBERATE_EXCEPTION;
                 })
                 .expectSuccess("foo")
                 .verify();
@@ -244,11 +326,11 @@ public class SingleStepVerifierTest {
     public void asyncContextOnSuccess() {
         assert executor != null;
         create(succeeded("foo").publishAndSubscribeOn(executor))
-                .expectCancellable(s -> {
+                .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
                 })
-                .expectSuccess(next -> {
+                .expectSuccessConsumed(next -> {
                     assertEquals("foo", next);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(10));
                 })
@@ -259,11 +341,11 @@ public class SingleStepVerifierTest {
     public void asyncContextOnError() {
         assert executor != null;
         create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(executor))
-                .expectCancellable(s -> {
+                .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
                 })
-                .expectError(error -> {
+                .expectErrorConsumed(error -> {
                     assertSame(DELIBERATE_EXCEPTION, error);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(10));
                 })
@@ -274,7 +356,7 @@ public class SingleStepVerifierTest {
     public void thenAwaitRespectsDelaysComplete() {
         SingleSource.Processor<String, String> processor = newSingleProcessor();
         new InlineSingleFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(500))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onSuccess("foo"))
@@ -282,12 +364,12 @@ public class SingleStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysEqualsFail() {
         thenAwaitRespectsDelaysFail(true);
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysGTFail() {
         thenAwaitRespectsDelaysFail(false);
     }
@@ -295,15 +377,15 @@ public class SingleStepVerifierTest {
     private static void thenAwaitRespectsDelaysFail(boolean equals) {
         SingleSource.Processor<String, String> processor = newSingleProcessor();
         verifyException(() -> new InlineSingleFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(equals ? 1000 : 1001))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onSuccess("foo"))
                 .expectSuccess("foo")
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    private static void verifyException(Supplier<Duration> verifier) {
-        PublisherStepVerifierTest.verifyException(verifier, SingleStepVerifierTest.class.getName());
+    private static void verifyException(Supplier<Duration> verifier, String failedTestMethod) {
+        PublisherStepVerifierTest.verifyException(verifier, SingleStepVerifierTest.class.getName(), failedTestMethod);
     }
 }

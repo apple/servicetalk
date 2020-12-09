@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -51,31 +51,33 @@ public interface PublisherStep<T> extends PublisherLastStep {
      * @param signals The next signals which are expected in-order.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectNext(Iterable<? extends T> signals);
+    PublisherStep<T> expectNextSequence(Iterable<? extends T> signals);
 
     /**
-     * Declare an expectation that {@code signals} will be the next in-order sequence of
-     * {@link Subscriber#onNext(Object) signals}.
-     * @param signals The next signals which are expected in-order.
+     * Declare an expectation that {@link Subscriber#onNext(Object) onNext} will be the next signal and evaluate it
+     * with {@code signalPredicate}.
+     * @param signalPredicate Will be invoked when {@link Subscriber#onNext(Object) onNext} is called and will raise
+     * a {@link AssertionError} if the predicate returns {@code false}.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectNext(Collection<? extends T> signals);
+    PublisherStep<T> expectNextMatches(Predicate<? super T> signalPredicate);
 
     /**
-     * Declare an expectation that can be asserted when the {@link Subscriber#onNext(Object) onNext} method is invoked.
+     * Declare an expectation that {@link Subscriber#onNext(Object) onNext} will be the next signal and evaluate it
+     * with {@code signalConsumer}.
      * @param signalConsumer Consumes the next {@link Subscriber#onNext(Object) onNext} signal.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectNext(Consumer<? super T> signalConsumer);
+    PublisherStep<T> expectNextConsumed(Consumer<? super T> signalConsumer);
 
     /**
      * Expect {@code n} {@link Subscriber#onNext(Object) onNext} signals, and assert their values via
      * {@code signalsConsumer}.
      * @param n The number of {@link Subscriber#onNext(Object) onNext} signals that are expected.
-     * @param signalsConsumer A {@link Consumer} that accepts an {@link Collection} which has {@code n} items.
+     * @param signalsConsumer A {@link Consumer} that accepts an {@link Iterable} which has {@code n} items.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectNext(int n, Consumer<? super Collection<? extends T>> signalsConsumer);
+    PublisherStep<T> expectNext(long n, Consumer<? super Iterable<? extends T>> signalsConsumer);
 
     /**
      * Expect between {@code [min, max]} {@link Subscriber#onNext(Object) onNext} signals, and assert their values via
@@ -86,18 +88,29 @@ public interface PublisherStep<T> extends PublisherLastStep {
      * invoked for verification, otherwise the expectation will fail.
      * @param max The maximum number of {@link Subscriber#onNext(Object) onNext} signals that will be accumulated
      * before invoking {@code signalsConsumer}.
-     * @param signalsConsumer A {@link Consumer} that accepts an {@link Collection} which has between
+     * @param signalsConsumer A {@link Consumer} that accepts an {@link Iterable} which has between
      * {@code [min, max]} items and preforms verification.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectNext(int min, int max, Consumer<? super Collection<? extends T>> signalsConsumer);
+    PublisherStep<T> expectNext(long min, long max, Consumer<? super Iterable<? extends T>> signalsConsumer);
 
     /**
-     * Expect {@code n} {@link Subscriber#onNext(Object) onNext} signals, and discard the values.
+     * Expect between {@code [min, max]} {@link Subscriber#onNext(Object) onNext} signals, and discard the values.
      * @param n The number of {@link Subscriber#onNext(Object) onNext} signals that are expected.
      * @return An object which allows for subsequent expectations to be defined.
      */
     PublisherStep<T> expectNextCount(long n);
+
+    /**
+     * Expect between {@code [min, max]} {@link Subscriber#onNext(Object) onNext} signals, and discard the values.
+     * @param min The minimum number of {@link Subscriber#onNext(Object) onNext} signals that are required before. If a
+     * terminal signal is processed and the number of accumulated {@link Subscriber#onNext(Object) onNext} signals is
+     * {@code <} this value, the expectation will fail.
+     * @param max The maximum number of {@link Subscriber#onNext(Object) onNext} signals that will be expected and
+     * ignored before moving on to the next expectation.
+     * @return An object which allows for subsequent expectations to be defined.
+     */
+    PublisherStep<T> expectNextCount(long min, long max);
 
     /**
      * Expect no {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)}, or

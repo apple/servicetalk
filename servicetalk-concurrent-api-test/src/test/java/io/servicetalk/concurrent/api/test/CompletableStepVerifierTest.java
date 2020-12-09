@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.AfterClass;
@@ -39,7 +38,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.api.test.StepVerifiers.create;
+import static io.servicetalk.concurrent.api.test.FirstSteps.create;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
@@ -71,18 +70,18 @@ public class CompletableStepVerifierTest {
     @Test
     public void expectCancellable() {
         create(completed())
-                .expectCancellable(Assert::assertNotNull)
+                .expectCancellableConsumed(Assert::assertNotNull)
                 .expectComplete()
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectCancellableTimeout() {
         assert executor != null;
         CountDownLatch latch = new CountDownLatch(1);
         try {
             verifyException(() -> create(completed().publishAndSubscribeOn(executor))
-                    .expectCancellable(cancellable -> {
+                    .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
                         } catch (InterruptedException e) {
@@ -90,7 +89,7 @@ public class CompletableStepVerifierTest {
                         }
                     })
                     .expectComplete()
-                    .verify(ofNanos(10)));
+                    .verify(ofNanos(10)), "expectCancellableConsumed");
         } finally {
             latch.countDown();
         }
@@ -107,7 +106,7 @@ public class CompletableStepVerifierTest {
     public void onCompleteDuplicateVerify() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         StepVerifier verifier = create(completed())
-                .expectCancellable(cancellable -> {
+                .expectCancellableConsumed(cancellable -> {
                     assertNotNull(cancellable);
                     latch.countDown();
                 })
@@ -124,11 +123,25 @@ public class CompletableStepVerifierTest {
                 .verify(ofDays(1)));
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void onCompleteTimeout() {
         verifyException(() -> create(never())
                 .expectComplete()
-                .verify(ofNanos(10)));
+                .verify(ofNanos(10)), "expectComplete");
+    }
+
+    @Test
+    public void onError() {
+        create(failed(DELIBERATE_EXCEPTION))
+                .expectError()
+                .verify();
+    }
+
+    @Test
+    public void onErrorFail() {
+        verifyException(() -> create(completed())
+                .expectError()
+                .verify(), "expectError");
     }
 
     @Test
@@ -139,33 +152,45 @@ public class CompletableStepVerifierTest {
     }
 
     @Test
+    public void onErrorClassFail() {
+        verifyException(() -> create(completed())
+                .expectError(DeliberateException.class)
+                .verify(), "expectError");
+    }
+
+    @Test
     public void onErrorPredicate() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(error -> error instanceof DeliberateException)
+                .expectErrorMatches(error -> error instanceof DeliberateException)
                 .verify();
+    }
+
+    @Test
+    public void onErrorPredicateFail() {
+        verifyException(() -> create(completed())
+                .expectErrorMatches(error -> error instanceof DeliberateException)
+                .verify(), "expectErrorMatches");
     }
 
     @Test
     public void onErrorConsumer() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(error -> {
-                    assertThat(error, is(DELIBERATE_EXCEPTION));
-                })
+                .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
-    public void expectOnErrorWhenOnComplete() {
+    @Test
+    public void onErrorConsumerFail() {
         verifyException(() -> create(completed())
-                .expectError(DeliberateException.class)
-                .verify());
+                .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
+                .verify(), "expectErrorConsumed");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectOnSuccessWhenOnError() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
                     .expectComplete()
-                    .verify());
+                    .verify(), "expectComplete");
     }
 
     @Test
@@ -178,36 +203,43 @@ public class CompletableStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsCompleteFail() {
         verifyException(() -> create(completed())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsErrorFails() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
-        create(Single.never())
-                .expectCancellable(c -> { })
+        create(never())
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
                 .verify();
     }
 
     @Test
-    public void thenCancel() {
+    public void thenCancelCompleted() {
         create(completed())
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void thenCancelFailed() {
+        create(failed(DELIBERATE_EXCEPTION))
                 .thenCancel()
                 .verify();
     }
@@ -225,22 +257,22 @@ public class CompletableStepVerifierTest {
     public void asyncContextOnError() {
         assert executor != null;
         create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(executor))
-                .expectCancellable(s -> {
+                .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
                 })
-                .expectError(error -> {
+                .expectErrorConsumed(error -> {
                     assertSame(DELIBERATE_EXCEPTION, error);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(10));
                 })
                 .verify();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DeliberateException.class)
     public void thenRunThrows() {
         create(completed())
                 .then(() -> {
-                    throw new IllegalStateException();
+                    throw DELIBERATE_EXCEPTION;
                 })
                 .expectComplete()
                 .verify();
@@ -250,7 +282,7 @@ public class CompletableStepVerifierTest {
     public void thenAwaitRespectsDelaysComplete() {
         CompletableSource.Processor processor = newCompletableProcessor();
         new InlineCompletableFirstStep(processor, new DefaultModifiableTimeSource())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(500))
                 .thenAwait(ofDays(1000))
                 .then(processor::onComplete)
@@ -258,12 +290,12 @@ public class CompletableStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysEqualsFail() {
         thenAwaitRespectsDelaysFail(true);
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysGTFail() {
         thenAwaitRespectsDelaysFail(false);
     }
@@ -271,15 +303,16 @@ public class CompletableStepVerifierTest {
     private static void thenAwaitRespectsDelaysFail(boolean equals) {
         CompletableSource.Processor processor = newCompletableProcessor();
         verifyException(() -> new InlineCompletableFirstStep(processor, new DefaultModifiableTimeSource())
-                .expectCancellable(c -> { })
+                .expectCancellableConsumed(c -> { })
                 .expectNoSignals(ofDays(equals ? 1000 : 1001))
                 .thenAwait(ofDays(1000))
                 .then(processor::onComplete)
                 .expectComplete()
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    private static void verifyException(Supplier<Duration> verifier) {
-        PublisherStepVerifierTest.verifyException(verifier, CompletableStepVerifierTest.class.getName());
+    private static void verifyException(Supplier<Duration> verifier, String failedTestMethod) {
+        PublisherStepVerifierTest.verifyException(verifier, CompletableStepVerifierTest.class.getName(),
+                failedTestMethod);
     }
 }

@@ -22,9 +22,9 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.StepAssertionError;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -42,7 +43,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.api.test.StepVerifiers.create;
+import static io.servicetalk.concurrent.api.test.FirstSteps.create;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
@@ -53,13 +54,16 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class PublisherStepVerifierTest {
     private static final AsyncContextMap.Key<Integer> ASYNC_KEY = AsyncContextMap.Key.newKey();
@@ -81,19 +85,20 @@ public class PublisherStepVerifierTest {
     @Test
     public void expectSubscription() {
         create(from("foo"))
-                .expectSubscription(Assert::assertNotNull)
+                .expectSubscriptionConsumed(Assert::assertNotNull)
                 .expectNext("foo")
                 .expectComplete()
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectSubscriptionTimeout() {
         assert executor != null;
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> create(from("foo").publishAndSubscribeOn(executor))
-                    .expectSubscription(subscription -> {
+            verifyException(() ->
+                    create(from("foo").publishAndSubscribeOn(executor))
+                    .expectSubscriptionConsumed(subscription -> {
                         try {
                             latch.await();
                         } catch (InterruptedException e) {
@@ -102,24 +107,24 @@ public class PublisherStepVerifierTest {
                     })
                     .expectNext("foo")
                     .expectComplete()
-                    .verify(ofNanos(10)));
+                    .verify(ofNanos(10)), "expectSubscriptionConsumed");
         } finally {
             latch.countDown();
         }
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void emptyItemsNonEmptyPublisher() {
         verifyException(() -> create(from("foo"))
-                .expectNext(emptyList())
+                .expectNextSequence(emptyList())
                 .expectComplete()
-                .verify());
+                .verify(), "expectComplete");
     }
 
     @Test
     public void emptyItemsEmptyPublisher() {
         create(empty())
-                .expectNext(emptyList())
+                .expectNextSequence(emptyList())
                 .expectComplete()
                 .verify();
     }
@@ -144,7 +149,7 @@ public class PublisherStepVerifierTest {
     public void singleItemDuplicateVerify() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         StepVerifier verifier = create(from("foo"))
-                .expectNext(next -> {
+                .expectNextConsumed(next -> {
                     assertEquals("foo", next);
                     latch.countDown();
                 })
@@ -173,7 +178,7 @@ public class PublisherStepVerifierTest {
     @Test
     public void twoItemsIterable() {
         create(from("foo", "bar"))
-                .expectNext(() -> asList("foo", "bar").iterator())
+                .expectNextSequence(() -> asList("foo", "bar").iterator())
                 .expectComplete()
                 .verify();
     }
@@ -181,45 +186,78 @@ public class PublisherStepVerifierTest {
     @Test
     public void justError() {
         create(failed(DELIBERATE_EXCEPTION))
+                .expectError()
+                .verify();
+    }
+
+    @Test
+    public void justErrorFail() {
+        verifyException(() -> create(from("foo"))
+                .expectError()
+                .verify(), "expectError");
+    }
+
+    @Test
+    public void justErrorClass() {
+        create(failed(DELIBERATE_EXCEPTION))
                 .expectError(DeliberateException.class)
                 .verify();
+    }
+
+    @Test
+    public void justErrorClassFail() {
+        verifyException(() -> create(from("foo"))
+                .expectError(DeliberateException.class)
+                .verify(), "expectError");
     }
 
     @Test
     public void justErrorPredicate() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(cause -> cause instanceof DeliberateException)
+                .expectErrorMatches(cause -> cause instanceof DeliberateException)
                 .verify();
+    }
+
+    @Test
+    public void justErrorPredicateFail() {
+        verifyException(() -> create(from("foo"))
+                .expectErrorMatches(cause -> cause instanceof DeliberateException)
+                .verify(), "expectErrorMatches");
     }
 
     @Test
     public void justErrorConsumer() {
         create(failed(DELIBERATE_EXCEPTION))
-                .expectError(cause -> {
-                    assertThat(cause, instanceOf(DeliberateException.class));
-                })
+                .expectErrorConsumed(cause -> assertThat(cause, instanceOf(DeliberateException.class)))
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
-    public void errorIgnoreNextFails() {
-        verifyException(() -> create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
-                .expectError(cause -> cause instanceof DeliberateException)
-                .verify());
+    @Test
+    public void justErrorConsumerFail() {
+        verifyException(() -> create(from("foo"))
+                .expectErrorConsumed(cause -> assertThat(cause, instanceOf(DeliberateException.class)))
+                .verify(), "expectErrorConsumed");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
+    public void errorIgnoreNextFails() {
+        verifyException(() -> create(from("foo").concat(failed(DELIBERATE_EXCEPTION)))
+                .expectErrorMatches(cause -> cause instanceof DeliberateException)
+                .verify(), "expectErrorMatches");
+    }
+
+    @Test
     public void completeIgnoreNextConsumer() {
         verifyException(() -> create(from("foo"))
                 .expectComplete()
-                .verify());
+                .verify(), "expectComplete");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void justErrorTimeout() {
         verifyException(() -> create(never())
                 .expectError(DeliberateException.class)
-                .verify(ofNanos(10)));
+                .verify(ofNanos(10)), "expectError");
     }
 
     @Test
@@ -230,19 +268,19 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void incorrectOnNextExpectation() {
         verifyException(() -> create(from("foo"))
                     .expectNext("bar")
                     .expectComplete()
-                    .verify());
+                    .verify(), "expectNext");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void timeoutOnNever() {
         verifyException(() -> create(never())
             .expectComplete()
-            .verify(ofNanos(10)));
+            .verify(ofNanos(10)), "expectComplete");
     }
 
     @Test
@@ -253,79 +291,149 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void expectNextCountZeroInvalid() {
+        create(empty()).expectNextCount(0);
+    }
+
     @Test
-    public void expectNextConsumer() {
-        create(from("foo"))
-                .expectNext(next -> assertEquals("foo", next))
+    public void expectNextCountExpectAfter() {
+        create(from("foo", "bar"))
+                .expectNextCount(1)
+                .expectNext("bar")
                 .expectComplete()
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
-    public void expectNextConsumerTimeout() {
-        verifyException(() -> create(from("foo").concat(never()))
-                .expectNext(next -> assertEquals("foo", next))
+    @Test
+    public void expectNextCountFail() {
+        verifyException(() -> create(from("foo"))
+                .expectNextCount(2)
                 .expectComplete()
-                .verify(ofNanos(10)));
+                .verify(), "expectNextCount");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
+    public void expectNextCountRange() {
+        create(from("foo", "bar"))
+                .expectNextCount(0, 2)
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void expectNextCountZeroRange() {
+        create(empty())
+                .expectNextCount(0, 2)
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void expectNextCountRangeNotEnoughFail() {
+        verifyException(() -> create(from("foo", "bar"))
+                .expectNextCount(3, 4)
+                .expectComplete()
+                .verify(), "expectNextCount");
+    }
+
+    @Test
+    public void expectNextCountRangeItemsAfterFail() {
+        verifyException(() -> create(from("foo", "bar", "baz"))
+                .expectNextCount(0, 2)
+                .expectComplete()
+                .verify(), "expectComplete");
+    }
+
+    @Test
+    public void expectNextPredicate() {
+        create(from("foo"))
+                .expectNextMatches("foo"::equals)
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void expectNextPredicateFail() {
+        verifyException(() -> create(from("foo"))
+                .expectNextMatches("bar"::equals)
+                .expectComplete()
+                .verify(), "expectNextMatches");
+    }
+
+    @Test
+    public void expectNextConsumer() {
+        create(from("foo"))
+                .expectNextConsumed(next -> assertEquals("foo", next))
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void expectNextConsumerTimeout() {
+        verifyException(() -> create(from("foo").concat(never()))
+                .expectNextConsumed(next -> assertEquals("foo", next))
+                .expectComplete()
+                .verify(ofNanos(10)), "expectComplete");
+    }
+
+    @Test
     public void expectNextArrayMoreThanActual() {
         verifyException(() -> create(from("foo"))
                 .expectNext("foo", "bar")
                 .expectComplete()
-                .verify());
+                .verify(), "expectNext");
     }
 
-    @Test(expected = AssertionError.class)
-    public void expectNextCollectionMoreThanActual() {
-        verifyException(() -> create(from("foo"))
-                .expectNext(asList("foo", "bar"))
-                .expectComplete()
-                .verify());
-    }
-
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextIterableMoreThanActual() {
         verifyException(() -> create(from("foo"))
-                .expectNext((Iterable<String>) asList("foo", "bar"))
+                .expectNextSequence(asList("foo", "bar"))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNextSequence");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextArrayLessThanActual() {
         verifyException(() ->
                 create(from("foo", "bar"))
                 .expectNext("foo")
                 .expectComplete()
-                .verify());
+                .verify(), "expectComplete");
     }
 
-    @Test(expected = AssertionError.class)
-    public void expectNextCollectionLessThanActual() {
-        verifyException(() ->
-                create(from("foo", "bar"))
-                        .expectNext(singletonList("foo"))
-                        .expectComplete()
-                        .verify());
-    }
-
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextIterableLessThanActual() {
-        verifyException(() ->
-                create(from("foo", "bar"))
-                        .expectNext((Iterable<String>) singletonList("foo"))
+        verifyException(() -> create(from("foo", "bar"))
+                        .expectNextSequence(singletonList("foo"))
                         .expectComplete()
-                        .verify());
+                        .verify(), "expectComplete");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextConsumerFail() {
         verifyException(() -> create(from("foo"))
-                .expectNext(next -> assertEquals("bar", next))
+                .expectNextConsumed(next -> assertEquals("bar", next))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNextConsumed");
+    }
+
+    @Test
+    public void expectNextConsumerTypeNonAmbiguousA() {
+        Consumer<String> item = n -> { };
+        create(from(item))
+                .expectNext(item)
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void expectNextConsumerTypeNonAmbiguousB() {
+        Consumer<String> item = n -> { };
+        create(from(item))
+                .expectNextConsumed(t -> assertSame(item, t))
+                .expectComplete()
+                .verify();
     }
 
     @Test
@@ -336,12 +444,12 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextMultiConsumerFail() {
         verifyException(() -> create(from("foo", "bar"))
                 .expectNext(2, nextIterable -> assertThat(nextIterable, contains("foo")))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNext");
     }
 
     @Test
@@ -363,32 +471,32 @@ public class PublisherStepVerifierTest {
     @Test
     public void expectNextMultiConsumerZero() {
         create(empty())
-                .expectNext(0, 2, nextIterable -> assertThat(nextIterable, Matchers.empty()))
+                .expectNext(0, 2, nextIterable -> assertThat(nextIterable, emptyIterable()))
                 .expectComplete()
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectNextMultiConsumerTimeout() {
         verifyException(() -> create(from("foo", "bar").concat(never()))
                 .expectNext(2, nextIterable -> assertThat(nextIterable, contains("foo", "bar")))
                 .expectComplete()
-                .verify(ofNanos(10)));
+                .verify(ofNanos(10)), "expectComplete");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectOnErrorWhenOnComplete() {
         verifyException(() -> create(from("foo"))
                 .expectNext("foo")
                 .expectError(DeliberateException.class)
-                .verify());
+                .verify(), "expectError");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void expectOnCompleteWhenOnError() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
                 .expectComplete()
-                .verify());
+                .verify(), "expectComplete");
     }
 
     @Test
@@ -400,12 +508,12 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsSubscriptionCompleteFail() {
         verifyException(() -> create(from("foo"))
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
     @Test
@@ -423,37 +531,44 @@ public class PublisherStepVerifierTest {
         assertTrue(subscription.isCancelled());
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsCompleteFail() {
         verifyException(() -> create(from("foo"))
                 .expectNext("foo")
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void noSignalsErrorFails() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
-                .expectSubscription(s -> { })
+                .expectSubscriptionConsumed(s -> { })
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
         create(never())
-                .expectSubscription(s -> { })
+                .expectSubscriptionConsumed(s -> { })
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
                 .verify();
     }
 
     @Test
-    public void thenCancel() {
+    public void thenCancelCompleted() {
         create(from("foo", "bar"))
                 .expectNext("foo")
+                .thenCancel()
+                .verify();
+    }
+
+    @Test
+    public void thenCancelFailed() {
+        create(failed(DELIBERATE_EXCEPTION))
                 .thenCancel()
                 .verify();
     }
@@ -536,11 +651,11 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = DeliberateException.class)
     public void thenRunThrows() {
         create(from("foo"))
                 .then(() -> {
-                    throw new IllegalStateException();
+                    throw DELIBERATE_EXCEPTION;
                 })
                 .expectComplete()
                 .verify();
@@ -550,11 +665,11 @@ public class PublisherStepVerifierTest {
     public void asyncContextOnComplete() {
         assert executor != null;
         create(from("foo").publishAndSubscribeOn(executor))
-                .expectSubscription(s -> {
+                .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
                 })
-                .expectNext(next -> {
+                .expectNextConsumed(next -> {
                     assertEquals("foo", next);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(10));
                 })
@@ -566,16 +681,16 @@ public class PublisherStepVerifierTest {
     public void asyncContextOnError() {
         assert executor != null;
         create(from("foo").concat(failed(DELIBERATE_EXCEPTION)).publishAndSubscribeOn(executor))
-                .expectSubscription(s -> {
+                .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
                 })
-                .expectNext(next -> {
+                .expectNextConsumed(next -> {
                     assertEquals("foo", next);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(10));
                     AsyncContext.put(ASYNC_KEY, 15);
                 })
-                .expectError(error -> {
+                .expectErrorConsumed(error -> {
                     assertSame(DELIBERATE_EXCEPTION, error);
                     assertThat(AsyncContext.get(ASYNC_KEY), is(15));
                 })
@@ -595,7 +710,7 @@ public class PublisherStepVerifierTest {
     public void thenAwaitRespectsDelaysComplete() {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         new InlinePublisherFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectSubscription(s -> { })
+                .expectSubscriptionConsumed(s -> { })
                 .expectNoSignals(ofDays(500))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onNext("foo"))
@@ -605,12 +720,12 @@ public class PublisherStepVerifierTest {
                 .verify();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysEqualsFail() {
         thenAwaitRespectsDelaysFail(true);
     }
 
-    @Test(expected = AssertionError.class)
+    @Test
     public void thenAwaitRespectsDelaysGTFail() {
         thenAwaitRespectsDelaysFail(false);
     }
@@ -618,32 +733,34 @@ public class PublisherStepVerifierTest {
     private static void thenAwaitRespectsDelaysFail(boolean equals) {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         verifyException(() -> new InlinePublisherFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectSubscription(s -> { })
+                .expectSubscriptionConsumed(s -> { })
                 .expectNoSignals(ofDays(equals ? 1000 : 1001))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onNext("foo"))
                 .expectNext("foo")
                 .then(processor::onComplete)
                 .expectComplete()
-                .verify());
+                .verify(), "expectNoSignals");
     }
 
-    private static void verifyException(Supplier<Duration> verifier) {
-        verifyException(verifier, PublisherStepVerifierTest.class.getName());
+    private static void verifyException(Supplier<Duration> verifier, String failedTestMethod) {
+        verifyException(verifier, PublisherStepVerifierTest.class.getName(), failedTestMethod);
     }
 
-    static void verifyException(Supplier<Duration> verifier, String classNamePrefix) {
+    static void verifyException(Supplier<Duration> verifier, String classNamePrefix, String failedTestMethod) {
         try {
             verifier.get();
-        } catch (AssertionError error) {
+        } catch (StepAssertionError error) {
             StackTraceElement[] stackTraceElements = error.getStackTrace();
-            if (stackTraceElements.length == 0 || !stackTraceElements[0].getClassName().startsWith(classNamePrefix)) {
-                // the tests expect AssertionError, we need to throw a different type of exception!
-                throw new IllegalStateException("stacktrace does not start with classNamePrefix: " + classNamePrefix,
-                        error);
-            }
-            throw error;
+            assertThat(stackTraceElements.length, greaterThanOrEqualTo(1));
+            assertThat("first stacktrace element expected <class: " + classNamePrefix +
+                    "> actual: " + stackTraceElements[0] + " error: " + error,
+                    stackTraceElements[0].getClassName(), startsWith(classNamePrefix));
+            StackTraceElement testMethodStackTrace = error.testMethodStackTrace();
+            assertEquals("unexpected test method failure: " + testMethodStackTrace, failedTestMethod,
+                    testMethodStackTrace.getMethodName());
+            return;
         }
-        throw new IllegalStateException("expected test to fail, but it didn't");
+        fail();
     }
 }

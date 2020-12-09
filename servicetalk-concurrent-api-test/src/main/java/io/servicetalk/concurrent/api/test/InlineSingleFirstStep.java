@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnSubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorNonNullChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorPredicate;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.SubscriptionEvent;
@@ -52,7 +53,7 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     }
 
     @Override
-    public SingleLastStep<T> expectCancellable(Consumer<? super Cancellable> consumer) {
+    public SingleLastStep<T> expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
         requireNonNull(consumer);
         events.add(new OnSubscriptionEvent() {
             @Override
@@ -87,24 +88,43 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     }
 
     @Override
-    public StepVerifier expectError(Predicate<Throwable> errorPredicate) {
-        return expectError(new OnTerminalErrorPredicate(errorPredicate));
+    public StepVerifier expectError() {
+        return expectErrorConsumed(new OnTerminalErrorNonNullChecker());
+    }
+
+    @Override
+    public StepVerifier expectErrorMatches(Predicate<Throwable> errorPredicate) {
+        return expectErrorConsumed(new OnTerminalErrorPredicate(errorPredicate));
     }
 
     @Override
     public StepVerifier expectError(Class<? extends Throwable> errorClass) {
-        return expectError(new OnTerminalErrorClassChecker(errorClass));
+        return expectErrorConsumed(new OnTerminalErrorClassChecker(errorClass));
     }
 
     @Override
-    public StepVerifier expectError(Consumer<Throwable> errorConsumer) {
+    public StepVerifier expectErrorConsumed(Consumer<Throwable> errorConsumer) {
         events.add(new OnTerminalErrorEvent(errorConsumer));
         return new SingleInlineStepVerifier<>(source, timeSource, events);
     }
 
     @Override
+    public StepVerifier expectSuccess() {
+        return expectSuccessConsumed(new Consumer<T>() {
+            @Override
+            public void accept(T next) {
+            }
+
+            @Override
+            public String toString() {
+                return "expectSuccess()";
+            }
+        });
+    }
+
+    @Override
     public StepVerifier expectSuccess(@Nullable T onSuccess) {
-        return expectSuccess(new Consumer<T>() {
+        return expectSuccessConsumed(new Consumer<T>() {
             @Override
             public void accept(T next) {
                 if (notEqualsOnNext(onSuccess, next)) {
@@ -120,7 +140,25 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     }
 
     @Override
-    public StepVerifier expectSuccess(Consumer<? super T> onSuccessConsumer) {
+    public StepVerifier expectSuccessMatches(Predicate<? super T> onSuccessPredicate) {
+        requireNonNull(onSuccessPredicate);
+        return expectSuccessConsumed(new Consumer<T>() {
+            @Override
+            public void accept(T t) {
+                if (!onSuccessPredicate.test(t)) {
+                    throw new AssertionError("expectSuccess predicate failed on item: " + t);
+                }
+            }
+
+            @Override
+            public String toString() {
+                return onSuccessPredicate.toString();
+            }
+        });
+    }
+
+    @Override
+    public StepVerifier expectSuccessConsumed(Consumer<? super T> onSuccessConsumer) {
         requireNonNull(onSuccessConsumer);
         events.add(new OnNextEvent<T>() {
             @Override

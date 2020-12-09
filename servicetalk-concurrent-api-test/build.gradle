@@ -21,7 +21,6 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-concurrent-api") // idleTimeout operator
   implementation project(":servicetalk-concurrent-test-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 

@@ -31,5 +31,5 @@ public interface CompletableFirstStep extends CompletableLastStep {
      * @param consumer Consumes the {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)}.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    CompletableLastStep expectCancellable(Consumer<? super Cancellable> consumer);
+    CompletableLastStep expectCancellableConsumed(Consumer<? super Cancellable> consumer);
 }

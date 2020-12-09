@@ -27,8 +27,8 @@ import static io.servicetalk.concurrent.api.test.TimeSources.nanoTimeNormalized;
  * Create new test utilities to verify each step in the lifecycle of a {@link Publisher}, {@link Single},
  * and {@link Completable}. The steps are typically from the perspective of a {@link Subscriber}'s lifecycle.
  */
-public final class StepVerifiers {
-    private StepVerifiers() {
+public final class FirstSteps {
+    private FirstSteps() {
     }
 
     /**

@@ -38,13 +38,19 @@ public interface SingleLastStep<T> {
     SingleLastStep<T> expectNoSignals(Duration duration);
 
     /**
+     * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal.
+     * @return An object which allows to verify all expectations.
+     */
+    StepVerifier expectError();
+
+    /**
      * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal and evaluate it
      * with {@code errorPredicate}.
      * @param errorPredicate Will be invoked when {@link Subscriber#onError(Throwable) onError} is called and will raise
      * a {@link AssertionError} if the predicate returns {@code false}.
      * @return An object which allows to verify all expectations.
      */
-    StepVerifier expectError(Predicate<Throwable> errorPredicate);
+    StepVerifier expectErrorMatches(Predicate<Throwable> errorPredicate);
 
     /**
      * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal and it will be
@@ -60,7 +66,13 @@ public interface SingleLastStep<T> {
      * @param errorConsumer Will be invoked when {@link Subscriber#onError(Throwable) onError} is called.
      * @return An object which allows to verify all expectations.
      */
-    StepVerifier expectError(Consumer<Throwable> errorConsumer);
+    StepVerifier expectErrorConsumed(Consumer<Throwable> errorConsumer);
+
+    /**
+     * Declare an expectation that {@link Subscriber#onSuccess(Object) onSuccess} will be the next signal.
+     * @return An object which allows to verify all expectations.
+     */
+    StepVerifier expectSuccess();
 
     /**
      * Declare an expectation that {@link Subscriber#onSuccess(Object) onSuccess} will be the next signal.
@@ -71,11 +83,19 @@ public interface SingleLastStep<T> {
 
     /**
      * Declare an expectation that {@link Subscriber#onSuccess(Object) onSuccess} will be the next signal and verify it
+     * with {@code onSuccessPredicate}.
+     * @param onSuccessPredicate Used to verify {@link Subscriber#onSuccess(Object) onSuccess}.
+     * @return An object which allows to verify all expectations.
+     */
+    StepVerifier expectSuccessMatches(Predicate<? super T> onSuccessPredicate);
+
+    /**
+     * Declare an expectation that {@link Subscriber#onSuccess(Object) onSuccess} will be the next signal and verify it
      * with {@code onSuccessConsumer}.
      * @param onSuccessConsumer Used to verify {@link Subscriber#onSuccess(Object) onSuccess}.
      * @return An object which allows to verify all expectations.
      */
-    StepVerifier expectSuccess(Consumer<? super T> onSuccessConsumer);
+    StepVerifier expectSuccessConsumed(Consumer<? super T> onSuccessConsumer);
 
     /**
      * Manually invoke {@link Cancellable#cancel()} on the {@link Cancellable} from

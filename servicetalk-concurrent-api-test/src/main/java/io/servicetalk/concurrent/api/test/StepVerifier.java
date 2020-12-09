@@ -15,9 +15,6 @@
  */
 package io.servicetalk.concurrent.api.test;
 
-import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-
 import java.time.Duration;
 
 /**
@@ -27,7 +24,7 @@ public interface StepVerifier {
     /**
      * Verify the none of the previously declared expectations are violated.
      * <p>
-     * This method will trigger a {@link PublisherSource#subscribe(Subscriber) subscribe} operation.
+     * This method will trigger a subscribe on the asynchronous source.
      * @return The amount of time the declared expectations took to complete.
      * @throws AssertionError if any of the declared expectations fail.
      */
@@ -36,7 +33,7 @@ public interface StepVerifier {
     /**
      * Verify the none of the previously declared expectations are violated.
      * <p>
-     * This method will trigger a {@link PublisherSource#subscribe(Subscriber) subscribe} operation.
+     * This method will trigger a subscribe on the asynchronous source.
      * @param duration The amount of time to wait while executing declared expectations.
      * @return The amount of time the declared expectations took to complete.
      * @throws AssertionError if any of the declared expectations fail, or if the {@code duration} expires.

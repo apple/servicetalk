@@ -133,7 +133,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         }
 
         final AssertionError newException(String message, Throwable cause, String stepClassName) {
-            return StepAssertionError.newInstance(message, cause, stepClassName, originalStackTrace);
+            return StepAssertionError.newInstance(this, message, cause, stepClassName);
         }
 
         static <T> boolean notEqualsOnNext(@Nullable final T expected, @Nullable final T actual) {
@@ -142,16 +142,25 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
 
         abstract String description();
 
-        private static final class StepAssertionError extends AssertionError {
-            private StepAssertionError(String message, Throwable cause) {
+        static final class StepAssertionError extends AssertionError {
+            private final PublisherEvent event;
+
+            private StepAssertionError(PublisherEvent event, String message, Throwable cause) {
                 super(message, cause);
+                this.event = event;
             }
 
-            private static StepAssertionError newInstance(String message, Throwable cause, String stepClassName,
-                                                          StackTraceElement[] originalStackTrace) {
-                StepAssertionError e = new StepAssertionError(message, cause);
-                e.setStackTrace(filterStackTrace(stepClassName, originalStackTrace));
+            private static StepAssertionError newInstance(PublisherEvent event, String message, Throwable cause,
+                                                          String stepClassName) {
+                StepAssertionError e = new StepAssertionError(event, message, cause);
+                e.setStackTrace(filterStackTrace(stepClassName, event.originalStackTrace));
                 return e;
+            }
+
+            StackTraceElement testMethodStackTrace() {
+                StackTraceElement[] thisTrace = this.getStackTrace();
+                int length = event.originalStackTrace.length - thisTrace.length;
+                return event.originalStackTrace[length - 1];
             }
 
             @Override

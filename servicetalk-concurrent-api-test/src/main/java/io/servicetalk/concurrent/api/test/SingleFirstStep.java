@@ -32,5 +32,5 @@ public interface SingleFirstStep<T> extends SingleLastStep<T> {
      * @param consumer Consumes the {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)}.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    SingleLastStep<T> expectCancellable(Consumer<? super Cancellable> consumer);
+    SingleLastStep<T> expectCancellableConsumed(Consumer<? super Cancellable> consumer);
 }

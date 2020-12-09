@@ -20,12 +20,13 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.NoSignalForDurationEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextAggregateEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextEvent;
-import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextIgnoreEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextExpectCountEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextIterableEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnSubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalCompleteEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorNonNullChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorPredicate;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.SubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.VerifyThreadAwaitEvent;
@@ -34,7 +35,6 @@ import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -55,7 +55,7 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     }
 
     @Override
-    public PublisherStep<T> expectSubscription(Consumer<? super Subscription> consumer) {
+    public PublisherStep<T> expectSubscriptionConsumed(Consumer<? super Subscription> consumer) {
         requireNonNull(consumer);
         events.add(new OnSubscriptionEvent() {
             @Override
@@ -92,22 +92,35 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     @SuppressWarnings("unchecked")
     @Override
     public PublisherStep<T> expectNext(T... signals) {
-        return expectNext((Iterable<? extends T>) asList(signals)); // avoid aggregating data in the Subscriber
+        return expectNextSequence(asList(signals));
     }
 
     @Override
-    public PublisherStep<T> expectNext(Iterable<? extends T> signals) {
+    public PublisherStep<T> expectNextSequence(Iterable<? extends T> signals) {
         events.add(new OnNextIterableEvent<T>(signals));
         return this;
     }
 
     @Override
-    public PublisherStep<T> expectNext(Collection<? extends T> signals) {
-        return expectNext((Iterable<? extends T>) signals); // avoid aggregating data in the Subscriber
+    public PublisherStep<T> expectNextMatches(Predicate<? super T> signalPredicate) {
+        requireNonNull(signalPredicate);
+        return expectNextConsumed(new Consumer<T>() {
+            @Override
+            public void accept(T t) {
+                if (!signalPredicate.test(t)) {
+                    throw new AssertionError("expectNext predicate failed on item: " + t);
+                }
+            }
+
+            @Override
+            public String toString() {
+                return signalPredicate.toString();
+            }
+        });
     }
 
     @Override
-    public PublisherStep<T> expectNext(Consumer<? super T> signalConsumer) {
+    public PublisherStep<T> expectNextConsumed(Consumer<? super T> signalConsumer) {
         requireNonNull(signalConsumer);
         events.add(new OnNextEvent<T>() {
             @Override
@@ -124,19 +137,24 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     }
 
     @Override
-    public PublisherStep<T> expectNext(int n, Consumer<? super Collection<? extends T>> signalsConsumer) {
+    public PublisherStep<T> expectNext(long n, Consumer<? super Iterable<? extends T>> signalsConsumer) {
         return expectNext(n, n, signalsConsumer);
     }
 
     @Override
-    public PublisherStep<T> expectNext(int min, int max, Consumer<? super Collection<? extends T>> signalsConsumer) {
+    public PublisherStep<T> expectNext(long min, long max, Consumer<? super Iterable<? extends T>> signalsConsumer) {
         events.add(new OnNextAggregateEvent<>(min, max, signalsConsumer));
         return this;
     }
 
     @Override
     public PublisherStep<T> expectNextCount(long n) {
-        events.add(new OnNextIgnoreEvent(n));
+        return expectNextCount(n, n);
+    }
+
+    @Override
+    public PublisherStep<T> expectNextCount(long min, long max) {
+        events.add(new OnNextExpectCountEvent(min, max));
         return this;
     }
 
@@ -175,17 +193,22 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     }
 
     @Override
-    public StepVerifier expectError(Predicate<Throwable> errorPredicate) {
-        return expectError(new OnTerminalErrorPredicate(errorPredicate));
+    public StepVerifier expectError() {
+        return expectErrorConsumed(new OnTerminalErrorNonNullChecker());
+    }
+
+    @Override
+    public StepVerifier expectErrorMatches(Predicate<Throwable> errorPredicate) {
+        return expectErrorConsumed(new OnTerminalErrorPredicate(errorPredicate));
     }
 
     @Override
     public StepVerifier expectError(Class<? extends Throwable> errorClass) {
-        return expectError(new OnTerminalErrorClassChecker(errorClass));
+        return expectErrorConsumed(new OnTerminalErrorClassChecker(errorClass));
     }
 
     @Override
-    public StepVerifier expectError(Consumer<Throwable> errorConsumer) {
+    public StepVerifier expectErrorConsumed(Consumer<Throwable> errorConsumer) {
         events.add(new OnTerminalErrorEvent(errorConsumer));
         return new PublisherInlineStepVerifier<>(source, timeSource, events);
     }

@@ -35,13 +35,19 @@ public interface CompletableLastStep {
     CompletableLastStep expectNoSignals(Duration duration);
 
     /**
+     * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal.
+     * @return An object which allows to verify all expectations.
+     */
+    StepVerifier expectError();
+
+    /**
      * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal and evaluate it
      * with {@code errorPredicate}.
      * @param errorPredicate Will be invoked when {@link Subscriber#onError(Throwable) onError} is called and will raise
      * a {@link AssertionError} if the predicate returns {@code false}.
      * @return An object which allows to verify all expectations.
      */
-    StepVerifier expectError(Predicate<Throwable> errorPredicate);
+    StepVerifier expectErrorMatches(Predicate<Throwable> errorPredicate);
 
     /**
      * Declare an expectation that {@link Subscriber#onError(Throwable) onError} will be the next signal and it will be
@@ -57,7 +63,7 @@ public interface CompletableLastStep {
      * @param errorConsumer Will be invoked when {@link Subscriber#onError(Throwable) onError} is called.
      * @return An object which allows to verify all expectations.
      */
-    StepVerifier expectError(Consumer<Throwable> errorConsumer);
+    StepVerifier expectErrorConsumed(Consumer<Throwable> errorConsumer);
 
     /**
      * Declare an expectation that {@link Subscriber#onComplete()} onComplete} will be the next signal.

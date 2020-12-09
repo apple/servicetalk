@@ -34,5 +34,5 @@ public interface PublisherFirstStep<T> extends PublisherStep<T> {
      * {@link PublisherSource.Subscriber#onSubscribe(Subscription)}.
      * @return An object which allows for subsequent expectations to be defined.
      */
-    PublisherStep<T> expectSubscription(Consumer<? super Subscription> consumer);
+    PublisherStep<T> expectSubscriptionConsumed(Consumer<? super Subscription> consumer);
 }
