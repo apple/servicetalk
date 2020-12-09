@@ -74,6 +74,10 @@ final class TestRecordStore implements RecordStore {
         return removeAddresses(domain, A, ttl, ipAddresses);
     }
 
+    public synchronized boolean removeIPv4Addresses(final String domain) {
+        return removeAddresses(domain, A);
+    }
+
     public synchronized void addIPv6Address(final String domain, final int ttl, final String... ipAddresses) {
         addAddress(domain, AAAA, ttl, ipAddresses);
     }
@@ -120,6 +124,17 @@ final class TestRecordStore implements RecordStore {
         for (String ipAddress : ipAddresses) {
             recordList.add(createAddressRecord(domain, recordType, ttl, ipAddress));
         }
+    }
+
+    private boolean removeAddresses(final String domain, final RecordType recordType) {
+        Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
+        boolean removed = typeMap.remove(recordType) != null;
+        List<ResourceRecord> recordList = getRecordList(typeMap, recordType);
+        recordList.clear();
+        if (removed && typeMap.isEmpty()) {
+            recordsToReturnByDomain.remove(domain, typeMap);
+        }
+        return removed;
     }
 
     private boolean removeAddresses(final String domain, final RecordType recordType, final int ttl,
