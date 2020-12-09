@@ -29,6 +29,8 @@ dependencies {
   implementation "io.netty:netty-resolver-dns:$nettyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  runtimeOnly "io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64"
+
   testImplementation testFixtures(project(":servicetalk-client-api-internal"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
