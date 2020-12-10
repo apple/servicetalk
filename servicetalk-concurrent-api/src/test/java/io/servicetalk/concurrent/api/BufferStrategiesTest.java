@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -68,6 +69,7 @@ public class BufferStrategiesTest {
         jdkExecutor.shutdownNow();
     }
 
+    @Ignore("https://github.com/apple/servicetalk/issues/1259")
     @Test
     public void sizeOrDurationConcurrent() throws Exception {
         final int maxBoundaries = 1_000;
