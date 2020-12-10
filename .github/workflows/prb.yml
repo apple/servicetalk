@@ -46,7 +46,7 @@ jobs:
           CI: true
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
         run: ./gradlew --parallel --max-workers=4 clean test
-      - name: Publish Test Results
+      - name: Publish Test Report
         if: ${{ always() }}
         uses: scacap/action-surefire-report@v1
         with:
@@ -81,24 +81,24 @@ jobs:
         env:
           CI: true
         run: ./gradlew --parallel --max-workers=4 clean quality
-      - name: Publish Checkstyle Results
+      - name: Publish Checkstyle Report
         if: ${{ always() }}
         uses: jwgmeligmeyling/checkstyle-github-action@v1.2
         with:
-          name: JDK ${{ matrix.java }} Checkstyle
+          name: JDK ${{ matrix.java }} Checkstyle Report
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish PMD Results
+      - name: Publish PMD Report
         if: ${{ always() }}
         uses: jwgmeligmeyling/pmd-github-action@v1.2
         with:
-          name: JDK ${{ matrix.java }} PMD
+          name: JDK ${{ matrix.java }} PMD Report
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish SpotBugs Results
+      - name: Publish SpotBugs Report
         if: ${{ always() }}
         uses: jwgmeligmeyling/spotbugs-github-action@v1.2
         with:
-          name: JDK ${{ matrix.java }} SpotBugs
+          name: JDK ${{ matrix.java }} SpotBugs Report
           path: '**/build/reports/spotbugs/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
