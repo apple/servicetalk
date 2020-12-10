@@ -43,6 +43,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http2.Http2Exception.StreamException;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -140,6 +141,7 @@ public class StreamObserverTest {
         }
     }
 
+    @Ignore("https://github.com/apple/servicetalk/issues/1264")
     @Test
     public void maxActiveStreamsViolationError() throws Exception {
         CountDownLatch maxConcurrentStreamsValueSetToOne = new CountDownLatch(1);
