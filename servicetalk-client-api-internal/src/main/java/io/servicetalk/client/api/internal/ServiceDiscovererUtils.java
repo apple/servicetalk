@@ -61,17 +61,19 @@ public final class ServiceDiscovererUtils {
         // Calculate additions (in newAddresses, not in activeAddresses).
         List<ServiceDiscovererEvent<T>> availableEvents =
                 relativeComplement(true, currentActiveAddresses, newActiveAddresses, comparator, null);
+        // Store nAvailable now because the List may be updated on the next step.
+        final int nAvailable = availableEvents == null ? 0 : availableEvents.size();
         // Calculate removals (in activeAddresses, not in newAddresses).
         List<ServiceDiscovererEvent<T>> allEvents =
                 relativeComplement(false, newActiveAddresses, currentActiveAddresses, comparator, availableEvents);
 
-        reportEvents(reporter, allEvents, availableEvents);
+        reportEvents(reporter, allEvents, nAvailable);
         return allEvents;
     }
 
     private static <T> void reportEvents(@Nullable final TwoIntsConsumer reporter,
                                          @Nullable final List<ServiceDiscovererEvent<T>> allEvents,
-                                         @Nullable final List<ServiceDiscovererEvent<T>> availableEvents) {
+                                         final int nAvailable) {
         if (reporter == null) {
             return;
         }
@@ -79,8 +81,7 @@ public final class ServiceDiscovererUtils {
             reporter.accept(0, 0);
             return;
         }
-        final int available = availableEvents == null ? 0 : availableEvents.size();
-        reporter.accept(available, allEvents.size() - available);
+        reporter.accept(nAvailable, allEvents.size() - nAvailable);
     }
 
     /**

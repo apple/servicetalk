@@ -88,16 +88,16 @@ public interface DnsServiceDiscovererObserver {
         int ttl();
 
         /**
-         * Number of records that are {@link ServiceDiscovererEvent#isAvailable() available}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() available}.
          *
-         * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() available}
+         * @return the number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() available}
          */
         int nAvailable();
 
         /**
-         * Number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}.
+         * Number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() unavailable}.
          *
-         * @return the number of records that are {@link ServiceDiscovererEvent#isAvailable() unavailable}
+         * @return the number of resolved records that became {@link ServiceDiscovererEvent#isAvailable() unavailable}
          */
         int nUnavailable();
     }
