@@ -1,11 +1,12 @@
 name: Release Builder
 on:
   push:
-    branches: [ main ]
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
 jobs:
   build-jdk8:
+    # Event branches cannot be logically ANDed with tags, so we filter here
+    if: github.event.base_ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
