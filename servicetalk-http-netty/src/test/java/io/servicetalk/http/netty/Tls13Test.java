@@ -25,7 +25,9 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -37,16 +39,18 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.netty.util.internal.PlatformDependent.javaVersion;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -57,6 +61,12 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @RunWith(Parameterized.class)
 public class Tls13Test {
+
+    @ClassRule
+    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
+    @ClassRule
+    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
+
     private static final String TLS1_3 = "TLSv1.3";
     private static final String TLS1_3_REQUIRED_CIPHER = "TLS_AES_128_GCM_SHA256";
 
@@ -76,24 +86,23 @@ public class Tls13Test {
 
     @Parameterized.Parameters(name = "server={0} client={1} cipher={2}")
     public static Collection<Object[]> sslProviders() {
-        // TLSv1.3 is not currently supported in JDK8.
-        return javaVersion() < 11 ?
-                asList(new Object[]{OPENSSL, OPENSSL, null},
-                        new Object[]{OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER}) :
-                asList(new Object[]{JDK, JDK, null},
-                        new Object[]{JDK, JDK, TLS1_3_REQUIRED_CIPHER},
-                        new Object[]{JDK, OPENSSL, null},
-                        new Object[]{JDK, OPENSSL, TLS1_3_REQUIRED_CIPHER},
-                        new Object[]{OPENSSL, JDK, null},
-                        new Object[]{OPENSSL, JDK, TLS1_3_REQUIRED_CIPHER},
-                        new Object[]{OPENSSL, OPENSSL, null},
-                        new Object[]{OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER}
+        return asList(new Object[]{JDK, JDK, null},
+                new Object[]{JDK, JDK, TLS1_3_REQUIRED_CIPHER},
+                new Object[]{JDK, OPENSSL, null},
+                new Object[]{JDK, OPENSSL, TLS1_3_REQUIRED_CIPHER},
+                new Object[]{OPENSSL, JDK, null},
+                new Object[]{OPENSSL, JDK, TLS1_3_REQUIRED_CIPHER},
+                new Object[]{OPENSSL, OPENSSL, null},
+                new Object[]{OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER}
         );
     }
 
     @Test
     public void requiredCipher() throws Exception {
         HttpServerSecurityConfigurator serverSecurityConfigurator = HttpServers.forAddress(localAddress(0))
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
                 .secure()
                 .protocols(TLS1_3)
                 .provider(serverSslProvider);
@@ -111,6 +120,9 @@ public class Tls13Test {
 
             SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> clientSecurityConfigurator =
                     HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                    .ioExecutor(CLIENT_CTX.ioExecutor())
+                    .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                    .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
                     .secure()
                     .protocols(TLS1_3)
                     .disableHostnameVerification()
