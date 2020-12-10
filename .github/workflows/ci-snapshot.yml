@@ -1,3 +1,4 @@
+name: Snapshot Builder
 on:
   push:
     branches: [ main ]
