@@ -1,6 +1,6 @@
 name: Pull Request Builder
 on:
-  pull_request:
+  pull_request_target:
     branches: [ main ]
 jobs:
   build:
