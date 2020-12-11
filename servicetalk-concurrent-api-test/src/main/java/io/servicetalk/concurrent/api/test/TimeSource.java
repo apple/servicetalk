@@ -23,8 +23,10 @@ import static io.servicetalk.concurrent.api.test.TimeUtils.toChronoUnit;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * A time source. This time source can be used to determine when a specific duration of time has passed. This process
- * requires saving a start time, and then using a fixed expiration duration:
+ * A source of time that can be represented as a {@code long}.
+ * <p>
+ * If the underlying time source is monotonic, utility methods are provided to determine if specific duration of time
+ * has elapsed (aka expired). This process requires saving a start time, and then using a fixed expiration duration:
  *
  * <pre>
  * TimeSource timeSource = timeSource();
@@ -52,7 +54,22 @@ interface TimeSource {
 
     /**
      * Determine if at least {@code duration} ticks have passed since {@code startTime} time.
-     *
+     * <p>
+     * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
+     * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
+     * @param duration How much time is permitted to pass before {@code startTime} is considered
+     * expired. Units are {@link #currentTime()}. Must be {@code >= 0}.
+     * @return {@code true} if at least {@code duration} ticks have passed since {@code startTime} time.
+     */
+    default boolean isExpired(long startTime, long duration) {
+        assert duration >= 0;
+        return currentTime() - startTime >= duration;
+    }
+
+    /**
+     * Determine if at least {@code duration} ticks have passed since {@code startTime} time.
+     * <p>
+     * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
      * expired. Must be {@code >= 0}.
@@ -66,7 +83,8 @@ interface TimeSource {
 
     /**
      * Determine if at least {@code expireDuration} ticks have passed since {@code startTime} time.
-     *
+     * <p>
+     * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
      * expired. Must be {@code >= 0}.
