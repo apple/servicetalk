@@ -21,17 +21,24 @@ cd "$(dirname "$0")"
 cd ..
 
 version=""
+cleanRemoteSite=true
 DOCS_FOLDER="docs/generation/.out/remote"
 JAVADOC_FOLDER="build/javadoc"
 BRANCH_NAME=$(git symbolic-ref -q HEAD)
 BRANCH_NAME=${BRANCH_NAME##refs/heads/}
 GIT_AUTHOR=$(git --no-pager show -s --format='%an <%ae>' HEAD)
 
+if [ -z "${DRYRUN:-}" ]; then
+    git="git"
+else
+    git="echo git"
+fi
+
 function usage() {
 cat << EOF
 Run as:
 publish-docs.sh - to update the SNAPSHOT version of docs website only
-publish-docs.sh {release_version} - to publish docs for a new release version and update the SNAPSHOT version
+publish-docs.sh {release_version} [skip_clean_remote_site] - to publish docs for a new release version and update the SNAPSHOT version
 EOF
 }
 
@@ -50,20 +57,23 @@ function clean_up_gh_pages() {
 
 # Enforce JDK8 to keep javadoc format consistent for all versions:
 java_version=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
-if [ "$java_version" != "1.8" ]; then
-  echo "Docs can be published only using Java 1.8, current version: $java_version"
+if [ "$java_version" != "11.0" ]; then
+  echo "Docs can be published only using Java 11, current version: $java_version"
   exit 1
 fi
 
 if [ "$#" -eq "0" ]; then
     echo "Publishing docs website for the SNAPSHOT version only"
-elif [ "$#" -eq "1" ]; then
+elif [ "$#" -ge "1" ]; then
     version="$1"
     if ( echo "$version" | grep -Eqv "^\d+\.\d+$" ); then
-        echo "Release version should match 'major.minor' pattern"
+        echo "Release version should match 'major.minor' pattern was: $1"
         exit 1
     fi
     echo "Publishing docs website for the release version $version"
+    if [ "$#" -ge "2" ]; then
+      cleanRemoteSite=false
+    fi
 else
     usage
     exit 1
@@ -76,7 +86,12 @@ clean_up_gh_pages
 
 echo "Generate docs website"
 pushd docs/generation
-./gradlew --no-daemon clean validateRemoteSite
+if $cleanRemoteSite; then
+  ./gradlew --no-daemon clean validateRemoteSite
+else
+  echo "Skipping cleaning remote site"
+  ./gradlew --no-daemon validateRemoteSite
+fi
 popd
 echo "Docs website generated, see ./$DOCS_FOLDER"
 
@@ -111,14 +126,14 @@ if [ ! -z "$version" ]; then
 fi
 echo $files_to_revert | xargs git checkout --
 
-git add * .nojekyll
+$git add * .nojekyll
 if [ -z "$version" ]; then
-    git commit --author="$GIT_AUTHOR" -m "Update SNAPSHOT doc website"
+    $git commit --author="$GIT_AUTHOR" -m "Update SNAPSHOT doc website"
 else
-    git commit --author="$GIT_AUTHOR" -m "Publish docs website $version"
+    $git commit --author="$GIT_AUTHOR" -m "Publish docs website $version"
 fi
 
-git push docs gh-pages
+$git push docs gh-pages
 popd
 
 # Clean up the state (worktree and temporary branch) after publication of the docs
