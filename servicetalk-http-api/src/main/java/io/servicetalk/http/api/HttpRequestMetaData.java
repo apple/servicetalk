@@ -405,37 +405,6 @@ public interface HttpRequestMetaData extends HttpMetaData {
     boolean removeQueryParameters(String key, String value);
 
     /**
-     * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
-     * from {@link #requestTarget()} and the {@code Host} header field value. This is the scheme component to use
-     * when computing an <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
-     * <p>
-     * @deprecated Use {@link #effectiveHostAndPort()}.
-     * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host component</a> derived
-     * from {@link #requestTarget()} and the {@code Host} header field value, or {@code null} if none can be derived.
-     */
-    @Deprecated
-    @Nullable
-    default String effectiveHost() {
-        HostAndPort hostAndPort = effectiveHostAndPort();
-        return hostAndPort == null ? null : hostAndPort.hostName();
-    }
-
-    /**
-     * The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port component</a> derived
-     * from {@link #requestTarget()} and the {@code Host} header field value. This is the scheme component to use
-     * when computing an <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
-     * <p>
-     * @deprecated Use {@link #effectiveHostAndPort()}.
-     * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port component</a> derived
-     * from {@link #requestTarget()}, and the {@code Host} header field value, or {@code <0} if none can be derived.
-     */
-    @Deprecated
-    default int effectivePort() {
-        HostAndPort hostAndPort = effectiveHostAndPort();
-        return hostAndPort == null ? -1 : hostAndPort.port();
-    }
-
-    /**
      * Get the <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
      * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
      * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.
