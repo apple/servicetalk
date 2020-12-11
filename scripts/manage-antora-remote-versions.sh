@@ -21,13 +21,8 @@ cd ..
 set -eu
 
 function usage() {
-cat << EOF
-manage-antora-remote-versions.sh {semver}
-
-Adds or updates tag versions in the Antora remotes.
-
-semver must be the full 3 components.
-EOF
+  echo "Usage: $0 version"
+  echo "version - Adds or updates tag versions in the Antora remotes. Expected semver 3 components."
 }
 
 if [ "$#" -ne "1" ]; then

@@ -35,13 +35,10 @@ else
 fi
 
 function usage() {
-cat << EOF
-Run as:
-1) publish-docs.sh
-to update the SNAPSHOT version of docs website only
-2) publish-docs.sh {release_version} [skip_clean_remote_site]
-to publish docs for a new release version and update the SNAPSHOT version
-EOF
+  echo "Usage: $0 [release_version [skip_clean_remote_site]]"
+  echo "No arguments - update the SNAPSHOT version of docs website only"
+  echo "release_version - publish docs for a new release version and update the SNAPSHOT version"
+  echo "skip_clean_remote_site - to skip clean step for building docs"
 }
 
 function clean_up_gh_pages() {

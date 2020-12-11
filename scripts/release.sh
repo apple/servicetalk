@@ -21,9 +21,8 @@ cd ..
 set -eu
 
 function usage() {
-cat << EOF
-release.sh {next_version}
-EOF
+  echo "Usage: $0 next_version"
+  echo "nex_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
 }
 
 if [ "$#" -ne "1" ]; then
