@@ -37,8 +37,10 @@ fi
 function usage() {
 cat << EOF
 Run as:
-publish-docs.sh - to update the SNAPSHOT version of docs website only
-publish-docs.sh {release_version} [skip_clean_remote_site] - to publish docs for a new release version and update the SNAPSHOT version
+1) publish-docs.sh
+to update the SNAPSHOT version of docs website only
+2) publish-docs.sh {release_version} [skip_clean_remote_site]
+to publish docs for a new release version and update the SNAPSHOT version
 EOF
 }
 
