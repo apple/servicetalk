@@ -56,6 +56,10 @@ interface TimeSource {
      * Determine if at least {@code duration} ticks have passed since {@code startTime} time.
      * <p>
      * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
+     * <p>
+     * Differences between {@code startTime} and {@link #currentTime()} that span greater than 2<sup>63</sup> (~292
+     * years if {@link #currentTimeUnits()} is {@link TimeUnit#NANOSECONDS}) will not correctly compute elapsed time due
+     * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
      * expired. Units are {@link #currentTime()}. Must be {@code >= 0}.
@@ -70,6 +74,10 @@ interface TimeSource {
      * Determine if at least {@code duration} ticks have passed since {@code startTime} time.
      * <p>
      * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
+     * <p>
+     * Differences between {@code startTime} and {@link #currentTime()} that span greater than 2<sup>63</sup> (~292
+     * years if {@link #currentTimeUnits()} is {@link TimeUnit#NANOSECONDS}) will not correctly compute elapsed time due
+     * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
      * expired. Must be {@code >= 0}.
@@ -85,6 +93,10 @@ interface TimeSource {
      * Determine if at least {@code expireDuration} ticks have passed since {@code startTime} time.
      * <p>
      * If this {@link TimeSource} is not monotonic, and time goes "backwards" the behavior of this method is undefined.
+     * <p>
+     * Differences between {@code startTime} and {@link #currentTime()} that span greater than 2<sup>63</sup> (~292
+     * years if {@link #currentTimeUnits()} is {@link TimeUnit#NANOSECONDS}) will not correctly compute elapsed time due
+     * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
      * expired. Must be {@code >= 0}.
@@ -97,6 +109,10 @@ interface TimeSource {
 
     /**
      * Calculate the amount of time that has passed since {@code startTime}.
+     * <p>
+     * Differences between {@code startTime} and {@link #currentTime()} that span greater than 2<sup>63</sup> (~292
+     * years if {@link #currentTimeUnits()} is {@link TimeUnit#NANOSECONDS}) will not correctly compute elapsed time due
+     * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @return the amount of time that has passed since {@code startTime}.
      */

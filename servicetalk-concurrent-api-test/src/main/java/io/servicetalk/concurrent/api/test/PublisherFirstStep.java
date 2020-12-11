@@ -28,6 +28,12 @@ import static io.servicetalk.concurrent.PublisherSource.Subscription;
  */
 public interface PublisherFirstStep<T> extends PublisherStep<T> {
     /**
+     * Declare an expectation that {@link PublisherSource.Subscriber#onSubscribe(Subscription)} is the next signal.
+     * @return An object which allows for subsequent expectations to be defined.
+     */
+    PublisherStep<T> expectSubscription();
+
+    /**
      * Declare an expectation that can be asserted when the {@link PublisherSource.Subscriber#onSubscribe(Subscription)}
      * method is called.
      * @param consumer Consumes the {@link Subscription} from

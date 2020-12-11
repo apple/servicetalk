@@ -55,6 +55,21 @@ final class InlinePublisherFirstStep<T> implements PublisherFirstStep<T> {
     }
 
     @Override
+    public PublisherStep<T> expectSubscription() {
+        events.add(new OnSubscriptionEvent() {
+            @Override
+            void subscription(Subscription subscription) {
+            }
+
+            @Override
+            String description() {
+                return "expectSubscription()";
+            }
+        });
+        return this;
+    }
+
+    @Override
     public PublisherStep<T> expectSubscriptionConsumed(Consumer<? super Subscription> consumer) {
         requireNonNull(consumer);
         events.add(new OnSubscriptionEvent() {

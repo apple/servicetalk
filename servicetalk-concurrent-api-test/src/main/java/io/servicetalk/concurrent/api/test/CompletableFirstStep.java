@@ -26,6 +26,12 @@ import static io.servicetalk.concurrent.CompletableSource.Subscriber;
  */
 public interface CompletableFirstStep extends CompletableLastStep {
     /**
+     * Declare an expectation that {@link Subscriber#onSubscribe(Cancellable)} is the next signal.
+     * @return An object which allows for subsequent expectations to be defined.
+     */
+    CompletableLastStep expectCancellable();
+
+    /**
      * Declare an expectation that can be asserted when the
      * {@link Subscriber#onSubscribe(Cancellable)} method is called.
      * @param consumer Consumes the {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)}.

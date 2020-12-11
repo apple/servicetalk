@@ -19,8 +19,9 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.NoSignalForDurationEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnCancellableAnyEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnCancellableConsumerEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnNextEvent;
-import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnSubscriptionEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorNonNullChecker;
@@ -53,19 +54,14 @@ final class InlineSingleFirstStep<T> implements SingleFirstStep<T> {
     }
 
     @Override
-    public SingleLastStep<T> expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
-        requireNonNull(consumer);
-        events.add(new OnSubscriptionEvent() {
-            @Override
-            void subscription(Subscription subscription) {
-                consumer.accept(subscription);
-            }
+    public SingleLastStep<T> expectCancellable() {
+        events.add(new OnCancellableAnyEvent());
+        return this;
+    }
 
-            @Override
-            String description() {
-                return "expectCancellable(" + consumer + ")";
-            }
-        });
+    @Override
+    public SingleLastStep<T> expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
+        events.add(new OnCancellableConsumerEvent(consumer));
         return this;
     }
 

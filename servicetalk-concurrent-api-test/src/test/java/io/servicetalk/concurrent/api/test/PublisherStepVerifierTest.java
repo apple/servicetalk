@@ -26,7 +26,6 @@ import io.servicetalk.concurrent.api.test.InlineStepVerifier.PublisherEvent.Step
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -85,7 +84,7 @@ public class PublisherStepVerifierTest {
     @Test
     public void expectSubscription() {
         create(from("foo"))
-                .expectSubscriptionConsumed(Assert::assertNotNull)
+                .expectSubscription()
                 .expectNext("foo")
                 .expectComplete()
                 .verify();
@@ -543,7 +542,7 @@ public class PublisherStepVerifierTest {
     @Test
     public void noSignalsErrorFails() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
-                .expectSubscriptionConsumed(s -> { })
+                .expectSubscription()
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
                 .verify(), "expectNoSignals");
@@ -552,7 +551,7 @@ public class PublisherStepVerifierTest {
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
         create(never())
-                .expectSubscriptionConsumed(s -> { })
+                .expectSubscription()
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
                 .verify();
@@ -710,7 +709,7 @@ public class PublisherStepVerifierTest {
     public void thenAwaitRespectsDelaysComplete() {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         new InlinePublisherFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectSubscriptionConsumed(s -> { })
+                .expectSubscription()
                 .expectNoSignals(ofDays(500))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onNext("foo"))
@@ -733,7 +732,7 @@ public class PublisherStepVerifierTest {
     private static void thenAwaitRespectsDelaysFail(boolean equals) {
         PublisherSource.Processor<String, String> processor = newPublisherProcessor();
         verifyException(() -> new InlinePublisherFirstStep<>(processor, new DefaultModifiableTimeSource())
-                .expectSubscriptionConsumed(s -> { })
+                .expectSubscription()
                 .expectNoSignals(ofDays(equals ? 1000 : 1001))
                 .thenAwait(ofDays(1000))
                 .then(() -> processor.onNext("foo"))

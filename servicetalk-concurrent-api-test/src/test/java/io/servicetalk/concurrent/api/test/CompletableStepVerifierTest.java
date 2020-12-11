@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void expectCancellable() {
         create(completed())
-                .expectCancellableConsumed(Assert::assertNotNull)
+                .expectCancellable()
                 .expectComplete()
                 .verify();
     }
@@ -206,7 +205,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void noSignalsCompleteFail() {
         verifyException(() -> create(completed())
-                .expectCancellableConsumed(c -> { })
+                .expectCancellable()
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
                 .verify(), "expectNoSignals");
@@ -215,7 +214,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void noSignalsErrorFails() {
         verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
-                .expectCancellableConsumed(c -> { })
+                .expectCancellable()
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
                 .verify(), "expectNoSignals");
@@ -224,7 +223,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
         create(never())
-                .expectCancellableConsumed(c -> { })
+                .expectCancellable()
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
                 .verify();
@@ -282,7 +281,7 @@ public class CompletableStepVerifierTest {
     public void thenAwaitRespectsDelaysComplete() {
         CompletableSource.Processor processor = newCompletableProcessor();
         new InlineCompletableFirstStep(processor, new DefaultModifiableTimeSource())
-                .expectCancellableConsumed(c -> { })
+                .expectCancellable()
                 .expectNoSignals(ofDays(500))
                 .thenAwait(ofDays(1000))
                 .then(processor::onComplete)
@@ -303,7 +302,7 @@ public class CompletableStepVerifierTest {
     private static void thenAwaitRespectsDelaysFail(boolean equals) {
         CompletableSource.Processor processor = newCompletableProcessor();
         verifyException(() -> new InlineCompletableFirstStep(processor, new DefaultModifiableTimeSource())
-                .expectCancellableConsumed(c -> { })
+                .expectCancellable()
                 .expectNoSignals(ofDays(equals ? 1000 : 1001))
                 .thenAwait(ofDays(1000))
                 .then(processor::onComplete)

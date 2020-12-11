@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.NoSignalForDurationEvent;
-import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnSubscriptionEvent;
+import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnCancellableConsumerEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalCompleteEvent;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorClassChecker;
 import io.servicetalk.concurrent.api.test.InlinePublisherSubscriber.OnTerminalErrorEvent;
@@ -50,19 +50,14 @@ final class InlineCompletableFirstStep implements CompletableFirstStep {
     }
 
     @Override
-    public CompletableLastStep expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
-        requireNonNull(consumer);
-        events.add(new OnSubscriptionEvent() {
-            @Override
-            void subscription(Subscription subscription) {
-                consumer.accept(subscription);
-            }
+    public CompletableLastStep expectCancellable() {
+        events.add(new InlinePublisherSubscriber.OnCancellableAnyEvent());
+        return this;
+    }
 
-            @Override
-            String description() {
-                return "expectCancellable(" + consumer + ")";
-            }
-        });
+    @Override
+    public CompletableLastStep expectCancellableConsumed(Consumer<? super Cancellable> consumer) {
+        events.add(new OnCancellableConsumerEvent(consumer));
         return this;
     }
 

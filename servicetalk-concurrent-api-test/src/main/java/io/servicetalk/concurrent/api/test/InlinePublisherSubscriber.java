@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.test;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -595,6 +596,35 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         @Override
         String description() {
             return "expectNext(" + minOnNext + "," + maxOnNext + "," + signalsConsumer + ")";
+        }
+    }
+
+    static final class OnCancellableAnyEvent extends OnSubscriptionEvent {
+        @Override
+        void subscription(Subscription subscription) {
+        }
+
+        @Override
+        String description() {
+            return "expectCancellable()";
+        }
+    }
+
+    static final class OnCancellableConsumerEvent extends OnSubscriptionEvent {
+        private final Consumer<? super Cancellable> consumer;
+
+        OnCancellableConsumerEvent(Consumer<? super Cancellable> consumer) {
+            this.consumer = requireNonNull(consumer);
+        }
+
+        @Override
+        void subscription(Subscription subscription) {
+            consumer.accept(subscription);
+        }
+
+        @Override
+        String description() {
+            return "expectCancellable(" + consumer + ")";
         }
     }
 
