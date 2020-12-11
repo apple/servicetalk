@@ -48,6 +48,7 @@ if ( echo "$version" | grep -q "SNAPSHOT" ); then
 fi
 
 echo "Releasing version $version"
+version_majorminor="${version%.*}"
 
 if [ -z "${DRYRUN:-}" ]; then
     git="git"
@@ -65,18 +66,18 @@ $git pull
 $git log -n1
 
 pushd docs/generation
-./gradlew --no-daemon clean validateLocalSite
+./gradlew --no-daemon clean validateRemoteSite
 popd
 
 sed "s/^version=.*/version=$version/" gradle.properties > gradle.properties.tmp
 mv gradle.properties.tmp gradle.properties
 
 for file in docs/antora.yml */docs/antora.yml; do
-    sed "s/^version:.*/version: '${version%.*}'/" "$file" > "$file.tmp"
+    sed "s/^version:.*/version: '${version_majorminor}'/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
-    sed "s/^:page-version: .*/:page-version: ${version%.*}/" "$file" > "$file.tmp"
+    sed "s/^:page-version: .*/:page-version: ${version_majorminor}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 ./scripts/manage-antora-remote-versions.sh "$version"
@@ -115,3 +116,6 @@ done
 
 $git commit -a -m "Preparing for $nextVersion development"
 $git push origin main
+
+# false -> we already did "clean validateRemoteSite" above, no need to clean again
+./scripts/publish-docs.sh "$version_majorminor" "false"
