@@ -167,17 +167,6 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
         return original.hasQueryParameter(key);
     }
 
-    @Override
-    @Nullable
-    public String effectiveHost() {
-        return original.effectiveHost();
-    }
-
-    @Override
-    public int effectivePort() {
-        return original.effectivePort();
-    }
-
     @Nullable
     @Override
     public HostAndPort effectiveHostAndPort() {

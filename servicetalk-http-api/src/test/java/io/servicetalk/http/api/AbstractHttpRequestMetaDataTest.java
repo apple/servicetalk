@@ -79,13 +79,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
-        assertNull(fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNull(effectiveHostAndPort);
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("other.site.com", fixture.effectiveHost());
-        assertEquals(8080, fixture.effectivePort());
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("other.site.com", effectiveHostAndPort.hostName());
+        assertEquals(8080, effectiveHostAndPort.port());
     }
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.2
@@ -102,13 +104,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
 
         // Host header ignored when request-target is absolute.
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
     }
 
     @Test
@@ -124,13 +130,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("https://jdoe@my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
 
         // Host header ignored when request-target is absolute
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
     }
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.3
@@ -147,13 +157,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNull(fixture.rawQuery());
         assertEquals("my.site.com:80", fixture.requestTarget());
 
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(80, fixture.effectivePort());
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertEquals(80, effectiveHostAndPort.port());
 
         // Host header ignored when request-target has authority form
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertEquals(80, fixture.effectivePort());
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertEquals(80, effectiveHostAndPort.port());
     }
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.4
@@ -170,13 +184,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNull(fixture.rawQuery());
         assertEquals("*", fixture.requestTarget());
 
-        assertNull(fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNull(effectiveHostAndPort);
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("other.site.com", fixture.effectiveHost());
-        assertEquals(8080, fixture.effectivePort());
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("other.site.com", effectiveHostAndPort.hostName());
+        assertEquals(8080, effectiveHostAndPort.port());
     }
 
     @Test
@@ -193,18 +209,24 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
-        assertEquals("host.header.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("host.header.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
 
         // Host header provides effective host and port
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("other.site.com", fixture.effectiveHost());
-        assertEquals(8080, fixture.effectivePort());
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("other.site.com", effectiveHostAndPort.hostName());
+        assertEquals(8080, effectiveHostAndPort.port());
 
         // Test host header changes port, but keeps the same hostname.
         fixture.headers().set(HOST, "other.site.com:8081");
-        assertEquals("other.site.com", fixture.effectiveHost());
-        assertEquals(8081, fixture.effectivePort());
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("other.site.com", effectiveHostAndPort.hostName());
+        assertEquals(8081, effectiveHostAndPort.port());
     }
 
     @Test
@@ -221,13 +243,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("foo=bar&abc=def&foo=baz", fixture.rawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.requestTarget());
 
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
 
         // Host header ignored when request-target is absolute.
         fixture.headers().set(HOST, "other.site.com:8080");
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
     }
 
     @Test
@@ -724,8 +750,10 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         assertEquals("http://my.site.com/some/path?foo=new&abc=def#fragment", fixture.requestTarget());
 
-        assertEquals("my.site.com", fixture.effectiveHost());
-        assertThat(fixture.effectivePort(), lessThan(0));
+        HostAndPort effectiveHostAndPort = fixture.effectiveHostAndPort();
+        assertNotNull(effectiveHostAndPort);
+        assertEquals("my.site.com", effectiveHostAndPort.hostName());
+        assertThat(effectiveHostAndPort.port(), lessThan(0));
     }
 
     @Test
