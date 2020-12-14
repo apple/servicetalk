@@ -1,0 +1,76 @@
+name: PR Quality Reports
+on:
+  workflow_run:
+    workflows: [ "PR Quality" ]
+    types:
+      - completed
+jobs:
+  checkstyle:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
+    steps:
+      - name: Download Artifacts
+        # v2.10.0
+        uses: dawidd6/action-download-artifact@5b72739630efa11b8d81784b89adf5246a5fc475
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          commit: ${{ github.event.workflow_run.head_commit.id }}
+          name: checkstyle-results-${{ matrix.java }}
+      - name: Publish Checkstyle Report
+        # v1.2
+        uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
+        with:
+          name: Checkstyle Report JDK ${{ matrix.java }}
+          path: '**/build/reports/checkstyle/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # TODO https://github.com/jwgmeligmeyling/checkstyle-github-action/issues/6
+          commit: ${{ github.event.workflow_run.head_commit.id }}
+  pmd:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
+    steps:
+      - name: Download Artifacts
+        # v2.10.0
+        uses: dawidd6/action-download-artifact@5b72739630efa11b8d81784b89adf5246a5fc475
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          commit: ${{ github.event.workflow_run.head_commit.id }}
+          name: pmd-results-${{ matrix.java }}
+      - name: Publish PMD Report
+        # v1.2
+        uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
+        with:
+          name: PMD Report JDK ${{ matrix.java }}
+          path: '**/build/reports/pmd/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: https://github.com/jwgmeligmeyling/pmd-github-action/issues/8
+          commit: ${{ github.event.workflow_run.head_commit.id }}
+  spotbugs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
+    steps:
+      - name: Download Artifacts
+        # v2.10.0
+        uses: dawidd6/action-download-artifact@5b72739630efa11b8d81784b89adf5246a5fc475
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          commit: ${{ github.event.workflow_run.head_commit.id }}
+          name: spotbugs-results-${{ matrix.java }}
+      - name: Publish SpotBugs Report
+        # v1.2
+        uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
+        with:
+          name: SpotBugs Report JDK ${{ matrix.java }}
+          path: '**/build/reports/spotbugs/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: https://github.com/jwgmeligmeyling/spotbugs-github-action/issues/8
+          commit: ${{ github.event.workflow_run.head_commit.id }}
