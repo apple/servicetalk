@@ -429,7 +429,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
         while (noSignalsUntil != null) {
             if (timeSource.isExpired(noSignalsUntil)) {
                 event = failVerification(new IllegalStateException("Received " + signalName + "(" +
-                        signal + ") with " + timeSource.duration(noSignalsUntil).negated() +
+                        signal + ") with " + timeSource.timeElapsed(noSignalsUntil).negated() +
                         " time remaining."), events.get(prevNoSignalsEventIndex));
             }
             noSignalsUntil = null;

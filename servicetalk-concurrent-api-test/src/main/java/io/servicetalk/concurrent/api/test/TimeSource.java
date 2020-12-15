@@ -62,11 +62,10 @@ interface TimeSource {
      * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
-     * expired. Units are {@link #currentTime()}. Must be {@code >= 0}.
+     * expired. Units are {@link #currentTime()}.
      * @return {@code true} if at least {@code duration} ticks have passed since {@code startTime} time.
      */
     default boolean isExpired(long startTime, long duration) {
-        assert duration >= 0;
         return currentTime() - startTime >= duration;
     }
 
@@ -80,12 +79,11 @@ interface TimeSource {
      * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
-     * expired. Must be {@code >= 0}.
+     * expired.
      * @param durationUnit The units for {@code duration}.
      * @return {@code true} if at least {@code duration} ticks have passed since {@code startTime} time.
      */
     default boolean isExpired(long startTime, long duration, TimeUnit durationUnit) {
-        assert duration >= 0;
         return currentTime() - startTime >= currentTimeUnits().convert(duration, durationUnit);
     }
 
@@ -99,11 +97,10 @@ interface TimeSource {
      * to numerical overflow.
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @param duration How much time is permitted to pass before {@code startTime} is considered
-     * expired. Must be {@code >= 0}.
+     * expired.
      * @return {@code true} if at least {@code expireDuration} ticks have passed since {@code startTime} time.
      */
     default boolean isExpired(long startTime, Duration duration) {
-        assert !duration.isNegative();
         return currentTime() - startTime >= convert(currentTimeUnits(), duration);
     }
 
@@ -116,7 +113,21 @@ interface TimeSource {
      * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
      * @return the amount of time that has passed since {@code startTime}.
      */
-    default Duration duration(long startTime) {
-        return Duration.of(currentTime() - startTime, toChronoUnit(currentTimeUnits()));
+    default Duration timeElapsed(long startTime) {
+        return timeElapsed(startTime, currentTime());
+    }
+
+    /**
+     * Calculate the amount of time that has passed between {@code startTime} and {@code endTime}.
+     * <p>
+     * Differences between {@code startTime} and {@link #currentTime()} that span greater than 2<sup>63</sup> (~292
+     * years if {@link #currentTimeUnits()} is {@link TimeUnit#NANOSECONDS}) will not correctly compute elapsed time due
+     * to numerical overflow.
+     * @param startTime a past value of {@link #currentTime()} which represents the start time stamp.
+     * @param endTime a past value of {@link #currentTime()} which represents the end time stamp.
+     * @return the amount of time that has passed between {@code startTime} and {@code endTime}.
+     */
+    default Duration timeElapsed(long startTime, long endTime) {
+        return Duration.of(endTime - startTime, toChronoUnit(currentTimeUnits()));
     }
 }

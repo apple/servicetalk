@@ -68,7 +68,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
         } catch (RuntimeException t) {
             processRuntimeException(t);
         }
-        return timeSource.duration(startTime);
+        return timeSource.timeElapsed(startTime);
     }
 
     @Override
@@ -92,7 +92,7 @@ abstract class InlineStepVerifier<Source, Sub extends InlineVerifiableSubscriber
             }
             throw event.newException(e.getMessage(), e, exceptionPrefixFilter());
         }
-        return timeSource.duration(startTime);
+        return timeSource.timeElapsed(startTime);
     }
 
     private void processRuntimeException(RuntimeException t) {
