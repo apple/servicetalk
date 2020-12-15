@@ -19,18 +19,15 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
@@ -51,20 +48,8 @@ import static org.junit.Assert.assertTrue;
 
 public class CompletableStepVerifierTest {
     private static final AsyncContextMap.Key<Integer> ASYNC_KEY = AsyncContextMap.Key.newKey();
-    @Nullable
-    private static Executor executor;
-
-    @BeforeClass
-    public static void beforeClass() {
-        executor = Executors.newCachedThreadExecutor();
-    }
-
-    @AfterClass
-    public static void afterClass() throws ExecutionException, InterruptedException {
-        if (executor != null) {
-            executor.closeAsync().toFuture().get();
-        }
-    }
+    @ClassRule
+    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 
     @Test
     public void expectCancellable() {
@@ -76,10 +61,9 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void expectCancellableTimeout() {
-        assert executor != null;
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> create(completed().publishAndSubscribeOn(executor))
+            verifyException(() -> create(completed().publishAndSubscribeOn(EXECUTOR_RULE.executor()))
                     .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
@@ -254,8 +238,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void asyncContextOnError() {
-        assert executor != null;
-        create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(executor))
+        create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
                 .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
