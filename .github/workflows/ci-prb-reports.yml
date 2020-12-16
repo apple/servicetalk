@@ -14,7 +14,6 @@ jobs:
         os: [ ubuntu-latest ]
     steps:
       - name: Download Artifacts
-        # v2.10.0
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
