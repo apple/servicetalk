@@ -25,19 +25,19 @@ interface NormalizedTimeSource extends TimeSource {
         return currentTime() <= timeStamp;
     }
 
-    default long timeStampFromNow(long duration, TimeUnit unit) {
-        return timeStampFrom(currentTime(), duration, unit);
+    default long currentTimePlus(long duration, TimeUnit unit) {
+        return timeStampPlus(currentTime(), duration, unit);
     }
 
-    default long timeStampFromNow(Duration duration) {
-        return timeStampFrom(currentTime(), duration);
+    default long currentTimePlus(Duration duration) {
+        return timeStampPlus(currentTime(), duration);
     }
 
-    default long timeStampFrom(long timeStamp, long duration, TimeUnit unit) {
+    default long timeStampPlus(long timeStamp, long duration, TimeUnit unit) {
         return timeStamp + currentTimeUnits().convert(duration, unit);
     }
 
-    default long timeStampFrom(long timeStamp, Duration duration) {
+    default long timeStampPlus(long timeStamp, Duration duration) {
         return timeStamp + convert(currentTimeUnits(), duration);
     }
 }

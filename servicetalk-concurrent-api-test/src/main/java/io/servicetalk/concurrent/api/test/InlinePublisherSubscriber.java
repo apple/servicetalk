@@ -323,8 +323,7 @@ final class InlinePublisherSubscriber<T> implements Subscriber<T>, InlineVerifia
                 prevNoSignalsEventIndex = eventIndex;
                 Duration duration = ((NoSignalForDurationEvent) currEvent).duration();
                 noSignalsUntil = noSignalsUntil == null ?
-                        timeSource.timeStampFromNow(duration) :
-                        timeSource.timeStampFrom(noSignalsUntil, duration);
+                        timeSource.currentTimePlus(duration) : timeSource.timeStampPlus(noSignalsUntil, duration);
             } else if (currEvent instanceof SubscriptionEvent) {
                 if (subscriptionBeginIndex < 0) {
                     subscriptionBeginIndex = eventIndex;
