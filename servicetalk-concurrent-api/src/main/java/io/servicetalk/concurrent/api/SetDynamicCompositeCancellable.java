@@ -16,17 +16,15 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtils.tryIncrementIfNotNegative;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
-import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
  * A {@link Cancellable} that contains other {@link Cancellable}s.
@@ -35,11 +33,11 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  * after that will be immediately cancelled.
  */
 final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicLongFieldUpdater<SetDynamicCompositeCancellable> sizeUpdater =
-            newUpdater(SetDynamicCompositeCancellable.class, "size");
-    @SuppressWarnings("unused")
-    private volatile long size;
-    private final Set<Cancellable> cancellables;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<SetDynamicCompositeCancellable, Set> setUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, Set.class, "set");
+    @Nullable
+    private volatile Set<Cancellable> set;
 
     /**
      * Create a new instance.
@@ -53,19 +51,21 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
      * @param initialSize The initial size of the internal {@link Set}.
      */
     SetDynamicCompositeCancellable(int initialSize) {
-        cancellables = newSetFromMap(new ConcurrentHashMap<>(initialSize));
+        set = newSetFromMap(new ConcurrentHashMap<>(initialSize));
     }
 
     @Override
     public void cancel() {
-        if (sizeUpdater.getAndSet(this, -1) >= 0) {
+        @SuppressWarnings("unchecked")
+        final Set<Cancellable> currentSet = (Set<Cancellable>) setUpdater.getAndSet(this, null);
+        if (currentSet != null) {
             Throwable delayedCause = null;
-            for (Cancellable c : cancellables) {
+            for (Cancellable c : currentSet) {
                 try {
                     // Removal while iterating typically results in ConcurrentModificationException, but not for
                     // ConcurrentHashMap. We use this approach to avoid concurrent invocation of cancel() between
                     // this method and add (if they race).
-                    if (cancellables.remove(c)) {
+                    if (currentSet.remove(c)) {
                         c.cancel();
                     }
                 } catch (Throwable cause) {
@@ -81,11 +81,14 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.add(toAdd)) {
-            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap.
+        final Set<Cancellable> currentSet = set;
+        if (currentSet == null) {
+            toAdd.cancel();
             return false;
-        } else if (!tryIncrementIfNotNegative(sizeUpdater, this)) {
-            if (cancellables.remove(toAdd)) {
+        } else if (!currentSet.add(toAdd)) {
+            return false; // user has implemented equals/hashCode so there is overlap?
+        } else if (!setUpdater.compareAndSet(this, currentSet, currentSet)) {
+            if (currentSet.remove(toAdd)) {
                 toAdd.cancel();
             }
             return false;
@@ -95,15 +98,12 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean remove(Cancellable toRemove) {
-        if (cancellables.remove(toRemove)) {
-            sizeUpdater.accumulateAndGet(this, -1, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
-            return true;
-        }
-        return false;
+        final Set<Cancellable> currentSet = set;
+        return currentSet != null && currentSet.remove(toRemove);
     }
 
     @Override
     public boolean isCancelled() {
-        return size < 0;
+        return set == null;
     }
 }

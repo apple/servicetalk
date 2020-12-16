@@ -34,8 +34,9 @@ interface DynamicCompositeCancellable extends Cancellable {
      * Add a {@link Cancellable} that will be cancelled when this object's {@link #cancel()} method is called,
      * or be cancelled immediately if this object's {@link #cancel()} method has already been called.
      * @param toAdd The {@link Cancellable} to add.
-     * @return {@code true} if the {@code toAdd} was added, and {@code false} if {@code toAdd} was not added and
-     * {@link Cancellable#cancel()} was called on {@code toAdd}.
+     * @return {@code true} if the {@code toAdd} was added, and {@code false} if {@code toAdd} was not added because
+     * it already exists. If {@code false} then {@link Cancellable#cancel()} will be called unless the reason is this
+     * implementation does not supporting duplicates and {@code toAdd} has already been added.
      */
     boolean add(Cancellable toAdd);
 

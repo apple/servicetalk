@@ -27,7 +27,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -65,6 +67,26 @@ public abstract class AbstractDynamicCompositeCancellableTest {
         c.add(cancellable);
         verify(cancellable).cancel();
         c.remove(cancellable);
+    }
+
+    @Test
+    public void duplicateAddDoesNotCancel() {
+        DynamicCompositeCancellable c = newCompositeCancellable();
+        Cancellable cancellable = mock(Cancellable.class);
+        int addCount = 0;
+        if (c.add(cancellable)) {
+            ++addCount;
+        }
+        if (c.add(cancellable)) {
+            ++addCount;
+        }
+        verify(cancellable, never()).cancel();
+
+        for (int i = 0; i < addCount; ++i) {
+            assertTrue(c.remove(cancellable));
+        }
+        c.cancel();
+        verify(cancellable, never()).cancel();
     }
 
     @Test

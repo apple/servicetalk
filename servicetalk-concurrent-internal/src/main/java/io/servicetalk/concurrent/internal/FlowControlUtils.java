@@ -139,26 +139,6 @@ public final class FlowControlUtils {
     }
 
     /**
-     * Try to increment the value associated with {@code updater} if the existing value isn't negative, and the
-     * increment operation wouldn't cause overflow.
-     * @param updater The {@link AtomicLongFieldUpdater} used to increment.
-     * @param owner The owner object to use for {@code updater}.
-     * @param <T> The type of {@code owner}.
-     * @return {@code true} if the increment was successful, {@code false} if the existing value was negative or the
-     * increment would result in overflow.
-     */
-    public static <T> boolean tryIncrementIfNotNegative(AtomicLongFieldUpdater<T> updater, T owner) {
-        for (;;) {
-            final long currValue = updater.get(owner);
-            if (currValue < 0 || currValue == Long.MAX_VALUE) {
-                return false;
-            } else if (updater.compareAndSet(owner, currValue, currValue + 1)) {
-                return true;
-            }
-        }
-    }
-
-    /**
      * Increment an {@code integer} referred by {@link AtomicIntegerFieldUpdater} atomically
      * and saturate to {@link Integer#MAX_VALUE} if overflow occurs.
      *
