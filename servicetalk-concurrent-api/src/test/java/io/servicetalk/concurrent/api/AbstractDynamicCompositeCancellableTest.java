@@ -77,7 +77,9 @@ public abstract class AbstractDynamicCompositeCancellableTest {
             cancellableSingles.add(EXECUTOR_RULE.executor().submit(() -> {
                 Cancellable c = mock(Cancellable.class);
                 barrier.await();
-                dynamicCancellable.add(c);
+                if (!dynamicCancellable.add(c)) {
+                    verify(c).cancel();
+                }
                 return c;
             }));
         }

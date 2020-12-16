@@ -20,12 +20,13 @@ import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.tryIncrementIfNotNegative;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**
  * A {@link Cancellable} that contains other {@link Cancellable}s.
@@ -34,10 +35,10 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * after that will be immediately cancelled.
  */
 final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> sizeUpdater =
+    private static final AtomicLongFieldUpdater<SetDynamicCompositeCancellable> sizeUpdater =
             newUpdater(SetDynamicCompositeCancellable.class, "size");
     @SuppressWarnings("unused")
-    private volatile int size;
+    private volatile long size;
     private final Set<Cancellable> cancellables;
 
     /**
@@ -80,9 +81,13 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.add(toAdd) || (sizeUpdater.accumulateAndGet(this, 1,
-                FlowControlUtils::addWithOverflowProtectionIfNotNegative) < 0 && cancellables.remove(toAdd))) {
-            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap, or cancelled.
+        if (!cancellables.add(toAdd)) {
+            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap.
+            return false;
+        } else if (!tryIncrementIfNotNegative(sizeUpdater, this)) {
+            if (cancellables.remove(toAdd)) {
+                toAdd.cancel();
+            }
             return false;
         }
         return true;

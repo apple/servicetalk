@@ -20,17 +20,18 @@ import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+import static io.servicetalk.concurrent.internal.FlowControlUtils.tryIncrementIfNotNegative;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> sizeUpdater =
+    private static final AtomicLongFieldUpdater<QueueDynamicCompositeCancellable> sizeUpdater =
             newUpdater(QueueDynamicCompositeCancellable.class, "size");
     @SuppressWarnings("unused")
-    private volatile int size;
+    private volatile long size;
     private final Queue<Cancellable> cancellables = new ConcurrentLinkedQueue<>();
 
     @Override
@@ -53,9 +54,13 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.offer(toAdd) || (sizeUpdater.accumulateAndGet(this, 1,
-                FlowControlUtils::addWithOverflowProtectionIfNotNegative) < 0 && cancellables.remove(toAdd))) {
-            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap, or cancelled.
+        if (!cancellables.offer(toAdd)) {
+            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap.
+            return false;
+        } else if (!tryIncrementIfNotNegative(sizeUpdater, this)) {
+            if (cancellables.remove(toAdd)) {
+                toAdd.cancel();
+            }
             return false;
         }
         return true;
