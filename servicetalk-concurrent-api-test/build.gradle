@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,17 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  api project(":servicetalk-concurrent")
+  api project(":servicetalk-concurrent-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-utils-internal")
+  implementation project(":servicetalk-concurrent-test-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
-  testImplementation project(":servicetalk-concurrent-test-internal")
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-
-  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
-  testFixturesImplementation project(":servicetalk-utils-internal")
-  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "junit:junit:$junitVersion"
-  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-  testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-  testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
