@@ -16,17 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * A {@link Cancellable} that contains other {@link Cancellable}s.
@@ -35,15 +34,10 @@ import static java.util.Collections.newSetFromMap;
  * after that will be immediately cancelled.
  */
 final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelledUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelled");
-    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelAllLockUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelAllLock");
+    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> sizeUpdater =
+            newUpdater(SetDynamicCompositeCancellable.class, "size");
     @SuppressWarnings("unused")
-    private volatile int cancelled;
-    @SuppressWarnings("unused")
-    private volatile int cancelAllLock;
-
+    private volatile int size;
     private final Set<Cancellable> cancellables;
 
     /**
@@ -63,18 +57,32 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public void cancel() {
-        if (cancelledUpdater.compareAndSet(this, 0, 1)) {
-            cancelAll();
+        if (sizeUpdater.getAndSet(this, -1) >= 0) {
+            Throwable delayedCause = null;
+            for (Cancellable c : cancellables) {
+                try {
+                    // Removal while iterating typically results in ConcurrentModificationException, but not for
+                    // ConcurrentHashMap. We use this approach to avoid concurrent invocation of cancel() between
+                    // this method and add (if they race).
+                    if (cancellables.remove(c)) {
+                        c.cancel();
+                    }
+                } catch (Throwable cause) {
+                    delayedCause = catchUnexpected(delayedCause, cause);
+                }
+            }
+
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
         }
     }
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.add(toAdd)) {
-            toAdd.cancel(); // out of memory, or user has implemented equals/hashCode so there is overlap.
-            return false;
-        } else if (isCancelled()) {
-            cancelAll(); // avoid concurrency on toAdd if another thread invokes cancel(), just cancel all.
+        if (!cancellables.add(toAdd) || (sizeUpdater.accumulateAndGet(this, 1,
+                FlowControlUtils::addWithOverflowProtectionIfNotNegative) < 0 && cancellables.remove(toAdd))) {
+            toAdd.cancel(); // out of memory, user has implemented equals/hashCode so there is overlap, or cancelled.
             return false;
         }
         return true;
@@ -82,36 +90,15 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean remove(Cancellable toRemove) {
-        return cancellables.remove(toRemove);
+        if (cancellables.remove(toRemove)) {
+            sizeUpdater.accumulateAndGet(this, -1, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean isCancelled() {
-        return cancelled != 0;
-    }
-
-    private void cancelAll() {
-        Throwable delayedCause = null;
-        boolean tryAcquire = true;
-        while (tryAcquire && tryAcquireLock(cancelAllLockUpdater, this)) {
-            try {
-                Iterator<Cancellable> itr = cancellables.iterator();
-                while (itr.hasNext()) {
-                    try {
-                        Cancellable cancellable = itr.next();
-                        itr.remove();
-                        cancellable.cancel();
-                    } catch (Throwable cause) {
-                        delayedCause = catchUnexpected(delayedCause, cause);
-                    }
-                }
-            } finally {
-                tryAcquire = !releaseLock(cancelAllLockUpdater, this);
-            }
-        }
-
-        if (delayedCause != null) {
-            throwException(delayedCause);
-        }
+        return size < 0;
     }
 }
