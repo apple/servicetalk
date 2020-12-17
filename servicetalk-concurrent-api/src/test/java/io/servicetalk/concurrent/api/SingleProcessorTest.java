@@ -16,23 +16,39 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class SingleProcessorTest {
+    @ClassRule
+    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Test
     public void testSuccessBeforeListen() {
@@ -180,17 +196,17 @@ public class SingleProcessorTest {
     @Test
     public void synchronousCancelStillAllowsForGC() throws InterruptedException {
         SingleProcessor<Integer> processor = new SingleProcessor<>();
-        ReferenceQueue<SingleSource.Subscriber<Integer>> queue = new ReferenceQueue<>();
-        WeakReference<SingleSource.Subscriber<Integer>> subscriberRef =
+        ReferenceQueue<Subscriber<Integer>> queue = new ReferenceQueue<>();
+        WeakReference<Subscriber<Integer>> subscriberRef =
                 synchronousCancelStillAllowsForGCDoSubscribe(processor, queue);
         System.gc();
         Thread.sleep(300);
         assertEquals(subscriberRef, queue.remove(100));
     }
 
-    private WeakReference<SingleSource.Subscriber<Integer>> synchronousCancelStillAllowsForGCDoSubscribe(
-            SingleProcessor<Integer> processor, ReferenceQueue<SingleSource.Subscriber<Integer>> queue) {
-        SingleSource.Subscriber<Integer> subscriber = new SingleSource.Subscriber<Integer>() {
+    private WeakReference<Subscriber<Integer>> synchronousCancelStillAllowsForGCDoSubscribe(
+            SingleProcessor<Integer> processor, ReferenceQueue<Subscriber<Integer>> queue) {
+        Subscriber<Integer> subscriber = new Subscriber<Integer>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 cancellable.cancel();
@@ -206,5 +222,55 @@ public class SingleProcessorTest {
         };
         processor.subscribe(subscriber);
         return new WeakReference<>(subscriber, queue);
+    }
+
+    @Test
+    public void multiThreadedAddAlwaysTerminatesError() throws Exception {
+        multiThreadedAddAlwaysTerminates(null, DELIBERATE_EXCEPTION);
+    }
+
+    @Test
+    public void multiThreadedAddAlwaysTerminatesSuccess() throws Exception {
+        multiThreadedAddAlwaysTerminates("foo", null);
+    }
+
+    @Test
+    public void multiThreadedAddAlwaysTerminatesSuccessNull() throws Exception {
+        multiThreadedAddAlwaysTerminates(null, null);
+    }
+
+    private static void multiThreadedAddAlwaysTerminates(@Nullable String value, @Nullable Throwable cause)
+            throws Exception {
+        final int subscriberCount = 1000;
+        CyclicBarrier barrier = new CyclicBarrier(subscriberCount + 1);
+        List<Single<Subscriber<String>>> subscriberSingles = new ArrayList<>(subscriberCount);
+        SingleProcessor<String> processor = new SingleProcessor<>();
+        for (int i = 0; i < subscriberCount; ++i) {
+            subscriberSingles.add(EXECUTOR_RULE.executor().submit(() -> {
+                @SuppressWarnings("unchecked")
+                Subscriber<String> subscriber = mock(Subscriber.class);
+                barrier.await();
+                processor.subscribe(subscriber);
+                return subscriber;
+            }));
+        }
+
+        Future<Collection<Subscriber<String>>> future = collectUnordered(subscriberSingles, subscriberCount).toFuture();
+        barrier.await();
+        if (cause != null) {
+            processor.onError(cause);
+
+            Collection<Subscriber<String>> subscribers = future.get();
+            for (Subscriber<String> s : subscribers) {
+                verify(s).onError(cause);
+            }
+        } else {
+            processor.onSuccess(value);
+
+            Collection<Subscriber<String>> subscribers = future.get();
+            for (Subscriber<String> s : subscribers) {
+                verify(s).onSuccess(value);
+            }
+        }
     }
 }
