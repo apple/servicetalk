@@ -19,33 +19,50 @@ import io.servicetalk.concurrent.Cancellable;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> cancelledUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(QueueDynamicCompositeCancellable.class, "cancelled");
-    @SuppressWarnings("unused")
-    private volatile int cancelled;
-
-    private final Queue<Cancellable> cancellables = new ConcurrentLinkedQueue<>();
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<QueueDynamicCompositeCancellable, Queue> queueUpdater =
+            newUpdater(QueueDynamicCompositeCancellable.class, Queue.class, "queue");
+    @Nullable
+    private volatile Queue<Cancellable> queue = new ConcurrentLinkedQueue<>();
 
     @Override
     public void cancel() {
-        if (cancelledUpdater.compareAndSet(this, 0, 1)) {
-            cancelAll();
+        @SuppressWarnings("unchecked")
+        final Queue<Cancellable> currentQueue = (Queue<Cancellable>) queueUpdater.getAndSet(this, null);
+        if (currentQueue != null) {
+            Throwable delayedCause = null;
+            Cancellable cancellable;
+            while ((cancellable = currentQueue.poll()) != null) {
+                try {
+                    cancellable.cancel();
+                } catch (Throwable cause) {
+                    delayedCause = catchUnexpected(delayedCause, cause);
+                }
+            }
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
         }
     }
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.offer(toAdd)) {
+        final Queue<Cancellable> currentQueue = queue;
+        if (currentQueue == null || !currentQueue.offer(toAdd)) {
             toAdd.cancel();
             return false;
-        } else if (isCancelled()) {
-            cancelAll();
+        } else if (!queueUpdater.compareAndSet(this, currentQueue, currentQueue)) {
+            if (currentQueue.remove(toAdd)) {
+                toAdd.cancel();
+            }
             return false;
         }
         return true;
@@ -53,26 +70,12 @@ final class QueueDynamicCompositeCancellable implements DynamicCompositeCancella
 
     @Override
     public boolean remove(Cancellable toRemove) {
-        return cancellables.remove(toRemove);
+        final Queue<Cancellable> currentQueue = queue;
+        return currentQueue != null && currentQueue.remove(toRemove);
     }
 
     @Override
     public boolean isCancelled() {
-        return cancelled != 0;
-    }
-
-    private void cancelAll() {
-        Throwable delayedCause = null;
-        Cancellable cancellable;
-        while ((cancellable = cancellables.poll()) != null) {
-            try {
-                cancellable.cancel();
-            } catch (Throwable cause) {
-                delayedCause = catchUnexpected(delayedCause, cause);
-            }
-        }
-        if (delayedCause != null) {
-            throwException(delayedCause);
-        }
+        return queue == null;
     }
 }

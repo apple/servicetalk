@@ -17,13 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
-import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
@@ -35,16 +33,11 @@ import static java.util.Collections.newSetFromMap;
  * after that will be immediately cancelled.
  */
 final class SetDynamicCompositeCancellable implements DynamicCompositeCancellable {
-    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelledUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelled");
-    private static final AtomicIntegerFieldUpdater<SetDynamicCompositeCancellable> cancelAllLockUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, "cancelAllLock");
-    @SuppressWarnings("unused")
-    private volatile int cancelled;
-    @SuppressWarnings("unused")
-    private volatile int cancelAllLock;
-
-    private final Set<Cancellable> cancellables;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<SetDynamicCompositeCancellable, Set> setUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(SetDynamicCompositeCancellable.class, Set.class, "set");
+    @Nullable
+    private volatile Set<Cancellable> set;
 
     /**
      * Create a new instance.
@@ -58,23 +51,46 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
      * @param initialSize The initial size of the internal {@link Set}.
      */
     SetDynamicCompositeCancellable(int initialSize) {
-        cancellables = newSetFromMap(new ConcurrentHashMap<>(initialSize));
+        set = newSetFromMap(new ConcurrentHashMap<>(initialSize));
     }
 
     @Override
     public void cancel() {
-        if (cancelledUpdater.compareAndSet(this, 0, 1)) {
-            cancelAll();
+        @SuppressWarnings("unchecked")
+        final Set<Cancellable> currentSet = (Set<Cancellable>) setUpdater.getAndSet(this, null);
+        if (currentSet != null) {
+            Throwable delayedCause = null;
+            for (Cancellable c : currentSet) {
+                try {
+                    // Removal while iterating typically results in ConcurrentModificationException, but not for
+                    // ConcurrentHashMap. We use this approach to avoid concurrent invocation of cancel() between
+                    // this method and add (if they race).
+                    if (currentSet.remove(c)) {
+                        c.cancel();
+                    }
+                } catch (Throwable cause) {
+                    delayedCause = catchUnexpected(delayedCause, cause);
+                }
+            }
+
+            if (delayedCause != null) {
+                throwException(delayedCause);
+            }
         }
     }
 
     @Override
     public boolean add(Cancellable toAdd) {
-        if (!cancellables.add(toAdd)) {
-            toAdd.cancel(); // out of memory, or user has implemented equals/hashCode so there is overlap.
+        final Set<Cancellable> currentSet = set;
+        if (currentSet == null) {
+            toAdd.cancel();
             return false;
-        } else if (isCancelled()) {
-            cancelAll(); // avoid concurrency on toAdd if another thread invokes cancel(), just cancel all.
+        } else if (!currentSet.add(toAdd)) {
+            return false; // user has implemented equals/hashCode so there is overlap?
+        } else if (!setUpdater.compareAndSet(this, currentSet, currentSet)) {
+            if (currentSet.remove(toAdd)) {
+                toAdd.cancel();
+            }
             return false;
         }
         return true;
@@ -82,36 +98,12 @@ final class SetDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     @Override
     public boolean remove(Cancellable toRemove) {
-        return cancellables.remove(toRemove);
+        final Set<Cancellable> currentSet = set;
+        return currentSet != null && currentSet.remove(toRemove);
     }
 
     @Override
     public boolean isCancelled() {
-        return cancelled != 0;
-    }
-
-    private void cancelAll() {
-        Throwable delayedCause = null;
-        boolean tryAcquire = true;
-        while (tryAcquire && tryAcquireLock(cancelAllLockUpdater, this)) {
-            try {
-                Iterator<Cancellable> itr = cancellables.iterator();
-                while (itr.hasNext()) {
-                    try {
-                        Cancellable cancellable = itr.next();
-                        itr.remove();
-                        cancellable.cancel();
-                    } catch (Throwable cause) {
-                        delayedCause = catchUnexpected(delayedCause, cause);
-                    }
-                }
-            } finally {
-                tryAcquire = !releaseLock(cancelAllLockUpdater, this);
-            }
-        }
-
-        if (delayedCause != null) {
-            throwException(delayedCause);
-        }
+        return set == null;
     }
 }

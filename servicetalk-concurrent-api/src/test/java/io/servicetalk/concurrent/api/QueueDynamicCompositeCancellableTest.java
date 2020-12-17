@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-public class SetDynamicCompositeCancellableTest extends AbstractDynamicCompositeCancellableTest {
+public class QueueDynamicCompositeCancellableTest extends AbstractDynamicCompositeCancellableTest {
     @Override
     protected DynamicCompositeCancellable newCompositeCancellable() {
-        return new SetDynamicCompositeCancellable();
+        return new QueueDynamicCompositeCancellable();
     }
 }
