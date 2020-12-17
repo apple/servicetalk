@@ -23,24 +23,22 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<CompletableProcessor, Queue> queueUpdater =
-            newUpdater(CompletableProcessor.class, Queue.class, "queue");
-    @Nullable
-    private volatile Queue<Subscriber> queue = new ConcurrentLinkedQueue<>();
+    private static final AtomicLongFieldUpdater<CompletableProcessor> counterUpdater =
+            AtomicLongFieldUpdater.newUpdater(CompletableProcessor.class, "counter");
+    private final Queue<Subscriber> queue = new ConcurrentLinkedQueue<>();
+    private volatile long counter;
     @Nullable
     private TerminalNotification terminalSignal;
 
@@ -52,20 +50,21 @@ final class CompletableProcessor extends Completable implements Processor {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        final Queue<Subscriber> currentQueue = queue;
-        if (currentQueue == null) {
+        if (counter < 0) { // best effort to short circuit and avoid the queue if terminated already
             terminateLateSubscriber(subscriber);
-        } else if (currentQueue.offer(subscriber)) {
-            if (!queueUpdater.compareAndSet(this, currentQueue, currentQueue)) {
-                if (currentQueue.remove(subscriber)) {
-                    terminateLateSubscriber(subscriber);
-                }
-            } else {
+        } else if (queue.offer(subscriber)) {
+            // We must check the state after we insert into the queue as the terminal event could have raced with this
+            // method and we need to ensure the subscriber is terminated.
+            // We don't check for overflow as we assume we will never exceed Long number of elements.
+            if (counterUpdater.incrementAndGet(this) > 0) {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                     // these references.
-                    currentQueue.remove(subscriber);
+                    queue.remove(subscriber);
                 });
+            } else if (queue.remove(subscriber)) {
+                // We don't decrement counter, we assume there will be no overflow from Long.MIN_VALUE.
+                terminateLateSubscriber(subscriber);
             }
         } else {
             subscriber.onError(new QueueFullAndRejectedSubscribeException("queue"));
@@ -95,13 +94,13 @@ final class CompletableProcessor extends Completable implements Processor {
 
     private void terminate(TerminalNotification terminalSignal) {
         if (this.terminalSignal == null) {
+            // We must set terminalSignal before counter as we depend upon happens-before relationship for this value
+            // to be visible for any future late subscribers.
             this.terminalSignal = terminalSignal;
-            @SuppressWarnings("unchecked")
-            Queue<Subscriber> currentQueue = (Queue<Subscriber>) queueUpdater.getAndSet(this, null);
-            if (currentQueue != null) {
+            if (counterUpdater.getAndSet(this, Long.MIN_VALUE) >= 0) {
                 Throwable delayedCause = null;
                 Subscriber subscriber;
-                while ((subscriber = currentQueue.poll()) != null) {
+                while ((subscriber = queue.poll()) != null) {
                     try {
                         terminalSignal.terminate(subscriber);
                     } catch (Throwable cause) {

@@ -23,12 +23,11 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
@@ -36,12 +35,12 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    private static final Object TERMINAL_UNSET = new Object();
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<SingleProcessor, Queue> queueUpdater =
-            newUpdater(SingleProcessor.class, Queue.class, "queue");
-    @Nullable
-    private volatile Queue<Subscriber<? super T>> queue = new ConcurrentLinkedQueue<>();
+    private static final AtomicLongFieldUpdater<SingleProcessor> counterUpdater =
+            AtomicLongFieldUpdater.newUpdater(SingleProcessor.class, "counter");
+    private static final Object TERMINAL_UNSET = new Object();
+    private final Queue<Subscriber<? super T>> queue = new ConcurrentLinkedQueue<>();
+    private volatile long counter;
     @Nullable
     private Object terminalSignal = TERMINAL_UNSET;
 
@@ -53,20 +52,21 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        final Queue<Subscriber<? super T>> currentQueue = queue;
-        if (currentQueue == null) {
+        if (counter < 0) { // best effort to short circuit and avoid the queue if terminated already
             terminateLateSubscriber(subscriber);
-        } else if (currentQueue.offer(subscriber)) {
-            if (!queueUpdater.compareAndSet(this, currentQueue, currentQueue)) {
-                if (currentQueue.remove(subscriber)) {
-                    terminateLateSubscriber(subscriber);
-                }
-            } else {
+        } else if (queue.offer(subscriber)) {
+            // We must check the state after we insert into the queue as the terminal event could have raced with this
+            // method and we need to ensure the subscriber is terminated.
+            // We don't check for overflow as we assume we will never exceed Long number of elements.
+            if (counterUpdater.incrementAndGet(this) > 0) {
                 delayedCancellable.delayedCancellable(() -> {
                     // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                     // these references.
-                    currentQueue.remove(subscriber);
+                    queue.remove(subscriber);
                 });
+            } else if (queue.remove(subscriber)) {
+                // We don't decrement counter, we assume there will be no overflow from Long.MIN_VALUE.
+                terminateLateSubscriber(subscriber);
             }
         } else {
             subscriber.onError(new QueueFullAndRejectedSubscribeException("queue"));
@@ -104,17 +104,16 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
 
     private void terminate(@Nullable Object terminalSignal) {
         if (this.terminalSignal == TERMINAL_UNSET) {
+            // We must set terminalSignal before counter as we depend upon happens-before relationship for this value
+            // to be visible for any future late subscribers.
             this.terminalSignal = terminalSignal;
-            @SuppressWarnings("unchecked")
-            Queue<Subscriber<? super T>> currentQueue =
-                    (Queue<Subscriber<? super T>>) queueUpdater.getAndSet(this, null);
-            if (currentQueue != null) {
+            if (counterUpdater.getAndSet(this, Long.MIN_VALUE) >= 0) {
                 Throwable delayedCause = null;
                 Subscriber<? super T> subscriber;
                 if (terminalSignal instanceof TerminalNotification) {
                     final Throwable error = ((TerminalNotification) terminalSignal).cause();
                     assert error != null;
-                    while ((subscriber = currentQueue.poll()) != null) {
+                    while ((subscriber = queue.poll()) != null) {
                         try {
                             subscriber.onError(error);
                         } catch (Throwable cause) {
@@ -124,7 +123,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
                 } else {
                     @SuppressWarnings("unchecked")
                     final T value = (T) terminalSignal;
-                    while ((subscriber = currentQueue.poll()) != null) {
+                    while ((subscriber = queue.poll()) != null) {
                         try {
                             subscriber.onSuccess(value);
                         } catch (Throwable cause) {
