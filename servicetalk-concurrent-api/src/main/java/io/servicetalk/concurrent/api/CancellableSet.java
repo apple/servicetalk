@@ -19,19 +19,18 @@ import io.servicetalk.concurrent.Cancellable;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Collections.newSetFromMap;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class CancellableSet implements Cancellable {
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<CancellableSet, Set> setUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(CancellableSet.class, Set.class, "set");
-    @Nullable
-    private volatile Set<Cancellable> set;
+    private static final AtomicLongFieldUpdater<CancellableSet> counterUpdater =
+            newUpdater(CancellableSet.class, "counter");
+    private final Set<Cancellable> set;
+    private volatile long counter;
 
     /**
      * Create a new instance.
@@ -56,16 +55,14 @@ final class CancellableSet implements Cancellable {
      */
     @Override
     public void cancel() {
-        @SuppressWarnings("unchecked")
-        final Set<Cancellable> currentSet = (Set<Cancellable>) setUpdater.getAndSet(this, null);
-        if (currentSet != null) {
+        if (counterUpdater.getAndSet(this, Long.MIN_VALUE) >= 0) {
             Throwable delayedCause = null;
-            for (Cancellable c : currentSet) {
+            for (Cancellable c : set) {
                 try {
                     // Removal while iterating typically results in ConcurrentModificationException, but not for
                     // ConcurrentHashMap. We use this approach to avoid concurrent invocation of cancel() between
                     // this method and add (if they race).
-                    if (currentSet.remove(c)) {
+                    if (set.remove(c)) {
                         c.cancel();
                     }
                 } catch (Throwable cause) {
@@ -88,14 +85,16 @@ final class CancellableSet implements Cancellable {
      * {@code toAdd} has already been added.
      */
     boolean add(Cancellable toAdd) {
-        final Set<Cancellable> currentSet = set;
-        if (currentSet == null) {
+        if (counter < 0) { // make best effort to avoid the set if cancelled already
             toAdd.cancel();
             return false;
-        } else if (!currentSet.add(toAdd)) {
+        } else if (!set.add(toAdd)) {
             return false; // user has implemented equals/hashCode so there is overlap?
-        } else if (!setUpdater.compareAndSet(this, currentSet, currentSet)) {
-            if (currentSet.remove(toAdd)) {
+        } else if (counterUpdater.incrementAndGet(this) <= 0) {
+            // We must check the state after we insert into the set as the terminal event could have raced with this
+            // method and we need to ensure the subscriber is terminated.
+            // We don't check for overflow as we assume we will never exceed Long number of elements.
+            if (set.remove(toAdd)) {
                 toAdd.cancel();
             }
             return false;
@@ -110,8 +109,7 @@ final class CancellableSet implements Cancellable {
      * @return {@code true} if {@code toRemove} was found and removed.
      */
     boolean remove(Cancellable toRemove) {
-        final Set<Cancellable> currentSet = set;
-        return currentSet != null && currentSet.remove(toRemove);
+        return set.remove(toRemove);
     }
 
     /**
@@ -119,6 +117,6 @@ final class CancellableSet implements Cancellable {
      * @return {@code true} if {@link #cancel()} has been called.
      */
     boolean isCancelled() {
-        return set == null;
+        return counter < 0;
     }
 }
