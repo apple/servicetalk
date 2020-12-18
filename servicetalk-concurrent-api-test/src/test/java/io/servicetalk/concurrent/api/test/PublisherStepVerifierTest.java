@@ -731,8 +731,8 @@ public class PublisherStepVerifierTest {
         StepAssertionError error = assertThrows(StepAssertionError.class, verifier::get);
         StackTraceElement[] stackTraceElements = error.getStackTrace();
         assertThat(stackTraceElements.length, greaterThanOrEqualTo(1));
-        assertThat("first stacktrace element expected <class: " + classNamePrefix +
-                        "> actual: " + stackTraceElements[0] + " error: " + error,
+        assertThat("first stacktrace element expected <class: " + classNamePrefix + "> actual: " +
+                        stackTraceElements[0] + " error: " + error,
                 stackTraceElements[0].getClassName(), startsWith(classNamePrefix));
         StackTraceElement testMethodStackTrace = error.testMethodStackTrace();
         assertEquals("unexpected test method failure: " + testMethodStackTrace, failedTestMethod,
