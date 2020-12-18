@@ -87,7 +87,7 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
 
     static HttpCookiePair parseCookiePair0(final CharSequence sequence, int nameStart, int nameLength, int valueEnd) {
         final int valueStart = nameStart + nameLength + 1;
-        if (valueEnd - 1 < valueStart) {
+        if (valueEnd <= valueStart || valueStart < 0) {
             throw new IllegalArgumentException("unexpected format of cookie pair, empty value");
         }
         if (sequence.charAt(valueStart) == '"' && sequence.charAt(valueEnd - 1) == '"') {
