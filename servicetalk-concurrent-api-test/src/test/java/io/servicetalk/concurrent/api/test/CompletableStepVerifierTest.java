@@ -33,8 +33,8 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.api.test.StepVerifiers.create;
+import static io.servicetalk.concurrent.api.test.Verifiers.stepVerifier;
+import static io.servicetalk.concurrent.api.test.Verifiers.stepVerifierForSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
@@ -53,7 +53,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void expectCancellable() {
-        create(completed())
+        stepVerifier(completed())
                 .expectCancellable()
                 .expectComplete()
                 .verify();
@@ -63,7 +63,7 @@ public class CompletableStepVerifierTest {
     public void expectCancellableTimeout() {
         CountDownLatch latch = new CountDownLatch(1);
         try {
-            verifyException(() -> create(completed().publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+            verifyException(() -> stepVerifier(completed().publishAndSubscribeOn(EXECUTOR_RULE.executor()))
                     .expectCancellableConsumed(cancellable -> {
                         try {
                             latch.await();
@@ -80,7 +80,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void onComplete() {
-        assertNotNull(create(completed())
+        assertNotNull(stepVerifier(completed())
                 .expectComplete()
                 .verify());
     }
@@ -88,7 +88,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void onCompleteDuplicateVerify() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        StepVerifier verifier = create(completed())
+        StepVerifier verifier = stepVerifier(completed())
                 .expectCancellableConsumed(cancellable -> {
                     assertNotNull(cancellable);
                     latch.countDown();
@@ -101,77 +101,77 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void onCompleteLargeTimeout() {
-        assertNotNull(create(completed())
+        assertNotNull(stepVerifier(completed())
                 .expectComplete()
                 .verify(ofDays(1)));
     }
 
     @Test
     public void onCompleteTimeout() {
-        verifyException(() -> create(never())
+        verifyException(() -> stepVerifier(never())
                 .expectComplete()
                 .verify(ofNanos(10)), "expectComplete");
     }
 
     @Test
     public void onError() {
-        create(failed(DELIBERATE_EXCEPTION))
+        stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .expectError()
                 .verify();
     }
 
     @Test
     public void onErrorFail() {
-        verifyException(() -> create(completed())
+        verifyException(() -> stepVerifier(completed())
                 .expectError()
                 .verify(), "expectError");
     }
 
     @Test
     public void onErrorClass() {
-        create(failed(DELIBERATE_EXCEPTION))
+        stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .expectError(DeliberateException.class)
                 .verify();
     }
 
     @Test
     public void onErrorClassFail() {
-        verifyException(() -> create(completed())
+        verifyException(() -> stepVerifier(completed())
                 .expectError(DeliberateException.class)
                 .verify(), "expectError");
     }
 
     @Test
     public void onErrorPredicate() {
-        create(failed(DELIBERATE_EXCEPTION))
+        stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .expectErrorMatches(error -> error instanceof DeliberateException)
                 .verify();
     }
 
     @Test
     public void onErrorPredicateFail() {
-        verifyException(() -> create(completed())
+        verifyException(() -> stepVerifier(completed())
                 .expectErrorMatches(error -> error instanceof DeliberateException)
                 .verify(), "expectErrorMatches");
     }
 
     @Test
     public void onErrorConsumer() {
-        create(failed(DELIBERATE_EXCEPTION))
+        stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
                 .verify();
     }
 
     @Test
     public void onErrorConsumerFail() {
-        verifyException(() -> create(completed())
+        verifyException(() -> stepVerifier(completed())
                 .expectErrorConsumed(error -> assertThat(error, is(DELIBERATE_EXCEPTION)))
                 .verify(), "expectErrorConsumed");
     }
 
     @Test
     public void expectOnSuccessWhenOnError() {
-        verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
+        verifyException(() -> stepVerifier(failed(DELIBERATE_EXCEPTION))
                     .expectComplete()
                     .verify(), "expectComplete");
     }
@@ -180,7 +180,7 @@ public class CompletableStepVerifierTest {
     public void noSignalsSubscriptionCancelSucceeds() {
         // expectNoSignals and subscription event are dequeued/processed sequentially on the Subscriber thread
         // and the scenario isn't instructed to expect the subscription so we pass the test.
-        create(never())
+        stepVerifier(never())
                 .expectNoSignals(ofDays(1))
                 .thenCancel()
                 .verify();
@@ -188,7 +188,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void noSignalsCompleteFail() {
-        verifyException(() -> create(completed())
+        verifyException(() -> stepVerifier(completed())
                 .expectCancellable()
                 .expectNoSignals(ofDays(1))
                 .expectComplete()
@@ -197,7 +197,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void noSignalsErrorFails() {
-        verifyException(() -> create(failed(DELIBERATE_EXCEPTION))
+        verifyException(() -> stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .expectCancellable()
                 .expectNoSignals(ofDays(1))
                 .expectError(DeliberateException.class)
@@ -206,7 +206,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void noSignalsAfterSubscriptionSucceeds() {
-        create(never())
+        stepVerifier(never())
                 .expectCancellable()
                 .expectNoSignals(ofMillis(100))
                 .thenCancel()
@@ -215,14 +215,14 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void thenCancelCompleted() {
-        create(completed())
+        stepVerifier(completed())
                 .thenCancel()
                 .verify();
     }
 
     @Test
     public void thenCancelFailed() {
-        create(failed(DELIBERATE_EXCEPTION))
+        stepVerifier(failed(DELIBERATE_EXCEPTION))
                 .thenCancel()
                 .verify();
     }
@@ -230,7 +230,7 @@ public class CompletableStepVerifierTest {
     @Test
     public void thenRun() {
         CompletableSource.Processor processor = newCompletableProcessor();
-        create(fromSource(processor))
+        stepVerifierForSource(processor)
                 .then(processor::onComplete)
                 .expectComplete()
                 .verify();
@@ -238,7 +238,7 @@ public class CompletableStepVerifierTest {
 
     @Test
     public void asyncContextOnError() {
-        create(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        stepVerifier(failed(DELIBERATE_EXCEPTION).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
                 .expectCancellableConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
@@ -252,7 +252,7 @@ public class CompletableStepVerifierTest {
 
     @Test(expected = DeliberateException.class)
     public void thenRunThrows() {
-        create(completed())
+        stepVerifier(completed())
                 .then(() -> {
                     throw DELIBERATE_EXCEPTION;
                 })
