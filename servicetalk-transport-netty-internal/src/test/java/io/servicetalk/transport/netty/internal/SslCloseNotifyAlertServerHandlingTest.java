@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 
 import org.junit.Test;
@@ -25,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.concurrent.api.test.Verifiers.stepVerifier;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -40,7 +40,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     public void afterExchangeIdleConnection() {
         receiveRequest();
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)))
+        stepVerifier(conn.write(fromSource(writeSource)))
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
@@ -59,7 +59,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)))
+        stepVerifier(conn.write(fromSource(writeSource)))
                 .then(this::closeNotifyAndVerifyClosing)
                 .expectError(RetryableClosureException.class)
                 .verify();
@@ -70,7 +70,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)))
+        stepVerifier(conn.write(fromSource(writeSource)))
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     closeNotifyAndVerifyClosing();
@@ -81,7 +81,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
 
     @Test
     public void whileReadingRequestBeforeSendingResponse() {
-        StepVerifiers.create(conn.write(fromSource(newPublisherProcessor())).merge(conn.read()))
+        stepVerifier(conn.write(fromSource(newPublisherProcessor())).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -95,7 +95,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileReadingRequestAndSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
+        stepVerifier(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -111,7 +111,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileReadingRequestAfterSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
+        stepVerifier(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -126,7 +126,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     }
 
     private void receiveRequest() {
-        StepVerifiers.create(conn.read())
+        stepVerifier(conn.read())
                 .then(() -> channel.writeInbound(BEGIN))
                 .expectNext(BEGIN)
                 .then(() -> channel.writeInbound(END))
