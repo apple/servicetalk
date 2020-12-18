@@ -49,7 +49,7 @@ final class ConcurrentStack<T> {
     T pop() {
         for (;;) {
             final Node<T> oldTop = top;
-            if (oldTop == null) {
+            if (oldTop == null || oldTop == CLOSED) {
                 return null;
             } else if (topUpdater.compareAndSet(this, oldTop, oldTop.next)) {
                 final T item = oldTop.item;

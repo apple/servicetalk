@@ -83,7 +83,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
 
     private void terminate(@Nullable Object terminalSignal) {
         if (this.terminalSignal == TERMINAL_UNSET) {
-            // We must set terminalSignal before counter as we depend upon happens-before relationship for this value
+            // We must set terminalSignal before close as we depend upon happens-before relationship for this value
             // to be visible for any future late subscribers.
             this.terminalSignal = terminalSignal;
             if (terminalSignal instanceof TerminalNotification) {
