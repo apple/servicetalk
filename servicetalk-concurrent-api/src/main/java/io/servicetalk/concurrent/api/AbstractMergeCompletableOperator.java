@@ -18,11 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscribeCompletable
         implements CompletableOperator {
@@ -70,15 +70,10 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
     abstract void doMerge(MergeSubscriber subscriber);
 
     abstract static class MergeSubscriber implements Subscriber {
-        static final AtomicIntegerFieldUpdater<MergeSubscriber> completedCountUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(MergeSubscriber.class, "completedCount");
         private static final AtomicReferenceFieldUpdater<MergeSubscriber, Object> terminalNotificationUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(MergeSubscriber.class, Object.class, "terminalNotification");
+                newUpdater(MergeSubscriber.class, Object.class, "terminalNotification");
         private static final Object ON_COMPLETE = new Object();
         private static final Object DELIVERED_DELAYED_ERROR = new Object();
-
-        @SuppressWarnings("unused")
-        volatile int completedCount;
         @SuppressWarnings("unused")
         @Nullable
         private volatile Object terminalNotification;
@@ -89,14 +84,6 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         MergeSubscriber(Subscriber subscriber, boolean delayError) {
             this.subscriber = subscriber;
             this.delayError = delayError;
-            dynamicCancellable = new CancellableStack();
-            subscriber.onSubscribe(dynamicCancellable);
-        }
-
-        MergeSubscriber(Subscriber subscriber, int completedCount, boolean delayError) {
-            this.subscriber = subscriber;
-            this.delayError = delayError;
-            this.completedCount = completedCount;
             dynamicCancellable = new CancellableStack();
             subscriber.onSubscribe(dynamicCancellable);
         }
@@ -173,12 +160,5 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
          * @return {@code true} if we are done processing after changing state due to receiving a terminal event.
          */
         abstract boolean onTerminate();
-
-        /**
-         * Determine if we are currently done.
-         *
-         * @return {@code true} if we are currently done.
-         */
-        abstract boolean isDone();
     }
 }

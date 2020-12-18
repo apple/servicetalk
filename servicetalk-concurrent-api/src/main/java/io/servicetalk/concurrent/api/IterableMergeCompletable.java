@@ -15,9 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.MergeCompletable.FixedCountMergeSubscriber;
-
-import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,31 +35,23 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
 
     @Override
     public MergeSubscriber apply(final Subscriber subscriber) {
-        if (others instanceof Collection) {
-            return new FixedCountMergeSubscriber(subscriber, 1 + ((Collection) others).size(), delayError);
-        } else {
-            return new DynamicCountSubscriber(subscriber, delayError);
-        }
+        return new DynamicCountSubscriber(subscriber, delayError);
     }
 
     @Override
     void doMerge(final MergeSubscriber subscriber) {
-        if (subscriber instanceof DynamicCountSubscriber) {
-            int count = 1;
-            for (Completable itr : others) {
-                ++count;
-                itr.subscribeInternal(subscriber);
-            }
-            ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
-        } else {
-            for (Completable itr : others) {
-                itr.subscribeInternal(subscriber);
-            }
+        long count = 1;
+        for (Completable itr : others) {
+            ++count;
+            itr.subscribeInternal(subscriber);
         }
+        ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
     }
 
-    private static final class DynamicCountSubscriber extends MergeCompletable.MergeSubscriber {
-        private volatile int expectedCount;
+    static final class DynamicCountSubscriber extends MergeSubscriber {
+        private static final AtomicLongFieldUpdater<DynamicCountSubscriber> completedCountUpdater =
+                AtomicLongFieldUpdater.newUpdater(DynamicCountSubscriber.class, "completedCount");
+        private volatile long completedCount;
 
         DynamicCountSubscriber(Subscriber subscriber, boolean delayError) {
             super(subscriber, delayError);
@@ -69,17 +59,13 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
 
         @Override
         boolean onTerminate() {
-            return completedCountUpdater.incrementAndGet(this) == expectedCount;
+            // we will go negative until setExpectedCount is called, but then we will offset by the expected amount.
+            return completedCountUpdater.decrementAndGet(this) == 0;
         }
 
-        @Override
-        boolean isDone() {
-            return completedCount == expectedCount;
-        }
-
-        void setExpectedCount(int count) {
-            expectedCount = count;
-            if (completedCount == count) {
+        void setExpectedCount(final long count) {
+            // add the expected amount back, if we come to 0 that means all sources have completed.
+            if (completedCountUpdater.addAndGet(this, count) == 0) {
                 tryToCompleteSubscriber();
             }
         }

@@ -15,77 +15,55 @@
  */
 package io.servicetalk.concurrent.api;
 
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-/**
- * A {@link Completable} implementation for merging {@link Completable}s.
- */
 final class MergeCompletable extends AbstractMergeCompletableOperator {
-
-    @Nullable
     private final Completable[] others;
-    @Nullable
-    private final Completable onlyOther;
     private final boolean delayError;
 
-    /**
-     * New instance.
-     * @param delayError {@code true} to wait until all {@code others} complete before propagating an error.
-     *                   {@code false} to fail fast and propagate an error on the first
-     *                   {@link Subscriber#onError(Throwable)} observed.
-     * @param original {@link Completable} to merge with {@code others}.
-     * @param others {@link Completable}s to merge with {@code original}.
-     */
-    MergeCompletable(boolean delayError, Completable original, Executor executor, Completable... others) {
+    private MergeCompletable(boolean delayError, Completable original, Executor executor, Completable... others) {
         super(original, executor);
         this.delayError = delayError;
-        switch (others.length) {
-            case 0:
-                throw new IllegalArgumentException("At least one Completable required to merge");
-            case 1:
-                onlyOther = requireNonNull(others[0]);
-                this.others = null;
-                break;
-            default:
-                this.others = others;
-                onlyOther = null;
-        }
+        this.others = requireNonNull(others);
+    }
+
+    static AbstractMergeCompletableOperator newInstance(boolean delayError, Completable original, Executor executor,
+                                                        Completable... others) {
+        return others.length == 1 ?
+                new MergeOneCompletable(delayError, original, executor, others[0]) :
+                new MergeCompletable(delayError, original, executor, others);
     }
 
     @Override
     public MergeSubscriber apply(final Subscriber subscriber) {
-        assert onlyOther != null || others != null;
-        return new FixedCountMergeSubscriber(subscriber, 1 + (onlyOther == null ? others.length : 1),
-                delayError);
+        return new FixedCountMergeSubscriber(subscriber, 1 + others.length, delayError);
     }
 
     @Override
     void doMerge(final MergeSubscriber subscriber) {
-        if (onlyOther == null) {
-            assert others != null;
-            for (Completable itr : others) {
-                itr.subscribeInternal(subscriber);
-            }
-        } else {
-            onlyOther.subscribeInternal(subscriber);
+        for (Completable itr : others) {
+            itr.subscribeInternal(subscriber);
         }
     }
 
     static final class FixedCountMergeSubscriber extends MergeSubscriber {
-        FixedCountMergeSubscriber(Subscriber subscriber, int completedCount, boolean delayError) {
-            super(subscriber, completedCount, delayError);
+        private static final AtomicIntegerFieldUpdater<FixedCountMergeSubscriber> remainingCountUpdater =
+                newUpdater(FixedCountMergeSubscriber.class, "remainingCount");
+        private volatile int remainingCount;
+
+        FixedCountMergeSubscriber(Subscriber subscriber, int expectedCount, boolean delayError) {
+            super(subscriber, delayError);
+            // Subscribe operation must happen before the Subscriber is terminated, so initialization will be visible
+            // in onTerminate.
+            this.remainingCount = expectedCount;
         }
 
         @Override
         boolean onTerminate() {
-            return completedCountUpdater.decrementAndGet(this) == 0;
-        }
-
-        @Override
-        boolean isDone() {
-            return completedCount == 0;
+            return remainingCountUpdater.decrementAndGet(this) == 0;
         }
     }
 }

@@ -413,9 +413,33 @@ public abstract class Completable {
     }
 
     /**
+     * Merges this {@link Completable} with the {@code other} {@link Completable} so that the resulting
+     * {@link Completable} terminates successfully when both of these complete or either terminates with an error.
+     * <p>
+     * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     futures.add(e.submit(() -> resultOfCompletable(other));
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
+     *         future.get(); // Throws if the processing for this item failed.
+     *     }
+     * }</pre>
+     *
+     * @param other {@link Completable}s to merge.
+     * @return {@link Completable} that terminates successfully when this and {@code other} {@link Completable}s
+     * complete or terminates with an error when either terminates with an error.
+     */
+    public final Completable merge(Completable other) {
+        return new MergeOneCompletable(false, this, executor, other);
+    }
+
+    /**
      * Merges this {@link Completable} with the {@code other} {@link Completable}s so that the resulting
-     * {@link Completable} terminates successfully when all of these complete or terminates with an error when any one
-     * terminates with an error.
+     * {@link Completable} terminates successfully when all of these complete or any one terminates with an error.
      * <p>
      * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
      * and in sequential programming is similar to:
@@ -437,7 +461,7 @@ public abstract class Completable {
      * complete or terminates with an error when any one terminates with an error.
      */
     public final Completable merge(Completable... other) {
-        return new MergeCompletable(false, this, executor, other);
+        return MergeCompletable.newInstance(false, this, executor, other);
     }
 
     /**
@@ -498,6 +522,45 @@ public abstract class Completable {
     }
 
     /**
+     * Merges this {@link Completable} with the {@code other} {@link Completable}, and delays error notification until
+     * all involved {@link Completable}s terminate.
+     * <p>
+     * Use {@link #merge(Completable)} if any error should immediately terminate the returned {@link Completable}.
+     * <p>
+     * This method provides a means to merge multiple asynchronous sources, delays throwing in the presence of any
+     * errors, and in sequential programming is similar to:
+     * <pre>{@code
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     futures.add(e.submit(() -> resultOfCompletable(other));
+     *     Throwable overallCause = null;
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
+     *         try {
+     *             f.get();
+     *         } catch (Throwable cause) {
+     *             if (overallCause != null) {
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     * }</pre>
+     *
+     * @param other {@link Completable} to merge.
+     * @return {@link Completable} that terminates after {@code this} {@link Completable} and {@code other}
+     * {@link Completable}. If all involved {@link Completable}s terminate successfully then the return value will
+     * terminate successfully. If any {@link Completable} terminates in an error, then the return value will also
+     * terminate in an error.
+     */
+    public final Completable mergeDelayError(Completable other) {
+        return new MergeOneCompletable(true, this, executor, other);
+    }
+
+    /**
      * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until
      * all involved {@link Completable}s terminate.
      * <p>
@@ -535,7 +598,7 @@ public abstract class Completable {
      * terminate in an error.
      */
     public final Completable mergeDelayError(Completable... other) {
-        return new MergeCompletable(true, this, executor, other);
+        return MergeCompletable.newInstance(true, this, executor, other);
     }
 
     /**
