@@ -22,6 +22,7 @@ import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
@@ -36,6 +37,7 @@ import static io.netty.util.internal.StringUtil.NEWLINE;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static java.util.Objects.requireNonNull;
 
+@Sharable
 final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     private final FixedLevelLogger logger;
     private final BooleanSupplier logUserDataSupplier;
