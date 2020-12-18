@@ -21,6 +21,7 @@ import io.netty.channel.Channel;
 /**
  * Configures a {@link Channel}.
  */
+@FunctionalInterface
 public interface ChannelInitializer {
 
     /**
