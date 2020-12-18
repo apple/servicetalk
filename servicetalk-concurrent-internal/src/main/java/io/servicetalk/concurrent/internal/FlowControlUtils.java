@@ -15,9 +15,6 @@
  */
 package io.servicetalk.concurrent.internal;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 /**
  * A set of utility methods for safe math operations to prevent overflow.
  */
@@ -87,16 +84,6 @@ public final class FlowControlUtils {
     }
 
     /**
-     * Subtract {@code y} from {@code x} if {@code x} is positive.
-     * @param x first value (may be negative).
-     * @param y second value (should be positive).
-     * @return the result of {@code x-y} if {@code x>0}, or {@code x}.
-     */
-    public static long subtractIfPositive(long x, long y) {
-        return x <= 0 ? x : x - y;
-    }
-
-    /**
      * Adds two positive longs and returns {@link Long#MAX_VALUE} if overflow occurs.
      * @param x first value (should be positive).
      * @param y second value (should be positive).
@@ -136,35 +123,5 @@ public final class FlowControlUtils {
         final long sum = x + y;
         // if overflow, sign extended right shift, then flip lower 63 bits (non-sign bits) to get 2s complement min/max.
         return ((x ^ sum) & (y ^ sum)) < 0 ? ((x >> 63) ^ Long.MAX_VALUE) : sum;
-    }
-
-    /**
-     * Increment an {@code integer} referred by {@link AtomicIntegerFieldUpdater} atomically
-     * and saturate to {@link Integer#MAX_VALUE} if overflow occurs.
-     *
-     * @param updater {@link AtomicIntegerFieldUpdater} used to atomically increment.
-     * @param owner Owner class of {@link AtomicIntegerFieldUpdater}.
-     * @param amount Amount to increment.
-     * @param <T> Type of the owner.
-     *
-     * @return Value of {@code int} referred by {@link AtomicIntegerFieldUpdater} after the increment.
-     */
-    public static <T> int addWithOverflowProtection(AtomicIntegerFieldUpdater<T> updater, T owner, int amount) {
-        return updater.accumulateAndGet(owner, amount, FlowControlUtils::addWithOverflowProtection);
-    }
-
-    /**
-     * Increment a {@code long} referred by {@link AtomicLongFieldUpdater} atomically
-     * and saturate to {@link Long#MAX_VALUE} if overflow occurs.
-     *
-     * @param updater {@link AtomicLongFieldUpdater} used to atomically increment.
-     * @param owner Owner class of {@link AtomicLongFieldUpdater}.
-     * @param amount Amount to increment.
-     * @param <T> Type of the owner.
-     *
-     * @return Value of {@code long} referred by {@link AtomicLongFieldUpdater} after the increment.
-     */
-    public static <T> long addWithOverflowProtection(AtomicLongFieldUpdater<T> updater, T owner, long amount) {
-        return updater.accumulateAndGet(owner, amount, FlowControlUtils::addWithOverflowProtection);
     }
 }
