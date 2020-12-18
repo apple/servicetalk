@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 
 import org.junit.Test;
 
@@ -24,6 +25,10 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertHandlingTest {
 
@@ -41,7 +46,11 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
                     writeMsg(writeSource, END);
                     closeNotifyAndVerifyClosing();
                 })
-                .expectError(ClosedChannelException.class)
+                .expectErrorConsumed(cause -> {
+                    assertThat("Unexpected write failure cause", cause, instanceOf(CloseEventObservedException.class));
+                    CloseEventObservedException ceoe = (CloseEventObservedException) cause;
+                    assertThat("Unexpected close event", ceoe.event(), is(CHANNEL_CLOSED_INBOUND));
+                })
                 .verify();
     }
 
@@ -52,7 +61,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
         StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(this::closeNotifyAndVerifyClosing)
-                .expectError(ClosedChannelException.class)
+                .expectError(RetryableClosureException.class)
                 .verify();
     }
 
@@ -79,7 +88,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
                     closeNotifyAndVerifyClosing();
                 })
                 .expectNext(BEGIN)
-                .expectError(ClosedChannelException.class)
+                .expectError(RetryableClosureException.class)
                 .verify();
     }
 

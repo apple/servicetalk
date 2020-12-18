@@ -133,7 +133,8 @@ public abstract class CloseHandler {
     /**
      * Request {@link Channel} outbound close, to be emitted from the {@link EventLoop} for the channel.
      * <p>
-     * This method will not ensure graceful closure of the channel outbound and may abort reads.
+     * This method will not ensure graceful closure of the channel outbound and may abort reads. The implementations of
+     * this method should be idempotent because it may be invoked multiple times.
      *
      * @param channel {@link Channel}
      */
