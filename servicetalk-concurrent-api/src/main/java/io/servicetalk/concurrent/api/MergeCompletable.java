@@ -52,18 +52,17 @@ final class MergeCompletable extends AbstractMergeCompletableOperator {
     static final class FixedCountMergeSubscriber extends MergeSubscriber {
         private static final AtomicIntegerFieldUpdater<FixedCountMergeSubscriber> remainingCountUpdater =
                 newUpdater(FixedCountMergeSubscriber.class, "remainingCount");
+        private final int expectedCount;
         private volatile int remainingCount;
 
         FixedCountMergeSubscriber(Subscriber subscriber, int expectedCount, boolean delayError) {
             super(subscriber, delayError);
-            // Subscribe operation must happen before the Subscriber is terminated, so initialization will be visible
-            // in onTerminate.
-            this.remainingCount = expectedCount;
+            this.expectedCount = expectedCount;
         }
 
         @Override
         boolean onTerminate() {
-            return remainingCountUpdater.decrementAndGet(this) == 0;
+            return remainingCountUpdater.incrementAndGet(this) == expectedCount;
         }
     }
 }
