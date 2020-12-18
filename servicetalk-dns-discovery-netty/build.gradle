@@ -31,7 +31,6 @@ dependencies {
 
   runtimeOnly "io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64"
 
-  testImplementation testFixtures(project(":servicetalk-client-api-internal"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
