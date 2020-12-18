@@ -54,6 +54,7 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.handler.codec.DecoderException;
+import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -641,8 +642,17 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.closeHandler.channelClosedOutbound(ctx);
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
+            } else if (evt == SslCloseCompletionEvent.SUCCESS) {
+                // Received "close_notify" alert from the peer: https://tools.ietf.org/html/rfc5246#section-7.2.1.
+                // This message notifies that the sender will not send any more messages on this connection.
+
+                // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
+                connection.closeHandler.channelClosedInbound(ctx);
+                // We MUST respond with a "close_notify" alert and close down the connection immediately,
+                // discarding any pending writes.
+                connection.closeHandler.closeChannelOutbound(ctx.channel());
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
-                // Notify close handler first to enhance error reporting
+                // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);
                 // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
                 // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
