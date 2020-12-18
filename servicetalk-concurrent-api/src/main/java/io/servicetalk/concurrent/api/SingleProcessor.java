@@ -18,16 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
@@ -35,12 +28,8 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    @SuppressWarnings("rawtypes")
-    private static final AtomicLongFieldUpdater<SingleProcessor> counterUpdater =
-            AtomicLongFieldUpdater.newUpdater(SingleProcessor.class, "counter");
     private static final Object TERMINAL_UNSET = new Object();
-    private final Queue<Subscriber<? super T>> queue = new ConcurrentLinkedQueue<>();
-    private volatile long counter;
+    private final ConcurrentStack<Subscriber<? super T>> stack = new ConcurrentStack<>();
     @Nullable
     private Object terminalSignal = TERMINAL_UNSET;
 
@@ -52,24 +41,14 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        if (counter < 0) { // best effort to short circuit and avoid the queue if terminated already
-            terminateLateSubscriber(subscriber);
-        } else if (queue.offer(subscriber)) {
-            // We must check the state after we insert into the queue as the terminal event could have raced with this
-            // method and we need to ensure the subscriber is terminated.
-            // We don't check for overflow as we assume we will never exceed Long number of elements.
-            if (counterUpdater.incrementAndGet(this) > 0) {
-                delayedCancellable.delayedCancellable(() -> {
-                    // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
-                    // these references.
-                    queue.remove(subscriber);
-                });
-            } else if (queue.remove(subscriber)) {
-                // We don't decrement counter, we assume there will be no overflow from Long.MIN_VALUE.
-                terminateLateSubscriber(subscriber);
-            }
+        if (stack.push(subscriber)) {
+            delayedCancellable.delayedCancellable(() -> {
+                // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
+                // these references.
+                stack.relaxedRemove(subscriber);
+            });
         } else {
-            subscriber.onError(new QueueFullAndRejectedSubscribeException("queue"));
+            terminateLateSubscriber(subscriber);
         }
     }
 
@@ -107,33 +86,14 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
             // We must set terminalSignal before counter as we depend upon happens-before relationship for this value
             // to be visible for any future late subscribers.
             this.terminalSignal = terminalSignal;
-            if (counterUpdater.getAndSet(this, Long.MIN_VALUE) >= 0) {
-                Throwable delayedCause = null;
-                Subscriber<? super T> subscriber;
-                if (terminalSignal instanceof TerminalNotification) {
-                    final Throwable error = ((TerminalNotification) terminalSignal).cause();
-                    assert error != null;
-                    while ((subscriber = queue.poll()) != null) {
-                        try {
-                            subscriber.onError(error);
-                        } catch (Throwable cause) {
-                            delayedCause = catchUnexpected(delayedCause, cause);
-                        }
-                    }
-                } else {
-                    @SuppressWarnings("unchecked")
-                    final T value = (T) terminalSignal;
-                    while ((subscriber = queue.poll()) != null) {
-                        try {
-                            subscriber.onSuccess(value);
-                        } catch (Throwable cause) {
-                            delayedCause = catchUnexpected(delayedCause, cause);
-                        }
-                    }
-                }
-                if (delayedCause != null) {
-                    throwException(delayedCause);
-                }
+            if (terminalSignal instanceof TerminalNotification) {
+                final Throwable error = ((TerminalNotification) terminalSignal).cause();
+                assert error != null;
+                stack.close(subscriber -> subscriber.onError(error));
+            } else {
+                @SuppressWarnings("unchecked")
+                final T value = (T) terminalSignal;
+                stack.close(subscriber -> subscriber.onSuccess(value));
             }
         }
     }
