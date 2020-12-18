@@ -85,10 +85,12 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
         return parseCookiePair0(sequence, nameStart, nameLength, valueEnd < 0 ? sequence.length() : valueEnd);
     }
 
-    static HttpCookiePair parseCookiePair0(final CharSequence sequence, int nameStart, int nameLength, int valueEnd) {
+    private static HttpCookiePair parseCookiePair0(final CharSequence sequence, int nameStart, int nameLength,
+                                                   int valueEnd) {
         final int valueStart = nameStart + nameLength + 1;
-        if (valueEnd - 1 < valueStart) {
-            throw new IllegalArgumentException("unexpected format of cookie pair, empty value");
+        if (valueEnd <= valueStart || valueStart < 0) {
+            throw new IllegalArgumentException("value indexes are invalid. valueStart: " + valueStart
+                    + " valueEnd: " + valueEnd);
         }
         if (sequence.charAt(valueStart) == '"' && sequence.charAt(valueEnd - 1) == '"') {
             if (valueEnd - 2 <= valueStart) {
