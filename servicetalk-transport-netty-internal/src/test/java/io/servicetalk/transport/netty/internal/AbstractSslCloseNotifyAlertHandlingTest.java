@@ -16,7 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.test.FirstSteps;
+import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
@@ -98,7 +98,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
             assertThat("Underlying Channel is not closed", channel.isOpen(), is(false));
             assertThat("Unexpected inbound messages", channel.inboundMessages(), hasSize(0));
             assertThat("Unexpected outbound messages", channel.outboundMessages(), hasSize(0));
-            FirstSteps.create(conn.onClose()).expectComplete().verify();
+            StepVerifiers.create(conn.onClose()).expectComplete().verify();
         } finally {
             // In case of test errors, do the clean up:
             try {
@@ -117,7 +117,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
 
     protected final void closeNotifyAndVerifyClosing() {
         channel.pipeline().fireUserEventTriggered(SslCloseCompletionEvent.SUCCESS);
-        FirstSteps.create(conn.onClosing()).expectComplete().verify();
+        StepVerifiers.create(conn.onClosing()).expectComplete().verify();
     }
 
     protected final void writeMsg(PublisherSource.Processor<String, String> writeSource, String msg) {

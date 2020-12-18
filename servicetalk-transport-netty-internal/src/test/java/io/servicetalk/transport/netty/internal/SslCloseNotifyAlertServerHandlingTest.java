@@ -16,7 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.test.FirstSteps;
+import io.servicetalk.concurrent.api.test.StepVerifiers;
 
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     public void afterExchangeIdleConnection() {
         receiveRequest();
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        FirstSteps.create(conn.write(fromSource(writeSource)))
+        StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
@@ -50,7 +50,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        FirstSteps.create(conn.write(fromSource(writeSource)))
+        StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(this::closeNotifyAndVerifyClosing)
                 .expectError(ClosedChannelException.class)
                 .verify();
@@ -61,7 +61,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        FirstSteps.create(conn.write(fromSource(writeSource)))
+        StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     closeNotifyAndVerifyClosing();
@@ -72,7 +72,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
 
     @Test
     public void whileReadingRequestBeforeSendingResponse() {
-        FirstSteps.create(conn.write(fromSource(newPublisherProcessor())).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(newPublisherProcessor())).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -86,7 +86,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileReadingRequestAndSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        FirstSteps.create(conn.write(fromSource(writeSource)).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -102,7 +102,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileReadingRequestAfterSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        FirstSteps.create(conn.write(fromSource(writeSource)).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
                     channel.writeInbound(BEGIN);
@@ -117,7 +117,7 @@ public class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotif
     }
 
     private void receiveRequest() {
-        FirstSteps.create(conn.read())
+        StepVerifiers.create(conn.read())
                 .then(() -> channel.writeInbound(BEGIN))
                 .expectNext(BEGIN)
                 .then(() -> channel.writeInbound(END))
