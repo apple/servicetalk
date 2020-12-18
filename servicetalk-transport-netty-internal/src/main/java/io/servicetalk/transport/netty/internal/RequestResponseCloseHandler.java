@@ -157,6 +157,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     public void protocolPayloadBeginInbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
         pending = isClient ? pending - 1 : pending + 1;
+        assert pending >= 0 : "Negative pending counter";
         state = set(state, READ);
     }
 
@@ -174,6 +175,7 @@ class RequestResponseCloseHandler extends CloseHandler {
     public void protocolPayloadBeginOutbound(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
         pending = isClient ? pending + 1 : pending - 1;
+        assert pending >= 0 : "Negative pending counter";
         state = set(state, WRITE);
     }
 
