@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 final class CancellableStack implements Cancellable {
-    private final ConcurrentStack<Cancellable> queue = new ConcurrentStack<>();
+    private final ConcurrentStack<Cancellable> stack = new ConcurrentStack<>();
 
     /**
      * {@inheritDoc}
@@ -28,7 +28,7 @@ final class CancellableStack implements Cancellable {
      */
     @Override
     public void cancel() {
-        queue.close(Cancellable::cancel);
+        stack.close(Cancellable::cancel);
     }
 
     /**
@@ -38,7 +38,7 @@ final class CancellableStack implements Cancellable {
      * @return {@code true} if the {@code toAdd} was added. If {@code false} {@link Cancellable#cancel()} is called.
      */
     boolean add(Cancellable toAdd) {
-        if (!queue.push(toAdd)) {
+        if (!stack.push(toAdd)) {
             toAdd.cancel();
             return false;
         }
@@ -57,6 +57,6 @@ final class CancellableStack implements Cancellable {
      * @see ConcurrentStack#relaxedRemove(Object)
      */
     boolean relaxedRemove(Cancellable toRemove) {
-        return queue.relaxedRemove(toRemove);
+        return stack.relaxedRemove(toRemove);
     }
 }
