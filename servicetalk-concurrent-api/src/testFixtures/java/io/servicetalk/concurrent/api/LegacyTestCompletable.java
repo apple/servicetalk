@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 @Deprecated
 public class LegacyTestCompletable extends Completable implements CompletableSource.Subscriber {
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
-    private final DynamicCompositeCancellable dynamicCancellable = new SetDynamicCompositeCancellable();
+    private final CancellableSet dynamicCancellable = new CancellableSet();
     private final boolean invokeListenerPostCancel;
     private boolean deferOnSubscribe;
     @Nullable

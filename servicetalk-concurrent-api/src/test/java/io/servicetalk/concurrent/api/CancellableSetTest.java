@@ -15,9 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
-public class SetDynamicCompositeCancellableTest extends AbstractDynamicCompositeCancellableTest {
+import io.servicetalk.concurrent.Cancellable;
+
+public class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet> {
     @Override
-    protected DynamicCompositeCancellable newCompositeCancellable() {
-        return new SetDynamicCompositeCancellable();
+    protected CancellableSet newCompositeCancellable() {
+        return new CancellableSet();
+    }
+
+    @Override
+    protected boolean add(final CancellableSet composite, final Cancellable c) {
+        return composite.add(c);
+    }
+
+    @Override
+    protected boolean remove(final CancellableSet composite, final Cancellable c) {
+        return composite.remove(c);
     }
 }

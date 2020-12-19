@@ -17,10 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-/**
- * Provides a means to cascade a {@link #cancel()} call to other {@link Cancellable} objects.
- */
-interface DynamicCompositeCancellable extends Cancellable {
+final class CancellableStack implements Cancellable {
+    private final ConcurrentStack<Cancellable> queue = new ConcurrentStack<>();
+
     /**
      * {@inheritDoc}
      * <p>
@@ -28,33 +27,36 @@ interface DynamicCompositeCancellable extends Cancellable {
      * been cancelled, and all future {@link Cancellable}s added via {@link #add(Cancellable)} will also be cancelled.
      */
     @Override
-    void cancel();
+    public void cancel() {
+        queue.close(Cancellable::cancel);
+    }
 
     /**
      * Add a {@link Cancellable} that will be cancelled when this object's {@link #cancel()} method is called,
      * or be cancelled immediately if this object's {@link #cancel()} method has already been called.
      * @param toAdd The {@link Cancellable} to add.
-     * @return {@code true} if the {@code toAdd} was added, and {@code false} if {@code toAdd} was not added because
-     * it already exists. If {@code false} then {@link Cancellable#cancel()} will be called unless the reason is this
-     * implementation does not supporting duplicates and {@code toAdd} has already been added.
+     * @return {@code true} if the {@code toAdd} was added. If {@code false} {@link Cancellable#cancel()} is called.
      */
-    boolean add(Cancellable toAdd);
+    boolean add(Cancellable toAdd) {
+        if (!queue.push(toAdd)) {
+            toAdd.cancel();
+            return false;
+        }
+        return true;
+    }
 
     /**
-     * Remove a {@link Cancellable} such that it will no longer be cancelled when this object's {@link #cancel()} method
-     * is called.
-     * <p>
-     * If this collection doesn't filter out duplicates in {@link #add(Cancellable)}, and duplicates maybe added,
-     * this method should be called until it returns {@code false} to remove each duplicate instance.
-     * @param toRemove The {@link Cancellable} to remove.
-     * @return {@code true} if {@code toRemove} was found and removed.
+     * Best effort removal of {@code item} from this stack.
+     * @param toRemove The item to remove.
+     * {@code true} if the item was found in this stack and marked for removal. The "relaxed" nature of
+     * this method means {@code true} might be returned in the following scenarios without external synchronization:
+     * <ul>
+     *   <li>invoked multiple times with the same {@code item} from different threads</li>
+     *   <li>{@link #cancel()} removes this item from another thread</li>
+     * </ul>
+     * @see ConcurrentStack#relaxedRemove(Object)
      */
-    boolean remove(Cancellable toRemove);
-
-    /**
-     * Determine if {@link #cancel()} has been called.
-     *
-     * @return {@code true} if {@link #cancel()} has been called.
-     */
-    boolean isCancelled();
+    boolean relaxedRemove(Cancellable toRemove) {
+        return queue.relaxedRemove(toRemove);
+    }
 }

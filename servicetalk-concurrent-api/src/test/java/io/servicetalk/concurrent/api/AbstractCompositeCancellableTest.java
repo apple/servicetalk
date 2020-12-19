@@ -33,57 +33,61 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public abstract class AbstractDynamicCompositeCancellableTest {
+public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 
-    protected abstract DynamicCompositeCancellable newCompositeCancellable();
+    protected abstract T newCompositeCancellable();
+
+    protected abstract boolean add(T composite, Cancellable c);
+
+    protected abstract boolean remove(T composite, Cancellable c);
 
     @Test
     public void testAddAndRemove() {
-        DynamicCompositeCancellable c = newCompositeCancellable();
+        T c = newCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
-        c.add(cancellable);
-        c.remove(cancellable);
+        add(c, cancellable);
+        remove(c, cancellable);
         c.cancel();
         verifyZeroInteractions(cancellable);
     }
 
     @Test
     public void testCancel() {
-        DynamicCompositeCancellable c = newCompositeCancellable();
+        T c = newCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
-        c.add(cancellable);
+        add(c, cancellable);
         c.cancel();
         verify(cancellable).cancel();
-        c.remove(cancellable);
+        remove(c, cancellable);
     }
 
     @Test
     public void testAddPostCancel() {
-        DynamicCompositeCancellable c = newCompositeCancellable();
+        T c = newCompositeCancellable();
         c.cancel();
         Cancellable cancellable = mock(Cancellable.class);
-        c.add(cancellable);
+        add(c, cancellable);
         verify(cancellable).cancel();
-        c.remove(cancellable);
+        remove(c, cancellable);
     }
 
     @Test
     public void duplicateAddDoesNotCancel() {
-        DynamicCompositeCancellable c = newCompositeCancellable();
+        T c = newCompositeCancellable();
         Cancellable cancellable = mock(Cancellable.class);
         int addCount = 0;
-        if (c.add(cancellable)) {
+        if (add(c, cancellable)) {
             ++addCount;
         }
-        if (c.add(cancellable)) {
+        if (add(c, cancellable)) {
             ++addCount;
         }
         verify(cancellable, never()).cancel();
 
         for (int i = 0; i < addCount; ++i) {
-            assertTrue(c.remove(cancellable));
+            assertTrue(remove(c, cancellable));
         }
         c.cancel();
         verify(cancellable, never()).cancel();
@@ -94,12 +98,12 @@ public abstract class AbstractDynamicCompositeCancellableTest {
         final int addThreads = 1000;
         final CyclicBarrier barrier = new CyclicBarrier(addThreads + 1);
         final List<Single<Cancellable>> cancellableSingles = new ArrayList<>(addThreads);
-        DynamicCompositeCancellable dynamicCancellable = newCompositeCancellable();
+        T dynamicCancellable = newCompositeCancellable();
         for (int i = 0; i < addThreads; ++i) {
             cancellableSingles.add(EXECUTOR_RULE.executor().submit(() -> {
                 Cancellable c = mock(Cancellable.class);
                 barrier.await();
-                dynamicCancellable.add(c);
+                add(dynamicCancellable, c);
                 return c;
             }));
         }

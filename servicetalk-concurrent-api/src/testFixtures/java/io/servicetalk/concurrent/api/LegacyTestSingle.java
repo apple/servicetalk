@@ -43,7 +43,7 @@ public class LegacyTestSingle<T> extends Single<T> implements SingleSource.Subsc
     private static final Object NULL = new Object();
     private final AtomicInteger subscribeCount = new AtomicInteger();
     private final Queue<Subscriber<? super T>> subscribers = new ConcurrentLinkedQueue<>();
-    private final DynamicCompositeCancellable dynamicCancellable = new SetDynamicCompositeCancellable();
+    private final CancellableSet dynamicCancellable = new CancellableSet();
     private final boolean invokeListenerPostCancel;
     private final boolean cacheResults;
     @Nullable

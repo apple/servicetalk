@@ -83,13 +83,13 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         @Nullable
         private volatile Object terminalNotification;
         private final Subscriber subscriber;
-        private final DynamicCompositeCancellable dynamicCancellable;
+        private final CancellableStack dynamicCancellable;
         private final boolean delayError;
 
         MergeSubscriber(Subscriber subscriber, boolean delayError) {
             this.subscriber = subscriber;
             this.delayError = delayError;
-            dynamicCancellable = new QueueDynamicCompositeCancellable();
+            dynamicCancellable = new CancellableStack();
             subscriber.onSubscribe(dynamicCancellable);
         }
 
@@ -97,7 +97,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
             this.subscriber = subscriber;
             this.delayError = delayError;
             this.completedCount = completedCount;
-            dynamicCancellable = new QueueDynamicCompositeCancellable();
+            dynamicCancellable = new CancellableStack();
             subscriber.onSubscribe(dynamicCancellable);
         }
 

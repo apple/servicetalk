@@ -146,13 +146,13 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private final Subscriber<? super R> target;
         private final Queue<Object> signals;
         private final PublisherFlatMapMerge<T, R> source;
-        private final DynamicCompositeCancellable cancellableSubscribers;
+        private final CancellableSet cancellableSubscribers;
 
         FlatMapSubscriber(PublisherFlatMapMerge<T, R> source, Subscriber<? super R> target) {
             this.source = source;
             this.target = target;
             signals = newUnboundedMpscQueue(4);
-            cancellableSubscribers = new SetDynamicCompositeCancellable(min(16, source.maxConcurrency));
+            cancellableSubscribers = new CancellableSet(min(16, source.maxConcurrency));
         }
 
         @Override
