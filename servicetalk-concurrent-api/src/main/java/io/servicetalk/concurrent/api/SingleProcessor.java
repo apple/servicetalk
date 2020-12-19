@@ -18,8 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /**
@@ -28,10 +28,8 @@ import javax.annotation.Nullable;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    private static final Object TERMINAL_UNSET = new Object();
-    private final ConcurrentStack<Subscriber<? super T>> stack = new ConcurrentStack<>();
-    @Nullable
-    private Object terminalSignal = TERMINAL_UNSET;
+    private final ClosableConcurrentStack<Subscriber<? super T>, Consumer<Subscriber<? super T>>> stack =
+            new ClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
@@ -41,14 +39,15 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        if (stack.push(subscriber)) {
+        Consumer<Subscriber<? super T>> terminalSignal = stack.push(subscriber);
+        if (terminalSignal == null) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                 // these references.
                 stack.relaxedRemove(subscriber);
             });
         } else {
-            terminateLateSubscriber(subscriber);
+            terminalSignal.accept(subscriber);
         }
     }
 
@@ -59,43 +58,16 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
 
     @Override
     public void onSuccess(@Nullable final T result) {
-        terminate(result);
+        terminate(s -> s.onSuccess(result));
     }
 
     @Override
     public void onError(final Throwable t) {
-        terminate(TerminalNotification.error(t));
+        terminate(s -> s.onError(t));
     }
 
-    private void terminateLateSubscriber(Subscriber<? super T> subscriber) {
-        Object terminalSignal = this.terminalSignal;
-        assert terminalSignal != TERMINAL_UNSET;
-        if (terminalSignal instanceof TerminalNotification) {
-            final Throwable error = ((TerminalNotification) terminalSignal).cause();
-            assert error != null;
-            subscriber.onError(error);
-        } else {
-            @SuppressWarnings("unchecked")
-            final T value = (T) terminalSignal;
-            subscriber.onSuccess(value);
-        }
-    }
-
-    private void terminate(@Nullable Object terminalSignal) {
-        if (this.terminalSignal == TERMINAL_UNSET) {
-            // We must set terminalSignal before close as we depend upon happens-before relationship for this value
-            // to be visible for any future late subscribers.
-            this.terminalSignal = terminalSignal;
-            if (terminalSignal instanceof TerminalNotification) {
-                final Throwable error = ((TerminalNotification) terminalSignal).cause();
-                assert error != null;
-                stack.close(subscriber -> subscriber.onError(error));
-            } else {
-                @SuppressWarnings("unchecked")
-                final T value = (T) terminalSignal;
-                stack.close(subscriber -> subscriber.onSuccess(value));
-            }
-        }
+    private void terminate(Consumer<Subscriber<? super T>> terminalSignal) {
+        stack.close(terminalSignal, terminalSignal);
     }
 
     @Override

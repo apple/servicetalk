@@ -30,32 +30,32 @@ import static io.servicetalk.concurrent.api.Completable.mergeAll;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ConcurrentStackTest {
+public class ClosableConcurrentStackTest {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 
     @Test
     public void singleThreadPushPop() {
-        ConcurrentStack<Integer> stack = new ConcurrentStack<>();
+        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
         }
 
         for (int i = itemCount - 1; i >= 0; --i) {
-            assertThat(stack.pop(), is(i));
+            assertThat(stack.relaxedPop(), is(i));
         }
     }
 
     @Test
     public void singleThreadPushRemove() {
-        ConcurrentStack<Integer> stack = new ConcurrentStack<>();
+        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
@@ -64,12 +64,12 @@ public class ConcurrentStackTest {
         for (int i = 0; i < itemCount; ++i) {
             assertTrue(stack.relaxedRemove(i));
         }
-        assertNull(stack.pop());
+        assertNull(stack.relaxedPop());
     }
 
     @Test
     public void concurrentPushRemove() throws Exception {
-        ConcurrentStack<Integer> stack = new ConcurrentStack<>();
+        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
@@ -89,12 +89,12 @@ public class ConcurrentStackTest {
         Future<Void> future = mergeAll(completableList, itemCount).toFuture();
         barrier.await();
         future.get();
-        assertNull(stack.pop());
+        assertNull(stack.relaxedPop());
     }
 
     @Test
     public void concurrentPushRemoveDifferentThread() throws Exception {
-        ConcurrentStack<Integer> stack = new ConcurrentStack<>();
+        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
@@ -114,12 +114,12 @@ public class ConcurrentStackTest {
         Future<Void> future = mergeAll(completableList, itemCount).toFuture();
         barrier.await();
         future.get();
-        assertNull(stack.pop());
+        assertNull(stack.relaxedPop());
     }
 
     @Test
     public void concurrentClosePushRemove() throws Exception {
-        ConcurrentStack<Cancellable> stack = new ConcurrentStack<>();
+        ClosableConcurrentStack<Cancellable, String> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Single<Cancellable>> completableList = new ArrayList<>(itemCount);
@@ -131,7 +131,7 @@ public class ConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                assertTrue(stack.push(c));
+                assertNull(stack.push(c));
                 return c;
             }));
         }
@@ -139,9 +139,9 @@ public class ConcurrentStackTest {
         Future<Collection<Cancellable>> future = collectUnordered(completableList, itemCount).toFuture();
         barrier.await();
         Collection<Cancellable> cancellables = future.get();
-        stack.close(Cancellable::cancel);
-        assertFalse(stack.push(() -> { }));
-        assertNull(stack.pop());
+        stack.close(Cancellable::cancel, "closed");
+        assertEquals("closed", stack.push(() -> { }));
+        assertNull(stack.relaxedPop());
         for (Cancellable c : cancellables) {
             verify(c).cancel();
         }
