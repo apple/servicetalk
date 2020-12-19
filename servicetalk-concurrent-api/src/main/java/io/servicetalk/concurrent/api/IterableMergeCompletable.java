@@ -15,14 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Completable} implementation for merging {@link Iterable}s of {@link Completable}s.
  */
-final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
+final class IterableMergeCompletable extends AbstractMergeCompletableOperator<CompletableDynamicCountSubscriber> {
     private final Iterable<? extends Completable> others;
     private final boolean delayError;
 
@@ -34,40 +32,17 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
     }
 
     @Override
-    public MergeSubscriber apply(final Subscriber subscriber) {
-        return new DynamicCountSubscriber(subscriber, delayError);
+    public CompletableDynamicCountSubscriber apply(final Subscriber subscriber) {
+        return new CompletableDynamicCountSubscriber(subscriber, delayError);
     }
 
     @Override
-    void doMerge(final MergeSubscriber subscriber) {
+    void doMerge(final CompletableDynamicCountSubscriber subscriber) {
         long count = 1;
         for (Completable itr : others) {
             ++count;
             itr.subscribeInternal(subscriber);
         }
-        ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
-    }
-
-    static final class DynamicCountSubscriber extends MergeSubscriber {
-        private static final AtomicLongFieldUpdater<DynamicCountSubscriber> completedCountUpdater =
-                AtomicLongFieldUpdater.newUpdater(DynamicCountSubscriber.class, "completedCount");
-        private volatile long completedCount;
-
-        DynamicCountSubscriber(Subscriber subscriber, boolean delayError) {
-            super(subscriber, delayError);
-        }
-
-        @Override
-        boolean onTerminate() {
-            // we will go negative until setExpectedCount is called, but then we will offset by the expected amount.
-            return completedCountUpdater.decrementAndGet(this) == 0;
-        }
-
-        void setExpectedCount(final long count) {
-            // add the expected amount back, if we come to 0 that means all sources have completed.
-            if (completedCountUpdater.addAndGet(this, count) == 0) {
-                tryToCompleteSubscriber();
-            }
-        }
+        subscriber.setExpectedCount(count);
     }
 }

@@ -15,12 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-final class MergeCompletable extends AbstractMergeCompletableOperator {
+final class MergeCompletable extends AbstractMergeCompletableOperator<CompletableFixedCountMergeSubscriber> {
     private final Completable[] others;
     private final boolean delayError;
 
@@ -30,39 +27,21 @@ final class MergeCompletable extends AbstractMergeCompletableOperator {
         this.others = requireNonNull(others);
     }
 
-    static AbstractMergeCompletableOperator newInstance(boolean delayError, Completable original, Executor executor,
-                                                        Completable... others) {
-        return others.length == 1 ?
+    static Completable newInstance(boolean delayError, Completable original, Executor executor, Completable... others) {
+        return others.length == 0 ? original : others.length == 1 ?
                 new MergeOneCompletable(delayError, original, executor, others[0]) :
                 new MergeCompletable(delayError, original, executor, others);
     }
 
     @Override
-    public MergeSubscriber apply(final Subscriber subscriber) {
-        return new FixedCountMergeSubscriber(subscriber, 1 + others.length, delayError);
+    public CompletableFixedCountMergeSubscriber apply(final Subscriber subscriber) {
+        return new CompletableFixedCountMergeSubscriber(subscriber, 1 + others.length, delayError);
     }
 
     @Override
-    void doMerge(final MergeSubscriber subscriber) {
+    void doMerge(final CompletableFixedCountMergeSubscriber subscriber) {
         for (Completable itr : others) {
             itr.subscribeInternal(subscriber);
-        }
-    }
-
-    static final class FixedCountMergeSubscriber extends MergeSubscriber {
-        private static final AtomicIntegerFieldUpdater<FixedCountMergeSubscriber> remainingCountUpdater =
-                newUpdater(FixedCountMergeSubscriber.class, "remainingCount");
-        private final int expectedCount;
-        private volatile int remainingCount;
-
-        FixedCountMergeSubscriber(Subscriber subscriber, int expectedCount, boolean delayError) {
-            super(subscriber, delayError);
-            this.expectedCount = expectedCount;
-        }
-
-        @Override
-        boolean onTerminate() {
-            return remainingCountUpdater.incrementAndGet(this) == expectedCount;
         }
     }
 }

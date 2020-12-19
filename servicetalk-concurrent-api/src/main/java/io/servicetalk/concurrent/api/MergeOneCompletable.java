@@ -15,11 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.MergeCompletable.FixedCountMergeSubscriber;
-
 import static java.util.Objects.requireNonNull;
 
-final class MergeOneCompletable extends AbstractMergeCompletableOperator {
+final class MergeOneCompletable extends AbstractMergeCompletableOperator<CompletableFixedCountMergeSubscriber> {
     private final Completable onlyOther;
     private final boolean delayError;
 
@@ -30,12 +28,12 @@ final class MergeOneCompletable extends AbstractMergeCompletableOperator {
     }
 
     @Override
-    public MergeSubscriber apply(final Subscriber subscriber) {
-        return new FixedCountMergeSubscriber(subscriber, 2, delayError);
+    public CompletableFixedCountMergeSubscriber apply(final Subscriber subscriber) {
+        return new CompletableFixedCountMergeSubscriber(subscriber, 2, delayError);
     }
 
     @Override
-    void doMerge(final MergeSubscriber subscriber) {
+    void doMerge(final CompletableFixedCountMergeSubscriber subscriber) {
         onlyOther.subscribeInternal(subscriber);
     }
 }
