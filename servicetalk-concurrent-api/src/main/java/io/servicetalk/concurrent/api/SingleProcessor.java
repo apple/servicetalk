@@ -18,16 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
@@ -35,17 +28,10 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<SingleProcessor, Object> terminalSignalUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(SingleProcessor.class, Object.class, "terminalSignal");
-    private static final Object TERMINAL_NULL = new Object();
-
-    private final Queue<Subscriber<? super T>> subscribers = new ConcurrentLinkedQueue<>();
+    private static final Object TERMINAL_UNSET = new Object();
+    private final ConcurrentStack<Subscriber<? super T>> stack = new ConcurrentStack<>();
     @Nullable
-    @SuppressWarnings("unused")
-    private volatile Object terminalSignal = TERMINAL_NULL;
-    @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private volatile int drainingTheQueue;
+    private Object terminalSignal = TERMINAL_UNSET;
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
@@ -55,21 +41,14 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-
-        if (subscribers.offer(subscriber)) {
-            Object terminalSignal = this.terminalSignal;
-            if (terminalSignal != TERMINAL_NULL) {
-                // To ensure subscribers are notified in order we go through the queue to notify subscribers.
-                notifyListeners(terminalSignal);
-            } else {
-                delayedCancellable.delayedCancellable(() -> {
-                    // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
-                    // these references.
-                    subscribers.remove(subscriber);
-                });
-            }
+        if (stack.push(subscriber)) {
+            delayedCancellable.delayedCancellable(() -> {
+                // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
+                // these references.
+                stack.relaxedRemove(subscriber);
+            });
         } else {
-            subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers"));
+            terminateLateSubscriber(subscriber);
         }
     }
 
@@ -88,38 +67,34 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         terminate(TerminalNotification.error(t));
     }
 
-    private void terminate(@Nullable Object terminalSignal) {
-        if (terminalSignalUpdater.compareAndSet(this, TERMINAL_NULL, terminalSignal)) {
-            notifyListeners(terminalSignal);
-        }
-    }
-
-    private void notifyListeners(@Nullable Object terminalSignal) {
-        Subscriber<? super T> subscriber;
-        Throwable delayedCause = null;
+    private void terminateLateSubscriber(Subscriber<? super T> subscriber) {
+        Object terminalSignal = this.terminalSignal;
+        assert terminalSignal != TERMINAL_UNSET;
         if (terminalSignal instanceof TerminalNotification) {
             final Throwable error = ((TerminalNotification) terminalSignal).cause();
-            assert error != null : "Cause can't be null from TerminalNotification.error(..)";
-            while ((subscriber = subscribers.poll()) != null) {
-                try {
-                    subscriber.onError(error);
-                } catch (Throwable cause) {
-                    delayedCause = catchUnexpected(delayedCause, cause);
-                }
-            }
+            assert error != null;
+            subscriber.onError(error);
         } else {
             @SuppressWarnings("unchecked")
             final T value = (T) terminalSignal;
-            while ((subscriber = subscribers.poll()) != null) {
-                try {
-                    subscriber.onSuccess(value);
-                } catch (Throwable cause) {
-                    delayedCause = catchUnexpected(delayedCause, cause);
-                }
-            }
+            subscriber.onSuccess(value);
         }
-        if (delayedCause != null) {
-            throwException(delayedCause);
+    }
+
+    private void terminate(@Nullable Object terminalSignal) {
+        if (this.terminalSignal == TERMINAL_UNSET) {
+            // We must set terminalSignal before close as we depend upon happens-before relationship for this value
+            // to be visible for any future late subscribers.
+            this.terminalSignal = terminalSignal;
+            if (terminalSignal instanceof TerminalNotification) {
+                final Throwable error = ((TerminalNotification) terminalSignal).cause();
+                assert error != null;
+                stack.close(subscriber -> subscriber.onError(error));
+            } else {
+                @SuppressWarnings("unchecked")
+                final T value = (T) terminalSignal;
+                stack.close(subscriber -> subscriber.onSuccess(value));
+            }
         }
     }
 

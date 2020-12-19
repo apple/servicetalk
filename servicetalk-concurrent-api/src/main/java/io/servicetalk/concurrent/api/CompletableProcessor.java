@@ -18,30 +18,20 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    private static final AtomicReferenceFieldUpdater<CompletableProcessor, TerminalNotification> terminalSignalUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(CompletableProcessor.class, TerminalNotification.class,
-                    "terminalSignal");
-
-    private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentStack<Subscriber> stack = new ConcurrentStack<>();
     @Nullable
-    private volatile TerminalNotification terminalSignal;
+    private TerminalNotification terminalSignal;
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
@@ -51,21 +41,14 @@ final class CompletableProcessor extends Completable implements Processor {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        if (subscribers.offer(subscriber)) {
-            TerminalNotification terminalSignal = this.terminalSignal;
-            if (terminalSignal != null) {
-                // To ensure subscribers are notified in order we go through the queue to notify subscribers.
-                notifyListeners(terminalSignal);
-            } else {
-                delayedCancellable.delayedCancellable(() -> {
-                    // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
-                    // these references.
-                    subscribers.remove(subscriber);
-                });
-            }
+        if (stack.push(subscriber)) {
+            delayedCancellable.delayedCancellable(() -> {
+                // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
+                // these references.
+                stack.relaxedRemove(subscriber);
+            });
         } else {
-            TerminalNotification.error(new QueueFullAndRejectedSubscribeException("subscribers"))
-                    .terminate(subscriber);
+            terminateLateSubscriber(subscriber);
         }
     }
 
@@ -84,24 +67,18 @@ final class CompletableProcessor extends Completable implements Processor {
         terminate(TerminalNotification.error(t));
     }
 
-    private void terminate(TerminalNotification terminalSignal) {
-        if (terminalSignalUpdater.compareAndSet(this, null, terminalSignal)) {
-            notifyListeners(terminalSignal);
-        }
+    private void terminateLateSubscriber(Subscriber subscriber) {
+        TerminalNotification terminalSignal = this.terminalSignal;
+        assert terminalSignal != null;
+        terminalSignal.terminate(subscriber);
     }
 
-    private void notifyListeners(TerminalNotification terminalSignal) {
-        Throwable delayedCause = null;
-        Subscriber subscriber;
-        while ((subscriber = subscribers.poll()) != null) {
-            try {
-                terminalSignal.terminate(subscriber);
-            } catch (Throwable cause) {
-                delayedCause = catchUnexpected(delayedCause, cause);
-            }
-        }
-        if (delayedCause != null) {
-            throwException(delayedCause);
+    private void terminate(TerminalNotification terminalSignal) {
+        if (this.terminalSignal == null) {
+            // We must set terminalSignal before close as we depend upon happens-before relationship for this value
+            // to be visible for any future late subscribers.
+            this.terminalSignal = terminalSignal;
+            stack.close(terminalSignal::terminate);
         }
     }
 

@@ -16,14 +16,25 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -31,8 +42,14 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class CompletableProcessorTest {
+    @ClassRule
+    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
     private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
 
@@ -104,17 +121,17 @@ public class CompletableProcessorTest {
     @Test
     public void synchronousCancelStillAllowsForGC() throws InterruptedException {
         CompletableProcessor processor = new CompletableProcessor();
-        ReferenceQueue<CompletableSource.Subscriber> queue = new ReferenceQueue<>();
-        WeakReference<CompletableSource.Subscriber> subscriberRef =
+        ReferenceQueue<Subscriber> queue = new ReferenceQueue<>();
+        WeakReference<Subscriber> subscriberRef =
                 synchronousCancelStillAllowsForGCDoSubscribe(processor, queue);
         System.gc();
         Thread.sleep(300);
         assertEquals(subscriberRef, queue.remove(100));
     }
 
-    private WeakReference<CompletableSource.Subscriber> synchronousCancelStillAllowsForGCDoSubscribe(
-            CompletableProcessor processor, ReferenceQueue<CompletableSource.Subscriber> queue) {
-        CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
+    private WeakReference<Subscriber> synchronousCancelStillAllowsForGCDoSubscribe(
+            CompletableProcessor processor, ReferenceQueue<Subscriber> queue) {
+        Subscriber subscriber = new Subscriber() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 cancellable.cancel();
@@ -130,5 +147,48 @@ public class CompletableProcessorTest {
         };
         processor.subscribe(subscriber);
         return new WeakReference<>(subscriber, queue);
+    }
+
+    @Test
+    public void multiThreadedAddAlwaysTerminatesError() throws Exception {
+        multiThreadedAddAlwaysTerminates(DELIBERATE_EXCEPTION);
+    }
+
+    @Test
+    public void multiThreadedAddAlwaysTerminatesComplete() throws Exception {
+        multiThreadedAddAlwaysTerminates(null);
+    }
+
+    private static void multiThreadedAddAlwaysTerminates(@Nullable Throwable cause) throws Exception {
+        final int subscriberCount = 1000;
+        CyclicBarrier barrier = new CyclicBarrier(subscriberCount + 1);
+        List<Single<Subscriber>> subscriberSingles = new ArrayList<>(subscriberCount);
+        CompletableProcessor processor = new CompletableProcessor();
+        for (int i = 0; i < subscriberCount; ++i) {
+            subscriberSingles.add(EXECUTOR_RULE.executor().submit(() -> {
+                Subscriber subscriber = mock(Subscriber.class);
+                barrier.await();
+                processor.subscribe(subscriber);
+                return subscriber;
+            }));
+        }
+
+        Future<Collection<Subscriber>> future = collectUnordered(subscriberSingles, subscriberCount).toFuture();
+        barrier.await();
+        if (cause != null) {
+            processor.onError(cause);
+
+            Collection<Subscriber> subscribers = future.get();
+            for (Subscriber s : subscribers) {
+                verify(s).onError(cause);
+            }
+        } else {
+            processor.onComplete();
+
+            Collection<Subscriber> subscribers = future.get();
+            for (Subscriber s : subscribers) {
+                verify(s).onComplete();
+            }
+        }
     }
 }
