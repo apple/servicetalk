@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import static io.servicetalk.concurrent.api.Completable.mergeAll;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -36,26 +37,30 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class RelaxedClosableConcurrentStackTest {
+public class ClosableStateConcurrentStackTest {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 
     @Test
-    public void singleThreadPushPop() {
-        RelaxedClosableConcurrentStack<Integer, Void> stack = new RelaxedClosableConcurrentStack<>();
+    public void singleThreadPushClose() {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
         }
 
+        List<Integer> values = new ArrayList<>(itemCount);
+        stack.close(values::add);
+
+        assertEquals(itemCount, values.size());
         for (int i = itemCount - 1; i >= 0; --i) {
-            assertThat(stack.relaxedPop(), is(i));
+            assertEquals(values.get(itemCount - i - 1).intValue(), i);
         }
     }
 
     @Test
     public void singleThreadPushRemove() {
-        RelaxedClosableConcurrentStack<Integer, Void> stack = new RelaxedClosableConcurrentStack<>();
+        ClosableStateConcurrentStack<Integer, String> stack = new ClosableStateConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
@@ -64,12 +69,12 @@ public class RelaxedClosableConcurrentStackTest {
         for (int i = 0; i < itemCount; ++i) {
             assertTrue(stack.relaxedRemove(i));
         }
-        assertNull(stack.relaxedPop());
+        closeAssertEmpty(stack);
     }
 
     @Test
     public void concurrentPushRemove() throws Exception {
-        RelaxedClosableConcurrentStack<Integer, Void> stack = new RelaxedClosableConcurrentStack<>();
+        ClosableStateConcurrentStack<Integer, String> stack = new ClosableStateConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
@@ -81,7 +86,7 @@ public class RelaxedClosableConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                stack.push(finalI);
+                assertNull(stack.push(finalI));
                 assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI));
             }));
         }
@@ -89,12 +94,12 @@ public class RelaxedClosableConcurrentStackTest {
         Future<Void> future = mergeAll(completableList, itemCount).toFuture();
         barrier.await();
         future.get();
-        assertNull(stack.relaxedPop());
+        closeAssertEmpty(stack);
     }
 
     @Test
     public void concurrentPushRemoveDifferentThread() throws Exception {
-        RelaxedClosableConcurrentStack<Integer, Void> stack = new RelaxedClosableConcurrentStack<>();
+        ClosableStateConcurrentStack<Integer, String> stack = new ClosableStateConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
@@ -114,12 +119,12 @@ public class RelaxedClosableConcurrentStackTest {
         Future<Void> future = mergeAll(completableList, itemCount).toFuture();
         barrier.await();
         future.get();
-        assertNull(stack.relaxedPop());
+        closeAssertEmpty(stack);
     }
 
     @Test
     public void concurrentClosePushRemove() throws Exception {
-        RelaxedClosableConcurrentStack<Cancellable, String> stack = new RelaxedClosableConcurrentStack<>();
+        ClosableStateConcurrentStack<Cancellable, String> stack = new ClosableStateConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Single<Cancellable>> completableList = new ArrayList<>(itemCount);
@@ -141,9 +146,15 @@ public class RelaxedClosableConcurrentStackTest {
         Collection<Cancellable> cancellables = future.get();
         stack.close(Cancellable::cancel, "closed");
         assertEquals("closed", stack.push(() -> { }));
-        assertNull(stack.relaxedPop());
         for (Cancellable c : cancellables) {
             verify(c).cancel();
         }
+    }
+
+    private static void closeAssertEmpty(ClosableStateConcurrentStack<Integer, String> stack) {
+        List<Integer> values = new ArrayList<>();
+        stack.close(values::add, "foo");
+        assertThat(values, is(empty()));
+        assertEquals("foo", stack.push(-1));
     }
 }

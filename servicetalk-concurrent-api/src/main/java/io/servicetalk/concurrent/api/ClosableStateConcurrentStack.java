@@ -24,10 +24,10 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-final class RelaxedClosableConcurrentStack<T, C> {
+final class ClosableStateConcurrentStack<T, C> {
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<RelaxedClosableConcurrentStack, Object> topUpdater =
-            newUpdater(RelaxedClosableConcurrentStack.class, Object.class, "top");
+    private static final AtomicReferenceFieldUpdater<ClosableStateConcurrentStack, Object> topUpdater =
+            newUpdater(ClosableStateConcurrentStack.class, Object.class, "top");
     @Nullable
     private volatile Object top;
 
@@ -54,38 +54,13 @@ final class RelaxedClosableConcurrentStack<T, C> {
     }
 
     /**
-     * Pop the top element from the stack.
-     * <p>
-     * Elements that were previously {@link #relaxedRemove(Object) relaxRemoved} may still be returned by this method.
-     * @return {@code null} if the stack is empty, or the top element of the stack.
-     */
-    @Nullable
-    T relaxedPop() {
-        for (;;) {
-            final Object rawOldTop = top;
-            if (rawOldTop == null || !Node.class.equals(rawOldTop.getClass())) {
-                return null;
-            } else {
-                @SuppressWarnings("unchecked")
-                final Node<T> oldTop = (Node<T>) rawOldTop;
-                if (topUpdater.compareAndSet(this, oldTop, oldTop.next)) {
-                    final T item = oldTop.item;
-                    if (item != null) { // best effort to avoid previously removed items.
-                        return item;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Best effort removal of {@code item} from this stack.
      * @param item The item to remove.
      * @return {@code true} if the item was found in this stack and marked for removal. The "relaxed" nature of
      * this method means {@code true} might be returned in the following scenarios without external synchronization:
      * <ul>
      *     <li>invoked multiple times with the same {@code item} from different threads</li>
-     *     <li>{@link #relaxedPop()} removes this item from another thread</li>
+     *     <li>{@link #close(Consumer, Object)} removes this item from another thread</li>
      * </ul>
      */
     boolean relaxedRemove(T item) {

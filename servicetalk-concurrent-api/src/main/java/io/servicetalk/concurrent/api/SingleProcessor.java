@@ -28,8 +28,8 @@ import javax.annotation.Nullable;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    private final RelaxedClosableConcurrentStack<Subscriber<? super T>, Consumer<Subscriber<? super T>>> stack =
-            new RelaxedClosableConcurrentStack<>();
+    private final ClosableStateConcurrentStack<Subscriber<? super T>, Consumer<Subscriber<? super T>>> stack =
+            new ClosableStateConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
