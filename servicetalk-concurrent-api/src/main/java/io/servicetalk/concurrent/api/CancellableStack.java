@@ -18,8 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 final class CancellableStack implements Cancellable {
-    private static final Object CLOSED = new Object();
-    private final ClosableConcurrentStack<Cancellable, Object> stack = new ClosableConcurrentStack<>();
+    private final ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>();
 
     /**
      * {@inheritDoc}
@@ -29,7 +28,7 @@ final class CancellableStack implements Cancellable {
      */
     @Override
     public void cancel() {
-        stack.close(Cancellable::cancel, CLOSED);
+        stack.close(Cancellable::cancel);
     }
 
     /**
@@ -39,25 +38,10 @@ final class CancellableStack implements Cancellable {
      * @return {@code true} if the {@code toAdd} was added. If {@code false} {@link Cancellable#cancel()} is called.
      */
     boolean add(Cancellable toAdd) {
-        if (stack.push(toAdd) != null) {
-            toAdd.cancel();
-            return false;
+        if (stack.push(toAdd)) {
+            return true;
         }
-        return true;
-    }
-
-    /**
-     * Best effort removal of {@code item} from this stack.
-     * @param toRemove The item to remove.
-     * {@code true} if the item was found in this stack and marked for removal. The "relaxed" nature of
-     * this method means {@code true} might be returned in the following scenarios without external synchronization:
-     * <ul>
-     *   <li>invoked multiple times with the same {@code item} from different threads</li>
-     *   <li>{@link #cancel()} removes this item from another thread</li>
-     * </ul>
-     * @see ClosableConcurrentStack#relaxedRemove(Object)
-     */
-    boolean relaxedRemove(Cancellable toRemove) {
-        return stack.relaxedRemove(toRemove);
+        toAdd.cancel();
+        return false;
     }
 }

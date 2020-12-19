@@ -27,11 +27,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
     @ClassRule
@@ -41,18 +38,6 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
 
     protected abstract boolean add(T composite, Cancellable c);
 
-    protected abstract boolean remove(T composite, Cancellable c);
-
-    @Test
-    public void testAddAndRemove() {
-        T c = newCompositeCancellable();
-        Cancellable cancellable = mock(Cancellable.class);
-        add(c, cancellable);
-        remove(c, cancellable);
-        c.cancel();
-        verifyZeroInteractions(cancellable);
-    }
-
     @Test
     public void testCancel() {
         T c = newCompositeCancellable();
@@ -60,7 +45,6 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
         add(c, cancellable);
         c.cancel();
         verify(cancellable).cancel();
-        remove(c, cancellable);
     }
 
     @Test
@@ -70,27 +54,6 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
         Cancellable cancellable = mock(Cancellable.class);
         add(c, cancellable);
         verify(cancellable).cancel();
-        remove(c, cancellable);
-    }
-
-    @Test
-    public void duplicateAddDoesNotCancel() {
-        T c = newCompositeCancellable();
-        Cancellable cancellable = mock(Cancellable.class);
-        int addCount = 0;
-        if (add(c, cancellable)) {
-            ++addCount;
-        }
-        if (add(c, cancellable)) {
-            ++addCount;
-        }
-        verify(cancellable, never()).cancel();
-
-        for (int i = 0; i < addCount; ++i) {
-            assertTrue(remove(c, cancellable));
-        }
-        c.cancel();
-        verify(cancellable, never()).cancel();
     }
 
     @Test

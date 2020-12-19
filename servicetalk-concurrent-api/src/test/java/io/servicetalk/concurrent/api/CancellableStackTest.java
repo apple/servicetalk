@@ -27,9 +27,4 @@ public class CancellableStackTest extends AbstractCompositeCancellableTest<Cance
     protected boolean add(final CancellableStack composite, final Cancellable c) {
         return composite.add(c);
     }
-
-    @Override
-    protected boolean remove(final CancellableStack composite, final Cancellable c) {
-        return composite.relaxedRemove(c);
-    }
 }

@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -26,53 +24,38 @@ import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.concurrent.api.Completable.mergeAll;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class ClosableConcurrentStackTest {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
 
     @Test
-    public void singleThreadPushPop() {
-        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
+    public void singleThreadPushClose() {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
         }
 
+        List<Integer> values = new ArrayList<>(itemCount);
+        stack.close(values::add);
+
+        assertEquals(itemCount, values.size());
         for (int i = itemCount - 1; i >= 0; --i) {
-            assertThat(stack.relaxedPop(), is(i));
+            assertEquals(values.get(itemCount - i - 1).intValue(), i);
         }
     }
 
     @Test
-    public void singleThreadPushRemove() {
-        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
-        final int itemCount = 1000;
-        for (int i = 0; i < itemCount; ++i) {
-            stack.push(i);
-        }
-
-        for (int i = 0; i < itemCount; ++i) {
-            assertTrue(stack.relaxedRemove(i));
-        }
-        assertNull(stack.relaxedPop());
-    }
-
-    @Test
-    public void concurrentPushRemove() throws Exception {
-        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
+    public void concurrentPushClose() throws Exception {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
-        List<Completable> completableList = new ArrayList<>(itemCount);
+        List<Single<Integer>> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
             final int finalI = i;
             completableList.add(EXECUTOR_RULE.executor().submit(() -> {
@@ -81,69 +64,23 @@ public class ClosableConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                stack.push(finalI);
-                assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI));
+                return stack.push(finalI) ? null : finalI;
             }));
         }
 
-        Future<Void> future = mergeAll(completableList, itemCount).toFuture();
+        List<Integer> overallValues = new ArrayList<>(itemCount);
+        Future<Collection<Integer>> future = collectUnordered(completableList, itemCount).toFuture();
         barrier.await();
-        future.get();
-        assertNull(stack.relaxedPop());
-    }
-
-    @Test
-    public void concurrentPushRemoveDifferentThread() throws Exception {
-        ClosableConcurrentStack<Integer, Void> stack = new ClosableConcurrentStack<>();
-        final int itemCount = 1000;
-        CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
-        List<Completable> completableList = new ArrayList<>(itemCount);
-        for (int i = 0; i < itemCount; ++i) {
-            final int finalI = i;
-            completableList.add(EXECUTOR_RULE.executor().submit(() -> {
-                try {
-                    barrier.await();
-                } catch (Exception e) {
-                    throw new AssertionError(e);
-                }
-                stack.push(finalI);
-            }).concat(EXECUTOR_RULE.executor().submit(() ->
-                    assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI)))));
+        stack.close(overallValues::add);
+        Collection<Integer> failedPushValues = future.get();
+        for (Integer integer : failedPushValues) {
+            if (integer != null) {
+                overallValues.add(integer);
+            }
         }
-
-        Future<Void> future = mergeAll(completableList, itemCount).toFuture();
-        barrier.await();
-        future.get();
-        assertNull(stack.relaxedPop());
-    }
-
-    @Test
-    public void concurrentClosePushRemove() throws Exception {
-        ClosableConcurrentStack<Cancellable, String> stack = new ClosableConcurrentStack<>();
-        final int itemCount = 1000;
-        CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
-        List<Single<Cancellable>> completableList = new ArrayList<>(itemCount);
+        assertEquals(itemCount, overallValues.size());
         for (int i = 0; i < itemCount; ++i) {
-            completableList.add(EXECUTOR_RULE.executor().submit(() -> {
-                Cancellable c = mock(Cancellable.class);
-                try {
-                    barrier.await();
-                } catch (Exception e) {
-                    throw new AssertionError(e);
-                }
-                assertNull(stack.push(c));
-                return c;
-            }));
-        }
-
-        Future<Collection<Cancellable>> future = collectUnordered(completableList, itemCount).toFuture();
-        barrier.await();
-        Collection<Cancellable> cancellables = future.get();
-        stack.close(Cancellable::cancel, "closed");
-        assertEquals("closed", stack.push(() -> { }));
-        assertNull(stack.relaxedPop());
-        for (Cancellable c : cancellables) {
-            verify(c).cancel();
+            assertThat(i, isIn(overallValues));
         }
     }
 }

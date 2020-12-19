@@ -27,7 +27,8 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    private final ClosableConcurrentStack<Subscriber, TerminalNotification> stack = new ClosableConcurrentStack<>();
+    private final RelaxedClosableConcurrentStack<Subscriber, TerminalNotification> stack =
+            new RelaxedClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
