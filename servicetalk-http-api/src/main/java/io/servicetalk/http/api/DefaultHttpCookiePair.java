@@ -64,7 +64,7 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-pair</a> in {@code sequence}.
      * @return a {@link HttpCookiePair} parsed from {@code sequence}.
      */
-    public static HttpCookiePair parseCookiePair(final CharSequence sequence, int nameStart, int valueEnd) {
+    static HttpCookiePair parseCookiePair(final CharSequence sequence, int nameStart, int valueEnd) {
         return parseCookiePair(sequence, nameStart, indexOf(sequence, '=', nameStart) - nameStart, valueEnd);
     }
 
@@ -80,8 +80,7 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-pair</a> in {@code sequence}.
      * @return a {@link HttpCookiePair} parsed from {@code sequence}.
      */
-    public static HttpCookiePair parseCookiePair(final CharSequence sequence, int nameStart, int nameLength,
-                                                 int valueEnd) {
+    static HttpCookiePair parseCookiePair(final CharSequence sequence, int nameStart, int nameLength, int valueEnd) {
         return parseCookiePair0(sequence, nameStart, nameLength, valueEnd < 0 ? sequence.length() : valueEnd);
     }
 
