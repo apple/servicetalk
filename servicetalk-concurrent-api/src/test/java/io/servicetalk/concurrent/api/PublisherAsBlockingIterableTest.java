@@ -375,12 +375,20 @@ public final class PublisherAsBlockingIterableTest {
         source.onNext(1);
         // Since, we have not consumed any item, we should not be requesting more.
         assertThat(subscription.requested(), is((long) 2));
-        verifyNextIs(iterator, 1); // Take next item, queue is half full, we should now be requesting more.
+        // Check the next item, it should be dequeued and prepared for the next().
+        assertThat("Item expected but not found.", iterator.hasNext(), is(true));
+        // Queue is half full, we should now be requesting more.
         assertThat(subscription.requested(), is((long) 3));
+        // Deliver all requested items.
         source.onNext(2, 3);
+        // Now take already dequeued item.
+        assertThat("Unexpected item found.", iterator.next(), is(1));
+        // Verify all other items.
         verifyNextIs(iterator, 2);
         verifyNextIs(iterator, 3);
         assertThat(subscription.requested(), is((long) 5));
+        source.onComplete();
+        assertThat("Item not expected but found.", iterator.hasNext(), is(false));
     }
 
     @Test

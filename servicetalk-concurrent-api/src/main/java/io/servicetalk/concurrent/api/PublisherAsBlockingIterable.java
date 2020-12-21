@@ -79,7 +79,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 AtomicIntegerFieldUpdater.newUpdater(SubscriberAndIterator.class, "onNextQueued");
 
         private final BlockingQueue<Object> data;
-        private final int maxBufferedItems;
         private final DelayedSubscription subscription = new DelayedSubscription();
         private final int queueCapacity;
         private volatile int onNextQueued;
@@ -103,8 +102,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private boolean terminated;
 
         SubscriberAndIterator(int queueCapacity) {
-            maxBufferedItems = queueCapacity;
-            itemsToNextRequest = max(1, maxBufferedItems / 2);
+            itemsToNextRequest = max(1, queueCapacity / 2);
             this.queueCapacity = queueCapacity;
             data = new LinkedBlockingQueue<>();
         }
@@ -114,7 +112,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             // Subscription is requested from here as well as hasNext. Also, it can be cancelled from close(). So, we
             // need to protect it from concurrent access.
             subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
-            subscription.request(maxBufferedItems);
+            subscription.request(queueCapacity);
         }
 
         @Override
@@ -215,8 +213,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void requestMoreIfRequired() {
+            onNextQueuedUpdater.decrementAndGet(this);
             if (--itemsToNextRequest == 0) {
-                itemsToNextRequest = max(1, maxBufferedItems / 2);
+                itemsToNextRequest = max(1, queueCapacity / 2);
                 subscription.request(itemsToNextRequest);
             }
         }
@@ -255,7 +254,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 }
                 throw new RuntimeException(cause);
             }
-            onNextQueuedUpdater.decrementAndGet(this);
             return unwrapNullUnchecked(signal);
         }
     }
