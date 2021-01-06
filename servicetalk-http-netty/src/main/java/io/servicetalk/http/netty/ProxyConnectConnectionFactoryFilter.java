@@ -119,7 +119,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
             // There is no need to apply offloading explicitly (despite completing `processor` on the EventLoop)
             // because `payloadBody()` will be offloaded according to the strategy for the request.
-            return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
+            return response.messageBody().ignoreElements().concat(fromSource(processor));
         }
     }
 

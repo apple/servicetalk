@@ -214,10 +214,10 @@ public class FlushStrategyOnServerTest {
     private void sendARequest() throws Exception {
         StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1,
                 headersFactory.newHeaders().set(TRANSFER_ENCODING, CHUNKED), DEFAULT_ALLOCATOR,
-                from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()),
+                from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()), false,
                 headersFactory);
         channel.writeInbound(req);
-        for (Object item : req.payloadBodyAndTrailers().toFuture().get()) {
+        for (Object item : req.messageBody().toFuture().get()) {
             channel.writeInbound(item);
         }
     }

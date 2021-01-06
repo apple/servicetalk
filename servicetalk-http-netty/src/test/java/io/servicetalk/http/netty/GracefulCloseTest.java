@@ -69,8 +69,8 @@ public class GracefulCloseTest {
                     resp.transform(new StaticTrailersTransformer());
                     break;
                 case Duplicate:
-                    resp.transformRawPayloadBody(publisher ->
-                            ((Publisher) publisher).concat(succeeded(INSTANCE.newEmptyTrailers())));
+                    resp.transformMessageBody(publisher ->
+                            ((Publisher<Object>) publisher).concat(succeeded(INSTANCE.newEmptyTrailers())));
                     break;
                 default:
                     break;

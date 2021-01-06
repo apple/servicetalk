@@ -98,6 +98,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
+    public HttpServerBuilder requireTrailerHeader(final boolean requireTrailerHeader) {
+        config.httpConfig().requireTrailerHeader(requireTrailerHeader);
+        return this;
+    }
+
+    @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
@@ -122,9 +128,9 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                     service, drainRequestPayloadBody);
         }
         return roConfig.tcpConfig().isAlpnConfigured() ?
-                AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
-                        service, drainRequestPayloadBody) :
-                NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
-                        service, drainRequestPayloadBody);
+                AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
+                        drainRequestPayloadBody) :
+                NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor, service,
+                        drainRequestPayloadBody);
     }
 }

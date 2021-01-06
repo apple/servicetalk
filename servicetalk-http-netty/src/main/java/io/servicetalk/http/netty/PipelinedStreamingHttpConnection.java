@@ -30,9 +30,11 @@ final class PipelinedStreamingHttpConnection
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final H1ProtocolConfig config,
                                      final HttpExecutionContext executionContext,
-                                     final StreamingHttpRequestResponseFactory reqRespFactory) {
+                                     final StreamingHttpRequestResponseFactory reqRespFactory,
+                                     final boolean requireTrailerHeader) {
         super(new NettyPipelinedConnection<>(connection),
-                config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory());
+                config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory(),
+                requireTrailerHeader);
     }
 
     @Override

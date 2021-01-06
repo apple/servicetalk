@@ -132,7 +132,7 @@ public class DefaultHttpExecutionStrategyTest {
         StreamingHttpRequest req = analyzer.createNewRequest();
         StreamingHttpResponse resp = analyzer.createNewResponse();
 
-        analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.payloadBodyAndTrailers()),
+        analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.messageBody()),
                 null, (publisher, __) ->
                         analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements().concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
@@ -149,7 +149,7 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.payloadBodyAndTrailers());
+                    .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.messageBody());
         }, (throwable, executor1) -> failed(throwable))).toFuture().get();
 
         analyzer.verify();

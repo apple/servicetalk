@@ -164,6 +164,15 @@ public abstract class HttpServerBuilder {
     }
 
     /**
+     * Set if the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a> header is required to process
+     * trailers.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * @return {@code this}
+     */
+    public abstract HttpServerBuilder requireTrailerHeader(boolean requireTrailerHeader);
+
+    /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

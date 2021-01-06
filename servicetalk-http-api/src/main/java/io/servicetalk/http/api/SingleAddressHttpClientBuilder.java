@@ -83,6 +83,9 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> requireTrailerHeader(boolean requireTrailerHeader);
+
+    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 

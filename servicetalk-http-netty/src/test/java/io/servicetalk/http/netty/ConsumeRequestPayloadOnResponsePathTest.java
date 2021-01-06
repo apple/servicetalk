@@ -51,10 +51,10 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 public class ConsumeRequestPayloadOnResponsePathTest {
 
@@ -81,19 +81,19 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concat(payloadBody))));
+                response.transformMessageBody(payloadBody -> consumePayloadBody(request).concat(payloadBody))));
     }
 
     @Test
     public void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRawPayloadBody(payloadBody -> payloadBody.concat(consumePayloadBody(request)))));
+                response.transformMessageBody(payloadBody -> payloadBody.concat(consumePayloadBody(request)))));
     }
 
     @Test
     public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRaw(new SuccessOnlyTrailersTransformer<>(trailers -> {
+                response.transform(new SuccessOnlyTrailersTransformer<>(trailers -> {
                     try {
                         consumePayloadBody(request).toFuture().get();
                     } catch (Exception e) {
@@ -109,7 +109,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                 // It doesn't use the BufferAllocator from HttpServiceContext to simplify the test and avoid using
                 // TriFunction. It doesn't change the behavior of this test.
                 newTransportResponse(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
-                        response.payloadBodyAndTrailers().concat(consumePayloadBody(request)),
+                        response.messageBody().concat(consumePayloadBody(request)), false,
                         DefaultHttpHeadersFactory.INSTANCE)));
     }
 
@@ -130,7 +130,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadAndResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).merge(payloadBody))));
+                response.transformMessageBody(payloadBody -> consumePayloadBody(request).merge(payloadBody))));
     }
 
     // TODO: add testResponsePayloadSentAndConsumeRequestPayload when Publisher.merge(Completable) is available

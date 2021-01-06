@@ -20,7 +20,6 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import javax.annotation.Nullable;
 
 final class ReadOnlyHttpClientConfig {
-
     private final ReadOnlyTcpClientConfig tcpConfig;
     @Nullable
     private final H1ProtocolConfig h1Config;
@@ -28,6 +27,7 @@ final class ReadOnlyHttpClientConfig {
     private final H2ProtocolConfig h2Config;
     @Nullable
     private final CharSequence connectAddress;
+    private final boolean requireTrailerHeader;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
         final HttpConfig configs = from.protocolConfigs();
@@ -35,6 +35,7 @@ final class ReadOnlyHttpClientConfig {
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         connectAddress = from.connectAddress();
+        requireTrailerHeader = configs.requireTrailerHeader();
     }
 
     ReadOnlyTcpClientConfig tcpConfig() {
@@ -49,6 +50,10 @@ final class ReadOnlyHttpClientConfig {
     @Nullable
     H2ProtocolConfig h2Config() {
         return h2Config;
+    }
+
+    boolean requireTrailerHeader() {
+        return requireTrailerHeader;
     }
 
     boolean isH2PriorKnowledge() {

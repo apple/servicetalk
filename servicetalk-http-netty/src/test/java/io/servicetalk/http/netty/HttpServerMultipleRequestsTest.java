@@ -70,7 +70,7 @@ public class HttpServerMultipleRequestsTest {
     @Test
     public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
         StreamingHttpService service = (ctx, request, responseFactory) -> {
-            request.payloadBodyAndTrailers().ignoreElements().subscribe();
+            request.messageBody().ignoreElements().subscribe();
 
             CharSequence requestId = request.headers().get(REQUEST_ID_HEADER);
             if (requestId != null) {
@@ -132,6 +132,6 @@ public class HttpServerMultipleRequestsTest {
         StreamingHttpResponse response = connection.request(request).toFuture().get();
         assertEquals(OK, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
-        response.payloadBodyAndTrailers().ignoreElements().subscribe();
+        response.messageBody().ignoreElements().subscribe();
     }
 }

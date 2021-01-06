@@ -31,8 +31,9 @@ final class NonPipelinedStreamingHttpConnection
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpHeadersFactory headersFactory) {
-        super(connection, 1, executionContext, reqRespFactory, headersFactory);
+                                        final HttpHeadersFactory headersFactory,
+                                        final boolean requireTrailerHeader) {
+        super(connection, 1, executionContext, reqRespFactory, headersFactory, requireTrailerHeader);
     }
 
     @Override

@@ -63,10 +63,10 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
@@ -439,10 +439,12 @@ public class BlockingStreamingToStreamingServiceTest {
             throw DELIBERATE_EXCEPTION;
         };
 
-        List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
-        assertMetaData(OK, response);
-        assertPayloadBody("", response);
-        assertEmptyTrailers(response);
+        try {
+            invokeService(syncService, reqRespFactory.get("/"));
+            fail("Payload body should complete with an error");
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
+        }
     }
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
@@ -453,7 +455,7 @@ public class BlockingStreamingToStreamingServiceTest {
                 .invokeService(executorRule.executor(), request,
                         req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
                                 .flatMapPublisher(response -> Publisher.<Object>from(response)
-                                        .concat(response.payloadBodyAndTrailers())), (t, e) -> failed(t))
+                                        .concat(response.messageBody())), (t, e) -> failed(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);

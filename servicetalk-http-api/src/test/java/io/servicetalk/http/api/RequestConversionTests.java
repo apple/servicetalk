@@ -68,7 +68,7 @@ public class RequestConversionTests extends AbstractConversionTest {
 
     @Test
     public void toAggregatedToStreaming() throws Exception {
-        verifyConvertedStreamingPayload(convertToAggregated().toStreamingRequest().payloadBodyAndTrailers());
+        verifyConvertedStreamingPayload(convertToAggregated().toStreamingRequest().messageBody());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class RequestConversionTests extends AbstractConversionTest {
 
     @Test
     public void toBlockingStreamingToStreaming() throws Exception {
-        verifyConvertedStreamingPayload(convertToBlockingStreaming().toStreamingRequest().payloadBodyAndTrailers());
+        verifyConvertedStreamingPayload(convertToBlockingStreaming().toStreamingRequest().messageBody());
     }
 
     private HttpRequest convertToAggregated() throws Exception {

@@ -30,7 +30,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Gets the underlying payload as a {@link Publisher} of {@link Buffer}s.
-     * @return The {@link Publisher} of {@link Buffer} representation of the underlying
+     * @return A {@link Publisher} of {@link Buffer}s representing the underlying payload body.
      */
     Publisher<Buffer> payloadBody();
 
@@ -46,10 +46,23 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Gets a {@link Publisher} that combines the raw payload body concatenated with the {@link HttpHeaders trailers}.
+     * @deprecated Use {@link #messageBody()}.
      * @return a {@link Publisher} that combines the raw payload body concatenated with the
      * {@link HttpHeaders trailers}.
      */
+    @Deprecated
     Publisher<Object> payloadBodyAndTrailers();
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * present).
+     * @return a {@link Publisher} that represents the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * present).
+     */
+    Publisher<Object> messageBody();
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload set to {@code payloadBody}.
@@ -122,10 +135,25 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed. Note that the raw objects of the
      * underlying {@link Publisher} may be exposed. The object types are not guaranteed to be homogeneous.
+     * @deprecated Use {@link #transformPayloadBody(UnaryOperator)}.
      * @param transformer Responsible for transforming the payload body.
      * @return {@code this}
      */
+    @Deprecated
     StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer);
+
+    /**
+     * Transform the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * present).
+     * <p>
+     * The transformation is not expected to change the presence of trailers in the message body. For example behavior
+     * is undefined if a {@link HttpHeaders} object is inserted to or removed from to the returned {@link Publisher}.
+     * To add trailers use {@link #transform(TrailersTransformer)}.
+     * @param transformer Responsible for transforming the message-body.
+     * @return {@code this}.
+     */
+    StreamingHttpResponse transformMessageBody(UnaryOperator<Publisher<?>> transformer);
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s,
@@ -139,10 +167,12 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Object}s,
      * with access to the trailers.
+     * @deprecated use {@link #transform(TrailersTransformer)}.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
      */
+    @Deprecated
     <T> StreamingHttpResponse transformRaw(TrailersTransformer<T, Object> trailersTransformer);
 
     /**

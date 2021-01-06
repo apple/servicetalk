@@ -26,12 +26,14 @@ final class ReadOnlyHttpServerConfig {
     private final H1ProtocolConfig h1Config;
     @Nullable
     private final H2ProtocolConfig h2Config;
+    private final boolean requireTrailerHeader;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         final HttpConfig configs = from.httpConfig();
         tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
+        requireTrailerHeader = configs.requireTrailerHeader();
     }
 
     ReadOnlyTcpServerConfig tcpConfig() {
@@ -46,6 +48,10 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     H2ProtocolConfig h2Config() {
         return h2Config;
+    }
+
+    boolean requireTrailerHeader() {
+        return requireTrailerHeader;
     }
 
     boolean isH2PriorKnowledge() {

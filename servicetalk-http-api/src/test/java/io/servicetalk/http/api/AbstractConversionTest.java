@@ -36,15 +36,22 @@ abstract class AbstractConversionTest {
     public static final String TRAILER_NAME = "foo";
     public static final String TRAILER_VALUE = "bar";
     private final PayloadInfo payloadInfo;
+    private final boolean expectTrailers;
 
     AbstractConversionTest(final PayloadInfo payloadInfo) {
         this.payloadInfo = payloadInfo;
+        this.expectTrailers = payloadInfo.mayHaveTrailers();
     }
 
     void verifyTrailers(Supplier<HttpHeaders> trailersSupplier) {
-        if (payloadInfo.mayHaveTrailers()) {
+        if (expectTrailers) {
             assertThat("Unexpected trailer with name: " + TRAILER_NAME, trailersSupplier.get().get(TRAILER_NAME),
                     equalTo(TRAILER_VALUE));
+        } else {
+            HttpHeaders trailers = trailersSupplier.get();
+            if (trailers != null && !trailers.isEmpty()) {
+                throw new AssertionError("expected null or empty. actual: " + trailers);
+            }
         }
     }
 
@@ -59,8 +66,7 @@ abstract class AbstractConversionTest {
 
     void verifyConvertedStreamingPayload(final Publisher<Object> payloadAndTrailersPublisher) throws Exception {
         Collection<Object> payloadAndTrailers = payloadAndTrailersPublisher.toFuture().get();
-        assertThat("Unexpected payload and trailers.", payloadAndTrailers,
-                payloadInfo.mayHaveTrailers() ? hasSize(2) : hasSize(1));
+        assertThat("Unexpected payload and trailers.", payloadAndTrailers, hasSize(2));
         Iterator<Object> iter = payloadAndTrailers.iterator();
         verifyPayload((Buffer) iter.next());
         verifyTrailers(() -> (HttpHeaders) iter.next());

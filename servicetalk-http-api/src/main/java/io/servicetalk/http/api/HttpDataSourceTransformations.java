@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
@@ -48,9 +47,9 @@ final class HttpDataSourceTransformations {
     }
 
     static final class BridgeFlowControlAndDiscardOperator implements PublisherOperator<Buffer, Buffer> {
-        private final Publisher<Buffer> discardedPublisher;
+        private final Publisher<?> discardedPublisher;
 
-        BridgeFlowControlAndDiscardOperator(final Publisher<Buffer> discardedPublisher) {
+        BridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
             this.discardedPublisher = requireNonNull(discardedPublisher);
         }
 
@@ -67,17 +66,17 @@ final class HttpDataSourceTransformations {
         private Subscription outerSubscription;
 
         BridgeFlowControlAndDiscardSubscriber(final Subscriber<? super T> target,
-                                              final Publisher<Buffer> discardedPublisher) {
+                                              final Publisher<?> discardedPublisher) {
             this.target = target;
             bridgedSubscription = new DelayedSubscription();
-            toSource(discardedPublisher).subscribe(new Subscriber<Buffer>() {
+            toSource(discardedPublisher).subscribe(new Subscriber<Object>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
                     bridgedSubscription.delayedSubscription(ConcurrentSubscription.wrap(s));
                 }
 
                 @Override
-                public void onNext(final Buffer buffer) {
+                public void onNext(final Object buffer) {
                 }
 
                 @Override
@@ -274,134 +273,6 @@ final class HttpDataSourceTransformations {
         }
     }
 
-    /**
-     * This operator is a hack from a RS perspective and is necessary because of how our APIs decouple the payload
-     * {@link Publisher} from the trailers {@link Single}. The hack part is because there is state maintained external
-     * the {@link Subscriber} implementation, and so this can't be re-subscribed or repeated.
-     */
-    static final class HttpBufferTrailersSpliceOperator implements PublisherOperator<Object, Buffer> {
-        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
-
-        HttpBufferTrailersSpliceOperator(final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
-            this.outTrailersSingle = requireNonNull(outTrailersSingle);
-        }
-
-        @Override
-        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
-            return new JustBufferSubscriber(subscriber, outTrailersSingle);
-        }
-
-        private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Buffer> {
-            JustBufferSubscriber(final Subscriber<? super Buffer> target,
-                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
-                super(target, outTrailersSingle);
-            }
-
-            @Override
-            public void onNext(final Object o) {
-                if (o instanceof Buffer) {
-                    subscriber.onNext((Buffer) o);
-                } else if (o instanceof HttpHeaders) {
-                    if (trailers != null) {
-                        throwDuplicateTrailersException(trailers, o);
-                    }
-                    trailers = (HttpHeaders) o;
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                } else if (trailers != null) {
-                    throwDuplicateTrailersException(trailers, o);
-                } else {
-                    trailers = (HttpHeaders) o;
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                }
-            }
-        }
-    }
-
-    static final class HttpObjectTrailersSpliceOperator implements PublisherOperator<Object, Object> {
-        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
-
-        HttpObjectTrailersSpliceOperator(final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
-            this.outTrailersSingle = requireNonNull(outTrailersSingle);
-        }
-
-        @Override
-        public Subscriber<? super Object> apply(final Subscriber<? super Object> subscriber) {
-            return new JustBufferSubscriber(subscriber, outTrailersSingle);
-        }
-
-        private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Object> {
-            JustBufferSubscriber(final Subscriber<? super Object> target,
-                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
-                super(target, outTrailersSingle);
-            }
-
-            @Override
-            public void onNext(final Object o) {
-                if (o instanceof HttpHeaders) {
-                    if (trailers != null) {
-                        throwDuplicateTrailersException(trailers, o);
-                    }
-                    trailers = (HttpHeaders) o;
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                } else {
-                    subscriber.onNext(o);
-                }
-            }
-        }
-    }
-
-    private abstract static class AbstractJustBufferSubscriber<T> implements Subscriber<Object> {
-        final Subscriber<? super T> subscriber;
-        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
-        @Nullable
-        HttpHeaders trailers;
-
-        AbstractJustBufferSubscriber(final Subscriber<? super T> target,
-                                     final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
-            this.subscriber = target;
-            this.outTrailersSingle = outTrailersSingle;
-        }
-
-        @Override
-        public final void onSubscribe(final Subscription s) {
-            subscriber.onSubscribe(s);
-        }
-
-        @Override
-        public final void onError(final Throwable t) {
-            try {
-                subscriber.onError(t);
-            } finally {
-                outTrailersSingle.onError(t);
-            }
-        }
-
-        @Override
-        public final void onComplete() {
-            try {
-                subscriber.onComplete();
-            } finally {
-                // Delay the completion of the trailers single until after the completion of the stream to provide
-                // a best effort sequencing. This ordering may break down if they sources are offloaded on different
-                // threads, but from this Operator's perspective we make a best effort.
-                if (trailers != null) {
-                    outTrailersSingle.onSuccess(trailers);
-                } else {
-                    outTrailersSingle.onError(newTrailersExpectedButNotSeenException());
-                }
-            }
-        }
-    }
-
-    static void throwDuplicateTrailersException(HttpHeaders trailers, Object o) {
-        throw new IllegalStateException("trailers already set to: " + trailers +
-                " but duplicate trailers seen: " + o);
-    }
-
-    static RuntimeException newTrailersExpectedButNotSeenException() {
-        return new IllegalStateException("trailers were expected, but not seen");
-    }
-
     static final class PayloadAndTrailers {
         @Nullable
         Buffer payload;
@@ -409,7 +280,7 @@ final class HttpDataSourceTransformations {
         HttpHeaders trailers;
     }
 
-    static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(Publisher<Object> payloadAndTrailers,
+    static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(Publisher<?> payloadAndTrailers,
                                                                   BufferAllocator allocator) {
         return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
             if (nextItem instanceof Buffer) {
@@ -434,10 +305,11 @@ final class HttpDataSourceTransformations {
                 throw new UnsupportedHttpChunkException(nextItem);
             }
             return pair;
-        }).beforeOnSuccess(pair -> {
+        }).map(pair -> {
             if (pair.payload == null) {
                 pair.payload = allocator.newBuffer(0, false);
             }
+            return pair;
         });
     }
 }

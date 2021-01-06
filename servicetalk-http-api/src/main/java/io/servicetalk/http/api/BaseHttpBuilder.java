@@ -116,6 +116,15 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 
     /**
+     * Set if the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a> header is required to process
+     * trailers.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * @return {@code this}
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> requireTrailerHeader(boolean requireTrailerHeader);
+
+    /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
      * builder.
      * <p>

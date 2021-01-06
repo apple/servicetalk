@@ -85,7 +85,7 @@ public class ServerGracefulConnectionClosureHandlingTest {
                         .payloadBody(request.payloadBody().ignoreElements().concat(from(RESPONSE_CONTENT)),
                                 textSerializer())
                         // Close ServerContext after response is complete
-                        .transformRawPayloadBody(payload -> payload.whenFinally(serverClose.get()))));
+                        .transformMessageBody(payload -> payload.whenFinally(serverClose.get()))));
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
         serverClose.set(() -> serverContext.closeAsyncGracefully().subscribe());
 

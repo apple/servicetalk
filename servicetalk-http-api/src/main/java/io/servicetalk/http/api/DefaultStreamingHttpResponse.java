@@ -32,7 +32,7 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
 
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                  final HttpHeaders headers, final BufferAllocator allocator,
-                                 @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
+                                 @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
                                  final HttpHeadersFactory headersFactory) {
         super(status, version, headers);
         payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
@@ -62,9 +62,15 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return payloadHolder.payloadBody();
     }
 
+    @Deprecated
     @Override
     public Publisher<Object> payloadBodyAndTrailers() {
         return payloadHolder.payloadBodyAndTrailers();
+    }
+
+    @Override
+    public Publisher<Object> messageBody() {
+        return payloadHolder.messageBody();
     }
 
     @Override
@@ -93,9 +99,16 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return this;
     }
 
+    @Deprecated
     @Override
     public StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
         payloadHolder.transformRawPayloadBody(transformer);
+        return this;
+    }
+
+    @Override
+    public StreamingHttpResponse transformMessageBody(final UnaryOperator<Publisher<?>> transformer) {
+        payloadHolder.transformMessageBody(transformer);
         return this;
     }
 
@@ -105,6 +118,7 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return this;
     }
 
+    @Deprecated
     @Override
     public <T> StreamingHttpResponse transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
         payloadHolder.transformRaw(trailersTransformer);

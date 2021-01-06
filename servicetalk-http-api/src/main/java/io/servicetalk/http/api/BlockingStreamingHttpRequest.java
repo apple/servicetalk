@@ -176,9 +176,11 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed. Note that the raw objects
      * of the underlying {@link Iterable} may be exposed. The object types are not guaranteed to be homogeneous.
+     * @deprecated Use {@link #transformPayloadBody(UnaryOperator)}.
      * @param transformer Responsible for transforming the payload body.
      * @return {@code this}
      */
+    @Deprecated
     BlockingStreamingHttpRequest transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
     /**
@@ -193,10 +195,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Object}s,
      * with access to the trailers.
+     * @deprecated Use {@link #transform(TrailersTransformer)}.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
      */
+    @Deprecated
     <T> BlockingStreamingHttpRequest transformRaw(TrailersTransformer<T, Object> trailersTransformer);
 
     /**

@@ -183,11 +183,11 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
                 }
-                final StreamingHttpRequest filteredRequest = request.transformRawPayloadBody(pub ->
+                final StreamingHttpRequest filteredRequest = request.transformMessageBody(pub ->
                         pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                 return delegate().handle(ctx, filteredRequest, factory).map(resp -> {
                             assertAsyncContext(requestId, errorQueue);
-                            return resp.transformRawPayloadBody(pub ->
+                            return resp.transformMessageBody(pub ->
                                     pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                         }
                 );
@@ -257,6 +257,6 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         StreamingHttpResponse response = connection.request(request).toFuture().get();
         assertEquals(OK, response.status());
         assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
-        response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+        response.messageBody().ignoreElements().toFuture().get();
     }
 }

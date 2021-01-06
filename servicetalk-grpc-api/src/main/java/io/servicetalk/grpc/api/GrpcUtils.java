@@ -79,8 +79,8 @@ final class GrpcUtils {
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
 
-    private static final TrailersTransformer<Object, Object> ENSURE_GRPC_STATUS_RECEIVED =
-            new StatelessTrailersTransformer<Object>() {
+    private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
+            new StatelessTrailersTransformer<Buffer>() {
                 @Override
                 protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
                     ensureGrpcStatusReceived(trailers);
@@ -107,14 +107,14 @@ final class GrpcUtils {
                                                  final HttpSerializer<T> serializer,
                                                  final BufferAllocator allocator) {
         return newStreamingResponse(responseFactory, context).payloadBody(payload, serializer)
-                .transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
+                .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
     static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
                                              @Nullable final GrpcServiceContext context,
                                              final GrpcStatus status,
                                              final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, context).transformRaw(new GrpcStatusUpdater(allocator, status));
+        return newStreamingResponse(responseFactory, context).transform(new GrpcStatusUpdater(allocator, status));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
@@ -137,7 +137,7 @@ final class GrpcUtils {
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
                                                   @Nullable final GrpcServiceContext context, final Throwable cause,
                                                   final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, context).transformRaw(new ErrorUpdater(cause, allocator));
+        return newStreamingResponse(responseFactory, context).transform(new ErrorUpdater(cause, allocator));
     }
 
     private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory,
@@ -188,13 +188,12 @@ final class GrpcUtils {
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
-            return response.payloadBodyAndTrailers().ignoreElements()
+            return response.messageBody().ignoreElements()
                     .concat(grpcStatusException != null ? failed(grpcStatusException) : empty());
         }
 
-        response.transformRaw(ENSURE_GRPC_STATUS_RECEIVED);
-        return deserializer.deserialize(headers, response.payloadBodyAndTrailers()
-                .filter(o -> !(o instanceof HttpHeaders)).map(o -> (Buffer) o));
+        response.transform(ENSURE_GRPC_STATUS_RECEIVED);
+        return deserializer.deserialize(headers, response.payloadBody());
     }
 
     static <Resp> Resp validateResponseAndGetPayload(final HttpResponse response,
@@ -202,7 +201,6 @@ final class GrpcUtils {
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers.
-
         final HttpHeaders headers = response.headers();
         final HttpHeaders trailers = response.trailers();
         ensureGrpcContentType(response.status(), headers);
@@ -489,7 +487,7 @@ final class GrpcUtils {
         }
     }
 
-    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Object> {
+    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
         private final BufferAllocator allocator;
         private final GrpcStatus successStatus;
 
@@ -512,7 +510,7 @@ final class GrpcUtils {
         }
     }
 
-    private static final class ErrorUpdater extends StatelessTrailersTransformer<Object> {
+    private static final class ErrorUpdater extends StatelessTrailersTransformer<Buffer> {
         private final Throwable cause;
         private final BufferAllocator allocator;
 

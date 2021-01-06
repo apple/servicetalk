@@ -38,6 +38,13 @@
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
 
+  <!-- False positive. Maybe https://github.com/spotbugs/spotbugs/issues/616 -->
+  <Match>
+    <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$1"/>
+    <Method name="mapOnNext"/>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+  </Match>
+
   <!-- Intentional reference comparison to avoid re-parsing if no value -->
   <Match>
     <Class name="io.servicetalk.http.api.Uri3986"/>

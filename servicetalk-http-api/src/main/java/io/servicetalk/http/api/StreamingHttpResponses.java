@@ -42,8 +42,8 @@ public final class StreamingHttpResponses {
     public static StreamingHttpResponse newResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator, null,
-                forUserCreated(headers), headersFactory);
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator, null, forUserCreated(),
+                headersFactory);
     }
 
     /**
@@ -55,15 +55,18 @@ public final class StreamingHttpResponses {
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param headers the {@link HttpHeaders} of the response.
      * @param allocator the allocator used for serialization purposes if necessary.
-     * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the
+     * @param messageBody a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the
      * response contains <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpResponse}.
      */
     public static StreamingHttpResponse newTransportResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
-            final BufferAllocator allocator, final Publisher<Object> payload, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator, payload,
-                forTransportReceive(headers), headersFactory);
+            final BufferAllocator allocator, final Publisher<Object> messageBody,
+            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator, messageBody,
+                forTransportReceive(requireTrailerHeader, version, headers), headersFactory);
     }
 }

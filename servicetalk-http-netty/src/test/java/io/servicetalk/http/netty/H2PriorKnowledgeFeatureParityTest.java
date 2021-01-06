@@ -115,6 +115,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
@@ -849,6 +850,31 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
+    @Test
+    public void trailersWithContentLength() throws Exception {
+        final String expectedPayload = "Hello World!";
+        final String expectedPayloadLength = String.valueOf(expectedPayload.length());
+        final String expectedTrailer = "foo";
+        final String expectedTrailerValue = "bar";
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
+                        .addTrailer(expectedTrailer, expectedTrailerValue)
+                        .addHeader(CONTENT_LENGTH, expectedPayloadLength)
+                        .payloadBody(expectedPayload, textSerializer()));
+             BlockingHttpClient client = forSingleAddress(HostAndPort.of(
+                     (InetSocketAddress) serverContext.listenAddress()))
+                     .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                     .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpResponse response = client.request(client.get("/"));
+            assertThat(response.payloadBody(textDeserializer()), equalTo(expectedPayload));
+            CharSequence trailer = response.trailers().get(expectedTrailer);
+            // http/1.x doesn't allow trailers with content-length, but we parse it anyways.
+            assertNotNull(trailer);
+            assertThat(trailer.toString(), is(expectedTrailerValue));
+        }
+    }
+
     @Ignore("100 continue is not yet supported")
     @Test
     public void continue100() throws Exception {
@@ -935,7 +961,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                     } else {
                         resp = responseFactory.ok();
                     }
-                    resp = resp.transformRawPayloadBody(pub -> request.payloadBodyAndTrailers());
+                    resp = resp.transformMessageBody(pub -> request.messageBody());
                     CharSequence contentType = request.headers().get(CONTENT_TYPE);
                     if (contentType != null) {
                         resp.headers().add(CONTENT_TYPE, contentType);
@@ -985,7 +1011,7 @@ public class H2PriorKnowledgeFeatureParityTest {
             AsyncContext.put(K2, v2);
             assertAsyncContext(K1, v1, errorQueue);
             assertAsyncContext(K2, v2, errorQueue);
-            return streamingHttpResponse.transformRawPayloadBody(pub -> {
+            return streamingHttpResponse.transformMessageBody(pub -> {
                 AsyncContext.put(K2, v2);
                 assertAsyncContext(K1, v1, errorQueue);
                 assertAsyncContext(K2, v2, errorQueue);
@@ -1026,7 +1052,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         final String v2 = "v2";
         final String v3 = "v3";
         AsyncContext.put(K1, v1);
-        return delegate.request(strategy, request.transformRawPayloadBody(pub -> {
+        return delegate.request(strategy, request.transformMessageBody(pub -> {
             AsyncContext.put(K2, v2);
             assertAsyncContext(K1, v1, errorQueue);
             assertAsyncContext(K2, v2, errorQueue);
@@ -1060,7 +1086,7 @@ public class H2PriorKnowledgeFeatureParityTest {
             assertAsyncContext(K1, v1, errorQueue);
             assertAsyncContext(K2, v2, errorQueue);
             assertAsyncContext(K3, v3, errorQueue);
-            return resp.transformRawPayloadBody(pub -> {
+            return resp.transformMessageBody(pub -> {
                 assertAsyncContext(K1, v1, errorQueue);
                 assertAsyncContext(K2, v2, errorQueue);
                 assertAsyncContext(K3, v3, errorQueue);

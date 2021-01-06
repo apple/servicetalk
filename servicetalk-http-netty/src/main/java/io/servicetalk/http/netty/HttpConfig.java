@@ -33,6 +33,7 @@ final class HttpConfig {
     @Nullable
     private H2ProtocolConfig h2Config;
     private List<String> supportedAlpnProtocols;
+    private boolean requireTrailerHeader;
 
     HttpConfig() {
         h1Config = h1Default();
@@ -44,6 +45,7 @@ final class HttpConfig {
         this.h1Config = from.h1Config;
         this.h2Config = from.h2Config;
         this.supportedAlpnProtocols = from.supportedAlpnProtocols;
+        this.requireTrailerHeader = from.requireTrailerHeader;
     }
 
     @Nullable
@@ -58,6 +60,14 @@ final class HttpConfig {
 
     List<String> supportedAlpnProtocols() {
         return supportedAlpnProtocols;
+    }
+
+    boolean requireTrailerHeader() {
+        return requireTrailerHeader;
+    }
+
+    void requireTrailerHeader(boolean requireTrailerHeader) {
+        this.requireTrailerHeader = requireTrailerHeader;
     }
 
     void protocols(final HttpProtocolConfig... protocols) {

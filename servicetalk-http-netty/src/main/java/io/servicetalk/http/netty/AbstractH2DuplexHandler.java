@@ -43,7 +43,6 @@ import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
-
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
@@ -73,8 +72,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         // For H2 we don't need to notify protocolPayloadEndOutboundSuccess(ctx); the codecs takes care of half-closure
         closeHandler.protocolPayloadEndOutbound(ctx);
-        HttpHeaders h1Headers = (HttpHeaders) msg;
-        Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
+        Http2Headers h2Headers = h1HeadersToH2Headers((HttpHeaders) msg);
         if (h2Headers.isEmpty()) {
             ctx.write(new DefaultHttp2DataFrame(EMPTY_BUFFER, true), promise);
         } else {

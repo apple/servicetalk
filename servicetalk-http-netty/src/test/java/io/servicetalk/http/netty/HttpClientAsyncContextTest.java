@@ -100,7 +100,7 @@ public class HttpClientAsyncContextTest {
         request.headers().set(REQUEST_ID_HEADER, requestId);
         StreamingHttpResponse response = connection.request(request).toFuture().get();
         assertEquals(OK, response.status());
-        response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+        response.messageBody().ignoreElements().toFuture().get();
     }
 
     private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
@@ -138,7 +138,7 @@ public class HttpClientAsyncContextTest {
                 }
             }
             final CharSequence requestId = hdrRequestId;
-            final StreamingHttpRequest requestWithPayloadAssert = request.transformRawPayloadBody(pub ->
+            final StreamingHttpRequest requestWithPayloadAssert = request.transformMessageBody(pub ->
                     pub.afterSubscriber(() -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription subscription) {
@@ -162,7 +162,7 @@ public class HttpClientAsyncContextTest {
                     }));
             return delegate.request(strategy, requestWithPayloadAssert).map(resp -> {
                 assertAsyncContext(requestId, errorQueue);
-                return resp.transformRawPayloadBody(pub ->
+                return resp.transformMessageBody(pub ->
                         pub.afterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription subscription) {

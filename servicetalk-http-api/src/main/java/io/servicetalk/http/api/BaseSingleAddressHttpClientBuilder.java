@@ -84,6 +84,9 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> requireTrailerHeader(boolean requireTrailerHeader);
+
+    @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 
