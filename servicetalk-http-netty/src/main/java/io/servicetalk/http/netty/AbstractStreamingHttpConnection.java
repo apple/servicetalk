@@ -113,8 +113,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 addRequestTransferEncodingIfNecessary(request);
             }
 
-            return strategy.invokeClient(executionContext.executor(), flatRequest, determineFlushStrategyForApi(request),
-                    this).subscribeShareContext();
+            return strategy.invokeClient(executionContext.executor(), flatRequest,
+                    determineFlushStrategyForApi(request), this).subscribeShareContext();
         });
     }
 
