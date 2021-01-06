@@ -55,6 +55,7 @@ import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -97,8 +98,10 @@ public class SingleRequestOrResponseApiTest {
                                                                     StreamingHttpRequest request) {
                         // Change path to send the request to the route API that expects only a single request item
                         // and generates requested number of response items:
-                        request.requestTarget(BlockingTestResponseStreamRpc.PATH);
-                        return super.request(delegate, strategy, request);
+                        return defer(() -> {
+                            request.requestTarget(BlockingTestResponseStreamRpc.PATH);
+                            return delegate.request(strategy, request).subscribeShareContext();
+                        });
                     }
                 });
     }
