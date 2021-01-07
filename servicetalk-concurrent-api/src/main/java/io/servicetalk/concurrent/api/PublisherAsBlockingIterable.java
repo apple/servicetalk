@@ -81,6 +81,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private final BlockingQueue<Object> data;
         private final DelayedSubscription subscription = new DelayedSubscription();
         private final int queueCapacity;
+        private final int requestN;
         private volatile int onNextQueued;
         /**
          * Number of items to emit from {@link #next()} till we request more.
@@ -102,8 +103,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private boolean terminated;
 
         SubscriberAndIterator(int queueCapacity) {
-            itemsToNextRequest = max(1, queueCapacity / 2);
             this.queueCapacity = queueCapacity;
+            requestN = max(1, queueCapacity / 2);
+            itemsToNextRequest = requestN;
             data = new LinkedBlockingQueue<>();
         }
 
@@ -213,9 +215,10 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void requestMoreIfRequired() {
-            onNextQueuedUpdater.decrementAndGet(this);
+            final int onNextQueued = onNextQueuedUpdater.decrementAndGet(this);
+            assert onNextQueued >= 0;
             if (--itemsToNextRequest == 0) {
-                itemsToNextRequest = max(1, queueCapacity / 2);
+                itemsToNextRequest = requestN;
                 subscription.request(itemsToNextRequest);
             }
         }
