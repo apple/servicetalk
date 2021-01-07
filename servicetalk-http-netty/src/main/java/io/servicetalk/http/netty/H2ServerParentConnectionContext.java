@@ -173,7 +173,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.sslSession(),
                                                 channel.config(),
                                                 streamObserver,
-                                                false);
+                                                false,
+                                                Http2Exception::wrapIfNecessary);
 
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service,

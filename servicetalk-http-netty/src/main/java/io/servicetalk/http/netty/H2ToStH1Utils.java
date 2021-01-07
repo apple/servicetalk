@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.transport.api.RetryableException;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
@@ -174,20 +173,5 @@ final class H2ToStH1Utils {
             http2Headers.add(h1Entry.getKey().toString().toLowerCase(), h1Entry.getValue());
         }
         return http2Headers;
-    }
-
-    /**
-     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
-     */
-    static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
-        H2StreamRefusedException(String message) {
-            super(message);
-        }
-    }
-
-    static class H2StreamResetException extends RuntimeException {
-        H2StreamResetException(String message) {
-            super(message);
-        }
     }
 }

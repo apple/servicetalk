@@ -162,15 +162,16 @@ public class StreamObserverTest {
 
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/second")).toFuture().get());
-            assertThat(e.getCause(), instanceOf(StreamException.class));
+            assertThat(e.getCause(), instanceOf(Http2Exception.class));
+            assertThat(e.getCause().getCause(), instanceOf(StreamException.class));
 
             verify(clientMultiplexedObserver, times(2)).onNewStream();
             verify(clientStreamObserver, times(2)).streamEstablished();
             verify(clientDataObserver, times(2)).onNewRead();
             verify(clientDataObserver, times(2)).onNewWrite();
             verify(clientReadObserver).readCancelled();
-            verify(clientWriteObserver).writeFailed(e.getCause());
-            verify(clientStreamObserver, await()).streamClosed(e.getCause());
+            verify(clientWriteObserver).writeFailed(e.getCause().getCause());
+            verify(clientStreamObserver, await()).streamClosed(e.getCause().getCause());
         }
         verify(clientStreamObserver, await()).streamClosed();
         verify(clientConnectionObserver).connectionClosed();
