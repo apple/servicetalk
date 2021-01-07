@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,12 +124,9 @@ final class NettyHttpServer {
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
-                channel -> {
-                    final ConnectionObserver connectionObserver = tcpServerConfig.transportObserver().onNewConnection();
-                    return initChannel(channel, executionContext, config,
-                            new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
-                            drainRequestPayloadBody, connectionObserver);
-                },
+                (channel, connectionObserver) -> initChannel(channel, executionContext, config,
+                        new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
+                        drainRequestPayloadBody, connectionObserver),
                 serverConnection -> serverConnection.process(true))
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
