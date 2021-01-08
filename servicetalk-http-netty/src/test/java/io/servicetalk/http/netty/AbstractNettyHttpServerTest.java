@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
@@ -23,6 +24,7 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -69,6 +71,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -121,6 +124,8 @@ public abstract class AbstractNettyHttpServerTest {
     private StreamingHttpService service;
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilterFactory;
+    @Nullable
+    private ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter;
     private HttpProtocolConfig protocol = h1Default();
     private TransportObserver clientTransportObserver = NoopTransportObserver.INSTANCE;
     private TransportObserver serverTransportObserver = NoopTransportObserver.INSTANCE;
@@ -150,7 +155,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .executionStrategy(defaultStrategy(serverExecutor))
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
-                .transportObserver(serverTransportObserver);
+                .transportObserver(serverTransportObserver)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         if (sslEnabled) {
             serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey);
@@ -168,6 +174,9 @@ public abstract class AbstractNettyHttpServerTest {
             clientBuilder.secure().disableHostnameVerification()
                     .trustManager(DefaultTestCerts::loadServerCAPem).commit();
         }
+        if (connectionFactoryFilter != null) {
+            clientBuilder.appendConnectionFactoryFilter(connectionFactoryFilter);
+        }
         if (clientTransportObserver != NoopTransportObserver.INSTANCE) {
             clientBuilder.appendConnectionFactoryFilter(
                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver));
@@ -175,6 +184,7 @@ public abstract class AbstractNettyHttpServerTest {
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor))
                 .protocols(protocol)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
@@ -202,6 +212,11 @@ public abstract class AbstractNettyHttpServerTest {
         this.serviceFilterFactory = serviceFilterFactory;
     }
 
+    void connectionFactoryFilter(
+            ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+        this.connectionFactoryFilter = connectionFactoryFilter;
+    }
+
     @After
     public void stopServer() throws Exception {
         newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverContext, serverExecutor)
@@ -225,8 +240,16 @@ public abstract class AbstractNettyHttpServerTest {
         return sslEnabled;
     }
 
-    ServerContext serverContext() {
+    final ServerContext serverContext() {
         return serverContext;
+    }
+
+    final StreamingHttpClient streamingHttpClient() {
+        return httpClient;
+    }
+
+    final StreamingHttpConnection streamingHttpConnection() {
+        return httpConnection;
     }
 
     void protocol(HttpProtocolConfig protocol) {
@@ -269,15 +292,11 @@ public abstract class AbstractNettyHttpServerTest {
         assertThat(actualPayload, is(expectedPayload));
     }
 
-    Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
-        return Publisher.from(texts).map(this::getChunkFromString);
+    static Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
+        return Publisher.from(texts).map(AbstractNettyHttpServerTest::getChunkFromString);
     }
 
-    StreamingHttpConnection streamingHttpConnection() {
-        return httpConnection;
-    }
-
-    Buffer getChunkFromString(final String text) {
+    static Buffer getChunkFromString(final String text) {
         return DEFAULT_ALLOCATOR.fromAscii(text);
     }
 

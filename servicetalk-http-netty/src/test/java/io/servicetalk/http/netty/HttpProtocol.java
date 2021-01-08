@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 enum HttpProtocol {
     HTTP_1(h1Default(), HTTP_1_1),
-    HTTP_2(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger").build(), HTTP_2_0);
+    HTTP_2(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build(), HTTP_2_0);
 
     final HttpProtocolConfig config;
     final HttpProtocolVersion version;

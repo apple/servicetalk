@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -100,9 +100,9 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     private static final class DefaultGrpcProtocol implements GrpcProtocol {
-        private final HttpProtocol httpProtocol;
+        private final HttpProtocolVersion httpProtocol;
 
-        private DefaultGrpcProtocol(final HttpProtocol httpProtocol) {
+        private DefaultGrpcProtocol(final HttpProtocolVersion httpProtocol) {
             this.httpProtocol = requireNonNull(httpProtocol);
         }
 
@@ -112,7 +112,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
         }
 
         @Override
-        public HttpProtocol httpProtocol() {
+        public HttpProtocolVersion httpProtocol() {
             return httpProtocol;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -47,8 +48,8 @@ final class DefaultNettyHttpConnectionContext extends DelegatingConnectionContex
     }
 
     @Override
-    public HttpProtocol protocol() {
-        return (HttpProtocol) nettyConnectionContext.protocol();
+    public HttpProtocolVersion protocol() {
+        return (HttpProtocolVersion) nettyConnectionContext.protocol();
     }
 
     @Override

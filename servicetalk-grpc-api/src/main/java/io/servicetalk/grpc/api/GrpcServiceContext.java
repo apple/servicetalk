@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.List;
@@ -41,6 +41,6 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
 
     interface GrpcProtocol extends Protocol {
 
-        HttpProtocol httpProtocol();
+        HttpProtocolVersion httpProtocol();
     }
 }

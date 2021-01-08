@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -50,14 +53,13 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
+@RunWith(Parameterized.class)
 public class ResponseCancelTest {
 
     private final BlockingQueue<Processor<HttpResponse, HttpResponse>> serverResponses;
@@ -70,17 +72,19 @@ public class ResponseCancelTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    public ResponseCancelTest() throws Exception {
+    public ResponseCancelTest(HttpProtocol protocol) throws Exception {
         serverResponses = new LinkedBlockingQueue<>();
         delayedClientCancels = new LinkedBlockingQueue<>();
         delayedClientTermination = new LinkedBlockingQueue<>();
-        ctx = forAddress(localAddress(0))
+        ctx = HttpServers.forAddress(localAddress(0))
+                .protocols(protocol.config)
                 .listenAndAwait((__, ___, factory) -> {
                     Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
                     serverResponses.add(resp);
                     return fromSource(resp);
                 });
-        client = forSingleAddress(serverHostAndPort(ctx))
+        client = HttpClients.forSingleAddress(serverHostAndPort(ctx))
+                .protocols(protocol.config)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -106,6 +110,11 @@ public class ResponseCancelTest {
                 })
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
                 .build();
+    }
+
+    @Parameters(name = "protocol={0}")
+    public static HttpProtocol[] data() {
+        return HttpProtocol.values();
     }
 
     @After

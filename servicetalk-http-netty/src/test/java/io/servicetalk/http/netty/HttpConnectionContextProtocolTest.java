@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
-import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -61,7 +60,7 @@ public class HttpConnectionContextProtocolTest {
 
         final HttpProtocolConfig[] protocols;
         final boolean secure;
-        final HttpProtocol expectedProtocol;
+        final HttpProtocolVersion expectedProtocol;
 
         Config(HttpProtocolConfig[] protocols, boolean secure, HttpProtocolVersion expectedProtocol) {
             this.protocols = protocols;

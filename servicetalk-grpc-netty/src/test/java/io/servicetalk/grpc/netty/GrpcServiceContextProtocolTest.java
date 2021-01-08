@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.http.api.HttpProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -68,7 +68,7 @@ public class GrpcServiceContextProtocolTest {
     private final ServerContext serverContext;
     private final BlockingTesterClient client;
 
-    public GrpcServiceContextProtocolTest(HttpProtocol httpProtocol, boolean streamingService) throws Exception {
+    public GrpcServiceContextProtocolTest(HttpProtocolVersion httpProtocol, boolean streamingService) throws Exception {
         expectedValue = "gRPC over " + httpProtocol;
 
         serverContext = GrpcServers.forAddress(localAddress(0))
@@ -87,11 +87,11 @@ public class GrpcServiceContextProtocolTest {
         return new Object[][]{{HTTP_2_0, true}, {HTTP_2_0, false}, {HTTP_1_1, true}, {HTTP_1_1, false}};
     }
 
-    private static HttpProtocolConfig protocolConfig(HttpProtocol httpProtocol) {
-        if (httpProtocol == HTTP_2_0) {
+    private static HttpProtocolConfig protocolConfig(HttpProtocolVersion httpProtocol) {
+        if (HTTP_2_0.equals(httpProtocol)) {
             return h2Default();
         }
-        if (httpProtocol == HTTP_1_1) {
+        if (HTTP_1_1.equals(httpProtocol)) {
             return h1Default();
         }
         throw new IllegalArgumentException("Unknown httpProtocol: " + httpProtocol);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
+import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
@@ -24,7 +24,7 @@ import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
  */
-public final class HttpProtocolVersion implements HttpProtocol {
+public final class HttpProtocolVersion implements Protocol {
     /**
      * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */

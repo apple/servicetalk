@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -431,8 +431,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public HttpProtocol protocol() {
-            return (HttpProtocol) connection.protocol();
+        public HttpProtocolVersion protocol() {
+            return (HttpProtocolVersion) connection.protocol();
         }
 
         @Override
