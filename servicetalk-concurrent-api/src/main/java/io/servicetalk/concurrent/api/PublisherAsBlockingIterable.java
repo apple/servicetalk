@@ -215,8 +215,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void requestMoreIfRequired() {
-            final int onNextQueued = onNextQueuedUpdater.decrementAndGet(this);
-            assert onNextQueued >= 0;
+            onNextQueuedUpdater.decrementAndGet(this);
             if (--itemsToNextRequest == 0) {
                 itemsToNextRequest = requestN;
                 subscription.request(itemsToNextRequest);
