@@ -82,6 +82,11 @@ public class Uri3986Test {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void portNegative() {
+        new Uri3986("http://foo.com:-1");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void portInvalidAtEnd() {
         new Uri3986("http://foo.com:6553a");
     }
@@ -93,7 +98,7 @@ public class Uri3986Test {
 
     @Test(expected = IllegalArgumentException.class)
     public void portInvalidMiddle() {
-        new Uri3986("http://foo.com:1ab");
+        new Uri3986("http://foo.com:1ab2");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -114,6 +119,11 @@ public class Uri3986Test {
     @Test(expected = IllegalArgumentException.class)
     public void duplicateUserInfo() {
         new Uri3986("http://foo@bar@apple.com");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void malformedAuthority() {
+        new Uri3986("http://blah@apple.com:80@apple.com");
     }
 
     @Test

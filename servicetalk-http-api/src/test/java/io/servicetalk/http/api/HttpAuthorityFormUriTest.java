@@ -90,6 +90,11 @@ public class HttpAuthorityFormUriTest {
         new HttpAuthorityFormUri("[::1]:8080foo");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void malformedAuthority() {
+        new HttpAuthorityFormUri("blah@apple.com:80@apple.com");
+    }
+
     @Test
     public void encodeTouchesAllComponents() {
         verifyEncodeDecode("www.foo bar.com:8080", "www.foo%20bar.com:8080");
