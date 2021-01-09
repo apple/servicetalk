@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.logging.LogLevel;
 
 import java.util.function.BooleanSupplier;
+
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     private static final int BUFFER_LENGTH_THRESHOLD = 64;
@@ -105,7 +107,8 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     @Override
     public void logSettings(Direction direction, ChannelHandlerContext ctx, Http2Settings settings) {
         if (logger.isEnabled()) {
-            logger.log("{} {} SETTINGS: ack=false settings={}", ctx.channel(), direction.name(), settings);
+            // Invoke settings.toString(). Otherwise, some loggers may use it as a Map for manual key=value encoding:
+            logger.log("{} {} SETTINGS: ack=false settings={}", ctx.channel(), direction.name(), settings.toString());
         }
     }
 
@@ -175,13 +178,11 @@ final class ServiceTalkHttp2FrameLogger extends Http2FrameLogger {
     }
 
     private String toString(ByteBuf buf) {
-        if (buf.readableBytes() <= BUFFER_LENGTH_THRESHOLD) {
+        if (logger.logLevel() == TRACE || buf.readableBytes() <= BUFFER_LENGTH_THRESHOLD) {
             // Log the entire buffer.
             return ByteBufUtil.hexDump(buf);
         }
-
-        // Otherwise just log the first 64 bytes.
-        int length = Math.min(buf.readableBytes(), BUFFER_LENGTH_THRESHOLD);
-        return ByteBufUtil.hexDump(buf, buf.readerIndex(), length) + "...";
+        // Otherwise just log the first bytes.
+        return ByteBufUtil.hexDump(buf, buf.readerIndex(), BUFFER_LENGTH_THRESHOLD) + "...";
     }
 }
