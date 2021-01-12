@@ -38,10 +38,6 @@ final class CancellableStack implements Cancellable {
      * @return {@code true} if the {@code toAdd} was added. If {@code false} {@link Cancellable#cancel()} is called.
      */
     boolean add(Cancellable toAdd) {
-        if (stack.push(toAdd)) {
-            return true;
-        }
-        toAdd.cancel();
-        return false;
+        return stack.push(toAdd);
     }
 }

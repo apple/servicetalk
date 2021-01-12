@@ -28,8 +28,7 @@ import javax.annotation.Nullable;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    private final ClosableStateConcurrentStack<Subscriber<? super T>, Consumer<Subscriber<? super T>>> stack =
-            new ClosableStateConcurrentStack<>();
+    private final ClosableConcurrentStack<Subscriber<? super T>> stack = new ClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
@@ -39,15 +38,12 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        Consumer<Subscriber<? super T>> terminalSignal = stack.push(subscriber);
-        if (terminalSignal == null) {
+        if (stack.push(subscriber)) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                 // these references.
                 stack.relaxedRemove(subscriber);
             });
-        } else {
-            terminalSignal.accept(subscriber);
         }
     }
 
@@ -67,7 +63,7 @@ final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
     }
 
     private void terminate(Consumer<Subscriber<? super T>> terminalSignal) {
-        stack.close(terminalSignal, terminalSignal);
+        stack.close(terminalSignal);
     }
 
     @Override

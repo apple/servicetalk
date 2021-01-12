@@ -15,19 +15,31 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 
+import static io.servicetalk.concurrent.api.Completable.mergeAll;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ClosableConcurrentStackTest {
     @ClassRule
@@ -51,11 +63,25 @@ public class ClosableConcurrentStackTest {
     }
 
     @Test
+    public void singleThreadPushRemove() {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
+        final int itemCount = 1000;
+        for (int i = 0; i < itemCount; ++i) {
+            stack.push(i);
+        }
+
+        for (int i = 0; i < itemCount; ++i) {
+            assertTrue(stack.relaxedRemove(i));
+        }
+        closeAssertEmpty(stack);
+    }
+
+    @Test
     public void concurrentPushClose() throws Exception {
         ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
-        List<Single<Integer>> completableList = new ArrayList<>(itemCount);
+        List<Completable> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
             final int finalI = i;
             completableList.add(EXECUTOR_RULE.executor().submit(() -> {
@@ -64,23 +90,106 @@ public class ClosableConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                return stack.push(finalI) ? null : finalI;
+                stack.push(finalI);
             }));
         }
 
-        List<Integer> overallValues = new ArrayList<>(itemCount);
-        Future<Collection<Integer>> future = collectUnordered(completableList, itemCount).toFuture();
+        Queue<Integer> overallValues = new ConcurrentLinkedQueue<>();
+        Future<Void> future = mergeAll(completableList, itemCount).toFuture();
         barrier.await();
         stack.close(overallValues::add);
-        Collection<Integer> failedPushValues = future.get();
-        for (Integer integer : failedPushValues) {
-            if (integer != null) {
-                overallValues.add(integer);
-            }
-        }
+        future.get();
         assertEquals(itemCount, overallValues.size());
         for (int i = 0; i < itemCount; ++i) {
             assertThat(i, isIn(overallValues));
         }
+    }
+
+    @Test
+    public void concurrentPushRemove() throws Exception {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
+        final int itemCount = 1000;
+        CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
+        List<Completable> completableList = new ArrayList<>(itemCount);
+        for (int i = 0; i < itemCount; ++i) {
+            final int finalI = i;
+            completableList.add(EXECUTOR_RULE.executor().submit(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                assertTrue("failed for index: " + finalI, stack.push(finalI));
+                assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI));
+            }));
+        }
+
+        Future<Void> future = mergeAll(completableList, itemCount).toFuture();
+        barrier.await();
+        future.get();
+        closeAssertEmpty(stack);
+    }
+
+    @Test
+    public void concurrentPushRemoveDifferentThread() throws Exception {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
+        final int itemCount = 1000;
+        CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
+        List<Completable> completableList = new ArrayList<>(itemCount);
+        for (int i = 0; i < itemCount; ++i) {
+            final int finalI = i;
+            completableList.add(EXECUTOR_RULE.executor().submit(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                stack.push(finalI);
+            }).concat(EXECUTOR_RULE.executor().submit(() ->
+                    assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI)))));
+        }
+
+        Future<Void> future = mergeAll(completableList, itemCount).toFuture();
+        barrier.await();
+        future.get();
+        closeAssertEmpty(stack);
+    }
+
+    @Test
+    public void concurrentClosePushRemove() throws Exception {
+        ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>();
+        final int itemCount = 1000;
+        CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
+        List<Single<Cancellable>> completableList = new ArrayList<>(itemCount);
+        for (int i = 0; i < itemCount; ++i) {
+            final int finalI = i;
+            completableList.add(EXECUTOR_RULE.executor().submit(() -> {
+                Cancellable c = mock(Cancellable.class);
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                assertTrue("failed for index: " + finalI, stack.push(c));
+                return c;
+            }));
+        }
+
+        Future<Collection<Cancellable>> future = collectUnordered(completableList, itemCount).toFuture();
+        barrier.await();
+        Collection<Cancellable> cancellables = future.get();
+        stack.close(Cancellable::cancel);
+        assertFalse(stack.push(() -> { }));
+        for (Cancellable c : cancellables) {
+            verify(c).cancel();
+        }
+    }
+
+    private static void closeAssertEmpty(ClosableConcurrentStack<Integer> stack) {
+        List<Integer> values = new ArrayList<>();
+        stack.close(values::add);
+        assertThat(values, is(empty()));
+        assertFalse(stack.push(-1));
+        assertThat(values, contains(-1));
     }
 }

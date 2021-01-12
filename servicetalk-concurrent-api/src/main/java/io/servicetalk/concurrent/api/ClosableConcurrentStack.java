@@ -25,33 +25,84 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class ClosableConcurrentStack<T> {
-    private static final Node<?> CLOSED = new Node<>();
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<ClosableConcurrentStack, Node> topUpdater =
-            newUpdater(ClosableConcurrentStack.class, Node.class, "top");
+    private static final AtomicReferenceFieldUpdater<ClosableConcurrentStack, Object> topUpdater =
+            newUpdater(ClosableConcurrentStack.class, Object.class, "top");
     @Nullable
-    private volatile Node<T> top;
+    private volatile Object top;
 
+    /**
+     * Push an item onto the stack.
+     * @param item the item to push onto the stack.
+     * @return {@code true} if the operation was successful. {@code false} if {@link #close(Consumer)} has been called
+     * and {@code item} has been consumed via {@link Consumer#accept(Object)} of the {@link #close(Consumer)} argument.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable
     boolean push(T item) {
         final Node<T> newTop = new Node<>(item);
-        Node<T> oldTop;
-        do {
-            oldTop = top;
-            if (oldTop == CLOSED) {
+        for (;;) {
+            final Object rawOldTop = top;
+            if (rawOldTop != null && !Node.class.equals(rawOldTop.getClass())) {
+                ((Consumer<T>) rawOldTop).accept(item);
                 return false;
             }
-            newTop.next = oldTop;
-        } while (!topUpdater.compareAndSet(this, oldTop, newTop));
-        return true;
+            newTop.next = (Node<T>) rawOldTop;
+            if (topUpdater.compareAndSet(this, rawOldTop, newTop)) {
+                return true;
+            }
+        }
     }
 
-    void close(Consumer<T> closer) {
-        @SuppressWarnings("unchecked")
-        Node<T> oldTop = topUpdater.getAndSet(this, closedNode());
-        if (oldTop == CLOSED) {
-            return;
+    /**
+     * Best effort removal of {@code item} from this stack.
+     * @param item The item to remove.
+     * @return {@code true} if the item was found in this stack and marked for removal. The "relaxed" nature of
+     * this method means {@code true} might be returned in the following scenarios without external synchronization:
+     * <ul>
+     *     <li>invoked multiple times with the same {@code item} from different threads</li>
+     *     <li>{@link #close(Consumer)} removes this item from another thread</li>
+     * </ul>
+     */
+    boolean relaxedRemove(T item) {
+        final Object rawCurrTop = top;
+        if (item == null || rawCurrTop == null || !Node.class.equals(rawCurrTop.getClass())) {
+            return false;
         }
+        @SuppressWarnings("unchecked")
+        Node<T> currTop = (Node<T>) rawCurrTop;
+        while (currTop != null) {
+            if (item.equals(currTop.item)) {
+                currTop.item = null; // best effort null out the item. pop/close will discard the Node later.
+                return true;
+            } else {
+                currTop = currTop.next;
+            }
+        }
+        return false;
+    }
 
+    /**
+     * Clear the stack contents, and prevent future {@link #push(Object)} operations from adding to this stack.
+     * {@code closer} will be invoked for each element currently in the stack.
+     * @param closer Invoked for each element currently in the stack. Elements that were previously
+     * {@link #relaxedRemove(Object) relaxRemoved} may still invoked by {@code closer}.
+     */
+    void close(Consumer<T> closer) {
+        requireNonNull(closer);
+        Object rawOldTop;
+        for (;;) {
+            rawOldTop = top;
+            if (rawOldTop == null || Node.class.equals(rawOldTop.getClass())) {
+                if (topUpdater.compareAndSet(this, rawOldTop, closer)) {
+                    break;
+                }
+            } else {
+                return;
+            }
+        }
+        @SuppressWarnings("unchecked")
+        Node<T> oldTop = (Node<T>) rawOldTop;
         Throwable delayedCause = null;
         while (oldTop != null) {
             final T item = oldTop.item;
@@ -70,20 +121,11 @@ final class ClosableConcurrentStack<T> {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <X> Node<X> closedNode() {
-        return (Node<X>) CLOSED;
-    }
-
     private static final class Node<T> {
         @Nullable
-        final T item;
+        T item;
         @Nullable
         Node<T> next;
-
-        Node() {
-            this.item = null;
-        }
 
         Node(T item) {
             this.item = requireNonNull(item);

@@ -27,8 +27,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    private final ClosableStateConcurrentStack<Subscriber, TerminalNotification> stack =
-            new ClosableStateConcurrentStack<>();
+    private final ClosableConcurrentStack<Subscriber> stack = new ClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
@@ -38,15 +37,12 @@ final class CompletableProcessor extends Completable implements Processor {
         // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        TerminalNotification terminalNotification = stack.push(subscriber);
-        if (terminalNotification == null) {
+        if (stack.push(subscriber)) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                 // these references.
                 stack.relaxedRemove(subscriber);
             });
-        } else {
-            terminalNotification.terminate(subscriber);
         }
     }
 
@@ -66,7 +62,7 @@ final class CompletableProcessor extends Completable implements Processor {
     }
 
     private void terminate(TerminalNotification terminalSignal) {
-        stack.close(terminalSignal::terminate, terminalSignal);
+        stack.close(terminalSignal::terminate);
     }
 
     @Override
