@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
 import static java.util.Objects.requireNonNull;
 
@@ -86,8 +87,10 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
-        request.requestTarget(effectiveRequestUri);
-        return delegate.request(strategy, request);
+        return defer(() -> {
+            final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
+            request.requestTarget(effectiveRequestUri);
+            return delegate.request(strategy, request).subscribeShareContext();
+        });
     }
 }

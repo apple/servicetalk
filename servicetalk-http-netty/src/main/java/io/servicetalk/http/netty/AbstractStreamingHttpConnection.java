@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
@@ -99,20 +100,22 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
-        Publisher<Object> flatRequest;
-        // See https://tools.ietf.org/html/rfc7230#section-3.3.3
-        if (canAddRequestContentLength(request)) {
-            flatRequest = setRequestContentLength(request);
-        } else {
-            flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
-            if (!mayHaveTrailers(request)) {
-                flatRequest = flatRequest.concat(succeeded(EmptyHttpHeaders.INSTANCE));
+        return defer(() -> {
+            Publisher<Object> flatRequest;
+            // See https://tools.ietf.org/html/rfc7230#section-3.3.3
+            if (canAddRequestContentLength(request)) {
+                flatRequest = setRequestContentLength(request);
+            } else {
+                flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
+                if (!mayHaveTrailers(request)) {
+                    flatRequest = flatRequest.concat(succeeded(EmptyHttpHeaders.INSTANCE));
+                }
+                addRequestTransferEncodingIfNecessary(request);
             }
-            addRequestTransferEncodingIfNecessary(request);
-        }
 
-        return strategy.invokeClient(executionContext.executor(), flatRequest, determineFlushStrategyForApi(request),
-                this);
+            return strategy.invokeClient(executionContext.executor(), flatRequest,
+                    determineFlushStrategyForApi(request), this).subscribeShareContext();
+        });
     }
 
     @Nullable
