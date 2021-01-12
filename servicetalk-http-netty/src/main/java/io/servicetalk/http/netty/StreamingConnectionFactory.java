@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,10 @@ final class StreamingConnectionFactory {
             final ReadOnlyHttpClientConfig roConfig, final TransportObserver observer) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext,
-                channel -> {
-                    final ConnectionObserver connectionObserver = observer.onNewConnection();
-                    return createConnection(channel, executionContext, roConfig, new TcpClientChannelInitializer(
-                            roConfig.tcpConfig(), connectionObserver, roConfig.hasProxy()), connectionObserver);
-                });
+                (channel, connectionObserver) -> createConnection(channel, executionContext, roConfig,
+                        new TcpClientChannelInitializer(roConfig.tcpConfig(), connectionObserver, roConfig.hasProxy()),
+                        connectionObserver),
+                observer);
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,

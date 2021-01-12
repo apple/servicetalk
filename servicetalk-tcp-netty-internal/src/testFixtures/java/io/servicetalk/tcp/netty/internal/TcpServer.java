@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServerContext;
@@ -85,15 +84,12 @@ public class TcpServer {
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
         return TcpServerBinder.bind(localAddress(port), config, false, executionContext, connectionAcceptor,
-                channel -> {
-                    final ConnectionObserver connectionObserver = config.transportObserver().onNewConnection();
-                    return DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
-                            executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
-                            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                            new TcpServerChannelInitializer(config, connectionObserver)
-                                    .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
-                            connectionObserver, false);
-                },
+                (channel, connectionObserver) -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        new TcpServerChannelInitializer(config, connectionObserver)
+                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
+                        connectionObserver, false),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                         .beforeFinally(() -> serverConnection.closeAsync().subscribe())
