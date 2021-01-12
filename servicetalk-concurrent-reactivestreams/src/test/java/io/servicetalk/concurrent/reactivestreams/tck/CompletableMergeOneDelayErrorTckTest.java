@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
 
-public class CancellableStackTest extends AbstractCompositeCancellableTest<CancellableStack> {
+import static io.servicetalk.concurrent.api.Completable.completed;
+
+public class CompletableMergeOneDelayErrorTckTest extends AbstractCompletableOperatorTckTest {
     @Override
-    protected CancellableStack newCompositeCancellable() {
-        return new CancellableStack();
-    }
-
-    @Override
-    protected boolean add(final CancellableStack composite, final Cancellable c) {
-        return composite.add(c);
+    protected Completable composeCompletable(Completable completable) {
+        return completable.mergeDelayError(completed());
     }
 }
