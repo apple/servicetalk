@@ -25,6 +25,7 @@ dependencies {
   }
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-http-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-router-utils-internal")

@@ -16,16 +16,16 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.utils.internal.CharSequenceUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.http.api.AsciiBuffer.hashCodeAscii;
-import static java.lang.Character.toUpperCase;
-import static java.util.Collections.emptyList;
+import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsUnknownTypes;
 
 /**
  * Provides factory methods for creating {@link CharSequence} implementations.
@@ -84,28 +84,8 @@ public final class CharSequences {
      * @return a {@link List} of {@link CharSequence} subsequences of the input with the separated values
      */
     public static List<CharSequence> split(final CharSequence input, final char delimiter) {
-        if (input.length() == 0) {
-            return emptyList();
-        }
-        int startIndex = 0;
-        List<CharSequence> result = new ArrayList<>();
-        for (int i = 0; i < input.length(); i++) {
-            if (input.charAt(i) == delimiter) {
-                if ((i - startIndex) > 0) {
-                    result.add(input.subSequence(startIndex, i));
-                }
-
-                startIndex = i + 1;
-            }
-        }
-
-        if ((input.length() - startIndex) > 0) {
-            result.add(input.subSequence(startIndex, input.length()));
-        }
-        return result;
+        return CharSequenceUtils.split(input, delimiter);
     }
-
-
 
     /**
      * Attempt to unwrap a {@link CharSequence} and obtain the underlying {@link Buffer} if possible.
@@ -183,38 +163,6 @@ public final class CharSequences {
         return -1;
     }
 
-    static boolean contentEqualsIgnoreCaseUnknownTypes(final CharSequence a, final CharSequence b) {
-        for (int i = 0; i < a.length(); ++i) {
-            if (!equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean equalsIgnoreCase(final char a, final char b) {
-        return a == b || toLowerCase(a) == toLowerCase(b);
-    }
-
-    /**
-     * Compare an unknown ascii character {@code a} with a known lowercase character {@code lowerCaseChar} in a case
-     * insensitive manner.
-     * @param a an unknown ascii character.
-     * @param lowerCaseChar a known to be lowercase ascii character.
-     * @return {@code true} if {@code a} and {@code lowerCaseChar} are case insensitive equal.
-     */
-    static boolean equalsIgnoreCaseLower(final char a, final char lowerCaseChar) {
-        return a == lowerCaseChar || toLowerCase(a) == lowerCaseChar;
-    }
-
-    private static char toLowerCase(final char c) {
-        return isUpperCase(c) ? (char) (c + 32) : c;
-    }
-
-    private static boolean isUpperCase(final char value) {
-        return value >= 'A' && value <= 'Z';
-    }
-
     /**
      * This methods make regionMatches operation correctly for any chars in strings.
      *
@@ -228,86 +176,10 @@ public final class CharSequences {
      */
     public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
                                  final CharSequence string, final int start, final int length) {
-        if (cs instanceof String && string instanceof String) {
-            return ((String) cs).regionMatches(ignoreCase, csStart, (String) string, start, length);
-        }
-
-        return regionMatchesCharSequences(cs, csStart, string, start, length,
-                ignoreCase ? GeneralCaseInsensitiveCharEqualityComparator.INSTANCE :
-                        DefaultCharEqualityComparator.INSTANCE);
+        return CharSequenceUtils.regionMatches(cs, ignoreCase, csStart, string, start, length);
     }
 
-    private static boolean regionMatchesCharSequences(final CharSequence cs, final int csStart,
-                                                      final CharSequence string, final int start, final int length,
-                                                      final CharEqualityComparator charEqualityComparator) {
-        if (csStart < 0 || length > cs.length() - csStart) {
-            return false;
-        }
-        if (start < 0 || length > string.length() - start) {
-            return false;
-        }
-
-        int csIndex = csStart;
-        final int csEnd = csIndex + length;
-        int stringIndex = start;
-
-        while (csIndex < csEnd) {
-            final char c1 = cs.charAt(csIndex++);
-            final char c2 = string.charAt(stringIndex++);
-
-            if (!charEqualityComparator.equals(c1, c2)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private interface CharEqualityComparator {
-        boolean equals(char a, char b);
-    }
-
-    private static final class DefaultCharEqualityComparator implements CharEqualityComparator {
-        static final DefaultCharEqualityComparator INSTANCE = new DefaultCharEqualityComparator();
-
-        private DefaultCharEqualityComparator() {
-            // No instances
-        }
-
-        @Override
-        public boolean equals(final char a, final char b) {
-            return a == b;
-        }
-    }
-
-    private static final class GeneralCaseInsensitiveCharEqualityComparator implements CharEqualityComparator {
-        static final GeneralCaseInsensitiveCharEqualityComparator
-                INSTANCE = new GeneralCaseInsensitiveCharEqualityComparator();
-
-        private GeneralCaseInsensitiveCharEqualityComparator() {
-            // No instances
-        }
-
-        @Override
-        public boolean equals(final char a, final char b) {
-            //For motivation, why we need two checks, see comment in String#regionMatches
-            return toUpperCase(a) == toUpperCase(b) || Character.toLowerCase(a) == Character.toLowerCase(b);
-        }
-    }
-
-    /**
-     * Returns the case-insensitive hash code of the specified string. Note that this method uses the same hashing
-     * algorithm with {@link #hashCode()} so that you can put arbitrary {@link CharSequence}s into the same headers.
-     */
     static int caseInsensitiveHashCode(CharSequence seq) {
         return seq.getClass() == AsciiBuffer.class ? seq.hashCode() : hashCodeAscii(seq);
-    }
-
-    static boolean contentEqualsUnknownTypes(final CharSequence a, final CharSequence b) {
-        for (int i = 0; i < a.length(); ++i) {
-            if (a.charAt(i) != b.charAt(i)) {
-                return false;
-            }
-        }
-        return true;
     }
 }

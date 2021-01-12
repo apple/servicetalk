@@ -20,13 +20,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
+import static io.servicetalk.utils.internal.CharSequenceUtils.equalsIgnoreCaseLower;
 import static java.lang.Long.parseLong;
 
 /**

@@ -36,8 +36,8 @@ import io.servicetalk.buffer.api.ByteProcessor;
 import java.nio.ByteOrder;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.http.api.CharSequences.contentEqualsUnknownTypes;
+import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class AsciiBuffer implements CharSequence {

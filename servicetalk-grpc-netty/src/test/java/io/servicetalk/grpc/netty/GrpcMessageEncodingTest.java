@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
+package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
@@ -21,8 +21,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.grpc.netty.GrpcClients;
-import io.servicetalk.grpc.netty.GrpcServers;
+import io.servicetalk.grpc.api.GrpcServerBuilder;
+import io.servicetalk.grpc.api.GrpcServiceContext;
+import io.servicetalk.grpc.api.GrpcStatusCode;
+import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamMetadata;
@@ -67,7 +69,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
 import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.grpc.api.GrpcUtils.encodingFor;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamMetadata;
@@ -76,6 +77,7 @@ import static io.servicetalk.grpc.netty.TesterProto.Tester.TestResponseStreamMet
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
+import static io.servicetalk.http.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
