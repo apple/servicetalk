@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,8 +225,16 @@ public abstract class AbstractNettyHttpServerTest {
         return sslEnabled;
     }
 
-    ServerContext serverContext() {
+    final ServerContext serverContext() {
         return serverContext;
+    }
+
+    final StreamingHttpClient streamingHttpClient() {
+        return httpClient;
+    }
+
+    final StreamingHttpConnection streamingHttpConnection() {
+        return httpConnection;
     }
 
     void protocol(HttpProtocolConfig protocol) {
@@ -269,15 +277,11 @@ public abstract class AbstractNettyHttpServerTest {
         assertThat(actualPayload, is(expectedPayload));
     }
 
-    Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
-        return Publisher.from(texts).map(this::getChunkFromString);
+    static Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
+        return Publisher.from(texts).map(AbstractNettyHttpServerTest::getChunkFromString);
     }
 
-    StreamingHttpConnection streamingHttpConnection() {
-        return httpConnection;
-    }
-
-    Buffer getChunkFromString(final String text) {
+    static Buffer getChunkFromString(final String text) {
         return DEFAULT_ALLOCATOR.fromAscii(text);
     }
 

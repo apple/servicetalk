@@ -41,14 +41,16 @@ public class MergeCompletableTest {
     private final CompletableHolder holder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new MergeCompletable(false, completables[0], immediate(),
+            return MergeCompletable.newInstance(false, completables[0], immediate(),
                     copyOfRange(completables, 1, completables.length));
         }
     };
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testEmpty() {
-        holder.init(0);
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        holder.init(0).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
     }
 
     @Test

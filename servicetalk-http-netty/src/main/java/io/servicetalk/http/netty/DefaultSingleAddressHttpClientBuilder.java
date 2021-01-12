@@ -102,11 +102,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
+    private boolean addHostHeaderFallbackFilter = true;
     @Nullable
     private ServiceDiscoveryRetryStrategy<R, ServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
-    @Nullable
-    private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
-            address -> new HostHeaderHttpRequesterFilter(hostToCharSequenceFunction.apply(address));
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
@@ -158,7 +156,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
         hostToCharSequenceFunction = from.hostToCharSequenceFunction;
-        hostHeaderFilterFactoryFunction = from.hostHeaderFilterFactoryFunction;
+        addHostHeaderFallbackFilter = from.addHostHeaderFallbackFilter;
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
     }
@@ -308,9 +306,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.proxyAbsoluteAddressFilterFactory());
             }
-            if (ctx.builder.hostHeaderFilterFactoryFunction != null) {
-                currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        ctx.builder.hostHeaderFilterFactoryFunction.apply(ctx.builder.address));
+            if (ctx.builder.addHostHeaderFallbackFilter) {
+                currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
+                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
@@ -444,7 +442,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        hostHeaderFilterFactoryFunction = null;
+        addHostHeaderFallbackFilter = false;
         return this;
     }
 
@@ -458,7 +456,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
-            Function<U, CharSequence> unresolvedAddressToHostFunction) {
+            final Function<U, CharSequence> unresolvedAddressToHostFunction) {
         this.hostToCharSequenceFunction = requireNonNull(unresolvedAddressToHostFunction);
         return this;
     }

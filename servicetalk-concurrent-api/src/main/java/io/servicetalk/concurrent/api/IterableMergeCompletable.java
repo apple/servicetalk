@@ -15,16 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.MergeCompletable.FixedCountMergeSubscriber;
-
-import java.util.Collection;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Completable} implementation for merging {@link Iterable}s of {@link Completable}s.
  */
-final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
+final class IterableMergeCompletable extends AbstractMergeCompletableOperator<CompletableDynamicCountSubscriber> {
     private final Iterable<? extends Completable> others;
     private final boolean delayError;
 
@@ -36,52 +32,17 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
     }
 
     @Override
-    public MergeSubscriber apply(final Subscriber subscriber) {
-        if (others instanceof Collection) {
-            return new FixedCountMergeSubscriber(subscriber, 1 + ((Collection) others).size(), delayError);
-        } else {
-            return new DynamicCountSubscriber(subscriber, delayError);
-        }
+    public CompletableDynamicCountSubscriber apply(final Subscriber subscriber) {
+        return new CompletableDynamicCountSubscriber(subscriber, delayError);
     }
 
     @Override
-    void doMerge(final MergeSubscriber subscriber) {
-        if (subscriber instanceof DynamicCountSubscriber) {
-            int count = 1;
-            for (Completable itr : others) {
-                ++count;
-                itr.subscribeInternal(subscriber);
-            }
-            ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
-        } else {
-            for (Completable itr : others) {
-                itr.subscribeInternal(subscriber);
-            }
+    void doMerge(final CompletableDynamicCountSubscriber subscriber) {
+        long count = 1;
+        for (Completable itr : others) {
+            ++count;
+            itr.subscribeInternal(subscriber);
         }
-    }
-
-    private static final class DynamicCountSubscriber extends MergeCompletable.MergeSubscriber {
-        private volatile int expectedCount;
-
-        DynamicCountSubscriber(Subscriber subscriber, boolean delayError) {
-            super(subscriber, delayError);
-        }
-
-        @Override
-        boolean onTerminate() {
-            return completedCountUpdater.incrementAndGet(this) == expectedCount;
-        }
-
-        @Override
-        boolean isDone() {
-            return completedCount == expectedCount;
-        }
-
-        void setExpectedCount(int count) {
-            expectedCount = count;
-            if (completedCount == count) {
-                tryToCompleteSubscriber();
-            }
-        }
+        subscriber.setExpectedCount(count);
     }
 }

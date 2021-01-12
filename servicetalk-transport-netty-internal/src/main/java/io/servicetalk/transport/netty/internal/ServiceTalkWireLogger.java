@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (logger.isEnabled()) {
-            logger.log(contextToString(ctx) + " EXCEPTION", cause);
+            logger.log(formatSimple(ctx, "EXCEPTION", cause));
         }
         ctx.fireExceptionCaught(cause);
     }
@@ -90,7 +90,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (logger.isEnabled()) {
-            logger.log(contextToString(ctx) + " USER_EVENT " + evt);
+            logger.log(format(ctx, "USER_EVENT", evt));
         }
         ctx.fireUserEventTriggered(evt);
     }
@@ -98,7 +98,7 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log(contextToString(ctx) + " BIND " + localAddress);
+            logger.log(formatSimple(ctx, "BIND", localAddress));
         }
         ctx.bind(localAddress, promise);
     }
@@ -108,7 +108,8 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
             ChannelHandlerContext ctx,
             SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
         if (logger.isEnabled()) {
-            logger.log(contextToString(ctx) + " CONNECT " + localAddress + " -> " + remoteAddress);
+            logger.log(contextToString(ctx) + " CONNECT: " + (localAddress == null ? remoteAddress :
+                    (localAddress + " -> " + remoteAddress)));
         }
         ctx.connect(remoteAddress, localAddress, promise);
     }
@@ -172,7 +173,9 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) {
         if (logger.isEnabled()) {
-            logger.log(contextToString(ctx) + " WRITABILITY_CHANGED");
+            final boolean curr = ctx.channel().isWritable();
+            final boolean prev = !curr;
+            logger.log(contextToString(ctx) + " WRITABILITY_CHANGED: " + prev + " -> " + curr);
         }
         ctx.fireChannelWritabilityChanged();
     }
@@ -185,40 +188,45 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         ctx.flush();
     }
 
-    private String formatByteBuf(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+    private static String formatByteBuf(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
         return formatByteBuf(ctx, eventName, null, msg);
     }
 
-    private String formatByteBufNoData(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
-        return contextToString(ctx) + ' ' + eventName + ' ' + msg.readableBytes() + 'B';
+    private static String formatByteBufNoData(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+        return contextToString(ctx) + ' ' + eventName + ": " + msg.readableBytes() + 'B';
     }
 
-    private <T> String formatByteBufHolder(ChannelHandlerContext ctx, String eventName, T msg,
-                                           Function<T, ByteBuf> byteBufExtractor) {
+    private static <T> String formatByteBufHolder(ChannelHandlerContext ctx, String eventName, T msg,
+                                                  Function<T, ByteBuf> byteBufExtractor) {
         return formatByteBuf(ctx, eventName, msgToString(msg), byteBufExtractor.apply(msg));
     }
 
-    private String formatByteBufHolderNoData(ChannelHandlerContext ctx, String eventName, Object msg,
-                                             IntSupplier readableBytes) {
-        return contextToString(ctx) + ' ' + eventName + ' ' + msgToString(msg) + ' ' + readableBytes.getAsInt() + 'B';
+    private static String formatByteBufHolderNoData(ChannelHandlerContext ctx, String eventName, Object msg,
+                                                    IntSupplier readableBytes) {
+        return contextToString(ctx) + ' ' + eventName + ": " + msgToString(msg) + ' ' + readableBytes.getAsInt() + 'B';
     }
 
-    private String formatByteBuf(ChannelHandlerContext ctx, String eventName, @Nullable String prefix, ByteBuf msg) {
+    private static String formatByteBuf(ChannelHandlerContext ctx, String eventName, @Nullable String prefix,
+                                        ByteBuf msg) {
         String channelString = contextToString(ctx);
         int length = msg.readableBytes();
-        int outputLength = channelString.length() + 1 + eventName.length() + 1 +
+        int outputLength = channelString.length() + 1 + eventName.length() + 2 +
                 (prefix != null ? prefix.length() + 1 : 0) + 10 + 1;
-        int rows = length / 16 + (length % 15 == 0 ? 0 : 1) + 4;
-        int hexDumpLength = 2 + rows * 80;
-        outputLength += hexDumpLength;
-        StringBuilder buf = new StringBuilder(outputLength);
-        buf.append(channelString).append(' ').append(eventName).append(' ');
+        if (length > 0) {
+            int rows = length / 16 + (length % 15 == 0 ? 0 : 1) + 4;
+            int hexDumpLength = 2 + rows * 80;
+            outputLength += hexDumpLength;
+        }
+        StringBuilder buf = new StringBuilder(outputLength)
+                .append(channelString).append(' ').append(eventName).append(": ");
         if (prefix != null) {
             buf.append(prefix).append(' ');
         }
         buf.append(length).append('B');
-        buf.append(NEWLINE);
-        appendPrettyHexDump(buf, msg);
+        if (length > 0) {
+            buf.append(NEWLINE);
+            appendPrettyHexDump(buf, msg);
+        }
         return buf.toString();
     }
 
@@ -227,19 +235,26 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         if (msg instanceof ByteBuf) {
             ByteBuf byteBuf = (ByteBuf) msg;
             return logUserData ? formatByteBuf(ctx, eventName, byteBuf) : formatByteBufNoData(ctx, eventName, byteBuf);
-        } else if (msg instanceof ByteBufHolder) {
+        }
+        if (msg instanceof ByteBufHolder) {
             ByteBufHolder holder = (ByteBufHolder) msg;
             return logUserData ? formatByteBufHolder(ctx, eventName, holder, ByteBufHolder::content) :
                     formatByteBufHolderNoData(ctx, eventName, holder, holder.content()::readableBytes);
-        } else if (msg instanceof Buffer) {
+        }
+        if (msg instanceof Buffer) {
             ByteBuf byteBuf = toByteBuf((Buffer) msg);
             return logUserData ? formatByteBuf(ctx, eventName, byteBuf) : formatByteBufNoData(ctx, eventName, byteBuf);
-        } else if (msg instanceof BufferHolder) {
+        }
+        if (msg instanceof BufferHolder) {
             BufferHolder holder = (BufferHolder) msg;
             return logUserData ? formatByteBufHolder(ctx, eventName, holder, h -> toByteBuf(h.content())) :
                     formatByteBufHolderNoData(ctx, eventName, holder, holder.content()::readableBytes);
         }
-        return logUserData ? msg.toString() : msgToString(msg);
+        return contextToString(ctx) + ' ' + eventName + ": " + (logUserData ? String.valueOf(msg) : msgToString(msg));
+    }
+
+    private static String formatSimple(ChannelHandlerContext ctx, String eventName, Object msg) {
+        return contextToString(ctx) + ' ' + eventName + ": " + msg;
     }
 
     private static String contextToString(ChannelHandlerContext ctx) {

@@ -17,6 +17,14 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
 public class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet> {
     @Override
     protected CancellableSet newCompositeCancellable() {
@@ -28,8 +36,33 @@ public class CancellableSetTest extends AbstractCompositeCancellableTest<Cancell
         return composite.add(c);
     }
 
-    @Override
-    protected boolean remove(final CancellableSet composite, final Cancellable c) {
-        return composite.remove(c);
+    @Test
+    public void testAddAndRemove() {
+        CancellableSet c = newCompositeCancellable();
+        Cancellable cancellable = mock(Cancellable.class);
+        add(c, cancellable);
+        c.remove(cancellable);
+        c.cancel();
+        verifyZeroInteractions(cancellable);
+    }
+
+    @Test
+    public void duplicateAddDoesNotCancel() {
+        CancellableSet c = newCompositeCancellable();
+        Cancellable cancellable = mock(Cancellable.class);
+        int addCount = 0;
+        if (add(c, cancellable)) {
+            ++addCount;
+        }
+        if (add(c, cancellable)) {
+            ++addCount;
+        }
+        verify(cancellable, never()).cancel();
+
+        for (int i = 0; i < addCount; ++i) {
+            assertTrue(c.remove(cancellable));
+        }
+        c.cancel();
+        verify(cancellable, never()).cancel();
     }
 }

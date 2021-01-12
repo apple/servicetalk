@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
@@ -41,8 +42,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -83,7 +84,8 @@ public final class TcpServerBinder {
     public static <T extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
             final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext executionContext,
             @Nullable final ConnectionAcceptor connectionAcceptor,
-            final Function<Channel, Single<T>> connectionFunction, final Consumer<T> connectionConsumer) {
+            final BiFunction<Channel, ConnectionObserver, Single<T>> connectionFunction,
+            final Consumer<T> connectionConsumer) {
 
         requireNonNull(connectionFunction);
         requireNonNull(connectionConsumer);
@@ -114,7 +116,8 @@ public final class TcpServerBinder {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                Single<T> connectionSingle = connectionFunction.apply(channel);
+                Single<T> connectionSingle = connectionFunction.apply(channel,
+                        config.transportObserver().onNewConnection());
                 if (connectionAcceptor != null) {
                     connectionSingle = connectionSingle.flatMap(conn ->
                             // Defer is required to isolate context for ConnectionAcceptor#accept and the rest

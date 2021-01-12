@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -95,7 +95,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
         NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
                 serverContext.listenAddress(), new TcpClientConfig().asReadOnly(emptyList()), false,
-                CLIENT_CTX, channel -> DefaultNettyConnection.initChannel(channel,
+                CLIENT_CTX, (channel, connectionObserver) -> DefaultNettyConnection.initChannel(channel,
                         CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), o -> true,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> {
                             channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
@@ -111,8 +111,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true))
-                .toFuture().get();
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), connectionObserver, true),
+                NoopTransportObserver.INSTANCE).toFuture().get();
         connection.closeAsync().toFuture().get();
 
         registeredLatch.await();

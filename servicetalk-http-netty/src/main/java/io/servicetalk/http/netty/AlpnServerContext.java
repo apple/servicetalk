@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,11 +60,8 @@ final class AlpnServerContext {
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
         return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor,
-                channel -> {
-                    final ConnectionObserver connectionObserver = tcpConfig.transportObserver().onNewConnection();
-                    return initChannel(listenAddress, channel, config, executionContext, service,
-                            drainRequestPayloadBody, connectionObserver);
-                },
+                (channel, connectionObserver) -> initChannel(listenAddress, channel, config, executionContext, service,
+                        drainRequestPayloadBody, connectionObserver),
                 serverConnection -> {
                     // Start processing requests on http/1.1 connection:
                     if (serverConnection instanceof NettyHttpServerConnection) {

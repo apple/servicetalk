@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.bootstrap.Bootstrap;
@@ -47,8 +49,8 @@ import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -76,21 +78,25 @@ public final class TcpConnector {
      * @param config The {@link ReadOnlyTcpClientConfig} to use while connecting.
      * @param autoRead if {@code true} auto read will be enabled for new {@link Channel}s.
      * @param executionContext The {@link ExecutionContext} to use for the returned {@link NettyConnection}.
-     * @param connectionFactory {@link Function} to create a {@link NettyConnection} asynchronously.
+     * @param connectionFactory {@link BiFunction} to create a {@link NettyConnection} asynchronously.
+     * @param observer {@link TransportObserver} to use for new connections.
      * @param <C> Type of the created connection.
      * @return A {@link Single} that completes with a new {@link Channel} when connected.
      */
     public static <C extends ListenableAsyncCloseable> Single<C> connect(
-            final @Nullable SocketAddress localAddress, final Object resolvedRemoteAddress,
+            @Nullable final SocketAddress localAddress, final Object resolvedRemoteAddress,
             final ReadOnlyTcpClientConfig config, final boolean autoRead, final ExecutionContext executionContext,
-            final Function<Channel, Single<? extends C>> connectionFactory) {
+            final BiFunction<Channel, ConnectionObserver, Single<? extends C>> connectionFactory,
+            final TransportObserver observer) {
         requireNonNull(resolvedRemoteAddress);
         requireNonNull(config);
         requireNonNull(executionContext);
+        requireNonNull(connectionFactory);
+        requireNonNull(observer);
         return new SubscribableSingle<C>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
-                ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory);
+                ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory, observer);
                 try {
                     Future<?> connectFuture = connect0(localAddress, resolvedRemoteAddress, config, autoRead,
                             executionContext, connectHandler);
@@ -216,12 +222,14 @@ public final class TcpConnector {
         private final DelayedCancellable futureCancellable = new DelayedCancellable();
         private final DelayedCancellable flatMapCancellable = new DelayedCancellable();
         private final Subscriber<? super C> target;
-        private final Function<Channel, Single<? extends C>> connectionFactory;
+        private final BiFunction<Channel, ConnectionObserver, Single<? extends C>> connectionFactory;
+        private final ConnectionObserver connectionObserver;
 
         private volatile int terminated;
 
         ConnectHandler(final Subscriber<? super C> target,
-                       final Function<Channel, Single<? extends C>> connectionFactory) {
+                       final BiFunction<Channel, ConnectionObserver, Single<? extends C>> connectionFactory,
+                       final TransportObserver observer) {
             this.target = target;
             this.connectionFactory = connectionFactory;
             target.onSubscribe(() -> {
@@ -231,11 +239,12 @@ public final class TcpConnector {
                     flatMapCancellable.cancel();
                 }
             });
+            connectionObserver = observer.onNewConnection();
         }
 
         @Override
         public void accept(final Channel channel) {
-            toSource(connectionFactory.apply(channel)
+            toSource(connectionFactory.apply(channel, connectionObserver)
                     .subscribeShareContext())
                     .subscribe(new Subscriber<C>() {
                         @Override
