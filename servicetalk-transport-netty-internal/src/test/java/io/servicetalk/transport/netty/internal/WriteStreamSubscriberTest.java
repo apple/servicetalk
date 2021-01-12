@@ -25,6 +25,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -50,7 +51,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
-                NoopWriteObserver.INSTANCE);
+                NoopWriteObserver.INSTANCE, identity());
         subscription = mock(Subscription.class);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -105,7 +106,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
@@ -124,7 +125,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);

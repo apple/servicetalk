@@ -170,8 +170,8 @@ public class StreamObserverTest {
             verify(clientDataObserver, times(2)).onNewRead();
             verify(clientDataObserver, times(2)).onNewWrite();
             verify(clientReadObserver).readCancelled();
-            verify(clientWriteObserver).writeFailed(e.getCause().getCause());
-            verify(clientStreamObserver, await()).streamClosed(e.getCause().getCause());
+            verify(clientWriteObserver).writeFailed(e.getCause());
+            verify(clientStreamObserver, await()).streamClosed(e.getCause());
         }
         verify(clientStreamObserver, await()).streamClosed();
         verify(clientConnectionObserver).connectionClosed();

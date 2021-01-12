@@ -20,9 +20,9 @@ import io.servicetalk.transport.api.RetryableException;
 import java.io.IOException;
 
 /**
- * An exception that indicates <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> protocol error.
+ * An exception that indicates <a href="https://tools.ietf.org/html/rfc7540#section-5.4">HTTP/2 error</a>.
  */
-public class Http2Exception extends IOException {
+class Http2Exception extends IOException {
     private static final long serialVersionUID = 745695232431963628L;
 
     Http2Exception(final String message) {

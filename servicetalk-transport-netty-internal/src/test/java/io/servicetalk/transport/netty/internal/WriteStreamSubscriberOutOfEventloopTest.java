@@ -29,6 +29,7 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -45,7 +46,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
     }
 
     @Test
@@ -103,7 +104,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         };
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         this.subscriber = new WriteStreamSubscriber(channel, demandEstimator, subscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
 
         this.subscriber.onNext(1);
         this.subscriber.onError(DELIBERATE_EXCEPTION);

@@ -40,6 +40,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
@@ -109,12 +110,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final CloseHandler closeHandler;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
-                          CloseHandler closeHandler, WriteObserver observer) {
+                          CloseHandler closeHandler, WriteObserver observer,
+                          UnaryOperator<Throwable> enrichProtocolError) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
         this.demandEstimator = demandEstimator;
-        promise = new AllWritesPromise(channel, observer);
+        promise = new AllWritesPromise(channel, observer, enrichProtocolError);
         this.closeHandler = closeHandler;
     }
 
@@ -277,10 +279,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          */
         private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>();
         private final WriteObserver observer;
+        private final UnaryOperator<Throwable> enrichProtocolError;
 
-        AllWritesPromise(final Channel channel, WriteObserver observer) {
+        AllWritesPromise(final Channel channel, final WriteObserver observer,
+                         final UnaryOperator<Throwable> enrichProtocolError) {
             super(channel);
             this.observer = observer;
+            this.enrichProtocolError = enrichProtocolError;
         }
 
         @Override
@@ -474,16 +479,17 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     closeHandler.closeChannelOutbound(channel);
                 }
             } else {
+                final Throwable enrichedCause = enrichProtocolError.apply(cause);
                 try {
-                    observer.writeFailed(cause);
-                    assignConnectionError(channel, cause);
-                    subscriber.onError(cause);
+                    observer.writeFailed(enrichedCause);
+                    assignConnectionError(channel, enrichedCause);
+                    subscriber.onError(enrichedCause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
                 }
                 if (!hasFlag(CHANNEL_CLOSED)) {
                     // Close channel on error.
-                    ChannelCloseUtils.close(channel, cause);
+                    ChannelCloseUtils.close(channel, enrichedCause);
                 }
             }
             // Notify listeners after the subscriber is terminated. Otherwise, WriteStreamSubscriber#channelClosed may
