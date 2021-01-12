@@ -41,7 +41,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
@@ -154,7 +154,7 @@ public class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServ
 
     private static final class AsyncContextCaptureTransportObserver implements TransportObserver {
 
-        private final Map<String, String> storageMap = new ConcurrentSkipListMap<>();
+        private final Map<String, String> storageMap = new ConcurrentHashMap<>();
         private final AsyncContextMap.Key<String> key;
 
         AsyncContextCaptureTransportObserver(AsyncContextMap.Key<String> key) {
@@ -167,6 +167,8 @@ public class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServ
 
         @Override
         public ConnectionObserver onNewConnection() {
+            // Use String.valueOf(...) here and in all other callbacks to prevent passing `null` value to the
+            // ConcurrentHashMap which does not allow `null` values:
             storageMap.put("onNewConnection", valueOf(AsyncContext.get(key)));
             return new AsyncContextCaptureConnectionObserver();
         }
