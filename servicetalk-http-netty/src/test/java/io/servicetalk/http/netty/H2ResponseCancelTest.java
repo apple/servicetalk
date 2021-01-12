@@ -56,7 +56,7 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
@@ -121,7 +121,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
         requestCancellationResetsStreamButNotParentConnection(streamingHttpClient());
         int connectionsAfter = newConnectionsCounter.get();
         assertThat("Client unexpectedly created more connections instead of reusing the existing one",
-                connectionsAfter - connectionsBefore, is(0));
+                connectionsAfter, is(connectionsBefore));
     }
 
     @Test
@@ -172,11 +172,11 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                 // .thenCancel()
                 .verify();
 
-        assertThat("Unexpected responses", responses, hasSize(0));
+        assertThat("Unexpected responses", responses, is(empty()));
         firstResponseLatch.countDown();
 
         assertResponse(responses.take(), HTTP_2_0, OK, "first");
-        // Mak sure we can use the same connection for future requests:
+        // Make sure we can use the same connection for future requests:
         assertResponse(makeRequest(newRequest(requester, "third")), HTTP_2_0, OK, "third");
     }
 
