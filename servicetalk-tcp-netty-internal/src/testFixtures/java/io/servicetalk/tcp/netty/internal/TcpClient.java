@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.api.TransportObserver;
@@ -93,15 +92,13 @@ public final class TcpClient {
      */
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
-                channel -> {
-                    final ConnectionObserver connectionObserver = observer.onNewConnection();
-                    return initChannel(channel,
-                            executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
-                            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
-                            new TcpClientChannelInitializer(config, connectionObserver).andThen(
-                                    channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                            executionContext.executionStrategy(), TCP, connectionObserver, true);
-                });
+                (channel, connectionObserver) -> initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        new TcpClientChannelInitializer(config, connectionObserver).andThen(
+                                channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
+                        executionContext.executionStrategy(), TCP, connectionObserver, true),
+                observer);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -50,6 +51,7 @@ final class TestServiceStreaming implements StreamingHttpService {
     static final String SVC_LARGE_LAST = "/largeLast";
     static final String SVC_TEST_PUBLISHER = "/testPublisher";
     static final String SVC_NO_CONTENT = "/noContent";
+    static final String SVC_NO_CONTENT_AFTER_READ = "/noContentAfterRead";
     static final String SVC_ROT13 = "/rot13";
     static final String SVC_THROW_ERROR = "/throwError";
     static final String SVC_SINGLE_ERROR = "/singleError";
@@ -92,6 +94,8 @@ final class TestServiceStreaming implements StreamingHttpService {
             case SVC_NO_CONTENT:
                 response = newNoContentResponse(req, factory);
                 break;
+            case SVC_NO_CONTENT_AFTER_READ:
+                return req.payloadBody().ignoreElements().concat(succeeded(newNoContentResponse(req, factory)));
             case SVC_ROT13:
                 response = newRot13Response(req, factory);
                 break;
@@ -109,7 +113,7 @@ final class TestServiceStreaming implements StreamingHttpService {
             default:
                 response = newNotFoundResponse(req, factory);
         }
-        return Single.succeeded(response);
+        return succeeded(response);
     }
 
     private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,

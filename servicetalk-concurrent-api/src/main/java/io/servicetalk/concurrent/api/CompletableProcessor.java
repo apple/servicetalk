@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import javax.annotation.Nullable;
-
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 /**
@@ -29,9 +27,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    private final ConcurrentStack<Subscriber> stack = new ConcurrentStack<>();
-    @Nullable
-    private TerminalNotification terminalSignal;
+    private final ClosableConcurrentStack<Subscriber> stack = new ClosableConcurrentStack<>();
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
@@ -47,8 +43,6 @@ final class CompletableProcessor extends Completable implements Processor {
                 // these references.
                 stack.relaxedRemove(subscriber);
             });
-        } else {
-            terminateLateSubscriber(subscriber);
         }
     }
 
@@ -67,19 +61,8 @@ final class CompletableProcessor extends Completable implements Processor {
         terminate(TerminalNotification.error(t));
     }
 
-    private void terminateLateSubscriber(Subscriber subscriber) {
-        TerminalNotification terminalSignal = this.terminalSignal;
-        assert terminalSignal != null;
-        terminalSignal.terminate(subscriber);
-    }
-
     private void terminate(TerminalNotification terminalSignal) {
-        if (this.terminalSignal == null) {
-            // We must set terminalSignal before close as we depend upon happens-before relationship for this value
-            // to be visible for any future late subscribers.
-            this.terminalSignal = terminalSignal;
-            stack.close(terminalSignal::terminate);
-        }
+        stack.close(terminalSignal::terminate);
     }
 
     @Override

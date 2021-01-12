@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,13 +66,12 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, false,
-                executionContext, channel -> createConnection(channel, observer));
+                executionContext, this::createConnection, observer);
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(
-            final Channel channel, final TransportObserver observer) {
+            final Channel channel, final ConnectionObserver connectionObserver) {
         final ReadOnlyTcpClientConfig tcpConfig = this.config.tcpConfig();
-        final ConnectionObserver connectionObserver = observer.onNewConnection();
         return new AlpnChannelSingle(channel,
                 new TcpClientChannelInitializer(tcpConfig, connectionObserver), false).flatMap(protocol -> {
             switch (protocol) {

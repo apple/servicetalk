@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.util.function.Function;
@@ -59,15 +58,13 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // Auto read is required for h2
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
-                channel -> {
-                    final ConnectionObserver connectionObserver = observer.onNewConnection();
-                    return H2ClientParentConnectionContext.initChannel(channel,
-                            executionContext.bufferAllocator(), executionContext.executor(),
-                            config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
-                            roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
-                            new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
-                                    new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver);
-                });
+                (channel, connectionObserver) -> H2ClientParentConnectionContext.initChannel(channel,
+                        executionContext.bufferAllocator(), executionContext.executor(),
+                        config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
+                        roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
+                        new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
+                                new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver),
+                observer);
     }
 
     @Override
