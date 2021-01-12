@@ -31,7 +31,7 @@ public class MergeCompletableDelayErrorTest {
     private final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new MergeCompletable(true, completables[0], immediate(),
+            return MergeCompletable.newInstance(true, completables[0], immediate(),
                     copyOfRange(completables, 1, completables.length));
         }
     };

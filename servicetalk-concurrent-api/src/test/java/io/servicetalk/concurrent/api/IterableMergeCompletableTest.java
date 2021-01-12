@@ -15,11 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.api.MergeCompletableTest.CompletableHolder;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -28,15 +33,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class IterableMergeCompletableTest {
-    private final MergeCompletableTest.CompletableHolder collectionHolder =
-            new MergeCompletableTest.CompletableHolder() {
+    private final CompletableHolder collectionHolder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],
                     asList(completables).subList(1, completables.length), immediate());
         }
     };
-    private final MergeCompletableTest.CompletableHolder iterableHolder = new MergeCompletableTest.CompletableHolder() {
+    private final CompletableHolder iterableHolder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],
@@ -103,6 +107,49 @@ public class IterableMergeCompletableTest {
     public void testIterableMergeWithOne() {
         TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
         iterableHolder.init(1).listen(subscriber).completeAll();
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void arrayMergeMultipleCompleted() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(completed(), completed(), completed())).subscribe(subscriber);
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void collectionMergeMultipleCompleted() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(asList(completed(), completed(), completed()))).subscribe(subscriber);
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void iterableMergeMultipleCompleted() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(() -> asList(completed(), completed(), completed()).iterator()))
+                .subscribe(subscriber);
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void mergeEmptyArray() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(new Completable[0])).subscribe(subscriber);
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void mergeEmptyIterable() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(() -> Collections.emptyIterator())).subscribe(subscriber);
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void mergeEmptyCollection() {
+        TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+        toSource(completed().merge(Collections.emptyList())).subscribe(subscriber);
         subscriber.awaitOnComplete();
     }
 }
