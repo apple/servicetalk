@@ -59,9 +59,9 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
 import static java.lang.String.valueOf;
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
@@ -145,7 +145,7 @@ public class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServ
 
     private static void assertMap(Map<String, String> map, String expected) {
         Set<Map.Entry<String, String>> entries = map.entrySet();
-        assertThat("No entries in the map", entries, hasSize(greaterThan(0)));
+        assertThat("No entries in the map", entries, not(empty()));
         for (Map.Entry<String, String> entry : entries) {
             assertThat("Unexpected value for \"" + entry.getKey() + "\" callback",
                     entry.getValue(), equalTo(expected));
