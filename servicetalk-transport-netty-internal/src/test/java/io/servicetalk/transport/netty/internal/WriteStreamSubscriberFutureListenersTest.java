@@ -41,6 +41,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -74,7 +75,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         subscriber = new WriteStreamSubscriber(channel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
         TestSubscription subscription = new TestSubscription();
         subscriber.onSubscribe(subscription);
         assertThat("No items requested.", subscription.requested(), greaterThan(0L));
@@ -178,7 +179,7 @@ public class WriteStreamSubscriberFutureListenersTest {
         WriteDemandEstimator estimator = WriteDemandEstimators.newDefaultEstimator();
         TestCompletableSubscriber completableSubscriber = new TestCompletableSubscriber();
         WriteStreamSubscriber subscriber = new WriteStreamSubscriber(mockChannel, estimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity());
         subscriber.onNext(1);
         verifyListenerInvokedWithSuccess(listeners.take());
         subscriber.onNext(2);

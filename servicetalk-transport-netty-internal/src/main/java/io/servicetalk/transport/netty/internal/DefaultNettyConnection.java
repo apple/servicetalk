@@ -64,6 +64,7 @@ import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
@@ -84,6 +85,7 @@ import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extr
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static java.util.function.UnaryOperator.identity;
 
 /**
  * Implementation of {@link NettyConnection} backed by a netty {@link Channel}.
@@ -136,13 +138,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final ChannelConfig parentChannelConfig;
     private volatile DataObserver dataObserver;
     private final boolean isClient;
+    private final UnaryOperator<Throwable> enrichProtocolError;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    Predicate<Read> terminalPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig,
-                                   DataObserver dataObserver, boolean isClient) {
+                                   DataObserver dataObserver, boolean isClient,
+                                   UnaryOperator<Throwable> enrichProtocolError) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
         this.readPublisher = registerReadObserver(nettyChannelPublisher.recoverWith(this::enrichErrorPublisher));
@@ -183,6 +187,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.protocol = requireNonNull(protocol);
         this.dataObserver = dataObserver;
         this.isClient = isClient;
+        this.enrichProtocolError = requireNonNull(enrichProtocolError);
     }
 
     /**
@@ -202,6 +207,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s.
      * @param streamObserver {@link StreamObserver} to report internal events.
      * @param isClient tells if this {@link Channel} is for the client.
+     * @param enrichProtocolError enriches protocol-specific {@link Throwable}s.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -211,10 +217,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
-            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient) {
+            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
+            UnaryOperator<Throwable> enrichProtocolError) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
-                sslSession, parentChannelConfig, streamObserver.streamEstablished(), isClient);
+                sslSession, parentChannelConfig, streamObserver.streamEstablished(), isClient, enrichProtocolError);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
         return connection;
@@ -257,7 +264,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                            executionStrategy, protocol, null, null, NoopDataObserver.INSTANCE, isClient);
+                            executionStrategy, protocol, null, null, NoopDataObserver.INSTANCE, isClient,
+                            identity());
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -337,7 +345,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Throwable enrichError(final Throwable t) {
-        final Throwable throwable;
+        Throwable throwable;
         if (t instanceof AbortedFirstWrite) {
             final Throwable cause = t.getCause();
             if (closeReason != null) {
@@ -350,6 +358,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         } else {
             throwable = wrapIfReasonIsKnown(t);
         }
+        throwable = enrichProtocolError.apply(throwable);
         transportError.onSuccess(throwable);
         return throwable;
     }
@@ -388,7 +397,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 final WriteObserver writeObserver = DefaultNettyConnection.this.dataObserver.onNewWrite();
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
-                        completableSubscriber, closeHandler, writeObserver);
+                        completableSubscriber, closeHandler, writeObserver, enrichProtocolError);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     toSource(composeFlushes(channel(), write, flushStrategySupplier.get(), writeObserver))
                             .subscribe(subscriber);
