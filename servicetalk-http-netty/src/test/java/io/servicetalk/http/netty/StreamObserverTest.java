@@ -33,6 +33,7 @@ import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
@@ -163,6 +164,7 @@ public class StreamObserverTest {
             ExecutionException e = assertThrows(ExecutionException.class,
                     () -> connection.request(connection.get("/second")).toFuture().get());
             assertThat(e.getCause(), instanceOf(Http2Exception.class));
+            assertThat(e.getCause(), instanceOf(RetryableException.class));
             assertThat(e.getCause().getCause(), instanceOf(StreamException.class));
 
             verify(clientMultiplexedObserver, times(2)).onNewStream();
