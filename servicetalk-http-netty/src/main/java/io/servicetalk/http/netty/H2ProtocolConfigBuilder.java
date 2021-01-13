@@ -78,9 +78,11 @@ public final class H2ProtocolConfigBuilder {
     /**
      * Enables a logger for HTTP/2 frames.
      *
+     * @deprecated Use {@link #enableFrameLogging(String, LogLevel, BooleanSupplier)} instead.
      * @param loggerName provides the logger to log HTTP/2 frames.
      * @return {@code this}
      */
+    @Deprecated
     public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
         return enableFrameLogging(loggerName, TRACE, () -> false);
     }
