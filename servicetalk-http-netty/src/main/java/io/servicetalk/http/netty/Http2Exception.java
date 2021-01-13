@@ -17,7 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.transport.api.RetryableException;
 
+import io.netty.handler.codec.http2.Http2NoMoreStreamIdsException;
+
 import java.io.IOException;
+
+import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 
 /**
  * An exception that indicates <a href="https://tools.ietf.org/html/rfc7540#section-5.4">HTTP/2 error</a>.
@@ -35,12 +39,34 @@ class Http2Exception extends IOException {
 
     static Throwable wrapIfNecessary(final Throwable cause) {
         if (cause instanceof io.netty.handler.codec.http2.Http2Exception) {
-            return new StacklessHttp2Exception((io.netty.handler.codec.http2.Http2Exception) cause);
+            final io.netty.handler.codec.http2.Http2Exception h2Cause =
+                    (io.netty.handler.codec.http2.Http2Exception) cause;
+            return isRetryable(h2Cause) ? new RetryableStacklessHttp2Exception(h2Cause) :
+                    new StacklessHttp2Exception(h2Cause);
         }
         if (cause instanceof io.netty.handler.codec.http2.Http2FrameStreamException) {
             return new StacklessHttp2Exception((io.netty.handler.codec.http2.Http2FrameStreamException) cause);
         }
         return cause;
+    }
+
+    /**
+     * Checks if an {@link io.netty.handler.codec.http2.Http2Exception} is retryable on a different h2 parent
+     * connection.
+     *
+     * @param cause {@link io.netty.handler.codec.http2.Http2Exception} for inspection
+     * @return {@code true} if {@link io.netty.handler.codec.http2.Http2Exception} is retryable on a different h2
+     * parent connection.
+     */
+    private static boolean isRetryable(final io.netty.handler.codec.http2.Http2Exception cause) {
+        // The first check captures cases like:
+        //  - Cannot create stream %d greater than Last-Stream-ID %d from GOAWAY.
+        //  - Stream IDs are exhausted for this endpoint.
+        //  - Maximum active streams violated for this endpoint.
+        //  - Http2ChannelClosedException
+        return cause.error() == REFUSED_STREAM
+                // The  second check captures "No more streams can be created on this connection":
+                || cause instanceof Http2NoMoreStreamIdsException;
     }
 
     private static final class StacklessHttp2Exception extends Http2Exception {
@@ -51,6 +77,20 @@ class Http2Exception extends IOException {
         }
 
         StacklessHttp2Exception(io.netty.handler.codec.http2.Http2FrameStreamException cause) {
+            super(cause);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            // This is a wrapping exception class that always has an original cause and does not require stack trace.
+            return this;
+        }
+    }
+
+    private static final class RetryableStacklessHttp2Exception extends Http2Exception implements RetryableException {
+        private static final long serialVersionUID = -5874594718640129904L;
+
+        RetryableStacklessHttp2Exception(io.netty.handler.codec.http2.Http2Exception cause) {
             super(cause);
         }
 
