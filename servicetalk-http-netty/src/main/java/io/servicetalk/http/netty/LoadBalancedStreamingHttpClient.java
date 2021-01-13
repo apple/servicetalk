@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
@@ -87,11 +88,16 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                                 // Transport MAY not close the connection if cancel raced with completion and completion
                                 // was seen by the transport before cancel. We have no way of knowing at this layer
                                 // if this indeed happen.
-                                // For H2, closing connection (stream) is cheaper but for H1 this may create more churn
-                                // if we are always hitting the above mentioned race and the connection otherwise is
-                                // good to be reused. As the debugging of why a closed connection was selected is much
-                                // more difficult for users, we decide to be pessimistic here.
-                                c.closeAsync().subscribe();
+                                // For H2 and above, connection are multiplexed and use virtual streams for each
+                                // request-response exchange. Because we don't have any way to know when the stream gets
+                                // closed we prematurely mark the request as finished. If the maximum concurrent streams
+                                // violated for this connection that exception is safe to retry on a new or same
+                                // connection.
+                                if (c.connectionContext().protocol().major() <= 1) {
+                                    c.closeAsync().subscribe();
+                                } else {
+                                    c.requestFinished();
+                                }
                             }
                         }))
                         // subscribeShareContext is used because otherwise the AsyncContext modified during response
@@ -104,7 +110,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                      final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
-                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(c -> c));
+                loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity()));
     }
 
     @Override
