@@ -42,6 +42,11 @@ abstract class DelegatingToBufferHttpPayloadWriter<T> implements HttpPayloadWrit
     }
 
     @Override
+    public void close(Throwable cause) throws IOException {
+        delegate.close(cause);
+    }
+
+    @Override
     public HttpHeaders trailers() {
         return delegate.trailers();
     }

@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
@@ -51,10 +50,8 @@ import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
 
     private final BlockingStreamingHttpService original;
 
@@ -68,7 +65,6 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -82,11 +78,9 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
                 final Processor payloadProcessor = newCompletableProcessor();
                 DefaultBlockingStreamingHttpServerResponse response = null;
-                BufferHttpPayloadWriter payloadWriterOuter = null;
+                final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
+                        ctx.headersFactory().newTrailers(), payloadProcessor);
                 try {
-                    final BufferHttpPayloadWriter payloadWriter = payloadWriterOuter = new BufferHttpPayloadWriter(
-                            ctx.headersFactory().newTrailers(), payloadProcessor);
-
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
                         final StreamingHttpResponse result;
                         try {
@@ -142,10 +136,16 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
                         safeOnError(subscriber, cause);
-                    } else if (payloadWriterOuter.markSubscriberComplete()) {
-                        payloadProcessor.onError(cause);
                     } else {
-                        LOGGER.error("An exception occurred after the response was sent", cause);
+                        try {
+                            payloadProcessor.onError(cause);
+                        } finally {
+                            try {
+                                payloadWriter.close(cause);
+                            } catch (IOException e) {
+                                LOGGER.info("Unexpected exception from close {}", payloadProcessor, e);
+                            }
+                        }
                     }
                     return;
                 }
@@ -165,23 +165,27 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
-
-        private static final AtomicIntegerFieldUpdater<BufferHttpPayloadWriter> subscriberCompleteUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(BufferHttpPayloadWriter.class, "subscriberComplete");
-        @SuppressWarnings("unused")
-        private volatile int subscriberComplete;
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
         private final HttpHeaders trailers;
         private final CompletableSource.Subscriber subscriber;
 
-        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableSource.Subscriber subscriber) {
+        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableSource.Subscriber threadSafeSubscriber) {
             this.trailers = trailers;
-            this.subscriber = subscriber;
+            this.subscriber = threadSafeSubscriber;
         }
 
         @Override
         public void write(final Buffer object) throws IOException {
             payloadWriter.write(object);
+        }
+
+        @Override
+        public void close(final Throwable cause) throws IOException {
+            try {
+                payloadWriter.close(cause);
+            } finally {
+                subscriber.onError(cause);
+            }
         }
 
         @Override
@@ -194,9 +198,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
             try {
                 payloadWriter.close();
             } finally {
-                if (markSubscriberComplete()) {
-                    subscriber.onComplete();
-                }
+                subscriber.onComplete();
             }
         }
 
@@ -207,10 +209,6 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
         Publisher<Buffer> connect() {
             return payloadWriter.connect();
-        }
-
-        boolean markSubscriberComplete() {
-            return subscriberCompleteUpdater.compareAndSet(this, 0, 1);
         }
     }
 }

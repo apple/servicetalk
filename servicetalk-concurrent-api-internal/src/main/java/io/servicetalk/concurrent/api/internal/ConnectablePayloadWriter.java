@@ -38,6 +38,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
@@ -49,11 +50,13 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private static final long REQUESTN_ABOUT_TO_PARK = Long.MIN_VALUE;
     private static final long REQUESTN_TERMINATED = REQUESTN_ABOUT_TO_PARK + 1;
+    @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<ConnectablePayloadWriter> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "requested");
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, TerminalNotification> closedUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(
-                    ConnectablePayloadWriter.class, TerminalNotification.class, "closed");
+            newUpdater(ConnectablePayloadWriter.class, TerminalNotification.class, "closed");
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, Object> stateUpdater =
             newUpdater(ConnectablePayloadWriter.class, Object.class, "state");
 
@@ -120,6 +123,15 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     @Override
     public void close() throws IOException {
+        close0(null);
+    }
+
+    @Override
+    public void close(final Throwable cause) throws IOException {
+        close0(requireNonNull(cause));
+    }
+
+    private void close0(@Nullable Throwable cause) {
         // Set closed before state, because the Subscriber thread depends upon this ordering in the event it needs to
         // terminate the Subscriber.
         if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
@@ -130,7 +142,13 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 final Object currState = state;
                 if (currState instanceof Subscriber) {
                     if (stateUpdater.compareAndSet(this, currState, State.TERMINATED)) {
-                        ((Subscriber) currState).onComplete();
+                        @SuppressWarnings("unchecked")
+                        final Subscriber<T> subscriber = (Subscriber<T>) currState;
+                        if (cause == null) {
+                            subscriber.onComplete();
+                        } else {
+                            subscriber.onError(cause);
+                        }
                         break;
                     }
                 } else if (currState == State.TERMINATED ||
