@@ -70,6 +70,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -118,7 +119,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
-                            buildContext.reqRespFactory));
+                            defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
+                                    buildContext.executionContext.bufferAllocator())));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = maxRedirects <= 0 ? urlClient :

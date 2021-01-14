@@ -23,6 +23,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
@@ -48,12 +49,12 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     AlpnLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
+        super(config, executionContext, connectionFilterFunction, reqRespFactoryFunc, strategyInfluencer,
                 connectionFactoryFilter, protocolBinding);
         assert config.h1Config() != null && config.h2Config() != null;
     }
@@ -81,14 +82,14 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     return StreamingConnectionFactory.createConnection(channel, executionContext, this.config,
                             NoopChannelInitializer.INSTANCE, connectionObserver)
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
-                                    reqRespFactory));
+                                    reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1)));
                 case HTTP_2:
                     final H2ProtocolConfig h2Config = this.config.h2Config();
                     assert h2Config != null;
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
-                            h2Config, reqRespFactory, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
-                            executionContext.executionStrategy(),
+                            h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
+                            tcpConfig.idleTimeoutMs(), executionContext.executionStrategy(),
                             new H2ClientParentChannelInitializer(h2Config), connectionObserver);
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));

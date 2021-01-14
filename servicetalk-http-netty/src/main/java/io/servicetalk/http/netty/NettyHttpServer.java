@@ -162,7 +162,7 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
+                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
@@ -234,14 +234,16 @@ final class NettyHttpServer {
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpExecutionStrategy strategy,
+                                  final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
                                   final boolean drainRequestPayloadBody) {
             super(headersFactory,
-                    new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator()),
+                    new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
+                            version),
                     new DefaultStreamingHttpResponseFactory(headersFactory,
-                            connection.executionContext().bufferAllocator()),
+                            connection.executionContext().bufferAllocator(), version),
                     new DefaultBlockingStreamingHttpResponseFactory(headersFactory,
-                            connection.executionContext().bufferAllocator()));
+                            connection.executionContext().bufferAllocator(), version));
             this.connection = connection;
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),

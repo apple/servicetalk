@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
@@ -43,7 +44,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
+        super(config, executionContext, connectionFilterFunction, version -> reqRespFactory, strategyInfluencer,
                 connectionFactoryFilter, protocolBinding);
     }
 
@@ -53,7 +54,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
         assert config.h1Config() != null;
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,
-                        reqRespFactory));
+                        reqRespFactoryFunc.apply(HTTP_1_1)));
     }
 
     @Override

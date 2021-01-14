@@ -25,6 +25,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -46,7 +47,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final ReadOnlyHttpClientConfig config;
     final HttpExecutionContext executionContext;
-    final StreamingHttpRequestResponseFactory reqRespFactory;
+    final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc;
     final HttpExecutionStrategyInfluencer strategyInfluencer;
     final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
     private final Function<FilterableStreamingHttpConnection,
@@ -55,7 +56,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     AbstractLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
@@ -63,7 +64,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
-        this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.reqRespFactoryFunc = requireNonNull(reqRespFactoryFunc);
         this.strategyInfluencer = strategyInfluencer;
         filterableConnectionFactory = connectionFactoryFilter.create(
                 new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
@@ -88,7 +89,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     public Completable closeAsyncGracefully() {
                         return close.closeAsyncGracefully();
                     }
-        });
+                });
         this.protocolBinding = protocolBinding;
     }
 

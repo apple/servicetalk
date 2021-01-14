@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -43,8 +42,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
@@ -62,8 +61,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
-            HttpHeaders h1Headers = metaData.headers();
-            Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
+            Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
             ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
         } else if (msg instanceof Buffer) {
@@ -107,9 +105,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 throw new IllegalArgumentException("a request must have " + METHOD + " and " +
                         PATH + " headers");
             } else {
-                StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                        h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
-                ctx.fireChannelRead(request);
+                ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
+                        h2HeadersToH1HeadersServer(h2Headers, httpMethod)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -123,9 +120,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
         if (shouldAddZeroContentLength(httpMethod)) {
             h2Headers.set(CONTENT_LENGTH, ZERO);
         }
-        StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
-        ctx.fireChannelRead(request);
+        ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
+                h2HeadersToH1HeadersServer(h2Headers, httpMethod)));
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
 

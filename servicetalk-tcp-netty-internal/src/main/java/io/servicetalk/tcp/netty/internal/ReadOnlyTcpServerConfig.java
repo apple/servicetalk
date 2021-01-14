@@ -49,7 +49,7 @@ public final class ReadOnlyTcpServerConfig
      * @param from Source to copy from.
      */
     ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
-        super(from, !supportedAlpnProtocols.isEmpty());
+        super(from, supportedAlpnProtocols.isEmpty() ? null : supportedAlpnProtocols.get(0));
         final TransportObserver transportObserver = from.transportObserver();
         this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
                 asSafeObserver(transportObserver);

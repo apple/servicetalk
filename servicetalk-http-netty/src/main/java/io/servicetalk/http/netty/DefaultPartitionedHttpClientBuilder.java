@@ -68,8 +68,10 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -117,7 +119,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
-                        clientFactory, partitionAttributesBuilderFactory, buildContext.reqRespFactory,
+                        clientFactory, partitionAttributesBuilderFactory,
+                        defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
+                                buildContext.executionContext.bufferAllocator()),
                         buildContext.executionContext, partitionMapFactory);
         return new FilterableClientToClient(partitionedClient, buildContext.executionContext.executionStrategy(),
                 buildContext.builder.buildStrategyInfluencerForClient(
@@ -221,7 +225,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Override
         public StreamingHttpResponseFactory httpResponseFactory() {
-            return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
+            return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR,
+                    HTTP_1_1);
         }
 
         @Override
