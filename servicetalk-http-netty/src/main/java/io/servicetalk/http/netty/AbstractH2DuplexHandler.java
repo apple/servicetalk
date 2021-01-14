@@ -19,8 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.netty.Http2Exception.H2StreamRefusedException;
-import io.servicetalk.http.netty.Http2Exception.H2StreamResetException;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -31,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
-import io.netty.handler.codec.http2.Http2FrameStream;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
@@ -39,9 +36,9 @@ import io.netty.util.ReferenceCountUtil;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
-import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
+import static io.servicetalk.http.netty.Http2Exception.newStreamResetException;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
@@ -63,16 +60,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     @Override
     public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof Http2ResetFrame) {
-            final Http2ResetFrame resetFrame = (Http2ResetFrame) evt;
-            final Http2FrameStream stream = resetFrame.stream();
-            assert stream != null;
-            if (resetFrame.errorCode() == REFUSED_STREAM.code()) {
-                ctx.fireExceptionCaught(new H2StreamRefusedException("RST_STREAM received for streamId=" + stream.id() +
-                        ", stream refused"));
-            } else {
-                ctx.fireExceptionCaught(new H2StreamResetException("RST_STREAM received for streamId=" + stream.id() +
-                        " with error code: " + resetFrame.errorCode()));
-            }
+            ctx.fireExceptionCaught(newStreamResetException((Http2ResetFrame) evt));
         } else {
             ctx.fireUserEventTriggered(evt);
         }

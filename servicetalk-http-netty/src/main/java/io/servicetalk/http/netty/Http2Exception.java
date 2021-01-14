@@ -17,7 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.transport.api.RetryableException;
 
+import io.netty.handler.codec.http2.Http2FrameStream;
 import io.netty.handler.codec.http2.Http2NoMoreStreamIdsException;
+import io.netty.handler.codec.http2.Http2ResetFrame;
 
 import java.io.IOException;
 
@@ -104,7 +106,7 @@ class Http2Exception extends IOException {
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
      */
-    static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
+    private static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
         private static final long serialVersionUID = 615309480184187428L;
 
         H2StreamRefusedException(String message) {
@@ -117,6 +119,17 @@ class Http2Exception extends IOException {
 
         H2StreamResetException(String message) {
             super(message);
+        }
+    }
+
+    static H2StreamResetException newStreamResetException(final Http2ResetFrame resetFrame) {
+        final Http2FrameStream stream = resetFrame.stream();
+        assert stream != null;
+        if (resetFrame.errorCode() == REFUSED_STREAM.code()) {
+            return new H2StreamRefusedException("RST_STREAM received for streamId=" + stream.id() + ", stream refused");
+        } else {
+            return new H2StreamResetException("RST_STREAM received for streamId=" + stream.id() + " with error code: " +
+                    resetFrame.errorCode());
         }
     }
 }
