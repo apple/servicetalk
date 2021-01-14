@@ -16,16 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.EmptySubscription;
 
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.util.Objects.requireNonNull;
 
 final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private static final Subscription CANCELLED = new EmptySubscription();
+    private static final Subscription CANCELLED = newEmptySubscription(true);
 
     private final Predicate<? super T> predicate;
 

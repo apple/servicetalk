@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 
 final class OnSubscribeIgnoringSubscriberForOffloading<T> implements PublisherSource.Subscriber<T> {
 
@@ -59,7 +59,7 @@ final class OnSubscribeIgnoringSubscriberForOffloading<T> implements PublisherSo
         // already, so we send an onSubscribe to the offloaded Subscriber which ignores this signal but makes
         // the signalOffloader does not see spec violation (onError without onSubscribe) for the offloaded
         // subscriber.
-        toReturn.onSubscribe(EMPTY_SUBSCRIPTION);
+        toReturn.onSubscribe(newEmptySubscription(subscriber));
         return toReturn;
     }
 }

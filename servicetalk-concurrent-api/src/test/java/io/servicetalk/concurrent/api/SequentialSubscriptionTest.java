@@ -93,8 +93,18 @@ public final class SequentialSubscriptionTest {
 
     @Test
     public void testInvalidRequestNLongMin() {
-        s.request(0);
-        verify(s1).request(MIN_VALUE);
+        s.request(MIN_VALUE);
+        verify(s1).request(leq(0L));
+    }
+
+    @Test
+    public void testInvalidRequestNDefaultConstructorPropagatedAfterSwitch() {
+        s = new SequentialSubscription();
+        s.request(-1);
+        s.switchTo(s1);
+        verify(s1).request(leq(0L));
+        s.switchTo(s2);
+        verify(s2).request(leq(0L));
     }
 
     @Test

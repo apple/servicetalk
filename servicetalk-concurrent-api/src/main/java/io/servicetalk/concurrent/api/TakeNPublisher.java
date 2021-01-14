@@ -16,10 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.EmptySubscription;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 
@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
  * @param <T> the type of the elements.
  */
 final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private static final Subscription CANCELLED = new EmptySubscription();
+    private static final Subscription CANCELLED = newEmptySubscription(true);
 
     private final long numElements;
 
