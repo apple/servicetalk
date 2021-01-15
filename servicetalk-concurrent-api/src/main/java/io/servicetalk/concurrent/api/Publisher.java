@@ -164,6 +164,32 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Apply a function to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} as well as
+     * optionally concat one {@link Subscriber#onNext(Object)} signal before the terminal signal is emitted.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *       results.add(mapper.onNext(t));
+     *     }
+     *     if (mapper.mapTerminalSignal()) {
+     *       results.add(mapper.onComplete());
+     *     }
+     *     return results;
+     * }</pre>
+     * @param mapperSupplier Invoked on each {@link PublisherSource#subscribe(Subscriber)} to obtain a
+     * {@link ScanConcatMapper} to use for the subscribe.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     */
+    public final <R> Publisher<R> scanConcat(
+            Supplier<? extends ScanConcatMapper<? super T, ? extends R>> mapperSupplier) {
+        return new ScanConcatPublisher<>(this, mapperSupplier, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
      * passed {@code nextFactory}.
      * <p>
