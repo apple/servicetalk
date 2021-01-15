@@ -195,7 +195,11 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         if (currState instanceof Subscriber && currClosed.cause() != ConnectedPublisher.CONNECTED_PUBLISHER_CANCELLED) {
             currClosed.terminate((Subscriber<?>) currState);
         }
-        throw new IOException("Already closed", currClosed.cause());
+        throw newAlreadyClosed(currClosed.cause());
+    }
+
+    private static IOException newAlreadyClosed(@Nullable Throwable cause) {
+        return new IOException("Already closed", cause);
     }
 
     private void waitForRequestNDemand() throws IOException {
@@ -259,7 +263,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 // for delivering the terminal event to the Subscriber (because it never has a reference to it), and
                 // the thread processing the subscribe(..) call will terminate the Subscriber instead of handing it off.
                 writerThread = null;
-                throw new IOException("Already closed " + closed);
+                final TerminalNotification localClosed = closed;
+                assert localClosed != null;
+                throw newAlreadyClosed(localClosed.cause());
             } else if (stateUpdater.compareAndSet(this, currState, State.WAITING_FOR_CONNECTED)) {
                 LockSupport.park();
             }
@@ -267,9 +273,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     }
 
     private static final class ConnectedPublisher<T> extends Publisher<T> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedPublisher.class);
         private static final IOException CONNECTED_PUBLISHER_CANCELLED = unknownStackTrace(
                 new IOException("Connected Publisher cancel()"), ConnectablePayloadWriter.class, "cancel()");
-        private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedPublisher.class);
         private final ConnectablePayloadWriter<T> outer;
 
         ConnectedPublisher(final ConnectablePayloadWriter<T> outer) {
