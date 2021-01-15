@@ -240,13 +240,13 @@ public final class ProtoBufSerializationProviderBuilder {
                 }
 
                 @Override
-                public void close(final Throwable cause) throws IOException {
-                    payloadWriter.close(cause);
+                public void close() throws IOException {
+                    payloadWriter.close();
                 }
 
                 @Override
-                public void close() throws IOException {
-                    payloadWriter.close();
+                public void close(final Throwable cause) throws IOException {
+                    payloadWriter.close(cause);
                 }
 
                 @Override

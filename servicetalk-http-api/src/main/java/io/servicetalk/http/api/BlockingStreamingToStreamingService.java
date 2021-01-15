@@ -180,11 +180,6 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
         }
 
         @Override
-        public void close(final Throwable cause) throws IOException {
-            payloadWriter.close(cause);
-        }
-
-        @Override
         public void flush() throws IOException {
             payloadWriter.flush();
         }
@@ -192,6 +187,11 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
         @Override
         public void close() throws IOException {
             payloadWriter.close();
+        }
+
+        @Override
+        public void close(final Throwable cause) throws IOException {
+            payloadWriter.close(cause);
         }
 
         @Override

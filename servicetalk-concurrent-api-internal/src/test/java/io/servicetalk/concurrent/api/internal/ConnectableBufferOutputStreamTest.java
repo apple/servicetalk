@@ -228,7 +228,9 @@ public class ConnectableBufferOutputStreamTest {
         }
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
-        subscriber.awaitOnComplete();
+        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
+        // successfully completed writing all data and closed the PayloadWriter.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
@@ -249,7 +251,9 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        subscriber.awaitOnComplete();
+        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
+        // successfully completed writing all data and closed the PayloadWriter.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.

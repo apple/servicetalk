@@ -224,7 +224,9 @@ public class ConnectablePayloadWriterTest {
         }
 
         assertThat(subscriber.takeOnNext(), is("foo"));
-        subscriber.awaitOnComplete();
+        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
+        // successfully completed writing all data and closed the PayloadWriter.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         cpw.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
@@ -246,7 +248,9 @@ public class ConnectablePayloadWriterTest {
         }
 
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
-        subscriber.awaitOnComplete();
+        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
+        // successfully completed writing all data and closed the PayloadWriter.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         cpw.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
