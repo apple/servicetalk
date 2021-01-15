@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -125,42 +124,6 @@ public final class SubscriberUtils {
                 if (sourceRequestedUpdater.compareAndSet(owner, sourceRequested, sourceRequested + toRequest)) {
                     return toRequest;
                 }
-            }
-        }
-    }
-
-    /**
-     * There are some scenarios where a completion {@link TerminalNotification} can be overridden with an error if
-     * errors are produced asynchronously.
-     * <p>
-     * This method helps set {@link TerminalNotification} atomically providing such an override.
-     *
-     * @param toSet {@link TerminalNotification} to set.
-     * @param overrideComplete Whether exisiting {@link TerminalNotification#complete()} should be overridden with the
-     * {@code toSet}.
-     * @param terminalNotificationUpdater {@link AtomicReferenceFieldUpdater} to access the current
-     * {@link TerminalNotification}.
-     * @param flagOwner instance of {@link R} that owns the current {@link TerminalNotification} field referenced by
-     * {@code terminalNotificationUpdater}.
-     * @param <R> Type of {@code flagOwner}.
-     * @return {@code true} if {@code toSet} is updated as the current {@link TerminalNotification}.
-     */
-    public static <R> boolean trySetTerminal(TerminalNotification toSet, boolean overrideComplete,
-                     AtomicReferenceFieldUpdater<R, TerminalNotification> terminalNotificationUpdater, R flagOwner) {
-        for (;;) {
-            TerminalNotification curr = terminalNotificationUpdater.get(flagOwner);
-            if (curr != null && !overrideComplete) {
-                // Once terminated, terminalNotification will never be set back to null.
-                return false;
-            } else if (curr == null && terminalNotificationUpdater.compareAndSet(flagOwner, null, toSet)) {
-                return true;
-            } else if (curr != null && curr.cause() == null) {
-                // Override complete
-                if (terminalNotificationUpdater.compareAndSet(flagOwner, curr, toSet)) {
-                    return true;
-                }
-            } else {
-                return false;
             }
         }
     }

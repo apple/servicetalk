@@ -18,10 +18,14 @@ package io.servicetalk.concurrent.internal;
 public class DeliberateException extends RuntimeException {
     private static final long serialVersionUID = 3895872583544069787L;
 
-    public static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException();
+    public static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException(false);
 
     public DeliberateException() {
         super("Deliberate Exception");
+    }
+
+    private DeliberateException(boolean enableSuppression) {
+        super("Deliberate Exception", null, enableSuppression, false);
     }
 
     @Override
