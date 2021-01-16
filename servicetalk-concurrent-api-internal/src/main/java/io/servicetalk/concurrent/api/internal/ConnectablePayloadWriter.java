@@ -38,6 +38,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
@@ -49,11 +53,13 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
     private static final long REQUESTN_ABOUT_TO_PARK = Long.MIN_VALUE;
     private static final long REQUESTN_TERMINATED = REQUESTN_ABOUT_TO_PARK + 1;
+    @SuppressWarnings("rawtypes")
     private static final AtomicLongFieldUpdater<ConnectablePayloadWriter> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(ConnectablePayloadWriter.class, "requested");
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, TerminalNotification> closedUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(
-                    ConnectablePayloadWriter.class, TerminalNotification.class, "closed");
+            newUpdater(ConnectablePayloadWriter.class, TerminalNotification.class, "closed");
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<ConnectablePayloadWriter, Object> stateUpdater =
             newUpdater(ConnectablePayloadWriter.class, Object.class, "state");
 
@@ -104,7 +110,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         try {
             s.onNext(t);
         } catch (final Throwable cause) {
-            closed = TerminalNotification.error(cause);
+            closed = error(cause);
             requested = REQUESTN_TERMINATED;
             state = State.TERMINATED;
             s.onError(cause);
@@ -120,9 +126,19 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     @Override
     public void close() throws IOException {
+        close0(null);
+    }
+
+    @Override
+    public void close(final Throwable cause) throws IOException {
+        close0(requireNonNull(cause));
+    }
+
+    private void close0(@Nullable Throwable cause) {
         // Set closed before state, because the Subscriber thread depends upon this ordering in the event it needs to
         // terminate the Subscriber.
-        if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
+        TerminalNotification terminal = cause == null ? complete() : error(cause);
+        if (closedUpdater.compareAndSet(this, null, terminal)) {
             // We need to terminate requested or else we may block indefinitely on subsequent calls to write in
             // waitForRequestNDemand.
             requested = REQUESTN_TERMINATED;
@@ -130,7 +146,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 final Object currState = state;
                 if (currState instanceof Subscriber) {
                     if (stateUpdater.compareAndSet(this, currState, State.TERMINATED)) {
-                        ((Subscriber) currState).onComplete();
+                        terminal.terminate((Subscriber<?>) currState);
                         break;
                     }
                 } else if (currState == State.TERMINATED ||
@@ -176,10 +192,14 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private void processClosed(TerminalNotification currClosed) throws IOException {
         Object currState = stateUpdater.getAndSet(this, State.TERMINATED);
-        if (currState instanceof Subscriber) {
+        if (currState instanceof Subscriber && currClosed.cause() != ConnectedPublisher.CONNECTED_PUBLISHER_CANCELLED) {
             currClosed.terminate((Subscriber<?>) currState);
         }
-        throw new IOException("Already closed " + currClosed);
+        throw newAlreadyClosed(currClosed.cause());
+    }
+
+    private static IOException newAlreadyClosed(@Nullable Throwable cause) {
+        return new IOException("Already closed", cause);
     }
 
     private void waitForRequestNDemand() throws IOException {
@@ -243,7 +263,9 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                 // for delivering the terminal event to the Subscriber (because it never has a reference to it), and
                 // the thread processing the subscribe(..) call will terminate the Subscriber instead of handing it off.
                 writerThread = null;
-                throw new IOException("Already closed " + closed);
+                final TerminalNotification localClosed = closed;
+                assert localClosed != null;
+                throw newAlreadyClosed(localClosed.cause());
             } else if (stateUpdater.compareAndSet(this, currState, State.WAITING_FOR_CONNECTED)) {
                 LockSupport.park();
             }
@@ -252,6 +274,8 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     private static final class ConnectedPublisher<T> extends Publisher<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(ConnectedPublisher.class);
+        private static final IOException CONNECTED_PUBLISHER_CANCELLED = unknownStackTrace(
+                new IOException("Connected Publisher cancel()"), ConnectablePayloadWriter.class, "cancel()");
         private final ConnectablePayloadWriter<T> outer;
 
         ConnectedPublisher(final ConnectablePayloadWriter<T> outer) {
@@ -295,7 +319,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                                 }
                             }
                         } else if (closedUpdater.compareAndSet(outer, null,
-                                TerminalNotification.error(newExceptionForInvalidRequestN(n)))) {
+                                error(newExceptionForInvalidRequestN(n)))) {
                             terminateRequestN();
                         } else {
                             LOGGER.warn("invalid request({}), but already closed.", n);
@@ -304,7 +328,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
                     @Override
                     public void cancel() {
-                        if (closedUpdater.compareAndSet(outer, null, TerminalNotification.complete())) {
+                        if (closedUpdater.compareAndSet(outer, null, error(CONNECTED_PUBLISHER_CANCELLED))) {
                             terminateRequestN();
                         }
                     }

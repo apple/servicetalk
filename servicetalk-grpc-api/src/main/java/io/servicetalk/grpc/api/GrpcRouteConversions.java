@@ -132,6 +132,11 @@ final class GrpcRouteConversions {
                             }
 
                             @Override
+                            public void close(final Throwable cause) throws IOException {
+                                connectablePayloadWriter.close(cause);
+                            }
+
+                            @Override
                             public void flush() throws IOException {
                                 connectablePayloadWriter.flush();
                             }

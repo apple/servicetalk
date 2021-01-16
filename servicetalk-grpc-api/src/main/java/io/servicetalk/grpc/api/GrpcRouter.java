@@ -697,6 +697,11 @@ final class GrpcRouter {
         }
 
         @Override
+        public void close(final Throwable cause) throws IOException {
+            payloadWriter.close(cause);
+        }
+
+        @Override
         public void flush() throws IOException {
             payloadWriter.flush();
         }

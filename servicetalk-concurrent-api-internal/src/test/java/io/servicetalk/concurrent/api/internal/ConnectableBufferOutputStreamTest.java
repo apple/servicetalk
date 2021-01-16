@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.assertNoTerminal;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.toRunnable;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.verifyCheckedRunnableException;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -228,7 +229,7 @@ public class ConnectableBufferOutputStreamTest {
         }
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
-        subscriber.awaitOnComplete();
+        assertNoTerminal(subscriber);
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
@@ -249,7 +250,7 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        subscriber.awaitOnComplete();
+        assertNoTerminal(subscriber);
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
