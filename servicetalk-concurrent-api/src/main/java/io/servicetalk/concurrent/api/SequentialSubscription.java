@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION_NO_THROW;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
@@ -59,7 +59,7 @@ final class SequentialSubscription implements Subscription, Cancellable {
      * New instance.
      */
     SequentialSubscription() {
-        this(EMPTY_SUBSCRIPTION);
+        this(EMPTY_SUBSCRIPTION_NO_THROW);
     }
 
     /**
@@ -146,7 +146,12 @@ final class SequentialSubscription implements Subscription, Cancellable {
             final long currSourceRequested = sourceRequested;
             assert currSourceRequested != SWITCHING; // no concurrency on this method allowed
             if (currSourceRequested == CANCELLED) {
-                next.cancel();
+                final long currRequested = requested;
+                if (currRequested >= 0) {
+                    next.cancel();
+                } else { // invalid requestN is pending, deliver to each subscription.
+                    next.request(currRequested);
+                }
                 break;
             } else if (sourceRequestedUpdater.compareAndSet(this, currSourceRequested, SWITCHING)) {
                 assert currSourceRequested >= 0 || currSourceRequested == REQUESTED;

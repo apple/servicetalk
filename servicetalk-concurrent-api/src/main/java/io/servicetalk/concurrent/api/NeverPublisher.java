@@ -15,17 +15,20 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
     @SuppressWarnings("rawtypes")
     private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
 
+    private NeverPublisher() {
+    }
+
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
         try {
-            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onSubscribe(newEmptySubscription(subscriber));
         } catch (Throwable t) {
             handleExceptionFromOnSubscribe(subscriber, t);
         }

@@ -36,7 +36,7 @@ import java.util.function.BiConsumer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.jdkflow.JdkFlowAdapters.fromFlowPublisher;
 import static io.servicetalk.concurrent.jdkflow.JdkFlowAdapters.toFlowPublisher;
 import static org.hamcrest.MatcherAssert.assertThat;
