@@ -90,7 +90,6 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             HttpHeaders headers = metaData.headers();
                             boolean addTrailers = isTransferEncodingChunked(headers);
                             if (!addTrailers && !HTTP_1_0.equals(metaData.version()) && !hasContentLength(headers) &&
-                                    !hasContentLength(headers) &&
                                     // HEAD responses MUST never carry a payload, adding chunked makes no sense and
                                     // breaks our HttpResponseDecoder
                                     !HEAD.equals(request.method())) {

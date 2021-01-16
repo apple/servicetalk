@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.assertNoTerminal;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.toRunnable;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.verifyCheckedRunnableException;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -228,9 +229,7 @@ public class ConnectableBufferOutputStreamTest {
         }
 
         assertThat(subscriber.takeOnNext(), is(buf(1)));
-        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
-        // successfully completed writing all data and closed the PayloadWriter.
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        assertNoTerminal(subscriber);
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
@@ -251,9 +250,7 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        // The subscriber has cancelled, we shouldn't force complete the subscriber and give the illusion we
-        // successfully completed writing all data and closed the PayloadWriter.
-        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        assertNoTerminal(subscriber);
         cbos.close(); // should be idempotent
 
         // Make sure the Subscription thread isn't blocked.
