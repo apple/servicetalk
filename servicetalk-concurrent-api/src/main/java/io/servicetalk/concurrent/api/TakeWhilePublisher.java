@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static java.util.Objects.requireNonNull;
 
 final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private static final Subscription CANCELLED = newEmptySubscription(true);
+    private static final Subscription CANCELLED = newEmptySubscription();
 
     private final Predicate<? super T> predicate;
 

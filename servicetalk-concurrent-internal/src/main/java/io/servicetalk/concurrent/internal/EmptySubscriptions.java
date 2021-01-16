@@ -25,8 +25,15 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
  * Utility methods for {@link Subscription}s which don't deliver any data.
  */
 public final class EmptySubscriptions {
-    public static final Subscription EMPTY_SUBSCRIPTION = newEmptySubscription(true);
-    public static final Subscription EMPTY_SUBSCRIPTION_NO_THROW = newEmptySubscription(false);
+    /**
+     * A {@link Subscription} with no associated {@link Subscriber} that will throw on invalid demand.
+     */
+    public static final Subscription EMPTY_SUBSCRIPTION = newEmptySubscription();
+    /**
+     * A {@link Subscription} with no associated {@link Subscriber} that will <strong>not</strong> throw on invalid
+     * demand.
+     */
+    public static final Subscription EMPTY_SUBSCRIPTION_NO_THROW = newEmptySubscriptionNoThrow();
 
     private EmptySubscriptions() {
     }
@@ -55,35 +62,37 @@ public final class EmptySubscriptions {
     }
 
     /**
-     * Create an empty {@link Subscription} that will optionally validate invalid demand.
-     * @param throwOnInvalidDemand {@code true} to throw on invalid {@link Subscription#request(long)} demand.
-     * {@code false} will not validate demand.
-     * @return A {@link Subscription} that will optionally validate invalid demand.
+     * Create an empty {@link Subscription} that will throw on invalid demand.
+     * @return A {@link Subscription} that will throw on invalid demand.
      */
-    public static Subscription newEmptySubscription(boolean throwOnInvalidDemand) {
-        if (throwOnInvalidDemand) {
-            return new Subscription() {
-                @Override
-                public void request(final long n) {
-                    if (!isRequestNValid(n)) {
-                        throw newExceptionForInvalidRequestN(n);
-                    }
+    public static Subscription newEmptySubscription() {
+        return new Subscription() {
+            @Override
+            public void request(final long n) {
+                if (!isRequestNValid(n)) {
+                    throw newExceptionForInvalidRequestN(n);
                 }
+            }
 
-                @Override
-                public void cancel() {
-                }
-            };
-        } else {
-            return new Subscription() {
-                @Override
-                public void request(final long n) {
-                }
+            @Override
+            public void cancel() {
+            }
+        };
+    }
 
-                @Override
-                public void cancel() {
-                }
-            };
-        }
+    /**
+     * Create an empty {@link Subscription} that will <strong>not</strong> throw on invalid demand.
+     * @return A {@link Subscription} that will will <strong>not</strong> throw on invalid demand.
+     */
+    private static Subscription newEmptySubscriptionNoThrow() {
+        return new Subscription() {
+            @Override
+            public void request(final long n) {
+            }
+
+            @Override
+            public void cancel() {
+            }
+        };
     }
 }

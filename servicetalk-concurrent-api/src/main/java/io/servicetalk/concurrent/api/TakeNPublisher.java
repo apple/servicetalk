@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
  * @param <T> the type of the elements.
  */
 final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private static final Subscription CANCELLED = newEmptySubscription(true);
+    private static final Subscription CANCELLED = newEmptySubscription();
 
     private final long numElements;
 

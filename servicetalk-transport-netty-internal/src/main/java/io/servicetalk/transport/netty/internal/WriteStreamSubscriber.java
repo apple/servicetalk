@@ -81,7 +81,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte CHANNEL_CLOSED = 1 << 1;
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
-    private static final Subscription CANCELLED = newEmptySubscription(true);
+    private static final Subscription CANCELLED = newEmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
