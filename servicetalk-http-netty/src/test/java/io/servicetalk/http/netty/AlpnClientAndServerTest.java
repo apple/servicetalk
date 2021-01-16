@@ -110,7 +110,7 @@ public class AlpnClientAndServerTest {
                 {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), singletonList(HTTP_2), null, ClosedChannelException.class},
-                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null}
         });
     }
 
@@ -165,7 +165,7 @@ public class AlpnClientAndServerTest {
     }
 
     @Test
-    public void testAlpn() throws Exception {
+    public void testAlpnConnection() throws Exception {
         if (expectedExceptionType != null) {
             assertThrows(expectedExceptionType, () -> client.request(client.get("/")));
             return;
@@ -175,18 +175,30 @@ public class AlpnClientAndServerTest {
             assertThat(connection.connectionContext().protocol(), is(expectedProtocol));
             assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
 
-            HttpResponse response = connection.request(client.get("/"));
-            assertThat(response.version(), is(expectedProtocol));
-            assertThat(response.status(), is(OK));
-            assertThat(response.payloadBody(textDeserializer()), is(PAYLOAD_BODY));
-
-            HttpServiceContext serviceCtx = serviceContext.take();
-            assertThat(serviceCtx.protocol(), is(expectedProtocol));
-            assertThat(serviceCtx.sslSession(), is(notNullValue()));
-            assertThat(requestVersion.take(), is(expectedProtocol));
-
-            assertThat(serviceContext, is(empty()));
-            assertThat(requestVersion, is(empty()));
+            assertResponseAndServiceContext(connection.request(client.get("/")));
         }
+    }
+
+    @Test
+    public void testAlpnClient() throws Exception {
+        if (expectedExceptionType != null) {
+            assertThrows(expectedExceptionType, () -> client.request(client.get("/")));
+        } else {
+            assertResponseAndServiceContext(client.request(client.get("/")));
+        }
+    }
+
+    private void assertResponseAndServiceContext(HttpResponse response) throws Exception {
+        assertThat(response.version(), is(expectedProtocol));
+        assertThat(response.status(), is(OK));
+        assertThat(response.payloadBody(textDeserializer()), is(PAYLOAD_BODY));
+
+        HttpServiceContext serviceCtx = serviceContext.take();
+        assertThat(serviceCtx.protocol(), is(expectedProtocol));
+        assertThat(serviceCtx.sslSession(), is(notNullValue()));
+        assertThat(requestVersion.take(), is(expectedProtocol));
+
+        assertThat(serviceContext, is(empty()));
+        assertThat(requestVersion, is(empty()));
     }
 }

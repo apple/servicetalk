@@ -27,12 +27,12 @@ package io.servicetalk.http.netty;
 final class AlpnIds {
 
     /**
-     * {@code "http/1.1"}: HTTP version 1.1
+     * <a href="https://tools.ietf.org/html/rfc7301#section-6">http/1.1</a>: HTTP version 1.1
      */
     static final String HTTP_1_1 = "http/1.1";
 
     /**
-     * {@code "h2"}: HTTP version 2
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.1">h2</a>: HTTP version 2.
      */
     static final String HTTP_2 = "h2";
 

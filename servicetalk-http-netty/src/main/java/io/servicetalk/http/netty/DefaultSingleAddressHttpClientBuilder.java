@@ -75,6 +75,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.time.Duration.ofSeconds;
@@ -92,10 +93,6 @@ import static java.util.function.Function.identity;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
-    /**
-     * https://tools.ietf.org/html/rfc7540#section-3.1
-     */
-    private static final String H2_ALPN_ID = "h2";
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
     @Nullable
@@ -281,52 +278,30 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
-            final StreamingHttpRequestResponseFactory reqRespFactory;
+            final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
+                    ctx.executionContext.bufferAllocator());
             if (roConfig.isH2PriorKnowledge()) {
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 assert h2Config != null;
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        ctx.builder.connectionFilterFactory,
-                        (reqRespFactory =
-                                new DefaultStreamingHttpRequestResponseFactory(ctx.executionContext.bufferAllocator(),
-                                        h2Config.headersFactory(), HTTP_2_0)),
+                        ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().isAlpnConfigured()) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        ctx.builder.connectionFilterFactory,
-                        new AlpnReqRespFactoryFunc(ctx.executionContext.bufferAllocator(),
+                        ctx.builder.connectionFilterFactory, new AlpnReqRespFactoryFunc(
+                                ctx.executionContext.bufferAllocator(),
                                 h1Config == null ? null : h1Config.headersFactory(),
                                 h2Config == null ? null : h2Config.headersFactory()),
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
-                // The client can't know which protocol will be negotiated, so just default to the preferred protocol
-                // and pay additional conversion costs if we don't get our preference.
-                String preferredAlpnProtocol = roConfig.tcpConfig().preferredAlpnProtocol();
-                if (H2_ALPN_ID.equals(preferredAlpnProtocol)) {
-                    if (h2Config == null) {
-                        throw new IllegalStateException("h2 is preferred alpn protocol, but the h2 config is null");
-                    }
-                    reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-                            ctx.executionContext.bufferAllocator(), h2Config.headersFactory(), HTTP_2_0);
-                } else { // just fall back to h1, all other protocols should convert to/from it.
-                    if (h1Config == null) {
-                        throw new IllegalStateException(preferredAlpnProtocol +
-                                " is preferred alpn protocol, but the h1 config is null");
-                    }
-                    reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-                            ctx.executionContext.bufferAllocator(), h1Config.headersFactory(), HTTP_1_1);
-                }
             } else {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 assert h1Config != null;
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        ctx.builder.connectionFilterFactory,
-                        (reqRespFactory =
-                                new DefaultStreamingHttpRequestResponseFactory(ctx.executionContext.bufferAllocator(),
-                                        h1Config.headersFactory(), HTTP_1_1)),
+                        ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
@@ -371,18 +346,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         } else if (roConfig.tcpConfig().isAlpnConfigured()) {
             H1ProtocolConfig h1Config = roConfig.h1Config();
             H2ProtocolConfig h2Config = roConfig.h2Config();
-            // The client can't know which protocol will be negotiated, so just default to the preferred protocol
-            // and pay additional conversion costs if we don't get our preference.
+            // The client can't know which protocol will be negotiated on the connection/transport level, so just
+            // default to the preferred protocol and pay additional conversion costs if we don't get our preference.
             String preferredAlpnProtocol = roConfig.tcpConfig().preferredAlpnProtocol();
-            if (H2_ALPN_ID.equals(preferredAlpnProtocol)) {
-                if (h2Config == null) {
-                    throw new IllegalStateException("h2 is preferred alpn protocol, but the h2 config is null");
-                }
+            if (HTTP_2.equals(preferredAlpnProtocol)) {
+                assert h2Config != null;
                 return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
             } else { // just fall back to h1, all other protocols should convert to/from it.
                 if (h1Config == null) {
                     throw new IllegalStateException(preferredAlpnProtocol +
-                            " is preferred alpn protocol, but the h1 config is null");
+                            " is preferred ALPN protocol, falling back to " + HTTP_1_1 + " but the " + HTTP_1_1 +
+                            " protocol was not configured.");
                 }
                 return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
             }
@@ -789,8 +763,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         private static HttpHeadersFactory headersFactory(@Nullable HttpHeadersFactory factory,
                                                          HttpProtocolVersion version) {
             if (factory == null) {
-                throw new IllegalStateException("HeadersFactory config not found for selected protocol: "
-                        + version);
+                throw new IllegalStateException("HeadersFactory config not found for selected protocol: " + version);
             }
             return factory;
         }
