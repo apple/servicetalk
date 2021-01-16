@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 
 final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     H2LBHttpConnectionFactory(
@@ -46,7 +47,7 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
+        super(config, executionContext, connectionFilterFunction, version -> reqRespFactory, strategyInfluencer,
                 connectionFactoryFilter, protocolBinding);
     }
 
@@ -60,7 +61,7 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext,
                 (channel, connectionObserver) -> H2ClientParentConnectionContext.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
-                        config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
+                        config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0), roTcpClientConfig.flushStrategy(),
                         roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),
                         new TcpClientChannelInitializer(roTcpClientConfig, connectionObserver).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver),

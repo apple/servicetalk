@@ -44,15 +44,16 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     private final FlushStrategy flushStrategy;
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
-    private final boolean alpnConfigured;
+    @Nullable
+    private final String preferredAlpnProtocol;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from,
-                                        final boolean alpnConfigured) {
+                                        @Nullable final String preferredAlpnProtocol) {
         options = from.options() == null ? emptyMap() : unmodifiableMap(new HashMap<>(from.options()));
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
-        this.alpnConfigured = alpnConfigured;
+        this.preferredAlpnProtocol = preferredAlpnProtocol;
     }
 
     /**
@@ -102,7 +103,17 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
      * configured
      */
     public boolean isAlpnConfigured() {
-        return alpnConfigured;
+        return preferredAlpnProtocol != null;
+    }
+
+    /**
+     * Get the preferred ALPN protocol. If a protocol sensitive decision must be made without knowing which protocol is
+     * negotiated (e.g. at the client level) this protocol can be used as a best guess.
+     * @return the preferred ALPN protocol.
+     */
+    @Nullable
+    public String preferredAlpnProtocol() {
+        return preferredAlpnProtocol;
     }
 
     /**

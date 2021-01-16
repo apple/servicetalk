@@ -38,8 +38,10 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -73,6 +75,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static java.time.Duration.ofSeconds;
@@ -215,7 +218,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
-        final StreamingHttpRequestResponseFactory reqRespFactory;
         private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
         private final SdStatusCompletable sdStatus;
         @Nullable
@@ -223,12 +225,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext executionContext,
-                final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd, final SdStatusCompletable sdStatus,
                 @Nullable final U proxyAddress) {
             this.builder = builder;
             this.executionContext = executionContext;
-            this.reqRespFactory = reqRespFactory;
             this.serviceDiscoverer = sd;
             this.sdStatus = sdStatus;
             this.proxyAddress = proxyAddress;
@@ -237,6 +237,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         U address() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
             return proxyAddress != null ? proxyAddress : builder.address;
+        }
+
+        HttpClientConfig httpConfig() {
+            return builder.config;
         }
 
         StreamingHttpClient build() {
@@ -250,8 +254,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
-        final ReadOnlyHttpClientConfig roConfig = ctx.builder.config.asReadOnly();
-
+        final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
@@ -259,11 +262,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-
             final Publisher<ServiceDiscovererEvent<R>> sdEvents =
                     ctx.serviceDiscoverer.discover(ctx.address()).flatMapConcatIterable(identity());
-
-            final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
@@ -278,17 +278,28 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
+            final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
+                    ctx.executionContext.bufferAllocator());
             if (roConfig.isH2PriorKnowledge()) {
+                H2ProtocolConfig h2Config = roConfig.h2Config();
+                assert h2Config != null;
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+                H1ProtocolConfig h1Config = roConfig.h1Config();
+                H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        ctx.builder.connectionFilterFactory, new AlpnReqRespFactoryFunc(
+                                ctx.executionContext.bufferAllocator(),
+                                h1Config == null ? null : h1Config.headersFactory(),
+                                h2Config == null ? null : h2Config.headersFactory()),
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else {
+                H1ProtocolConfig h1Config = roConfig.h1Config();
+                assert h1Config != null;
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
@@ -326,6 +337,36 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
+    static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
+                                                                     BufferAllocator allocator) {
+        if (roConfig.isH2PriorKnowledge()) {
+            H2ProtocolConfig h2Config = roConfig.h2Config();
+            assert h2Config != null;
+            return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
+        } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+            H1ProtocolConfig h1Config = roConfig.h1Config();
+            H2ProtocolConfig h2Config = roConfig.h2Config();
+            // The client can't know which protocol will be negotiated on the connection/transport level, so just
+            // default to the preferred protocol and pay additional conversion costs if we don't get our preference.
+            String preferredAlpnProtocol = roConfig.tcpConfig().preferredAlpnProtocol();
+            if (HTTP_2.equals(preferredAlpnProtocol)) {
+                assert h2Config != null;
+                return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
+            } else { // just fall back to h1, all other protocols should convert to/from it.
+                if (h1Config == null) {
+                    throw new IllegalStateException(preferredAlpnProtocol +
+                            " is preferred ALPN protocol, falling back to " + HTTP_1_1 + " but the " + HTTP_1_1 +
+                            " protocol was not configured.");
+                }
+                return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
+            }
+        } else {
+            H1ProtocolConfig h1Config = roConfig.h1Config();
+            assert h1Config != null;
+            return new DefaultStreamingHttpRequestResponseFactory(allocator, h1Config.headersFactory(), HTTP_1_1);
+        }
+    }
+
     private static StreamingHttpClientFilterFactory appendFilter(
             @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
@@ -354,16 +395,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-        final StreamingHttpRequestResponseFactory reqRespFactory;
-        if (clonedBuilder.config.isH2PriorKnowledge()) {
-            assert clonedBuilder.config.protocolConfigs().h2Config() != null;
-            reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                    clonedBuilder.config.protocolConfigs().h2Config().headersFactory(), HTTP_2_0);
-        } else {
-            assert clonedBuilder.config.protocolConfigs().h1Config() != null;
-            reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                    clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
-        }
         final SdStatusCompletable sdStatus = new SdStatusCompletable();
         ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd =
                 new RetryingServiceDiscoverer<>(new StatusAwareServiceDiscoverer<>(serviceDiscoverer, sdStatus),
@@ -371,7 +402,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                                 DefaultServiceDiscoveryRetryStrategy.Builder.<R>withDefaults(exec.executor(),
                                         SD_RETRY_STRATEGY_INIT_DURATION, SD_RETRY_STRATEGY_JITTER).build() :
                                 serviceDiscovererRetryStrategy);
-        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, sd, sdStatus, proxyAddress);
+        return new HttpClientBuildContext<>(clonedBuilder, exec, sd, sdStatus, proxyAddress);
     }
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
@@ -681,6 +712,60 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         @Override
         public Completable closeAsyncGracefully() {
             return delegate.closeAsyncGracefully();
+        }
+    }
+
+    private static final class AlpnReqRespFactoryFunc implements
+                                                  Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> {
+        private final BufferAllocator allocator;
+        @Nullable
+        private final HttpHeadersFactory h1HeadersFactory;
+        @Nullable
+        private final HttpHeadersFactory h2HeadersFactory;
+        @Nullable
+        private StreamingHttpRequestResponseFactory h1Factory;
+        @Nullable
+        private StreamingHttpRequestResponseFactory h2Factory;
+
+        AlpnReqRespFactoryFunc(final BufferAllocator allocator, @Nullable final HttpHeadersFactory h1HeadersFactory,
+                               @Nullable final HttpHeadersFactory h2HeadersFactory) {
+            this.allocator = allocator;
+            this.h1HeadersFactory = h1HeadersFactory;
+            this.h2HeadersFactory = h2HeadersFactory;
+        }
+
+        @Override
+        public StreamingHttpRequestResponseFactory apply(final HttpProtocolVersion version) {
+            if (version == HTTP_1_1) {
+                if (h1Factory == null) { // its OK if we race and re-initialize the instance.
+                    h1Factory = new DefaultStreamingHttpRequestResponseFactory(allocator,
+                            headersFactory(h1HeadersFactory, HTTP_1_1), HTTP_1_1);
+                }
+                return h1Factory;
+            } else if (version == HTTP_2_0) {
+                if (h2Factory == null) { // its OK if we race and re-initialize the instance.
+                    h2Factory = new DefaultStreamingHttpRequestResponseFactory(allocator,
+                            headersFactory(h2HeadersFactory, HTTP_2_0), HTTP_2_0);
+                }
+                return h2Factory;
+            } else if (version.major() <= 1) {
+                // client doesn't generate HTTP_1_0 requests, no need to cache.
+                return new DefaultStreamingHttpRequestResponseFactory(allocator,
+                        headersFactory(h1HeadersFactory, version), version);
+            } else if (version.major() == 2) {
+                return new DefaultStreamingHttpRequestResponseFactory(allocator,
+                        headersFactory(h2HeadersFactory, version), version);
+            } else {
+                throw new IllegalArgumentException("unsupported protocol: " + version);
+            }
+        }
+
+        private static HttpHeadersFactory headersFactory(@Nullable HttpHeadersFactory factory,
+                                                         HttpProtocolVersion version) {
+            if (factory == null) {
+                throw new IllegalStateException("HeadersFactory config not found for selected protocol: " + version);
+            }
+            return factory;
         }
     }
 }

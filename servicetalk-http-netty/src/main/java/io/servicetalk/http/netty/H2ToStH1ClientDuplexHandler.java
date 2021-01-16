@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -44,8 +43,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
@@ -139,9 +138,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             } else if (httpStatus == null) {
                 throw new IllegalArgumentException("a response must have " + STATUS + " header");
             } else {
-                StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
-                        h2HeadersToH1HeadersClient(h2Headers, httpStatus), allocator, headersFactory);
-                ctx.fireChannelRead(response);
+                ctx.fireChannelRead(
+                        newResponseMetaData(HTTP_2_0, httpStatus, h2HeadersToH1HeadersClient(h2Headers, httpStatus)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -156,9 +154,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         if (shouldAddZeroContentLength(httpStatus.code(), method)) {
             h2Headers.set(CONTENT_LENGTH, ZERO);
         }
-        StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
-                h2HeadersToH1HeadersClient(h2Headers, httpStatus), allocator, headersFactory);
-        ctx.fireChannelRead(response);
+        ctx.fireChannelRead(
+                newResponseMetaData(HTTP_2_0, httpStatus, h2HeadersToH1HeadersClient(h2Headers, httpStatus)));
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
 

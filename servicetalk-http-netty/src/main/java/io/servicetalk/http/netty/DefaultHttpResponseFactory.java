@@ -17,26 +17,29 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponses;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultHttpResponseFactory implements HttpResponseFactory {
     private final HttpHeadersFactory headersFactory;
     private final BufferAllocator allocator;
+    private final HttpProtocolVersion version;
 
-    DefaultHttpResponseFactory(final HttpHeadersFactory headersFactory, final BufferAllocator allocator) {
+    DefaultHttpResponseFactory(final HttpHeadersFactory headersFactory, final BufferAllocator allocator,
+                               final HttpProtocolVersion version) {
         this.headersFactory = headersFactory;
         this.allocator = allocator;
+        this.version = version;
     }
 
     @Override
     public HttpResponse newResponse(final HttpResponseStatus status) {
-        return awaitResult(StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(), allocator,
+        return awaitResult(StreamingHttpResponses.newResponse(status, version, headersFactory.newHeaders(), allocator,
                 headersFactory).toResponse().toFuture());
     }
 }

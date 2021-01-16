@@ -32,7 +32,6 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -64,12 +63,12 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -117,7 +116,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
-                        clientFactory, partitionAttributesBuilderFactory, buildContext.reqRespFactory,
+                        clientFactory, partitionAttributesBuilderFactory,
+                        defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
+                                buildContext.executionContext.bufferAllocator()),
                         buildContext.executionContext, partitionMapFactory);
         return new FilterableClientToClient(partitionedClient, buildContext.executionContext.executionStrategy(),
                 buildContext.builder.buildStrategyInfluencerForClient(
@@ -128,7 +129,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                                                                                  FilterableStreamingHttpClient {
 
         private static final Function<PartitionAttributes, FilterableStreamingHttpClient> PARTITION_CLOSED = pa ->
-                new NoopPartitionClient(new ClosedPartitionException(pa, "Partition closed "));
+                new NoopPartitionClient(new ClosedPartitionException(pa, "Partition closed"));
         private static final Function<PartitionAttributes, FilterableStreamingHttpClient> PARTITION_UNKNOWN = pa ->
                 new NoopPartitionClient(new UnknownPartitionException(pa, "Partition unknown"));
 
@@ -221,7 +222,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Override
         public StreamingHttpResponseFactory httpResponseFactory() {
-            return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
+            throw ex;
         }
 
         @Override
@@ -242,7 +243,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            throw new UnsupportedOperationException("Noop partition client should not be used.");
+            throw ex;
         }
     }
 

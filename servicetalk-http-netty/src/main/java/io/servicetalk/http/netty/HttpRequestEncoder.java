@@ -38,6 +38,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
@@ -139,7 +140,9 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             }
         }
 
-        message.version().writeTo(stBuffer);
+        // It is possible for the user to generate a request with a non-http/1.x version (e.g. ALPN prefers h2), and
+        // if this happens just force http/1.1 to avoid generating an invalid request.
+        (message.version().major() == 1 ? message.version() : HTTP_1_1).writeTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
     }
 }

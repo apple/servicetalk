@@ -19,24 +19,26 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponses;
-
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultBlockingStreamingHttpResponseFactory implements BlockingStreamingHttpResponseFactory {
     private final HttpHeadersFactory headersFactory;
     private final BufferAllocator allocator;
+    private final HttpProtocolVersion version;
 
     DefaultBlockingStreamingHttpResponseFactory(final HttpHeadersFactory headersFactory,
-                                                final BufferAllocator allocator) {
+                                                final BufferAllocator allocator,
+                                                final HttpProtocolVersion version) {
         this.headersFactory = headersFactory;
         this.allocator = allocator;
+        this.version = version;
     }
 
     @Override
     public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
+        return StreamingHttpResponses.newResponse(status, version, headersFactory.newHeaders(),
                 allocator, headersFactory).toBlockingStreamingResponse();
     }
 }

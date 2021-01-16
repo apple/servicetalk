@@ -44,7 +44,7 @@ public final class ReadOnlyTcpClientConfig
      * @param from Source to copy from.
      */
     ReadOnlyTcpClientConfig(final TcpClientConfig from, final List<String> supportedAlpnProtocols) {
-        super(from, !supportedAlpnProtocols.isEmpty());
+        super(from, supportedAlpnProtocols.isEmpty() ? null : supportedAlpnProtocols.get(0));
         final ReadOnlyClientSecurityConfig securityConfig = from.securityConfig();
         if (securityConfig != null) {
             sslContext = forClient(securityConfig, supportedAlpnProtocols);

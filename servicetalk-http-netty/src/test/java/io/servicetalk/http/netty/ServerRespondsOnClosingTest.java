@@ -48,6 +48,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -62,7 +63,7 @@ import static org.hamcrest.Matchers.is;
 public class ServerRespondsOnClosingTest {
 
     private static final HttpResponseFactory RESPONSE_FACTORY = new DefaultHttpResponseFactory(
-            DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
+            DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
     private static final String RESPONSE_PAYLOAD_BODY = "Hello World";
 
     @Rule

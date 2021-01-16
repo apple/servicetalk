@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
@@ -37,7 +36,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -57,7 +58,7 @@ public class HttpResponseFactoryStatusCodeTest {
     @Test
     public void testStatusCode() {
         final HttpResponseFactory httpResponseFactory =
-                new DefaultHttpResponseFactory(INSTANCE, BufferAllocators.DEFAULT_ALLOCATOR);
+                new DefaultHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
 
         List<HttpResponseStatus> actualStatuses =
                 buildHttpStatuses(httpResponseFactory, HttpResponseFactory.class, HttpResponse.class);
@@ -69,7 +70,7 @@ public class HttpResponseFactoryStatusCodeTest {
     public void testBlockingStatusCode() {
 
         final BlockingStreamingHttpResponseFactory blockingStreamingHttpResponseFactory =
-                new DefaultBlockingStreamingHttpResponseFactory(INSTANCE, BufferAllocators.DEFAULT_ALLOCATOR);
+                new DefaultBlockingStreamingHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
 
         List<HttpResponseStatus> actualStatuses =
                 buildHttpStatuses(blockingStreamingHttpResponseFactory,
@@ -82,7 +83,7 @@ public class HttpResponseFactoryStatusCodeTest {
     public void testStreamingStatusCode() {
 
         final StreamingHttpResponseFactory streamingHttpResponseFactory =
-                new DefaultStreamingHttpResponseFactory(INSTANCE, BufferAllocators.DEFAULT_ALLOCATOR);
+                new DefaultStreamingHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
 
         List<HttpResponseStatus> actualStatuses =
                 buildHttpStatuses(streamingHttpResponseFactory,
