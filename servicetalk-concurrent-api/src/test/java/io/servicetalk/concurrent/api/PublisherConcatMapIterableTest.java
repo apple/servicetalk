@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,6 +32,8 @@ import org.junit.rules.Timeout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +45,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -59,6 +63,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class PublisherConcatMapIterableTest {
+    @ClassRule
+    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     @Rule
@@ -330,6 +336,39 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
+    public void exceptionInsideOnNextWhenOnCompleteRacesRequestNIsPropagated() throws Exception {
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        toSource(publisher.flatMapConcatIterable(identity())
+                .map(new Function<String, String>() {
+                    private int count;
+
+                    @Override
+                    public String apply(final String s) {
+                        if (++count == 2) {
+                            throw DELIBERATE_EXCEPTION;
+                        }
+                        return s;
+                    }
+                })).subscribe(subscriber);
+        final Subscription s = subscriber.awaitSubscription();
+        s.request(1);
+        publisher.onNext(asList("one", "two", "three"));
+        assertThat(subscriber.takeOnNext(), is("one"));
+        Future<Void> future = EXECUTOR_RULE.executor().submit(() -> {
+            try {
+                barrier.await();
+            } catch (Exception e) {
+                throwException(e);
+            }
+            s.request(2);
+        }).toFuture();
+        barrier.await();
+        publisher.onComplete();
+        future.get();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     public void exceptionFromOnNextIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .map((Function<String, String>) s -> {
@@ -337,6 +376,24 @@ public class PublisherConcatMapIterableTest {
                 })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two", "three"));
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void exceptionFromOnNextIsPropagatedAndDoesNotCancel() {
+        TestPublisher<List<String>> localPublisher = new TestPublisher.Builder<List<String>>().disableAutoOnSubscribe()
+                .build(subscriber1 -> {
+                    subscriber1.onSubscribe(subscription);
+                    return subscriber1;
+                });
+        toSource(localPublisher.flatMapConcatIterable(identity())
+                .map((Function<String, String>) s -> {
+                    subscriber.awaitSubscription().cancel();
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        localPublisher.onNext(asList("one", "two", "three"));
+        assertFalse(subscription.isCancelled());
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
@@ -350,27 +407,6 @@ public class PublisherConcatMapIterableTest {
         subscriber.awaitSubscription().request(1);
         publisher.onNext(asList("one", "two", "three"));
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-    }
-
-    @Test
-    public void exceptionFromSubscriptionRequestNIsPropagatedAndNoMoreEventsDelivered() {
-        AtomicBoolean shouldThrow = new AtomicBoolean();
-        toSource(publisher.flatMapConcatIterable(identity())
-                .map(s -> {
-                    // Only throw on the first call to map(). If the operator propagates events
-                    // after the terminal we want to let them pass through and fail the test.
-                    if (shouldThrow.compareAndSet(false, true)) {
-                        throw DELIBERATE_EXCEPTION;
-                    } else {
-                        return s;
-                    }
-                })).subscribe(subscriber);
-        publisher.onNext(singletonList("one"));
-        subscriber.awaitSubscription().request(1);
-        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        subscriber.awaitSubscription().request(1);
-        publisher.onNext(asList("two", "three"));
-        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
     }
 
     private void verifyTermination(boolean success) {

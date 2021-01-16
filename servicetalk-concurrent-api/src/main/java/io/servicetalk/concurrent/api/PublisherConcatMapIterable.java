@@ -36,6 +36,8 @@ import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
 final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
+    private static final long CANCEL_PENDING = -1;
+    private static final long CANCELLED = Long.MIN_VALUE;
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
     PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper,
@@ -127,8 +129,23 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         @Override
         public void cancel() {
-            if (requestNUpdater.getAndSet(this, -1) >= 0 && tryAcquireLock(emittingUpdater, this)) {
-                doCancel();
+            for (;;) {
+                final long currRequestN = requestN;
+                if (currRequestN < 0) {
+                    break;
+                } else if (requestNUpdater.compareAndSet(this, currRequestN, CANCEL_PENDING)) {
+                    if (tryAcquireLock(emittingUpdater, this)) {
+                        try {
+                            requestN = CANCELLED;
+                            doCancel();
+                        } finally {
+                            if (!releaseLock(emittingUpdater, this)) {
+                                tryDrainIterator(ErrorHandlingStrategyInDrain.Propagate);
+                            }
+                        }
+                    }
+                    break;
+                }
             }
         }
 
@@ -205,16 +222,20 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         terminalNotification.terminate(target);
                     }
                 } finally {
-                    currRequestN = requestNUpdater.accumulateAndGet(this, currRequestN - initialRequestN,
-                            FlowControlUtils::addWithOverflowProtectionIfNotNegative);
-                    if (currRequestN < 0) {
-                        terminated = true;
-                        // We clear out the current iterator to allow for GC, and we don't want to deliver any more data
-                        // because it may be out of order or incomplete ... so simulate a terminated event.
-                        doCancel();
-                    } else if (!terminated) {
+                    // If we terminated we don't want to unlock, otherwise we may propagate duplicate terminal signals.
+                    if (!terminated) {
+                        currRequestN = requestNUpdater.accumulateAndGet(this, currRequestN - initialRequestN,
+                                FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                         try {
-                            if (terminalNotification == null && !hasNext && currRequestN > 0 &&
+                            if (currRequestN == CANCEL_PENDING) {
+                                terminated = true;
+                                // If we throw we expect an error to be propagated, so we are effectively cancelled.
+                                requestN = CANCELLED;
+                                if (!thrown) {
+                                    // We have been cancelled while we held the lock, do the cancel operation.
+                                    doCancel();
+                                }
+                            } else if (terminalNotification == null && !hasNext && currRequestN > 0 &&
                                     (currentIterator != EmptyIterator.instance() || thrown)) {
                                 // We only request 1 at a time, and therefore we don't have any outstanding demand, so
                                 // we will not be getting an onNext call, so we write to the currentIterator variable
