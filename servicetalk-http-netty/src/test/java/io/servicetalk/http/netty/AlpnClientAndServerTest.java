@@ -110,7 +110,7 @@ public class AlpnClientAndServerTest {
                 {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), singletonList(HTTP_2), null, ClosedChannelException.class},
-                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null}
+                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
         });
     }
 
