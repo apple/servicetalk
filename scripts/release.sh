@@ -55,11 +55,14 @@ else
     git="echo git"
 fi
 
+remote=$(git remote -v | grep "/apple/servicetalk.git" | head -n1 | cut -f1)
+echo "Working with remote $remote"
+
 $git fetch -p
 if $git rev-parse --quiet --verify main > /dev/null; then
     $git checkout main
 else
-    $git checkout --track origin/main
+    $git checkout --track ${remote}/main
 fi
 $git pull
 $git log -n1
@@ -89,7 +92,7 @@ fi
 
 $git commit -a -m "Release $version"
 $git tag "$version" -m "Release $version"
-$git push origin "$version"
+$git push ${remote} "$version"
 
 echo "Preparing repository for next development version $nextVersion"
 
@@ -114,7 +117,6 @@ for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
 done
 
 $git commit -a -m "Preparing for $nextVersion development"
-$git push origin main
+$git push ${remote} main
 
-# false -> we already did "clean validateRemoteSite" above, no need to clean again
-./scripts/publish-docs.sh "$version_majorminor" "false"
+./scripts/publish-docs.sh "$version_majorminor"

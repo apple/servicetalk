@@ -21,7 +21,6 @@ cd "$(dirname "$0")"
 cd ..
 
 version=""
-cleanRemoteSite=true
 DOCS_FOLDER="docs/generation/.out/remote"
 JAVADOC_FOLDER="build/javadoc"
 BRANCH_NAME=$(git symbolic-ref -q HEAD)
@@ -54,7 +53,7 @@ function clean_up_gh_pages() {
   rm -rf gh-pages
 }
 
-# Enforce JDK8 to keep javadoc format consistent for all versions:
+# Enforce JDK11 to keep javadoc format consistent for all versions:
 java_version=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
 if [ "$java_version" != "11.0" ]; then
   echo "Docs can be published only using Java 11, current version: $java_version"
@@ -63,16 +62,13 @@ fi
 
 if [ "$#" -eq "0" ]; then
     echo "Publishing docs website for the SNAPSHOT version only"
-elif [ "$#" -ge "1" ]; then
+elif [ "$#" -eq "1" ]; then
     version="$1"
     if ( echo "$version" | grep -Eqv "^\d+\.\d+$" ); then
         echo "Release version should match 'major.minor' pattern was: $1"
         exit 1
     fi
     echo "Publishing docs website for the release version $version"
-    if [ "$#" -ge "2" ]; then
-      cleanRemoteSite=false
-    fi
 else
     usage
     exit 1
@@ -80,17 +76,12 @@ fi
 
 echo ""
 
-# Clean up the state at the beggining in case the previous run did not finish successfuly
+# Clean up the state at the beginning in case the previous run did not finish successfully
 clean_up_gh_pages
 
 echo "Generate docs website"
 pushd docs/generation
-if $cleanRemoteSite; then
-  ./gradlew --no-daemon clean validateRemoteSite
-else
-  echo "Skipping cleaning remote site"
-  ./gradlew --no-daemon validateRemoteSite
-fi
+./gradlew --no-daemon clean validateRemoteSite
 popd
 echo "Docs website generated, see ./$DOCS_FOLDER"
 
