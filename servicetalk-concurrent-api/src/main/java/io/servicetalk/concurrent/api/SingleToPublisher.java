@@ -23,7 +23,7 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadSubscriber;
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -109,7 +109,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         // We have not offloaded the Subscriber as we generally emit to the Subscriber from the
                         // Single Subscriber methods which is correctly offloaded. This is the case where we invoke the
                         // Subscriber directly, hence we explicitly offload.
-                        terminateSuccessfully(result, offloadSubscriber(signalOffloader, subscriber));
+                        terminateSuccessfully(result, offloadWithDummyOnSubscribe(signalOffloader, subscriber));
                         return;
                     } else if (cState == STATE_IDLE &&
                             stateUpdater.compareAndSet(this, STATE_IDLE, STATE_REQUESTED)) {
@@ -120,7 +120,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 }
             } else {
                 if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
-                    Subscriber<? super T> offloaded = offloadSubscriber(signalOffloader, this.subscriber);
+                    Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, this.subscriber);
                     try {
                         // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a
                         // cancel.

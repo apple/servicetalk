@@ -50,7 +50,7 @@ final class OnSubscribeIgnoringSubscriberForOffloading<T> implements PublisherSo
         original.onComplete();
     }
 
-    static <T> PublisherSource.Subscriber<? super T> offloadSubscriber(
+    static <T> PublisherSource.Subscriber<? super T> offloadWithDummyOnSubscribe(
             SignalOffloader offloader, PublisherSource.Subscriber<? super T> original) {
         OnSubscribeIgnoringSubscriberForOffloading<T> subscriber =
                 new OnSubscribeIgnoringSubscriberForOffloading<>(original);
