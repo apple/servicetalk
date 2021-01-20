@@ -25,12 +25,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -96,8 +97,30 @@ public class ScanWithPublisherTest {
     private static void scanOnNextTerminalNoConcat(boolean onNext, boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t,
-                state -> false, (state, cause) -> null, state -> state)).subscribe(subscriber);
+        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return false;
+            }
+        })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         if (onNext) {
             s.request(1);
@@ -136,8 +159,31 @@ public class ScanWithPublisherTest {
     private static void terminalConcatWithDemand(boolean demandUpFront, boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(() -> 0, Integer::sum, state -> true, (state, cause) -> ++state,
-                state -> ++state)).subscribe(subscriber);
+        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+            private int sum;
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                if (next != null) {
+                    sum += next;
+                }
+                return sum;
+            }
+
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return ++sum;
+            }
+
+            @Override
+            public Integer mapOnComplete() {
+                return ++sum;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return true;
+            }
+        })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(demandUpFront ? 4 : 3);
         processor.onNext(1);
@@ -172,12 +218,29 @@ public class ScanWithPublisherTest {
     private static void terminalThrowsHandled(boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t, state -> true,
-                (state, cause) -> {
-                    throwException(cause);
-                    return state;
-                }, state -> {
-                    throw DELIBERATE_EXCEPTION;
+        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+                    @Nullable
+                    @Override
+                    public Integer mapOnNext(@Nullable final Integer next) {
+                        return next;
+                    }
+
+                    @Nullable
+                    @Override
+                    public Integer mapOnError(final Throwable cause) throws Throwable {
+                        throw cause;
+                    }
+
+                    @Nullable
+                    @Override
+                    public Integer mapOnComplete() {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+
+                    @Override
+                    public boolean mapTerminal() {
+                        return true;
+                    }
                 })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         if (onComplete) {
@@ -201,9 +264,30 @@ public class ScanWithPublisherTest {
     private static void mapTerminalSignalThrows(boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t, state -> {
-            throw DELIBERATE_EXCEPTION;
-        }, (state, cause) -> state, state -> state)).subscribe(subscriber);
+        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                throw DELIBERATE_EXCEPTION;
+            }
+        })).subscribe(subscriber);
         subscriber.awaitSubscription();
         if (onComplete) {
             processor.onComplete();
@@ -217,8 +301,7 @@ public class ScanWithPublisherTest {
     public void invalidDemandAllowsError() {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t,
-                state -> false, (state, cause) -> null, state -> state)).subscribe(subscriber);
+        toSource(fromSource(processor).scanWith(ScanWithPublisherTest::noopMapper)).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
@@ -232,8 +315,7 @@ public class ScanWithPublisherTest {
                     return subscriber1;
                 });
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(publisher.<Integer>scanWith(() -> null, (state, t) -> t,
-                state -> true, (state, cause) -> null, state -> state)).subscribe(subscriber);
+        toSource(publisher.scanWith(ScanWithPublisherTest::noopMapper)).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(100);
         upstreamSubscription.awaitRequestN(100);
@@ -244,5 +326,32 @@ public class ScanWithPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         publisher.onError(newExceptionForInvalidRequestN(-1));
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    private static <T> ScanWithMapper<T, T> noopMapper() {
+        return new ScanWithMapper<T, T>() {
+            @Nullable
+            @Override
+            public T mapOnNext(@Nullable final T next) {
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public T mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public T mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return true;
+            }
+        };
     }
 }

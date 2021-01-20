@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -32,21 +30,41 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Publisher<T> original;
-    private final Supplier<R> initial;
-    private final BiFunction<R, ? super T, R> mapper;
-    private final Predicate<R> mapTerminal;
-    private final BiFunction<R, Throwable, R> onErrorMapper;
-    private final UnaryOperator<R> onCompleteMapper;
+    private final Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier;
 
-    ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> mapper,
-                      Predicate<R> mapTerminal, BiFunction<R, Throwable, R> onErrorMapper,
-                      UnaryOperator<R> onCompleteMapper, Executor executor) {
+    ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> accumulator,
+                      Executor executor) {
+        this(original, () -> new ScanWithMapper<T, R>() {
+            @Nullable
+            private R state = initial.get();
+
+            @Override
+            public R mapOnNext(@Nullable final T next) {
+                state = accumulator.apply(state, next);
+                return state;
+            }
+
+            @Override
+            public R mapOnError(final Throwable cause) {
+                return state;
+            }
+
+            @Override
+            public R mapOnComplete() {
+                return state;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return false;
+            }
+        }, executor);
+    }
+
+    ScanWithPublisher(Publisher<T> original, Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier,
+                      Executor executor) {
         super(executor, true);
-        this.initial = requireNonNull(initial);
-        this.mapper = requireNonNull(mapper);
-        this.mapTerminal = requireNonNull(mapTerminal);
-        this.onErrorMapper = requireNonNull(onErrorMapper);
-        this.onCompleteMapper = requireNonNull(onCompleteMapper);
+        this.mapperSupplier = requireNonNull(mapperSupplier);
         this.original = original;
     }
 
@@ -54,16 +72,16 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         original.subscribeInternal(new ScanWithSubscriber<>(subscriber, signalOffloader.offloadSubscriber(
-                contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), this));
+                contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), mapperSupplier.get()));
     }
 
     private static final class ScanWithSubscriber<T, R> implements Subscriber<T> {
         private static final long TERMINATED = Long.MIN_VALUE;
         private static final long TERMINAL_PENDING = TERMINATED + 1;
         /**
-         * We don't want to invoke {@link #onErrorMapper} for invalid demand because we may never get enough demand to
-         * deliver an {@link #onNext(Object)} to the downstream subscriber. {@code -1} to avoid {@link #demand}
-         * underflow in onNext (in case the source doesn't deliver a timely error).
+         * We don't want to invoke {@link ScanWithMapper#mapOnError(Throwable)} for invalid demand because we may never
+         * get enough demand to deliver an {@link #onNext(Object)} to the downstream subscriber. {@code -1} to avoid
+         * {@link #demand} underflow in onNext (in case the source doesn't deliver a timely error).
          */
         private static final long INVALID_DEMAND = -1;
         @SuppressWarnings("rawtypes")
@@ -71,10 +89,8 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 newUpdater(ScanWithSubscriber.class, "demand");
         private final Subscriber<? super R> subscriber;
         private final Subscriber<? super R> offloadedSubscriber;
-        private final ScanWithPublisher<T, R> parent;
+        private final ScanWithMapper<? super T, ? extends R> mapper;
         private volatile long demand;
-        @Nullable
-        private R state;
         /**
          * Retains the {@link #onError(Throwable)} cause for use in the {@link Subscription}.
          * Happens-before relationship with {@link #demand} means no volatile or other synchronization required.
@@ -83,11 +99,10 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private Throwable errorCause;
 
         ScanWithSubscriber(final Subscriber<? super R> subscriber, final Subscriber<? super R> offloadedSubscriber,
-                           final ScanWithPublisher<T, R> parent) {
+                           final ScanWithMapper<? super T, ? extends R> mapper) {
             this.subscriber = subscriber;
             this.offloadedSubscriber = offloadedSubscriber;
-            this.parent = parent;
-            this.state = parent.initial.get();
+            this.mapper = requireNonNull(mapper);
         }
 
         @Override
@@ -133,9 +148,9 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         public void onNext(@Nullable final T t) {
             // If anything throws in onNext the source is responsible for catching the error, cancelling the associated
             // Subscription, and propagate an onError.
-            state = parent.mapper.apply(state, t);
+            final R mapped = mapper.mapOnNext(t);
             demandUpdater.decrementAndGet(this);
-            subscriber.onNext(state);
+            subscriber.onNext(mapped);
         }
 
         @Override
@@ -143,7 +158,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
             errorCause = t;
             final boolean doMap;
             try {
-                doMap = parent.mapTerminal.test(state);
+                doMap = mapper.mapTerminal();
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -173,7 +188,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         public void onComplete() {
             final boolean doMap;
             try {
-                doMap = parent.mapTerminal.test(state);
+                doMap = mapper.mapTerminal();
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -201,7 +216,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         private void deliverOnError(Throwable t, Subscriber<? super R> subscriber) {
             try {
-                subscriber.onNext(parent.onErrorMapper.apply(state, t));
+                subscriber.onNext(mapper.mapOnError(t));
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -211,7 +226,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         private void deliverOnComplete(Subscriber<? super R> subscriber) {
             try {
-                subscriber.onNext(parent.onCompleteMapper.apply(state));
+                subscriber.onNext(mapper.mapOnComplete());
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;

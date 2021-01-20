@@ -16,13 +16,38 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.ScanWithMapper;
+
+import javax.annotation.Nullable;
 
 import static java.lang.String.valueOf;
 
-public class PublisherScanWithTerminalMapperTckTest extends AbstractPublisherOperatorTckTest<String> {
+public class PublisherScanWithMapperTckTest extends AbstractPublisherOperatorTckTest<String> {
     @Override
     protected Publisher<String> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.scanWith(() -> null, (state, t) -> valueOf(t), state -> false, (state, cause) -> state,
-                state -> state);
+        return publisher.scanWith(() -> new ScanWithMapper<Integer, String>() {
+            @Nullable
+            @Override
+            public String mapOnNext(@Nullable final Integer next) {
+                return valueOf(next);
+            }
+
+            @Nullable
+            @Override
+            public String mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public String mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return false;
+            }
+        });
     }
 }
