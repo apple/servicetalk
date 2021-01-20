@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.CompositeException.maxDelayedErrors;
+import static io.servicetalk.concurrent.api.CompositeExceptionUtils.addPendingError;
+import static io.servicetalk.concurrent.api.CompositeExceptionUtils.maxDelayedErrors;
 import static io.servicetalk.concurrent.api.PublisherFlatMapMerge.FLAT_MAP_DEFAULT_CONCURRENCY;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
@@ -41,8 +42,8 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.trySetTerminal;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -93,8 +94,11 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
     private static final class FlatMapSubscriber<T, R> implements Subscriber<T>, Subscription {
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, CompositeException> delayedErrorUpdater =
-                newUpdater(FlatMapSubscriber.class, CompositeException.class, "delayedError");
+        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, Throwable> pendingErrorUpdater =
+                newUpdater(FlatMapSubscriber.class, Throwable.class, "pendingError");
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> pendingErrorCountUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "pendingErrorCount");
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "emitting");
@@ -110,14 +114,14 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeMappedSourcesUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "activeMappedSources");
-        @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification>
-                terminalNotificationUpdater = newUpdater(FlatMapSubscriber.class, TerminalNotification.class,
-                "terminalNotification");
-
-        @SuppressWarnings("unused")
+        /**
+         * An indicator in the pending queue that a Single terminated with error.
+         */
+        private static final Object SINGLE_ERROR = new Object();
         @Nullable
-        private volatile CompositeException delayedError;
+        private volatile Throwable pendingError;
+        @SuppressWarnings("UnusedDeclaration")
+        private volatile int pendingErrorCount;
         @SuppressWarnings("unused")
         private volatile int emitting;
         @SuppressWarnings("unused")
@@ -127,9 +131,6 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @SuppressWarnings("unused")
         private volatile long sourceRequested;
         private volatile int activeMappedSources;
-        @SuppressWarnings("unused")
-        @Nullable
-        private volatile TerminalNotification terminalNotification;
         /**
          * This variable is only accessed within the "emitting lock" so we rely upon this to provide visibility to
          * other threads.
@@ -137,16 +138,10 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         private boolean targetTerminated;
         @Nullable
         private Subscription subscription;
-
         private final Queue<Object> pending;
-        private final CancellableSet cancellable = new CancellableSet();
+        private final CancellableSet cancellableSet = new CancellableSet();
         private final PublisherFlatMapSingle<T, R> source;
         private final Subscriber<? super R> target;
-
-        /*
-         * An indicator in the pending queue that a Single terminated with error.
-         */
-        private static final Object SINGLE_ERROR = new Object();
 
         FlatMapSubscriber(PublisherFlatMapSingle<T, R> source, Subscriber<? super R> target) {
             this.source = source;
@@ -158,16 +153,15 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @Override
         public void request(long n) {
             assert subscription != null;
-            if (!isRequestNValid(n)) {
+            if (isRequestNValid(n)) {
+                requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
+                int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                        sourceEmittedUpdater, source.maxConcurrency, this);
+                if (actualSourceRequestN != 0) {
+                    subscription.request(actualSourceRequestN);
+                }
+            } else {
                 subscription.request(n);
-                return;
-            }
-
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
-            int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
-                    sourceEmittedUpdater, source.maxConcurrency, this);
-            if (actualSourceRequestN != 0) {
-                subscription.request(actualSourceRequestN);
             }
         }
 
@@ -192,29 +186,21 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @Override
         public void onNext(T t) {
             final Single<? extends R> next = requireNonNull(source.mapper.apply(t));
-
-            // Requested count will be decremented after this single completes.
-            // If we are cancelled the activeUpdater count is best effort depending upon which sources finish. This best
-            // effort behavior mimics the semantics of cancel though so we don't take any special action to try to
-            // adjust the count or prematurely terminate.
-            final int activeSources = activeMappedSourcesUpdater.incrementAndGet(this);
-            assert activeSources > 0; // otherwise onComplete was previously invoked or concurrency on this Subscriber.
-            next.subscribeInternal(new FlatMapSingleSubscriber());
+            if (activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
+                next.subscribeInternal(new FlatMapSingleSubscriber());
+            }
+            // else we have already terminated and onNext isn't valid!
         }
 
         @Override
         public void onError(Throwable t) {
-            if (!onError0(t, false, false)) {
-                LOGGER.debug("Already terminated/cancelled, ignoring error notification.", t);
-            }
+            onError0(t, false);
         }
 
         @Override
         public void onComplete() {
-            // Setting terminal must be done before terminateActiveMappedSources to ensure visibility of the terminal.
-            final boolean setTerminal = trySetTerminal(complete(), false, terminalNotificationUpdater, this);
-            final boolean allSourcesTerminated = terminateActiveMappedSources();
-            if (setTerminal && allSourcesTerminated) {
+            if (terminateActiveMappedSources()) {
+                // delayedError is checked in drain loop, and complete() is discarded if there are errors pending.
                 enqueueAndDrain(complete());
             }
         }
@@ -243,18 +229,12 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private boolean onError0(Throwable throwable, boolean overrideComplete,
-                                 boolean cancelSubscriberIfNecessary) {
-            final TerminalNotification notification = TerminalNotification.error(throwable);
-            if (trySetTerminal(notification, overrideComplete, terminalNotificationUpdater, this)) {
-                try {
-                    doCancel(cancelSubscriberIfNecessary);
-                } finally {
-                    enqueueAndDrain(notification);
-                }
-                return true;
+        private void onError0(Throwable throwable, boolean cancelUpstream) {
+            try {
+                doCancel(cancelUpstream);
+            } finally {
+                enqueueAndDrain(error(throwable));
             }
-            return false;
         }
 
         private void tryEmitItem(final Object item) {
@@ -274,7 +254,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private void enqueueAndDrain(Object item) {
             if (!pending.offer(item)) {
-                enqueueAndDrainFailed(item);
+                enqueueFailed(item);
             }
             drainPending();
         }
@@ -320,52 +300,48 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
-        private void enqueueAndDrainFailed(Object item) {
-            QueueFullException exception = new QueueFullException("pending");
-            if (item instanceof TerminalNotification) {
-                LOGGER.error("Queue should be unbounded, but an offer failed!", exception);
-                throw exception;
-            } else {
-                onError0(exception, true, true);
-            }
+        private void enqueueFailed(Object item) {
+            LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
+            // Note that we throw even if the item represents a terminal signal (even though we don't expect another
+            // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
+            // to enqueue a terminal event async control flow won't be completed and the user won't be notified. This
+            // is a relatively extreme failure condition and we fail loudly to clarify that signal delivery is
+            // interrupted and the user may experience hangs.
+            throw new QueueFullException("pending");
         }
 
         /**
          * Cancel and cleanup.
-         * @param cancelSubscription enforces the
+         * @param cancelUpstream enforces the
          * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.3">
          *     reactive streams rule 2.3</a>.
          */
-        private void doCancel(boolean cancelSubscription) {
-            cancellable.cancel();
-            if (cancelSubscription) {
-                Subscription subscription = this.subscription;
-                assert subscription != null;
-                subscription.cancel();
+        private void doCancel(boolean cancelUpstream) {
+            try {
+                if (cancelUpstream) {
+                    Subscription subscription = this.subscription;
+                    assert subscription != null;
+                    subscription.cancel();
+                }
+            } finally {
+                cancellableSet.cancel();
+                // Don't bother clearing out signals (which require additional concurrency control) because it is
+                // assumed this Subscriber will be dereferenced and eligible for GC [1].
+                // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.13
             }
         }
 
         private void sendToTarget(Object item) {
-            if (targetTerminated || item == SINGLE_ERROR) {
-                // No notifications past terminal/cancelled
+            if (targetTerminated || item == SINGLE_ERROR) { // No notifications past terminal/cancelled
                 return;
             }
             if (item instanceof TerminalNotification) {
                 targetTerminated = true;
-                // Load the terminal notification in case an error happened after an onComplete and we override the
-                // terminal value.
-                TerminalNotification terminalNotification = this.terminalNotification;
-                assert terminalNotification != null;
-                CompositeException de = this.delayedError;
-                if (de != null) {
-                    de.transferPendingToSuppressed();
-                    if (terminalNotification.cause() == de) {
-                        terminalNotification.terminate(target);
-                    } else {
-                        terminalNotification.terminate(target, de);
-                    }
+                final Throwable currPendingError = pendingError;
+                if (currPendingError != null) {
+                    target.onError(currPendingError);
                 } else {
-                    terminalNotification.terminate(target);
+                    ((TerminalNotification) item).terminate(target);
                 }
             } else {
                 target.onNext(unwrapNullUnchecked(item));
@@ -383,7 +359,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 // upon which sources finish. This best effort behavior mimics the semantics of cancel though so we
                 // don't take any special action to try to adjust the count or prematurely terminate.
                 this.singleCancellable = singleCancellable;
-                cancellable.add(singleCancellable);
+                cancellableSet.add(singleCancellable);
             }
 
             @Override
@@ -399,27 +375,28 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onError(Throwable t) {
+                Throwable currPendingError = pendingError;
                 if (source.maxDelayedErrors == 0) {
-                    onError0(t, true, true);
+                    if (currPendingError == null &&
+                            pendingErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, t)) {
+                        onError0(t, true);
+                    }
                 } else {
-                    CompositeException de = FlatMapSubscriber.this.delayedError;
-                    if (de == null) {
-                        de = new CompositeException(t, source.maxDelayedErrors);
-                        if (!delayedErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, de)) {
-                            de = FlatMapSubscriber.this.delayedError;
-                            assert de != null;
-                            de.add(t);
+                    if (currPendingError == null) {
+                        if (pendingErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, t)) {
+                            currPendingError = t;
+                        } else {
+                            currPendingError = pendingError;
+                            assert currPendingError != null;
+                            addPendingError(pendingErrorCountUpdater, FlatMapSubscriber.this, source.maxDelayedErrors,
+                                    currPendingError, t);
                         }
                     } else {
-                        de.add(t);
+                        addPendingError(pendingErrorCountUpdater, FlatMapSubscriber.this, source.maxDelayedErrors,
+                                currPendingError, t);
                     }
                     if (onSingleTerminated()) {
-                        if (trySetTerminal(TerminalNotification.error(de), true, terminalNotificationUpdater,
-                                FlatMapSubscriber.this)) {
-                            // Since we have already added error to delayedError, we use complete() TerminalNotification
-                            // as a dummy signal to start draining and termination.
-                            enqueueAndDrain(complete());
-                        }
+                        enqueueAndDrain(error(currPendingError));
                     } else {
                         // Queueing/draining may result in requestN more data.
                         tryEmitItem(SINGLE_ERROR);
@@ -429,7 +406,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             private boolean onSingleTerminated() {
                 assert singleCancellable != null;
-                cancellable.remove(singleCancellable);
+                cancellableSet.remove(singleCancellable);
                 return decrementActiveMappedSources();
             }
         }

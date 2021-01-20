@@ -19,23 +19,14 @@ import org.hamcrest.Matcher;
 
 import javax.annotation.Nullable;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public final class VerificationTestUtils {
     private VerificationTestUtils() {
-    }
-
-    public static void verifyOriginalAndSuppressedCauses(@Nullable Throwable actualCause,
-                                                         Throwable expectedOriginalCause,
-                                                         Throwable expectedSuppressedCause) {
-        assertNotNull(actualCause);
-        assertSame(expectedOriginalCause, actualCause.getCause());
-        verifySuppressed(actualCause, expectedSuppressedCause);
     }
 
     public static void verifySuppressed(@Nullable Throwable holder, Throwable expectedSuppressedCause) {

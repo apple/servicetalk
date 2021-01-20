@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,17 +42,18 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
-import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -120,16 +122,15 @@ public class PublisherFlatMapSingleTest {
             List<Integer> list = single.toFuture().get();
             assertThat("Unexpected items received", list, hasSize(500));
             Throwable cause = error.get();
-            assertThat("Unexpected exception.", cause, instanceOf(CompositeException.class));
-            assertThat("Unexpected exception.", cause.getCause(), instanceOf(DeliberateException.class));
-            assertThat("Unexpected exception.", cause.getSuppressed().length,
-                    equalTo(499/*everything but the first error is suppressed*/));
+            assertThat(cause, instanceOf(DeliberateException.class));
+            // everything but the first error is suppressed
+            assertThat("Unexpected exception.", asList(cause.getSuppressed()), hasSize(499));
         }
     }
 
     @Test
     public void testSingleItemSyncSingle() {
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
@@ -139,7 +140,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemCompletesWithNull() {
-        toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.succeeded(null), 2)).subscribe(subscriber);
+        toSource(source.<Integer>flatMapMergeSingle(integer1 -> succeeded(null), 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onComplete();
@@ -173,7 +174,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSingleError() {
-        toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.failed(DELIBERATE_EXCEPTION), 2))
+        toSource(source.<Integer>flatMapMergeSingle(integer1 -> failed(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
@@ -192,8 +193,43 @@ public class PublisherFlatMapSingleTest {
     }
 
     @Test
+    public void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
+        CountDownLatch cancelledLatch = new CountDownLatch(1);
+        source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
+            subscriber1.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                }
+
+                @Override
+                public void cancel() {
+                    try {
+                        cancelledLatch.await();
+                    } catch (InterruptedException e) {
+                        throwException(e);
+                    }
+                    subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));
+                }
+            });
+            return subscriber1;
+        });
+        TestSingle<Integer> mappedSingle = new TestSingle<>();
+        toSource(source.flatMapMergeSingle(i -> mappedSingle, 1)).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        source.onNext(1);
+
+        executor.execute(() -> mappedSingle.onError(DELIBERATE_EXCEPTION));
+        // Verify that cancel happens before terminal. This ensures that sources which allow for multiple sequential
+        // Subscribers can clear out there current subscriber in preparation for the next Subscriber and avoid duplicate
+        // subscribe related errors.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        cancelledLatch.countDown();
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     public void testSourceEmitsErrorNoOnNexts() {
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -201,7 +237,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSourceEmitsErrorPostOnNexts() {
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
@@ -350,7 +386,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testRequestPostSingleError() {
-        toSource(source.<Integer>flatMapMergeSingleDelayError(integer1 -> Single.failed(DELIBERATE_EXCEPTION), 2))
+        toSource(source.<Integer>flatMapMergeSingleDelayError(integer1 -> failed(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(3);
@@ -362,12 +398,13 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1); // Request more with 1 single completion.
         assertThat(subscription.requested(), is(3L));
         source.onComplete(); // Stop requesting more.
-        verifySuppressed(subscriber.awaitOnError(), DELIBERATE_EXCEPTION);
+        Throwable cause = subscriber.awaitOnError();
+        assertThat(cause, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testRequestMultipleTimes() {
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), 10)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), 10)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         assertThat(subscription.requested(), is(2L));
@@ -380,7 +417,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testRequestMultipleTimesBreachMaxConcurrency() {
-        toSource(source.flatMapMergeSingle(integer -> Single.succeeded(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer -> succeeded(2), 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         subscriber.awaitSubscription().request(2);
@@ -394,26 +431,26 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testMultipleSingleErrors() {
-        List<DeliberateException> errors = new ArrayList<>();
+        Queue<DeliberateException> errors = new ArrayDeque<>();
         toSource(source.flatMapMergeSingleDelayError(integer -> {
             DeliberateException de = new DeliberateException();
             errors.add(de);
             return Single.<Integer>failed(de);
-        }, 2)).subscribe(subscriber);
+        }, 2, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         source.onNext(1, 1);
         source.onComplete();
-        assertThat("Unexpected emitted error count.", errors, hasSize(2));
-        DeliberateException first = errors.remove(0);
-        for (DeliberateException error : errors) {
-            verifyOriginalAndSuppressedCauses(subscriber.awaitOnError(), first, error);
-        }
+        Throwable cause = subscriber.awaitOnError();
+        assertThat(errors, hasSize(2));
+        assertThat(asList(cause.getSuppressed()), hasSize(1));
+        assertThat(cause, is(errors.poll()));
+        assertThat(cause.getSuppressed()[0], is(errors.poll()));
     }
 
     @Test
     public void testRequestLongMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(Long.MAX_VALUE);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -426,7 +463,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testAccumulateToLongMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(Long.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -439,7 +476,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testAccumulateToIntMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapMergeSingle(integer1 -> Single.succeeded(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> succeeded(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.awaitSubscription().request(Integer.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -460,7 +497,7 @@ public class PublisherFlatMapSingleTest {
             expectedNumbers[i] = i;
         }
         PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
-                value -> Single.succeeded(Integer.toString(value)),
+                value -> succeeded(Integer.toString(value)),
                 false, 1, immediate());
         toSource(pub).subscribe(new Subscriber<String>() {
             private Subscription subscription;

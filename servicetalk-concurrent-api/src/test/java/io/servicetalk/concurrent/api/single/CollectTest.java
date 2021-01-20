@@ -35,7 +35,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.fail;
 
 public class CollectTest {
@@ -78,8 +77,7 @@ public class CollectTest {
             fail();
         } catch (ExecutionException e) {
             assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected exception cause.", e.getCause().getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
 
@@ -93,8 +91,7 @@ public class CollectTest {
             fail();
         } catch (ExecutionException e) {
             assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected exception cause.", e.getCause().getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
 
@@ -133,8 +130,7 @@ public class CollectTest {
             fail();
         } catch (ExecutionException e) {
             assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected exception cause.", e.getCause().getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
 
@@ -148,8 +144,7 @@ public class CollectTest {
             fail();
         } catch (ExecutionException e) {
             assertThat("Second source not subscribed.", secondSubscribed.get(), is(true));
-            assertThat("Unexpected exception.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected exception cause.", e.getCause().getCause(), is(DELIBERATE_EXCEPTION));
+            assertThat("Unexpected exception.", e.getCause(), is(DELIBERATE_EXCEPTION));
         }
     }
 }

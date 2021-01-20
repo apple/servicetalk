@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -26,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,18 +52,16 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
-import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -85,8 +85,7 @@ public class PublisherFlatMapMergeTest {
     @Nullable
     private static Executor executor;
 
-    private final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<Integer> subscriber =
-            new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> publisher = new TestPublisher<>();
 
     @BeforeClass
@@ -141,8 +140,7 @@ public class PublisherFlatMapMergeTest {
         processor.onComplete();
         latchOnError.await();
         final Throwable t = causeRef.get();
-        assertThat(t, instanceOf(CompositeException.class));
-        assertThat(t.getCause(), is(DELIBERATE_EXCEPTION));
+        assertThat(t, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -248,6 +246,42 @@ public class PublisherFlatMapMergeTest {
         assertEquals(2, nextItem.intValue());
 
         mappedPublisher.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
+        CountDownLatch cancelledLatch = new CountDownLatch(1);
+        publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
+            subscriber1.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                }
+
+                @Override
+                public void cancel() {
+                    try {
+                        cancelledLatch.await();
+                    } catch (InterruptedException e) {
+                        throwException(e);
+                    }
+                    subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));
+                }
+            });
+            return subscriber1;
+        });
+        TestPublisher<Integer> mappedPublisher = new TestPublisher<>();
+        toSource(publisher.flatMapMerge(i -> mappedPublisher, 1)).subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+        publisher.onNext(1);
+
+        assert executor != null;
+        executor.execute(() -> mappedPublisher.onError(DELIBERATE_EXCEPTION));
+        // Verify that cancel happens before terminal. This ensures that sources which allow for multiple sequential
+        // Subscribers can clear out there current subscriber in preparation for the next Subscriber and avoid duplicate
+        // subscribe related errors.
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
+        cancelledLatch.countDown();
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
@@ -541,15 +575,14 @@ public class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(upstreamSubscription);
                     return subscriber1;
                 });
-        toSource(publisher.<Integer>flatMapMergeDelayError(i -> Publisher.failed(DELIBERATE_EXCEPTION), 2))
-                .subscribe(subscriber);
+        toSource(publisher.<Integer>flatMapMergeDelayError(i -> failed(DELIBERATE_EXCEPTION), 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         verifyCumulativeDemand(upstreamSubscription, 2);
 
         publisher.onNext(1, 2);
         assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
         publisher.onComplete();
-        verifySuppressed(subscriber.awaitOnError(), DELIBERATE_EXCEPTION);
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -606,21 +639,21 @@ public class PublisherFlatMapMergeTest {
 
     @Test
     public void multipleMappedErrors() {
-        List<DeliberateException> errors = new ArrayList<>();
+        Queue<DeliberateException> errors = new ArrayDeque<>();
         toSource(publisher.<Integer>flatMapMergeDelayError(i -> {
             DeliberateException de = new DeliberateException();
             errors.add(de);
-            return Publisher.failed(de);
-        }, 2)).subscribe(subscriber);
+            return failed(de);
+        }, 2, 2)).subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
 
         publisher.onNext(1, 2);
         publisher.onComplete();
+        Throwable cause = subscriber.awaitOnError();
         assertThat(errors, hasSize(2));
-        DeliberateException first = errors.remove(0);
-        for (DeliberateException error : errors) {
-            verifyOriginalAndSuppressedCauses(subscriber.awaitOnError(), first, error);
-        }
+        assertThat(asList(cause.getSuppressed()), hasSize(1));
+        assertThat(cause, is(errors.poll()));
+        assertThat(cause.getSuppressed()[0], is(errors.poll()));
     }
 
     @Test
@@ -769,8 +802,7 @@ public class PublisherFlatMapMergeTest {
         assert executor != null;
         final int upstreamItems = 10000;
         final int mappedItems = 5;
-        final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<IntPair> subscriber =
-                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
+        final TestPublisherSubscriber<IntPair> subscriber = new TestPublisherSubscriber<>();
         Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
                 .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems);
         toSource(publisher).subscribe(subscriber);
@@ -917,10 +949,9 @@ public class PublisherFlatMapMergeTest {
             List<Integer> list = single.toFuture().get();
             assertThat("Unexpected items received", list, hasSize(500));
             Throwable cause = error.get();
-            assertThat("Unexpected exception.", cause, instanceOf(CompositeException.class));
-            assertThat("Unexpected exception.", cause.getCause(), instanceOf(DeliberateException.class));
-            assertThat("Unexpected exception.", cause.getSuppressed().length,
-                    equalTo(499/*everything but the first error is suppressed*/));
+            assertThat(cause, instanceOf(DeliberateException.class));
+            // everything but the first error is suppressed
+            assertThat("Unexpected exception.", asList(cause.getSuppressed()), hasSize(499));
         }
     }
 
