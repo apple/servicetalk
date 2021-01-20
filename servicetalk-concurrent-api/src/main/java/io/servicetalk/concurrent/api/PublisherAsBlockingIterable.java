@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
-import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Iterator;
@@ -30,14 +29,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -52,7 +49,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     private final int queueCapacityHint;
 
     PublisherAsBlockingIterable(final Publisher<T> original) {
-        this(original, 16);
+        this(original, 32);
     }
 
     PublisherAsBlockingIterable(final Publisher<T> original, int queueCapacityHint) {
@@ -74,15 +71,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<SubscriberAndIterator> onNextQueuedUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(SubscriberAndIterator.class, "onNextQueued");
-
         private final BlockingQueue<Object> data;
         private final DelayedSubscription subscription = new DelayedSubscription();
-        private final int queueCapacity;
         private final int requestN;
-        private volatile int onNextQueued;
         /**
          * Number of items to emit from {@link #next()} till we request more.
          * Alternatively we can {@link Subscription#request(long) request(1)} every time we emit an item.
@@ -91,7 +82,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
          * {@link Subscription#request(long) request(n)} should be as fast as
          * {@link Subscription#request(long) request(1)}.
          * <p>
-         * Only accessed from {@link Iterator} methods and not from {@link Subscriber} methods.
+         * Only accessed from {@link Iterator} methods and not from {@link Subscriber} methods (after initialization).
          */
         private int itemsToNextRequest;
 
@@ -103,9 +94,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private boolean terminated;
 
         SubscriberAndIterator(int queueCapacity) {
-            this.queueCapacity = queueCapacity;
-            requestN = max(1, queueCapacity / 2);
-            itemsToNextRequest = requestN;
+            requestN = queueCapacity;
             data = new LinkedBlockingQueue<>();
         }
 
@@ -114,7 +103,8 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             // Subscription is requested from here as well as hasNext. Also, it can be cancelled from close(). So, we
             // need to protect it from concurrent access.
             subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
-            subscription.request(queueCapacity);
+            itemsToNextRequest = requestN;
+            subscription.request(requestN);
         }
 
         @Override
@@ -130,11 +120,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void onNext(@Nullable T t) {
-            // optimistically increment. there is no concurrency allowed in onNext.
-            if (onNextQueuedUpdater.incrementAndGet(this) > queueCapacity) {
-                onNextQueuedUpdater.decrementAndGet(this);
-                throw new QueueFullException("publisher-iterator", queueCapacity);
-            }
             offer(wrapNull(t));
         }
 
@@ -215,10 +200,13 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void requestMoreIfRequired() {
-            onNextQueuedUpdater.decrementAndGet(this);
-            if (--itemsToNextRequest == 0) {
+            // Request more when we half of the outstanding demand has been delivered. This attempts to keep some
+            // outstanding demand in the event there is impedance mismatch between producer and consumer (as opposed to
+            // waiting until outstanding demand reaches 0) while still having an upper bound.
+            if (--itemsToNextRequest == requestN >>> 1) {
+                final int toRequest = requestN - itemsToNextRequest;
                 itemsToNextRequest = requestN;
-                subscription.request(itemsToNextRequest);
+                subscription.request(toRequest);
             }
         }
 

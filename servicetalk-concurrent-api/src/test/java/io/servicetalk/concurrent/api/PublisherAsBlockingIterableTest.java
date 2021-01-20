@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -286,10 +285,9 @@ public final class PublisherAsBlockingIterableTest {
         source.onNext(1, 2);
         verifyNextIs(iterator, 1);
         verifyNextIs(iterator, 2);
-        assertThat(subscription.requested(), is((long) 7)); /*5 + 2*/
         source.onNext(3);
         verifyNextIs(iterator, 3);
-        assertThat(subscription.requested(), is((long) 7));
+        assertThat(subscription.requested(), is((long) 8));
     }
 
     @Test
@@ -389,21 +387,6 @@ public final class PublisherAsBlockingIterableTest {
         assertThat(subscription.requested(), is((long) 5));
         source.onComplete();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
-    }
-
-    @Test
-    public void onNextMoreThanRequested() {
-        Iterator<Integer> itr = source.toIterable(1).iterator();
-        TestSubscription subscription = new TestSubscription();
-        source.onSubscribe(subscription);
-        assertTrue(source.isSubscribed());
-        assertThat(subscription.requested(), is((long) 1));
-        source.onNext(1);
-        source.onNext(2, 3, 4); // queue is capacity + 2
-        expected.expect(instanceOf(QueueFullException.class));
-        while (itr.hasNext()) {
-            itr.next();
-        }
     }
 
     @Test
