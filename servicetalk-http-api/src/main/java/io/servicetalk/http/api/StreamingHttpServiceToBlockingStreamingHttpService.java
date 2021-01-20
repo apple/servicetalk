@@ -110,7 +110,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             @Nullable
             private Subscription subscription;
             private final int demandBatchSize;
-            private int outstandingDemand;
+            private int itemsToNextRequest;
 
             PayloadPump(final Subscriber subscriber, final HttpPayloadWriter<Buffer> payloadWriter,
                         final int demandBatchSize) {
@@ -124,8 +124,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 // We need to protect sub.cancel() from concurrent invocation.
                 subscription = ConcurrentSubscription.wrap(inSubscription);
                 subscriber.onSubscribe(subscription);
-                outstandingDemand = demandBatchSize;
-                subscription.request(outstandingDemand);
+                itemsToNextRequest = demandBatchSize;
+                subscription.request(itemsToNextRequest);
             }
 
             @Override
@@ -141,12 +141,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 } else {
                     throw new IllegalArgumentException("unsupported type: " + bufferOrTrailers);
                 }
-                if (--outstandingDemand < demandBatchSize >>> 1) {
-                    assert subscription != null;
-                    final long additionalDemand = demandBatchSize - outstandingDemand;
-                    outstandingDemand = demandBatchSize;
-                    subscription.request(additionalDemand);
-                }
+                requestMoreIfRequired();
             }
 
             @Override
@@ -169,6 +164,14 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                     return;
                 }
                 subscriber.onComplete();
+            }
+
+            private void requestMoreIfRequired() {
+                if (--itemsToNextRequest == 0) {
+                    assert subscription != null;
+                    itemsToNextRequest = demandBatchSize;
+                    subscription.request(itemsToNextRequest);
+                }
             }
         }
     }
