@@ -328,23 +328,23 @@ public class ScanWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    private static <T> ScanWithMapper<T, T> noopMapper() {
-        return new ScanWithMapper<T, T>() {
+    private static ScanWithMapper<Integer, Integer> noopMapper() {
+        return new ScanWithMapper<Integer, Integer>() {
             @Nullable
             @Override
-            public T mapOnNext(@Nullable final T next) {
+            public Integer mapOnNext(@Nullable final Integer next) {
                 return next;
             }
 
             @Nullable
             @Override
-            public T mapOnError(final Throwable cause) {
+            public Integer mapOnError(final Throwable cause) {
                 return null;
             }
 
             @Nullable
             @Override
-            public T mapOnComplete() {
+            public Integer mapOnComplete() {
                 return null;
             }
 
