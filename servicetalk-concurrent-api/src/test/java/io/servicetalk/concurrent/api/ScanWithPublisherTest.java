@@ -25,13 +25,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import javax.annotation.Nullable;
-
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -39,9 +38,40 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ScanConcatPublisherTest {
+public class ScanWithPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    @Test
+    public void scanWithComplete() {
+        scanWithNoTerminalMapper(true);
+    }
+
+    @Test
+    public void scanWithError() {
+        scanWithNoTerminalMapper(false);
+    }
+
+    private static void scanWithNoTerminalMapper(boolean onComplete) {
+        PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        toSource(fromSource(processor).scanWith(() -> 0, Integer::sum)).subscribe(subscriber);
+        Subscription s = subscriber.awaitSubscription();
+        s.request(3);
+        processor.onNext(1);
+        assertThat(subscriber.takeOnNext(), is(1));
+        processor.onNext(2);
+        assertThat(subscriber.takeOnNext(), is(3));
+        processor.onNext(3);
+        assertThat(subscriber.takeOnNext(), is(6));
+        if (onComplete) {
+            processor.onComplete();
+            subscriber.awaitOnComplete();
+        } else {
+            processor.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        }
+    }
 
     @Test
     public void scanOnNextOnCompleteNoConcat() {
@@ -66,7 +96,8 @@ public class ScanConcatPublisherTest {
     private static void scanOnNextTerminalNoConcat(boolean onNext, boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanConcat(ScanConcatPublisherTest::noopMapper)).subscribe(subscriber);
+        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t,
+                state -> false, (state, cause) -> null, state -> state)).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         if (onNext) {
             s.request(1);
@@ -105,40 +136,16 @@ public class ScanConcatPublisherTest {
     private static void terminalConcatWithDemand(boolean demandUpFront, boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanConcat(() -> new ScanConcatMapper<Integer, Integer>() {
-            private int sum;
-            @Nullable
-            @Override
-            public Integer onNext(@Nullable final Integer next) {
-                if (next != null) {
-                    sum += next;
-                }
-                return next;
-            }
-
-            @Override
-            public Integer onError(final Throwable t) {
-                return sum;
-            }
-
-            @Override
-            public Integer onComplete() {
-                return sum;
-            }
-
-            @Override
-            public boolean mapTerminalSignal() {
-                return true;
-            }
-        })).subscribe(subscriber);
+        toSource(fromSource(processor).scanWith(() -> 0, Integer::sum, state -> true, (state, cause) -> ++state,
+                state -> ++state)).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(demandUpFront ? 4 : 3);
         processor.onNext(1);
         assertThat(subscriber.takeOnNext(), is(1));
         processor.onNext(2);
-        assertThat(subscriber.takeOnNext(), is(2));
-        processor.onNext(3);
         assertThat(subscriber.takeOnNext(), is(3));
+        processor.onNext(3);
+        assertThat(subscriber.takeOnNext(), is(6));
         if (onComplete) {
             processor.onComplete();
         } else {
@@ -148,7 +155,7 @@ public class ScanConcatPublisherTest {
             assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
             s.request(1);
         }
-        assertThat(subscriber.takeOnNext(), is(6));
+        assertThat(subscriber.takeOnNext(), is(7));
         subscriber.awaitOnComplete();
     }
 
@@ -165,28 +172,13 @@ public class ScanConcatPublisherTest {
     private static void terminalThrowsHandled(boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanConcat(() -> new ScanConcatMapper<Integer, Integer>() {
-            @Nullable
-            @Override
-            public Integer onNext(@Nullable final Integer next) {
-                return next;
-            }
-
-            @Override
-            public Integer onError(final Throwable t) throws Throwable {
-                throw t;
-            }
-
-            @Override
-            public Integer onComplete() {
-                throw DELIBERATE_EXCEPTION;
-            }
-
-            @Override
-            public boolean mapTerminalSignal() {
-                return true;
-            }
-        })).subscribe(subscriber);
+        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t, state -> true,
+                (state, cause) -> {
+                    throwException(cause);
+                    return state;
+                }, state -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         if (onComplete) {
             processor.onComplete();
@@ -209,30 +201,9 @@ public class ScanConcatPublisherTest {
     private static void mapTerminalSignalThrows(boolean onComplete) {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanConcat(() -> new ScanConcatMapper<Integer, Integer>() {
-            @Nullable
-            @Override
-            public Integer onNext(@Nullable final Integer next) {
-                return null;
-            }
-
-            @Nullable
-            @Override
-            public Integer onError(final Throwable t) {
-                return null;
-            }
-
-            @Nullable
-            @Override
-            public Integer onComplete() {
-                return null;
-            }
-
-            @Override
-            public boolean mapTerminalSignal() {
-                throw DELIBERATE_EXCEPTION;
-            }
-        })).subscribe(subscriber);
+        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t, state -> {
+            throw DELIBERATE_EXCEPTION;
+        }, (state, cause) -> state, state -> state)).subscribe(subscriber);
         subscriber.awaitSubscription();
         if (onComplete) {
             processor.onComplete();
@@ -246,7 +217,8 @@ public class ScanConcatPublisherTest {
     public void invalidDemandAllowsError() {
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanConcat(ScanConcatPublisherTest::noopMapper)).subscribe(subscriber);
+        toSource(fromSource(processor).<Integer>scanWith(() -> null, (state, t) -> t,
+                state -> false, (state, cause) -> null, state -> state)).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
@@ -260,7 +232,8 @@ public class ScanConcatPublisherTest {
                     return subscriber1;
                 });
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(publisher.scanConcat(ScanConcatPublisherTest::noopMapper)).subscribe(subscriber);
+        toSource(publisher.<Integer>scanWith(() -> null, (state, t) -> t,
+                state -> true, (state, cause) -> null, state -> state)).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(100);
         upstreamSubscription.awaitRequestN(100);
@@ -271,32 +244,5 @@ public class ScanConcatPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         publisher.onError(newExceptionForInvalidRequestN(-1));
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
-    }
-
-    private static ScanConcatMapper<Integer, Integer> noopMapper() {
-        return new ScanConcatMapper<Integer, Integer>() {
-            @Nullable
-            @Override
-            public Integer onNext(@Nullable final Integer next) {
-                return next;
-            }
-
-            @Nullable
-            @Override
-            public Integer onError(final Throwable t) {
-                return null; // intentionally swallow exception
-            }
-
-            @Nullable
-            @Override
-            public Integer onComplete() {
-                return null;
-            }
-
-            @Override
-            public boolean mapTerminalSignal() {
-                return false;
-            }
-        };
     }
 }

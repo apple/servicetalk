@@ -48,6 +48,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
@@ -164,29 +165,87 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Apply a function to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} as well as
+     * Apply a {@link BiFunction} to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} and an
+     * accumulated state.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     R state = initial.get();
+     *     for (T t : resultOfThisPublisher()) {
+     *       state = mapper.apply(state, t);
+     *       results.add(state);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param initial Invoked on each {@link PublisherSource#subscribe(Subscriber)} and provides the initial state for
+     * each {@link Subscriber}.
+     * @param accumulator Used to map (or accumulate) the current state in combination with each
+     * {@link Subscriber#onNext(Object)} from this {@link Publisher}.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     */
+    public final <R> Publisher<R> scanWith(Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
+        return scanWith(initial, accumulator, state -> false, (state, cause) -> state, state -> state);
+    }
+
+    /**
+     * Apply a {@link BiFunction} to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} as well as
      * optionally concat one {@link Subscriber#onNext(Object)} signal before the terminal signal is emitted.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     List<R> results = ...;
-     *     for (T t : resultOfThisPublisher()) {
-     *       results.add(mapper.onNext(t));
+     *     R state = initial.get();
+     *     try {
+     *       for (T t : resultOfThisPublisher()) {
+     *         state = mapper.apply(state, t);
+     *         results.add(state);
+     *       }
+     *     } catch (Throwable cause) {
+     *       if (mapTerminal.test(state)) {
+     *         results.add(onErrorMapper.apply(state, cause));
+     *         return;
+     *       }
+     *       throw cause;
      *     }
-     *     if (mapper.mapTerminalSignal()) {
-     *       results.add(mapper.onComplete());
+     *     if (mapTerminal.test(state)) {
+     *       results.add(onCompleteMapper.apply(state));
      *     }
      *     return results;
      * }</pre>
-     * @param mapperSupplier Invoked on each {@link PublisherSource#subscribe(Subscriber)} to obtain a
-     * {@link ScanConcatMapper} to use for the subscribe.
+     * @param initial Invoked on each {@link PublisherSource#subscribe(Subscriber)} and provides the initial state for
+     * each {@link Subscriber}.
+     * @param mapper Used to map (or accumulate) the current state in combination with each
+     * {@link Subscriber#onNext(Object)} from this {@link Publisher}.
+     * @param mapTerminal Invoked when a terminal signal is received and determines if an additional
+     * {@link Subscriber#onNext(Object)} signal will be emitted downstream. If the {@link Predicate} returns
+     * {@code true} then the following mappers will be invoked:
+     * <ul>
+     *     <li>{@code onErrorMapper} - for {@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@code onCompleteMapper} - for {@link Subscriber#onComplete()}</li>
+     * </ul>
+     * If the {@link Predicate} returns {@code false} then the terminal signal will be passed through (with no
+     * additional invocation of parameters).
+     * @param onErrorMapper Used to map the current state with an error signal {@link Subscriber#onError(Throwable)}
+     * emitted on this {@link Publisher}. The return value will be emitted downstream as
+     * {@link Subscriber#onNext(Object)}, followed by {@link Subscriber#onComplete()}. If this {@link BiFunction} throws
+     * the exception will be propagated downstream via {@link Subscriber#onError(Throwable)}. Note this
+     * {@link BiFunction} is only invoked if {@code mapTerminal} returns {@code true}.
+     * @param onCompleteMapper Used to map the current state with a complete signal {@link Subscriber#onComplete()}
+     * emitted on this {@link Publisher}. The return value will be emitted downstream as
+     * {@link Subscriber#onNext(Object)}, followed by {@link Subscriber#onComplete()}. If this {@link UnaryOperator}
+     * throws the exception will be propagated downstream via {@link Subscriber#onError(Throwable)}. Note this
+     * {@link UnaryOperator} is only invoked if {@code mapTerminal} returns {@code true}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
      * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
-    public final <R> Publisher<R> scanConcat(
-            Supplier<? extends ScanConcatMapper<? super T, ? extends R>> mapperSupplier) {
-        return new ScanConcatPublisher<>(this, mapperSupplier, executor);
+    public final <R> Publisher<R> scanWith(Supplier<R> initial, BiFunction<R, ? super T, R> mapper,
+                                           Predicate<R> mapTerminal, BiFunction<R, Throwable, R> onErrorMapper,
+                                           UnaryOperator<R> onCompleteMapper) {
+        return new ScanWithPublisher<>(this, initial, mapper, mapTerminal, onErrorMapper, onCompleteMapper, executor);
     }
 
     /**

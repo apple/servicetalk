@@ -15,12 +15,14 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -28,59 +30,74 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
-final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
+final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Publisher<T> original;
-    private final Supplier<? extends ScanConcatMapper<? super T, ? extends R>> mapperSupplier;
+    private final Supplier<R> initial;
+    private final BiFunction<R, ? super T, R> mapper;
+    private final Predicate<R> mapTerminal;
+    private final BiFunction<R, Throwable, R> onErrorMapper;
+    private final UnaryOperator<R> onCompleteMapper;
 
-    ScanConcatPublisher(Publisher<T> original,
-                        Supplier<? extends ScanConcatMapper<? super T, ? extends R>> mapperSupplier,
-                        Executor executor) {
+    ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> mapper,
+                      Predicate<R> mapTerminal, BiFunction<R, Throwable, R> onErrorMapper,
+                      UnaryOperator<R> onCompleteMapper, Executor executor) {
         super(executor, true);
-        this.mapperSupplier = requireNonNull(mapperSupplier);
+        this.initial = requireNonNull(initial);
+        this.mapper = requireNonNull(mapper);
+        this.mapTerminal = requireNonNull(mapTerminal);
+        this.onErrorMapper = requireNonNull(onErrorMapper);
+        this.onCompleteMapper = requireNonNull(onCompleteMapper);
         this.original = original;
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeInternal(new ScanConcatSubscriber<>(subscriber, signalOffloader.offloadSubscriber(
-                contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), mapperSupplier.get()));
+        original.subscribeInternal(new ScanWithSubscriber<>(subscriber, signalOffloader.offloadSubscriber(
+                contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), this));
     }
 
-    private static final class ScanConcatSubscriber<T, R> implements Subscriber<T> {
+    private static final class ScanWithSubscriber<T, R> implements Subscriber<T> {
         private static final long TERMINATED = Long.MIN_VALUE;
         private static final long TERMINAL_PENDING = TERMINATED + 1;
         /**
-         * We don't want to invoke {@link ScanConcatMapper#onError(Throwable)} for invalid demand because we may never
-         * get enough demand to deliver an {@link #onNext(Object)} to the downstream subscriber. {@code -1} to avoid
-         * {@link #demand} underflow in onNext (in case the source doesn't deliver a timely error).
+         * We don't want to invoke {@link #onErrorMapper} for invalid demand because we may never get enough demand to
+         * deliver an {@link #onNext(Object)} to the downstream subscriber. {@code -1} to avoid {@link #demand}
+         * underflow in onNext (in case the source doesn't deliver a timely error).
          */
         private static final long INVALID_DEMAND = -1;
         @SuppressWarnings("rawtypes")
-        private static final AtomicLongFieldUpdater<ScanConcatSubscriber> demandUpdater =
-                newUpdater(ScanConcatSubscriber.class, "demand");
+        private static final AtomicLongFieldUpdater<ScanWithSubscriber> demandUpdater =
+                newUpdater(ScanWithSubscriber.class, "demand");
         private final Subscriber<? super R> subscriber;
         private final Subscriber<? super R> offloadedSubscriber;
-        private final ScanConcatMapper<T, R> mapper;
+        private final ScanWithPublisher<T, R> parent;
         private volatile long demand;
+        @Nullable
+        private R state;
+        /**
+         * Retains the {@link #onError(Throwable)} cause for use in the {@link Subscription}.
+         * Happens-before relationship with {@link #demand} means no volatile or other synchronization required.
+         */
         @Nullable
         private Throwable errorCause;
 
-        ScanConcatSubscriber(final Subscriber<? super R> subscriber, final Subscriber<? super R> offloadedSubscriber,
-                             final ScanConcatMapper<T, R> mapper) {
+        ScanWithSubscriber(final Subscriber<? super R> subscriber, final Subscriber<? super R> offloadedSubscriber,
+                           final ScanWithPublisher<T, R> parent) {
             this.subscriber = subscriber;
             this.offloadedSubscriber = offloadedSubscriber;
-            this.mapper = requireNonNull(mapper);
+            this.parent = parent;
+            this.state = parent.initial.get();
         }
 
         @Override
-        public void onSubscribe(final PublisherSource.Subscription subscription) {
-            subscriber.onSubscribe(new PublisherSource.Subscription() {
+        public void onSubscribe(final Subscription subscription) {
+            subscriber.onSubscribe(new Subscription() {
                 @Override
                 public void request(final long n) {
                     if (!isRequestNValid(n)) {
                         handleInvalidDemand(n);
-                    } else if (demandUpdater.getAndAccumulate(ScanConcatSubscriber.this, n,
+                    } else if (demandUpdater.getAndAccumulate(ScanWithSubscriber.this, n,
                             FlowControlUtils::addWithOverflowProtectionIfNotNegative) == TERMINAL_PENDING) {
                         demand = TERMINATED;
                         if (errorCause != null) {
@@ -95,13 +112,14 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
 
                 @Override
                 public void cancel() {
+                    demand = TERMINATED;
                     subscription.cancel();
                 }
 
                 private void handleInvalidDemand(final long n) {
                     // If there is a terminal pending then the upstream source cannot deliver an error because
                     // duplicate terminal signals are not allowed. otherwise we let upstream deliver the error.
-                    if (demandUpdater.getAndSet(ScanConcatSubscriber.this, INVALID_DEMAND) == TERMINAL_PENDING) {
+                    if (demandUpdater.getAndSet(ScanWithSubscriber.this, INVALID_DEMAND) == TERMINAL_PENDING) {
                         demand = TERMINATED;
                         offloadedSubscriber.onError(newExceptionForInvalidRequestN(n));
                     } else {
@@ -113,8 +131,11 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onNext(@Nullable final T t) {
+            // If anything throws in onNext the source is responsible for catching the error, cancelling the associated
+            // Subscription, and propagate an onError.
+            state = parent.mapper.apply(state, t);
             demandUpdater.decrementAndGet(this);
-            subscriber.onNext(mapper.onNext(t));
+            subscriber.onNext(state);
         }
 
         @Override
@@ -122,7 +143,7 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
             errorCause = t;
             final boolean doMap;
             try {
-                doMap = mapper.mapTerminalSignal();
+                doMap = parent.mapTerminal.test(state);
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -136,7 +157,9 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
                     } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
                         break;
                     } else if (currDemand < 0) {
-                        subscriber.onError(t); // either invalid request n, or we have already been terminated.
+                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
+                        // In either circumstance we propagate the error downstream and bail.
+                        subscriber.onError(t);
                         break;
                     }
                 }
@@ -150,7 +173,7 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
         public void onComplete() {
             final boolean doMap;
             try {
-                doMap = mapper.mapTerminalSignal();
+                doMap = parent.mapTerminal.test(state);
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -163,7 +186,9 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
                         break;
                     } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
                         break;
-                    } else if (currDemand < 0) { // either invalid request n, or we have already been terminated.
+                    } else if (currDemand < 0) {
+                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
+                        // In either circumstance we propagate the error downstream and bail.
                         subscriber.onError(new IllegalStateException("onComplete with invalid demand: " + currDemand));
                         break;
                     }
@@ -176,7 +201,7 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
 
         private void deliverOnError(Throwable t, Subscriber<? super R> subscriber) {
             try {
-                subscriber.onNext(mapper.onError(t));
+                subscriber.onNext(parent.onErrorMapper.apply(state, t));
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -186,7 +211,7 @@ final class ScanConcatPublisher<T, R> extends AbstractNoHandleSubscribePublisher
 
         private void deliverOnComplete(Subscriber<? super R> subscriber) {
             try {
-                subscriber.onNext(mapper.onComplete());
+                subscriber.onNext(parent.onCompleteMapper.apply(state));
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
