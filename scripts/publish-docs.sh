@@ -34,10 +34,9 @@ else
 fi
 
 function usage() {
-  echo "Usage: $0 [release_version [skip_clean_remote_site]]"
+  echo "Usage: $0 [release_version]"
   echo "No arguments - update the SNAPSHOT version of docs website only"
   echo "release_version - publish docs for a new release version and update the SNAPSHOT version"
-  echo "skip_clean_remote_site - to skip clean step for building docs"
 }
 
 function clean_up_gh_pages() {
