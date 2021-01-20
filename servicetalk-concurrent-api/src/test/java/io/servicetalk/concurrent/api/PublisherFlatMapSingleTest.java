@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -192,7 +193,8 @@ public class PublisherFlatMapSingleTest {
     }
 
     @Test
-    public void singleItemMappedErrorPropagatedBeforeCancel() {
+    public void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
+        CountDownLatch cancelledLatch = new CountDownLatch(1);
         source = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(new Subscription() {
                 @Override
@@ -201,6 +203,11 @@ public class PublisherFlatMapSingleTest {
 
                 @Override
                 public void cancel() {
+                    try {
+                        cancelledLatch.await();
+                    } catch (InterruptedException e) {
+                        throwException(e);
+                    }
                     subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));
                 }
             });
@@ -211,7 +218,12 @@ public class PublisherFlatMapSingleTest {
         subscriber.awaitSubscription().request(1);
         source.onNext(1);
 
-        mappedSingle.onError(DELIBERATE_EXCEPTION);
+        executor.execute(() -> mappedSingle.onError(DELIBERATE_EXCEPTION));
+        // Verify that cancel happens before terminal. This ensures that sources which allow for multiple sequential
+        // Subscribers can clear out there current subscriber in preparation for the next Subscriber and avoid duplicate
+        // subscribe related errors.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        cancelledLatch.countDown();
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 

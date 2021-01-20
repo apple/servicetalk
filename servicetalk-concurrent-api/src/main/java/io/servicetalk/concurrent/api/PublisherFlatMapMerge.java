@@ -149,18 +149,20 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         private final Subscriber<? super R> target;
         private final Queue<Object> signals;
         private final PublisherFlatMapMerge<T, R> source;
-        private final CancellableSet cancellableSubscribers;
+        private final CancellableSet cancellableSet;
 
         FlatMapSubscriber(PublisherFlatMapMerge<T, R> source, Subscriber<? super R> target) {
             this.source = source;
             this.target = target;
             signals = newUnboundedMpscQueue(4);
-            cancellableSubscribers = new CancellableSet(min(16, source.maxConcurrency));
+            cancellableSet = new CancellableSet(min(16, source.maxConcurrency));
         }
 
         @Override
         public void cancel() {
-            doCancel(true, true);
+            // invalidate pendingDemand as a best effort to avoid further signal delivery.
+            pendingDemand = -1;
+            doCancel(true);
         }
 
         @Override
@@ -197,7 +199,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         public void onNext(@Nullable final T t) {
             final Publisher<? extends R> publisher = requireNonNull(source.mapper.apply(t));
             FlatMapPublisherSubscriber<T, R> subscriber = new FlatMapPublisherSubscriber<>(this);
-            if (cancellableSubscribers.add(subscriber) && activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
+            if (cancellableSet.add(subscriber) && activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
                 publisher.subscribeInternal(subscriber);
             }
             // else if activeMapped <=0 after increment we have already terminated and onNext isn't valid!
@@ -205,11 +207,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         @Override
         public void onError(final Throwable t) {
+            upstreamError = t;
             try {
-                upstreamError = t;
-                enqueueAndDrain(error(t));
+                doCancel(false);
             } finally {
-                doCancel(false, true);
+                enqueueAndDrain(error(t));
             }
         }
 
@@ -260,17 +262,14 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             return (int) min(Integer.MAX_VALUE, max(availableRequestN / source.maxConcurrency, MIN_MAPPED_DEMAND));
         }
 
-        private void doCancel(boolean cancelSubscription, boolean invalidatePendingDemand) {
-            if (invalidatePendingDemand) {
-                pendingDemand = -1;
-            }
+        private void doCancel(boolean cancelUpstream) {
             try {
-                if (cancelSubscription) {
+                if (cancelUpstream) {
                     assert subscription != null;
                     subscription.cancel();
                 }
             } finally {
-                cancellableSubscribers.cancel();
+                cancellableSet.cancel();
                 // Don't bother clearing out signals (which require additional concurrency control) because it is
                 // assumed this Subscriber will be dereferenced and eligible for GC [1].
                 // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.13
@@ -333,6 +332,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         private void enqueueFailed(Object item) {
             LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
+            // Note that we throw even if the item represents a terminal signal (even though we don't expect another
+            // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
+            // to enqueue a terminal event async control flow won't be completed and the user won't be notified. This
+            // is a relatively extreme failure condition and we fail loudly to clarify that signal delivery is
+            // interrupted and the user may experience hangs.
             throw new QueueFullException("pending");
         }
 
@@ -343,11 +347,10 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             while (tryAcquire && tryAcquireLock(emittingLockUpdater, this)) {
                 try {
                     final long prevDemand = pendingDemandUpdater.getAndSet(this, 0);
-                    long emittedCount = 0;
                     if (prevDemand < 0) {
                         pendingDemand = prevDemand;
-                        sendToTargetIfPrematureError();
                     } else {
+                        long emittedCount = 0;
                         Object t;
                         while (emittedCount < prevDemand && (t = signals.poll()) != null) {
                             try {
@@ -480,7 +483,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber, int unusedDemand) {
-            if (cancellableSubscribers.remove(subscriber) && decrementActiveMappedSources()) {
+            if (cancellableSet.remove(subscriber) && decrementActiveMappedSources()) {
                 return true;
             } else if (unusedDemand > 0) {
                 incMappedDemand(unusedDemand);
@@ -573,7 +576,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                 if (parent.source.maxDelayedErrors == 0) {
                     if (currPendingError == null && pendingErrorUpdater.compareAndSet(parent, null, t)) {
                         try {
-                            parent.doCancel(true, false);
+                            parent.doCancel(true);
                         } finally {
                             // Emit the error to preserve ordering relative to onNext signals for this source.
                             parent.tryEmitItem(error(t), this);

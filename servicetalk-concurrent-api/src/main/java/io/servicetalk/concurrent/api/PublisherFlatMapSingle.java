@@ -139,7 +139,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         @Nullable
         private Subscription subscription;
         private final Queue<Object> pending;
-        private final CancellableSet cancellable = new CancellableSet();
+        private final CancellableSet cancellableSet = new CancellableSet();
         private final PublisherFlatMapSingle<T, R> source;
         private final Subscriber<? super R> target;
 
@@ -302,21 +302,32 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private void enqueueFailed(Object item) {
             LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
+            // Note that we throw even if the item represents a terminal signal (even though we don't expect another
+            // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
+            // to enqueue a terminal event async control flow won't be completed and the user won't be notified. This
+            // is a relatively extreme failure condition and we fail loudly to clarify that signal delivery is
+            // interrupted and the user may experience hangs.
             throw new QueueFullException("pending");
         }
 
         /**
          * Cancel and cleanup.
-         * @param cancelSubscription enforces the
+         * @param cancelUpstream enforces the
          * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.3">
          *     reactive streams rule 2.3</a>.
          */
-        private void doCancel(boolean cancelSubscription) {
-            cancellable.cancel();
-            if (cancelSubscription) {
-                Subscription subscription = this.subscription;
-                assert subscription != null;
-                subscription.cancel();
+        private void doCancel(boolean cancelUpstream) {
+            try {
+                if (cancelUpstream) {
+                    Subscription subscription = this.subscription;
+                    assert subscription != null;
+                    subscription.cancel();
+                }
+            } finally {
+                cancellableSet.cancel();
+                // Don't bother clearing out signals (which require additional concurrency control) because it is
+                // assumed this Subscriber will be dereferenced and eligible for GC [1].
+                // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.13
             }
         }
 
@@ -348,7 +359,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 // upon which sources finish. This best effort behavior mimics the semantics of cancel though so we
                 // don't take any special action to try to adjust the count or prematurely terminate.
                 this.singleCancellable = singleCancellable;
-                cancellable.add(singleCancellable);
+                cancellableSet.add(singleCancellable);
             }
 
             @Override
@@ -395,7 +406,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             private boolean onSingleTerminated() {
                 assert singleCancellable != null;
-                cancellable.remove(singleCancellable);
+                cancellableSet.remove(singleCancellable);
                 return decrementActiveMappedSources();
             }
         }

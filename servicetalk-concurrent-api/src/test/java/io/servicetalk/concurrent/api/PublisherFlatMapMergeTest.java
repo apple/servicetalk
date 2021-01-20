@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -84,8 +85,7 @@ public class PublisherFlatMapMergeTest {
     @Nullable
     private static Executor executor;
 
-    private final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<Integer> subscriber =
-            new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> publisher = new TestPublisher<>();
 
     @BeforeClass
@@ -250,7 +250,8 @@ public class PublisherFlatMapMergeTest {
     }
 
     @Test
-    public void singleItemMappedErrorPropagatedBeforeCancel() {
+    public void cancelPropagatedBeforeErrorButOriginalErrorPreserved() {
+        CountDownLatch cancelledLatch = new CountDownLatch(1);
         publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(new Subscription() {
                 @Override
@@ -259,6 +260,11 @@ public class PublisherFlatMapMergeTest {
 
                 @Override
                 public void cancel() {
+                    try {
+                        cancelledLatch.await();
+                    } catch (InterruptedException e) {
+                        throwException(e);
+                    }
                     subscriber1.onError(new IllegalStateException("shouldn't reach the Subscriber!"));
                 }
             });
@@ -269,7 +275,13 @@ public class PublisherFlatMapMergeTest {
         subscriber.awaitSubscription().request(1);
         publisher.onNext(1);
 
-        mappedPublisher.onError(DELIBERATE_EXCEPTION);
+        assert executor != null;
+        executor.execute(() -> mappedPublisher.onError(DELIBERATE_EXCEPTION));
+        // Verify that cancel happens before terminal. This ensures that sources which allow for multiple sequential
+        // Subscribers can clear out there current subscriber in preparation for the next Subscriber and avoid duplicate
+        // subscribe related errors.
+        assertThat(subscriber.pollTerminal(TERMINAL_POLL_MS, MILLISECONDS), is(nullValue()));
+        cancelledLatch.countDown();
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
@@ -790,8 +802,7 @@ public class PublisherFlatMapMergeTest {
         assert executor != null;
         final int upstreamItems = 10000;
         final int mappedItems = 5;
-        final io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<IntPair> subscriber =
-                new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();
+        final TestPublisherSubscriber<IntPair> subscriber = new TestPublisherSubscriber<>();
         Publisher<IntPair> publisher = range(0, upstreamItems).flatMapMerge(outer -> range(0, mappedItems)
                 .map(inner -> new IntPair(outer, inner)).publishAndSubscribeOn(executor), upstreamItems);
         toSource(publisher).subscribe(subscriber);
