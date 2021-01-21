@@ -24,20 +24,21 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -72,17 +73,12 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     }
 
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberAndIterator.class);
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<SubscriberAndIterator> onNextQueuedUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(SubscriberAndIterator.class, "onNextQueued");
-
         private final BlockingQueue<Object> data;
         private final DelayedSubscription subscription = new DelayedSubscription();
-        private final int queueCapacity;
         private final int requestN;
-        private volatile int onNextQueued;
         /**
          * Number of items to emit from {@link #next()} till we request more.
          * Alternatively we can {@link Subscription#request(long) request(1)} every time we emit an item.
@@ -91,7 +87,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
          * {@link Subscription#request(long) request(n)} should be as fast as
          * {@link Subscription#request(long) request(1)}.
          * <p>
-         * Only accessed from {@link Iterator} methods and not from {@link Subscriber} methods.
+         * Only accessed from {@link Iterator} methods and not from {@link Subscriber} methods (after initialization).
          */
         private int itemsToNextRequest;
 
@@ -103,9 +99,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private boolean terminated;
 
         SubscriberAndIterator(int queueCapacity) {
-            this.queueCapacity = queueCapacity;
-            requestN = max(1, queueCapacity / 2);
-            itemsToNextRequest = requestN;
+            requestN = queueCapacity;
             data = new LinkedBlockingQueue<>();
         }
 
@@ -114,7 +108,8 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             // Subscription is requested from here as well as hasNext. Also, it can be cancelled from close(). So, we
             // need to protect it from concurrent access.
             subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
-            subscription.request(queueCapacity);
+            itemsToNextRequest = requestN;
+            subscription.request(itemsToNextRequest);
         }
 
         @Override
@@ -130,11 +125,6 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         @Override
         public void onNext(@Nullable T t) {
-            // optimistically increment. there is no concurrency allowed in onNext.
-            if (onNextQueuedUpdater.incrementAndGet(this) > queueCapacity) {
-                onNextQueuedUpdater.decrementAndGet(this);
-                throw new QueueFullException("publisher-iterator", queueCapacity);
-            }
             offer(wrapNull(t));
         }
 
@@ -149,8 +139,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void offer(Object o) {
-            boolean offered = data.offer(o);
-            assert offered;
+            if (!data.offer(o)) {
+                enqueueFailed(o);
+            }
         }
 
         @Override
@@ -192,6 +183,16 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             return hasNextProcessNext();
         }
 
+        private void enqueueFailed(Object item) {
+            LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
+            // Note that we throw even if the item represents a terminal signal (even though we don't expect another
+            // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
+            // to enqueue a terminal event async control flow won't be completed and the user won't be notified. This
+            // is a relatively extreme failure condition and we fail loudly to clarify that signal delivery is
+            // interrupted and the user may experience hangs.
+            throw new QueueFullException("data");
+        }
+
         private boolean hasNextInterrupted(InterruptedException e) {
             currentThread().interrupt(); // Reset the interrupted flag.
             terminated = true;
@@ -215,10 +216,13 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void requestMoreIfRequired() {
-            onNextQueuedUpdater.decrementAndGet(this);
-            if (--itemsToNextRequest == 0) {
+            // Request more when we half of the outstanding demand has been delivered. This attempts to keep some
+            // outstanding demand in the event there is impedance mismatch between producer and consumer (as opposed to
+            // waiting until outstanding demand reaches 0) while still having an upper bound.
+            if (--itemsToNextRequest == requestN >>> 1) {
+                final int toRequest = requestN - itemsToNextRequest;
                 itemsToNextRequest = requestN;
-                subscription.request(itemsToNextRequest);
+                subscription.request(toRequest);
             }
         }
 
