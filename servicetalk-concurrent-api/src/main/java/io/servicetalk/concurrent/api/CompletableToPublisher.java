@@ -48,6 +48,7 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
             implements CompletableSource.Subscriber, Subscription {
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<ConversionSubscriber> terminatedUpdater =
                 newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;

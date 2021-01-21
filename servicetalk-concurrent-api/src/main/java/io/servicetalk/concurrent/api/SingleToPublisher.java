@@ -53,7 +53,7 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private static final int STATE_REQUESTED = 1;
         private static final int STATE_AWAITING_REQUESTED = 2;
         private static final int STATE_TERMINATED = 3;
-
+        @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<ConversionSubscriber> stateUpdater =
                 newUpdater(ConversionSubscriber.class, "state");
         private final Subscriber<? super T> subscriber;
