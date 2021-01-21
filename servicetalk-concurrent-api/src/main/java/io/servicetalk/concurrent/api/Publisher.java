@@ -164,6 +164,66 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Apply a {@link BiFunction} to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} and an
+     * accumulated state.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     R state = initial.get();
+     *     for (T t : resultOfThisPublisher()) {
+     *       state = accumulator.apply(state, t);
+     *       results.add(state);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param initial Invoked on each {@link PublisherSource#subscribe(Subscriber)} and provides the initial state for
+     * each {@link Subscriber}.
+     * @param accumulator Used to accumulate the current state in combination with each
+     * {@link Subscriber#onNext(Object)} from this {@link Publisher}.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     */
+    public final <R> Publisher<R> scanWith(Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
+        return new ScanWithPublisher<>(this, initial, accumulator, executor);
+    }
+
+    /**
+     * Apply a function to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} as well as
+     * optionally concat one {@link Subscriber#onNext(Object)} signal before the terminal signal is emitted downstream.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     ScanWithMapper<T, R> mapper = mapperSupplier.get();
+     *     try {
+     *       for (T t : resultOfThisPublisher()) {
+     *         results.add(mapper.mapOnNext(t));
+     *       }
+     *     } catch (Throwable cause) {
+     *       if (mapTerminal.test(state)) {
+     *         results.add(mapper.mapOnError(cause));
+     *         return;
+     *       }
+     *       throw cause;
+     *     }
+     *     if (mapTerminal.test(state)) {
+     *       results.add(mapper.mapOnComplete());
+     *     }
+     *     return results;
+     * }</pre>
+     * @param mapperSupplier Invoked on each {@link PublisherSource#subscribe(Subscriber)} and maintains any necessary
+     * state for the mapping/accumulation for each {@link Subscriber}.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     */
+    public final <R> Publisher<R> scanWith(Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
+        return new ScanWithPublisher<>(this, mapperSupplier, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
      * passed {@code nextFactory}.
      * <p>
