@@ -588,12 +588,12 @@ final class GrpcRouter {
                 final GrpcSerializationProvider serializationProvider) {
             return addBlockingStreamingRoute(path, executionStrategy,
                     new BlockingStreamingRoute<Req, Resp>() {
-
                         @Override
                         public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
                                            final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                             final Resp resp = route.handle(ctx, request);
                             responseWriter.write(resp);
+                            responseWriter.close();
                         }
 
                         @Override

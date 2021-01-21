@@ -25,9 +25,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -44,11 +41,11 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
+import static io.servicetalk.oio.api.internal.PayloadWriterUtils.safeClose;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private final BlockingStreamingHttpService original;
 
@@ -142,11 +139,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                         try {
                             exceptionProcessor.onError(cause);
                         } finally {
-                            try {
-                                payloadWriter.close(cause);
-                            } catch (IOException e) {
-                                LOGGER.info("Unexpected exception from close {}", exceptionProcessor, e);
-                            }
+                            safeClose(payloadWriter, cause);
                         }
                     }
                     return;

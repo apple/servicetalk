@@ -94,19 +94,19 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     void payloadBody(final Publisher<Buffer> payloadBody) {
-        if (this.messageBody == null) {
-            this.messageBody = requireNonNull(payloadBody);
+        if (messageBody == null) {
+            messageBody = requireNonNull(payloadBody);
             payloadInfo.setOnlyEmitsBuffer(true);
         } else if (payloadInfo.mayHaveTrailers()) {
             final Publisher<?> oldMessageBody = messageBody;
-            this.messageBody = defer(() -> {
+            messageBody = defer(() -> {
                 Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
                 return merge(payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(
                                 oldMessageBody.liftSync(new PreserveTrailersBufferOperator(trailersProcessor)))),
                         fromSource(trailersProcessor)).subscribeShareContext();
             });
         } else {
-            this.messageBody = payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(this.messageBody));
+            messageBody = payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(messageBody));
             payloadInfo.setOnlyEmitsBuffer(true);
         }
     }
@@ -207,16 +207,12 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
                         @Override
                         public Object mapOnError(final Throwable t) throws Throwable {
-                            assert trailers == null;
-                            trailers = headersFactory.newEmptyTrailers();
-                            return trailersTransformer.catchPayloadFailure(state, t, trailers);
+                            return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
                         }
 
                         @Override
                         public Object mapOnComplete() {
-                            assert trailers == null;
-                            trailers = headersFactory.newEmptyTrailers();
-                            return trailersTransformer.payloadComplete(state, trailers);
+                            return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
                         }
 
                         @Override

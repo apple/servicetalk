@@ -37,7 +37,6 @@ import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
-
     // All state is only touched from eventloop.
     private long requestCount;
     private boolean requested;
@@ -134,11 +133,10 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
     }
 
-    void channelInboundClosed() {
+    void channelInboundClosed(Throwable cause) {
         assertInEventloop();
         if (fatalError == null) {
-            fatalError = StacklessClosedChannelException.newInstance(
-                    NettyChannelPublisher.class, "channelInboundClosed");
+            fatalError = cause;
             exceptionCaught0(fatalError);
         }
     }

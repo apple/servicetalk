@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
-import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute;
@@ -32,22 +31,19 @@ import io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.Route;
 import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.oio.api.internal.PayloadWriterUtils.safeClose;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcRouteConversions {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouteConversions.class);
-
     private GrpcRouteConversions() {
         // No instance
     }
@@ -117,9 +113,8 @@ final class GrpcRouteConversions {
                         final ConnectablePayloadWriter<Resp> connectablePayloadWriter =
                                 new ConnectablePayloadWriter<>();
                         final Publisher<Resp> pub = connectablePayloadWriter.connect();
-                        final ConcurrentTerminalSubscriber<? super Resp> concurrentTerminalSubscriber =
-                                new ConcurrentTerminalSubscriber<>(subscriber, false);
-                        toSource(pub).subscribe(concurrentTerminalSubscriber);
+                        final CompletableSource.Processor exceptionProcessor = newCompletableProcessor();
+                        toSource(fromSource(exceptionProcessor).merge(pub)).subscribe(subscriber);
                         final GrpcPayloadWriter<Resp> grpcPayloadWriter = new GrpcPayloadWriter<Resp>() {
                             @Override
                             public void write(final Resp resp) throws IOException {
@@ -143,15 +138,16 @@ final class GrpcRouteConversions {
                         };
                         try {
                             original.handle(ctx, request.toIterable(), grpcPayloadWriter);
+
+                            // The user code has returned successfully, complete the processor so the response stream
+                            // can complete. If the user handles the request asynchronously (e.g. on another thread)
+                            // they are responsible for closing the payloadWriter.
+                            exceptionProcessor.onComplete();
                         } catch (Throwable t) {
-                            concurrentTerminalSubscriber.onError(t);
-                        } finally {
                             try {
-                                grpcPayloadWriter.close();
-                            } catch (IOException e) {
-                                if (!concurrentTerminalSubscriber.processOnError(e)) {
-                                    LOGGER.error("Failed to close GrpcPayloadWriter", e);
-                                }
+                                exceptionProcessor.onError(t);
+                            } finally {
+                                safeClose(grpcPayloadWriter, t);
                             }
                         }
                     }
@@ -319,10 +315,11 @@ final class GrpcRouteConversions {
                     } else {
                         original.close();
                     }
-                    subscriber.onComplete();
                 } catch (Throwable t) {
                     subscriber.onError(t);
+                    return;
                 }
+                subscriber.onComplete();
             }
         });
     }

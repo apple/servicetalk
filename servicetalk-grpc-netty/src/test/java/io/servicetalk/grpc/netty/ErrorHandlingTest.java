@@ -81,9 +81,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -404,7 +405,7 @@ public class ErrorHandlingTest {
     }
 
     @Test
-    public void requestStreaming() throws Exception {
+    public void requestStreaming() {
         verifyException(client.testRequestStream(from(TestRequest.newBuilder().build())).toFuture());
     }
 
@@ -457,7 +458,7 @@ public class ErrorHandlingTest {
     }
 
     @Test
-    public void bidiStreamingServerFailClientRequestNeverComplete() throws Exception {
+    public void bidiStreamingServerFailClientRequestNeverComplete() {
         // The response publisher is merged with the write publisher in order to provide status in the event of a write
         // failure. We must fail the read publisher internally at the appropriate time so the merge operator will
         // propagate the expected status (e.g. not wait for transport failure like stream reset or channel closed).
@@ -465,7 +466,7 @@ public class ErrorHandlingTest {
     }
 
     @Test
-    public void requestStreamingServerFailClientRequestNeverComplete() throws Exception {
+    public void requestStreamingServerFailClientRequestNeverComplete() {
         verifyException(client.testRequestStream(from(TestRequest.newBuilder().build()).concat(never())).toFuture());
     }
 
@@ -562,20 +563,15 @@ public class ErrorHandlingTest {
         }
     }
 
-    private void verifyException(final Future<?> result)
-            throws Exception {
-        try {
-            result.get();
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            verifyException(cause);
-        }
+    private void verifyException(final Future<?> result) {
+        verifyException(assertThrows(ExecutionException.class, result::get).getCause());
     }
 
     private void verifyException(final Throwable cause) {
-        assertThat("Unexpected error.", cause, instanceOf(GrpcStatusException.class));
-        GrpcStatusException gse = (GrpcStatusException) cause;
-        assertThat("Unexpected grpc status.", gse.status().code(), equalTo(expectedStatus()));
+        assertNotNull(cause);
+        assertThat(assertThrows(GrpcStatusException.class, () -> {
+            throw cause;
+        }).status().code(), equalTo(expectedStatus()));
     }
 
     private GrpcStatusCode expectedStatus() {
