@@ -42,8 +42,8 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader), signalOffloader, contextMap,
-                contextProvider);
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
+                signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
@@ -53,12 +53,17 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                 newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
 
         private volatile int terminated;
 
-        private ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        private ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
         }
 
         @Override
@@ -69,25 +74,26 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onComplete() {
-            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+            if (terminatedUpdater.getAndSet(this, 1) == 0) {
                 subscriber.onComplete();
             }
         }
 
         @Override
         public void onError(Throwable t) {
-            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+            if (terminatedUpdater.getAndSet(this, 1) == 0) {
                 subscriber.onError(t);
             }
         }
 
         @Override
         public void request(long n) {
-            if (!isRequestNValid(n) && terminatedUpdater.compareAndSet(this, 0, 1)) {
+            if (!isRequestNValid(n) && terminatedUpdater.getAndSet(this, 1) == 0) {
                 // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
                 // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
                 // Subscriber directly, hence we explicitly offload.
-                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, subscriber);
+                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(subscriber, signalOffloader,
+                        contextMap, contextProvider);
                 try {
                     // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
                     cancel();

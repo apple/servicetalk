@@ -43,8 +43,8 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader), signalOffloader,
-                contextMap, contextProvider);
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader, contextMap, contextProvider),
+                signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> extends SequentialCancellable
@@ -58,14 +58,19 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 newUpdater(ConversionSubscriber.class, "state");
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
 
         @Nullable
         private T result;
         private volatile int state;
 
-        ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
+                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
         }
 
         @Override
@@ -109,7 +114,8 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         // We have not offloaded the Subscriber as we generally emit to the Subscriber from the
                         // Single Subscriber methods which is correctly offloaded. This is the case where we invoke the
                         // Subscriber directly, hence we explicitly offload.
-                        terminateSuccessfully(result, offloadWithDummyOnSubscribe(signalOffloader, subscriber));
+                        terminateSuccessfully(result, offloadWithDummyOnSubscribe(subscriber, signalOffloader,
+                                contextMap, contextProvider));
                         return;
                     } else if (cState == STATE_IDLE &&
                             stateUpdater.compareAndSet(this, STATE_IDLE, STATE_REQUESTED)) {
@@ -118,19 +124,17 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                         return;
                     }
                 }
-            } else {
-                if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
-                    Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, this.subscriber);
-                    try {
-                        // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a
-                        // cancel.
-                        cancel();
-                    } catch (Throwable t) {
-                        offloaded.onError(t);
-                        return;
-                    }
-                    offloaded.onError(newExceptionForInvalidRequestN(n));
+            } else if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
+                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(subscriber, signalOffloader,
+                        contextMap, contextProvider);
+                try {
+                    // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
+                    cancel();
+                } catch (Throwable t) {
+                    offloaded.onError(t);
+                    return;
                 }
+                offloaded.onError(newExceptionForInvalidRequestN(n));
             }
         }
 

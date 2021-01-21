@@ -16,17 +16,18 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 
-final class OnSubscribeIgnoringSubscriberForOffloading<T> implements PublisherSource.Subscriber<T> {
+final class OnSubscribeIgnoringSubscriberForOffloading<T> implements Subscriber<T> {
 
-    private final PublisherSource.Subscriber<? super T> original;
+    private final Subscriber<? super T> original;
 
-    private OnSubscribeIgnoringSubscriberForOffloading(final PublisherSource.Subscriber<? super T> original) {
+    private OnSubscribeIgnoringSubscriberForOffloading(final Subscriber<? super T> original) {
         this.original = original;
     }
 
@@ -50,11 +51,10 @@ final class OnSubscribeIgnoringSubscriberForOffloading<T> implements PublisherSo
         original.onComplete();
     }
 
-    static <T> PublisherSource.Subscriber<? super T> offloadWithDummyOnSubscribe(
-            SignalOffloader offloader, PublisherSource.Subscriber<? super T> original) {
-        OnSubscribeIgnoringSubscriberForOffloading<T> subscriber =
-                new OnSubscribeIgnoringSubscriberForOffloading<>(original);
-        PublisherSource.Subscriber<? super T> toReturn = offloader.offloadSubscriber(subscriber);
+    static <T> Subscriber<? super T> offloadWithDummyOnSubscribe(Subscriber<? super T> original,
+            SignalOffloader offloader, AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        Subscriber<? super T> toReturn = offloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(
+                new OnSubscribeIgnoringSubscriberForOffloading<>(original), contextMap));
         // We have created an offloaded Subscriber but we have sent onSubscribe to the original Subscriber
         // already, so we send an onSubscribe to the offloaded Subscriber which ignores this signal but makes
         // the signalOffloader does not see spec violation (onError without onSubscribe) for the offloaded
