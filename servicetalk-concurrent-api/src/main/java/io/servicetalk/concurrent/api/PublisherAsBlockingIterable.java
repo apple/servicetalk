@@ -49,7 +49,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     private final int queueCapacityHint;
 
     PublisherAsBlockingIterable(final Publisher<T> original) {
-        this(original, 32);
+        this(original, 16);
     }
 
     PublisherAsBlockingIterable(final Publisher<T> original, int queueCapacityHint) {
@@ -104,7 +104,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             // need to protect it from concurrent access.
             subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
             itemsToNextRequest = requestN;
-            subscription.request(requestN);
+            subscription.request(itemsToNextRequest);
         }
 
         @Override
