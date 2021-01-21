@@ -107,13 +107,13 @@ public class ScanWithPublisherTest {
             @Nullable
             @Override
             public Integer mapOnError(final Throwable cause) {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Nullable
             @Override
             public Integer mapOnComplete() {
-                return null;
+                throw new UnsupportedOperationException();
             }
 
             @Override

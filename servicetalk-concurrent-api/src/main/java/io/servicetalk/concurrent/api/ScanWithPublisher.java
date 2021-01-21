@@ -46,12 +46,12 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
             @Override
             public R mapOnError(final Throwable cause) {
-                return state;
+                throw newMapTerminalUnsupported();
             }
 
             @Override
             public R mapOnComplete() {
-                return state;
+                throw newMapTerminalUnsupported();
             }
 
             @Override
@@ -233,5 +233,9 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
             }
             subscriber.onComplete();
         }
+    }
+
+    private static IllegalStateException newMapTerminalUnsupported() {
+        throw new IllegalStateException("mapTerminal returns false, this method should never be invoked!");
     }
 }
