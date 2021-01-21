@@ -21,7 +21,11 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -69,6 +73,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
     }
 
     private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberAndIterator.class);
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
         private final BlockingQueue<Object> data;
@@ -134,8 +139,9 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         }
 
         private void offer(Object o) {
-            boolean offered = data.offer(o);
-            assert offered;
+            if (!data.offer(o)) {
+                enqueueFailed(o);
+            }
         }
 
         @Override
@@ -175,6 +181,16 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 return hasNextInterrupted(e);
             }
             return hasNextProcessNext();
+        }
+
+        private void enqueueFailed(Object item) {
+            LOGGER.error("Queue should be unbounded, but an offer failed for item {}!", item);
+            // Note that we throw even if the item represents a terminal signal (even though we don't expect another
+            // terminal signal to be delivered from the upstream source because we are already terminated). If we fail
+            // to enqueue a terminal event async control flow won't be completed and the user won't be notified. This
+            // is a relatively extreme failure condition and we fail loudly to clarify that signal delivery is
+            // interrupted and the user may experience hangs.
+            throw new QueueFullException("data");
         }
 
         private boolean hasNextInterrupted(InterruptedException e) {
