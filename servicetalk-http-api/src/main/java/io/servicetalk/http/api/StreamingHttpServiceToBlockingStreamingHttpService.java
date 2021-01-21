@@ -125,7 +125,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 subscription = ConcurrentSubscription.wrap(inSubscription);
                 subscriber.onSubscribe(subscription);
                 itemsToNextRequest = demandBatchSize;
-                subscription.request(demandBatchSize);
+                subscription.request(itemsToNextRequest);
             }
 
             @Override
