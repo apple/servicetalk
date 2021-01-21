@@ -168,8 +168,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
 
             private void requestMoreIfRequired() {
                 // Request more when we half of the outstanding demand has been delivered. This attempts to keep some
-                // outstanding demand in the event there is impedance mismatch between producer and consumer (as opposed to
-                // waiting until outstanding demand reaches 0) while still having an upper bound.
+                // outstanding demand in the event there is impedance mismatch between producer and consumer (as opposed
+                // to waiting until outstanding demand reaches 0) while still having an upper bound.
                 if (--itemsToNextRequest == demandBatchSize >>> 1) {
                     final int toRequest = demandBatchSize - itemsToNextRequest;
                     itemsToNextRequest = demandBatchSize;
