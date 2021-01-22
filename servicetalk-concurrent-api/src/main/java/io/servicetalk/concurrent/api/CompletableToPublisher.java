@@ -74,21 +74,21 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onComplete() {
-            if (terminatedUpdater.getAndSet(this, 1) == 0) {
+            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 subscriber.onComplete();
             }
         }
 
         @Override
         public void onError(Throwable t) {
-            if (terminatedUpdater.getAndSet(this, 1) == 0) {
+            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 subscriber.onError(t);
             }
         }
 
         @Override
         public void request(long n) {
-            if (!isRequestNValid(n) && terminatedUpdater.getAndSet(this, 1) == 0) {
+            if (!isRequestNValid(n) && terminatedUpdater.compareAndSet(this, 0, 1)) {
                 // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
                 // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
                 // Subscriber directly, hence we explicitly offload.
