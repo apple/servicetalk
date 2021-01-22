@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ import static io.grpc.internal.GrpcUtil.MESSAGE_ACCEPT_ENCODING;
 import static io.grpc.internal.GrpcUtil.MESSAGE_ENCODING;
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
+import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -76,7 +77,6 @@ import static io.servicetalk.grpc.netty.TesterProto.Tester.TestMetadata;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TestResponseStreamMetadata;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
-import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;

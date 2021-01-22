@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ dependencies {
   api project(":servicetalk-encoding-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-client-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-concurrent-api-internal")

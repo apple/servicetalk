@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,9 +63,9 @@ import static io.netty.handler.codec.http.HttpConstants.HT;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.ByteProcessor.FIND_LF;
+import static io.servicetalk.buffer.internal.CharSequences.emptyAsciiString;
+import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
-import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;

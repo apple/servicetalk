@@ -22,6 +22,7 @@ dependencies {
   api project(":servicetalk-http-api")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-client-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -38,6 +39,7 @@ dependencies {
   implementation "io.netty:netty-codec-http2:$nettyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation testFixtures(project(":servicetalk-buffer-internal"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-api"))

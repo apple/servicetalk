@@ -31,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 

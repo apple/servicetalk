@@ -23,10 +23,10 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.buffer.internal.CharSequences.regionMatches;
+import static io.servicetalk.buffer.internal.CharSequences.split;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.utils.internal.CharSequenceUtils.regionMatches;
-import static io.servicetalk.utils.internal.CharSequenceUtils.split;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -54,7 +54,7 @@ public final class HeaderUtils {
      */
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(@Nullable final CharSequence acceptEncodingHeaderValue,
-                                                  final List<ContentCodec> serverSupportedEncodings) {
+                                                         final List<ContentCodec> serverSupportedEncodings) {
 
         // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
@@ -82,7 +82,7 @@ public final class HeaderUtils {
      */
     @Nullable
     public static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
-                                                  final List<ContentCodec> serverSupportedEncodings) {
+                                                         final List<ContentCodec> serverSupportedEncodings) {
         // Fast path, Client has no encodings configured, or has identity as the only encoding configured
         if (clientSupportedEncodings == NONE_CONTENT_ENCODING_SINGLETON ||
                 (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
@@ -99,7 +99,7 @@ public final class HeaderUtils {
     }
 
     private static List<ContentCodec> parseAcceptEncoding(@Nullable final CharSequence acceptEncodingHeaderValue,
-                                                         final List<ContentCodec> allowedEncodings) {
+                                                          final List<ContentCodec> allowedEncodings) {
 
         if (acceptEncodingHeaderValue == null || acceptEncodingHeaderValue.length() == 0) {
             return NONE_CONTENT_ENCODING_SINGLETON;
@@ -129,7 +129,7 @@ public final class HeaderUtils {
      */
     @Nullable
     public static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
-                                    @Nullable final CharSequence name) {
+                                           @Nullable final CharSequence name) {
         requireNonNull(allowedList);
         if (name == null || name.length() == 0) {
             return null;

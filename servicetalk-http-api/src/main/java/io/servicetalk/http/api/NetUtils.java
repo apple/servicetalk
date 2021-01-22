@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@
  * under the License.
  */
 package io.servicetalk.http.api;
+
+import io.servicetalk.buffer.internal.AsciiBuffer;
 
 final class NetUtils {
 

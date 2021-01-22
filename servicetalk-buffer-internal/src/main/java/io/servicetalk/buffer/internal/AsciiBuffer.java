@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,20 +28,20 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.buffer.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.buffer.api.EmptyBuffer;
 
 import java.nio.ByteOrder;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.utils.internal.CharSequenceUtils.contentEqualsUnknownTypes;
+import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.buffer.internal.CharSequences.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-final class AsciiBuffer implements CharSequence {
-    static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EMPTY_BUFFER);
+public final class AsciiBuffer implements CharSequence {
+    static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EmptyBuffer.EMPTY_BUFFER);
     private static final boolean BIG_ENDIAN_NATIVE_ORDER = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     // constants borrowed from murmur3
     private static final int HASH_CODE_ASCII_SEED = 0xc2b2ae35;
@@ -117,17 +117,18 @@ final class AsciiBuffer implements CharSequence {
      *         not a substring.
      * @throws NullPointerException if {@code subString} is {@code null}.
      */
-    int indexOf(char ch, int start) {
+    public int indexOf(char ch, int start) {
         return buffer.indexOf(start, buffer.writerIndex(), (byte) ch);
     }
 
     /**
      * Iterates over the readable bytes of this buffer with the specified {@code processor} in ascending order.
      *
+     * @param visitor the {@link ByteProcessor} visitor of each element.
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
-    int forEachByte(final ByteProcessor visitor) {
+    public int forEachByte(final ByteProcessor visitor) {
         return buffer.forEachByte(visitor);
     }
 

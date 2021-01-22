@@ -20,6 +20,6 @@ dependencies {
     api project(":servicetalk-encoding-api")
 
     implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-    implementation project(":servicetalk-utils-internal")
     implementation project(":servicetalk-annotations")
+    implementation project(":servicetalk-buffer-internal")
 }

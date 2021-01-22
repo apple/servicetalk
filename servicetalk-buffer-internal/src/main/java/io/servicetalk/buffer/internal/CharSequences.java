@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,136 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.utils.internal;
+package io.servicetalk.buffer.internal;
+
+import io.servicetalk.buffer.api.Buffer;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.internal.AsciiBuffer.EMPTY_ASCII_BUFFER;
+import static io.servicetalk.buffer.internal.AsciiBuffer.hashCodeAscii;
 import static java.lang.Character.toUpperCase;
 import static java.util.Collections.emptyList;
 
-public final class CharSequenceUtils {
+public final class CharSequences {
 
-    private CharSequenceUtils() {
+    private CharSequences() {
         // No instances
+    }
+
+    /**
+     * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
+     * with a case-insensitive {@code hashCode}.
+     *
+     * @param input a string containing only 8-bit ASCII characters.
+     * @return a {@link CharSequence}
+     */
+    public static CharSequence newAsciiString(final String input) {
+        return newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(input));
+    }
+
+    /**
+     * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
+     * with a case-insensitive {@code hashCode}.
+     *
+     * @param input a {@link Buffer} containing
+     * @return a {@link CharSequence}.
+     */
+    public static CharSequence newAsciiString(final Buffer input) {
+        return new AsciiBuffer(input);
+    }
+
+    /**
+     * Get a reference to an unmodifiable empty {@link CharSequence} with the same properties as
+     * {@link #newAsciiString(Buffer)}.
+     * @return a reference to an unmodifiable empty {@link CharSequence} with the same properties as
+     *      {@link #newAsciiString(Buffer)}.
+     */
+    public static CharSequence emptyAsciiString() {
+        return EMPTY_ASCII_BUFFER;
+    }
+
+    /**
+     * Attempt to unwrap a {@link CharSequence} and obtain the underlying {@link Buffer} if possible.
+     * @param cs the {@link CharSequence} to unwrap.
+     * @return the underlying {@link Buffer} or {@code null}.
+     */
+    @Nullable
+    public static Buffer unwrapBuffer(CharSequence cs) {
+        return cs.getClass() == AsciiBuffer.class ? ((AsciiBuffer) cs).unwrap() : null;
+    }
+
+    /**
+     * Perform a case-insensitive comparison of two {@link CharSequence}s.
+     * <p>
+     * NOTE: This only supports 8-bit ASCII.
+     *
+     * @param a first {@link CharSequence} to compare.
+     * @param b second {@link CharSequence} to compare.
+     * @return {@code true} if both {@link CharSequence}'s are equals when ignoring the case.
+     */
+    public static boolean contentEqualsIgnoreCase(@Nullable final CharSequence a, @Nullable final CharSequence b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        if (a == b) {
+            return true;
+        }
+        if (a.length() != b.length()) {
+            return false;
+        }
+        if (a.getClass() == AsciiBuffer.class) {
+            return ((AsciiBuffer) a).contentEqualsIgnoreCase(b);
+        }
+        return contentEqualsIgnoreCaseUnknownTypes(a, b);
+    }
+
+    /**
+     * Returns {@code true} if the content of both {@link CharSequence}'s are equals. This only supports 8-bit ASCII.
+     * @param a left hand side of comparison.
+     * @param b right hand side of comparison.
+     * @return {@code true} if {@code a}'s content equals {@code b}.
+     */
+    public static boolean contentEquals(final CharSequence a, final CharSequence b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length() != b.length()) {
+            return false;
+        }
+        if (a.getClass() == AsciiBuffer.class) {
+            return ((AsciiBuffer) a).contentEquals(b);
+        }
+        return contentEqualsUnknownTypes(a, b);
+    }
+
+    /**
+     * Find the index of {@code c} within {@code sequence} starting at index {@code fromIndex}.
+     *
+     * @param sequence The {@link CharSequence} to search in.
+     * @param c The character to find.
+     * @param fromIndex The index to start searching (inclusive).
+     * @return The index of {@code c} or {@code -1} otherwise.
+     */
+    public static int indexOf(CharSequence sequence, char c, int fromIndex) {
+        if (sequence instanceof String) {
+            return ((String) sequence).indexOf(c, fromIndex);
+        } else if (sequence instanceof AsciiBuffer) {
+            return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
+        }
+        for (int i = fromIndex; i < sequence.length(); ++i) {
+            if (sequence.charAt(i) == c) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static int caseInsensitiveHashCode(CharSequence seq) {
+        return seq.getClass() == AsciiBuffer.class ? seq.hashCode() : hashCodeAscii(seq);
     }
 
     /**
@@ -104,7 +222,7 @@ public final class CharSequenceUtils {
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
      */
     public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
-                                 final CharSequence string, final int start, final int length) {
+                                        final CharSequence string, final int start, final int length) {
         if (cs instanceof String && string instanceof String) {
             return ((String) cs).regionMatches(ignoreCase, csStart, (String) string, start, length);
         }

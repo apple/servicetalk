@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.buffer.internal;
+
+import io.servicetalk.buffer.netty.BufferAllocators;
 
 import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.http.api.CharSequences.contentEquals;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.internal.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
+import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
 import static java.lang.Character.toLowerCase;
 import static java.lang.Character.toUpperCase;
 import static org.junit.Assert.assertEquals;
@@ -96,7 +97,7 @@ public class AsciiBufferTest {
     public void testSubSequence() {
         testSubSequence(newAsciiString("some-data"));
         testSubSequence(newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii("some-data")));
-        testSubSequence(newAsciiString(DEFAULT_ALLOCATOR.fromAscii("some-data")));
+        testSubSequence(newAsciiString(BufferAllocators.DEFAULT_ALLOCATOR.fromAscii("some-data")));
     }
 
     private static void testSubSequence(CharSequence cs) {

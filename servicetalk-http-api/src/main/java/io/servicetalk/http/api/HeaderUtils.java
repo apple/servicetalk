@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.buffer.internal.AsciiBuffer;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.ContentCodings;
 import io.servicetalk.serialization.api.SerializationException;
@@ -31,12 +32,12 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.internal.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
+import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.internal.CharSequences.indexOf;
+import static io.servicetalk.buffer.internal.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.http.api.CharSequences.contentEquals;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.indexOf;
-import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;

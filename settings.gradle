@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ include "servicetalk-annotations",
         "servicetalk-benchmarks",
         "servicetalk-bom",
         "servicetalk-buffer-api",
+        "servicetalk-buffer-internal",
         "servicetalk-buffer-netty",
         "servicetalk-client-api",
         "servicetalk-client-api-internal",
