@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -71,8 +72,8 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeInternal(new ScanWithSubscriber<>(subscriber, signalOffloader.offloadSubscriber(
-                contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), mapperSupplier.get()));
+        original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
+                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ScanWithSubscriber<T, R> implements Subscriber<T> {
@@ -88,7 +89,9 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         private static final AtomicLongFieldUpdater<ScanWithSubscriber> demandUpdater =
                 newUpdater(ScanWithSubscriber.class, "demand");
         private final Subscriber<? super R> subscriber;
-        private final Subscriber<? super R> offloadedSubscriber;
+        private final SignalOffloader signalOffloader;
+        private final AsyncContextMap contextMap;
+        private final AsyncContextProvider contextProvider;
         private final ScanWithMapper<? super T, ? extends R> mapper;
         private volatile long demand;
         /**
@@ -98,10 +101,13 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         @Nullable
         private Throwable errorCause;
 
-        ScanWithSubscriber(final Subscriber<? super R> subscriber, final Subscriber<? super R> offloadedSubscriber,
-                           final ScanWithMapper<? super T, ? extends R> mapper) {
+        ScanWithSubscriber(final Subscriber<? super R> subscriber, final ScanWithMapper<? super T, ? extends R> mapper,
+                           final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
+                           final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.offloadedSubscriber = offloadedSubscriber;
+            this.signalOffloader = signalOffloader;
+            this.contextMap = contextMap;
+            this.contextProvider = contextProvider;
             this.mapper = requireNonNull(mapper);
         }
 
@@ -116,9 +122,9 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                             FlowControlUtils::addWithOverflowProtectionIfNotNegative) == TERMINAL_PENDING) {
                         demand = TERMINATED;
                         if (errorCause != null) {
-                            deliverOnError(errorCause, offloadedSubscriber);
+                            deliverOnError(errorCause, newOffloadedSubscriber());
                         } else {
-                            deliverOnComplete(offloadedSubscriber);
+                            deliverOnComplete(newOffloadedSubscriber());
                         }
                     } else {
                         subscription.request(n);
@@ -136,10 +142,14 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                     // duplicate terminal signals are not allowed. otherwise we let upstream deliver the error.
                     if (demandUpdater.getAndSet(ScanWithSubscriber.this, INVALID_DEMAND) == TERMINAL_PENDING) {
                         demand = TERMINATED;
-                        offloadedSubscriber.onError(newExceptionForInvalidRequestN(n));
+                        newOffloadedSubscriber().onError(newExceptionForInvalidRequestN(n));
                     } else {
                         subscription.request(n);
                     }
+                }
+
+                private Subscriber<? super R> newOffloadedSubscriber() {
+                    return offloadWithDummyOnSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
                 }
             });
         }
