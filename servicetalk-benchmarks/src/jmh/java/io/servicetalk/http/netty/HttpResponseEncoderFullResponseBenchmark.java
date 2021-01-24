@@ -34,8 +34,8 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.ArrayDeque;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;

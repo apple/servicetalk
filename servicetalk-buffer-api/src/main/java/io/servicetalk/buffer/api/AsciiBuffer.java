@@ -28,19 +28,15 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.buffer.internal;
-
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.ByteProcessor;
-import io.servicetalk.buffer.api.EmptyBuffer;
+package io.servicetalk.buffer.api;
 
 import java.nio.ByteOrder;
 
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsUnknownTypes;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-public final class AsciiBuffer implements CharSequence {
+final class AsciiBuffer implements CharSequence {
     static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EmptyBuffer.EMPTY_BUFFER);
     private static final boolean BIG_ENDIAN_NATIVE_ORDER = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     // constants borrowed from murmur3
@@ -117,7 +113,7 @@ public final class AsciiBuffer implements CharSequence {
      *         not a substring.
      * @throws NullPointerException if {@code subString} is {@code null}.
      */
-    public int indexOf(char ch, int start) {
+    int indexOf(char ch, int start) {
         return buffer.indexOf(start, buffer.writerIndex(), (byte) ch);
     }
 
@@ -128,7 +124,7 @@ public final class AsciiBuffer implements CharSequence {
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
-    public int forEachByte(final ByteProcessor visitor) {
+    int forEachByte(final ByteProcessor visitor) {
         return buffer.forEachByte(visitor);
     }
 

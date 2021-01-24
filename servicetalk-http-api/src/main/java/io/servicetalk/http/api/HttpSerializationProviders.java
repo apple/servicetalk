@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;

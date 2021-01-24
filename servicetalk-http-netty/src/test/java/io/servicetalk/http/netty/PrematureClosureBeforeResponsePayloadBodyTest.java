@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
-import static io.servicetalk.buffer.internal.Matchers.contentEqualTo;
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;

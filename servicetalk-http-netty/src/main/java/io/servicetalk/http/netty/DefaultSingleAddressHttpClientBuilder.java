@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.internal.CharSequences;
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;

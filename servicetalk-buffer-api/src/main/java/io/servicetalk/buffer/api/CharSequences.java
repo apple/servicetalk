@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.buffer.internal;
-
-import io.servicetalk.buffer.api.Buffer;
+package io.servicetalk.buffer.api;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
+import static io.servicetalk.buffer.api.AsciiBuffer.hashCodeAscii;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.buffer.internal.AsciiBuffer.EMPTY_ASCII_BUFFER;
-import static io.servicetalk.buffer.internal.AsciiBuffer.hashCodeAscii;
 import static java.lang.Character.toUpperCase;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 public final class CharSequences {
 
@@ -66,6 +65,17 @@ public final class CharSequences {
     }
 
     /**
+     * Check if the provided {@link CharSequence} is an AsciiString,
+     * result of a call to {@link #newAsciiString(String)}.
+     *
+     * @param sequence The {@link CharSequence} to check.
+     * @return {@code true} if the check passes.
+     */
+    public static boolean isAsciiString(final CharSequence sequence) {
+        return sequence.getClass() == AsciiBuffer.class || sequence instanceof AsciiBuffer;
+    }
+
+    /**
      * Attempt to unwrap a {@link CharSequence} and obtain the underlying {@link Buffer} if possible.
      * @param cs the {@link CharSequence} to unwrap.
      * @return the underlying {@link Buffer} or {@code null}.
@@ -73,6 +83,29 @@ public final class CharSequences {
     @Nullable
     public static Buffer unwrapBuffer(CharSequence cs) {
         return cs.getClass() == AsciiBuffer.class ? ((AsciiBuffer) cs).unwrap() : null;
+    }
+
+    /**
+     * Iterates over the readable bytes of this {@link CharSequence} with the specified
+     * {@link ByteProcessor} in ascending order.
+     *
+     * @param visitor the {@link ByteProcessor} visitor of each element.
+     * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
+     * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
+     */
+    public static int forEachByte(final CharSequence sequence, final ByteProcessor visitor) {
+        requireNonNull(sequence);
+        if (sequence instanceof AsciiBuffer) {
+            return ((AsciiBuffer) sequence).forEachByte(visitor);
+        } else {
+            for (int i = 0; i < sequence.length(); ++i) {
+                if (!visitor.process((byte) sequence.charAt(i))) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
     }
 
     /**
@@ -160,6 +193,7 @@ public final class CharSequences {
         if (input.length() == 0) {
             return emptyList();
         }
+
         int startIndex = 0;
         List<CharSequence> result = new ArrayList<>();
         for (int i = 0; i < input.length(); i++) {

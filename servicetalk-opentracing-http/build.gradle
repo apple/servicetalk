@@ -21,7 +21,6 @@ dependencies {
   api "io.opentracing:opentracing-api:$openTracingVersion"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")

@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.HeaderUtils;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -33,7 +34,6 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.TrailersTransformer;
-import io.servicetalk.http.internal.HeaderUtils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
@@ -45,10 +45,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
@@ -58,7 +59,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.internal.HeaderUtils.encodingFor;
 import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
 

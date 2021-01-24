@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.buffer.internal.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.buffer.internal.CharSequences.indexOf;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 
 /**

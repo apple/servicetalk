@@ -46,7 +46,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
-import static io.servicetalk.buffer.internal.Matchers.contentEqualTo;
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;

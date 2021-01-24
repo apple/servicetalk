@@ -42,7 +42,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;

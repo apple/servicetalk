@@ -42,7 +42,7 @@ import org.junit.rules.Timeout;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;

@@ -39,7 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;

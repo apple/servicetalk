@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.internal.CharSequences;
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanWithMapper;
 import io.servicetalk.http.api.CharSequences;

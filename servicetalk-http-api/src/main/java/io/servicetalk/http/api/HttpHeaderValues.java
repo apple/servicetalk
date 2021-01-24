@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
  * Common <a href="https://tools.ietf.org/html/rfc7231#section-5">request header values</a> and

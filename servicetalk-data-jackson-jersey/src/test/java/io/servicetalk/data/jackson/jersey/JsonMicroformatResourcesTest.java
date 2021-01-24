@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.APPLICATION_VND_INPUT_JSON;
 import static io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources.APPLICATION_VND_OUTPUT_JSON;

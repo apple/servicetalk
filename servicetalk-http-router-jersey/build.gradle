@@ -22,7 +22,6 @@ dependencies {
   api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-data-jackson")
@@ -45,7 +44,6 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testFixturesImplementation project(":servicetalk-buffer-internal")
   testFixturesImplementation project(":servicetalk-data-jackson")
   testFixturesImplementation project(":servicetalk-http-netty")
   testFixturesImplementation project(":servicetalk-http-utils")

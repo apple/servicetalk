@@ -23,7 +23,6 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-api-internal")

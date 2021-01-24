@@ -31,7 +31,6 @@ dependencies {
   api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-buffer-internal")
   implementation project(":servicetalk-buffer-netty")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"

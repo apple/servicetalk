@@ -18,7 +18,6 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-opentracing-inmemory-api")
-  api project(":servicetalk-buffer-internal")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-http-api")

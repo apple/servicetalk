@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static java.lang.String.valueOf;
 

@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
-import static io.servicetalk.buffer.internal.CharSequences.emptyAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;

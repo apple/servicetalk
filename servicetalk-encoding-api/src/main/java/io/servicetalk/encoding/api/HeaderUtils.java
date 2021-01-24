@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.internal;
-
-import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+package io.servicetalk.encoding.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.buffer.internal.CharSequences.regionMatches;
-import static io.servicetalk.buffer.internal.CharSequences.split;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
+import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;

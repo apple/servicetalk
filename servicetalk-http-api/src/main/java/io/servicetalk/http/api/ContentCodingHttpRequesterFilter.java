@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;

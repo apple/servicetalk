@@ -63,7 +63,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.Matchers.contentEqualTo;
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.from;

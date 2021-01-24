@@ -43,7 +43,7 @@ import javax.ws.rs.ext.ReaderInterceptorContext;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;

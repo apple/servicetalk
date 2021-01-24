@@ -55,7 +55,7 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.internal.StringUtil.simpleClassName;
-import static io.servicetalk.buffer.internal.CharSequences.unwrapBuffer;
+import static io.servicetalk.buffer.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;

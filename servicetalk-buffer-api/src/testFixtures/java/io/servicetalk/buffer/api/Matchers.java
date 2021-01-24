@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.buffer.internal;
+package io.servicetalk.buffer.api;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.BufferStrategies.forCountOrTime;

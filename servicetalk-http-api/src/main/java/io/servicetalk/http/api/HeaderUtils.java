@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
-import io.servicetalk.buffer.internal.AsciiBuffer;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.ContentCodings;
 import io.servicetalk.serialization.api.SerializationException;
@@ -32,12 +31,14 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.buffer.internal.CharSequences.indexOf;
-import static io.servicetalk.buffer.internal.CharSequences.regionMatches;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.forEachByte;
+import static io.servicetalk.buffer.api.CharSequences.indexOf;
+import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -50,7 +51,6 @@ import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static io.servicetalk.http.api.UriUtils.TCHAR_HMASK;
 import static io.servicetalk.http.api.UriUtils.TCHAR_LMASK;
 import static io.servicetalk.http.api.UriUtils.isBitSet;
-import static io.servicetalk.http.internal.HeaderUtils.encodingFor;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
@@ -274,11 +274,7 @@ public final class HeaderUtils {
      * @param key the cookie name or header name to validate.
      */
     static void validateCookieTokenAndHeaderName(final CharSequence key) {
-        if (key.getClass() == AsciiBuffer.class) {
-            ((AsciiBuffer) key).forEachByte(TOKEN_VALIDATOR);
-        } else {
-            validateCookieTokenAndHeaderName0(key);
-        }
+        forEachByte(key, TOKEN_VALIDATOR);
     }
 
     /**

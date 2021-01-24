@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.internal.CharSequences;
+import io.servicetalk.buffer.api.CharSequences;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,9 +25,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.buffer.internal.CharSequences.contentEquals;
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.domainMatches;

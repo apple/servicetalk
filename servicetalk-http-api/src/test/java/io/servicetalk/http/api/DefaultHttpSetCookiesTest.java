@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.internal.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;

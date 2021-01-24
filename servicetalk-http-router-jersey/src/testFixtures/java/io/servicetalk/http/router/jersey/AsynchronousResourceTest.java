@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
 
-import static io.servicetalk.buffer.internal.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
