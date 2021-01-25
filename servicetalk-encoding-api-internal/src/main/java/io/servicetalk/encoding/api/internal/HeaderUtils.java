@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -104,7 +105,7 @@ public final class HeaderUtils {
         }
 
         List<ContentCodec> knownEncodings = new ArrayList<>();
-        List<CharSequence> acceptEncodingValues = CharSequences.split(acceptEncodingHeaderValue, ',');
+        List<CharSequence> acceptEncodingValues = split(acceptEncodingHeaderValue, ',', true);
         for (CharSequence val : acceptEncodingValues) {
             ContentCodec enc = encodingFor(allowedEncodings, val);
             if (enc != null) {

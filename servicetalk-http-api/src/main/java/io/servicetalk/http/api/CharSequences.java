@@ -133,7 +133,7 @@ public final class CharSequences {
      * @return a {@link List} of {@link CharSequence} subsequences of the input with the separated values
      */
     public static List<CharSequence> split(final CharSequence input, final char delimiter) {
-        return io.servicetalk.buffer.api.CharSequences.split(input, delimiter);
+        return io.servicetalk.buffer.api.CharSequences.split(input, delimiter, false);
     }
 
     /**

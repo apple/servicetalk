@@ -206,37 +206,67 @@ public final class CharSequences {
     }
 
     /**
-     * Split a given {@link CharSequence} to separate ones on the given {@code delimiter}.
-     * The returned {@link CharSequence}s are created by invoking the {@link CharSequence#subSequence(int, int)} method
-     * on the main one.
+     * Split a given {@link #newAsciiString(Buffer) AsciiString} to separate ones on the given {@code delimiter}.
      *
+     * Trimming white-space before and after each token can be controlled by the {@code trim} flag
      * This method has no support for regex.
      *
-     * @param input The initial {@link CharSequence} to split, this experiences no side effects
-     * @param delimiter The delimiter character
+     * @param input The initial {@link CharSequence} to split, this experiences no side effects.
+     * @param delimiter The delimiter character.
+     * @param trim Flag to control whether the individual items must be trimmed.
      * @return a {@link List} of {@link CharSequence} subsequences of the input with the separated values
      */
-    public static List<CharSequence> split(final CharSequence input, final char delimiter) {
+    public static List<CharSequence> split(final CharSequence input, final char delimiter, final boolean trim) {
         if (input.length() == 0) {
             return emptyList();
         }
 
-        int startIndex = 0;
         List<CharSequence> result = new ArrayList<>();
+
+        int startIndex = trim ? -1 : 0;
+        int endIndex = -1;
+
         for (int i = 0; i < input.length(); i++) {
-            if (input.charAt(i) == delimiter) {
-                if ((i - startIndex) > 0) {
-                    result.add(input.subSequence(startIndex, i));
+            char c = input.charAt(i);
+            if (!trim) {
+                endIndex = i;
+            } else if (c != ' ' && c != delimiter) {
+                endIndex = i + 1;
+            }
+
+            if (startIndex == -1 && c != ' ' && c != delimiter) {
+                startIndex = i;
+            } else if (c == delimiter) {
+                if (startIndex != -1 && endIndex != -1 && (i - startIndex) > 0) {
+                    result.add(subsequence(input, startIndex, endIndex));
                 }
 
-                startIndex = i + 1;
+                if (!trim) {
+                    startIndex = i + 1;
+                } else {
+                    startIndex = -1;
+                    endIndex = -1;
+                }
             }
         }
 
-        if ((input.length() - startIndex) > 0) {
-            result.add(input.subSequence(startIndex, input.length()));
+        if (!trim) {
+            endIndex = input.length();
         }
+
+        if (startIndex != -1 && endIndex != -1 && (input.length() - startIndex) > 0) {
+            result.add(subsequence(input, startIndex, endIndex));
+        }
+
         return result;
+    }
+
+    private static CharSequence subsequence(final CharSequence input, final int start, final int end) {
+        if (isAsciiString(input)) {
+            return newAsciiString(((AsciiBuffer) input).unwrap().copy(start, end - start));
+        } else {
+            return input.subSequence(start, end);
+        }
     }
 
     private static boolean equalsIgnoreCase(final char a, final char b) {
