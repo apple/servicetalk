@@ -15,7 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -58,9 +60,10 @@ public final class GlobalExecutionContext {
         static final ExecutionContext INSTANCE;
 
         static {
-            final IoExecutor ioExecutor = createIoExecutor(new IoThreadFactory("servicetalk-global-io-executor", true));
-            final Executor executor = newCachedThreadExecutor(
-                    new DefaultThreadFactory("servicetalk-global-executor", true, NORM_PRIORITY));
+            final IoExecutor ioExecutor = new GlobalIoExecutor(createIoExecutor(
+                    new IoThreadFactory(GlobalIoExecutor.NAME_PREFIX, true)));
+            final Executor executor = new GlobalExecutor(newCachedThreadExecutor(
+                    new DefaultThreadFactory(GlobalExecutor.NAME_PREFIX, true, NORM_PRIORITY)));
             INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_ALL_STRATEGY);
             LOGGER.debug("Initialized GlobalExecutionContext");
         }
@@ -68,5 +71,73 @@ public final class GlobalExecutionContext {
         private GlobalExecutionContextInitializer() {
             // No instances
         }
+    }
+
+    private static final class GlobalIoExecutor implements IoExecutor {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(GlobalIoExecutor.class);
+
+        static final String NAME_PREFIX = "servicetalk-global-io-executor";
+
+        private final IoExecutor delegate;
+
+        GlobalIoExecutor(final IoExecutor delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync()
+                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsync()"));
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully()
+                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsyncGracefully()"));
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public boolean isUnixDomainSocketSupported() {
+            return delegate.isUnixDomainSocketSupported();
+        }
+
+        @Override
+        public boolean isFileDescriptorSocketAddressSupported() {
+            return delegate.isFileDescriptorSocketAddressSupported();
+        }
+    }
+
+    private static final class GlobalExecutor extends DelegatingExecutor {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExecutor.class);
+
+        static final String NAME_PREFIX = "servicetalk-global-executor";
+
+        GlobalExecutor(final Executor delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate().closeAsync()
+                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsync()"));
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate().closeAsyncGracefully()
+                    .beforeOnSubscribe(__ -> log(LOGGER, NAME_PREFIX, "closeAsyncGracefully()"));
+        }
+    }
+
+    private static void log(final Logger logger, final String name, final String methodName) {
+        logger.debug("Closure of \"{}\" was initiated using {} method. Closing the global instance before " +
+                "closing all resources that use it may result in unexpected behavior.", name, methodName);
     }
 }
