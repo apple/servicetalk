@@ -38,7 +38,7 @@ import static io.servicetalk.buffer.api.CharSequences.forEachByte;
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.encoding.api.HeaderUtils.encodingFor;
+import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;

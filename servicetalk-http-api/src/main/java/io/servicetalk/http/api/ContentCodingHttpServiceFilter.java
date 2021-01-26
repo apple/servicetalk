@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.encoding.api.HeaderUtils.negotiateAcceptedEncoding;
+import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;

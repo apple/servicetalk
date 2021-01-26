@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.encoding.api;
+package io.servicetalk.encoding.api.internal;
+
+import io.servicetalk.buffer.api.CharSequences;
+import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.ContentCodings;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.buffer.api.CharSequences.regionMatches;
-import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -103,7 +104,7 @@ public final class HeaderUtils {
         }
 
         List<ContentCodec> knownEncodings = new ArrayList<>();
-        List<CharSequence> acceptEncodingValues = split(acceptEncodingHeaderValue, ',');
+        List<CharSequence> acceptEncodingValues = CharSequences.split(acceptEncodingHeaderValue, ',');
         for (CharSequence val : acceptEncodingValues) {
             ContentCodec enc = encodingFor(allowedEncodings, val);
             if (enc != null) {
@@ -133,7 +134,7 @@ public final class HeaderUtils {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (contentEqualsIgnoreCaseUnknownTypes(name, identity().name())) {
+        if (CharSequences.contentEqualsIgnoreCaseUnknownTypes(name, identity().name())) {
             return identity();
         }
 
@@ -148,6 +149,6 @@ public final class HeaderUtils {
     }
 
     private static boolean startsWith(final CharSequence string, final CharSequence prefix) {
-        return regionMatches(string, true, 0, prefix, 0, prefix.length());
+        return CharSequences.regionMatches(string, true, 0, prefix, 0, prefix.length());
     }
 }

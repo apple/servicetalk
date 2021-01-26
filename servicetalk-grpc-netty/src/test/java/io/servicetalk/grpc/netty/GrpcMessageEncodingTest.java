@@ -70,7 +70,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
 import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
-import static io.servicetalk.encoding.api.HeaderUtils.encodingFor;
+import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamMetadata;

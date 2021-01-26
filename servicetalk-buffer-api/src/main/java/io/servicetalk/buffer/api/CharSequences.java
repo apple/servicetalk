@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,10 @@ import static java.lang.Character.toUpperCase;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * 8-bit ASCII strings factory and basic utilities helper.
+ * This class can work with 8-bit {@link CharSequence} instances only, any other input will have undefined behavior.
+ */
 public final class CharSequences {
 
     private CharSequences() {
@@ -72,7 +76,7 @@ public final class CharSequences {
      * @return {@code true} if the check passes.
      */
     public static boolean isAsciiString(final CharSequence sequence) {
-        return sequence.getClass() == AsciiBuffer.class || sequence instanceof AsciiBuffer;
+        return sequence.getClass() == AsciiBuffer.class;
     }
 
     /**
@@ -82,20 +86,21 @@ public final class CharSequences {
      */
     @Nullable
     public static Buffer unwrapBuffer(CharSequence cs) {
-        return cs.getClass() == AsciiBuffer.class ? ((AsciiBuffer) cs).unwrap() : null;
+        return isAsciiString(cs) ? ((AsciiBuffer) cs).unwrap() : null;
     }
 
     /**
      * Iterates over the readable bytes of this {@link CharSequence} with the specified
      * {@link ByteProcessor} in ascending order.
      *
+     * @param sequence the {@link CharSequence} to operate on.
      * @param visitor the {@link ByteProcessor} visitor of each element.
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
     public static int forEachByte(final CharSequence sequence, final ByteProcessor visitor) {
         requireNonNull(sequence);
-        if (sequence instanceof AsciiBuffer) {
+        if (isAsciiString(sequence)) {
             return ((AsciiBuffer) sequence).forEachByte(visitor);
         } else {
             for (int i = 0; i < sequence.length(); ++i) {
@@ -163,7 +168,7 @@ public final class CharSequences {
     public static int indexOf(CharSequence sequence, char c, int fromIndex) {
         if (sequence instanceof String) {
             return ((String) sequence).indexOf(c, fromIndex);
-        } else if (sequence instanceof AsciiBuffer) {
+        } else if (isAsciiString(sequence)) {
             return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
         }
         for (int i = fromIndex; i < sequence.length(); ++i) {
@@ -174,8 +179,15 @@ public final class CharSequences {
         return -1;
     }
 
+    /**
+     * Calculate a hash code of a byte array assuming ASCII character encoding.
+     * The resulting hash code will be case insensitive.
+     *
+     * @param seq The ascii string to produce hashcode for.
+     * @return a hashcode for the given input.
+     */
     public static int caseInsensitiveHashCode(CharSequence seq) {
-        return seq.getClass() == AsciiBuffer.class ? seq.hashCode() : hashCodeAscii(seq);
+        return isAsciiString(seq) ? seq.hashCode() : hashCodeAscii(seq);
     }
 
     /**
@@ -323,7 +335,7 @@ public final class CharSequences {
         }
     }
 
-    public static boolean contentEqualsUnknownTypes(final CharSequence a, final CharSequence b) {
+    static boolean contentEqualsUnknownTypes(final CharSequence a, final CharSequence b) {
         for (int i = 0; i < a.length(); ++i) {
             if (a.charAt(i) != b.charAt(i)) {
                 return false;
