@@ -39,12 +39,12 @@ final class NonPipelinedStreamingHttpConnection
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream,
                                              @Nullable final FlushStrategy flushStrategy) {
         if (flushStrategy == null) {
-            return connection.write(requestStream).merge(connection.read());
+            return connection.write(requestStream).mergeDelayError(connection.read());
         } else {
             return Publisher.defer(() -> {
                 final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return connection.write(requestStream).merge(connection.read())
+                return connection.write(requestStream).mergeDelayError(connection.read())
                         .afterFinally(resetFlushStrategy::cancel);
             });
         }

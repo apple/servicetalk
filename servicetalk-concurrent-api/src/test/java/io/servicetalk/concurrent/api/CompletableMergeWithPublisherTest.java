@@ -15,17 +15,26 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
+import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -34,8 +43,18 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class CompletableMergeWithPublisherTest {
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule<Executor> executorRule = newRule();
     private final TestSubscription subscription = new TestSubscription();
@@ -45,11 +64,30 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedPublisherSubscriptionForReqNBuffering() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testDelayedPublisherSubscriptionForReqNBuffering(false);
+    }
+
+    @Test
+    public void delayErrorDelayedPublisherSubscriptionForReqNBuffering() {
+        testDelayedPublisherSubscriptionForReqNBuffering(true);
+    }
+
+    private Publisher<String> applyMerge(Completable completable, boolean delayError) {
+        return applyMerge(completable, delayError, publisher);
+    }
+
+    private static Publisher<String> applyMerge(Completable completable, boolean delayError,
+                                                Publisher<String> publisher) {
+        return delayError ? completable.mergeDelayError(publisher) : completable.merge(publisher);
+    }
+
+    private void testDelayedPublisherSubscriptionForReqNBuffering(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         completable.onComplete();
         subscriber.awaitSubscription().request(7);
+        publisher.onSubscribe(subscription);
         publisher.onNext("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
         publisher.onComplete();
         assertThat(subscriber.takeOnNext(12), contains("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
@@ -58,8 +96,17 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedPublisherSubscriptionForCancelBuffering() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testDelayedPublisherSubscriptionForCancelBuffering(false);
+    }
+
+    @Test
+    public void delayErrorDelayedPublisherSubscriptionForCancelBuffering() {
+        testDelayedPublisherSubscriptionForCancelBuffering(true);
+    }
+
+    private void testDelayedPublisherSubscriptionForCancelBuffering(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
         publisher.onSubscribe(subscription);
         completable.onComplete();
@@ -69,20 +116,30 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testDelayedCompletableSubscriptionForCancelBuffering() {
-        LegacyTestCompletable completable = new LegacyTestCompletable(false, true);
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testDelayedCompletableSubscriptionForCancelBuffering(false);
+    }
+
+    @Test
+    public void delayErrorDelayedCompletableSubscriptionForCancelBuffering() {
+        testDelayedCompletableSubscriptionForCancelBuffering(true);
+    }
+
+    private void testDelayedCompletableSubscriptionForCancelBuffering(boolean delayError) {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable cancellable = new TestCancellable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         subscriber.awaitSubscription().request(5);
-        completable.sendOnSubscribe();
+        completable.onSubscribe(cancellable);
         publisher.onSubscribe(subscription);
         completable.onComplete();
         subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
-        completable.verifyCancelled();
+        assertTrue(cancellable.isCancelled());
     }
 
     @Test
     public void testCompletableFailCancelsPublisher() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
+        TestCompletable completable = new TestCompletable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         completable.onError(DELIBERATE_EXCEPTION);
@@ -91,33 +148,109 @@ public class CompletableMergeWithPublisherTest {
     }
 
     @Test
+    public void delayErrorCompletableFailDoesNotCancelPublisherFail() {
+        delayErrorCompletableFailDoesNotCancelPublisher(true);
+    }
+
+    @Test
+    public void delayErrorCompletableFailDoesNotCancelPublisher() {
+        delayErrorCompletableFailDoesNotCancelPublisher(false);
+    }
+
+    private void delayErrorCompletableFailDoesNotCancelPublisher(boolean secondIsError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, true)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        completable.onError(DELIBERATE_EXCEPTION);
+        assertFalse(subscription.isCancelled());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        if (secondIsError) {
+            publisher.onError(newSecondException());
+        } else {
+            publisher.onComplete();
+        }
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
     public void testPublisherFailCancelsCompletable() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable cancellable = new TestCancellable();
         toSource(completable.merge(publisher)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
+        completable.onSubscribe(cancellable);
         assertFalse(subscription.isCancelled());
         publisher.onError(DELIBERATE_EXCEPTION);
-        completable.verifyCancelled();
+        assertTrue(cancellable.isCancelled());
         assertFalse(subscription.isCancelled());
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void testCancelCancelsPendingSourceSubscription() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+    public void delayErrorPublisherFailDoesNotCancelCompletableFail() {
+        delayErrorPublisherFailDoesNotCancelCompletable(true);
+    }
+
+    @Test
+    public void delayErrorPublisherFailDoesNotCancelCompletable() {
+        delayErrorPublisherFailDoesNotCancelCompletable(false);
+    }
+
+    private void delayErrorPublisherFailDoesNotCancelCompletable(boolean secondIsError) {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable cancellable = new TestCancellable();
+        toSource(applyMerge(completable, true)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
+        completable.onSubscribe(cancellable);
+        assertFalse(subscription.isCancelled());
+        publisher.onError(DELIBERATE_EXCEPTION);
+        assertFalse(cancellable.isCancelled());
+        assertFalse(subscription.isCancelled());
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        if (secondIsError) {
+            completable.onError(newSecondException());
+        } else {
+            completable.onComplete();
+        }
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void testCancelCancelsPendingSourceSubscription() {
+        testCancelCancelsPendingSourceSubscription(false);
+    }
+
+    @Test
+    public void delayErrorCancelCancelsPendingSourceSubscription() {
+        testCancelCancelsPendingSourceSubscription(true);
+    }
+
+    private void testCancelCancelsPendingSourceSubscription(boolean delayError) {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable cancellable = new TestCancellable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        completable.onSubscribe(cancellable);
         subscriber.awaitSubscription().cancel();
         assertTrue(subscription.isCancelled());
-        completable.verifyCancelled();
+        assertTrue(cancellable.isCancelled());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @Test
     public void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction(false);
+    }
+
+    @Test
+    public void delayErrorCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction() {
+        testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction(true);
+    }
+
+    private void testCancelCompletableCompletePublisherPendingCancelsNoMoreInteraction(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         completable.onComplete();
         subscriber.awaitSubscription().request(2);
@@ -131,8 +264,20 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction(false);
+    }
+
+    @Test
+    public void delayErrorCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction() {
+        testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction(true);
+    }
+
+    private void testCancelPublisherCompleteCompletablePendingCancelsNoMoreInteraction(boolean delayError) {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable cancellable = new TestCancellable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
+        completable.onSubscribe(cancellable);
+        publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         publisher.onNext("one", "two");
         publisher.onComplete();
@@ -140,13 +285,23 @@ public class CompletableMergeWithPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains("one", "two"));
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
-        completable.verifyCancelled();
+        assertTrue(cancellable.isCancelled());
     }
 
     @Test
     public void testCompletableAndPublisherCompleteSingleCompleteSignal() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testCompletableAndPublisherCompleteSingleCompleteSignal(false);
+    }
+
+    @Test
+    public void delayErrorCompletableAndPublisherCompleteSingleCompleteSignal() {
+        testCompletableAndPublisherCompleteSingleCompleteSignal(true);
+    }
+
+    private void testCompletableAndPublisherCompleteSingleCompleteSignal(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         completable.onComplete();
         publisher.onNext("one", "two");
@@ -157,22 +312,43 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testCompletableAndPublisherFailOnlySingleErrorSignal() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testCompletableAndPublisherFailOnlySingleErrorSignal(false);
+    }
+
+    @Test
+    public void delayErrorCompletableAndPublisherFailOnlySingleErrorSignal() {
+        testCompletableAndPublisherFailOnlySingleErrorSignal(true);
+    }
+
+    private void testCompletableAndPublisherFailOnlySingleErrorSignal(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(3);
         publisher.onNext("one", "two");
         completable.onError(DELIBERATE_EXCEPTION);
-        assertTrue(subscription.isCancelled());
-        publisher.onError(DELIBERATE_EXCEPTION);
+        if (!delayError) {
+            assertTrue(subscription.isCancelled());
+        }
+        publisher.onError(newSecondException());
         assertThat(subscriber.takeOnNext(2), contains("one", "two"));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCompletableFailsAndPublisherCompletesSingleErrorSignal() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testCompletableFailsAndPublisherCompletesSingleErrorSignal(false);
+    }
+
+    @Test
+    public void delayErrorCompletableFailsAndPublisherCompletesSingleErrorSignal() {
+        testCompletableFailsAndPublisherCompletesSingleErrorSignal(true);
+    }
+
+    private void testCompletableFailsAndPublisherCompletesSingleErrorSignal(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         publisher.onNext("one", "two");
         publisher.onComplete();
@@ -183,8 +359,17 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void testPublisherFailsAndCompletableCompletesSingleErrorSignal() {
-        LegacyTestCompletable completable = new LegacyTestCompletable();
-        toSource(completable.merge(publisher)).subscribe(subscriber);
+        testPublisherFailsAndCompletableCompletesSingleErrorSignal(false);
+    }
+
+    @Test
+    public void delayErrorPublisherFailsAndCompletableCompletesSingleErrorSignal() {
+        testPublisherFailsAndCompletableCompletesSingleErrorSignal(true);
+    }
+
+    private void testPublisherFailsAndCompletableCompletesSingleErrorSignal(boolean delayError) {
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(2);
         publisher.onNext("one", "two");
@@ -197,11 +382,20 @@ public class CompletableMergeWithPublisherTest {
 
     @Test
     public void offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
+        offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates(false);
+    }
+
+    @Test
+    public void delayErrorOffloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
+        offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates(true);
+    }
+
+    private void offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates(boolean delayError) throws Exception {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestCancellable testCancellable = new TestCancellable();
         CountDownLatch latch = new CountDownLatch(1);
-        toSource(completable.publishOn(executorRule.executor())
-                .merge(publisher.publishOn(executorRule.executor())).afterOnNext(item -> {
+        toSource(applyMerge(completable.publishOn(executorRule.executor()), delayError,
+                publisher.publishOn(executorRule.executor())).afterOnNext(item -> {
             // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
             // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
             // the downstream subscriber until after all the onNext events have completed.
@@ -228,5 +422,186 @@ public class CompletableMergeWithPublisherTest {
         latch.await();
         assertThat(subscriber.takeOnNext(values.length), contains(values));
         subscriber.awaitOnComplete();
+    }
+
+    @Test
+    public void publisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
+        publisherAndCompletableErrorDoesNotDuplicateErrorDownstream(false);
+    }
+
+    @Test
+    public void delayErrorPublisherAndCompletableErrorDoesNotDuplicateErrorDownstream() throws Exception {
+        publisherAndCompletableErrorDoesNotDuplicateErrorDownstream(true);
+    }
+
+    private void publisherAndCompletableErrorDoesNotDuplicateErrorDownstream(boolean delayError) throws Exception {
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        TestCompletable completable = new TestCompletable();
+        toSource(applyMerge(completable, delayError)).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        Future<Void> f = executorRule.executor().submit(() -> {
+            try {
+                barrier.await();
+            } catch (Exception e) {
+                throwException(e);
+            }
+            completable.onError(DELIBERATE_EXCEPTION);
+        }).toFuture();
+
+        barrier.await();
+        publisher.onError(DELIBERATE_EXCEPTION);
+
+        f.get();
+        assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void onNextConcurrentWithCompletableError() throws Exception {
+        onNextConcurrentWithCompletableError(false);
+    }
+
+    @Test
+    public void delayErrorOnNextConcurrentWithCompletableError() throws Exception {
+        onNextConcurrentWithCompletableError(true);
+    }
+
+    private void onNextConcurrentWithCompletableError(boolean delayError) throws Exception {
+        CountDownLatch nextLatch1 = new CountDownLatch(1);
+        CountDownLatch nextLatch2 = new CountDownLatch(1);
+        TestCompletable completable = new TestCompletable();
+        @SuppressWarnings("unchecked")
+        PublisherSource.Subscriber<String> mockSubscriber = mock(PublisherSource.Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            Subscription s = invocation.getArgument(0);
+            s.request(Long.MAX_VALUE);
+            return null;
+        }).when(mockSubscriber).onSubscribe(any());
+        doAnswer((Answer<Void>) invocation -> {
+            nextLatch2.countDown();
+            nextLatch1.await();
+            return null;
+        }).when(mockSubscriber).onNext(any());
+        toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
+        publisher.onSubscribe(subscription);
+        Future<Void> f = executorRule.executor().submit(() -> {
+            try {
+                nextLatch2.await();
+            } catch (Exception e) {
+                throwException(e);
+            }
+            completable.onError(DELIBERATE_EXCEPTION);
+            nextLatch1.countDown();
+        }).toFuture();
+
+        subscription.awaitRequestN(1);
+        publisher.onNext("one");
+        f.get();
+        publisher.onError(newSecondException());
+        verify(mockSubscriber).onNext(eq("one"));
+        verify(mockSubscriber).onError(eq(DELIBERATE_EXCEPTION));
+        verify(mockSubscriber, never()).onComplete();
+    }
+
+    private static IllegalStateException newSecondException() {
+        return new IllegalStateException("second exception should be ignored");
+    }
+
+    @Test
+    public void onNextReentryCompleteConcurrentWithCompletable() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(false, true, true);
+    }
+
+    @Test
+    public void onNextReentryErrorConcurrentWithCompletable() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(false, false, true);
+    }
+
+    @Test
+    public void onNextReentryCompleteConcurrentWithCompletableError() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(false, true, false);
+    }
+
+    @Test
+    public void onNextReentryErrorConcurrentWithCompletableError() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(false, false, false);
+    }
+
+    @Test
+    public void delayErrorOnNextReentryCompleteConcurrentWithCompletable() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(true, true, true);
+    }
+
+    @Test
+    public void delayErrorOnNextReentryErrorConcurrentWithCompletable() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(true, false, true);
+    }
+
+    @Test
+    public void delayErrorOnNextReentryCompleteConcurrentWithCompletableError() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(true, true, false);
+    }
+
+    @Test
+    public void delayErrorOnNextReentryErrorConcurrentWithCompletableError() throws Exception {
+        onNextReentryCompleteConcurrentWithCompletable(true, false, false);
+    }
+
+    private void onNextReentryCompleteConcurrentWithCompletable(boolean delayError, boolean pubOnComplete,
+                                                                boolean compOnComplete) throws Exception {
+        CountDownLatch nextLatch1 = new CountDownLatch(1);
+        CountDownLatch nextLatch2 = new CountDownLatch(1);
+        TestCompletable completable = new TestCompletable();
+        AtomicInteger onNextCount = new AtomicInteger();
+        @SuppressWarnings("unchecked")
+        PublisherSource.Subscriber<String> mockSubscriber = mock(PublisherSource.Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            Subscription s = invocation.getArgument(0);
+            s.request(Long.MAX_VALUE);
+            return null;
+        }).when(mockSubscriber).onSubscribe(any());
+        doAnswer((Answer<Void>) invocation -> {
+            nextLatch2.countDown();
+            final int count = onNextCount.incrementAndGet();
+            if (count == 1) {
+                publisher.onNext("two");
+            } else if (count == 2) {
+                if (pubOnComplete) {
+                    publisher.onComplete();
+                } else {
+                    publisher.onError(DELIBERATE_EXCEPTION);
+                }
+            }
+            nextLatch1.await();
+            return null;
+        }).when(mockSubscriber).onNext(any());
+        toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
+        publisher.onSubscribe(subscription);
+        Future<Void> f = executorRule.executor().submit(() -> {
+            try {
+                nextLatch2.await();
+            } catch (Exception e) {
+                throwException(e);
+            }
+            if (compOnComplete) {
+                completable.onComplete();
+            } else {
+                completable.onError(DELIBERATE_EXCEPTION);
+            }
+            nextLatch1.countDown();
+        }).toFuture();
+
+        subscription.awaitRequestN(2);
+        publisher.onNext("one");
+
+        f.get();
+        verify(mockSubscriber).onNext(eq("one"));
+        verify(mockSubscriber, compOnComplete ? times(1) : atMost(1)).onNext(eq("two"));
+        if (pubOnComplete && compOnComplete) {
+            verify(mockSubscriber).onComplete();
+            verify(mockSubscriber, never()).onError(any());
+        } else {
+            verify(mockSubscriber, never()).onComplete();
+            verify(mockSubscriber).onError(eq(DELIBERATE_EXCEPTION));
+        }
     }
 }

@@ -334,7 +334,7 @@ public class NettyPipelinedConnectionTest {
         writePublisher1.onError(DELIBERATE_EXCEPTION);
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertThat(readSubscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
-        assertFalse(writePublisher2.isSubscribed());
+        assertTrue(writePublisher2.isSubscribed());
         assertFalse(channel.isOpen());
     }
 
@@ -365,6 +365,7 @@ public class NettyPipelinedConnectionTest {
         readSubscription.request(1);
 
         assertTrue(mockReadPublisher1.isSubscribed());
+        mockReadPublisher1.onError(newSecondException());
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertFalse(writePublisher1.isSubscribed());
 
@@ -397,15 +398,19 @@ public class NettyPipelinedConnectionTest {
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
 
-        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertTrue(writePublisher1.isSubscribed());
-        writePublisher1.onComplete();
+        writePublisher1.onError(newSecondException());
+        assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
 
         readSubscriber2.awaitSubscription();
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onComplete();
         readSubscriber2.awaitOnComplete();
         verify(mockConnection, never()).closeAsync();
+    }
+
+    private static IllegalStateException newSecondException() {
+        return new IllegalStateException("second exception shouldn't propagate");
     }
 
     @Test
@@ -450,6 +455,7 @@ public class NettyPipelinedConnectionTest {
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
 
+        writePublisher1.onError(newSecondException());
         assertThat(readSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         assertTrue(writePublisher1.isSubscribed());
         verify(mockConnection).closeAsync();
