@@ -95,7 +95,6 @@ public class AsciiBufferTest {
     public void testSubSequence() {
         testSubSequence(newAsciiString("some-data"));
         testSubSequence(newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii("some-data")));
-        //testSubSequence(newAsciiString(DEFAULT_ALLOCATOR.fromAscii("some-data")));
     }
 
     private static void testSubSequence(CharSequence cs) {
