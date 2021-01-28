@@ -28,22 +28,6 @@ final class DefaultPayloadInfo implements PayloadInfo {
     DefaultPayloadInfo() {
     }
 
-    /**
-     * Create a new instance and initialize {@link #mayHaveTrailers()} if the message body will include trailers
-     * (e.g. a trailing {@link HttpHeaders}).
-     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
-     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
-     * @param version The {@link HttpProtocolVersion} associated with the message body.
-     * @param headers The {@link HttpHeaders} associated with the message body.
-     */
-    DefaultPayloadInfo(boolean requireTrailerHeader, HttpProtocolVersion version, HttpHeaders headers) {
-        if ((version.major() > 1 ||
-                (version.major() == 1 && version.minor() > 0 && isTransferEncodingChunked(headers))) &&
-                (!requireTrailerHeader || headers.contains(TRAILER))) {
-            setMayHaveTrailers(true);
-        }
-    }
-
     DefaultPayloadInfo(PayloadInfo from) {
         if (from instanceof DefaultPayloadInfo) {
             this.flags = ((DefaultPayloadInfo) from).flags;
@@ -73,8 +57,8 @@ final class DefaultPayloadInfo implements PayloadInfo {
         return set(SAFE_TO_AGGREGATE, safeToAggregate);
     }
 
-    DefaultPayloadInfo setMayHaveTrailers(boolean trailersPresent) {
-        return set(MAY_HAVE_TRAILERS, trailersPresent);
+    DefaultPayloadInfo setMayHaveTrailers(boolean mayHaveTrailers) {
+        return set(MAY_HAVE_TRAILERS, mayHaveTrailers);
     }
 
     DefaultPayloadInfo setOnlyEmitsBuffer(boolean onlyEmitsBuffer) {
@@ -91,7 +75,9 @@ final class DefaultPayloadInfo implements PayloadInfo {
      */
     static DefaultPayloadInfo forTransportReceive(boolean requireTrailerHeader, HttpProtocolVersion version,
                                                   HttpHeaders headers) {
-        return new DefaultPayloadInfo(requireTrailerHeader, version, headers);
+        return new DefaultPayloadInfo().setMayHaveTrailers((version.major() > 1 ||
+                (version.major() == 1 && version.minor() > 0 && isTransferEncodingChunked(headers))) &&
+                (!requireTrailerHeader || headers.contains(TRAILER)));
     }
 
     /**

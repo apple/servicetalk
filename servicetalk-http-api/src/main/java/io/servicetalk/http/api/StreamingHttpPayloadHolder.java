@@ -40,6 +40,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -51,7 +52,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
-    private final int majorHttpVersion;
+    private final HttpProtocolVersion version;
     @Nullable
     private Publisher<?> messageBody;
 
@@ -63,7 +64,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
-        this.majorHttpVersion = version.major();
+        this.version = requireNonNull(version);
         this.messageBody = messageBody;
     }
 
@@ -149,7 +150,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         } else {
             // It is possible the resulting transformed publisher contains a trailers object, but this is not supported
             // by this API. Instead use the designated trailers transform methods.
-            messageBody = transformer.apply(messageBody == null ? empty() : messageBody);
+            messageBody = transformer.apply(messageBody());
         }
     }
 
@@ -176,7 +177,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     private <T, P> void transformWithTrailersUnchecked(final TrailersTransformer<T, P> trailersTransformer,
                                                        final Function<Object, P> caster) {
-        if (majorHttpVersion == 1) {
+        if (version == HTTP_1_1) {
             // This transform adds trailers, and for http/1.1 we need `transfer-encoding: chunked` not `content-length`.
             addChunkedEncoding(headers);
         }
@@ -200,7 +201,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                                 trailers = (HttpHeaders) next;
                                 return trailersTransformer.payloadComplete(state, trailers);
                             } else if (trailers != null) {
-                                throwOnNextAfterTrailersException(next);
+                                throwOnNextAfterTrailersException(trailers, next);
                             }
                             return trailersTransformer.accept(state, caster.apply(requireNonNull(next)));
                         }
@@ -286,14 +287,15 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 " but duplicate trailers seen: " + o);
     }
 
-    private static void throwOnNextAfterTrailersException(@Nullable Object o) {
-        throw new IllegalStateException("trailers must be the last onNext signal, but got: " + o);
+    private static void throwOnNextAfterTrailersException(HttpHeaders trailers, @Nullable Object o) {
+        throw new IllegalStateException("trailers must be the last onNext signal, but got: " + o + " after: " +
+                trailers);
     }
 
     /**
      * Merge a {@link Publisher} and a {@link Single} into a single {@link Publisher}.
      * <p>
-     * The transport for HTTP client connections does {@code connection.write(requestStream).merge(connection.read())}
+     * The HTTP client connection does {@code connection.write(requestStream).mergeDelayError(connection.read())}
      * in order to propagate any errors that may occur on the write (see NonPipelinedStreamingHttpConnection and
      * NettyPipelinedConnection). This means that the read and write stream must complete (successfully) before
      * the {@link Publisher#concat(Single)} operator will execute and trailers can be processed. However in some cases

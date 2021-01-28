@@ -67,6 +67,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
@@ -433,18 +434,14 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     @Test
-    public void throwAfterPayloadWriterClosed() throws Exception {
+    public void throwAfterPayloadWriterClosed() {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             response.sendMetaData().close();
             throw DELIBERATE_EXCEPTION;
         };
 
-        try {
-            invokeService(syncService, reqRespFactory.get("/"));
-            fail("Payload body should complete with an error");
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
-        }
+        assertThat(assertThrows(ExecutionException.class, () -> invokeService(syncService, reqRespFactory.get("/")))
+                        .getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,

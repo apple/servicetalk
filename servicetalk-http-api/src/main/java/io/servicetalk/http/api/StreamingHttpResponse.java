@@ -55,11 +55,11 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
-     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
      * @return a {@link Publisher} that represents the
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
-     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
      */
     Publisher<Object> messageBody();
@@ -144,7 +144,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Transform the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
-     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer</a> (if
+     * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
      * <p>
      * The transformation is not expected to change the presence of trailers in the message body. For example behavior

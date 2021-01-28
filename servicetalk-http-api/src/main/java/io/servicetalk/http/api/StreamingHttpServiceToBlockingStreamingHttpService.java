@@ -64,7 +64,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
         return original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
                 .flatMapCompletable(streamingHttpResponse -> {
                     copyMeta(streamingHttpResponse, svcResponse);
-                    return new MessageBodyToPayloadWriter(streamingHttpResponse.payloadBodyAndTrailers(),
+                    return new MessageBodyToPayloadWriter(streamingHttpResponse.messageBody(),
                             svcResponse.sendMetaData(), demandBatchSize);
                 });
     }

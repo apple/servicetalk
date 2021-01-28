@@ -201,8 +201,8 @@ final class HeaderUtils {
                 List<Object> itemsUnchecked = (List<Object>) reduction;
                 items = itemsUnchecked;
             } else {
-                // this method is called if the payload has been aggregated, we expect {meta, buffer, trailers}.
-                items = new ArrayList<>(3);
+                // this method is called if the payload has been aggregated, we expect <buffer*, trailers?>.
+                items = new ArrayList<>(2);
                 items.add(reduction);
             }
             items.add(item);

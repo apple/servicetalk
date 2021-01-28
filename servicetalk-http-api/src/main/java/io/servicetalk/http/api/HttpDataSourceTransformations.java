@@ -32,6 +32,7 @@ import java.nio.BufferOverflowException;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -40,6 +41,7 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class HttpDataSourceTransformations {
     private HttpDataSourceTransformations() {
@@ -47,6 +49,9 @@ final class HttpDataSourceTransformations {
     }
 
     static final class BridgeFlowControlAndDiscardOperator implements PublisherOperator<Buffer, Buffer> {
+        private static final AtomicIntegerFieldUpdater<BridgeFlowControlAndDiscardOperator> appliedUpdater =
+                newUpdater(BridgeFlowControlAndDiscardOperator.class, "applied");
+        private volatile int applied;
         private final Publisher<?> discardedPublisher;
 
         BridgeFlowControlAndDiscardOperator(final Publisher<?> discardedPublisher) {
@@ -55,7 +60,9 @@ final class HttpDataSourceTransformations {
 
         @Override
         public Subscriber<? super Buffer> apply(final Subscriber<? super Buffer> subscriber) {
-            return new BridgeFlowControlAndDiscardSubscriber<>(subscriber, discardedPublisher);
+            // We only need to subscribe to and drain contents from original Publisher a single time.
+            return appliedUpdater.compareAndSet(this, 0, 1) ?
+                    new BridgeFlowControlAndDiscardSubscriber<>(subscriber, discardedPublisher) : subscriber;
         }
     }
 
