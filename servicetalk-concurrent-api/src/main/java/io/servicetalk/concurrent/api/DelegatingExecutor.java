@@ -23,20 +23,31 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An {@link Executor} that simply delegates all calls to another {@link Executor}.
  */
 public abstract class DelegatingExecutor implements Executor {
 
-    final Executor delegate;
+    private final Executor delegate;
 
     /**
      * New instance.
      *
      * @param delegate {@link Executor} to delegate all calls to.
      */
-    public DelegatingExecutor(final Executor delegate) {
-        this.delegate = delegate;
+    protected DelegatingExecutor(final Executor delegate) {
+        this.delegate = requireNonNull(delegate);
+    }
+
+    /**
+     * Returns the delegate {@link Executor} used.
+     *
+     * @return The delegate {@link Executor} used.
+     */
+    protected Executor delegate() {
+        return delegate;
     }
 
     @Override

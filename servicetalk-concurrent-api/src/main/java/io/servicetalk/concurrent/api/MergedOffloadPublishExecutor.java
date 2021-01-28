@@ -41,12 +41,12 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements S
         // the Executor. In practice, the Executor passed here should always be self when the SignalOffloaderFactory is
         // an Executor itself.
         assert executor == this;
-        return new PublishOnlySignalOffloader(delegate, fallbackExecutor);
+        return new PublishOnlySignalOffloader(delegate(), fallbackExecutor);
     }
 
     @Override
     public boolean hasThreadAffinity() {
-        return SignalOffloaders.hasThreadAffinity(delegate) && SignalOffloaders.hasThreadAffinity(fallbackExecutor);
+        return SignalOffloaders.hasThreadAffinity(delegate()) && SignalOffloaders.hasThreadAffinity(fallbackExecutor);
     }
 
     private static final class PublishOnlySignalOffloader implements SignalOffloader {
