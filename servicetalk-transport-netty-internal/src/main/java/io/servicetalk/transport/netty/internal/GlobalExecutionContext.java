@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,15 +74,15 @@ public final class GlobalExecutionContext {
         }
     }
 
-    private static final class GlobalIoExecutor implements IoExecutor {
+    private static final class GlobalIoExecutor implements EventLoopAwareNettyIoExecutor {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(GlobalIoExecutor.class);
 
         static final String NAME_PREFIX = "servicetalk-global-io-executor";
 
-        private final IoExecutor delegate;
+        private final EventLoopAwareNettyIoExecutor delegate;
 
-        GlobalIoExecutor(final IoExecutor delegate) {
+        GlobalIoExecutor(final EventLoopAwareNettyIoExecutor delegate) {
             this.delegate = delegate;
         }
 
@@ -110,6 +111,26 @@ public final class GlobalExecutionContext {
         @Override
         public boolean isFileDescriptorSocketAddressSupported() {
             return delegate.isFileDescriptorSocketAddressSupported();
+        }
+
+        @Override
+        public boolean isCurrentThreadEventLoop() {
+            return delegate.isCurrentThreadEventLoop();
+        }
+
+        @Override
+        public EventLoopGroup eventLoopGroup() {
+            return delegate.eventLoopGroup();
+        }
+
+        @Override
+        public EventLoopAwareNettyIoExecutor next() {
+            return delegate.next();
+        }
+
+        @Override
+        public Executor asExecutor() {
+            return delegate.asExecutor();
         }
     }
 

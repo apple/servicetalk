@@ -45,7 +45,7 @@ public final class NettyIoExecutors {
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static NettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(ThreadFactory threadFactory) {
         return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
     }
 
@@ -56,7 +56,7 @@ public final class NettyIoExecutors {
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static NettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
+    public static EventLoopAwareNettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
         validateIoThreads(ioThreads);
         return new EventLoopGroupIoExecutor(createEventLoopGroup(ioThreads, threadFactory), true);
     }
