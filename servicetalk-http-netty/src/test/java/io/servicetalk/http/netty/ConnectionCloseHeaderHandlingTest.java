@@ -47,6 +47,7 @@ import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,17 +86,14 @@ import static org.junit.Assume.assumeTrue;
 
 @RunWith(Enclosed.class)
 public class ConnectionCloseHeaderHandlingTest {
-
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
     private static final String SERVER_SHOULD_CLOSE = "serverShouldClose";
 
     public abstract static class ConnectionSetup {
-
         @ClassRule
         public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
         @ClassRule
         public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
-
         @Rule
         public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
@@ -209,9 +207,16 @@ public class ConnectionCloseHeaderHandlingTest {
         }
 
         protected void assertClosedChannelException(String path) {
-            Exception e = assertThrows(ExecutionException.class,
-                    () -> connection.request(connection.get(path).addHeader(CONTENT_LENGTH, ZERO)).toFuture().get());
+            assertClosedChannelException(sendZeroLengthRequest(path));
+        }
+
+        protected void assertClosedChannelException(Future<StreamingHttpResponse> responseFuture) {
+            Exception e = assertThrows(ExecutionException.class, responseFuture::get);
             assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
+        }
+
+        protected Future<StreamingHttpResponse> sendZeroLengthRequest(String path) {
+            return connection.request(connection.get(path).addHeader(CONTENT_LENGTH, ZERO)).toFuture();
         }
 
         protected static void assertResponse(StreamingHttpResponse response) {
@@ -400,10 +405,11 @@ public class ConnectionCloseHeaderHandlingTest {
             assertResponse(response);
 
             // Send another request before connection reads payload body of the first request:
-            assertClosedChannelException("/second");
+            Future<StreamingHttpResponse> secondFuture = sendZeroLengthRequest("/second");
 
             responseReceived.countDown();
             assertResponsePayloadBody(response);
+            assertClosedChannelException(secondFuture);
             awaitConnectionClosed();
         }
 
@@ -417,12 +423,13 @@ public class ConnectionCloseHeaderHandlingTest {
                 responseReceived.countDown();
             });
             // Send another request before connection receives a response for the first request:
-            assertClosedChannelException("/second");
+            Future<StreamingHttpResponse> secondFuture = sendZeroLengthRequest("/second");
             sendResponse.countDown();
 
             StreamingHttpResponse response = responses.take();
             assertResponse(response);
             assertResponsePayloadBody(response);
+            assertClosedChannelException(secondFuture);
             awaitConnectionClosed();
         }
 

@@ -518,7 +518,46 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <T> Publisher<T> merge(Publisher<? extends T> mergeWith) {
-        return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
+        return new CompletableMergeWithPublisher<>(this, mergeWith, false, executor);
+    }
+
+    /**
+     * Merges the passed {@link Publisher} with this {@link Completable}.
+     * <p>
+     * The resulting {@link Publisher} emits all items emitted by the passed {@link Publisher} and terminates when both
+     * this {@link Completable} and the passed {@link Publisher} terminate. If either terminates with an error then the
+     * error will be propagated to the return value.
+     * <pre>{@code
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     futures.add(e.submit(() -> resultOfMergeWithStream());
+     *     Throwable overallCause = null;
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
+     *         try {
+     *             f.get();
+     *         } catch (Throwable cause) {
+     *             if (overallCause != null) {
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     * }</pre>
+     *
+     * @param mergeWith the {@link Publisher} to merge in
+     * @param <T> The value type of the resulting {@link Publisher}.
+     * @return {@link Publisher} emits all items emitted by the passed {@link Publisher} and terminates when both this
+     * {@link Completable} and the passed {@link Publisher} terminate. If either terminates with an error then the
+     * error will be propagated to the return value.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     */
+    public final <T> Publisher<T> mergeDelayError(Publisher<? extends T> mergeWith) {
+        return new CompletableMergeWithPublisher<>(this, mergeWith, true, executor);
     }
 
     /**

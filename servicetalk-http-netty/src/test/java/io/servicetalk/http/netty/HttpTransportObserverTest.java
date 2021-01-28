@@ -280,8 +280,6 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
         verify(clientWriteObserver, atLeastOnce()).itemWritten();
         verify(clientWriteObserver).writeComplete();
-        // Failure of the read triggers cancellation of the write.
-        verify(clientWriteObserver, await()).writeCancelled();
 
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
         verify(serverReadObserver, atLeastOnce()).itemRead();
@@ -362,7 +360,7 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverWriteObserver, atMostOnce()).writeCancelled();
 
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(clientReadObserver).readCancelled();
+        verify(clientReadObserver).readFailed(any(IOException.class));
 
         if (protocol == HTTP_1) {
             verify(clientConnectionObserver).connectionClosed(DELIBERATE_EXCEPTION);

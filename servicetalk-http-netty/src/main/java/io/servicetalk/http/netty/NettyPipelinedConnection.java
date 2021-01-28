@@ -236,7 +236,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
                         // the most straightforward way to propagate an error through the APIs is through the read async
                         // source. This has a side effect that the read async source isn't strictly full-duplex (data
                         // will be full-duplex, but completion will be delayed until the write completes).
-                        .merge(new Publisher<Resp>() {
+                        .mergeDelayError(new Publisher<Resp>() {
                             @Override
                             protected void handleSubscribe(final Subscriber<? super Resp> rSubscriber) {
                                 final Subscriber<? super Resp> nextReadSubscriber;
