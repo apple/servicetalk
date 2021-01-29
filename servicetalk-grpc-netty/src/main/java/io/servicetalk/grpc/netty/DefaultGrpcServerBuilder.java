@@ -54,7 +54,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
             .executionStrategy(defaultStrategy());
 
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
-        this.httpServerBuilder = httpServerBuilder.protocols(h2Default());
+        this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
     }
 
     @Override
