@@ -40,6 +40,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:helloworld",
         "servicetalk-examples:grpc:routeguide",
         "servicetalk-examples:grpc:protoc-options",
+        "servicetalk-examples:grpc:compression",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:http2",
@@ -88,6 +89,7 @@ include "servicetalk-annotations",
 project(":servicetalk-examples:grpc:helloworld").name = "servicetalk-examples-grpc-helloworld"
 project(":servicetalk-examples:grpc:routeguide").name = "servicetalk-examples-grpc-routeguide"
 project(":servicetalk-examples:grpc:protoc-options").name = "servicetalk-examples-grpc-protoc-options"
+project(":servicetalk-examples:grpc:compression").name = "servicetalk-examples-grpc-compression"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"

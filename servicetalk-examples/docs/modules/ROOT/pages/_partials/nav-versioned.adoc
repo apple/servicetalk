@@ -11,5 +11,6 @@
 ** xref:{page-version}@servicetalk-examples::http/service-composition.adoc[Service Composition]
 * xref:{page-version}@servicetalk-examples::grpc/index.adoc[gRPC]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#HelloWorld[Hello World]
+** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#route-guide[Route Guide]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#protoc-options[Protoc Options]
