@@ -38,7 +38,7 @@ import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
@@ -86,9 +86,10 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             // > When a message does not have a Transfer-Encoding header field, a
                             // Content-Length header field can provide the anticipated size.
                             // https://tools.ietf.org/html/rfc7230#section-3.3.2
-                            HttpHeaders headers = metaData.headers();
-                            boolean addTrailers = metaData.version().major() > 1 || isTransferEncodingChunked(headers);
-                            if (!addTrailers && metaData.version() == HTTP_1_1 && !hasContentLength(headers) &&
+                            final HttpHeaders headers = metaData.headers();
+                            final HttpProtocolVersion version = metaData.version();
+                            boolean addTrailers = version.major() > 1 || isTransferEncodingChunked(headers);
+                            if (!addTrailers && h1TrailersSupported(version) && !hasContentLength(headers) &&
                                     // HEAD responses MUST never carry a payload, adding chunked makes no sense and
                                     // breaks our HttpResponseDecoder
                                     !HEAD.equals(request.method())) {
