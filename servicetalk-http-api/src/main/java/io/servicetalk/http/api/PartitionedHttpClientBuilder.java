@@ -89,7 +89,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> requireTrailerHeader(boolean requireTrailerHeader);
+    public abstract PartitionedHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> autoRetryStrategy(

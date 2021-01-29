@@ -418,9 +418,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> requireTrailerHeader(
-            final boolean requireTrailerHeader) {
-        builderTemplate.requireTrailerHeader(requireTrailerHeader);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> allowDropResponseTrailers(
+            final boolean allowDrop) {
+        builderTemplate.allowDropResponseTrailers(allowDrop);
         return this;
     }
 

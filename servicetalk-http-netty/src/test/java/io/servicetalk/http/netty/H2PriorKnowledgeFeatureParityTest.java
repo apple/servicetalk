@@ -19,10 +19,12 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -107,6 +109,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -283,6 +286,138 @@ public class H2PriorKnowledgeFeatureParityTest {
             assertNotNull(cookie);
             assertEquals("value3", cookie.value());
         }
+    }
+
+    @Test
+    public void serverAllowDropTrailers() throws Exception {
+        serverAllowDropTrailers(true, false);
+    }
+
+    @Test
+    public void serverDoNotAllowDropTrailers() throws Exception {
+        serverAllowDropTrailers(false, false);
+    }
+
+    @Test
+    public void serverAllowDropTrailersClientTrailersHeader() throws Exception {
+        serverAllowDropTrailers(true, true);
+    }
+
+    @Test
+    public void serverDoNotAllowDropTrailersClientTrailersHeader() throws Exception {
+        serverAllowDropTrailers(false, true);
+    }
+
+    private void serverAllowDropTrailers(boolean allowDrop, boolean clientAddTrailerHeader) throws Exception {
+        String trailerName = "t1";
+        String trailerValue = "v1";
+        SingleSource.Processor<HttpHeaders, HttpHeaders> trailersProcessor = Processors.newSingleProcessor();
+        h1ServerContext = HttpServers.forAddress(localAddress(0))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .allowDropRequestTrailers(allowDrop)
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok().payloadBody(
+                    request.transformPayloadBody(buf -> buf) // intermediate Buffer transform may drop trailers
+                            .transform(new StatelessTrailersTransformer<Buffer>() {
+                                @Override
+                                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                                    trailersProcessor.onSuccess(trailers);
+                                    return trailers;
+                                }
+                            }).payloadBody())));
+        InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .allowDropResponseTrailers(allowDrop)
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpRequest request = client.get("/");
+            if (clientAddTrailerHeader) {
+                request.headers().add(TRAILER, trailerName);
+            }
+            request.trailers().add(trailerName, trailerValue);
+            client.request(request);
+            HttpHeaders requestTrailers = fromSource(trailersProcessor).toFuture().get();
+            if (allowDrop && !clientAddTrailerHeader) {
+                assertFalse(requestTrailers.contains(trailerName));
+            } else {
+                assertHeaderValue(requestTrailers, trailerName, trailerValue);
+            }
+        }
+    }
+
+    @Test
+    public void clientAllowDropTrailers() throws Exception {
+        clientAllowDropTrailers(true, false);
+    }
+
+    @Test
+    public void clientDoNotAllowDropTrailers() throws Exception {
+        clientAllowDropTrailers(false, false);
+    }
+
+    @Test
+    public void clientAllowDropTrailersServerTrailersHeader() throws Exception {
+        clientAllowDropTrailers(true, true);
+    }
+
+    @Test
+    public void clientDoNotAllowDropTrailersServerTrailersHeader() throws Exception {
+        clientAllowDropTrailers(false, true);
+    }
+
+    private void clientAllowDropTrailers(boolean allowDrop, boolean serverAddTrailerHeader) throws Exception {
+        String trailerName = "t1";
+        String trailerValue = "v1";
+        InetSocketAddress serverAddress = serverAddTrailerHeader ?
+                bindHttpEchoServerWithTrailer(trailerName) : bindHttpEchoServer();
+        try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .allowDropResponseTrailers(allowDrop)
+                .executionStrategy(clientExecutionStrategy).buildStreaming()) {
+            StreamingHttpResponse response = client.request(client.get("/")
+                    .transform(new StatelessTrailersTransformer<Buffer>() {
+                @Override
+                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                    trailers.add(trailerName, trailerValue);
+                    return trailers;
+                }
+            })).toFuture().get();
+            SingleSource.Processor<HttpHeaders, HttpHeaders> trailersProcessor = Processors.newSingleProcessor();
+            response.transformPayloadBody(buf -> buf) // intermediate Buffer transform may drop trailers
+                    .transform(new StatelessTrailersTransformer<Buffer>() {
+                        @Override
+                        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                            trailersProcessor.onSuccess(trailers);
+                            return trailers;
+                        }
+                    }).messageBody().ignoreElements().toFuture().get();
+            HttpHeaders responseTrailers = fromSource(trailersProcessor).toFuture().get();
+            if (allowDrop && !serverAddTrailerHeader) {
+                assertFalse(responseTrailers.contains(trailerName));
+            } else {
+                assertHeaderValue(responseTrailers, trailerName, trailerValue);
+            }
+        }
+    }
+
+    private InetSocketAddress bindHttpEchoServerWithTrailer(String trailerName) throws Exception {
+        return bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return delegate().handle(ctx, request, responseFactory)
+                        .map(response -> {
+                            response.headers().add(TRAILER, trailerName);
+                            return response;
+                        });
+            }
+        });
+    }
+
+    private static void assertHeaderValue(HttpHeaders headers, String key, String value) {
+        CharSequence v = headers.get(key);
+        assertNotNull(v);
+        assertThat(v.toString(), is(value));
     }
 
     @Test

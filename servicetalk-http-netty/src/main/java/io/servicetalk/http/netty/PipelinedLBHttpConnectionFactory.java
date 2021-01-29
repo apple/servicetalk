@@ -54,7 +54,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
         assert config.h1Config() != null;
         return buildStreaming(executionContext, resolvedAddress, config, observer)
                 .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,
-                        reqRespFactoryFunc.apply(HTTP_1_1), config.requireTrailerHeader()));
+                        reqRespFactoryFunc.apply(HTTP_1_1), config.allowDropTrailersReadFromTransport()));
     }
 
     @Override

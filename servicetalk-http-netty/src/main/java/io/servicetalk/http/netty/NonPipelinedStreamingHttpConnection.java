@@ -32,8 +32,8 @@ final class NonPipelinedStreamingHttpConnection
                                         final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpHeadersFactory headersFactory,
-                                        final boolean requireTrailerHeader) {
-        super(connection, 1, executionContext, reqRespFactory, headersFactory, requireTrailerHeader);
+                                        final boolean allowDropTrailersReadFromTransport) {
+        super(connection, 1, executionContext, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport);
     }
 
     @Override

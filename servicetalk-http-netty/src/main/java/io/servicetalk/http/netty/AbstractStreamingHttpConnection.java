@@ -62,13 +62,13 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
-    private final boolean requireTrailerHeader;
+    private final boolean allowDropTrailersReadFromTransport;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
                                     final HttpExecutionContext executionContext,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpHeadersFactory headersFactory,
-                                    final boolean requireTrailerHeader) {
+                                    final boolean allowDropTrailersReadFromTransport) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
         this.executionContext = requireNonNull(executionContext);
@@ -76,7 +76,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
         this.headersFactory = headersFactory;
-        this.requireTrailerHeader = requireTrailerHeader;
+        this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
 
     @Override
@@ -132,7 +132,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),
-                executionContext.bufferAllocator(), pub, requireTrailerHeader, headersFactory);
+                executionContext.bufferAllocator(), pub, allowDropTrailersReadFromTransport, headersFactory);
     }
 
     @Override

@@ -105,7 +105,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,
-                                                        boolean requireTrailerHeader) {
+                                                        boolean allowDropTrailersReadFromTransport) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
@@ -128,8 +128,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     initializer.init(channel);
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new DefaultH2ClientParentConnection(connection, subscriber,
-                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), requireTrailerHeader,
-                            config.headersFactory(), reqRespFactory, observer);
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline),
+                            allowDropTrailersReadFromTransport, config.headersFactory(), reqRespFactory, observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
                     deliverErrorFromSource(subscriber, cause);
@@ -155,7 +155,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final HttpHeadersFactory headersFactory;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
         private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor;
-        private final boolean requireTrailerHeader;
+        private final boolean allowDropTrailersReadFromTransport;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
         private MultiplexedObserver multiplexedObserver = NoopMultiplexedObserver.INSTANCE;
@@ -164,7 +164,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         Subscriber<? super H2ClientParentConnection> subscriber,
                                         DelayedCancellable delayedCancellable,
                                         boolean waitForSslHandshake,
-                                        boolean requireTrailerHeader,
+                                        boolean allowDropTrailersReadFromTransport,
                                         HttpHeadersFactory headersFactory,
                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                         ConnectionObserver observer) {
@@ -172,7 +172,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             this.subscriber = requireNonNull(subscriber);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
-            this.requireTrailerHeader = requireTrailerHeader;
+            this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
             maxConcurrencyProcessor = newPublisherProcessor(16);
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
@@ -251,11 +251,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     subscriber.onSubscribe(sequentialCancellable);
                     if (promise.isDone()) {
                         childChannelActive(promise, subscriber, sequentialCancellable, strategy, request, observer,
-                                requireTrailerHeader);
+                                allowDropTrailersReadFromTransport);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
                                 future, subscriber, sequentialCancellable, strategy, request, observer,
-                                requireTrailerHeader));
+                                allowDropTrailersReadFromTransport));
                     }
                 }
             };
@@ -267,7 +267,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         HttpExecutionStrategy strategy,
                                         StreamingHttpRequest request,
                                         StreamObserver streamObserver,
-                                        boolean requireTrailerHeader) {
+                                        boolean allowDropTrailersReadFromTransport) {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
@@ -300,7 +300,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
-                            executionContext(), reqRespFactory, headersFactory, requireTrailerHeader)
+                            executionContext(), reqRespFactory, headersFactory, allowDropTrailersReadFromTransport)
                             .request(strategy, request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {

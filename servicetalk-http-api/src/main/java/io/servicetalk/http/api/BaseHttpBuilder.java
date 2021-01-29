@@ -116,13 +116,16 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 
     /**
-     * Set if the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a> header is required to process
-     * trailers.
-     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
-     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * Provide a hint if response <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed
+     * to be dropped. This hint maybe ignored if the transport can otherwise infer that
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> should be preserved. For example, if the
+     * response headers contain <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a> then this hint
+     * maybe ignored.
+     * @param allowDrop {@code true} if response
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed to be dropped.
      * @return {@code this}
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> requireTrailerHeader(boolean requireTrailerHeader);
+    public abstract BaseHttpBuilder<ResolvedAddress> allowDropResponseTrailers(boolean allowDrop);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

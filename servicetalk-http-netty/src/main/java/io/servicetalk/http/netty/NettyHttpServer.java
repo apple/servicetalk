@@ -161,8 +161,8 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody, config.requireTrailerHeader())),
-                HTTP_1_1, channel);
+                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
+                        config.allowDropTrailersReadFromTransport())), HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,

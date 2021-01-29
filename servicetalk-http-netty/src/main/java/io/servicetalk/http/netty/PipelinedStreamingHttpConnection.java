@@ -31,10 +31,10 @@ final class PipelinedStreamingHttpConnection
                                      final H1ProtocolConfig config,
                                      final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
-                                     final boolean requireTrailerHeader) {
+                                     final boolean allowDropTrailersReadFromTransport) {
         super(new NettyPipelinedConnection<>(connection),
                 config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory(),
-                requireTrailerHeader);
+                allowDropTrailersReadFromTransport);
     }
 
     @Override

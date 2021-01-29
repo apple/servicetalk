@@ -478,8 +478,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> requireTrailerHeader(final boolean requireTrailerHeader) {
-        config.protocolConfigs().requireTrailerHeader(requireTrailerHeader);
+    public SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
+        config.protocolConfigs().allowDropTrailersReadFromTransport(allowDrop);
         return this;
     }
 

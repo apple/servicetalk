@@ -306,8 +306,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> requireTrailerHeader(final boolean requireTrailerHeader) {
-        builderTemplate.requireTrailerHeader(requireTrailerHeader);
+    public PartitionedHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
+        builderTemplate.allowDropResponseTrailers(allowDrop);
         return this;
     }
 

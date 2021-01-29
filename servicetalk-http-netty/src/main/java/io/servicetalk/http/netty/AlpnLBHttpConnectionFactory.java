@@ -83,7 +83,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             NoopChannelInitializer.INSTANCE, connectionObserver)
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
-                                    config.requireTrailerHeader()));
+                                    config.allowDropTrailersReadFromTransport()));
                 case HTTP_2:
                     final H2ProtocolConfig h2Config = this.config.h2Config();
                     assert h2Config != null;
@@ -92,7 +92,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                             h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
                             tcpConfig.idleTimeoutMs(), executionContext.executionStrategy(),
                             new H2ClientParentChannelInitializer(h2Config), connectionObserver,
-                            config.requireTrailerHeader());
+                            config.allowDropTrailersReadFromTransport());
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }

@@ -98,8 +98,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder requireTrailerHeader(final boolean requireTrailerHeader) {
-        config.httpConfig().requireTrailerHeader(requireTrailerHeader);
+    public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
+        config.httpConfig().allowDropTrailersReadFromTransport(allowDrop);
         return this;
     }
 

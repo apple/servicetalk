@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class DefaultPayloadInfo implements PayloadInfo {
     private static final byte SAFE_TO_AGGREGATE = 1;
@@ -75,8 +76,8 @@ final class DefaultPayloadInfo implements PayloadInfo {
      */
     static DefaultPayloadInfo forTransportReceive(boolean requireTrailerHeader, HttpProtocolVersion version,
                                                   HttpHeaders headers) {
-        return new DefaultPayloadInfo().setMayHaveTrailers((version.major() > 1 ||
-                (version.major() == 1 && version.minor() > 0 && isTransferEncodingChunked(headers))) &&
+        return new DefaultPayloadInfo().setMayHaveTrailers(
+                (version.major() > 1 || (version == HTTP_1_1 && isTransferEncodingChunked(headers))) &&
                 (!requireTrailerHeader || headers.contains(TRAILER)));
     }
 
