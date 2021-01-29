@@ -185,9 +185,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<Merger> stateUpdater = newUpdater(Merger.class, "state");
         private static final int PUBLISHER_TERMINATED = 1;
-        private static final int COMPLETABLE_TERMINATED = 1 << 2;
-        private static final int COMPLETABLE_ERROR = 1 << 3;
-        private static final int IN_ON_NEXT = 1 << 4;
+        private static final int COMPLETABLE_TERMINATED = 2;
+        private static final int COMPLETABLE_ERROR = 4;
+        private static final int IN_ON_NEXT = 8;
         private static final int ALL_TERMINATED = PUBLISHER_TERMINATED | COMPLETABLE_TERMINATED;
         private static final int COMPLETABLE_ALL_TERM = ALL_TERMINATED | COMPLETABLE_ERROR;
         private final CompletableSubscriber completableSubscriber;
@@ -234,22 +234,22 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             for (;;) {
                 final int currState = state;
                 int newState;
-                if (allBitsSet(currState, ALL_TERMINATED)) {
+                if (isState(currState, ALL_TERMINATED)) {
                     // If downstream subscriber has been terminated, we can't deliver any more signals.
                     break;
-                } else if (allBitsSet(currState, COMPLETABLE_TERMINATED)) {
+                } else if (isState(currState, COMPLETABLE_TERMINATED)) {
                     // No need to acquire lock if the Completable has terminated, there will be no concurrency.
                     offloadedSubscriber.onNext(t);
                     break;
                 } else if (stateUpdater.compareAndSet(this, currState,
-                        (newState = setAllBits(currState, IN_ON_NEXT)))) {
+                        (newState = setState(currState, IN_ON_NEXT)))) {
                     try {
                         offloadedSubscriber.onNext(t);
                     } finally {
                         // Only attempt unlock if this method invocation acquired the lock. If this call is re-entry we
                         // don't want to unlock.
-                        if (!allBitsSet(currState, IN_ON_NEXT) &&
-                                !stateUpdater.compareAndSet(this, newState, clearAllBits(newState, IN_ON_NEXT))) {
+                        if (!isState(currState, IN_ON_NEXT) &&
+                                !stateUpdater.compareAndSet(this, newState, clearState(newState, IN_ON_NEXT))) {
                             onNextUnLockFail();
                         }
                     }
@@ -261,11 +261,11 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         private void onNextUnLockFail() {
             for (;;) {
                 final int currState = state;
-                if (allBitsSet(currState, COMPLETABLE_ERROR)) {
+                if (isState(currState, COMPLETABLE_ERROR)) {
                     assert completableError != null;
                     offloadedSubscriber.onError(completableError);
                     break;
-                } else if (stateUpdater.compareAndSet(this, currState, clearAllBits(currState, IN_ON_NEXT))) {
+                } else if (stateUpdater.compareAndSet(this, currState, clearState(currState, IN_ON_NEXT))) {
                     // Clear the state because we may have re-entry terminated with onComplete and if the Completable
                     // fails in the future it should propagate the failure.
                     break;
@@ -277,12 +277,12 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         public void onError(Throwable t) {
             for (;;) {
                 final int currState = state;
-                if (allBitsSet(currState, PUBLISHER_TERMINATED)) {
+                if (isState(currState, PUBLISHER_TERMINATED)) {
                     // If Publisher is terminated that means the Completable propagated an onError
                     break;
-                } else if (stateUpdater.compareAndSet(this, currState, setAllBits(currState, ALL_TERMINATED))) {
+                } else if (stateUpdater.compareAndSet(this, currState, setState(currState, ALL_TERMINATED))) {
                     try {
-                        if (!allBitsSet(currState, COMPLETABLE_TERMINATED)) {
+                        if (!isState(currState, COMPLETABLE_TERMINATED)) {
                             completableSubscriber.cancel();
                         }
                     } finally {
@@ -297,11 +297,11 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         public void onComplete() {
             for (;;) {
                 final int currState = state;
-                if (allBitsSet(currState, PUBLISHER_TERMINATED)) {
+                if (isState(currState, PUBLISHER_TERMINATED)) {
                     // If Publisher is terminated that means the Completable propagated an onError
                     break;
-                } else if (stateUpdater.compareAndSet(this, currState, setAllBits(currState, PUBLISHER_TERMINATED))) {
-                    if (allBitsSet(currState, COMPLETABLE_TERMINATED)) {
+                } else if (stateUpdater.compareAndSet(this, currState, setState(currState, PUBLISHER_TERMINATED))) {
+                    if (isState(currState, COMPLETABLE_TERMINATED)) {
                         offloadedSubscriber.onComplete();
                     }
                     break;
@@ -309,16 +309,16 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             }
         }
 
-        private static boolean allBitsSet(int mask, int bitsToCheck) {
-            return (mask & bitsToCheck) == bitsToCheck;
+        private static boolean isState(int state, int stateToCheck) {
+            return (state & stateToCheck) == stateToCheck;
         }
 
-        private static int clearAllBits(int mask, int bitsToClear) {
-            return mask & ~bitsToClear;
+        private static int clearState(int state, int stateToClear) {
+            return state & ~stateToClear;
         }
 
-        private static int setAllBits(int mask, int bitsToSet) {
-            return mask | bitsToSet;
+        private static int setState(int state, int stateToSet) {
+            return state | stateToSet;
         }
 
         private final class CompletableSubscriber extends DelayedCancellable implements CompletableSource.Subscriber {
@@ -331,12 +331,12 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             public void onComplete() {
                 for (;;) {
                     final int currState = state;
-                    if (allBitsSet(currState, COMPLETABLE_TERMINATED)) {
+                    if (isState(currState, COMPLETABLE_TERMINATED)) {
                         // If Completable is terminated that means the Publisher propagated an onError
                         break;
                     } else if (stateUpdater.compareAndSet(Merger.this, currState,
-                            setAllBits(currState, COMPLETABLE_TERMINATED))) {
-                        if (allBitsSet(currState, PUBLISHER_TERMINATED)) {
+                            setState(currState, COMPLETABLE_TERMINATED))) {
+                        if (isState(currState, PUBLISHER_TERMINATED)) {
                             // This CompletableSource.Subscriber will be notified on the correct Executor, but we need
                             // to use the same offloaded Subscriber as the Publisher to ensure that all events are
                             // sequenced properly.
@@ -353,17 +353,17 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                 completableError = t;
                 for (;;) {
                     final int currState = state;
-                    if (allBitsSet(currState, COMPLETABLE_TERMINATED)) {
+                    if (isState(currState, COMPLETABLE_TERMINATED)) {
                         // If Completable is terminated that means the Publisher propagated an onError
                         break;
                     } else if (stateUpdater.compareAndSet(Merger.this, currState,
-                            setAllBits(currState, COMPLETABLE_ALL_TERM))) {
+                            setState(currState, COMPLETABLE_ALL_TERM))) {
                         try {
-                            if (!allBitsSet(currState, PUBLISHER_TERMINATED)) {
+                            if (!isState(currState, PUBLISHER_TERMINATED)) {
                                 subscription.cancel();
                             }
                         } finally {
-                            if (!allBitsSet(currState, IN_ON_NEXT)) {
+                            if (!isState(currState, IN_ON_NEXT)) {
                                 // This CompletableSource.Subscriber will be notified on the correct Executor, but we
                                 // need to use the same offloaded Subscriber as the Publisher to ensure that all events
                                 // are sequenced properly.
