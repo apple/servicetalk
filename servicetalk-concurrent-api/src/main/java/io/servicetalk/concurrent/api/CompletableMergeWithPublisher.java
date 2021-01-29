@@ -241,8 +241,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                     // No need to acquire lock if the Completable has terminated, there will be no concurrency.
                     offloadedSubscriber.onNext(t);
                     break;
-                } else if (stateUpdater.compareAndSet(this, currState,
-                        (newState = setState(currState, IN_ON_NEXT)))) {
+                } else if (stateUpdater.compareAndSet(this, currState, (newState = setState(currState, IN_ON_NEXT)))) {
                     try {
                         offloadedSubscriber.onNext(t);
                     } finally {
