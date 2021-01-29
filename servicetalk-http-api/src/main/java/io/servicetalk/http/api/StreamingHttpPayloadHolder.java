@@ -70,23 +70,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     @SuppressWarnings("unchecked")
     Publisher<Buffer> payloadBody() {
-        return messageBody == null ? empty() :
-                payloadInfo.mayHaveTrailers() || !payloadInfo.onlyEmitsBuffer() ?
-                        messageBody.liftSync(HttpTransportBufferFilterOperator.INSTANCE) :
-                        (Publisher<Buffer>) messageBody;
-    }
-
-    @Deprecated
-    Publisher<Object> payloadBodyAndTrailers() {
-        if (messageBody != null && payloadInfo.mayHaveTrailers()) {
-            final Publisher<?> oldMessageBody = messageBody;
-            return defer(() -> {
-                Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                return mergeEnsureTrailers(oldMessageBody.liftSync(new PreserveTrailersOperator(trailersProcessor)),
-                        fromSource(trailersProcessor), headersFactory).subscribeShareContext();
-            });
-        }
-        return messageBody();
+        return messageBody == null ? empty() : !payloadInfo.isGenericTypeBuffer() || payloadInfo.mayHaveTrailers() ?
+                messageBody.liftSync(HttpTransportBufferFilterOperator.INSTANCE) : (Publisher<Buffer>) messageBody;
     }
 
     @SuppressWarnings("unchecked")
@@ -97,7 +82,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     void payloadBody(final Publisher<Buffer> payloadBody) {
         if (messageBody == null) {
             messageBody = requireNonNull(payloadBody);
-            payloadInfo.setOnlyEmitsBuffer(true);
+            payloadInfo.setGenericTypeBuffer(true);
         } else if (payloadInfo.mayHaveTrailers()) {
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
@@ -108,7 +93,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             });
         } else {
             messageBody = payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(messageBody));
-            payloadInfo.setOnlyEmitsBuffer(true);
+            payloadInfo.setGenericTypeBuffer(true);
         }
     }
 
@@ -121,7 +106,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     void transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
-        if (messageBody != null && payloadInfo.mayHaveTrailers()) {
+        if (payloadInfo.mayHaveTrailers()) {
+            assert messageBody != null;
             final Publisher<?> oldMessageBody = messageBody;
             messageBody = defer(() -> {
                 Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
@@ -131,97 +117,67 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             });
         } else {
             messageBody = requireNonNull(transformer.apply(payloadBody()));
-            payloadInfo.setOnlyEmitsBuffer(true);
-        }
-    }
-
-    @Deprecated
-    void transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
-        payloadInfo.setOnlyEmitsBuffer(false); // We lose type information and cannot guarantee emitting buffers.
-        payloadInfo.setMayHaveTrailers(true); // We don't know if the user will insert trailers or not, assume they may.
-        if (messageBody != null && payloadInfo.mayHaveTrailers()) {
-            final Publisher<?> oldMessageBody = messageBody;
-            messageBody = defer(() -> {
-                Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
-                return merge(transformer.apply(oldMessageBody.liftSync(
-                        new PreserveTrailersOperator(trailersProcessor))), fromSource(trailersProcessor))
-                        .subscribeShareContext();
-            });
-        } else {
-            // It is possible the resulting transformed publisher contains a trailers object, but this is not supported
-            // by this API. Instead use the designated trailers transform methods.
-            messageBody = transformer.apply(messageBody());
+            payloadInfo.setGenericTypeBuffer(true);
         }
     }
 
     void transformMessageBody(UnaryOperator<Publisher<?>> transformer) {
-        payloadInfo.setOnlyEmitsBuffer(false); // We lose type information and cannot guarantee emitting buffers.
-        // The transformation does not support changing the presence of trailers in the message body.
+        // The transformation does not support changing the presence of trailers in the message body or the type of
+        // Publisher (e.g. payloadInfo assumed not impacted).
         messageBody = transformer.apply(messageBody());
     }
 
     <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
-        transformWithTrailersUnchecked(trailersTransformer, o -> (Buffer) o);
-    }
-
-    @Deprecated
-    <T> void transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
-        payloadInfo.setOnlyEmitsBuffer(false); // We lose type information and cannot guarantee emitting buffers.
-        transformWithTrailersUnchecked(trailersTransformer, identity());
-    }
-
-    Single<PayloadAndTrailers> aggregate() {
-        payloadInfo.setSafeToAggregate(true);
-        return aggregatePayloadAndTrailers(messageBody(), allocator);
-    }
-
-    private <T, P> void transformWithTrailersUnchecked(final TrailersTransformer<T, P> trailersTransformer,
-                                                       final Function<Object, P> caster) {
         if (h1TrailersSupported) {
             // This transform adds trailers, and for http/1.1 we need `transfer-encoding: chunked` not `content-length`.
             addChunkedEncoding(headers);
         }
-        payloadInfo.setMayHaveTrailers(true);
         if (messageBody == null) {
             messageBody = from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
                     headersFactory.newEmptyTrailers()));
         } else {
             messageBody = messageBody.scanWith(() -> new ScanWithMapper<Object, Object>() {
-                        @Nullable
-                        private final T state = trailersTransformer.newState();
-                        @Nullable
-                        private HttpHeaders trailers;
+                @Nullable
+                private final T state = trailersTransformer.newState();
+                @Nullable
+                private HttpHeaders trailers;
 
-                        @Override
-                        public Object mapOnNext(@Nullable final Object next) {
-                            if (next instanceof HttpHeaders) {
-                                if (trailers != null) {
-                                    throwDuplicateTrailersException(trailers, next);
-                                }
-                                trailers = (HttpHeaders) next;
-                                return trailersTransformer.payloadComplete(state, trailers);
-                            } else if (trailers != null) {
-                                throwOnNextAfterTrailersException(trailers, next);
-                            }
-                            return trailersTransformer.accept(state, caster.apply(requireNonNull(next)));
+                @Override
+                public Object mapOnNext(@Nullable final Object next) {
+                    if (next instanceof HttpHeaders) {
+                        if (trailers != null) {
+                            throwDuplicateTrailersException(trailers, next);
                         }
+                        trailers = (HttpHeaders) next;
+                        return trailersTransformer.payloadComplete(state, trailers);
+                    } else if (trailers != null) {
+                        throwOnNextAfterTrailersException(trailers, next);
+                    }
+                    return trailersTransformer.accept(state, (Buffer) requireNonNull(next));
+                }
 
-                        @Override
-                        public Object mapOnError(final Throwable t) throws Throwable {
-                            return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
-                        }
+                @Override
+                public Object mapOnError(final Throwable t) throws Throwable {
+                    return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
+                }
 
-                        @Override
-                        public Object mapOnComplete() {
-                            return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
-                        }
+                @Override
+                public Object mapOnComplete() {
+                    return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
+                }
 
-                        @Override
-                        public boolean mapTerminal() {
-                            return trailers == null;
-                        }
-                    });
+                @Override
+                public boolean mapTerminal() {
+                    return trailers == null;
+                }
+            });
         }
+        payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
+    }
+
+    Single<PayloadAndTrailers> aggregate() {
+        payloadInfo.setSafeToAggregate(true);
+        return aggregatePayloadAndTrailers(messageBody(), allocator);
     }
 
     @Override
@@ -235,8 +191,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     @Override
-    public boolean onlyEmitsBuffer() {
-        return payloadInfo.onlyEmitsBuffer();
+    public boolean isGenericTypeBuffer() {
+        return payloadInfo.isGenericTypeBuffer();
     }
 
     BufferAllocator allocator() {
@@ -310,12 +266,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
     }
 
-    private static Publisher<Object> mergeEnsureTrailers(Publisher<?> p, Single<HttpHeaders> s,
-                                                         HttpHeadersFactory headersFactory) {
-        return from(p, s.map(t -> t == null ? headersFactory.newEmptyTrailers() : t).toPublisher())
-                .flatMapMerge(identity(), 2);
-    }
-
     private static final class PreserveTrailersBufferOperator implements PublisherOperator<Object, Buffer> {
         private final Processor<HttpHeaders, HttpHeaders> trailersProcessor;
 
@@ -329,10 +279,21 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             return new PreserveTrailersBufferSubscriber(subscriber, trailersProcessor);
         }
 
-        private static final class PreserveTrailersBufferSubscriber extends AbstractPreserveTrailersSubscriber<Buffer> {
+        private static final class PreserveTrailersBufferSubscriber implements Subscriber<Object> {
+            private final Subscriber<? super Buffer> target;
+            private final Processor<HttpHeaders, HttpHeaders> trailersProcessor;
+            @Nullable
+            private HttpHeaders trailers;
+
             PreserveTrailersBufferSubscriber(final Subscriber<? super Buffer> target,
                                              final Processor<HttpHeaders, HttpHeaders> trailersProcessor) {
-                super(target, trailersProcessor);
+                this.target = target;
+                this.trailersProcessor = trailersProcessor;
+            }
+
+            @Override
+            public void onSubscribe(final PublisherSource.Subscription subscription) {
+                target.onSubscribe(subscription);
             }
 
             @Override
@@ -350,81 +311,26 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                     throw new UnsupportedHttpChunkException(o);
                 }
             }
-        }
-    }
 
-    private static final class PreserveTrailersOperator implements PublisherOperator<Object, Object> {
-        private final Processor<HttpHeaders, HttpHeaders> trailersProcessor;
-        PreserveTrailersOperator(Processor<HttpHeaders, HttpHeaders> trailersProcessor) {
-            this.trailersProcessor = trailersProcessor;
-        }
-
-        @Override
-        public Subscriber<? super Object> apply(
-                final Subscriber<? super Object> subscriber) {
-            return new PreserveTrailersSubscriber(subscriber, trailersProcessor);
-        }
-
-        private static final class PreserveTrailersSubscriber extends AbstractPreserveTrailersSubscriber<Object> {
-            PreserveTrailersSubscriber(final Subscriber<? super Object> target,
-                                       final Processor<HttpHeaders, HttpHeaders> trailersProcessor) {
-                super(target, trailersProcessor);
+            @Override
+            public void onError(final Throwable t) {
+                try {
+                    trailersProcessor.onError(t);
+                } finally {
+                    target.onError(t);
+                }
             }
 
             @Override
-            public void onNext(final Object o) {
-                if (o instanceof HttpHeaders) {
-                    if (trailers != null) {
-                        throwDuplicateTrailersException(trailers, o);
+            public void onComplete() {
+                try {
+                    if (trailers == null) {
+                        // We didn't find any trailers, terminate with null which will be filtered above in merge(..).
+                        trailersProcessor.onSuccess(null);
                     }
-                    trailers = (HttpHeaders) o;
-                    trailersProcessor.onSuccess(trailers);
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                } else {
-                    target.onNext(o);
+                } finally {
+                    target.onComplete();
                 }
-            }
-        }
-    }
-
-    private abstract static class AbstractPreserveTrailersSubscriber<T> implements Subscriber<Object> {
-        final Subscriber<? super T> target;
-        final Processor<HttpHeaders, HttpHeaders> trailersProcessor;
-        @Nullable
-        HttpHeaders trailers;
-
-        AbstractPreserveTrailersSubscriber(final Subscriber<? super T> target,
-                                           final Processor<HttpHeaders, HttpHeaders> trailersProcessor) {
-            this.target = target;
-            this.trailersProcessor = trailersProcessor;
-        }
-
-        @Override
-        public final void onSubscribe(final PublisherSource.Subscription subscription) {
-            target.onSubscribe(subscription);
-        }
-
-        @Override
-        public abstract void onNext(Object o);
-
-        @Override
-        public final void onError(final Throwable t) {
-            try {
-                trailersProcessor.onError(t);
-            } finally {
-                target.onError(t);
-            }
-        }
-
-        @Override
-        public final void onComplete() {
-            try {
-                if (trailers == null) {
-                    // We didn't find any trailers, terminate with null which will be filtered above in merge(..).
-                    trailersProcessor.onSuccess(null);
-                }
-            } finally {
-                target.onComplete();
             }
         }
     }

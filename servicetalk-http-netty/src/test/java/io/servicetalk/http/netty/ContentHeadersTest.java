@@ -130,7 +130,6 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(GET), contentLength(), HAVE_EXISTING_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequestAsStreaming(GET), transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new RequestTest(aggregatedRequestAsStreaming(GET), transformRaw(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
 
@@ -180,8 +179,6 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponse(OK), GET, trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(aggregatedResponse(INTERNAL_SERVER_ERROR), CONNECT, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponseAsStreaming(OK), GET, transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new ResponseTest(aggregatedResponseAsStreaming(OK), GET, transformRaw(),
-                        HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(streamingResponse(OK), GET, defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
 
@@ -300,19 +297,6 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 throw new IllegalStateException();
             }
         }, "Transform");
-    }
-
-    private static UnaryOperator<HttpMetaData> transformRaw() {
-        return describe(input -> {
-            if (input instanceof StreamingHttpRequest) {
-                return ((StreamingHttpRequest) input).transformRaw(new StatelessTrailersTransformer<>());
-            } else if (input instanceof StreamingHttpResponse) {
-                return ((StreamingHttpResponse) input).transformRaw(new StatelessTrailersTransformer<>());
-            } else {
-                fail("Unexpected metadata type: " + input.getClass());
-                throw new IllegalStateException();
-            }
-        }, "TransformRaw");
     }
 
     @Test

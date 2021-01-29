@@ -56,8 +56,8 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     }
 
     @Override
-    public boolean onlyEmitsBuffer() {
-        return original.onlyEmitsBuffer();
+    public boolean isGenericTypeBuffer() {
+        return original.isGenericTypeBuffer();
     }
 
     @Override

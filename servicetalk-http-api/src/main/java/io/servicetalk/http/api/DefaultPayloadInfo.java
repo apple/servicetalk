@@ -22,7 +22,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 final class DefaultPayloadInfo implements PayloadInfo {
     private static final byte SAFE_TO_AGGREGATE = 1;
     private static final byte MAY_HAVE_TRAILERS = 2;
-    private static final byte ONLY_EMIT_BUFFERS = 4;
+    private static final byte GENERIC_TYPE_BUFFER = 4;
 
     private byte flags;
 
@@ -35,7 +35,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
         } else {
             setSafeToAggregate(from.isSafeToAggregate());
             setMayHaveTrailers(from.mayHaveTrailers());
-            setOnlyEmitsBuffer(from.onlyEmitsBuffer());
+            setGenericTypeBuffer(from.isGenericTypeBuffer());
         }
     }
 
@@ -50,8 +50,8 @@ final class DefaultPayloadInfo implements PayloadInfo {
     }
 
     @Override
-    public boolean onlyEmitsBuffer() {
-        return isSet(ONLY_EMIT_BUFFERS);
+    public boolean isGenericTypeBuffer() {
+        return isSet(GENERIC_TYPE_BUFFER);
     }
 
     DefaultPayloadInfo setSafeToAggregate(boolean safeToAggregate) {
@@ -62,8 +62,17 @@ final class DefaultPayloadInfo implements PayloadInfo {
         return set(MAY_HAVE_TRAILERS, mayHaveTrailers);
     }
 
-    DefaultPayloadInfo setOnlyEmitsBuffer(boolean onlyEmitsBuffer) {
-        return set(ONLY_EMIT_BUFFERS, onlyEmitsBuffer);
+    DefaultPayloadInfo setGenericTypeBuffer(boolean genericTypeBuffer) {
+        return set(GENERIC_TYPE_BUFFER, genericTypeBuffer);
+    }
+
+    DefaultPayloadInfo setMayHaveTrailersAndGenericTypeBuffer(boolean mayHaveTrailers) {
+        if (mayHaveTrailers) {
+            flags = (byte) ((flags | MAY_HAVE_TRAILERS) & ~GENERIC_TYPE_BUFFER);
+        } else {
+            flags = (byte) ((flags | GENERIC_TYPE_BUFFER) & ~MAY_HAVE_TRAILERS);
+        }
+        return this;
     }
 
     /**
@@ -86,7 +95,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
      * @return A new {@link PayloadInfo} representing an HTTP message created by a user.
      */
     static DefaultPayloadInfo forUserCreated() {
-        return new DefaultPayloadInfo().setOnlyEmitsBuffer(true);
+        return new DefaultPayloadInfo().setGenericTypeBuffer(true);
     }
 
     private boolean isSet(byte expected) {
