@@ -164,6 +164,18 @@ public abstract class HttpServerBuilder {
     }
 
     /**
+     * Provide a hint if request <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> are allowed to
+     * be dropped. This hint maybe ignored if the transport can otherwise infer that the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a> should be preserved. For example, if the
+     * request headers contain <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * then this hint maybe ignored.
+     * @param allowDrop {@code true} if request <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailers</a>
+     * are allowed to be dropped.
+     * @return {@code this}
+     */
+    public abstract HttpServerBuilder allowDropRequestTrailers(boolean allowDrop);
+
+    /**
      * Appends the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

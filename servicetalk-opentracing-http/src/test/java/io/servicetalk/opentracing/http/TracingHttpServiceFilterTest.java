@@ -230,7 +230,7 @@ public class TracingHttpServiceFilterTest {
                     LOGGER.debug(logLinePrefix[0], request.path());
                     return delegate().handle(ctx, request, responseFactory).map(response -> {
                         LOGGER.debug(logLinePrefix[1], request.path());
-                        return response.transformRawPayloadBody(payload -> {
+                        return response.transformMessageBody(payload -> {
                             LOGGER.debug(logLinePrefix[2], request.path());
                             return payload.beforeSubscriber(() -> new PublisherSource.Subscriber<Object>() {
                                 @Override

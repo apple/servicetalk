@@ -79,9 +79,9 @@ import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_NEIT
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_TRANSFER_ENCODING_CHUNKED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.UnaryOperator.identity;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)

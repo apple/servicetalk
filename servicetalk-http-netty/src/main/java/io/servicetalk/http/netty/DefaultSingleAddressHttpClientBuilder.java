@@ -478,6 +478,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
+        config.protocolConfigs().allowDropTrailersReadFromTransport(allowDrop);
+        return this;
+    }
+
+    @Override
     public SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :

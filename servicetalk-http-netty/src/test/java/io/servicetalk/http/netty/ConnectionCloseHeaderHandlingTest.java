@@ -176,7 +176,15 @@ public class ConnectionCloseHeaderHandlingTest {
                             }
                             if (!noResponseContent) {
                                 // Defer payload body to see how client-side processes "Connection: close" header
-                                responseReceived.await();
+                                boolean done = false;
+                                do {
+                                    try {
+                                        responseReceived.await();
+                                        done = true;
+                                    } catch (InterruptedException interruptedException) {
+                                        // ignored
+                                    }
+                                } while (!done);
                             }
                             writer.write(content);
                         }

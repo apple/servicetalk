@@ -43,10 +43,9 @@ public final class StreamingHttpRequests {
      */
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator,
-            final HttpHeadersFactory headersFactory) {
+            final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, allocator, null,
-                forUserCreated(headers), headersFactory);
+                forUserCreated(), headersFactory);
     }
 
     /**
@@ -62,14 +61,16 @@ public final class StreamingHttpRequests {
      * @param allocator the allocator used for serialization purposes if necessary.
      * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
      * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
      */
     public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator,
-            final Publisher<Object> payload, final HttpHeadersFactory headersFactory) {
+            final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
+            final boolean requireTrailerHeader, final HttpHeadersFactory headersFactory) {
         return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, null, allocator, payload,
-                forTransportReceive(headers), headersFactory);
+                forTransportReceive(requireTrailerHeader, version, headers), headersFactory);
     }
 }

@@ -91,8 +91,7 @@ final class AlpnServerContext {
                             NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
                 case HTTP_2:
                     return H2ServerParentConnectionContext.initChannel(listenAddress, channel, httpExecutionContext,
-                            config, NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody,
-                            observer);
+                            config, NoopChannelInitializer.INSTANCE, service, drainRequestPayloadBody, observer);
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }

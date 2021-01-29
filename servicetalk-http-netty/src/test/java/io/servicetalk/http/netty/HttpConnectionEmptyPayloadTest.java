@@ -98,7 +98,7 @@ public class HttpConnectionEmptyPayloadTest {
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
             // Drain the current response content so we will be able to read the next response.
-            response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+            response.messageBody().ignoreElements().toFuture().get();
 
             response = awaitIndefinitelyNonNull(response2Single);
             assertEquals(OK, response.status());
@@ -117,7 +117,7 @@ public class HttpConnectionEmptyPayloadTest {
             contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-            response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+            response.messageBody().ignoreElements().toFuture().get();
         }
     }
 }

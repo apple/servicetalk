@@ -88,7 +88,6 @@ import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -162,7 +161,8 @@ final class NettyHttpServer {
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
+                        HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
+                        config.allowDropTrailersReadFromTransport())), HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
@@ -230,13 +230,15 @@ final class NettyHttpServer {
         private final HttpExecutionContext executionContext;
         private final SplittingFlushStrategy splittingFlushStrategy;
         private final boolean drainRequestPayloadBody;
+        private final boolean requireTrailerHeader;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
                                   final HttpExecutionStrategy strategy,
                                   final HttpProtocolVersion version,
                                   final HttpHeadersFactory headersFactory,
-                                  final boolean drainRequestPayloadBody) {
+                                  final boolean drainRequestPayloadBody,
+                                  final boolean requireTrailerHeader) {
             super(headersFactory,
                     new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator(),
                             version),
@@ -263,6 +265,7 @@ final class NettyHttpServer {
                     });
             connection.updateFlushStrategy((current, isCurrentOriginal) -> splittingFlushStrategy);
             this.drainRequestPayloadBody = drainRequestPayloadBody;
+            this.requireTrailerHeader = requireTrailerHeader;
         }
 
         void process(final boolean handleMultipleRequests) {
@@ -271,7 +274,7 @@ final class NettyHttpServer {
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
                                     newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
                                             meta.headers(), executionContext().bufferAllocator(), payload,
-                                            headersFactory)));
+                                            requireTrailerHeader, headersFactory)));
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
                     .subscribe(new ErrorLoggingHttpSubscriber());
         }
@@ -295,7 +298,7 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
-                final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
+                final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
@@ -353,7 +356,7 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
-                                    completed() : request.payloadBodyAndTrailers().ignoreElements()
+                                    completed() : request.messageBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
@@ -369,16 +372,12 @@ final class NettyHttpServer {
         @Nonnull
         private static Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
                                                         final StreamingHttpResponse response) {
-            // Add the content-length if necessary, falling back to transfer-encoding
-            // otherwise.
+            // Add the content-length if necessary, falling back to transfer-encoding otherwise.
             if (canAddResponseContentLength(response, requestMethod)) {
                 return setResponseContentLength(response);
             } else {
-                Publisher<Object> flatResponse = Publisher.<Object>from(response)
-                        .concat(response.payloadBodyAndTrailers());
-                if (!mayHaveTrailers(response)) {
-                    flatResponse = flatResponse.concat(succeeded(EmptyHttpHeaders.INSTANCE));
-                }
+                final Publisher<Object> flatResponse = Publisher.<Object>from(response).concat(response.messageBody())
+                        .scanWith(HeaderUtils::insertTrailersMapper);
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }

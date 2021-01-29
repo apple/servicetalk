@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Publisher;
  * {@link StreamingHttpResponse}.
  */
 interface PayloadInfo {
-
     /**
      * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be safely
      * aggregated to bring all data in memory. Inputs to this decision is left to the user of the API.
@@ -44,10 +43,11 @@ interface PayloadInfo {
 
     /**
      * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} will only
-     * emit {@link Buffer}s.
-     *
+     * emit {@link Buffer}s (independent of trailers).
+     * @deprecated "raw" payload type support will be removed in future releases.
      * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} will only
-     * emit {@link Buffer}s.
+     * emit {@link Buffer}s (independent of trailers).
      */
+    @Deprecated
     boolean onlyEmitsBuffer();
 }

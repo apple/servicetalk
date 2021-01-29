@@ -16,9 +16,10 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
+import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 
 final class DefaultPayloadInfo implements PayloadInfo {
-
     private static final byte SAFE_TO_AGGREGATE = 1;
     private static final byte MAY_HAVE_TRAILERS = 2;
     private static final byte ONLY_EMIT_BUFFERS = 4;
@@ -67,27 +68,25 @@ final class DefaultPayloadInfo implements PayloadInfo {
 
     /**
      * Construct a new {@link PayloadInfo} to represent an HTTP message read from the transport.
-     *
-     * @param httpHeaders {@link HttpHeaders} for an HTTP message read from the transport.
+     * @param requireTrailerHeader {@code true} if <a href="https://tools.ietf.org/html/rfc7230#section-4.4">Trailer</a>
+     * header is required to accept trailers. {@code false} assumes trailers may be present if other criteria allows.
+     * @param version The {@link HttpProtocolVersion} associated with the message body.
+     * @param headers The {@link HttpHeaders} associated with the message body.
      * @return A new {@link PayloadInfo} representing an HTTP message read from the transport.
      */
-    static DefaultPayloadInfo forTransportReceive(HttpHeaders httpHeaders) {
-        return newInfoUsingHeaders(httpHeaders);
+    static DefaultPayloadInfo forTransportReceive(boolean requireTrailerHeader, HttpProtocolVersion version,
+                                                  HttpHeaders headers) {
+        return new DefaultPayloadInfo().setMayHaveTrailers(
+                (version.major() > 1 || (h1TrailersSupported(version) && isTransferEncodingChunked(headers))) &&
+                (!requireTrailerHeader || headers.contains(TRAILER)));
     }
 
     /**
      * Construct a new {@link PayloadInfo} to represent an HTTP message created by a user.
-     *
-     * @param httpHeaders {@link HttpHeaders} for an HTTP message created by a user.
      * @return A new {@link PayloadInfo} representing an HTTP message created by a user.
      */
-    static DefaultPayloadInfo forUserCreated(HttpHeaders httpHeaders) {
-        return newInfoUsingHeaders(httpHeaders).setOnlyEmitsBuffer(true);
-    }
-
-    private static DefaultPayloadInfo newInfoUsingHeaders(final HttpHeaders httpHeaders) {
-        return isTransferEncodingChunked(httpHeaders) ? new DefaultPayloadInfo().setMayHaveTrailers(true) :
-                new DefaultPayloadInfo();
+    static DefaultPayloadInfo forUserCreated() {
+        return new DefaultPayloadInfo().setOnlyEmitsBuffer(true);
     }
 
     private boolean isSet(byte expected) {
@@ -119,7 +118,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
 
     @Override
     public int hashCode() {
-        return (int) flags;
+        return flags;
     }
 
     @Override

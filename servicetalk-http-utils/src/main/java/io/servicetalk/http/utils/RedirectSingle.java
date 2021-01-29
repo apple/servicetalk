@@ -177,7 +177,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         result.headers().get(LOCATION), redirectSingle.originalRequest);
             }
             // Consume any payload of the redirect response
-            toSource(result.payloadBodyAndTrailers().ignoreElements().concat(
+            toSource(result.messageBody().ignoreElements().concat(
                     redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
                         .subscribe(new RedirectSubscriber(
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));

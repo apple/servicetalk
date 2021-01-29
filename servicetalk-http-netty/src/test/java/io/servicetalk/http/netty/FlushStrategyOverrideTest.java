@@ -108,7 +108,7 @@ public class FlushStrategyOverrideTest {
                 .afterFinally(reqWritten::countDown));
 
         Future<? extends Collection<Object>> clientResp = conn.request(req)
-                .flatMapPublisher(StreamingHttpResponse::payloadBodyAndTrailers).toFuture();
+                .flatMapPublisher(StreamingHttpResponse::messageBody).toFuture();
         reqWritten.await(); // Wait for request to be written.
 
         FlushSender clientFlush = clientStrategy.verifyApplied();
@@ -132,7 +132,7 @@ public class FlushStrategyOverrideTest {
 
         // No more custom strategies.
         Collection<Object> secondReqChunks = conn.request(conn.get(""))
-                .flatMapPublisher(StreamingHttpResponse::payloadBodyAndTrailers).toFuture().get();
+                .flatMapPublisher(StreamingHttpResponse::messageBody).toFuture().get();
         clientStrategy.verifyNoMoreInteractions();
         service.getLastUsedStrategy();
         serverStrategy.verifyNoMoreInteractions();

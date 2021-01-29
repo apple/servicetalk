@@ -106,8 +106,7 @@ public class PipelinedHttpConnectionTest {
         pipe = TestStreamingHttpConnection.from(
                 new PipelinedStreamingHttpConnection(connection, h1().maxPipelinedRequests(2).build(),
                         new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
-                        reqRespFactory
-                ));
+                        reqRespFactory, false));
     }
 
     @SuppressWarnings("unchecked")

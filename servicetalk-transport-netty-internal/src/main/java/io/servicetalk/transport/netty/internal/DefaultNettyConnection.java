@@ -666,7 +666,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
                 // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
                 // the current netty version) gets triggered reliably at the appropriate time.
-                connection.nettyChannelPublisher.channelInboundClosed();
+                connection.nettyChannelPublisher.channelInboundClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "userEventTriggered(ChannelInputShutdownReadComplete)"));
             } else if (evt instanceof SslHandshakeCompletionEvent) {
                 connection.sslSession = extractSslSessionAndReport(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
                         this::tryFailSubscriber, observer != NoopConnectionObserver.INSTANCE);
@@ -697,7 +698,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     DefaultNettyConnection.class, "channelInactive(...)");
             tryFailSubscriber(closedChannelException);
             connection.channelOutboundListener.channelClosed(closedChannelException);
-            connection.nettyChannelPublisher.channelInboundClosed();
+            connection.nettyChannelPublisher.channelInboundClosed(closedChannelException);
         }
 
         private void doChannelActive(ChannelHandlerContext ctx) {

@@ -31,8 +31,9 @@ final class NonPipelinedStreamingHttpConnection
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpHeadersFactory headersFactory) {
-        super(connection, 1, executionContext, reqRespFactory, headersFactory);
+                                        final HttpHeadersFactory headersFactory,
+                                        final boolean allowDropTrailersReadFromTransport) {
+        super(connection, 1, executionContext, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport);
     }
 
     @Override

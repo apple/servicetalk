@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientInvoker;
-import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -45,7 +44,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
-import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
@@ -64,11 +62,13 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
+    private final boolean allowDropTrailersReadFromTransport;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
                                     final HttpExecutionContext executionContext,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpHeadersFactory headersFactory) {
+                                    final HttpHeadersFactory headersFactory,
+                                    final boolean allowDropTrailersReadFromTransport) {
         this.connection = requireNonNull(conn);
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
         this.executionContext = requireNonNull(executionContext);
@@ -76,6 +76,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
         this.headersFactory = headersFactory;
+        this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
 
     @Override
@@ -101,18 +102,15 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
         return defer(() -> {
-            Publisher<Object> flatRequest;
+            final Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3
             if (canAddRequestContentLength(request)) {
                 flatRequest = setRequestContentLength(request);
             } else {
-                flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
-                if (!mayHaveTrailers(request)) {
-                    flatRequest = flatRequest.concat(succeeded(EmptyHttpHeaders.INSTANCE));
-                }
+                flatRequest = Publisher.<Object>from(request).concat(request.messageBody())
+                        .scanWith(HeaderUtils::insertTrailersMapper);
                 addRequestTransferEncodingIfNecessary(request);
             }
-
             return strategy.invokeClient(executionContext.executor(), flatRequest,
                     determineFlushStrategyForApi(request), this).subscribeShareContext();
         });
@@ -134,7 +132,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),
-                executionContext.bufferAllocator(), pub, headersFactory);
+                executionContext.bufferAllocator(), pub, allowDropTrailersReadFromTransport, headersFactory);
     }
 
     @Override

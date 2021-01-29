@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.ScanWithMapper;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
@@ -31,10 +32,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
@@ -73,10 +74,7 @@ final class HeaderUtils {
     }
 
     static boolean canAddRequestContentLength(final StreamingHttpRequest request) {
-        if (!canAddContentLength(request)) {
-            return false;
-        }
-        return clientMaySendPayloadBodyFor(request.method());
+        return canAddContentLength(request) && clientMaySendPayloadBodyFor(request.method());
     }
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
@@ -117,13 +115,13 @@ final class HeaderUtils {
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
-        return setContentLength(request, request.payloadBodyAndTrailers(),
+        return setContentLength(request, request.messageBody(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
                         HeaderUtils::updateRequestContentLengthNonZero);
     }
 
     static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
-        return setContentLength(response, response.payloadBodyAndTrailers(), HeaderUtils::updateResponseContentLength);
+        return setContentLength(response, response.messageBody(), HeaderUtils::updateResponseContentLength);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -149,6 +147,38 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
+    static ScanWithMapper<Object, Object> insertTrailersMapper() {
+        return new ScanWithMapper<Object, Object>() {
+            @Nullable
+            private boolean sawHeaders;
+
+            @Nullable
+            @Override
+            public Object mapOnNext(@Nullable final Object next) {
+                if (next instanceof HttpHeaders) {
+                    sawHeaders = true;
+                }
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public Object mapOnError(final Throwable t) throws Throwable {
+                throw t;
+            }
+
+            @Override
+            public Object mapOnComplete() {
+                return EmptyHttpHeaders.INSTANCE;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return !sawHeaders;
+            }
+        };
+    }
+
     private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
         return HEAD.equals(requestMethod);
     }
@@ -158,9 +188,9 @@ final class HeaderUtils {
     }
 
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
-                                                      final Publisher<Object> originalPayloadAndTrailers,
+                                                      final Publisher<Object> messageBody,
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
-        return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
+        return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
                 return item;
@@ -171,7 +201,8 @@ final class HeaderUtils {
                 List<Object> itemsUnchecked = (List<Object>) reduction;
                 items = itemsUnchecked;
             } else {
-                items = new ArrayList<>();
+                // this method is called if the payload has been aggregated, we expect <buffer*, trailers?>.
+                items = new ArrayList<>(2);
                 items.add(reduction);
             }
             items.add(item);
@@ -181,38 +212,30 @@ final class HeaderUtils {
             final Publisher<Object> flatRequest;
             if (reduction == null) {
                 flatRequest = from(metadata, EmptyHttpHeaders.INSTANCE);
-            } else if (reduction instanceof List) {
-                final List<?> items = (List<?>) reduction;
-                for (Object item : items) {
-                    contentLength += calculateContentLength(item);
-                }
-                flatRequest = Publisher.<Object>from(metadata)
-                        .concat(fromIterable(items))
-                        .concat(succeeded(EmptyHttpHeaders.INSTANCE));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
                 flatRequest = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
+            } else if (reduction instanceof List) {
+                @SuppressWarnings("unchecked")
+                final List<Object> items = (List<Object>) reduction;
+                for (Object item : items) {
+                    if (item instanceof Buffer) {
+                        contentLength += ((Buffer) item).readableBytes();
+                    }
+                }
+                if (!(items.get(items.size() - 1) instanceof HttpHeaders)) {
+                    items.add(EmptyHttpHeaders.INSTANCE);
+                }
+                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
             } else if (reduction instanceof HttpHeaders) {
                 flatRequest = from(metadata, reduction);
             } else {
-                throw new IllegalArgumentException("Unknown object " + reduction + " found as payload");
+                throw new IllegalArgumentException("unsupported payload chunk type: " + reduction);
             }
             contentLengthUpdater.apply(contentLength, metadata.headers());
             return flatRequest;
         });
-    }
-
-    static int calculateContentLength(Object item) {
-        // TODO(scott): add support for file region
-        if (item instanceof Buffer) {
-            return calculateContentLength((Buffer) item);
-        }
-        throw new IllegalArgumentException("Unknown object " + item + " found as payload");
-    }
-
-    static int calculateContentLength(Buffer item) {
-        return item.readableBytes();
     }
 
     static StreamingHttpResponse addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,

@@ -172,11 +172,13 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed.
+     * @deprecated Use {@link #transformPayloadBody(UnaryOperator)}.
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
      * payload body {@link BlockingIterable} will be transformed/consumed or else no more responses may be processed.
      * @return {@code this}
      */
+    @Deprecated
     BlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
     /**
@@ -191,10 +193,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed to {@link Object}s,
      * with access to the trailers.
+     * @deprecated Use {@link #transform(TrailersTransformer)}.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
      */
+    @Deprecated
     <T> BlockingStreamingHttpResponse transformRaw(TrailersTransformer<T, Object> trailersTransformer);
 
     /**

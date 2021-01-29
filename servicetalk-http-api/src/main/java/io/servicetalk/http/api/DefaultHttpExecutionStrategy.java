@@ -88,7 +88,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             resp = resp.publishOn(e);
         }
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            resp = resp.map(response -> response.transformRawPayloadBody(payload -> payload.publishOn(e)));
+            resp = resp.map(response -> response.transformMessageBody(payload -> payload.publishOn(e)));
         }
         return resp;
     }
@@ -100,7 +100,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            request = request.transformRawPayloadBody(payload -> payload.publishOn(e));
+            request = request.transformMessageBody(payload -> payload.publishOn(e));
         }
         Publisher<Object> resp;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
@@ -138,7 +138,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                     return service.handle(wrappedCtx, request, responseFactory);
                 } else {
                     if (diff.isDataReceiveOffloaded()) {
-                        request = request.transformRawPayloadBody(p -> p.publishOn(e));
+                        request = request.transformMessageBody(p -> p.publishOn(e));
                     }
                     final Single<StreamingHttpResponse> resp;
                     if (diff.isMetadataReceiveOffloaded()) {
@@ -153,7 +153,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                             // This is different as compared to invokeService() where we just offload once on the
                             // flattened (meta + data) stream. In this case, we need to preserve the service contract
                             // and hence have to offload both meta and data separately.
-                            resp.map(r -> r.transformRawPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
+                            resp.map(r -> r.transformMessageBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
                 }
             }
 

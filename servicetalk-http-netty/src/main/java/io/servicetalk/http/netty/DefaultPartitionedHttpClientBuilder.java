@@ -306,6 +306,12 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
+    public PartitionedHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
+        builderTemplate.allowDropResponseTrailers(allowDrop);
+        return this;
+    }
+
+    @Override
     public PartitionedHttpClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);

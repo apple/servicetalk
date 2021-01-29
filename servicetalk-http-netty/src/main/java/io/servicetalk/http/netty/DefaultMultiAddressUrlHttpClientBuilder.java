@@ -116,7 +116,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
 
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
-
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
                             defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
@@ -415,6 +414,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> disableHostHeaderFallback() {
         builderTemplate.disableHostHeaderFallback();
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> allowDropResponseTrailers(
+            final boolean allowDrop) {
+        builderTemplate.allowDropResponseTrailers(allowDrop);
         return this;
     }
 

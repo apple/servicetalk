@@ -233,10 +233,17 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        Publisher<Object> payload = trailers != null ? from(payloadBody, trailers) : from(payloadBody);
+        final DefaultPayloadInfo payloadInfo;
+        final Publisher<Object> payload;
+        if (trailers != null) {
+            payload = from(payloadBody, trailers);
+            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailers(true);
+        } else {
+            payload = from(payloadBody);
+            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailers(false);
+        }
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
-                original.payloadHolder().allocator(), payload, new DefaultPayloadInfo(this),
-                original.payloadHolder().headersFactory());
+                original.payloadHolder().allocator(), payload, payloadInfo, original.payloadHolder().headersFactory());
     }
 
     @Override

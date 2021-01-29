@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
@@ -25,9 +24,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -42,15 +38,15 @@ import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
+import static io.servicetalk.oio.api.internal.PayloadWriterUtils.safeClose;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
     private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private final BlockingStreamingHttpService original;
 
@@ -75,9 +71,12 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     return;
                 }
 
+                // This exists to help users with error propagation. If the user closes the payloadWriter and they throw
+                // (e.g. try-with-resources) this processor is merged with the payloadWriter Publisher so the error will
+                // still be propagated.
                 final Processor exceptionProcessor = newCompletableProcessor();
                 final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
-                        ctx.headersFactory().newTrailers(), exceptionProcessor);
+                        ctx.headersFactory().newTrailers());
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 try {
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
@@ -87,9 +86,10 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             // > When a message does not have a Transfer-Encoding header field, a
                             // Content-Length header field can provide the anticipated size.
                             // https://tools.ietf.org/html/rfc7230#section-3.3.2
-                            HttpHeaders headers = metaData.headers();
-                            boolean addTrailers = isTransferEncodingChunked(headers);
-                            if (!addTrailers && !HTTP_1_0.equals(metaData.version()) && !hasContentLength(headers) &&
+                            final HttpHeaders headers = metaData.headers();
+                            final HttpProtocolVersion version = metaData.version();
+                            boolean addTrailers = version.major() > 1 || isTransferEncodingChunked(headers);
+                            if (!addTrailers && h1TrailersSupported(version) && !hasContentLength(headers) &&
                                     // HEAD responses MUST never carry a payload, adding chunked makes no sense and
                                     // breaks our HttpResponseDecoder
                                     !HEAD.equals(request.method())) {
@@ -115,7 +115,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                 }
                             });
                             result = newTransportResponse(metaData.status(), metaData.version(), metaData.headers(),
-                                    ctx.executionContext().bufferAllocator(), messageBody, ctx.headersFactory());
+                                    ctx.executionContext().bufferAllocator(), messageBody, false, ctx.headersFactory());
                         } catch (Throwable t) {
                             subscriber.onError(t);
                             throw t;
@@ -127,6 +127,11 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             ctx.headersFactory().newHeaders(), payloadWriter,
                             ctx.executionContext().bufferAllocator(), sendMeta);
                     original.handle(ctx, request.toBlockingStreamingRequest(), response);
+
+                    // The user code has returned successfully, complete the processor so the response stream can
+                    // complete. If the user handles the request asynchronously (e.g. on another thread) they are
+                    // responsible for closing the payloadWriter.
+                    exceptionProcessor.onComplete();
                 } catch (Throwable cause) {
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
@@ -135,11 +140,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                         try {
                             exceptionProcessor.onError(cause);
                         } finally {
-                            try {
-                                payloadWriter.close(cause);
-                            } catch (IOException e) {
-                                LOGGER.info("Unexpected exception from close {}", exceptionProcessor, e);
-                            }
+                            safeClose(payloadWriter, cause);
                         }
                     }
                     return;
@@ -161,12 +162,10 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
-        private final CompletableSource.Subscriber subscriber;
         private final HttpHeaders trailers;
 
-        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableSource.Subscriber subscriber) {
+        BufferHttpPayloadWriter(final HttpHeaders trailers) {
             this.trailers = trailers;
-            this.subscriber = subscriber;
         }
 
         @Override
@@ -181,20 +180,12 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
         @Override
         public void close() throws IOException {
-            try {
-                payloadWriter.close();
-            } finally {
-                subscriber.onComplete();
-            }
+            payloadWriter.close();
         }
 
         @Override
         public void close(final Throwable cause) throws IOException {
-            try {
-                payloadWriter.close(cause);
-            } finally {
-                subscriber.onError(cause);
-            }
+            payloadWriter.close(cause);
         }
 
         @Override

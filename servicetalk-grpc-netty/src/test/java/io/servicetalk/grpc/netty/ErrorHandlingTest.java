@@ -56,8 +56,10 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -66,6 +68,8 @@ import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -77,9 +81,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -113,6 +118,8 @@ public class ErrorHandlingTest {
         FilterEmitsGrpcException,
         ServiceThrows,
         ServiceThrowsGrpcException,
+        ServiceOperatorThrows,
+        ServiceOperatorThrowsGrpcException,
         ServiceEmitsError,
         ServiceEmitsGrpcException,
         ServiceEmitsDataThenError,
@@ -194,6 +201,12 @@ public class ErrorHandlingTest {
             case ServiceThrowsGrpcException:
                 serviceFactory = setupForServiceThrows(cannedException);
                 break;
+            case ServiceOperatorThrows:
+                serviceFactory = setupForServiceOperatorThrows(DELIBERATE_EXCEPTION);
+                break;
+            case ServiceOperatorThrowsGrpcException:
+                serviceFactory = setupForServiceOperatorThrows(cannedException);
+                break;
             case ServiceEmitsError:
                 serviceFactory = setupForServiceEmitsError(DELIBERATE_EXCEPTION);
                 break;
@@ -255,7 +268,7 @@ public class ErrorHandlingTest {
 
             @Override
             public Publisher<TestResponse> testResponseStream(final GrpcServiceContext ctx, final TestRequest request) {
-                return Publisher.from(TestResponse.newBuilder().setMessage(request.getName()).build());
+                return from(TestResponse.newBuilder().setMessage(request.getName()).build());
             }
 
             @Override
@@ -271,10 +284,35 @@ public class ErrorHandlingTest {
         return new ServiceFactory(service);
     }
 
+    private ServiceFactory setupForServiceOperatorThrows(final Throwable toThrow) {
+        final TesterService service = mockTesterService();
+        setupForServiceOperatorThrows(service, toThrow);
+        return new ServiceFactory(service);
+    }
+
     private void setupForServiceThrows(final TesterService service, final Throwable toThrow) {
         when(service.test(any(), any())).thenThrow(toThrow);
         when(service.testBiDiStream(any(), any())).thenThrow(toThrow);
         when(service.testRequestStream(any(), any())).thenThrow(toThrow);
+        when(service.testResponseStream(any(), any())).thenThrow(toThrow);
+    }
+
+    private void setupForServiceOperatorThrows(final TesterService service, final Throwable toThrow) {
+        when(service.test(any(), any())).thenThrow(toThrow);
+        doAnswer((Answer<Publisher<TestResponse>>) invocation -> {
+            Publisher<TestRequest> request = invocation.getArgument(1);
+            return request.map(req -> {
+               throwException(toThrow);
+               return null;
+            });
+        }).when(service).testBiDiStream(any(), any());
+        doAnswer(invocation -> {
+            Publisher<TestRequest> request = invocation.getArgument(1);
+            return request.collect(ArrayList::new, (list, req) -> {
+                throwException(toThrow);
+                return null;
+            });
+        }).when(service).testRequestStream(any(), any());
         when(service.testResponseStream(any(), any())).thenThrow(toThrow);
     }
 
@@ -300,11 +338,10 @@ public class ErrorHandlingTest {
     private void setupForServiceEmitsDataThenError(final TesterService service, final Throwable toThrow) {
         when(service.test(any(), any())).thenReturn(Single.failed(toThrow));
         when(service.testBiDiStream(any(), any()))
-                .thenReturn(Publisher.from(cannedResponse).concat(Publisher.failed(toThrow)));
+                .thenReturn(from(cannedResponse).concat(Publisher.failed(toThrow)));
         when(service.testRequestStream(any(), any())).thenReturn(Single.failed(toThrow));
         when(service.testResponseStream(any(), any()))
-                .thenReturn(Publisher.from(cannedResponse)
-                        .concat(Publisher.failed(toThrow)));
+                .thenReturn(from(cannedResponse).concat(Publisher.failed(toThrow)));
     }
 
     private ServiceFactory setupForBlockingServiceThrows(final Throwable toThrow) throws Exception {
@@ -364,13 +401,12 @@ public class ErrorHandlingTest {
 
     @Test
     public void bidiStreaming() throws Exception {
-        verifyStreamingResponse(client.testBiDiStream(Publisher.from(TestRequest.newBuilder().build())));
+        verifyStreamingResponse(client.testBiDiStream(from(TestRequest.newBuilder().build())));
     }
 
     @Test
-    public void requestStreaming() throws Exception {
-        verifyException(client.testRequestStream(Publisher.from(TestRequest.newBuilder().build()))
-                .toFuture());
+    public void requestStreaming() {
+        verifyException(client.testRequestStream(from(TestRequest.newBuilder().build())).toFuture());
     }
 
     @Test
@@ -421,6 +457,19 @@ public class ErrorHandlingTest {
         }
     }
 
+    @Test
+    public void bidiStreamingServerFailClientRequestNeverComplete() {
+        // The response publisher is merged with the write publisher in order to provide status in the event of a write
+        // failure. We must fail the read publisher internally at the appropriate time so the merge operator will
+        // propagate the expected status (e.g. not wait for transport failure like stream reset or channel closed).
+        verifyException(client.testBiDiStream(from(TestRequest.newBuilder().build()).concat(never())).toFuture());
+    }
+
+    @Test
+    public void requestStreamingServerFailClientRequestNeverComplete() {
+        verifyException(client.testRequestStream(from(TestRequest.newBuilder().build()).concat(never())).toFuture());
+    }
+
     private TesterService mockTesterService() {
         TesterService filter = mock(TesterService.class);
         when(filter.closeAsync()).thenReturn(completed());
@@ -452,6 +501,8 @@ public class ErrorHandlingTest {
             case FilterEmitsGrpcException:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
+            case ServiceOperatorThrows:
+            case ServiceOperatorThrowsGrpcException:
             case ServiceEmitsError:
             case ServiceEmitsGrpcException:
             case BlockingServiceThrows:
@@ -497,6 +548,8 @@ public class ErrorHandlingTest {
             case FilterEmitsGrpcException:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
+            case ServiceOperatorThrows:
+            case ServiceOperatorThrowsGrpcException:
             case ServiceEmitsError:
             case ServiceEmitsGrpcException:
             case BlockingServiceThrows:
@@ -510,20 +563,15 @@ public class ErrorHandlingTest {
         }
     }
 
-    private void verifyException(final Future<?> result)
-            throws Exception {
-        try {
-            result.get();
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            verifyException(cause);
-        }
+    private void verifyException(final Future<?> result) {
+        verifyException(assertThrows(ExecutionException.class, result::get).getCause());
     }
 
     private void verifyException(final Throwable cause) {
-        assertThat("Unexpected error.", cause, instanceOf(GrpcStatusException.class));
-        GrpcStatusException gse = (GrpcStatusException) cause;
-        assertThat("Unexpected grpc status.", gse.status().code(), equalTo(expectedStatus()));
+        assertNotNull(cause);
+        assertThat(assertThrows(GrpcStatusException.class, () -> {
+            throw cause;
+        }).status().code(), equalTo(expectedStatus()));
     }
 
     private GrpcStatusCode expectedStatus() {
@@ -535,6 +583,7 @@ public class ErrorHandlingTest {
             case FilterThrows:
             case FilterEmitsError:
             case ServiceThrows:
+            case ServiceOperatorThrows:
             case BlockingServiceThrows:
             case ServiceEmitsError:
             case ServiceEmitsDataThenError:
@@ -547,6 +596,7 @@ public class ErrorHandlingTest {
             case FilterEmitsGrpcException:
             case FilterThrowsGrpcException:
             case ServiceThrowsGrpcException:
+            case ServiceOperatorThrowsGrpcException:
             case ServiceEmitsDataThenGrpcException:
             case ServiceEmitsGrpcException:
             case BlockingServiceThrowsGrpcException:

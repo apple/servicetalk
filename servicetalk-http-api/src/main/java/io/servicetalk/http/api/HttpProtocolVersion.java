@@ -147,4 +147,13 @@ public final class HttpProtocolVersion implements Protocol {
     public String name() {
         return httpVersion;
     }
+
+    /**
+     * Determine if the protocol version is {@link #major()} is {@code 1} and trailers are supported.
+     * @param version The version to check.
+     * @return {@code true} if the protocol version is {@link #major()} is {@code 1} and trailers are supported.
+     */
+    static boolean h1TrailersSupported(HttpProtocolVersion version) {
+        return version.major() == 1 && version.minor() > 0;
+    }
 }

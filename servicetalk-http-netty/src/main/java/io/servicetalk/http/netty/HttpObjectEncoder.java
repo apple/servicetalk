@@ -59,7 +59,6 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
-import static io.servicetalk.http.netty.HeaderUtils.calculateContentLength;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
@@ -159,7 +158,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                     case ST_INIT:
                         throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
                     case ST_CONTENT_NON_CHUNK:
-                        final long contentLength = calculateContentLength(stBuffer);
+                        final long contentLength = stBuffer.readableBytes();
                         if (contentLength > 0) {
                             ctx.write(encodeAndRetain(stBuffer), promise);
                             break;
@@ -176,7 +175,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                         break;
                     case ST_CONTENT_CHUNK:
                         PromiseCombiner promiseCombiner = new PromiseCombiner();
-                        encodeChunkedContent(ctx, stBuffer, calculateContentLength(stBuffer), promiseCombiner);
+                        encodeChunkedContent(ctx, stBuffer, stBuffer.readableBytes(), promiseCombiner);
                         promiseCombiner.finish(promise);
                         break;
                     default:

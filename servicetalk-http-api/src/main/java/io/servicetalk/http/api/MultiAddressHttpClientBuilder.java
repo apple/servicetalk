@@ -74,6 +74,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
+
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
      *

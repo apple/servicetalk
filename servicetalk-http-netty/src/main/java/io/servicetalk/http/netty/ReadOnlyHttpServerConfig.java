@@ -26,12 +26,14 @@ final class ReadOnlyHttpServerConfig {
     private final H1ProtocolConfig h1Config;
     @Nullable
     private final H2ProtocolConfig h2Config;
+    private final boolean allowDropTrailers;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         final HttpConfig configs = from.httpConfig();
         tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
+        allowDropTrailers = configs.allowDropTrailersReadFromTransport();
     }
 
     ReadOnlyTcpServerConfig tcpConfig() {
@@ -46,6 +48,10 @@ final class ReadOnlyHttpServerConfig {
     @Nullable
     H2ProtocolConfig h2Config() {
         return h2Config;
+    }
+
+    boolean allowDropTrailersReadFromTransport() {
+        return allowDropTrailers;
     }
 
     boolean isH2PriorKnowledge() {

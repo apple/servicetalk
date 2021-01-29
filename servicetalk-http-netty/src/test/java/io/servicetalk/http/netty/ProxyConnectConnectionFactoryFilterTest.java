@@ -131,7 +131,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     private void configureRequestSend() {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(OK);
-        when(response.payloadBodyAndTrailers()).thenReturn(payloadBodyAndTrailers);
+        when(response.messageBody()).thenReturn(payloadBodyAndTrailers);
         when(connection.request(any(), any())).thenReturn(succeeded(response));
     }
 
@@ -174,7 +174,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     public void nonSuccessfulResponseCode() {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(INTERNAL_SERVER_ERROR);
-        when(response.payloadBodyAndTrailers()).thenReturn(payloadBodyAndTrailers);
+        when(response.messageBody()).thenReturn(payloadBodyAndTrailers);
         when(connection.request(any(), any())).thenReturn(succeeded(response));
 
         configureConnectRequest();

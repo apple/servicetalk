@@ -152,6 +152,9 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     @Override
     public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> allowDropResponseTrailers(boolean allowDrop);
+
     /**
      * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
      * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
