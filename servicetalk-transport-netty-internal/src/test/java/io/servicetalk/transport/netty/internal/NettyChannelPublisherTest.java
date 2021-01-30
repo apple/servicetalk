@@ -37,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +70,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -151,6 +153,21 @@ public class NettyChannelPublisherTest {
                 }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
+    }
+
+    @Test
+    public void errorFromOnSubscribeResumeTerminatesOnce() throws Exception {
+        channel.close().await();
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            Subscription s = invocation.getArgument(0);
+            s.request(Long.MAX_VALUE);
+            return null;
+        }).when(mockSubscriber).onSubscribe(any());
+        toSource(publisher).subscribe(mockSubscriber);
+        verify(mockSubscriber).onSubscribe(any());
+        verify(mockSubscriber).onError(any());
     }
 
     @Test
