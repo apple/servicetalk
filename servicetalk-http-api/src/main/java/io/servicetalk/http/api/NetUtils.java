@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.CharSequences;
+
+import static io.servicetalk.buffer.api.CharSequences.isAsciiString;
+
 final class NetUtils {
 
     private NetUtils() {
@@ -48,8 +52,8 @@ final class NetUtils {
 
     private static boolean isValidIpV4Address(final CharSequence ip, int from, int toExclusive) {
         return ip instanceof String ? isValidIpV4Address((String) ip, from, toExclusive, String::indexOf) :
-               ip instanceof AsciiBuffer ?
-                        isValidIpV4Address((AsciiBuffer) ip, from, toExclusive, AsciiBuffer::indexOf) :
+               isAsciiString(ip) ?
+                        isValidIpV4Address(ip, from, toExclusive, CharSequences::indexOf) :
                         isValidIpV4Address(ip, from, toExclusive, NetUtils::indexOf0);
     }
 
@@ -227,8 +231,8 @@ final class NetUtils {
     private static int indexOf(final CharSequence cs, final char searchChar, int start) {
         if (cs instanceof String) {
             return ((String) cs).indexOf(searchChar, start);
-        } else if (cs instanceof AsciiBuffer) {
-            return ((AsciiBuffer) cs).indexOf(searchChar, start);
+        } else if (isAsciiString(cs)) {
+            return CharSequences.indexOf(cs, searchChar, start);
         }
         return indexOf0(cs, searchChar, start);
     }

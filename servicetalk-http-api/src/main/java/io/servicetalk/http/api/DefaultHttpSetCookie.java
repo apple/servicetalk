@@ -15,13 +15,15 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.CharSequences;
+
 import java.util.Objects;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.equalsIgnoreCaseLower;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
@@ -42,9 +44,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
 
     /**
-     * An underlying size of 16 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
-     * with the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
-     * this initial value should be re-evaluated.
+     * An underlying size of 16 has been shown with the current {@link CharSequences#newAsciiString(String)} hash
+     * algorithm to have no collisions with the current set of supported cookie names.
+     * If more cookie names are supported, or the hash algorithm changes this initial value should be re-evaluated.
      * <p>
      * We use {@link HttpHeaders} here because we need a case-insensitive way to compare multiple keys. Instead of a
      * if/else block we lean on {@link HttpHeaders} which provides an associative array that compares keys in a case

@@ -38,15 +38,17 @@ dependencies {
   implementation "io.netty:netty-codec-http2:$nettyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+  testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-api"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testImplementation project(":servicetalk-data-jackson")
-  testImplementation project(":servicetalk-test-resources")
-  testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-concurrent-test-internal")
+  testImplementation project(":servicetalk-data-jackson")
+  testImplementation project(":servicetalk-encoding-api-internal")
+  testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-utils-internal")
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
   testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
   testImplementation "junit:junit:$junitVersion"

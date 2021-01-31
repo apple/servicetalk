@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,20 +28,16 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.http.api;
-
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.ByteProcessor;
+package io.servicetalk.buffer.api;
 
 import java.nio.ByteOrder;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
-import static io.servicetalk.http.api.CharSequences.contentEqualsUnknownTypes;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class AsciiBuffer implements CharSequence {
-    static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EMPTY_BUFFER);
+    static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EmptyBuffer.EMPTY_BUFFER);
     private static final boolean BIG_ENDIAN_NATIVE_ORDER = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     // constants borrowed from murmur3
     private static final int HASH_CODE_ASCII_SEED = 0xc2b2ae35;
@@ -124,6 +120,7 @@ final class AsciiBuffer implements CharSequence {
     /**
      * Iterates over the readable bytes of this buffer with the specified {@code processor} in ascending order.
      *
+     * @param visitor the {@link ByteProcessor} visitor of each element.
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */

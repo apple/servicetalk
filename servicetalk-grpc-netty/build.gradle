@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-concurrent-api-internal")
   testImplementation project(":servicetalk-concurrent-test-internal")
+  testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
   testImplementation project(":servicetalk-router-utils-internal")

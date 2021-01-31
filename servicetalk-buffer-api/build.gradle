@@ -19,7 +19,10 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   implementation project(":servicetalk-annotations")
 
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }

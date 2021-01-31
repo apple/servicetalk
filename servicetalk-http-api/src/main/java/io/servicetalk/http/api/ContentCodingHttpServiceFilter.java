@@ -29,10 +29,11 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
-import static io.servicetalk.http.api.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
+import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static java.util.Collections.emptyList;
 
 /**
@@ -147,7 +148,7 @@ public final class ContentCodingHttpServiceFilter
         ContentCodec encoding = response.encoding();
         if (encoding == null) {
             // Negotiated from client headers and server config
-            encoding = negotiateAcceptedEncoding(requestHeaders, supportedEncodings);
+            encoding = negotiateAcceptedEncoding(requestHeaders.get(ACCEPT_ENCODING), supportedEncodings);
         }
 
         return encoding == identity() ? null : encoding;

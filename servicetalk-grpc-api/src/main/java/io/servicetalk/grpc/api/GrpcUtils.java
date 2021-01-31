@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -37,24 +38,20 @@ import io.servicetalk.http.api.TrailersTransformer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-import static io.servicetalk.http.api.CharSequences.regionMatches;
-import static io.servicetalk.http.api.CharSequences.split;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -259,26 +256,6 @@ final class GrpcUtils {
         return enc;
     }
 
-    static List<ContentCodec> readGrpcAcceptMessageEncoding(final HttpMetaData httpMetaData,
-                                                            final List<ContentCodec> allowedCodings) {
-        final CharSequence acceptEncodingsHeaderVal = httpMetaData.headers().get(GRPC_ACCEPT_ENCODING_KEY);
-
-        if (acceptEncodingsHeaderVal == null || acceptEncodingsHeaderVal.length() == 0) {
-            return GRPC_ACCEPT_ENCODING_NONE;
-        }
-
-        List<ContentCodec> knownEncodings = new ArrayList<>(allowedCodings.size());
-        List<CharSequence> acceptEncodingValues = split(acceptEncodingsHeaderVal, ',');
-        for (CharSequence val : acceptEncodingValues) {
-            ContentCodec enc = encodingFor(allowedCodings, val);
-            if (enc != null) {
-                knownEncodings.add(enc);
-            }
-        }
-
-        return knownEncodings;
-    }
-
     /**
      * Establish a commonly accepted encoding between server and client, according to the supported-codings
      * on the server side and the {@code 'Accepted-Encoding'} incoming header on the request.
@@ -296,68 +273,9 @@ final class GrpcUtils {
             final HttpMetaData httpMetaData,
             final List<ContentCodec> allowedCodings) {
 
-        // Fast path, server has no codings configured or has only identity configured as encoding
-        if (allowedCodings.isEmpty() ||
-                (allowedCodings.size() == 1 && allowedCodings.contains(identity()))) {
-            return identity();
-        }
-
-        List<ContentCodec> clientSupportedEncodings =
-                readGrpcAcceptMessageEncoding(httpMetaData, allowedCodings);
-        return negotiateAcceptedEncoding(clientSupportedEncodings, allowedCodings);
-    }
-
-    static ContentCodec negotiateAcceptedEncoding(final List<ContentCodec> clientSupportedEncodings,
-                                                  final List<ContentCodec> allowedEncodings) {
-        // Fast path, Client has no codings configured, or has identity as the only encoding configured
-        if (clientSupportedEncodings == GRPC_ACCEPT_ENCODING_NONE ||
-                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
-            return identity();
-        }
-
-        for (ContentCodec encoding : allowedEncodings) {
-            if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
-                return encoding;
-            }
-        }
-
-        return identity();
-    }
-
-    /**
-     * Returns the {@link ContentCodec} that matches the {@code name} within the {@code allowedList}.
-     * if {@code name} is {@code null} or empty it results in {@code null} .
-     * If {@code name} is {@code 'identity'} this will always result in
-     * {@link ContentCodings#identity()} regardless of its presence in the {@code allowedList}.
-     *
-     * @param allowedList the source list to find a matching codec from.
-     * @param name the codec name used for the equality predicate.
-     * @return a codec from the allowed-list that name matches the {@code name}.
-     */
-    @Nullable
-    static ContentCodec encodingFor(final Collection<ContentCodec> allowedList,
-                                    @Nullable final CharSequence name) {
-        if (name == null || name.length() == 0) {
-            return null;
-        }
-
-        // Identity is always supported, regardless of its presence in the allowed-list
-        if (contentEqualsIgnoreCase(name, identity().name())) {
-            return identity();
-        }
-
-        for (ContentCodec enumEnc : allowedList) {
-            // Encoding values can potentially included compression configurations, we only match on the type
-            if (startsWith(name, enumEnc.name())) {
-                return enumEnc;
-            }
-        }
-
-        return null;
-    }
-
-    private static boolean startsWith(final CharSequence string, final CharSequence prefix) {
-        return regionMatches(string, true, 0, prefix, 0, prefix.length());
+        CharSequence acceptEncHeaderValue = httpMetaData.headers().get(GRPC_ACCEPT_ENCODING_KEY);
+        ContentCodec encoding = HeaderUtils.negotiateAcceptedEncoding(acceptEncHeaderValue, allowedCodings);
+        return encoding == null ? identity() : encoding;
     }
 
     private static void initResponse(final HttpResponseMetaData response, @Nullable final GrpcServiceContext context) {
