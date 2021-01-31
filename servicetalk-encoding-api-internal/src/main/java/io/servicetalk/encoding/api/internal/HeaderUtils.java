@@ -134,7 +134,7 @@ public final class HeaderUtils {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (CharSequences.contentEqualsIgnoreCaseUnknownTypes(name, identity().name())) {
+        if (CharSequences.contentEquals(name, identity().name())) {
             return identity();
         }
 

@@ -122,17 +122,6 @@ public final class CharSequences {
     }
 
     /**
-     * Calculate a hash code of a byte array assuming ASCII character encoding.
-     * The resulting hash code will be case insensitive.
-     *
-     * @param seq The ascii string to produce hashcode for.
-     * @return a hashcode for the given input.
-     */
-    public static int caseInsensitiveHashCode(CharSequence seq) {
-        return io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode(seq);
-    }
-
-    /**
      * Split a given {@link CharSequence} to separate ones on the given {@code delimiter}.
      * The returned {@link CharSequence}s are created by invoking the {@link CharSequence#subSequence(int, int)} method
      * on the main one.
@@ -145,25 +134,6 @@ public final class CharSequences {
      */
     public static List<CharSequence> split(final CharSequence input, final char delimiter) {
         return io.servicetalk.buffer.api.CharSequences.split(input, delimiter);
-    }
-
-    public static boolean contentEqualsIgnoreCaseUnknownTypes(final CharSequence a, final CharSequence b) {
-        return io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes(a, b);
-    }
-
-    public static boolean equalsIgnoreCase(final char a, final char b) {
-        return io.servicetalk.buffer.api.CharSequences.equalsIgnoreCase(a, b);
-    }
-
-    /**
-     * Compare an unknown ascii character {@code a} with a known lowercase character {@code lowerCaseChar} in a case
-     * insensitive manner.
-     * @param a an unknown ascii character.
-     * @param lowerCaseChar a known to be lowercase ascii character.
-     * @return {@code true} if {@code a} and {@code lowerCaseChar} are case insensitive equal.
-     */
-    public static boolean equalsIgnoreCaseLower(final char a, final char lowerCaseChar) {
-        return io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower(a, lowerCaseChar);
     }
 
     /**

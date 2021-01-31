@@ -165,11 +165,11 @@ public final class CharSequences {
      * @param fromIndex The index to start searching (inclusive).
      * @return The index of {@code c} or {@code -1} otherwise.
      */
-    public static int indexOf(CharSequence sequence, char c, int fromIndex) {
+    public static int indexOf(final CharSequence sequence, char c, int fromIndex) {
         if (sequence instanceof String) {
             return ((String) sequence).indexOf(c, fromIndex);
         } else if (isAsciiString(sequence)) {
-            return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
+            return asciiStringIndexOf(sequence, c, fromIndex);
         }
         for (int i = fromIndex; i < sequence.length(); ++i) {
             if (sequence.charAt(i) == c) {
@@ -177,6 +177,21 @@ public final class CharSequences {
             }
         }
         return -1;
+    }
+
+    /**
+     * Find the index of {@code c} within {@code sequence} starting at index {@code fromIndex}.
+     * This version avoids instance type check for special occasions that we can know the type before hand.
+     * The input is expected to be an {@link #newAsciiString(Buffer) AsciiString} value; if the input type is not known
+     * use the generic {@link #indexOf(CharSequence, char, int)} instead.
+     *
+     * @param sequence The {@link CharSequence} to search in.
+     * @param c The character to find.
+     * @param fromIndex The index to start searching (inclusive).
+     * @return The index of {@code c} or {@code -1} otherwise.
+     */
+    public static int asciiStringIndexOf(final CharSequence sequence, char c, int fromIndex) {
+        return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
     }
 
     /**
@@ -224,16 +239,7 @@ public final class CharSequences {
         return result;
     }
 
-    public static boolean contentEqualsIgnoreCaseUnknownTypes(final CharSequence a, final CharSequence b) {
-        for (int i = 0; i < a.length(); ++i) {
-            if (!equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static boolean equalsIgnoreCase(final char a, final char b) {
+    private static boolean equalsIgnoreCase(final char a, final char b) {
         return a == b || toLowerCase(a) == toLowerCase(b);
     }
 
@@ -338,6 +344,15 @@ public final class CharSequences {
     static boolean contentEqualsUnknownTypes(final CharSequence a, final CharSequence b) {
         for (int i = 0; i < a.length(); ++i) {
             if (a.charAt(i) != b.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean contentEqualsIgnoreCaseUnknownTypes(final CharSequence a, final CharSequence b) {
+        for (int i = 0; i < a.length(); ++i) {
+            if (!equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
                 return false;
             }
         }
