@@ -67,6 +67,18 @@ receives the response payload body as a blocking iterable stream of buffers.
 client that sends a `GET` request to the specified URL in absolute-form and receives the response payload body as a
 blocking iterable stream of buffers.
 
+[#Compression]
+== Compression
+
+Extends the async "Hello World" example to demonstrate content encoding compression filters. No separate example is
+needed for the other API variants as the usage of content encoding filters is the same for all API styles.
+
+* link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java[CompressionFilterExampleServer] - a server that demonstrates 
+the asynchronous API and responds with a simple `Hello World!` response body, optionally customized for a specific name for `POST` requests, as a `text/plain`.
+* link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java[CompressionFilterExampleClient.java] - a client that
+sends a `POST` request containing a name to the link:{source-root}/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java[server] and 
+receives a response greeting the posted name as a single content.
+
 [#Serialization]
 == Serialization
 
@@ -132,7 +144,7 @@ This example demonstrates how client and server can be configured to do mutual a
 Using the following classes:
 
 - link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpServerMutualTLS] - A server that sets the trust manager and key manager, and requires client authentication.
-- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java[HttpClientMutualTLS] - A client that sets the trust manager and key manager.
+- link:{source-root}/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java[HttpClientMutualTLS] - A client that sets the trust manager and key manager.
 
 NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the TLS/SSL configuration API is
 the same across all the HTTP APIs.

@@ -48,6 +48,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:serialization",
         "servicetalk-examples:http:service-composition",
         "servicetalk-examples:http:uds",
+        "servicetalk-examples:http:compression",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
         "servicetalk-grpc-netty",
@@ -95,3 +96,4 @@ project(":servicetalk-examples:http:serialization").name = "servicetalk-examples
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"
+project(":servicetalk-examples:http:compression").name = "servicetalk-examples-http-compression"

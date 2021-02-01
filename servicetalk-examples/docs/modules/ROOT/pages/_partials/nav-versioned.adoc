@@ -1,6 +1,7 @@
 
 * xref:{page-version}@servicetalk-examples::http/index.adoc[HTTP]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#HelloWorld[Hello World]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[Serialization]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#JAXRS[JAX-RS]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#MetaData[MetaData]
