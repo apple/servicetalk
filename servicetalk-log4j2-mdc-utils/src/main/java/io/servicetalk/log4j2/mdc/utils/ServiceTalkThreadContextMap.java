@@ -27,7 +27,10 @@ import org.apache.logging.log4j.util.ReadOnlyStringMap;
 import org.apache.logging.log4j.util.StringMap;
 import org.apache.logging.log4j.util.TriConsumer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -41,6 +44,47 @@ public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, Cl
     private static final Key<Map<String, String>> key = Key.newKey("log4j2Mdc");
     @SuppressWarnings("IllegalInstantiationOfString")
     private static final String NULL_STRING = "";
+
+    private static final String[] KNOWN_CONFLICTS = {
+            "io.servicetalk.log4j2.mdc.DefaultServiceTalkThreadContextMap",
+            "io.servicetalk.opentracing.log4j2.ServiceTalkTracingThreadContextMap",
+    };
+
+    private static final String ADAPTER_CONFLICT_MESSAGE = "Detected multiple ServiceTalk MDC adapters in classpath." +
+            " The %s MDC adapters should not be" +
+            " loaded at the same time. Please exclude one from your dependencies.%n";
+
+    public ServiceTalkThreadContextMap() {
+        detectPossibleConflicts();
+    }
+
+    private void detectPossibleConflicts() {
+        List<String> found = new ArrayList<>(KNOWN_CONFLICTS.length);
+        for (String cls : KNOWN_CONFLICTS) {
+            try {
+                Class.forName(cls);
+                found.add(cls);
+            } catch (ClassNotFoundException ex) {
+                // Not found - continue
+            }
+        }
+
+        if (found.size() > 1) {
+            System.err.printf((ADAPTER_CONFLICT_MESSAGE), Arrays.toString(found.toArray()));
+            // Log4j's provider interface provides no formal way to declare ordering or precedence if there are multiple
+            // provides which may overlap. Currently log4j2's ThreadContextMapFactory gives precedent to the logger
+            // specified via system property [1] so we check for this as a "best effort" to detect that this class has
+            // precedence and will be used for MDC storage.
+            // [1] https://logging.apache.org/log4j/2.0/log4j-api/apidocs/org/apache/logging/log4j/spi/ThreadContextMapFactory.html
+            if (!System.getProperty("log4j2.threadContextMap", "")
+                    .equals(this.getClass().getCanonicalName())) {
+                throw new IllegalStateException("log4j2.threadContextMap is not set to " +
+                        this.getClass().getCanonicalName() + ". There is no way to determine" +
+                        " which ThreadContextMap has precedence for MDC storage and behavior is therefore undefined.");
+            }
+            // Do NOT use log4j2 to log here as it can cause some reentrancy problem
+        }
+    }
 
     @Override
     public final void put(String key, String value) {
