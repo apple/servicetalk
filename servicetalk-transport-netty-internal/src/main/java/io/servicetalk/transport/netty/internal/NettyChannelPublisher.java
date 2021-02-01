@@ -166,50 +166,42 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     private boolean processPending(SubscriptionImpl target) {
         // Should always be called from eventloop. (assert done before calling)
-        if (inProcessPending || pending == null) {
-            // Guard against re-entrance.
-            return false;
-        }
-
-        inProcessPending = true;
-        try {
-            while (requestCount > 0) {
-                Object p = pending.poll();
-                if (p == null) {
-                    break;
-                }
-                if (p instanceof TerminalNotification) {
-                    Throwable throwable = ((TerminalNotification) p).cause();
-                    assert throwable != null : "onComplete notification can not be enqueued.";
-                    sendErrorToTarget(target, throwable);
-                    return true;
-                }
-                if (emit(target, p)) {
-                    if (subscription == target || subscription == null) {
-                        // stop draining the pending events if the current Subscription is still the same for which we
-                        // started draining, continue emitting the remaining data if there is a new Subscriber
+        if (!inProcessPending && pending != null && !pending.isEmpty()) {
+            inProcessPending = true;
+            try {
+                while (requestCount > 0) {
+                    Object p = pending.poll();
+                    if (p == null) {
+                        break;
+                    }
+                    if (p instanceof TerminalNotification) {
+                        sendErrorToTarget(target, (TerminalNotification) p);
                         return true;
                     }
-                    target = subscription;
+                    if (emit(target, p)) {
+                        if (subscription == target || subscription == null) {
+                            // stop draining the pending events if the current Subscription is still the same for which
+                            // we started draining, continue emitting the remaining data if there is a new Subscriber
+                            return true;
+                        }
+                        target = subscription;
+                    }
                 }
+                if (pending.peek() instanceof TerminalNotification) {
+                    sendErrorToTarget(target, (TerminalNotification) pending.poll());
+                    return true;
+                }
+            } finally {
+                inProcessPending = false;
             }
-            if (pending.peek() instanceof TerminalNotification) {
-                TerminalNotification terminal = (TerminalNotification) pending.poll();
-                Throwable throwable = terminal.cause();
-                assert throwable != null : "onComplete notification can not be enqueued.";
-                sendErrorToTarget(target, throwable);
-                return true;
-            }
-        } finally {
-            inProcessPending = false;
         }
         return false;
     }
 
     private boolean emit(SubscriptionImpl target, Object next) {
-        requestCount--;
+        --requestCount;
         @SuppressWarnings("unchecked")
-        T t = (T) next;
+        final T t = (T) next;
         /*
          * In case when this Publisher is converted to a Single (with isLast always returning true),
          * it should be possible for us to cancel the Subscription inside onNext.
@@ -234,6 +226,12 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             return true;
         }
         return false;
+    }
+
+    private void sendErrorToTarget(SubscriptionImpl target, TerminalNotification terminal) {
+        Throwable throwable = terminal.cause();
+        assert throwable != null;
+        sendErrorToTarget(target, throwable);
     }
 
     private void sendErrorToTarget(SubscriptionImpl target, Throwable throwable) {
@@ -305,7 +303,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             subscriber.onSubscribe(subscription);
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
-            if (!processPending(subscription) && (fatalError != null && (pending == null || pending.isEmpty()))) {
+            if (subscription == this.subscription && !processPending(subscription) &&
+                    (fatalError != null && (pending == null || pending.isEmpty()))) {
                 // We are already on the eventloop, so we are sure that nobody else is emitting to the Subscriber.
                 sendErrorToTarget(subscription, fatalError);
             }
