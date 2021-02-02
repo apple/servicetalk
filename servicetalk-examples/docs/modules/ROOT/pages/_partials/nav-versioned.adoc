@@ -1,6 +1,7 @@
 
 * xref:{page-version}@servicetalk-examples::http/index.adoc[HTTP]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#HelloWorld[Hello World]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[Serialization]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#JAXRS[JAX-RS]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#MetaData[MetaData]
@@ -10,5 +11,6 @@
 ** xref:{page-version}@servicetalk-examples::http/service-composition.adoc[Service Composition]
 * xref:{page-version}@servicetalk-examples::grpc/index.adoc[gRPC]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#HelloWorld[Hello World]
+** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#route-guide[Route Guide]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#protoc-options[Protoc Options]

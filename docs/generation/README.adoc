@@ -22,7 +22,7 @@ maintained in the https://github.com/apple/servicetalk[upstream project].
 * Source code links in the docs link to files locally.
 * Validates the generated HTML and checks for dangling links.
 
-This allows to preview local doc changes made to upstream projects.
+This allows previewing of local doc changes made to upstream projects.
 
 [source,shell]
 ----

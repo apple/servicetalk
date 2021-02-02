@@ -75,6 +75,15 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-str
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[bi-directional streaming programming paradigm].
 
+[#Compression]
+== Compression
+
+Extends the async "Hello World" example to demonstrate compression of the response body.
+
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleServer.java[CompressionExampleServer] - Waits for hello request from the client and responds with a compressed greeting response.
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleClient.java[CompressionExampleClient] - Sends a hello request to the server and receives a compressed greeting response.
+
+
 [#protoc-options]
 == Protoc Options
 
