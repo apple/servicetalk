@@ -45,6 +45,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -83,7 +84,7 @@ import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
-import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -276,16 +277,15 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     streamChannel = future.getNow();
                     parentContext.trackActiveStream(streamChannel);
 
+                    final CloseHandler closeHandler = forNonPipelined(true, streamChannel.config());
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
-                            PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
+                            closeHandler, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext.executionContext().bufferAllocator(),
                                     parentContext.executionContext().executor(), LAST_CHUNK_PREDICATE,
-                                    // Http2StreamChannel is not of type SocketChannel. Also Netty will manage the half
-                                    // closure based upon stream state.
-                                    PROTOCOL_OUTBOUND_CLOSE_HANDLER,
+                                    closeHandler,
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
                                     parentContext.executionContext().executionStrategy(),

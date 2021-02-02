@@ -108,4 +108,9 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     public Executor executor() {
         return delegate.executor();
     }
+
+    @Override
+    public String toString() {
+        return delegate.toString();
+    }
 }

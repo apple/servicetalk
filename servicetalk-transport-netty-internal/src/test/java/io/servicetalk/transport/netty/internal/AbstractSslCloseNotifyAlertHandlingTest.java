@@ -78,12 +78,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                             closeHandler.protocolPayloadBeginOutbound(ctx);
                         }
                         if (END.equals(msg)) {
-                            closeHandler.protocolPayloadEndOutbound(ctx);
-                            promise.addListener(f -> {
-                                if (f.isSuccess()) {
-                                    closeHandler.protocolPayloadEndOutboundSuccess(ctx);
-                                }
-                            });
+                            closeHandler.protocolPayloadEndOutbound(ctx, promise);
                         }
                         ctx.write(msg, promise);
                     }

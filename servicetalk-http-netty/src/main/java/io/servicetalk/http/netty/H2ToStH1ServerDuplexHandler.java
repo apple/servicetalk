@@ -60,6 +60,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
+            closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
@@ -81,6 +82,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             final HttpRequestMethod httpMethod;
             final String path;
             if (!readHeaders) {
+                closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence method = h2Headers.getAndRemove(METHOD.value());
                 CharSequence pathSequence = h2Headers.getAndRemove(PATH.value());
                 if (pathSequence == null || method == null) {
@@ -101,6 +103,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
+                closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpMethod == null) {
                 throw new IllegalArgumentException("a request must have " + METHOD + " and " +
                         PATH + " headers");

@@ -35,6 +35,7 @@ import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
@@ -56,7 +57,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
-import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.util.Objects.requireNonNull;
 
 final class H2ServerParentConnectionContext extends H2ParentConnectionContext implements ServerContext {
@@ -146,20 +147,17 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                         parentChannelInitializer.multiplexedObserver.onNewStream();
 
                                 // Netty To ServiceTalk type conversion
-
+                                final CloseHandler closeHandler = forNonPipelined(false, streamChannel.config());
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
-                                        h2ServerConfig.headersFactory(),
-                                        PROTOCOL_OUTBOUND_CLOSE_HANDLER, streamObserver));
+                                        h2ServerConfig.headersFactory(), closeHandler, streamObserver));
 
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =
                                         DefaultNettyConnection.initChildChannel(streamChannel,
                                                 connection.executionContext().bufferAllocator(),
                                                 connection.executionContext().executor(), LAST_CHUNK_PREDICATE,
-                                                // Http2StreamChannel is not of type SocketChannel. Also Netty will
-                                                // manage the half closure based upon stream state.
-                                                PROTOCOL_OUTBOUND_CLOSE_HANDLER,
+                                                closeHandler,
                                                 // TODO(scott): after flushStrategy is no longer on the connection
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.

@@ -19,6 +19,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
@@ -59,7 +60,6 @@ import static java.util.Objects.requireNonNull;
  * https://tools.ietf.org/html/rfc7230#section-6.6</a> but is protocol-independent.
  */
 class RequestResponseCloseHandler extends CloseHandler {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestResponseCloseHandler.class);
 
     private final boolean isClient;
@@ -147,10 +147,10 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     private void storeCloseRequestAndEmit(final CloseEvent event) {
-        eventHandler.accept(event);
         if (this.closeEvent == null) {
             this.closeEvent = event;
         }
+        eventHandler.accept(event);
     }
 
     @Override
@@ -180,20 +180,19 @@ class RequestResponseCloseHandler extends CloseHandler {
     }
 
     @Override
-    public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
+    public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         if (isClient || (closeEvent != null && pending == 0)) {
             ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
         }
-    }
-
-    @Override
-    public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
-        assert ctx.executor().inEventLoop();
-        state = unset(state, WRITE);
-        final CloseEvent evt = this.closeEvent;
-        if (evt != null) {
-            closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, false);
-        }
+        promise.addListener(f -> {
+            if (f.isSuccess()) {
+                state = unset(state, WRITE);
+                final CloseEvent evt = this.closeEvent;
+                if (evt != null) {
+                    closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, false);
+                }
+            }
+        });
     }
 
     @Override
