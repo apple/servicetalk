@@ -138,11 +138,18 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                         // +1 for the encoding footer (ie. END_OF_STREAM)
                         try {
                             if (next == END_OF_STREAM) {
-                                // ZIP footer is 10 bytes
-                                Buffer dst = allocator.newBuffer(10);
-                                stream.swap(dst);
-                                output.finish();
+                                Buffer dst;
+                                if (!headerWritten) {
+                                    // Empty publisher will not produce any items other than the END_OF_STREAM
+                                    // so we need to keep the header & footer in the same chunk and deliver downstream.
+                                    dst = stream.buffer;
+                                } else {
+                                    // ZIP footer is 10 bytes
+                                    dst = allocator.newBuffer(10);
+                                    stream.swap(dst);
+                                }
 
+                                output.finish();
                                 subscriber.onNext(dst);
                                 return;
                             }
