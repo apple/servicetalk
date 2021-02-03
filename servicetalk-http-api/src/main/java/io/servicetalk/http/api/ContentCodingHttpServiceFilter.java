@@ -36,6 +36,10 @@ import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static java.util.Collections.emptyList;
 
 /**
@@ -108,8 +112,8 @@ public final class ContentCodingHttpServiceFilter
                         }
 
                         return super.handle(ctx, request, responseFactory).map(response -> {
-                            encodePayloadContentIfAvailable(request.headers(), request.method(), request.version(),
-                                    responseCodings, response, allocator);
+                            encodePayloadContentIfAvailable(request.headers(), request.method(), responseCodings,
+                                    response, allocator);
                             return response;
                         });
                     } catch (UnsupportedContentEncodingException cause) {
@@ -130,15 +134,11 @@ public final class ContentCodingHttpServiceFilter
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,
                                                         final HttpRequestMethod method,
-                                                        final HttpProtocolVersion version,
                                                         final List<ContentCodec> supportedEncodings,
                                                         final StreamingHttpResponse response,
                                                         final BufferAllocator allocator) {
-        if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers())) {
-            return;
-        }
-
-        if (isPassThrough(method, version, response)) {
+        if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers()) ||
+                isPassThrough(method, response)) {
             return;
         }
 
@@ -149,8 +149,7 @@ public final class ContentCodingHttpServiceFilter
         }
     }
 
-    private static boolean isPassThrough(final HttpRequestMethod method, final HttpProtocolVersion version,
-                                      final StreamingHttpResponse response) {
+    private static boolean isPassThrough(final HttpRequestMethod method, final StreamingHttpResponse response) {
         // see. https://tools.ietf.org/html/rfc7230#section-3.3.3
         // The length of a message body is determined by one of the following
         //         (in order of precedence):
@@ -169,8 +168,8 @@ public final class ContentCodingHttpServiceFilter
         // ...
 
         int code = response.status().code();
-        return code < 200 || code == 204 || code == 304 ||
-                (method == HEAD || (method == CONNECT && code == 200));
+        return INFORMATIONAL_1XX.contains(code) || code == NO_CONTENT.code() || code == NOT_MODIFIED.code() ||
+                (method == HEAD || (method == CONNECT && SUCCESSFUL_2XX.contains(code)));
     }
 
     @Nullable

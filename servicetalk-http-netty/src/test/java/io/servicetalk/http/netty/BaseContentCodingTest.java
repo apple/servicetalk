@@ -134,7 +134,7 @@ public abstract class BaseContentCodingTest {
 
         public String toString() {
             if (list.isEmpty()) {
-                return "identity";
+                return identity().name().toString();
             }
 
             StringBuilder b = new StringBuilder();

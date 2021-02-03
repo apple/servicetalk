@@ -226,7 +226,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     protected void assertResponse(final StreamingHttpResponse response) throws Throwable {
         verifyNoErrors();
 
-        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, "identity").toString());
+        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
 
         String responsePayload = response.payloadBody(textDeserializer()).collect(StringBuilder::new,
                 StringBuilder::append).toFuture().get().toString();
