@@ -58,6 +58,7 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.InflaterInputStream;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.grpc.internal.GrpcUtil.MESSAGE_ACCEPT_ENCODING;
@@ -212,11 +213,7 @@ public class GrpcMessageEncodingTest {
                                 .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
                                     .map((String::trim)).collect(toList());
 
-                        final List<String> expectedReqAcceptedEncodings = clientSupportedEncodings.stream()
-                                                .filter((enc) -> enc != identity())
-                                                .map((ContentCodec::name))
-                                                .map((CharSequence::toString))
-                                                .collect(toList());
+                        final List<String> expectedReqAcceptedEncodings = encodingsAsStrings(clientSupportedEncodings);
 
                         assertTrue("Request encoding should be present in the request headers",
                                 contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING, "identity")));
@@ -247,11 +244,7 @@ public class GrpcMessageEncodingTest {
                             .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
                             .map((String::trim)).collect(toList());
 
-                    final List<String> expectedRespAcceptedEncodings = serverSupportedEncodings.stream()
-                                    .filter((enc) -> enc != identity())
-                                    .map((ContentCodec::name))
-                                    .map((CharSequence::toString))
-                                    .collect(toList());
+                    final List<String> expectedRespAcceptedEncodings = encodingsAsStrings(serverSupportedEncodings);
 
                     if (!expectedRespAcceptedEncodings.isEmpty() && !actualRespAcceptedEncodings.isEmpty()) {
                         assertEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings);
@@ -478,6 +471,15 @@ public class GrpcMessageEncodingTest {
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {
         assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.UNIMPLEMENTED));
+    }
+
+    @Nonnull
+    private static List<String> encodingsAsStrings(final List<ContentCodec> supportedEncodings) {
+        return supportedEncodings.stream()
+                .filter(enc -> enc != identity())
+                .map(ContentCodec::name)
+                .map(CharSequence::toString)
+                .collect(toList());
     }
 
     static class TestEncodingScenario {

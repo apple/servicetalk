@@ -221,48 +221,60 @@ public final class CharSequences {
             return emptyList();
         }
 
-        List<CharSequence> result = new ArrayList<>();
+        boolean isAscii = isAsciiString(input);
+        List<CharSequence> result = new ArrayList<>(4);
 
-        int startIndex = trim ? -1 : 0;
+        int startIndex = 0;
         int endIndex = -1;
 
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            if (!trim) {
-                endIndex = i;
-            } else if (c != ' ' && c != delimiter) {
-                endIndex = i + 1;
-            }
-
-            if (startIndex == -1 && c != ' ' && c != delimiter) {
-                startIndex = i;
-            } else if (c == delimiter) {
-                if (startIndex != -1 && endIndex != -1 && (i - startIndex) > 0) {
-                    result.add(subsequence(input, startIndex, endIndex));
+        if (trim) {
+            startIndex = -1;
+            for (int i = 0; i < input.length(); i++) {
+                char c = input.charAt(i);
+                if (c != ' ' && c != delimiter) {
+                    endIndex = i + 1;
                 }
 
-                if (!trim) {
-                    startIndex = i + 1;
-                } else {
+                if (startIndex == -1 && c != ' ' && c != delimiter) {
+                    startIndex = i;
+                } else if (c == delimiter) {
+                    if (endIndex > startIndex) {
+                        result.add(subsequence(isAscii, input, startIndex, endIndex));
+                    } else {
+                        result.add(isAscii ? newAsciiString("") : "");
+                    }
+
                     startIndex = -1;
                     endIndex = -1;
                 }
             }
-        }
+        } else {
+            for (int i = 0; i < input.length(); i++) {
+                char c = input.charAt(i);
+                endIndex = i;
 
-        if (!trim) {
+                if (c == delimiter) {
+                    if (endIndex >= startIndex) {
+                        result.add(subsequence(isAscii, input, startIndex, endIndex));
+                    }
+
+                    startIndex = i + 1;
+                }
+            }
+
             endIndex = input.length();
         }
 
         if (startIndex != -1 && endIndex != -1 && (input.length() - startIndex) > 0) {
-            result.add(subsequence(input, startIndex, endIndex));
+            result.add(subsequence(isAscii, input, startIndex, endIndex));
         }
 
         return result;
     }
 
-    private static CharSequence subsequence(final CharSequence input, final int start, final int end) {
-        if (isAsciiString(input)) {
+    private static CharSequence subsequence(final boolean isAscii, final CharSequence input,
+                                            final int start, final int end) {
+        if (isAscii) {
             return newAsciiString(((AsciiBuffer) input).unwrap().copy(start, end - start));
         } else {
             return input.subSequence(start, end);

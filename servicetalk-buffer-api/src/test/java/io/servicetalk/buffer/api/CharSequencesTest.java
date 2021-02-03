@@ -21,11 +21,11 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.split;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 
 public class CharSequencesTest {
 
     // Common strings
+    public static final CharSequence EMPTY_ASCII = newAsciiString("");
     public static final String GZIP = "gzip";
     public static final CharSequence GZIP_ASCII = newAsciiString(GZIP);
     public static final String DEFLATE = "deflate";
@@ -46,17 +46,29 @@ public class CharSequencesTest {
         assertThat(split(GZIP, ',', false), contains(GZIP));
         assertThat(split("gzip,", ',', false), contains(GZIP));
         assertThat(split("gzip,deflate,compress", ',', false), contains(GZIP, DEFLATE, COMPRESS));
-        assertThat(split("gzip,,compress", ',', false), contains(GZIP, COMPRESS));
+        assertThat(split("gzip,,compress", ',', false), contains(GZIP, "", COMPRESS));
         assertThat(split("gzip, ,compress", ',', false), contains(GZIP, " ", COMPRESS));
         assertThat(split("gzip , , compress", ',', false), contains("gzip ", " ", " compress"));
         assertThat(split("gzip , white space word , compress", ',', false),
                 contains("gzip ", " white space word ", " compress"));
+        assertThat(split("gzip compress", ' ', false),
+                contains("gzip", "compress"));
+        assertThat(split("gzip     compress", ' ', false),
+                contains("gzip", "", "", "", "", "compress"));
+        assertThat(split("gzip     compress", ' ', false),
+                contains("gzip", "", "", "", "", "compress"));
+        assertThat(split(" gzip     compress ", ' ', false),
+                contains("", "gzip", "", "", "", "", "compress"));
+        assertThat(split("gzip,,,,,compress", ',', false),
+                contains("gzip", "", "", "", "", "compress"));
+        assertThat(split(",gzip,,,,,compress,", ',', false),
+                contains("", "gzip", "", "", "", "", "compress"));
     }
 
     @Test
     public void splitStringWithTrim() {
-        assertThat(split(" ,      ", ',', true), empty());
-        assertThat(split(" ,      ,", ',', true), empty());
+        assertThat(split(" ,      ", ',', true), contains(""));
+        assertThat(split(" ,      ,", ',', true), contains("", ""));
         assertThat(split(" gzip  ,  deflate  ", ',', true), contains(GZIP, DEFLATE));
         assertThat(split(" gzip  ,  deflate  ,", ',', true), contains(GZIP, DEFLATE));
         assertThat(split("gzip, deflate", ',', true), contains(GZIP, DEFLATE));
@@ -66,12 +78,22 @@ public class CharSequencesTest {
         assertThat(split(GZIP, ',', true), contains(GZIP));
         assertThat(split("gzip,", ',', true), contains(GZIP));
         assertThat(split("gzip,deflate,compress", ',', true), contains(GZIP, DEFLATE, COMPRESS));
-        assertThat(split("gzip,,compress", ',', true), contains(GZIP, COMPRESS));
-        assertThat(split("gzip, ,compress", ',', true), contains(GZIP, COMPRESS));
-        assertThat(split("gzip , , compress", ',', true), contains(GZIP, COMPRESS));
-        assertThat(split(",, , ", ',', true), empty());
+        assertThat(split("gzip,,compress", ',', true), contains(GZIP, "", COMPRESS));
+        assertThat(split("gzip, ,compress", ',', true), contains(GZIP, "", COMPRESS));
+        assertThat(split("gzip , , compress", ',', true), contains(GZIP, "", COMPRESS));
+        assertThat(split(",, , ", ',', true), contains("", "", ""));
         assertThat(split("gzip , white space word , compress", ',', true),
                 contains("gzip", "white space word", "compress"));
+        assertThat(split("gzip compress", ' ', true),
+                contains("gzip", "compress"));
+        assertThat(split("gzip     compress", ' ', true),
+                contains("gzip", "", "", "", "", "compress"));
+        assertThat(split(" gzip     compress ", ' ', true),
+                contains("", "gzip", "", "", "", "", "compress"));
+        assertThat(split("gzip,,,,,compress", ',', true),
+                contains("gzip", "", "", "", "", "compress"));
+        assertThat(split(",gzip,,,,,compress,", ',', true),
+                contains("", "gzip", "", "", "", "", "compress"));
     }
 
     @Test
@@ -97,17 +119,21 @@ public class CharSequencesTest {
         assertThat(split(newAsciiString("gzip,deflate,compress"), ',', false),
                 contains(GZIP_ASCII, DEFLATE_ASCII, COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip,,compress"), ',', false),
-                contains(GZIP_ASCII, COMPRESS_ASCII));
+                contains(GZIP_ASCII, newAsciiString(""), COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip, ,compress"), ',', false),
                 contains(GZIP_ASCII, newAsciiString(" "), COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip , , compress"), ',', false),
                 contains(newAsciiString("gzip "), newAsciiString(" "), newAsciiString(" compress")));
+        assertThat(split(newAsciiString(" gzip  ,  deflate  ,  "), ',', false),
+                contains(newAsciiString(" gzip  "), newAsciiString("  deflate  "),
+                        newAsciiString("  ")));
     }
 
     @Test
     public void splitAsciiStringWithTrim() {
-        assertThat(split(newAsciiString(" ,      "), ',', true), empty());
-        assertThat(split(newAsciiString(" ,      ,"), ',', true), empty());
+        assertThat(split(newAsciiString(" ,      "), ',', true), contains(EMPTY_ASCII));
+        assertThat(split(newAsciiString(" ,      ,"), ',', true),
+                contains(EMPTY_ASCII, EMPTY_ASCII));
         assertThat(split(newAsciiString(" gzip  ,  deflate  "), ',', true),
                 contains(GZIP_ASCII, DEFLATE_ASCII));
         assertThat(split(newAsciiString(" gzip  ,  deflate  ,"), ',', true),
@@ -125,11 +151,14 @@ public class CharSequencesTest {
         assertThat(split(newAsciiString("gzip,deflate,compress"), ',', true),
                 contains(GZIP_ASCII, DEFLATE_ASCII, COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip,,compress"), ',', true),
-                contains(GZIP_ASCII, COMPRESS_ASCII));
+                contains(GZIP_ASCII, EMPTY_ASCII, COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip, ,compress"), ',', true),
-                contains(GZIP_ASCII, COMPRESS_ASCII));
+                contains(GZIP_ASCII, EMPTY_ASCII, COMPRESS_ASCII));
         assertThat(split(newAsciiString("gzip , , compress"), ',', true),
-                contains(GZIP_ASCII, COMPRESS_ASCII));
-        assertThat(split(newAsciiString(",, , "), ',', true), empty());
+                contains(GZIP_ASCII, EMPTY_ASCII, COMPRESS_ASCII));
+        assertThat(split(newAsciiString(",, , "), ',', true),
+                contains(EMPTY_ASCII, EMPTY_ASCII, EMPTY_ASCII));
+        assertThat(split(newAsciiString(" gzip  ,  deflate  , "), ',', true),
+                contains(GZIP_ASCII, DEFLATE_ASCII));
     }
 }
