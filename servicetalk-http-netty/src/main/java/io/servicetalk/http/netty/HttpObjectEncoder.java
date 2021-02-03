@@ -59,6 +59,8 @@ import static io.servicetalk.buffer.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
@@ -135,7 +137,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
                     isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
 
-            sanitizeHeadersBeforeEncode(metaData, state == ST_CONTENT_ALWAYS_EMPTY);
+            sanitizeHeadersBeforeEncode(metaData, state);
 
             encodeHeaders(metaData.headers(), byteBuf, stBuf);
             writeShortBE(byteBuf, CRLF_SHORT);
@@ -203,6 +205,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      */
     protected boolean isContentAlwaysEmpty(@SuppressWarnings("unused") T msg) {
         return false;
+    }
+
+    private void sanitizeHeadersBeforeEncode(T msg, int state) {
+        if (state == ST_CONTENT_CHUNK && HTTP_1_1.equals(msg.version())) {
+            // A sender MUST remove the received Content-Length field prior to forwarding a "Transfer-Encoding: chunked"
+            // message downstream: https://tools.ietf.org/html/rfc7230#section-3.3.3
+            msg.headers().remove(CONTENT_LENGTH);
+        }
+        sanitizeHeadersBeforeEncode(msg, state == ST_CONTENT_ALWAYS_EMPTY);
     }
 
     /**

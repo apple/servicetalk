@@ -334,8 +334,8 @@ public class HttpRequestEncoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    private static void verifyHttpRequest(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
-                                          boolean trailers) {
+    private static String verifyHttpRequest(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
+                                            boolean trailers) {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
@@ -394,6 +394,7 @@ public class HttpRequestEncoderTest {
             default:
                 throw new Error();
         }
+        return actualMetaData;
     }
 
     private static void consumeEmptyBufferFromTrailers(EmbeddedChannel channel) {
@@ -478,5 +479,27 @@ public class HttpRequestEncoderTest {
             assertNotNull(closeHandler);
             verify(closeHandler, never()).protocolPayloadEndOutbound(any(), any());
         }
+    }
+
+    @Test
+    public void withContentLengthAndChunked() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        Buffer buffer = allocator.wrap(content);
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
+        request.headers()
+                .add(CONNECTION, KEEP_ALIVE)
+                .add(USER_AGENT, "unit-test")
+                .add(CONTENT_LENGTH, valueOf(content.length))
+                .add(TRANSFER_ENCODING, CHUNKED);
+        channel.writeOutbound(request);
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+        String metaData = verifyHttpRequest(channel, buffer, TransferEncoding.Chunked, false);
+        assertFalse("Unexpected content-length header in meta-data while chunked encoding is used: " + metaData,
+                metaData.contains(CONTENT_LENGTH));
+        assertFalse(channel.finishAndReleaseAll());
     }
 }
