@@ -32,8 +32,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 
@@ -45,6 +47,7 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
@@ -52,6 +55,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.lang.Integer.toHexString;
@@ -65,7 +70,9 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(),
+    private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
+
+    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
             getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
 
     @Override
@@ -375,5 +382,61 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         channel().close();
         assertEmptyTrailers(channel());
         assertFalse(channel().finishAndReleaseAll());
+    }
+
+    @Test
+    public void successfulResponseToConnectRequest() {
+        methodQueue.add(CONNECT);
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+
+        assertStartLineForContent();
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void successfulResponseToConnectRequestWithPayloadBodyFails() {
+        methodQueue.add(CONNECT);
+        String content = "content";
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: " + content.length() + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+
+        // Verify response meta-data received and parsed as a full response:
+        assertStartLineForContent();
+        assertEmptyTrailers(channel);
+
+        // Try to write response content:
+        assertDecoderException(content, "Invalid start-line");
+    }
+
+    @Test
+    public void errorResponseToConnectRequestWithEmptyContent() {
+        methodQueue.add(CONNECT);
+        writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: 0" + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+        assertResponseLine(HTTP_1_1, BAD_REQUEST);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void errorResponseToConnectRequestWithContent() {
+        methodQueue.add(CONNECT);
+        int contentLength = 128;
+        writeMsg("HTTP/1.1 400 Bad Request" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n");
+        writeContent(contentLength);
+        assertResponseLine(HTTP_1_1, BAD_REQUEST);
+        HttpHeaders trailers = assertPayloadSize(contentLength);
+        assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
+        assertFalse(channel.finishAndReleaseAll());
     }
 }
