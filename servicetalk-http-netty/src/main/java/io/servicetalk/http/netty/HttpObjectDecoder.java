@@ -671,12 +671,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             return null;
         }
 
+        // Determine content-length here to apply validation as soon as header are read:
+        final long contentLength = contentLength();
         if (isContentAlwaysEmpty(message)) {
             removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
         } else if (isTransferEncodingChunked(message.headers())) {
             return State.READ_CHUNK_SIZE;
-        } else if (contentLength() >= 0) {
+        } else if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;
         } else {
             return State.READ_VARIABLE_LENGTH_CONTENT;
@@ -850,9 +852,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     private static long getContentLength(final HttpMetaData message) {
-        CharSequence value = message.headers().get(CONTENT_LENGTH);
-        if (value != null) {
-            return Long.parseLong(value.toString());
+        final HttpHeaders headers = message.headers();
+        final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH), headers::values);
+        if (contentLength >= 0) {
+            return contentLength;
         }
 
         // We know the content length if it's a Web Socket message even if

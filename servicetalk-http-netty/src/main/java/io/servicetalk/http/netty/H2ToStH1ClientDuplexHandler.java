@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,14 +135,15 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 if (httpStatus != null) {
                     fireFullResponse(ctx, h2Headers, httpStatus);
                 } else {
-                    ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null));
+                    validateContentLengthMatch();
+                    ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null, false));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpStatus == null) {
                 throw new IllegalArgumentException("a response must have " + STATUS + " header");
             } else {
-                ctx.fireChannelRead(
-                        newResponseMetaData(HTTP_2_0, httpStatus, h2HeadersToH1HeadersClient(h2Headers, httpStatus)));
+                ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
+                        h2HeadersToH1HeadersClient(h2Headers, httpStatus, false)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -154,21 +155,32 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private void fireFullResponse(ChannelHandlerContext ctx, final Http2Headers h2Headers,
                                   HttpResponseStatus httpStatus) {
         assert method != null;
-        if (shouldAddZeroContentLength(httpStatus.code(), method)) {
-            h2Headers.set(CONTENT_LENGTH, ZERO);
-        }
-        ctx.fireChannelRead(
-                newResponseMetaData(HTTP_2_0, httpStatus, h2HeadersToH1HeadersClient(h2Headers, httpStatus)));
+        ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
+                h2HeadersToH1HeadersClient(h2Headers, httpStatus, true)));
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
 
     private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(Http2Headers h2Headers,
-                                                                   @Nullable HttpResponseStatus httpStatus) {
+                                                                   @Nullable HttpResponseStatus httpStatus,
+                                                                   boolean fullResponse) {
         assert method != null;
         h2HeadersSanitizeForH1(h2Headers);
-        if (httpStatus != null && !h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH) &&
-                canAddResponseTransferEncodingProtocol(httpStatus.code(), method)) {
-            h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        if (httpStatus != null) {
+            final int statusCode = httpStatus.code();
+            final long contentLength = contentLength(h2Headers);
+            if (contentLength < 0) {
+                if (fullResponse) {
+                    if (shouldAddZeroContentLength(httpStatus.code(), method)) {
+                        h2Headers.set(CONTENT_LENGTH, ZERO);
+                    }
+                } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {
+                    h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+                }
+            } else if (!shouldAddZeroContentLength(statusCode, method)) {
+                throw new IllegalArgumentException("content-length (" + contentLength +
+                        ") header is not expected for status code " + statusCode + " in response to " + method.name() +
+                        " request");
+            }
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
     }
