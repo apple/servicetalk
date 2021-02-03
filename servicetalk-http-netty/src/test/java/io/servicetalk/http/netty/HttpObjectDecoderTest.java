@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -94,6 +95,10 @@ abstract class HttpObjectDecoderTest {
     }
 
     final void writeChunk(int length) {
+        if (length == 0) {
+            writeMsg("0\r\n");
+            return;
+        }
         writeChunkSize(length);
         writeContent(length);
         writeMsg("\r\n");
@@ -134,6 +139,8 @@ abstract class HttpObjectDecoderTest {
                 assertEmptyTrailers(channel());
             }
         } else {
+            assertThat("No 'transfer-encoding: chunked' header",
+                    isTransferEncodingChunked(metaData.headers()), is(true));
             HttpHeaders trailers = assertPayloadSize(-expectedContentLength);
             if (containsTrailers) {
                 assertSingleHeaderValue(trailers, "TrailerStatus", "good");

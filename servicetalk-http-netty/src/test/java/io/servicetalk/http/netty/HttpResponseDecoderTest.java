@@ -51,6 +51,8 @@ import java.util.Queue;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -64,6 +66,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 
 public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
@@ -291,7 +294,7 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void variableNoTrailersNoContent() {
+    public void variableEmptyContent() {
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Connection: keep-alive" + "\r\n" + "\r\n");
@@ -306,7 +309,27 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    public void variableWithTrailers() {
+    public void variableWithContent() {
+        int contentLength = 128;
+        writeMsg("HTTP/1.1 200 OK" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" + "\r\n");
+        writeContent(contentLength);
+
+        // For a response, the variable length content is considered "complete" when the channel is closed.
+        channel.close();
+
+        HttpMetaData metaData = assertStartLineForContent();
+        assertStandardHeaders(metaData.headers());
+        assertThat(metaData.headers().get(CONTENT_LENGTH), is(nullValue()));
+        Buffer chunk = channel().readInbound();
+        assertThat(chunk.readableBytes(), is(contentLength));
+        assertEmptyTrailers(channel());
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void variableWithChunkedContentAndTrailers() {
         int chunkSize = 128;
         writeMsg("HTTP/1.1 200 OK" + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
@@ -315,14 +338,23 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
         // Note that trailers are only allowed when chunked encoding is used. So the trailers in this case are
         // considered part of the payload (even the \r\n), and the response is terminated when the channel is closed.
         // https://tools.ietf.org/html/rfc7230.html#section-4.1
-        writeContent(chunkSize);
-        String trailersMsg = "TrailerStatus: good" + "\r\n" + "\r\n";
-        writeMsg(trailersMsg);
+        writeChunk(chunkSize);
+        writeChunk(0);
+        String trailersPart = "TrailerStatus: good" + "\r\n";
+        writeMsg(trailersPart);
+        writeMsg("\r\n");
 
         // For a response, the variable length content is considered "complete" when the channel is closed.
         channel.close();
 
-        validateWithContent(-(chunkSize + trailersMsg.length()), false);
+        // In this case, content is parsed without taking "chunked" encoding into account.
+        int expectedContentLength = 2 /* chunk-size */ + 2 /* CRLF */ + chunkSize + 2 /* CRLF */ + 3 /* last-chunk */ +
+                trailersPart.length() + 2 /* CRLF */;
+        HttpMetaData metaData = assertStartLineForContent();
+        assertStandardHeaders(metaData.headers());
+        assertThat(isTransferEncodingChunked(metaData.headers()), is(false));
+        HttpHeaders trailers = assertPayloadSize(expectedContentLength);
+        assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
         assertFalse(channel.finishAndReleaseAll());
     }
 
