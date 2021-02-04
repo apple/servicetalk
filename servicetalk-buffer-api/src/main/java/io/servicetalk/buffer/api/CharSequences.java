@@ -206,37 +206,93 @@ public final class CharSequences {
     }
 
     /**
-     * Split a given {@link CharSequence} to separate ones on the given {@code delimiter}.
-     * The returned {@link CharSequence}s are created by invoking the {@link CharSequence#subSequence(int, int)} method
-     * on the main one.
+     * Split a given {@link #newAsciiString(Buffer) AsciiString} to separate ones on the given {@code delimiter}.
      *
+     * Trimming white-space before and after each token can be controlled by the {@code trim} flag
      * This method has no support for regex.
      *
-     * @param input The initial {@link CharSequence} to split, this experiences no side effects
-     * @param delimiter The delimiter character
+     * @param input The initial {@link CharSequence} to split, this experiences no side effects.
+     * @param delimiter The delimiter character.
+     * @param trim Flag to control whether the individual items must be trimmed.
      * @return a {@link List} of {@link CharSequence} subsequences of the input with the separated values
      */
-    public static List<CharSequence> split(final CharSequence input, final char delimiter) {
+    public static List<CharSequence> split(final CharSequence input, final char delimiter, final boolean trim) {
         if (input.length() == 0) {
             return emptyList();
         }
 
-        int startIndex = 0;
-        List<CharSequence> result = new ArrayList<>();
-        for (int i = 0; i < input.length(); i++) {
-            if (input.charAt(i) == delimiter) {
-                if ((i - startIndex) > 0) {
-                    result.add(input.subSequence(startIndex, i));
-                }
+        return trim ? splitWithTrim(input, isAsciiString(input), delimiter) :
+                split0(input, isAsciiString(input), delimiter);
+    }
 
+    private static List<CharSequence> split0(final CharSequence input, final boolean isAscii, final char delimiter) {
+        int startIndex = 0;
+
+        List<CharSequence> result = new ArrayList<>(4);
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+
+            if (c == delimiter) {
+                result.add(subsequence(isAscii, input, startIndex, i));
                 startIndex = i + 1;
             }
         }
 
         if ((input.length() - startIndex) > 0) {
-            result.add(input.subSequence(startIndex, input.length()));
+            result.add(subsequence(isAscii, input, startIndex, input.length()));
+        } else {
+            result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
         }
+
         return result;
+    }
+
+    private static List<CharSequence> splitWithTrim(final CharSequence input, final boolean isAscii,
+                                                    final char delimiter) {
+        int startIndex = -1;
+        int endIndex = -1;
+        boolean reset = true;
+
+        List<CharSequence> result = new ArrayList<>(4);
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c != ' ' && c != delimiter) {
+                endIndex = i + 1;
+            }
+
+            if (reset && c != ' ' && c != delimiter) {
+                startIndex = i;
+                reset = false;
+            } else if (c == delimiter) {
+                if (endIndex > startIndex) {
+                    result.add(subsequence(isAscii, input, startIndex, endIndex));
+                } else {
+                    result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
+                }
+
+                startIndex = i + 1;
+                endIndex = i + 1;
+                reset = true;
+            }
+        }
+
+        if (startIndex != -1) {
+            if ((input.length() - startIndex) > 0) {
+                result.add(subsequence(isAscii, input, startIndex, endIndex));
+            } else {
+                result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
+            }
+        }
+
+        return result;
+    }
+
+    private static CharSequence subsequence(final boolean isAscii, final CharSequence input,
+                                            final int start, final int end) {
+        return isAscii ? newAsciiString(((AsciiBuffer) input).unwrap().copy(start, end - start)) :
+                input.subSequence(start, end);
     }
 
     private static boolean equalsIgnoreCase(final char a, final char b) {
