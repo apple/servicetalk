@@ -68,6 +68,9 @@
     <a class="nav-link" href="#HelloWorld">Hello World</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Compression">Compression</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#Serialization">Serialization</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -96,6 +99,9 @@
 <ul class="nav-list">
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#Compression">Compression</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#route-guide">Route Guide</a>
@@ -191,6 +197,9 @@
           <a href="../../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-client-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-client-api/0.36/index.html">0.36</a>
         </li>
         <li class="version">
@@ -233,6 +242,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-concurrent-api/0.36/index.html">0.36</a>
@@ -297,6 +309,9 @@
           <a href="../index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
           <a href="../../0.36/index.html">0.36</a>
         </li>
         <li class="version">
@@ -357,6 +372,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-grpc-api/0.36/index.html">0.36</a>
@@ -421,6 +439,9 @@
           <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-http-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-http-api/0.36/index.html">0.36</a>
         </li>
         <li class="version">
@@ -481,6 +502,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.37/index.html">0.37</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-router-jersey/0.36/index.html">0.36</a>
@@ -545,6 +569,9 @@
           <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-data-jackson-jersey/0.36/index.html">0.36</a>
         </li>
         <li class="version">
@@ -607,6 +634,9 @@
           <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-loadbalancer/0.36/index.html">0.36</a>
         </li>
         <li class="version">
@@ -664,6 +694,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.37/index.html">0.37</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-security-jersey/0.36/index.html">0.36</a>
@@ -726,6 +759,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.37/index.html">0.37</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk/0.36/index.html">0.36</a>
@@ -802,6 +838,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="index.html">SNAPSHOT</a>
+    <a class="version" href="../../0.37/http/index.html">0.37</a>
     <a class="version" href="../../0.36/http/index.html">0.36</a>
     <a class="version" href="../../0.35/http/index.html">0.35</a>
     <a class="version" href="../../0.34/http/index.html">0.34</a>
@@ -937,6 +974,28 @@ blocking iterable stream of buffers.</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="Compression"><a class="anchor" href="#Compression"></a><a class="link" href="#Compression">Compression</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Extends the async "Hello World" example to demonstrate content encoding compression filters. No separate example is
+needed for the other API variants as the usage of content encoding filters is the same for all API styles.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">CompressionFilterExampleServer</a> - a server that demonstrates
+the asynchronous API and responds with a simple <code>Hello World!</code> response body, optionally customized for a specific name for <code>POST</code> requests, as a <code>text/plain</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a client that
+sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
+receives a response greeting the posted name as a single content.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="Serialization"><a class="anchor" href="#Serialization"></a><a class="link" href="#Serialization">Serialization</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -1059,7 +1118,7 @@ across all the HTTP APIs.
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
 </li>
 </ul>
 </div>
