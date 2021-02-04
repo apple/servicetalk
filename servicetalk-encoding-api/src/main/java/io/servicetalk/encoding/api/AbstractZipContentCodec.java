@@ -105,10 +105,10 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                 .concat(succeeded(END_OF_STREAM))
                 .liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
 
-                    final SwappableBufferOutputStream stream = new SwappableBufferOutputStream();
+                    private final SwappableBufferOutputStream stream = new SwappableBufferOutputStream();
 
                     @Nullable
-                    DeflaterOutputStream output;
+                    private DeflaterOutputStream output;
 
                     private boolean headerWritten;
 
@@ -570,12 +570,9 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         }
     }
 
-    static class SwappableBufferOutputStream extends OutputStream {
+    private static class SwappableBufferOutputStream extends OutputStream {
         @Nullable
         private Buffer buffer;
-
-        SwappableBufferOutputStream() {
-        }
 
         private void swap(final Buffer buffer) {
             this.buffer = requireNonNull(buffer);
@@ -600,7 +597,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         }
     }
 
-    static final class BufferBoundedInputStream extends InputStream {
+    private static final class BufferBoundedInputStream extends InputStream {
         private final Buffer buffer;
         private int count;
 
