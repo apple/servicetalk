@@ -185,12 +185,10 @@ class RequestResponseCloseHandler extends CloseHandler {
             ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
         }
         promise.addListener(f -> {
-            if (f.isSuccess()) {
-                state = unset(state, WRITE);
-                final CloseEvent evt = this.closeEvent;
-                if (evt != null) {
-                    closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, false);
-                }
+            state = unset(state, WRITE);
+            final CloseEvent evt = this.closeEvent;
+            if (evt != null) {
+                closeChannelHalfOrFullyOnPayloadEnd(ctx.channel(), evt, false);
             }
         });
     }

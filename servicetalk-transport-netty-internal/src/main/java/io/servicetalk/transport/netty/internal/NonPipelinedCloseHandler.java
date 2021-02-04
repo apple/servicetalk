@@ -26,6 +26,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CH
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GRACEFUL_USER_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_INBOUND;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.PROTOCOL_CLOSING_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandler.State.has;
 import static java.util.Objects.requireNonNull;
 
@@ -88,7 +89,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     @Override
     public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
         state = set(state, OUT_CLOSED);
-        storeCloseRequestAndEmit(PROTOCOL_CLOSING_INBOUND);
+        storeCloseRequestAndEmit(PROTOCOL_CLOSING_OUTBOUND);
         outboundEventCheckClose(ctx.channel());
     }
 
@@ -129,7 +130,7 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     void gracefulUserClosing(final Channel channel) {
         state = set(state, GRACEFUL_CLOSE);
         storeCloseRequestAndEmit(GRACEFUL_USER_CLOSING);
-        if (!isAllSet(state, READ_WRITE)) {
+        if (!isAnySet(state, READ_WRITE)) {
             closeChannel(channel);
         }
     }

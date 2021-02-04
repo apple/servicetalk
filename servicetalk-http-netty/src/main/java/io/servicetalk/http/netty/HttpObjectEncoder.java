@@ -119,6 +119,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
             }
             T metaData = castMetaData(msg);
+            closeHandler.protocolPayloadBeginOutbound(ctx);
+            if (shouldClose(metaData)) {
+                closeHandler.protocolClosingOutbound(ctx);
+            }
 
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
@@ -135,10 +139,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
             encodeHeaders(metaData.headers(), byteBuf, stBuf);
             writeShortBE(byteBuf, CRLF_SHORT);
-            closeHandler.protocolPayloadBeginOutbound(ctx);
-            if (shouldClose(metaData)) {
-                closeHandler.protocolClosingOutbound(ctx);
-            }
             headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
                                             HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
             ctx.write(byteBuf, promise);
