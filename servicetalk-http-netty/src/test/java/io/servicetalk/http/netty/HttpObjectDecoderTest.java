@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -118,14 +117,13 @@ abstract class HttpObjectDecoderTest {
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
-    final void validateWithContent(int expectedContentLength, boolean containsTrailers) {
+    final HttpMetaData validateWithContent(int expectedContentLength, boolean containsTrailers) {
         HttpMetaData metaData = assertStartLineForContent();
         assertStandardHeaders(metaData.headers());
         if (expectedContentLength > 0) {
             assertSingleHeaderValue(metaData.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
-            Buffer chunk = channel().readInbound();
-            assertThat(chunk.readableBytes(), is(expectedContentLength));
-            assertEmptyTrailers(channel());
+            HttpHeaders trailers = assertPayloadSize(expectedContentLength);
+            assertThat("Trailers are not empty", trailers.isEmpty(), is(true));
         } else if (expectedContentLength == 0) {
             if (containsTrailers) {
                 assertSingleHeaderValue(metaData.headers(), TRANSFER_ENCODING, CHUNKED);
@@ -136,18 +134,7 @@ abstract class HttpObjectDecoderTest {
                 assertEmptyTrailers(channel());
             }
         } else {
-            Buffer actual = DEFAULT_ALLOCATOR.newBuffer(-expectedContentLength);
-            Object chunk;
-            for (;;) {
-                chunk = channel().readInbound();
-                if (chunk instanceof Buffer) {
-                    actual.writeBytes((Buffer) chunk);
-                } else {
-                    break;
-                }
-            }
-            assertThat(actual.readableBytes(), is(-expectedContentLength));
-            HttpHeaders trailers = (HttpHeaders) chunk;
+            HttpHeaders trailers = assertPayloadSize(-expectedContentLength);
             if (containsTrailers) {
                 assertSingleHeaderValue(trailers, "TrailerStatus", "good");
             } else {
@@ -155,6 +142,22 @@ abstract class HttpObjectDecoderTest {
             }
         }
         assertFalse(channel().finishAndReleaseAll());
+        return metaData;
+    }
+
+    final HttpHeaders assertPayloadSize(int expectedPayloadSize) {
+        int actualPayloadSize = 0;
+        Object item;
+        for (;;) {
+            item = channel().readInbound();
+            if (item instanceof Buffer) {
+                actualPayloadSize += ((Buffer) item).readableBytes();
+            } else {
+                assertThat(actualPayloadSize, is(expectedPayloadSize));
+                assertThat(item, instanceOf(HttpHeaders.class));
+                return (HttpHeaders) item;
+            }
+        }
     }
 
     static void assertEmptyTrailers(EmbeddedChannel channel) {

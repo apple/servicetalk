@@ -42,6 +42,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -122,6 +123,8 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     @Override
     protected boolean isContentAlwaysEmpty(final HttpResponseMetaData msg) {
         // Don't poll from the queue for informational responses, because the real response is expected next.
+        // https://tools.ietf.org/html/rfc7230#section-3.3.3 (1): any response with a 1xx (Informational) status code
+        // cannot contain a message body:
         if (msg.status().statusClass() == INFORMATIONAL_1XX) {
             // One exception: Hixie 76 websocket handshake response
             return !(msg.status().code() == SWITCHING_PROTOCOLS.code() &&
@@ -140,12 +143,16 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         HttpRequestMethod method = methodQueue.poll();
 
-        // We are either switching protocols, and we will no longer process any more HTTP/1.x responses, or the protocol
-        // rules prevent a content body. Also 204 and 304 are always empty.
-        // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        // Note that we are using ServiceTalk constants for HttpRequestMethod here, and assume the decoders will
-        // also use ServiceTalk constants which allows us to use reference check here:
-        return method == HEAD || method == CONNECT
+        // https://tools.ietf.org/html/rfc7230#section-3.3.3 (2): Any 2xx (Successful) response to a CONNECT request
+        // implies that the connection will become a tunnel immediately after the empty line that concludes the header
+        // fields:
+        if (CONNECT.equals(method) && msg.status().statusClass() == SUCCESSFUL_2XX) {
+            return true;
+        }
+
+        // https://tools.ietf.org/html/rfc7230#section-3.3.3 (1): Any response to a HEAD request and any response with
+        // a 204 (No Content), or 304 (Not Modified) status code cannot contain a message body:
+        return HEAD.equals(method)
                 || msg.status().code() == NO_CONTENT.code() || msg.status().code() == NOT_MODIFIED.code();
     }
 
