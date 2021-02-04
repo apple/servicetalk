@@ -677,6 +677,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
         } else if (isTransferEncodingChunked(message.headers())) {
+            if (contentLength >= 0L && HTTP_1_1.equals(message.version())) {
+                // Remove the received content-length header(s), keep only "transfer-encoding: chunked"
+                // See https://tools.ietf.org/html/rfc7230#section-3.3.3, item 3.
+                message.headers().remove(CONTENT_LENGTH);
+                this.contentLength = Long.MIN_VALUE;
+            }
             return State.READ_CHUNK_SIZE;
         } else if (contentLength >= 0L) {
             return State.READ_FIXED_LENGTH_CONTENT;

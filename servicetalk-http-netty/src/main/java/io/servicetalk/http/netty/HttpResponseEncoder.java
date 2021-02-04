@@ -109,11 +109,12 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         // - this is the rough equivalent of what is done in Netty in terms of sequencing. Instead of trying to
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         HttpRequestMethod method = methodQueue.poll();
+
+        HttpHeaders headers = msg.headers();
         if (isAlwaysEmpty) {
             final HttpResponseStatus status = msg.status();
             if (status.statusClass() == INFORMATIONAL_1XX || status.code() == NO_CONTENT.code()) {
 
-                HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.2
                 headers.remove(CONTENT_LENGTH);
@@ -122,11 +123,15 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method != null && CONNECT.name().equals(method.name())
-                && msg.status().statusClass() == SUCCESSFUL_2XX) {
+        } else if (CONNECT.equals(method) && msg.status().statusClass() == SUCCESSFUL_2XX) {
+
+            // Stripping Content-Length:
+            // See https://tools.ietf.org/html/rfc7230#section-3.3.2
+            headers.remove(CONTENT_LENGTH);
+
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
-            msg.headers().remove(TRANSFER_ENCODING);
+            headers.remove(TRANSFER_ENCODING);
         }
     }
 

@@ -411,6 +411,22 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
+    public void chunkedWithContentLength() {
+        int chunkSize = 128;
+        int chunkedContentLength = 2 + 2 + chunkSize + 2 + 5;
+        writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Content-Length: " + chunkedContentLength + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n");
+        writeChunk(chunkSize);
+        writeLastChunk();
+        HttpMetaData metaData = validateWithContent(-chunkSize, false);
+        assertThat("Unexpected content-length header(s)",
+                metaData.headers().valuesIterator(CONTENT_LENGTH).hasNext(), is(false));
+    }
+
+    @Test
     public void chunkedNoTrailersMultipleLargeContent() {
         int chunkSize = 4096;
         int numChunks = 5;

@@ -246,8 +246,29 @@ public class HttpResponseEncoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    private static void verifyHttpResponse(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
-                                          boolean trailers) {
+    @Test
+    public void withContentLengthAndChunked() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
+        response.headers()
+                .add(CONNECTION, KEEP_ALIVE)
+                .add(SERVER, "unit-test")
+                .add(CONTENT_LENGTH, valueOf(content.length))
+                .add(TRANSFER_ENCODING, CHUNKED);
+        channel.writeOutbound(response);
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+        String metaData = verifyHttpResponse(channel, buffer, TransferEncoding.Chunked, false);
+        assertFalse("Unexpected content-length header in meta-data while chunked encoding is used: " + metaData,
+                metaData.contains(CONTENT_LENGTH));
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    private static String verifyHttpResponse(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
+                                             boolean trailers) {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
@@ -304,6 +325,7 @@ public class HttpResponseEncoderTest {
             default:
                 throw new Error();
         }
+        return actualMetaData;
     }
 
     private static void consumeEmptyBufferFromTrailers(EmbeddedChannel channel) {
