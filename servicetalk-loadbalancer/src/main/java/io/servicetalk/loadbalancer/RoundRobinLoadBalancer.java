@@ -346,6 +346,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         void markInactive() {
             @SuppressWarnings("unchecked")
             final List<C> toRemove = connectionsUpdater.getAndSet(this, CLOSED_LIST);
+            LOGGER.debug("Closing {} connection(s) gracefully to inactive address: {}", toRemove.size(), address);
             for (C conn : toRemove) {
                 conn.closeAsyncGracefully().subscribe();
             }
