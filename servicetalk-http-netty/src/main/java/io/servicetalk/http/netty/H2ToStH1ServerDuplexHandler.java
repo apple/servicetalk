@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
@@ -35,6 +33,8 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
@@ -47,7 +47,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
-import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -101,6 +100,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 if (httpMethod != null) {
                     fireFullRequest(ctx, h2Headers, httpMethod, path);
                 } else {
+                    validateContentLengthMatch();
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
@@ -109,7 +109,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                         PATH + " headers");
             } else {
                 ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                        h2HeadersToH1HeadersServer(h2Headers, httpMethod)));
+                        h2HeadersToH1HeadersServer(h2Headers, httpMethod, false)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -120,25 +120,34 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
     private void fireFullRequest(ChannelHandlerContext ctx, final Http2Headers h2Headers,
                                  HttpRequestMethod httpMethod, String path) {
-        if (shouldAddZeroContentLength(httpMethod)) {
-            h2Headers.set(CONTENT_LENGTH, ZERO);
-        }
         ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                h2HeadersToH1HeadersServer(h2Headers, httpMethod)));
+                h2HeadersToH1HeadersServer(h2Headers, httpMethod, true)));
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
 
     private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(Http2Headers h2Headers,
-                                                                   @Nullable HttpRequestMethod httpMethod) {
+                                                                   @Nullable HttpRequestMethod httpMethod,
+                                                                   boolean fullRequest) {
         CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
         if (value != null) {
             h2Headers.set(HOST, value);
         }
         h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
         h2HeadersSanitizeForH1(h2Headers);
-        if (httpMethod != null && !h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH) &&
-                clientMaySendPayloadBodyFor(httpMethod)) {
-            h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        if (httpMethod != null) {
+            final long contentLength = contentLength(h2Headers);
+            if (clientMaySendPayloadBodyFor(httpMethod)) {
+                if (contentLength < 0) {
+                    if (fullRequest) {
+                        h2Headers.set(CONTENT_LENGTH, ZERO);
+                    } else {
+                        h2Headers.add(TRANSFER_ENCODING, CHUNKED);
+                    }
+                }
+            } else if (contentLength >= 0) {
+                throw new IllegalArgumentException("content-length (" + contentLength +
+                        ") header is not expected for " + httpMethod.name() + " request");
+            }
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
     }

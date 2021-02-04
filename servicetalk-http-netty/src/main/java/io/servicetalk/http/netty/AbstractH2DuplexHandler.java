@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,17 +36,21 @@ import io.netty.util.ReferenceCountUtil;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.Http2Exception.newStreamResetException;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
+import static java.lang.Math.addExact;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
     private final StreamObserver observer;
+    private long contentLength = Long.MIN_VALUE;
+    private long seenContentLength;
 
     AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler,
                             StreamObserver observer) {
@@ -83,9 +87,11 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         Object toRelease = msg;
         try {
             Http2DataFrame dataFrame = (Http2DataFrame) msg;
-            if (dataFrame.content().isReadable()) {
+            final int readableBytes = dataFrame.content().readableBytes();
+            if (readableBytes > 0) {
+                updateSeenContentLength(readableBytes);
                 // Copy to unpooled memory before passing to the user
-                Buffer data = allocator.newBuffer(dataFrame.content().readableBytes());
+                Buffer data = allocator.newBuffer(readableBytes);
                 ByteBuf nettyData = toByteBuf(data);
                 nettyData.writeBytes(dataFrame.content());
                 toRelease = release(dataFrame);
@@ -94,6 +100,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
                 toRelease = release(dataFrame);
             }
             if (dataFrame.isEndStream()) {
+                validateContentLengthMatch();
                 ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                 closeHandler.protocolPayloadEndInbound(ctx);
             }
@@ -104,6 +111,10 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         }
     }
 
+    /**
+     * Used to releases the frame as soon as we don't need it anymore (before firing an event on the pipeline) to
+     * reduce time we hold pooled direct memory.
+     */
     @Nullable
     private static Http2DataFrame release(Http2DataFrame dataFrame) {
         dataFrame.release();
@@ -119,5 +130,34 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
             observer.streamClosed(t);
         }
         ctx.fireChannelInactive();
+    }
+
+    final long contentLength(final Http2Headers headers) {
+        if (contentLength == Long.MIN_VALUE) {
+            contentLength = HeaderUtils.contentLength(headers.valueIterator(CONTENT_LENGTH), headers::getAll);
+        }
+        return contentLength;
+    }
+
+    final void validateContentLengthMatch() {
+        if (contentLength >= 0 && seenContentLength != contentLength) {
+            throw newUnexpectedContentLength();
+        }
+    }
+
+    private void updateSeenContentLength(final int readableBytes) {
+        assert readableBytes >= 0;
+        if (contentLength < 0) {
+            return;
+        }
+        seenContentLength = addExact(seenContentLength, readableBytes);
+        if (seenContentLength > contentLength) {
+            throw newUnexpectedContentLength();
+        }
+    }
+
+    private IllegalArgumentException newUnexpectedContentLength() {
+        throw new IllegalArgumentException("Expected content-length " + contentLength +
+                " not equal to the actual length " + seenContentLength);
     }
 }

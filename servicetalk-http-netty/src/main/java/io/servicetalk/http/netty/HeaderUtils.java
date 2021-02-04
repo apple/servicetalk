@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanWithMapper;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -31,6 +32,7 @@ import io.netty.util.AsciiString;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -268,6 +270,41 @@ final class HeaderUtils {
         // 1xx (Informational) or 204 (No Content).
         // https://tools.ietf.org/html/rfc7230#section-3.3.2
         return INFORMATIONAL_1XX.contains(statusCode) || statusCode == NO_CONTENT.code();
+    }
+
+    /**
+     * Extracts the {@link HttpHeaderNames#CONTENT_LENGTH content-length} value from the passed values iterator.
+     *
+     * @param iterator the {@link Iterator} over content-length header values
+     * @param valuesExtractor a {@link Function} that extracts header values for exception message
+     * @return the normalized content-length from the headers or {@code -1} if no content-length header is found
+     * @throws IllegalArgumentException if multiple content-length header values are present
+     */
+    static long contentLength(final Iterator<? extends CharSequence> iterator,
+                              final Function<CharSequence, Iterable<? extends CharSequence>> valuesExtractor) {
+        if (!iterator.hasNext()) {
+            return -1;
+        }
+
+        // Guard against multiple Content-Length headers as stated in
+        // https://tools.ietf.org/html/rfc7230#section-3.3.2:
+        //
+        //   If a message is received that has multiple Content-Length header
+        //   fields with field-values consisting of the same decimal value, or a
+        //   single Content-Length header field with a field value containing a
+        //   list of identical decimal values (e.g., "Content-Length: 42, 42"),
+        //   indicating that duplicate Content-Length header fields have been
+        //   generated or combined by an upstream message processor, then the
+        //   recipient MUST either reject the message as invalid or replace the
+        //   duplicated field-values with a single valid Content-Length field
+        //   containing that decimal value prior to determining the message body
+        //   length or forwarding the message.
+        CharSequence firstValue = iterator.next();
+        if (iterator.hasNext() || CharSequences.indexOf(firstValue, ',', 0) >= 0) {
+            throw new IllegalArgumentException("Multiple content-length values found: " +
+                    valuesExtractor.apply(CONTENT_LENGTH));
+        }
+        return Long.parseLong(firstValue.toString());
     }
 
     @FunctionalInterface
