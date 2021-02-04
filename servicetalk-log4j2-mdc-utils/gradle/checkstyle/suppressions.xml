@@ -19,6 +19,8 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress checks="IllegalInstantiationOfString"
-            files="io[\\/]servicetalk[\\/]log4j2[\\/]dc[\\/]utils[\\/]ServiceTalkThreadContextMap.java"/>
+  <suppress id="ConsolePrint"
+            files="io[\\/]servicetalk[\\/]log4j2[\\/]mdc[\\/]utils[\\/]ServiceTalkThreadContextMap.java"/>
+  <suppress checks="LineLength"
+            files="io[\\/]servicetalk[\\/]log4j2[\\/]mdc[\\/]utils[\\/]ServiceTalkThreadContextMap.java"/>
 </suppressions>
