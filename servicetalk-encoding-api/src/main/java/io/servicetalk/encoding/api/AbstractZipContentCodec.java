@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
     private static final Buffer END_OF_STREAM = DEFAULT_RO_ALLOCATOR.fromAscii(" ");
+    private static final int FOOTER_LEN = 10;
 
     protected final int chunkSize;
     private final int maxPayloadSize;
@@ -103,76 +104,64 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         return from
                 .concat(succeeded(END_OF_STREAM))
                 .liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
-                    @Nullable
-                    SwappableBufferOutputStream stream;
+
+                    private final SwappableBufferOutputStream stream = new SwappableBufferOutputStream();
 
                     @Nullable
-                    DeflaterOutputStream output;
+                    private DeflaterOutputStream output;
 
                     private boolean headerWritten;
 
                     @Override
                     public void onSubscribe(PublisherSource.Subscription subscription) {
-                        try {
-                            Buffer dst = allocator.newBuffer(chunkSize);
-                            stream = new SwappableBufferOutputStream(dst);
-                            // This will write header bytes on the stream, which will be consumed along with the first
-                            // onNext part
-                            output = newDeflaterOutputStream(stream);
-                        } catch (Exception e) {
-                            close(output);
-                            LOGGER.error("Error while encoding with {}", name(), e);
-                            deliverErrorFromSource(subscriber, e);
-                            return;
-                        }
-
                         subscriber.onSubscribe(subscription);
                     }
 
                     @Override
                     public void onNext(Buffer next) {
-                        assert output != null;
-                        assert stream != null;
-
-                        // onNext will produce AT-MOST N items (as received)
+                        // onNext will produce AT-MOST N items (from upstream)
                         // +1 for the encoding footer (ie. END_OF_STREAM)
                         try {
-                            if (next == END_OF_STREAM) {
-                                // ZIP footer is 10 bytes
-                                Buffer dst = allocator.newBuffer(10);
-                                stream.swap(dst);
-                                output.finish();
+                            Buffer dst = allocator.newBuffer(next == END_OF_STREAM ? FOOTER_LEN : chunkSize);
+                            stream.swap(dst);
 
+                            if (!headerWritten) {
+                                // This will produce header bytes
+                                output = newDeflaterOutputStream(stream);
+                            }
+
+                            assert output != null;
+                            if (next == END_OF_STREAM) {
+                                output.finish();
                                 subscriber.onNext(dst);
                                 return;
                             }
 
-                            Buffer dst;
-                            if (headerWritten) {
-                                dst = allocator.newBuffer(chunkSize);
-                                stream.swap(dst);
-                            } else {
-                                dst = stream.buffer;
-                            }
+                            consume(next);
 
-                            if (next.hasArray()) {
-                                output.write(next.array(), next.arrayOffset() + next.readerIndex(),
-                                        next.readableBytes());
-                            } else {
-                                while (next.readableBytes() > 0) {
-                                    byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
-                                    next.readBytes(onHeap);
-                                    output.write(onHeap);
-                                }
-                            }
-
-                            output.flush();
                             headerWritten = true;
                             subscriber.onNext(dst);
                         } catch (Exception e) {
                             LOGGER.error("Error while encoding with {}", name(), e);
                             onError(e);
                         }
+                    }
+
+                    private void consume(final Buffer next) throws IOException {
+                        assert output != null;
+
+                        if (next.hasArray()) {
+                            output.write(next.array(), next.arrayOffset() + next.readerIndex(),
+                                    next.readableBytes());
+                        } else {
+                            while (next.readableBytes() > 0) {
+                                byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
+                                next.readBytes(onHeap);
+                                output.write(onHeap);
+                            }
+                        }
+
+                        output.flush();
                     }
 
                     @Override
@@ -581,12 +570,9 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         }
     }
 
-    static class SwappableBufferOutputStream extends OutputStream {
+    private static class SwappableBufferOutputStream extends OutputStream {
+        @Nullable
         private Buffer buffer;
-
-        SwappableBufferOutputStream(final Buffer buffer) {
-            this.buffer = requireNonNull(buffer);
-        }
 
         private void swap(final Buffer buffer) {
             this.buffer = requireNonNull(buffer);
@@ -594,21 +580,24 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
         @Override
         public void write(final int b) {
+            assert buffer != null;
             buffer.writeInt(b);
         }
 
         @Override
         public void write(byte[] b) {
+            assert buffer != null;
             buffer.writeBytes(b);
         }
 
         @Override
         public void write(byte[] b, int off, int len) {
+            assert buffer != null;
             buffer.writeBytes(b, off, len);
         }
     }
 
-    static final class BufferBoundedInputStream extends InputStream {
+    private static final class BufferBoundedInputStream extends InputStream {
         private final Buffer buffer;
         private int count;
 

@@ -198,7 +198,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         verifyNoErrors();
     }
 
-    private void verifyNoErrors() throws Throwable {
+    protected void verifyNoErrors() throws Throwable {
         if (!errors.isEmpty()) {
             throw errors.get(0);
         }
@@ -223,10 +223,10 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                 .payloadBody(from(payloadAsString((byte) 'a')), textSerializer())).toFuture().get());
     }
 
-    private void assertResponse(final StreamingHttpResponse response) throws Throwable {
+    protected void assertResponse(final StreamingHttpResponse response) throws Throwable {
         verifyNoErrors();
 
-        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, "identity").toString());
+        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
 
         String responsePayload = response.payloadBody(textDeserializer()).collect(StringBuilder::new,
                 StringBuilder::append).toFuture().get().toString();
@@ -269,12 +269,11 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         }
     }
 
-    static ServerContext newServiceTalkServer(final Scenario scenario, final List<Throwable> errors)
+    private ServerContext newServiceTalkServer(final Scenario scenario, final List<Throwable> errors)
             throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(localAddress(0));
 
-        StreamingHttpService service = (ctx, request, responseFactory) -> succeeded(responseFactory.ok()
-                .payloadBody(from(payloadAsString((byte) 'b')), textSerializer()));
+        StreamingHttpService service = (ctx, request, responseFactory) -> succeeded(buildResponse(responseFactory));
 
         StreamingHttpServiceFilterFactory filterFactory = REQ_FILTER.apply(scenario, errors);
 
@@ -284,6 +283,10 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                         scenario.serverSupported))
                 .appendServiceFilter(filterFactory)
                 .listenStreamingAndAwait(service);
+    }
+
+    protected StreamingHttpResponse buildResponse(final StreamingHttpResponseFactory responseFactory) {
+        return responseFactory.ok().payloadBody(from(payloadAsString((byte) 'b')), textSerializer());
     }
 
     static BlockingHttpClient newServiceTalkClient(final HostAndPort hostAndPort, final Scenario scenario,

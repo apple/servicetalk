@@ -34,6 +34,12 @@ import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
+import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static java.util.Collections.emptyList;
 
 /**
@@ -106,7 +112,8 @@ public final class ContentCodingHttpServiceFilter
                         }
 
                         return super.handle(ctx, request, responseFactory).map(response -> {
-                            encodePayloadContentIfAvailable(request.headers(), responseCodings, response, allocator);
+                            encodePayloadContentIfAvailable(request.headers(), request.method(), responseCodings,
+                                    response, allocator);
                             return response;
                         });
                     } catch (UnsupportedContentEncodingException cause) {
@@ -126,10 +133,12 @@ public final class ContentCodingHttpServiceFilter
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,
+                                                        final HttpRequestMethod method,
                                                         final List<ContentCodec> supportedEncodings,
                                                         final StreamingHttpResponse response,
                                                         final BufferAllocator allocator) {
-        if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers())) {
+        if (supportedEncodings.isEmpty() || hasContentEncoding(response.headers()) ||
+                isPassThrough(method, response)) {
             return;
         }
 
@@ -138,6 +147,29 @@ public final class ContentCodingHttpServiceFilter
             setContentEncoding(response.headers(), coding.name());
             response.transformPayloadBody(bufferPublisher -> coding.encode(bufferPublisher, allocator));
         }
+    }
+
+    private static boolean isPassThrough(final HttpRequestMethod method, final StreamingHttpResponse response) {
+        // see. https://tools.ietf.org/html/rfc7230#section-3.3.3
+        // The length of a message body is determined by one of the following
+        //         (in order of precedence):
+        //
+        // 1.  Any response to a HEAD request and any response with a 1xx
+        //         (Informational), 204 (No Content), or 304 (Not Modified) status
+        // code is always terminated by the first empty line after the
+        // header fields, regardless of the header fields present in the
+        // message, and thus cannot contain a message body.
+        //
+        // 2.  Any 2xx (Successful) response to a CONNECT request implies that
+        // the connection will become a tunnel immediately after the empty
+        // line that concludes the header fields.  A client MUST ignore any
+        // Content-Length or Transfer-Encoding header fields received in
+        // such a message.
+        // ...
+
+        int code = response.status().code();
+        return INFORMATIONAL_1XX.contains(code) || code == NO_CONTENT.code() || code == NOT_MODIFIED.code() ||
+                (method == HEAD || (method == CONNECT && SUCCESSFUL_2XX.contains(code)));
     }
 
     @Nullable
