@@ -211,7 +211,7 @@ public class GrpcMessageEncodingTest {
 
                         final List<String> actualReqAcceptedEncodings = stream(request.headers()
                                 .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
-                                    .map((String::trim)).collect(toList());
+                                    .map(String::trim).collect(toList());
 
                         final List<String> expectedReqAcceptedEncodings = encodingsAsStrings(clientSupportedEncodings);
 
@@ -227,7 +227,7 @@ public class GrpcMessageEncodingTest {
 
                     return super.handle(ctx, request, responseFactory).map((response -> {
                         try {
-                            _handle(clientSupportedEncodings, serverSupportedEncodings, response);
+                            handle0(clientSupportedEncodings, serverSupportedEncodings, response);
                         } catch (Throwable t) {
                             errors.add(t);
                             throw t;
@@ -237,7 +237,7 @@ public class GrpcMessageEncodingTest {
                     }));
                 }
 
-                private void _handle(final List<ContentCodec> clientSupportedEncodings,
+                private void handle0(final List<ContentCodec> clientSupportedEncodings,
                                      final List<ContentCodec> serverSupportedEncodings,
                                      final StreamingHttpResponse response) {
                     final List<String> actualRespAcceptedEncodings = stream(response.headers()

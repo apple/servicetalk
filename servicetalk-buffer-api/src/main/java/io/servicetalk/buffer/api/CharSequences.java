@@ -239,12 +239,10 @@ public final class CharSequences {
             }
         }
 
-        if (startIndex != -1) {
-            if ((input.length() - startIndex) > 0) {
-                result.add(subsequence(isAscii, input, startIndex, input.length()));
-            } else {
-                result.add(isAscii ? newAsciiString("") : "");
-            }
+        if ((input.length() - startIndex) > 0) {
+            result.add(subsequence(isAscii, input, startIndex, input.length()));
+        } else {
+            result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
         }
 
         return result;
@@ -271,7 +269,7 @@ public final class CharSequences {
                 if (endIndex > startIndex) {
                     result.add(subsequence(isAscii, input, startIndex, endIndex));
                 } else {
-                    result.add(isAscii ? newAsciiString("") : "");
+                    result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
                 }
 
                 startIndex = i + 1;
@@ -284,7 +282,7 @@ public final class CharSequences {
             if ((input.length() - startIndex) > 0) {
                 result.add(subsequence(isAscii, input, startIndex, endIndex));
             } else {
-                result.add(isAscii ? newAsciiString("") : "");
+                result.add(isAscii ? EMPTY_ASCII_BUFFER : "");
             }
         }
 
