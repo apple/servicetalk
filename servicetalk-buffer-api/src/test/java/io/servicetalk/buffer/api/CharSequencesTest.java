@@ -83,7 +83,6 @@ public class CharSequencesTest {
     }
 
     private static void splitWithTrim(Function<String, ? extends CharSequence> f) {
-        // System.out.println(split(" gzip  ,  deflate  ", ',', true));
         assertThat(split(f.apply(" ,      "), ',', true),
                 contains(f.apply(""), f.apply("")));
         assertThat(split(f.apply(" ,      ,"), ',', true),
