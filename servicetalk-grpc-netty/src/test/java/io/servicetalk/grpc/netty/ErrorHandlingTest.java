@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusCode;
@@ -68,15 +69,18 @@ import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -86,6 +90,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -98,10 +103,12 @@ public class ErrorHandlingTest {
             c -> new StreamingHttpClientFilter(c) { };
     private static final StreamingHttpServiceFilterFactory IDENTITY_FILTER =
             s -> new StreamingHttpServiceFilter(s) { };
+    private static final String REQ_THROW_NAME = "THROW";
 
     private final TestMode testMode;
     private final TestResponse cannedResponse;
     private final BlockingTesterClient blockingClient;
+    private final Publisher<TestRequest> requestPublisher;
 
     private enum TestMode {
         HttpClientFilterThrows,
@@ -120,14 +127,29 @@ public class ErrorHandlingTest {
         ServiceThrowsGrpcException,
         ServiceOperatorThrows,
         ServiceOperatorThrowsGrpcException,
+        ServiceSecondOperatorThrowsGrpcException,
         ServiceEmitsError,
         ServiceEmitsGrpcException,
         ServiceEmitsDataThenError,
         ServiceEmitsDataThenGrpcException,
-        BlockingServiceThrows,
-        BlockingServiceThrowsGrpcException,
-        BlockingServiceWritesThenThrows,
-        BlockingServiceWritesThenThrowsGrpcException
+        BlockingServiceThrows(false),
+        BlockingServiceThrowsGrpcException(false),
+        BlockingServiceWritesThenThrows(false),
+        BlockingServiceWritesThenThrowsGrpcException(false);
+
+        private final boolean safeNoOffload;
+
+        TestMode() {
+            this(true);
+        }
+
+        TestMode(boolean safeNoOffload) {
+            this.safeNoOffload = safeNoOffload;
+        }
+
+        boolean isSafeNoOffload() {
+            return safeNoOffload;
+        }
     }
 
     @Rule
@@ -139,13 +161,15 @@ public class ErrorHandlingTest {
     private final ServerContext serverContext;
     private final TesterClient client;
 
-    public ErrorHandlingTest(TestMode testMode) throws Exception {
+    public ErrorHandlingTest(TestMode testMode, GrpcExecutionStrategy serverStrategy,
+                             GrpcExecutionStrategy clientStrategy) throws Exception {
         this.testMode = testMode;
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
         ServiceFactory serviceFactory;
         TesterService filter = mockTesterService();
         StreamingHttpServiceFilterFactory serviceFilterFactory = IDENTITY_FILTER;
         StreamingHttpClientFilterFactory clientFilterFactory = IDENTITY_CLIENT_FILTER;
+        Publisher<TestRequest> requestPublisher = from(TestRequest.newBuilder().build());
         switch (testMode) {
             case HttpClientFilterThrows:
                 clientFilterFactory = new ErrorProducingClientFilter(true, DELIBERATE_EXCEPTION);
@@ -207,6 +231,11 @@ public class ErrorHandlingTest {
             case ServiceOperatorThrowsGrpcException:
                 serviceFactory = setupForServiceOperatorThrows(cannedException);
                 break;
+            case ServiceSecondOperatorThrowsGrpcException:
+                serviceFactory = setupForServiceSecondOperatorThrows(cannedException);
+                requestPublisher = from(TestRequest.newBuilder().build(),
+                        TestRequest.newBuilder().setName(REQ_THROW_NAME).build());
+                break;
             case ServiceEmitsError:
                 serviceFactory = setupForServiceEmitsError(DELIBERATE_EXCEPTION);
                 break;
@@ -234,10 +263,12 @@ public class ErrorHandlingTest {
             default:
                 throw new IllegalArgumentException("Unknown mode: " + testMode);
         }
+        this.requestPublisher = requestPublisher;
         serverContext = GrpcServers.forAddress(localAddress(0)).appendHttpServiceFilter(serviceFilterFactory)
-                .listenAndAwait(serviceFactory);
+                .executionStrategy(serverStrategy).listenAndAwait(serviceFactory);
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                GrpcClients.forAddress(serverHostAndPort(serverContext)).appendHttpClientFilter(clientFilterFactory);
+                GrpcClients.forAddress(serverHostAndPort(serverContext)).appendHttpClientFilter(clientFilterFactory)
+                .executionStrategy(clientStrategy);
         client = clientBuilder.build(new ClientFactory());
         blockingClient = clientBuilder.buildBlocking(new ClientFactory());
     }
@@ -290,6 +321,12 @@ public class ErrorHandlingTest {
         return new ServiceFactory(service);
     }
 
+    private ServiceFactory setupForServiceSecondOperatorThrows(final Throwable toThrow) {
+        final TesterService service = mockTesterService();
+        setupForServiceSecondOperatorThrows(service, toThrow);
+        return new ServiceFactory(service);
+    }
+
     private void setupForServiceThrows(final TesterService service, final Throwable toThrow) {
         when(service.test(any(), any())).thenThrow(toThrow);
         when(service.testBiDiStream(any(), any())).thenThrow(toThrow);
@@ -311,6 +348,34 @@ public class ErrorHandlingTest {
             return request.collect(ArrayList::new, (list, req) -> {
                 throwException(toThrow);
                 return null;
+            });
+        }).when(service).testRequestStream(any(), any());
+        when(service.testResponseStream(any(), any())).thenThrow(toThrow);
+    }
+
+    private void setupForServiceSecondOperatorThrows(final TesterService service, final Throwable toThrow) {
+        when(service.test(any(), any())).thenThrow(toThrow);
+        doAnswer((Answer<Publisher<TestResponse>>) invocation -> {
+            Publisher<TestRequest> request = invocation.getArgument(1);
+            return request.map(req -> {
+                if (REQ_THROW_NAME.equals(req.getName())) {
+                    throwException(toThrow);
+                    return null;
+                } else {
+                    return cannedResponse;
+                }
+            });
+        }).when(service).testBiDiStream(any(), any());
+        doAnswer(invocation -> {
+            Publisher<TestRequest> request = invocation.getArgument(1);
+            return request.collect(ArrayList::new, (list, req) -> {
+                if (REQ_THROW_NAME.equals(req.getName())) {
+                    throwException(toThrow);
+                    return null;
+                } else {
+                    list.add(cannedResponse);
+                    return list;
+                }
             });
         }).when(service).testRequestStream(any(), any());
         when(service.testResponseStream(any(), any())).thenThrow(toThrow);
@@ -380,9 +445,27 @@ public class ErrorHandlingTest {
         }).when(blockingService).testResponseStream(any(), any(), any());
     }
 
-    @Parameterized.Parameters(name = "{index}: mode = {0}")
-    public static Collection<TestMode> data() {
-        return asList(TestMode.values());
+    @Parameterized.Parameters(name = "{index}: mode = {0} server = {1} client = {2}")
+    public static Collection<Object[]> data() {
+        GrpcExecutionStrategy noopStrategy = noOffloadsStrategy();
+        GrpcExecutionStrategy immediateStrategy = customStrategyBuilder().executor(immediate()).build();
+        GrpcExecutionStrategy[] strategies =
+                new GrpcExecutionStrategy[] {noopStrategy, immediateStrategy, defaultStrategy()};
+        List<Object[]> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
+        for (GrpcExecutionStrategy serverStrategy : strategies) {
+            for (GrpcExecutionStrategy clientStrategy : strategies) {
+                for (TestMode mode : TestMode.values()) {
+                    if (mode.isSafeNoOffload() || isOffloadSafe(serverStrategy)) {
+                        data.add(new Object[] {mode, serverStrategy, clientStrategy});
+                    }
+                }
+            }
+        }
+        return data;
+    }
+
+    private static boolean isOffloadSafe(GrpcExecutionStrategy strategy) {
+        return strategy.executor() != immediate() && strategy.executor() != null;
     }
 
     @After
@@ -396,65 +479,54 @@ public class ErrorHandlingTest {
 
     @Test
     public void scalar() throws Exception {
-        verifyException(client.test(TestRequest.newBuilder().build()).toFuture());
+        verifyException(client.test(requestPublisherTakeFirstRequest()).toFuture());
     }
 
     @Test
     public void bidiStreaming() throws Exception {
-        verifyStreamingResponse(client.testBiDiStream(from(TestRequest.newBuilder().build())));
+        verifyStreamingResponse(client.testBiDiStream(requestPublisher));
     }
 
     @Test
     public void requestStreaming() {
-        verifyException(client.testRequestStream(from(TestRequest.newBuilder().build())).toFuture());
+        verifyException(client.testRequestStream(requestPublisher).toFuture());
     }
 
     @Test
     public void responseStreaming() throws Exception {
-        verifyStreamingResponse(client.testResponseStream(TestRequest.newBuilder().build()));
+        // ServiceSecondOperatorThrowsGrpcException only throws on the second request, however testResponseStream can
+        // only send a single scalar request, so ignore this test combination.
+        assumeThat(testMode, not(TestMode.ServiceSecondOperatorThrowsGrpcException));
+        verifyStreamingResponse(client.testResponseStream(requestPublisherTakeFirstRequest()));
     }
 
     @Test
-    public void scalarFromBlockingClient() throws Exception {
-        try {
-            blockingClient.test(TestRequest.newBuilder().build());
-            fail("Expected blocking scalar response to fail.");
-        } catch (GrpcStatusException e) {
-            assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
-        }
+    public void scalarFromBlockingClient() {
+        assertThat(assertThrows(GrpcStatusException.class,
+                () -> blockingClient.test(requestPublisherTakeFirstRequest())).status().code(),
+                equalTo(expectedStatus()));
     }
 
     @Test
-    public void bidiStreamingFromBlockingClient() throws Exception {
-        try {
-            BlockingIterator<TestResponse> resp =
-                    blockingClient.testBiDiStream(singletonList(TestRequest.newBuilder().setName("foo").build()))
-                            .iterator();
-            verifyStreamingResponse(resp);
-        } catch (GrpcStatusException e) {
-            assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
-        }
+    public void bidiStreamingFromBlockingClient() {
+        assertThat(assertThrows(GrpcStatusException.class, () ->
+                verifyStreamingResponse(blockingClient.testBiDiStream(requestPublisher.toIterable()).iterator()))
+                .status().code(), equalTo(expectedStatus()));
     }
 
     @Test
-    public void requestStreamingFromBlockingClient() throws Exception {
-        try {
-            blockingClient.testRequestStream(singletonList(TestRequest.newBuilder().setName("foo").build()));
-            fail("Expected blocking request streaming to fail.");
-        } catch (GrpcStatusException e) {
-            assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
-        }
+    public void requestStreamingFromBlockingClient() {
+        assertThat(assertThrows(GrpcStatusException.class, () ->
+                blockingClient.testRequestStream(requestPublisher.toIterable())).status().code(),
+                equalTo(expectedStatus()));
     }
 
     @Test
-    public void responseStreamingFromBlockingClient() throws Exception {
-        try {
-            BlockingIterator<TestResponse> resp =
-                    blockingClient.testResponseStream(TestRequest.newBuilder().build()).iterator();
-            verifyStreamingResponse(resp);
-        } catch (GrpcStatusException e) {
-            assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
-        }
+    public void responseStreamingFromBlockingClient() {
+        assertThat(assertThrows(GrpcStatusException.class, () ->
+                verifyStreamingResponse(
+                        blockingClient.testResponseStream(requestPublisherTakeFirstRequest()).iterator()))
+                .status().code(), equalTo(expectedStatus()));
     }
 
     @Test
@@ -462,12 +534,16 @@ public class ErrorHandlingTest {
         // The response publisher is merged with the write publisher in order to provide status in the event of a write
         // failure. We must fail the read publisher internally at the appropriate time so the merge operator will
         // propagate the expected status (e.g. not wait for transport failure like stream reset or channel closed).
-        verifyException(client.testBiDiStream(from(TestRequest.newBuilder().build()).concat(never())).toFuture());
+        verifyException(client.testBiDiStream(requestPublisher.concat(never())).toFuture());
     }
 
     @Test
     public void requestStreamingServerFailClientRequestNeverComplete() {
-        verifyException(client.testRequestStream(from(TestRequest.newBuilder().build()).concat(never())).toFuture());
+        verifyException(client.testRequestStream(requestPublisher.concat(never())).toFuture());
+    }
+
+    private TestRequest requestPublisherTakeFirstRequest() throws Exception {
+        return requestPublisher.takeAtMost(1).firstOrError().toFuture().get();
     }
 
     private TesterService mockTesterService() {
@@ -483,6 +559,7 @@ public class ErrorHandlingTest {
             case ServiceEmitsDataThenGrpcException:
             case BlockingServiceWritesThenThrows:
             case BlockingServiceWritesThenThrowsGrpcException:
+            case ServiceSecondOperatorThrowsGrpcException:
                 assertThat("Unexpected response.", resp.next(), equalTo(cannedResponse));
                 resp.next(); // should throw
                 fail("Expected streaming response to fail");
@@ -527,6 +604,7 @@ public class ErrorHandlingTest {
             case ServiceEmitsDataThenGrpcException:
             case BlockingServiceWritesThenThrows:
             case BlockingServiceWritesThenThrowsGrpcException:
+            case ServiceSecondOperatorThrowsGrpcException:
                 List<TestResponse> items = subscriber.takeOnNext(1);
                 assertThat("Unexpected response.", items, hasSize(1));
                 assertThat("Unexpected response.", items, contains(cannedResponse));
@@ -597,6 +675,7 @@ public class ErrorHandlingTest {
             case FilterThrowsGrpcException:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrowsGrpcException:
+            case ServiceSecondOperatorThrowsGrpcException:
             case ServiceEmitsDataThenGrpcException:
             case ServiceEmitsGrpcException:
             case BlockingServiceThrowsGrpcException:

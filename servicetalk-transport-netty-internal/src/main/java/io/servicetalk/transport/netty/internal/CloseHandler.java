@@ -18,7 +18,9 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.SocketChannel;
 
 import java.nio.channels.ClosedChannelException;
@@ -32,9 +34,7 @@ import static java.lang.Boolean.TRUE;
  * Contract between protocol codecs and a close handler.
  */
 public abstract class CloseHandler {
-
     public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
-    public static final CloseHandler PROTOCOL_OUTBOUND_CLOSE_HANDLER = new ProtocolOutboundCloseEventHandler();
 
     /**
      * New {@link CloseHandler} instance.
@@ -48,6 +48,20 @@ public abstract class CloseHandler {
         config.setOption(ALLOW_HALF_CLOSURE, TRUE);
         config.setAutoClose(false);
         return new RequestResponseCloseHandler(client);
+    }
+
+    /**
+     * Create a new {@link CloseHandler} instance which doesn't support pipelining, and only ever has a single
+     * outstanding request/response. The {@link CloseHandler} doesn't require the channel be of any special type
+     * (e.g. {@link DuplexChannel}) nor support any special channel options
+     * (e.g. {@link io.netty.channel.ChannelOption#ALLOW_HALF_CLOSURE}).
+     * @param isClient operation mode, {@code TRUE} for {@code client} or {@code FALSE} for {@code server}.
+     * @param config The {@link ChannelConfig} associated with the channel to create the {@link CloseHandler} for.
+     * @return a new {@link CloseHandler} instance which doesn't support pipelining.
+     */
+    public static CloseHandler forNonPipelined(boolean isClient, ChannelConfig config) {
+        config.setAutoClose(false);
+        return new NonPipelinedCloseHandler(isClient);
     }
 
     /**
@@ -72,18 +86,12 @@ public abstract class CloseHandler {
     public abstract void protocolPayloadBeginOutbound(ChannelHandlerContext ctx);
 
     /**
-     * Signal end of outbound payload, to be emitted from the {@link EventLoop} for the {@link Channel}.
-     *
+     * Signal end of outbound payload, including the {@link ChannelPromise} associated with the last write. Must be
+     * called from the {@link EventLoop} for the {@link Channel}.
+     * @param promise The {@link ChannelPromise} associated with the last write operation.
      * @param ctx {@link ChannelHandlerContext}
      */
-    public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx);
-
-    /**
-     * Signal end of outbound payload, once successfully written to the {@link Channel}.
-     *
-     * @param ctx {@link ChannelHandlerContext}
-     */
-    public abstract void protocolPayloadEndOutboundSuccess(ChannelHandlerContext ctx);
+    public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx, ChannelPromise promise);
 
     /**
      * Signal inbound close command observed, to be emitted from the {@link EventLoop} for the {@link Channel}.
@@ -270,70 +278,7 @@ public abstract class CloseHandler {
         }
 
         @Override
-        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolClosingInbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
-        }
-    }
-
-    private static final class ProtocolOutboundCloseEventHandler extends CloseHandler {
-
-        @Override
-        void registerEventHandler(final Channel channel, final Consumer<CloseEvent> eventHandler) {
-        }
-
-        @Override
-        void channelClosedInbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        void channelClosedOutbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        void closeChannelInbound(final Channel channel) {
-            channel.close();
-        }
-
-        @Override
-        void closeChannelOutbound(final Channel channel) {
-            channel.close();
-        }
-
-        @Override
-        void gracefulUserClosing(final Channel channel) {
-            channel.close();
-        }
-
-        @Override
-        public void protocolPayloadBeginInbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolPayloadBeginOutbound(final ChannelHandlerContext ctx) {
-        }
-
-        @Override
-        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
-            ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
-        }
-
-        @Override
-        public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
+        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         }
 
         @Override

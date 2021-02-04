@@ -65,6 +65,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpRequestMetaData) {
+            closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
             CharSequence host = h1Headers.getAndRemove(HOST);
@@ -102,6 +103,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             Http2Headers h2Headers = headersFrame.headers();
             final HttpResponseStatus httpStatus;
             if (!readHeaders) {
+                closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence status = h2Headers.getAndRemove(STATUS.value());
                 if (status == null) {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
@@ -135,6 +137,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null));
                 }
+                closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpStatus == null) {
                 throw new IllegalArgumentException("a response must have " + STATUS + " header");
             } else {

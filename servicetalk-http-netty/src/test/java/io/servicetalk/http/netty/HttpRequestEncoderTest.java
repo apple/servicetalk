@@ -99,8 +99,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -473,14 +473,10 @@ public class HttpRequestEncoderTest {
             fromSource(serverCloseTrigger).toFuture().get();
             Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
-            try {
-                write.toFuture().get();
-                fail("Should not complete normally");
-            } catch (ExecutionException e) {
-                CloseHandler closeHandler = closeHandlerRef.get();
-                assertNotNull(closeHandler);
-                verify(closeHandler, never()).protocolPayloadEndOutbound(any());
-            }
+            assertThrows(ExecutionException.class, () -> write.toFuture().get());
+            CloseHandler closeHandler = closeHandlerRef.get();
+            assertNotNull(closeHandler);
+            verify(closeHandler, never()).protocolPayloadEndOutbound(any(), any());
         }
     }
 }

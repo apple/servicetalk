@@ -31,6 +31,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.epoll.Epoll;
@@ -321,6 +323,8 @@ public class RequestResponseCloseHandlerTest {
             ctx = mock(ChannelHandlerContext.class);
             channel = mock(SocketChannel.class, "[id: 0xmocked, L:mocked - R:mocked]");
             when(ctx.channel()).thenReturn(channel);
+            when(ctx.newPromise()).thenReturn(new DefaultChannelPromise(channel));
+            when(channel.newPromise()).thenReturn(new DefaultChannelPromise(channel));
 
             // Asserts
             EventExecutor exec = mock(EventExecutor.class);
@@ -333,6 +337,7 @@ public class RequestResponseCloseHandlerTest {
             when(loop.inEventLoop()).thenReturn(true);
             when(scc.getOption(ALLOW_HALF_CLOSURE)).thenReturn(TRUE);
             pipeline = mock(ChannelPipeline.class);
+            when(ctx.pipeline()).thenReturn(pipeline);
             when(channel.pipeline()).thenReturn(pipeline);
 
             when(channel.isOutputShutdown()).then(__ -> outputShutdown.get());
@@ -363,8 +368,7 @@ public class RequestResponseCloseHandlerTest {
                 }
                 return scc;
             });
-            h = (RequestResponseCloseHandler) spy(mode == C ? forPipelinedRequestResponse(true, channel.config()) :
-                    forPipelinedRequestResponse(false, channel.config()));
+            h = (RequestResponseCloseHandler) spy(forPipelinedRequestResponse(mode == C, channel.config()));
             h.registerEventHandler(channel, e -> {
                 if (observedEvent == null) {
                     LOGGER.debug("Emitted: {}", e);
@@ -411,8 +415,10 @@ public class RequestResponseCloseHandlerTest {
                         break;
                     case OE:
                         assertCanWrite();
-                        h.protocolPayloadEndOutboundSuccess(ctx);
-                        order.verify(h).protocolPayloadEndOutboundSuccess(ctx);
+                        ChannelPromise promise = ctx.newPromise();
+                        promise.trySuccess();
+                        h.protocolPayloadEndOutbound(ctx, promise);
+                        order.verify(h).protocolPayloadEndOutbound(ctx, promise);
                         break;
                     case OC:
                         h.protocolClosingOutbound(ctx);
@@ -476,7 +482,7 @@ public class RequestResponseCloseHandlerTest {
                             verify(h, never()).protocolPayloadBeginOutbound(ctx);
                             break;
                         case OE:
-                            verify(h, never()).protocolPayloadEndOutboundSuccess(ctx);
+                            verify(h, never()).protocolPayloadEndOutbound(eq(ctx), any());
                             break;
                         case OC:
                             verify(h, never()).protocolClosingOutbound(ctx);
@@ -539,7 +545,8 @@ public class RequestResponseCloseHandlerTest {
                 }
             });
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(true);
-            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(),
+                    channel.newPromise()));
             channel.close().syncUninterruptibly();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
@@ -557,7 +564,8 @@ public class RequestResponseCloseHandlerTest {
                 }
             });
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
-            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.eventLoop().execute(() ->
+                    ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
             channel.close().syncUninterruptibly();
             assertThat("OutboundDataEndEvent should not fire", ab.get(), is(false));
         }
@@ -585,12 +593,12 @@ public class RequestResponseCloseHandlerTest {
             channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
             // Response #1
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
-            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx, ctx.newPromise()));
             channel.runPendingTasks();
             assertThat("OutboundDataEndEvent should not fire", ab.get(), is(false));
             // Response #2
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
-            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx, ctx.newPromise()));
             channel.close().syncUninterruptibly();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
@@ -609,7 +617,8 @@ public class RequestResponseCloseHandlerTest {
             });
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
             channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
-            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.eventLoop().execute(() ->
+                    ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
             channel.close().syncUninterruptibly();
             assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
