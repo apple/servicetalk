@@ -602,4 +602,21 @@ abstract class HttpObjectDecoderTest {
                                 "Content-Length: 0" + "\r\n" + startLine() + "\r\n\r\n") +
                 "Connection: keep-alive" + "\r\n\r\n"));
     }
+
+    @Test
+    public void multipleContentLengthHeaders() {
+        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: 1" + "\r\n" +
+                "Content-Length: 2" + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n"));
+    }
+
+    @Test
+    public void multipleContentLengthHeaderValues() {
+        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: 1, 2" + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n"));
+    }
 }
