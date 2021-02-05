@@ -32,6 +32,8 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -42,9 +44,19 @@ import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.Http2Exception.newStreamResetException;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
+import static java.lang.Boolean.getBoolean;
 import static java.lang.Math.addExact;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractH2DuplexHandler.class);
+    /**
+     * Temporary opt-out of
+     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.2.6">Malformed Requests and Responses</a> checks.
+     * This is only meant to ease interoperability until violating implementations are fixed.
+     * <b>Will be removed in future release!</b>
+     */
+    private static final boolean ALLOW_INVALID_CONTENT_LENGTH =
+            getBoolean("io.servicetalk.http2.allowInvalidContentLength");
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
@@ -141,7 +153,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
 
     final void validateContentLengthMatch() {
         if (contentLength >= 0 && seenContentLength != contentLength) {
-            throw newUnexpectedContentLength();
+            handleUnexpectedContentLength();
         }
     }
 
@@ -152,12 +164,18 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         }
         seenContentLength = addExact(seenContentLength, readableBytes);
         if (seenContentLength > contentLength) {
-            throw newUnexpectedContentLength();
+            handleUnexpectedContentLength();
         }
     }
 
-    private IllegalArgumentException newUnexpectedContentLength() {
-        throw new IllegalArgumentException("Expected content-length " + contentLength +
-                " not equal to the actual length " + seenContentLength);
+    private void handleUnexpectedContentLength() {
+        final String msg = "Expected content-length " + contentLength + " not equal to the actual length " +
+                seenContentLength +
+                ". Malformed request/response according to https://tools.ietf.org/html/rfc7540#section-8.1.2.6.";
+        if (ALLOW_INVALID_CONTENT_LENGTH) {
+            LOGGER.info(msg);
+        } else {
+            throw new IllegalArgumentException(msg);
+        }
     }
 }
