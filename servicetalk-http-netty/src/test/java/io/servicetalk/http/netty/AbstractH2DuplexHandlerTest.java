@@ -28,7 +28,6 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
@@ -45,11 +44,14 @@ import java.util.function.Consumer;
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
+import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.lang.String.valueOf;
@@ -60,6 +62,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 public class AbstractH2DuplexHandlerTest {
@@ -83,7 +86,7 @@ public class AbstractH2DuplexHandlerTest {
 
             @Override
             Http2Headers setHeaders(Http2Headers headers) {
-                return headers.status(HttpResponseStatus.OK.codeAsText());
+                return headers.status(OK.codeAsText());
             }
         },
         SERVER_HANDLER {
@@ -190,7 +193,7 @@ public class AbstractH2DuplexHandlerTest {
         Http2Headers headers = new DefaultHttp2Headers();
         switch (variant) {
             case CLIENT_HANDLER:
-                headers.status(HttpResponseStatus.NO_CONTENT.codeAsText());
+                headers.status(NO_CONTENT.codeAsText());
                 break;
             case SERVER_HANDLER:
                 headers.method(HttpMethod.TRACE.asciiName()).path("/");
@@ -203,6 +206,43 @@ public class AbstractH2DuplexHandlerTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream)));
         assertThat(e.getMessage(), startsWith("content-length (1) header is not expected"));
+    }
+
+    @Test
+    public void responseWithContentLengthToHeadRequest() {
+        responseWithContentLengthToHeadRequest(false);
+    }
+
+    @Test
+    public void responseWithContentLengthToHeadRequestEndStream() {
+        responseWithContentLengthToHeadRequest(true);
+    }
+
+    private void responseWithContentLengthToHeadRequest(boolean endStream) {
+        assumeTrue("Only relevant for the client-side", variant == Variant.CLIENT_HANDLER);
+        int contentLength = 1;
+        // Send HEAD request
+        channel.writeOutbound(newRequest(HEAD, "/", HTTP_2_0, HEADERS_FACTORY.newHeaders(),
+                DEFAULT_ALLOCATOR, HEADERS_FACTORY), true);
+        // Prepare server response with content-length header:
+        Http2Headers headers = new DefaultHttp2Headers();
+        headers.status(OK.codeAsText());
+        headers.setInt(CONTENT_LENGTH, contentLength);
+        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream));
+
+        HttpMetaData metaData = channel.readInbound();
+        assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(contentLength)));
+        if (endStream) {
+            HttpHeaders trailers = channel.readInbound();
+            assertThat(trailers.isEmpty(), is(true));
+        } else {
+            // No more items at this moment:
+            assertThat(channel.inboundMessages(), is(empty()));
+            channel.writeInbound(new DefaultHttp2HeadersFrame(new DefaultHttp2Headers(), true));
+            HttpHeaders trailers = channel.readInbound();
+            assertThat(trailers.isEmpty(), is(true));
+        }
+        assertThat(channel.inboundMessages(), is(empty()));
     }
 
     @Test
@@ -261,6 +301,18 @@ public class AbstractH2DuplexHandlerTest {
         HttpHeaders trailers = channel.readInbound();
         assertThat(trailers.isEmpty(), is(!addTrailers));
         assertThat(channel.inboundMessages(), is(empty()));
+    }
+
+    @Test
+    public void singleHeadersFrameWithContentLength() {
+        variant.writeOutbound(channel);
+
+        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
+        headers.setInt(CONTENT_LENGTH, 1);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, true)));
+        assertThat(e.getMessage(), containsString("not equal to the actual length"));
     }
 
     @Test
