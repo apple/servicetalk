@@ -43,6 +43,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -664,6 +665,97 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testOneEmptyQueryParam() {
+        createFixture("/foo?bar");
+        assertEquals("/foo?bar", fixture.requestTarget());
+        assertEquals("bar", fixture.rawQuery());
+        assertEquals("", fixture.queryParameter("bar"));
+        assertNull(fixture.queryParameter("nothing"));
+
+        assertEquals(singletonList("bar"), iteratorAsList(fixture.queryParametersKeys().iterator()));
+        Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
+        assertNext(itr, "bar", "");
+        assertFalse(itr.hasNext());
+
+        List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
+        assertThat(entries, hasSize(1));
+        assertEquals("bar", entries.get(0).getKey());
+        assertEquals("", entries.get(0).getValue());
+    }
+
+    @Test
+    public void testTwoEmptyQueryParams() {
+        testTwoEmptyQueryParams("", "");
+        testTwoEmptyQueryParams("", "x");
+        testTwoEmptyQueryParams("x", "");
+    }
+
+    private void testTwoEmptyQueryParams(String v1, String v2) {
+        String rawQuery = "bar" + (v1.isEmpty() ? "" : "=" + v1) + "&baz" + (v2.isEmpty() ? "" : "=" + v2);
+        String requestTarget = "/foo?" + rawQuery;
+        createFixture(requestTarget);
+        assertEquals(requestTarget, fixture.requestTarget());
+        assertEquals(rawQuery, fixture.rawQuery());
+        assertEquals(v1, fixture.queryParameter("bar"));
+        assertEquals(v2, fixture.queryParameter("baz"));
+        assertNull(fixture.queryParameter("nothing"));
+
+        assertEquals(asList("bar", "baz"), iteratorAsList(fixture.queryParametersKeys().iterator()));
+        Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
+        assertNext(itr, "bar", v1);
+        assertNext(itr, "baz", v2);
+        assertFalse(itr.hasNext());
+
+        List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
+        assertThat(entries, hasSize(2));
+        assertEquals("bar", entries.get(0).getKey());
+        assertEquals(v1, entries.get(0).getValue());
+        assertEquals("baz", entries.get(1).getKey());
+        assertEquals(v2, entries.get(1).getValue());
+    }
+
+    @Test
+    public void testThreeEmptyQueryParams() {
+        testThreeEmptyQueryParams("", "", "");
+        testThreeEmptyQueryParams("x", "", "");
+        testThreeEmptyQueryParams("x", "x", "");
+        testThreeEmptyQueryParams("x", "", "x");
+        testThreeEmptyQueryParams("", "x", "");
+        testThreeEmptyQueryParams("", "x", "x");
+        testThreeEmptyQueryParams("", "", "x");
+        testThreeEmptyQueryParams("x", "x", "x");
+    }
+
+    private void testThreeEmptyQueryParams(String v1, String v2, String v3) {
+        String rawQuery = "bar" + (v1.isEmpty() ? "" : "=" + v1) + "&baz" + (v2.isEmpty() ? "" : "=" + v2) +
+                "&zap" + (v3.isEmpty() ? "" : "=" + v3);
+        String requestTarget = "/foo?" + rawQuery;
+        createFixture(requestTarget);
+        assertEquals(requestTarget, fixture.requestTarget());
+        assertEquals(rawQuery, fixture.rawQuery());
+        assertEquals(v1, fixture.queryParameter("bar"));
+        assertEquals(v2, fixture.queryParameter("baz"));
+        assertEquals(v3, fixture.queryParameter("zap"));
+        assertNull(fixture.queryParameter("nothing"));
+
+        assertEquals(asList("bar", "baz", "zap"), iteratorAsList(fixture.queryParametersKeys().iterator()));
+        Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
+        assertNext(itr, "bar", v1);
+        assertNext(itr, "baz", v2);
+        assertNext(itr, "zap", v3);
+        assertFalse(itr.hasNext());
+
+        List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
+        assertThat(entries, hasSize(3));
+        assertEquals("bar", entries.get(0).getKey());
+        assertEquals(v1, entries.get(0).getValue());
+        assertEquals("baz", entries.get(1).getKey());
+        assertEquals(v2, entries.get(1).getValue());
+        assertEquals("zap", entries.get(2).getKey());
+        assertEquals(v3, entries.get(2).getValue());
+    }
+
+    @Test
     public void testEncodeToRequestTargetWithNoParams() {
         createFixture("/some/path#fragment");
         fixture.addQueryParameters("", emptyList());
@@ -786,5 +878,12 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         return StreamSupport
                 .stream(spliteratorUnknownSize(iterator, Spliterator.ORDERED), false)
                 .collect(toList());
+    }
+
+    private static void assertNext(Iterator<Entry<String, String>> itr, String key, String value) {
+        assertTrue(itr.hasNext());
+        Entry<String, String> next = itr.next();
+        assertEquals(key, next.getKey());
+        assertEquals(value, next.getValue());
     }
 }

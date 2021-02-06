@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -280,18 +281,9 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
             }
             final String value = listIterator.next();
             assert key != null;
-            return new Entry<String, String>() {
-
-                @Override
-                public String getKey() {
-                    return key;
-                }
-
-                @Override
-                public String getValue() {
-                    return value;
-                }
-
+            // Make new references for key/value as otherwise if references are not processed sequentially/individually
+            // (e.g. added to a collection) references in earlier entries will be overwritten to point to later entries.
+            return new SimpleEntry<String, String>(key, value) {
                 @Override
                 public String setValue(final String value) {
                     throw new UnsupportedOperationException();
