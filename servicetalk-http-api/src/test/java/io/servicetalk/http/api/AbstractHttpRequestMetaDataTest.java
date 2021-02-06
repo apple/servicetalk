@@ -679,8 +679,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
         assertThat(entries, hasSize(1));
-        assertEquals("bar", entries.get(0).getKey());
-        assertEquals("", entries.get(0).getValue());
+        assertEntry(entries.get(0), "bar", "");
     }
 
     @Test
@@ -691,7 +690,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     private void testTwoEmptyQueryParams(String v1, String v2) {
-        String rawQuery = "bar" + (v1.isEmpty() ? "" : "=" + v1) + "&baz" + (v2.isEmpty() ? "" : "=" + v2);
+        String rawQuery = "bar" + queryValue(v1) + "&baz" + queryValue(v2);
         String requestTarget = "/foo?" + rawQuery;
         createFixture(requestTarget);
         assertEquals(requestTarget, fixture.requestTarget());
@@ -708,10 +707,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
         assertThat(entries, hasSize(2));
-        assertEquals("bar", entries.get(0).getKey());
-        assertEquals(v1, entries.get(0).getValue());
-        assertEquals("baz", entries.get(1).getKey());
-        assertEquals(v2, entries.get(1).getValue());
+        assertEntry(entries.get(0), "bar", v1);
+        assertEntry(entries.get(1), "baz", v2);
     }
 
     @Test
@@ -727,8 +724,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     private void testThreeEmptyQueryParams(String v1, String v2, String v3) {
-        String rawQuery = "bar" + (v1.isEmpty() ? "" : "=" + v1) + "&baz" + (v2.isEmpty() ? "" : "=" + v2) +
-                "&zap" + (v3.isEmpty() ? "" : "=" + v3);
+        String rawQuery = "bar" + queryValue(v1) + "&baz" + queryValue(v2) + "&zap" + queryValue(v3);
         String requestTarget = "/foo?" + rawQuery;
         createFixture(requestTarget);
         assertEquals(requestTarget, fixture.requestTarget());
@@ -747,12 +743,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
         List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
         assertThat(entries, hasSize(3));
-        assertEquals("bar", entries.get(0).getKey());
-        assertEquals(v1, entries.get(0).getValue());
-        assertEquals("baz", entries.get(1).getKey());
-        assertEquals(v2, entries.get(1).getValue());
-        assertEquals("zap", entries.get(2).getKey());
-        assertEquals(v3, entries.get(2).getValue());
+        assertEntry(entries.get(0), "bar", v1);
+        assertEntry(entries.get(1), "baz", v2);
+        assertEntry(entries.get(2), "zap", v3);
     }
 
     @Test
@@ -882,8 +875,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     private static void assertNext(Iterator<Entry<String, String>> itr, String key, String value) {
         assertTrue(itr.hasNext());
-        Entry<String, String> next = itr.next();
+        assertEntry(itr.next(), key, value);
+    }
+
+    private static void assertEntry(Entry<String, String> next, String key, String value) {
         assertEquals(key, next.getKey());
         assertEquals(value, next.getValue());
+    }
+
+    private static String queryValue(String v) {
+        return v.isEmpty() ? "" : "=" + v;
     }
 }
