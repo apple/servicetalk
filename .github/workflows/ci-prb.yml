@@ -22,7 +22,7 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Cache Gradle Packages
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             ~/.gradle/caches
