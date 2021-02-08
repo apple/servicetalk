@@ -248,11 +248,15 @@ final class UriUtils {
     private static void addQueryParam(final String s, final int nameStart, int valueStart, final int valueEnd,
                                       final Charset charset, final Map<String, List<String>> params,
                                       final BiFunction<String, Charset, String> decoder) {
+        final String value;
+        final String name;
         if (valueStart <= nameStart) {
-            valueStart = valueEnd + 1;
+            name = decoder.apply(s.substring(nameStart, valueEnd), charset);
+            value = "";
+        } else {
+            name = decoder.apply(s.substring(nameStart, valueStart - 1), charset);
+            value = decoder.apply(s.substring(valueStart, valueEnd), charset);
         }
-        final String name = decoder.apply(s.substring(nameStart, valueStart - 1), charset);
-        final String value = decoder.apply(s.substring(valueStart, valueEnd), charset);
         final List<String> values = params.computeIfAbsent(name, k -> new ArrayList<>(1)); // Often there's only 1 value
         values.add(value);
     }
