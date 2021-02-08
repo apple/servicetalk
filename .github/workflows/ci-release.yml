@@ -37,7 +37,6 @@ jobs:
         run: ./gradlew --parallel --max-workers=4 -PreleaseBuild=true clean check && ./gradlew -PreleaseBuild=true publish
       - name: Publish Test Results
         if: always()
-        # v1.0.5
         uses: scacap/action-surefire-report@7a84557836c48d2f522b02d8a84395234f982697
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
