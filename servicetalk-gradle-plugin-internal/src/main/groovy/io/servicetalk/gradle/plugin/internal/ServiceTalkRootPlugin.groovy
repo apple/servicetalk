@@ -43,6 +43,12 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         description = "Consolidate sub-project's Javadoc into a single location"
         group = "documentation"
         destinationDir = file("$buildDir/javadoc")
+        // Disable module directories to avoid "undefined" sub-folder bug in JDK11. See:
+        // - https://stackoverflow.com/questions/53732632/gradle-javadoc-search-redirects-to-undefined-url
+        // - https://bugs.openjdk.java.net/browse/JDK-8215291
+        if (JavaVersion.current().isJava11()) {
+          options.addBooleanOption('-no-module-directories', true)
+        }
 
         gradle.projectsEvaluated {
           subprojects.findAll {!it.name.contains("examples") &&
@@ -52,6 +58,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
               classpath += javadocTask.classpath
               excludes += javadocTask.excludes
               includes += javadocTask.includes
+              dependsOn javadocTask
             }
           }
         }

@@ -47,7 +47,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
 
     /**
      * Create an {@link ExecutorRule} with a {@link TestExecutor}.
-     * <p></p>
+     * <p>
      * {@link #executor()} will return the {@link TestExecutor} to allow controlling the executor in tests.
      *
      * @return a new {@link ExecutorRule}.
