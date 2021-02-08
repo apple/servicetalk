@@ -168,7 +168,7 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         }
     }
 
-    private void handleUnexpectedContentLength() {
+    final void handleUnexpectedContentLength() {
         final String msg = "Expected content-length " + contentLength + " not equal to the actual length " +
                 seenContentLength +
                 ". Malformed request/response according to https://tools.ietf.org/html/rfc7540#section-8.1.2.6.";
