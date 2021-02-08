@@ -43,6 +43,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
@@ -135,7 +136,14 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 if (httpStatus != null) {
                     fireFullResponse(ctx, h2Headers, httpStatus);
                 } else {
-                    validateContentLengthMatch();
+                    if (!HEAD.equals(method)) {
+                        // https://tools.ietf.org/html/rfc7230#section-3.3
+                        // Responses to the HEAD request method (Section 4.3.2 of [RFC7231]) never include a message
+                        // body because the associated response header fields (e.g., Transfer-Encoding, Content-Length,
+                        // etc.), if present, indicate only what their values would have been if the request method had
+                        // been GET (Section 4.3.1 of [RFC7231]).
+                        validateContentLengthMatch();
+                    }
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null, false));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
@@ -180,6 +188,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 throw new IllegalArgumentException("content-length (" + contentLength +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");
+            } else if (fullResponse && !HEAD.equals(method)) {
+                handleUnexpectedContentLength();
             }
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
