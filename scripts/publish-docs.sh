@@ -85,7 +85,7 @@ popd
 echo "Docs website generated, see ./$DOCS_FOLDER"
 
 echo "Generate javadoc"
-./gradlew --no-daemon javadocAll
+./gradlew --no-daemon clean javadocAll
 echo "Javadoc generated, see ./$JAVADOC_FOLDER"
 ``
 if ( ! git remote get-url docs ); then
