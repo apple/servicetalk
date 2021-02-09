@@ -112,11 +112,13 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -151,6 +153,7 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -991,23 +994,56 @@ public class H2PriorKnowledgeFeatureParityTest {
         final String expectedPayloadLength = String.valueOf(expectedPayload.length());
         final String expectedTrailer = "foo";
         final String expectedTrailerValue = "bar";
+        final AtomicReference<HttpRequest> requestReceived = new AtomicReference<>();
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                        .addTrailer(expectedTrailer, expectedTrailerValue)
-                        .addHeader(CONTENT_LENGTH, expectedPayloadLength)
-                        .payloadBody(expectedPayload, textSerializer()));
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    requestReceived.set(request);
+                    return responseFactory.ok()
+                            .addTrailer(expectedTrailer, expectedTrailerValue)
+                            .addHeader(CONTENT_LENGTH, expectedPayloadLength)
+                            .payloadBody(expectedPayload, textSerializer());
+                });
              BlockingHttpClient client = forSingleAddress(HostAndPort.of(
                      (InetSocketAddress) serverContext.listenAddress()))
                      .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                      .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            HttpResponse response = client.request(client.get("/"));
+
+            HttpResponse response = client.request(client.post("/")
+                    .addTrailer(expectedTrailer, expectedTrailerValue)
+                    .addHeader(CONTENT_LENGTH, expectedPayloadLength)
+                    .payloadBody(expectedPayload, textSerializer()));
+            assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textDeserializer()), equalTo(expectedPayload));
-            CharSequence trailer = response.trailers().get(expectedTrailer);
-            // http/1.x doesn't allow trailers with content-length, but we parse it anyways.
-            assertNotNull(trailer);
-            assertThat(trailer.toString(), is(expectedTrailerValue));
+            assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
+            assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
+
+            // Verify what server received:
+            HttpRequest request = requestReceived.get();
+            assertThat(request.payloadBody(textDeserializer()), equalTo(expectedPayload));
+            assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
+            assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
         }
+    }
+
+    private static void assertHeaders(boolean h2PriorKnowledge, HttpHeaders headers, String expectedPayloadLength) {
+        if (h2PriorKnowledge) {
+            // http/2 doesn't support "chunked" encoding, it removes "transfer-encoding" header and preserves
+            // content-length:
+            assertThat(headers.get(CONTENT_LENGTH), contentEqualTo(expectedPayloadLength));
+            assertThat(isTransferEncodingChunked(headers), is(false));
+        } else {
+            // http/1.x doesn't allow trailers with content-length, but it switches to "chunked" encoding when trailers
+            // are present and removes content-length header:
+            assertThat(headers.get(CONTENT_LENGTH), nullValue());
+            assertThat(isTransferEncodingChunked(headers), is(true));
+        }
+    }
+
+    private static void assertTrailers(HttpHeaders trailers, String expectedTrailer, String expectedTrailerValue) {
+        CharSequence trailer = trailers.get(expectedTrailer);
+        assertNotNull(trailer);
+        assertThat(trailer.toString(), is(expectedTrailerValue));
     }
 
     @Ignore("100 continue is not yet supported")
