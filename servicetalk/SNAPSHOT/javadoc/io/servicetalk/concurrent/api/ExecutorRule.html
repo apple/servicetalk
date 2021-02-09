@@ -13,8 +13,7 @@
 <!--[if IE]>
 <script type="text/javascript" src="../../../../jquery/jszip-utils/dist/jszip-utils-ie.min.js"></script>
 <![endif]-->
-<script type="text/javascript" src="../../../../jquery/jquery-3.3.1.js"></script>
-<script type="text/javascript" src="../../../../jquery/jquery-migrate-3.0.1.js"></script>
+<script type="text/javascript" src="../../../../jquery/jquery-3.5.1.js"></script>
 <script type="text/javascript" src="../../../../jquery/jquery-ui.js"></script>
 </head>
 <body>
@@ -34,7 +33,7 @@ var rowColor = "rowColor";
 var tableTab = "tableTab";
 var activeTableTab = "activeTableTab";
 var pathtoroot = "../../../../";
-var useModuleDirectories = true;
+var useModuleDirectories = false;
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -266,7 +265,7 @@ extends org.junit.rules.ExternalResource</pre>
 <h4>withTestExecutor</h4>
 <pre class="methodSignature">public static&nbsp;<a href="ExecutorRule.html" title="class in io.servicetalk.concurrent.api">ExecutorRule</a>&lt;<a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api">TestExecutor</a>&gt;&nbsp;withTestExecutor()</pre>
 <div class="block">Create an <a href="ExecutorRule.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorRule</code></a> with a <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a>.
- <p></p>
+ <p>
  <a href="#executor()"><code>executor()</code></a> will return the <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a> to allow controlling the executor in tests.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
