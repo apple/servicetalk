@@ -21,6 +21,7 @@ dependencies {
     api project(":servicetalk-concurrent-api")
 
     implementation project(":servicetalk-annotations")
+    implementation project(":servicetalk-utils-internal")
     implementation project(":servicetalk-concurrent-internal")
     implementation "com.google.code.findbugs:jsr305:$jsr305Version"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"

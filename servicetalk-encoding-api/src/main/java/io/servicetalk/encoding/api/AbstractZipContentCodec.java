@@ -18,7 +18,10 @@ package io.servicetalk.encoding.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -35,17 +43,15 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);
-    private static final Buffer END_OF_STREAM = DEFAULT_RO_ALLOCATOR.fromAscii(" ");
-    private static final int FOOTER_LEN = 10;
 
     protected final int chunkSize;
     private final int maxPayloadSize;
@@ -92,7 +98,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
             LOGGER.error("Error while encoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
-            close(output);
+            closeIgnoreException(output);
         }
 
         return dst;
@@ -101,89 +107,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     @Override
     public final Publisher<Buffer> encode(final Publisher<Buffer> from,
                                           final BufferAllocator allocator) {
-        return from
-                .concat(succeeded(END_OF_STREAM))
-                .liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
-
-                    private final SwappableBufferOutputStream stream = new SwappableBufferOutputStream();
-
-                    @Nullable
-                    private DeflaterOutputStream output;
-
-                    private boolean headerWritten;
-
-                    @Override
-                    public void onSubscribe(PublisherSource.Subscription subscription) {
-                        subscriber.onSubscribe(subscription);
-                    }
-
-                    @Override
-                    public void onNext(Buffer next) {
-                        // onNext will produce AT-MOST N items (from upstream)
-                        // +1 for the encoding footer (ie. END_OF_STREAM)
-                        try {
-                            Buffer dst = allocator.newBuffer(next == END_OF_STREAM ? FOOTER_LEN : chunkSize);
-                            stream.swap(dst);
-
-                            if (!headerWritten) {
-                                // This will produce header bytes
-                                output = newDeflaterOutputStream(stream);
-                            }
-
-                            assert output != null;
-                            if (next == END_OF_STREAM) {
-                                output.finish();
-                                subscriber.onNext(dst);
-                                return;
-                            }
-
-                            consume(next);
-
-                            headerWritten = true;
-                            subscriber.onNext(dst);
-                        } catch (Exception e) {
-                            LOGGER.error("Error while encoding with {}", name(), e);
-                            onError(e);
-                        }
-                    }
-
-                    private void consume(final Buffer next) throws IOException {
-                        assert output != null;
-
-                        if (next.hasArray()) {
-                            output.write(next.array(), next.arrayOffset() + next.readerIndex(),
-                                    next.readableBytes());
-                        } else {
-                            while (next.readableBytes() > 0) {
-                                byte[] onHeap = new byte[min(next.readableBytes(), chunkSize)];
-                                next.readBytes(onHeap);
-                                output.write(onHeap);
-                            }
-                        }
-
-                        output.flush();
-                    }
-
-                    @Override
-                    public void onError(Throwable t) {
-                        close(output);
-                        subscriber.onError(t);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        try {
-                            if (output != null) {
-                                output.close();
-                            }
-                        } catch (IOException e) {
-                            onError(e);
-                            return;
-                        }
-
-                        subscriber.onComplete();
-                    }
-                });
+        return from.liftSync(subscriber -> new EncodingOperator(subscriber, allocator, this));
     }
 
     @Override
@@ -204,7 +128,7 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
             LOGGER.error("Error while decoding with {}", name(), e);
             throw new RuntimeException(e);
         } finally {
-            close(input);
+            closeIgnoreException(input);
         }
 
         return dst;
@@ -212,79 +136,335 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     @Override
     public final Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
-        return from.liftSync(subscriber -> new PublisherSource.Subscriber<Buffer>() {
+        return from.liftSync(subscriber -> new DecodingOperator(subscriber, allocator, this));
+    }
 
-            @Nullable
-            Inflater inflater;
-            @Nullable
-            ZLibStreamDecoder streamDecoder;
-            @Nullable
-            PublisherSource.Subscription subscription;
+    private static class EncodingOperator implements PublisherSource.Subscriber<Buffer> {
 
-            @Override
-            public void onSubscribe(final PublisherSource.Subscription subscription) {
-                try {
-                    inflater = newRawInflater();
-                    streamDecoder = new ZLibStreamDecoder(inflater, supportsChecksum(), maxPayloadSize);
-                    this.subscription = subscription;
-                } catch (Exception e) {
-                    if (inflater != null) {
-                        inflater.end();
+        private static final int FOOTER_LEN = 10;
+        private static final OutputStream NULL_OUTPUT = newEmptyStream("NULL");
+        private static final OutputStream SIGNAL_IN_PROGRESS_OUTPUT = newEmptyStream("SIGNAL IN PROGRESS");
+        private static final OutputStream TERMINATED_OUTPUT = newEmptyStream("TERMINATED");
+
+        private static final AtomicLongFieldUpdater<EncodingOperator> demandUpdater =
+                newUpdater(EncodingOperator.class, "demand");
+
+        private static final AtomicReferenceFieldUpdater<EncodingOperator, OutputStream> outputUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(EncodingOperator.class, OutputStream.class, "output");
+
+        private final SwappableBufferOutputStream stream = new SwappableBufferOutputStream();
+        private final PublisherSource.Subscriber<? super Buffer> subscriber;
+        private final BufferAllocator allocator;
+        private final AbstractZipContentCodec codec;
+
+        private volatile long demand;
+
+        @Nullable
+        private volatile OutputStream output = NULL_OUTPUT;
+
+        EncodingOperator(final PublisherSource.Subscriber<? super Buffer> subscriber, final BufferAllocator allocator,
+                         final AbstractZipContentCodec codec) {
+            this.subscriber = subscriber;
+            this.allocator = allocator;
+            this.codec = codec;
+        }
+
+        @Override
+        public void onSubscribe(Subscription subscription) {
+            final Subscription sub = new Subscription() {
+                @Override
+                public void request(final long n) {
+                    if (!isRequestNValid(n)) {
+                        subscription.request(n);
+                    } else if (demandUpdater.accumulateAndGet(EncodingOperator.this, n,
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative) > 0) {
+                        subscription.request(n);
                     }
-
-                    LOGGER.error("Error while decoding with {}", name(), e);
-                    deliverErrorFromSource(subscriber, e);
-                    return;
                 }
 
-                subscriber.onSubscribe(subscription);
+                @Override
+                public void cancel() {
+                    subscription.cancel();
+
+                    for (;;) {
+                        OutputStream theState = outputUpdater.get(EncodingOperator.this);
+                        if (theState == TERMINATED_OUTPUT) {
+                            return;
+                        }
+
+                        if (outputUpdater.compareAndSet(EncodingOperator.this,
+                                theState, TERMINATED_OUTPUT)) {
+                            // Clean up only if the state was not RESERVED,
+                            // otherwise let the signal in-progress handle the cleaning
+                            if (theState != SIGNAL_IN_PROGRESS_OUTPUT) {
+                                closeIgnoreException(theState);
+                            }
+
+                            return;
+                        }
+                    }
+                }
+            };
+            subscriber.onSubscribe(sub);
+        }
+
+        @Override
+        public void onNext(Buffer next) {
+            if (next == null) {
+                return;
             }
 
-            @Override
-            public void onNext(@Nullable final Buffer src) {
-                assert streamDecoder != null;
-                assert subscription != null;
-                assert src != null;
+            // onNext will produce AT-MOST N items (from upstream)
+            runSeriallyWithTermHandoff((output) -> {
+                demandUpdater.decrementAndGet(this);
+                Buffer buffer = allocator.newBuffer(codec.chunkSize);
+                stream.swap(buffer);
 
+                try {
+                    if (output == NULL_OUTPUT) {
+                        // This will produce header bytes
+                        output = codec.newDeflaterOutputStream(stream);
+                    }
+
+                    consume(output, next);
+                } catch (IOException e) {
+                    throwException(e);
+                }
+
+                subscriber.onNext(buffer);
+                return output;
+            });
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            runSeriallyWithTermHandoff((__) -> TERMINATED_OUTPUT);
+            subscriber.onError(t);
+        }
+
+        @Override
+        public void onComplete() {
+            // onComplete will deliver 1 more element (encoding footer) if there is enough demand.
+            runSeriallyWithTermHandoff((output) -> {
+                if (demand > 0) {
+                    Buffer buffer = allocator.newBuffer(output == NULL_OUTPUT ? codec.chunkSize : FOOTER_LEN);
+                    stream.swap(buffer);
+
+                    try {
+                        if (output == NULL_OUTPUT) {
+                            // This will produce header bytes
+                            output = codec.newDeflaterOutputStream(stream);
+                        }
+
+                        // This will produce footer bytes
+                        output.close();
+                        subscriber.onNext(buffer);
+                        subscriber.onComplete();
+                    } catch (IOException e) {
+                        LOGGER.error("Error while encoding with {}", codec.name(), e);
+                        subscriber.onError(e);
+                    }
+                } else {
+                    subscriber.onComplete();
+                }
+
+                return TERMINATED_OUTPUT;
+            });
+        }
+
+        // Execute a signal while maintaining ability to receive a cancellation handoff that will trigger the clean-up
+        // phase of the resources.
+        private void runSeriallyWithTermHandoff(final Function<OutputStream, OutputStream> work) {
+            OutputStream theOutput = outputUpdater.get(EncodingOperator.this);
+            if (theOutput == TERMINATED_OUTPUT) {
+                return;
+            }
+
+            Exception toThrow = null;
+
+            // No need to loop since the signals are guaranteed to be signalled serially,
+            // thus a CAS fail means cancellation won, so we can safely ignore it.
+            if (outputUpdater.compareAndSet(EncodingOperator.this, theOutput, SIGNAL_IN_PROGRESS_OUTPUT)) {
+                try {
+                    theOutput = work.apply(theOutput);
+                } catch (Exception e) {
+                    LOGGER.error("Error while encoding with {}", codec.name(), e);
+                    theOutput = TERMINATED_OUTPUT;
+                    toThrow = e;
+                }
+
+                if (!outputUpdater.compareAndSet(EncodingOperator.this, SIGNAL_IN_PROGRESS_OUTPUT, theOutput) ||
+                        theOutput == TERMINATED_OUTPUT) {
+                    // state changed while we were in progress OR newState is TERMINATED
+                    // therefore, cleaning is our responsibility
+                    closeIgnoreException(theOutput);
+                }
+            }
+
+            if (toThrow != null) {
+                throwException(toThrow);
+            }
+        }
+
+        private void consume(final OutputStream output, final Buffer next) throws IOException {
+            if (next.hasArray()) {
+                output.write(next.array(), next.arrayOffset() + next.readerIndex(),
+                        next.readableBytes());
+            } else {
+                while (next.readableBytes() > 0) {
+                    byte[] onHeap = new byte[min(next.readableBytes(), codec.chunkSize)];
+                    next.readBytes(onHeap);
+                    output.write(onHeap);
+                }
+            }
+
+            output.flush();
+        }
+    }
+
+    private static final class DecodingOperator implements PublisherSource.Subscriber<Buffer> {
+
+        private static final AtomicIntegerFieldUpdater<DecodingOperator> stateUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DecodingOperator.class, "state");
+
+        private static final int AVAILABLE = 1;
+        private static final int SIGNAL_IN_PROGRESS = 2;
+        private static final int TERMINATED = 3;
+
+        private final PublisherSource.Subscriber<? super Buffer> subscriber;
+        private final BufferAllocator allocator;
+        private final AbstractZipContentCodec codec;
+        private final ZLibStreamDecoder streamDecoder;
+        private final Inflater inflater;
+
+        @Nullable
+        private Subscription subscription;
+
+        private volatile int state = AVAILABLE;
+
+        DecodingOperator(final PublisherSource.Subscriber<? super Buffer> subscriber, final BufferAllocator allocator,
+                         final AbstractZipContentCodec codec) {
+            this.subscriber = subscriber;
+            this.allocator = allocator;
+            this.inflater = codec.newRawInflater();
+            this.streamDecoder = new ZLibStreamDecoder(inflater, codec.supportsChecksum(), codec.maxPayloadSize);
+            this.codec = codec;
+        }
+
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            this.subscription = ConcurrentSubscription.wrap(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    subscription.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    subscription.cancel();
+
+                    for (;;) {
+                        int theState = stateUpdater.get(DecodingOperator.this);
+                        if (theState == TERMINATED) {
+                            return;
+                        }
+
+                        if (stateUpdater.compareAndSet(DecodingOperator.this,
+                                theState, TERMINATED)) {
+                            // Clean up only if the state was not RESERVED,
+                            // otherwise let the signal in-progress handle the cleaning
+                            if (theState != SIGNAL_IN_PROGRESS) {
+                                inflater.end();
+                            }
+
+                            return;
+                        }
+                    }
+                }
+            });
+
+            subscriber.onSubscribe(this.subscription);
+        }
+
+        @Override
+        public void onNext(@Nullable final Buffer src) {
+            assert subscription != null;
+
+            if (src == null) {
+                return;
+            }
+
+            runSeriallyWithTermHandoff(() -> {
                 // onNext will produce AT-MOST N items (as received)
                 try {
                     if (streamDecoder.isFinished()) {
                         throw new IllegalStateException("Stream encoder previously closed but more input arrived ");
                     }
 
-                    Buffer part = allocator.newBuffer(chunkSize);
+                    Buffer part = allocator.newBuffer(codec.chunkSize);
                     streamDecoder.decode(src, part);
                     if (part.readableBytes() > 0) {
                         subscriber.onNext(part);
+                    } else {
+                        // Not enough data to decompress, ask for more
+                        subscription.request(1);
                     }
-
-                    // Not enough data to decompress, ask for more
-                    subscription.request(1);
                 } catch (Exception e) {
-                    LOGGER.error("Error while decoding with {}", name(), e);
-                    onError(e);
+                    throwException(e);
+                }
+
+                return AVAILABLE;
+            });
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            runSeriallyWithTermHandoff(() -> TERMINATED);
+            subscriber.onError(t);
+        }
+
+        @Override
+        public void onComplete() {
+            runSeriallyWithTermHandoff(() -> TERMINATED);
+            subscriber.onComplete();
+        }
+
+        // Execute a signal while maintaining ability to receive a cancellation handoff that will trigger the clean-up
+        // phase of the resources.
+        private void runSeriallyWithTermHandoff(final IntSupplier work) {
+            int theState = stateUpdater.get(DecodingOperator.this);
+            if (theState == TERMINATED) {
+                return;
+            }
+
+            Exception toThrow = null;
+
+            // No need to loop since the signals are guaranteed to be signalled serially,
+            // thus a CAS fail means cancellation won, so we can safely ignore it.
+            if (stateUpdater.compareAndSet(DecodingOperator.this, theState, SIGNAL_IN_PROGRESS)) {
+                try {
+                    theState = work.getAsInt();
+                } catch (Exception e) {
+                    LOGGER.error("Error while decoding with {}", codec.name(), e);
+                    theState = TERMINATED;
+                    toThrow = e;
+                }
+
+                if (!stateUpdater.compareAndSet(DecodingOperator.this, SIGNAL_IN_PROGRESS, theState) ||
+                        theState == TERMINATED) {
+                    // state changed while we were in progress OR newState is TERMINATED
+                    // therefore, cleaning is our responsibility
+                    inflater.end();
                 }
             }
 
-            @Override
-            public void onError(final Throwable t) {
-                assert inflater != null;
-
-                inflater.end();
-                subscriber.onError(t);
+            if (toThrow != null) {
+                throwException(toThrow);
             }
-
-            @Override
-            public void onComplete() {
-                assert inflater != null;
-
-                inflater.end();
-                subscriber.onComplete();
-            }
-        });
+        }
     }
 
-    private void close(@Nullable final Closeable closeable) {
+    private static void closeIgnoreException(@Nullable final Closeable closeable) {
         try {
             if (closeable != null) {
                 closeable.close();
@@ -292,6 +472,25 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
         } catch (IOException e) {
             LOGGER.error("Unexpected IO exception while closing buffer streams", e);
         }
+    }
+
+    private static OutputStream newEmptyStream(final String type) {
+        return new OutputStream() {
+
+            @Override
+            public void write(int b) {
+                throw new IllegalStateException(type + " output stream.");
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                throw new IllegalStateException(type + " output stream.");
+            }
+
+            @Override
+            public void close() {
+            }
+        };
     }
 
     // Code forked from Netty's JdkZlibDecoder
