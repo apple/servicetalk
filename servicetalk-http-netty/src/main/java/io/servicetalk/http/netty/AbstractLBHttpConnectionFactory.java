@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
-    private final ListenableAsyncCloseable close = emptyAsyncCloseable();
+
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final ReadOnlyHttpClientConfig config;
@@ -68,6 +68,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.strategyInfluencer = strategyInfluencer;
         filterableConnectionFactory = connectionFactoryFilter.create(
                 new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
+                    private final ListenableAsyncCloseable close = emptyAsyncCloseable();
+
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
                             final ResolvedAddress ra, @Nullable final TransportObserver observer) {
