@@ -31,10 +31,12 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
@@ -65,17 +67,24 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // LoadBalancer takes ownership of it (e.g. connection initialization) and in that case they will not be
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
-        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
-                .flatMap(c -> c.request(strategy, request)
+        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatMap(c -> {
+                final OwnedRunnable ownedRunnable = c.connectionContext().protocol().major() <= 1 ? null :
+                        new OwnedRunnable(c::requestFinished);
+                return c.request(strategy, ownedRunnable == null ? request :
+                                new StreamingHttpRequestWithContext(request, ownedRunnable))
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
                             @Override
                             public void onComplete() {
-                                c.requestFinished();
+                                if (ownedRunnable == null || ownedRunnable.own()) {
+                                    c.requestFinished();
+                                }
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                c.requestFinished();
+                                if (ownedRunnable == null || ownedRunnable.own()) {
+                                    c.requestFinished();
+                                }
                             }
 
                             @Override
@@ -88,14 +97,16 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                                 // Transport MAY not close the connection if cancel raced with completion and completion
                                 // was seen by the transport before cancel. We have no way of knowing at this layer
                                 // if this indeed happen.
+                                //
                                 // For H2 and above, connection are multiplexed and use virtual streams for each
-                                // request-response exchange. Because we don't have any way to know when the stream gets
-                                // closed we prematurely mark the request as finished. If the maximum concurrent streams
-                                // violated for this connection that exception is safe to retry on a new or same
-                                // connection.
-                                if (c.connectionContext().protocol().major() <= 1) {
+                                // request-response exchange. Because we don't have access to the stream at this level
+                                // we cannot close it. Instead, we use a Runnable which will be registered for the
+                                // stream and executed when it closes. However, cancellation can happen before transport
+                                // created a stream. We check the ownership of the Runnable and if it was not owned by
+                                // the transport, we mark request as finished immediately.
+                                if (ownedRunnable == null) {
                                     c.closeAsync().subscribe();
-                                } else {
+                                } else if (ownedRunnable.own()) {
                                     c.requestFinished();
                                 }
                             }
@@ -103,7 +114,8 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                         // subscribeShareContext is used because otherwise the AsyncContext modified during response
                         // meta data processing will not be visible during processing of the response payload for
                         // ConnectionFilters (it already is visible on ClientFilters).
-                        .subscribeShareContext());
+                        .subscribeShareContext();
+            });
     }
 
     @Override
@@ -141,5 +153,27 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    static final class OwnedRunnable implements Runnable {
+        private static final AtomicIntegerFieldUpdater<OwnedRunnable> ownedUpdater =
+                newUpdater(OwnedRunnable.class, "owned");
+        @SuppressWarnings("unused")
+        private volatile int owned;
+
+        private final Runnable runnable;
+
+        OwnedRunnable(final Runnable runnable) {
+            this.runnable = runnable;
+        }
+
+        @Override
+        public void run() {
+            runnable.run();
+        }
+
+        boolean own() {
+            return ownedUpdater.compareAndSet(this, 0, 1);
+        }
     }
 }
