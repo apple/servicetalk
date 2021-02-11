@@ -30,6 +30,7 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
@@ -63,7 +64,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
@@ -203,6 +204,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     private static final class NoopPartitionClient implements FilterableStreamingHttpClient {
+        private final ListenableAsyncCloseable close = emptyAsyncCloseable();
         private final RuntimeException ex;
 
         NoopPartitionClient(RuntimeException ex) {
@@ -227,12 +229,17 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Override
         public Completable onClose() {
-            return completed();
+            return close.onClose();
         }
 
         @Override
         public Completable closeAsync() {
-            return completed();
+            return close.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return close.closeAsyncGracefully();
         }
 
         @Override
