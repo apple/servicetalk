@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew --parallel --max-workers=4 clean check && ./gradlew publish
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@7a84557836c48d2f522b02d8a84395234f982697
+        uses: scacap/action-surefire-report@fd75ee04fbef040d0198e50ad153fcf997a0cf78
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
