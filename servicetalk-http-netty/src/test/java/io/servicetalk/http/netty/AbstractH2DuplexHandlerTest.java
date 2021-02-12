@@ -316,6 +316,22 @@ public class AbstractH2DuplexHandlerTest {
     }
 
     @Test
+    public void singleHeadersFrameWithZeroContentLength() {
+        variant.writeOutbound(channel);
+
+        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
+        headers.setInt(CONTENT_LENGTH, 0);
+        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, true));
+
+        HttpMetaData metaData = channel.readInbound();
+        assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(0)));
+
+        HttpHeaders trailers = channel.readInbound();
+        assertThat(trailers.isEmpty(), is(true));
+        assertThat(channel.inboundMessages(), is(empty()));
+    }
+
+    @Test
     public void lessThanActual() {
         invalidContentLength(3, "hello", false);
     }

@@ -143,7 +143,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                     } else {
                         h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
-                } else if (fullRequest) {
+                } else if (fullRequest && contentLength > 0) {
                     handleUnexpectedContentLength();
                 }
             } else if (contentLength >= 0) {
