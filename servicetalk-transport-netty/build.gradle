@@ -25,6 +25,4 @@ dependencies {
   implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "io.netty:netty-common:$nettyVersion"
-  implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
 }

@@ -33,8 +33,6 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "io.netty:netty-codec:$nettyVersion"
   implementation "io.netty:netty-transport:$nettyVersion"
-  implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
