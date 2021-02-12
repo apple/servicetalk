@@ -286,6 +286,31 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Test
+    public void whitespaceHeaderName() {
+        testBadHeaderName(" ");
+        testBadHeaderName("  ");
+        testBadHeaderName("\t");
+        testBadHeaderName("\t\t");
+    }
+
+    @Test
+    public void embededWhitespaceHeaderName() {
+        testBadHeaderName("content length");
+        testBadHeaderName("content\tlength");
+    }
+
+    @Test
+    public void trailingWhitespaceHeaderName() {
+        testBadHeaderName("content-length ");
+        testBadHeaderName("content-length\t");
+    }
+
+    private void testBadHeaderName(String badHeader) {
+        assertDecoderException(startLine() + "\r\n" +
+                badHeader + ": 3" + "\r\n" + "\r\n", "Invalid header name");
+    }
+
+    @Test
     public void headerNameWithControlChar() {
         assertDecoderExceptionWithCause(startLine() + "\r\n" +
                 "H\0st: servicetalk.io" + "\r\n" + "\r\n", "Invalid header name");

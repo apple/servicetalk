@@ -139,6 +139,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private long chunkSize;
     private int cumulationIndex = -1;
     private long contentLength = Long.MIN_VALUE;
+    /**
+     * Line being parsed. Used for reporting location in exceptions
+     */
     private int parsingLine;
 
     /**
@@ -589,7 +592,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex) {
+    private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex)
+            throws DecoderException {
         // https://tools.ietf.org/html/rfc7230#section-3.2
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -607,9 +611,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // No whitespace is allowed between the header field-name and colon.  In
         //    the past, differences in the handling of such whitespace have led to
         //    security vulnerabilities in request routing and response handling.
+        // Additional checks will be done by header validator
+
         final int nonControlIndex = lfIndex - 2;
         final int nameStart = buffer.readerIndex();
-        // Other checks will be done by header validator if enabled by users
         final int nameEnd = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
         if (nameEnd < 0) {
             throw newDecoderExceptionAtLine("Unable to find end of a header name in line ", parsingLine);
@@ -617,7 +622,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (nameEnd == nameStart) {
             throw newDecoderExceptionAtLine("Empty header name in line ", parsingLine);
         }
-
         // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
         final CharSequence name = newAsciiString(newBufferFrom(buffer.retainedSlice(nameStart, nameEnd - nameStart)));
         final CharSequence value;
@@ -720,6 +724,15 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return trailer != null ? trailer : headersFactory.newEmptyTrailers();
     }
 
+    /**
+     * Parse the HTTP headers from a buffer
+     *
+     * @param buffer source of the headers
+     * @param headers destination for parsed headers
+     * @param lfIndex the end of the current line
+     * @param maxHeaderFieldLength limit to the length of the headers
+     * @return true if complete headers were processed otherwise false indicates incomplete parsing or error.
+     */
     private boolean parseAllHeaders(final ByteBuf buffer, final HttpHeaders headers, int lfIndex,
                                     final int maxHeaderFieldLength) {
         for (;;) {
@@ -734,6 +747,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             ++parsingLine;
             if (nextLFIndex - 2 == lfIndex) {
+                // CRLF followed by CRLF, we are done.
                 consumeCRLF(buffer, nextLFIndex);
                 return true;
             }
@@ -793,6 +807,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return lfIndex;
     }
 
+    /**
+     * find the next occurrence of CRLF in the buffer beginning at startIndex and looking no further than maxLineSize or
+     * the written portion of the buffer.
+     *
+     * @param buffer source buffer
+     * @param startIndex initial scanning index
+     * @param maxLineSize maximum length of a line
+     * @param parsingLine line count for error messages.
+     * @return the offset of the CRLF or < 0 if no CRLF found
+     * @throws DecoderException if no LF or found in buffer
+     * @throws TooLongFrameException if the line exceeds the permitted maximum
+     */
     private static int findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize, final int parsingLine) {
         final int maxToIndex = startIndex + maxLineSize;
         for (;;) {
