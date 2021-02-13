@@ -51,7 +51,6 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -76,9 +75,7 @@ public class StreamingHttpPayloadHolderTest {
         SetWithSerializer,
         Transform,
         TransformWithTrailer,
-        TransformWithSerializer,
-        TransformRaw,
-        TransformRawWithTrailer,
+        TransformWithSerializer
     }
 
     private enum SourceType {
@@ -98,8 +95,6 @@ public class StreamingHttpPayloadHolderTest {
     private final TestPublisherSubscriber<Object> payloadAndTrailersSubscriber = new TestPublisherSubscriber<>();
     private final TransformFunctions transformFunctions = new TransformFunctions();
     private final TransformFunctions secondTransformFunctions = new TransformFunctions();
-    private final RawTransformFunctions rawTransformFunctions = new RawTransformFunctions();
-    private final RawTransformFunctions secondRawTransformFunctions = new RawTransformFunctions();
     private final StreamingHttpPayloadHolder payloadHolder;
     private final UpdateMode updateMode;
     private final boolean doubleTransform;
@@ -134,8 +129,7 @@ public class StreamingHttpPayloadHolderTest {
             for (UpdateMode updateMode : UpdateMode.values()) {
                 params.add(new Object[]{sourceType, updateMode, false});
                 if (updateMode == UpdateMode.Transform || updateMode == UpdateMode.TransformWithTrailer ||
-                        updateMode == UpdateMode.TransformWithSerializer ||
-                        updateMode == UpdateMode.TransformRaw || updateMode == UpdateMode.TransformRawWithTrailer) {
+                        updateMode == UpdateMode.TransformWithSerializer) {
                     params.add(new Object[]{sourceType, updateMode, true});
                 }
             }
@@ -149,31 +143,25 @@ public class StreamingHttpPayloadHolderTest {
             assertThat("Unexpected payload info trailer indication.", payloadHolder.mayHaveTrailers(), is(true));
         }
 
+        final boolean sourceTypeTrailers = sourceType == SourceType.Trailers;
         switch (updateMode) {
             case Set:
                 payloadHolder.payloadBody(updatedPayloadSource.map(b -> (Buffer) b));
-                assertThat("Expected buffer payload.",
-                        payloadHolder.mayHaveTrailers() || payloadHolder.onlyEmitsBuffer(), is(true));
+                assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
+                assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
             case SetWithSerializer:
                 payloadHolder.payloadBody(updatedPayloadSource.map(b -> ((Buffer) b).toString(defaultCharset())),
                         textSerializer());
-                assertThat("Expected buffer payload.",
-                        payloadHolder.mayHaveTrailers() || payloadHolder.onlyEmitsBuffer(), is(true));
+                assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
+                assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
             case Transform:
             case TransformWithTrailer:
             case TransformWithSerializer:
-                transformFunctions.setupFor(updateMode, payloadHolder);
+                transformFunctions.setupFor(updateMode, payloadHolder, sourceTypeTrailers);
                 if (doubleTransform) {
-                    secondTransformFunctions.setupFor(updateMode, payloadHolder);
-                }
-                break;
-            case TransformRaw:
-            case TransformRawWithTrailer:
-                rawTransformFunctions.setupFor(updateMode, payloadHolder);
-                if (doubleTransform) {
-                    secondRawTransformFunctions.setupFor(updateMode, payloadHolder);
+                    secondTransformFunctions.setupFor(updateMode, payloadHolder, sourceTypeTrailers);
                 }
                 break;
             default:
@@ -183,25 +171,11 @@ public class StreamingHttpPayloadHolderTest {
 
     @After
     public void tearDown() {
-        if (skipAfterVerification) {
-            return;
-        }
-        switch (updateMode) {
-            case Transform:
-                transformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
-                if (doubleTransform) {
-                    secondTransformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
-                }
-                break;
-            case TransformRaw:
-                rawTransformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
-                if (doubleTransform) {
-                    secondRawTransformFunctions.verifyMocks(updateMode, sourceType, headersFactory,
-                            canControlPayload());
-                }
-                break;
-            default:
-                break;
+        if (!skipAfterVerification && updateMode == UpdateMode.Transform) {
+            transformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
+            if (doubleTransform) {
+                secondTransformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
+            }
         }
     }
 
@@ -254,16 +228,13 @@ public class StreamingHttpPayloadHolderTest {
     public void transformedWithTrailersPayloadEmitsError() throws Throwable {
         checkSkipTest(() -> {
             assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.None))));
-            assumeThat("Ignored update mode: " + updateMode, updateMode,
-                    anyOf(equalTo(UpdateMode.TransformWithTrailer), equalTo(UpdateMode.TransformRawWithTrailer)));
+            assumeThat("Ignored update mode: " + updateMode, updateMode, equalTo(UpdateMode.TransformWithTrailer));
         });
         assert payloadSource != null;
 
         throwPayloadErrorFromTransformer(updateMode, transformFunctions.trailerTransformer);
-        throwPayloadErrorFromTransformer(updateMode, rawTransformFunctions.trailerTransformer);
         if (doubleTransform) {
             throwPayloadErrorFromTransformer(updateMode, secondTransformFunctions.trailerTransformer);
-            throwPayloadErrorFromTransformer(updateMode, secondRawTransformFunctions.trailerTransformer);
         }
 
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
@@ -274,18 +245,9 @@ public class StreamingHttpPayloadHolderTest {
         payloadAndTrailersSubscriber.awaitSubscription().request(1);
         getPayloadSource().onError(DELIBERATE_EXCEPTION);
         assertThat(payloadAndTrailersSubscriber.awaitOnError(), equalTo(DELIBERATE_EXCEPTION));
-
-        switch (updateMode) {
-            case TransformWithTrailer:
-                verify(transformFunctions.trailerTransformer).catchPayloadFailure(any(),
-                        eq(DELIBERATE_EXCEPTION), any());
-                break;
-            case TransformRawWithTrailer:
-                verify(rawTransformFunctions.trailerTransformer).catchPayloadFailure(any(),
-                        eq(DELIBERATE_EXCEPTION), any());
-                break;
-            default:
-                break;
+        if (updateMode == UpdateMode.TransformWithTrailer) {
+            verify(transformFunctions.trailerTransformer).catchPayloadFailure(any(),
+                    eq(DELIBERATE_EXCEPTION), any());
         }
     }
 
@@ -293,8 +255,7 @@ public class StreamingHttpPayloadHolderTest {
     public void transformedWithTrailersPayloadEmitsErrorAndSwallowed() throws Throwable {
         checkSkipTest(() -> {
             assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.None))));
-            assumeThat("Ignored update mode: " + updateMode, updateMode,
-                    anyOf(equalTo(UpdateMode.TransformWithTrailer), equalTo(UpdateMode.TransformRawWithTrailer)));
+            assumeThat("Ignored update mode: " + updateMode, updateMode, equalTo(UpdateMode.TransformWithTrailer));
         });
         assert payloadSource != null;
 
@@ -308,10 +269,8 @@ public class StreamingHttpPayloadHolderTest {
             payloadSource.onNext(mock(HttpHeaders.class));
         }
         swallowPayloadErrorInTransformer(updateMode, transformFunctions.trailerTransformer);
-        swallowPayloadErrorInTransformer(updateMode, rawTransformFunctions.trailerTransformer);
         if (doubleTransform) {
             swallowPayloadErrorInTransformer(updateMode, secondTransformFunctions.trailerTransformer);
-            swallowPayloadErrorInTransformer(updateMode, secondRawTransformFunctions.trailerTransformer);
         }
         payloadSource.onError(DELIBERATE_EXCEPTION);
         List<Object> items = payloadAndTrailersSubscriber.takeOnNext(1);
@@ -321,18 +280,9 @@ public class StreamingHttpPayloadHolderTest {
             assertThat(payloadAndTrailersSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         } else {
             payloadAndTrailersSubscriber.awaitOnComplete();
-
-            switch (updateMode) {
-                case TransformWithTrailer:
-                    verify(transformFunctions.trailerTransformer).catchPayloadFailure(any(),
-                            eq(DELIBERATE_EXCEPTION), any());
-                    break;
-                case TransformRawWithTrailer:
-                    verify(rawTransformFunctions.trailerTransformer).catchPayloadFailure(any(),
-                            eq(DELIBERATE_EXCEPTION), any());
-                    break;
-                default:
-                    break;
+            if (updateMode == UpdateMode.TransformWithTrailer) {
+                verify(transformFunctions.trailerTransformer).catchPayloadFailure(any(),
+                        eq(DELIBERATE_EXCEPTION), any());
             }
         }
     }
@@ -385,8 +335,6 @@ public class StreamingHttpPayloadHolderTest {
         payloadAndTrailersSubscriber.awaitOnComplete();
         if (updateMode == UpdateMode.TransformWithTrailer) {
             verify(transformFunctions.trailerTransformer).payloadComplete(any(), any());
-        } else if (updateMode == UpdateMode.TransformRawWithTrailer) {
-            verify(rawTransformFunctions.trailerTransformer).payloadComplete(any(), any());
         }
     }
 
@@ -394,8 +342,7 @@ public class StreamingHttpPayloadHolderTest {
         if (canControlPayload()) {
             getPayloadSource().onComplete();
         }
-        if (updateMode == UpdateMode.TransformWithTrailer || updateMode == UpdateMode.TransformRawWithTrailer ||
-                updateMode == UpdateMode.TransformRaw) {
+        if (updateMode == UpdateMode.TransformWithTrailer) {
             subscriber.awaitSubscription().request(1);
         }
         if (payloadSource != null && (updateMode == UpdateMode.Set || updateMode == UpdateMode.SetWithSerializer)) {
@@ -417,8 +364,7 @@ public class StreamingHttpPayloadHolderTest {
     }
 
     private boolean canNotTestForTrailers() {
-        return sourceType != SourceType.Trailers && updateMode != UpdateMode.TransformRawWithTrailer &&
-                updateMode != UpdateMode.TransformWithTrailer;
+        return sourceType != SourceType.Trailers && updateMode != UpdateMode.TransformWithTrailer;
     }
 
     private boolean canControlPayload() {
@@ -438,7 +384,7 @@ public class StreamingHttpPayloadHolderTest {
     static void throwPayloadErrorFromTransformer(final UpdateMode updateMode,
                                                  final TrailersTransformer<String, ?> trailersTransformer)
             throws Throwable {
-        if (updateMode == UpdateMode.TransformWithTrailer || updateMode == UpdateMode.TransformRawWithTrailer) {
+        if (updateMode == UpdateMode.TransformWithTrailer) {
             when(trailersTransformer.catchPayloadFailure(any(), eq(DELIBERATE_EXCEPTION), any()))
                     .thenAnswer(invocation -> {
                         throw DELIBERATE_EXCEPTION;
@@ -448,7 +394,7 @@ public class StreamingHttpPayloadHolderTest {
 
     void swallowPayloadErrorInTransformer(final UpdateMode updateMode,
                                           final TrailersTransformer<String, ?> trailersTransformer) throws Throwable {
-        if (updateMode == UpdateMode.TransformWithTrailer || updateMode == UpdateMode.TransformRawWithTrailer) {
+        if (updateMode == UpdateMode.TransformWithTrailer) {
             when(trailersTransformer.catchPayloadFailure(any(), eq(DELIBERATE_EXCEPTION), any()))
                     .thenAnswer(invocation -> invocation.getArgument(2));
         }
@@ -471,26 +417,24 @@ public class StreamingHttpPayloadHolderTest {
             when(trailerTransformer.accept(any(), any())).thenAnswer(invocation -> invocation.getArgument(1));
         }
 
-        void setupFor(UpdateMode updateMode, StreamingHttpPayloadHolder payloadHolder) {
+        void setupFor(UpdateMode updateMode, StreamingHttpPayloadHolder payloadHolder, boolean sourceTypeTrailers) {
             switch (updateMode) {
                 case Transform:
                     payloadHolder.transformPayloadBody(transformer);
-                    assertThat("Expected buffer payload.",
-                            payloadHolder.mayHaveTrailers() || payloadHolder.onlyEmitsBuffer(), is(true));
+                    assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
+                    assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                     break;
                 case TransformWithTrailer:
                     when(trailerTransformer.payloadComplete(any(), any()))
                             .thenAnswer(invocation -> invocation.getArgument(1));
                     payloadHolder.transform(trailerTransformer);
-                    assertThat("Expected buffer payload.",
-                            payloadHolder.mayHaveTrailers() || payloadHolder.onlyEmitsBuffer(), is(true));
-                    assertThat("Unexpected payload info trailer indication.", payloadHolder.mayHaveTrailers(),
-                            is(true));
+                    assertThat(payloadHolder.mayHaveTrailers(), is(true));
+                    assertThat(payloadHolder.isGenericTypeBuffer(), is(false));
                     break;
                 case TransformWithSerializer:
                     payloadHolder.transformPayloadBody(stringTransformer, textSerializer());
-                    assertThat("Expected buffer payload.",
-                            payloadHolder.mayHaveTrailers() || payloadHolder.onlyEmitsBuffer(), is(true));
+                    assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
+                    assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                     break;
                 default:
                     break;
@@ -514,56 +458,6 @@ public class StreamingHttpPayloadHolderTest {
                     break;
                 case TransformWithSerializer:
                     verify(stringTransformer).apply(any());
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private static final class RawTransformFunctions {
-        @SuppressWarnings("unchecked")
-        private final UnaryOperator<Publisher<?>> transformer = mock(UnaryOperator.class);
-        @SuppressWarnings("unchecked")
-        private final TrailersTransformer<String, Object> trailerTransformer = mock(TrailersTransformer.class);
-
-        RawTransformFunctions() {
-            when(transformer.apply(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            when(trailerTransformer.accept(any(), any())).thenAnswer(invocation -> invocation.getArgument(1));
-        }
-
-        void setupFor(UpdateMode updateMode, StreamingHttpPayloadHolder request) {
-            switch (updateMode) {
-                case TransformRaw:
-                    request.transformMessageBody(transformer);
-                    assertThat("Expected raw payload.", request.onlyEmitsBuffer(), is(false));
-                    break;
-                case TransformRawWithTrailer:
-                    when(trailerTransformer.payloadComplete(any(), any()))
-                            .thenAnswer(invocation -> invocation.getArgument(1));
-                    request.transformRaw(trailerTransformer);
-                    assertThat("Expected raw payload.", request.onlyEmitsBuffer(), is(false));
-                    assertThat("Unexpected payload info trailer indication.", request.mayHaveTrailers(), is(true));
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        void verifyMocks(UpdateMode updateMode, SourceType sourceType, HttpHeadersFactory headersFactory,
-                         boolean canControlPayload) {
-            switch (updateMode) {
-                case TransformRaw:
-                    verify(transformer).apply(any());
-                    break;
-                case TransformRawWithTrailer:
-                    verify(trailerTransformer).newState();
-                    if (canControlPayload) {
-                        verify(trailerTransformer).accept(any(), any());
-                    }
-                    if (sourceType != SourceType.Trailers) {
-                        verify(headersFactory).newEmptyTrailers();
-                    }
                     break;
                 default:
                     break;

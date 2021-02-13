@@ -62,12 +62,6 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return payloadHolder.payloadBody();
     }
 
-    @Deprecated
-    @Override
-    public Publisher<Object> payloadBodyAndTrailers() {
-        return payloadHolder.payloadBodyAndTrailers();
-    }
-
     @Override
     public Publisher<Object> messageBody() {
         return payloadHolder.messageBody();
@@ -99,13 +93,6 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return this;
     }
 
-    @Deprecated
-    @Override
-    public StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
-        payloadHolder.transformRawPayloadBody(transformer);
-        return this;
-    }
-
     @Override
     public StreamingHttpResponse transformMessageBody(final UnaryOperator<Publisher<?>> transformer) {
         payloadHolder.transformMessageBody(transformer);
@@ -115,13 +102,6 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     @Override
     public <T> StreamingHttpResponse transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         payloadHolder.transform(trailersTransformer);
-        return this;
-    }
-
-    @Deprecated
-    @Override
-    public <T> StreamingHttpResponse transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
-        payloadHolder.transformRaw(trailersTransformer);
         return this;
     }
 
@@ -150,8 +130,8 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     }
 
     @Override
-    public boolean onlyEmitsBuffer() {
-        return payloadHolder.onlyEmitsBuffer();
+    public boolean isGenericTypeBuffer() {
+        return payloadHolder.isGenericTypeBuffer();
     }
 
     StreamingHttpPayloadHolder payloadHolder() {

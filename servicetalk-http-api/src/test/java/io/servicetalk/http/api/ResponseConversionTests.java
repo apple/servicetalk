@@ -47,7 +47,7 @@ public class ResponseConversionTests extends AbstractConversionTest {
         List<Object[]> params = new ArrayList<>();
         params.add(newParam(new DefaultPayloadInfo(), "no-payload-info"));
         params.add(newParam(new DefaultPayloadInfo().setMayHaveTrailers(true), "trailers"));
-        params.add(newParam(new DefaultPayloadInfo().setOnlyEmitsBuffer(true), "only-buffers"));
+        params.add(newParam(new DefaultPayloadInfo().setGenericTypeBuffer(true), "publisher-buffer"));
         params.add(newParam(new DefaultPayloadInfo().setSafeToAggregate(true), "safe-to-aggregate"));
         return params;
     }

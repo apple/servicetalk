@@ -73,7 +73,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
 
     private final FilterableStreamingHttpConnection connection;
     private final TestCompletable connectionClose;
-    private final TestPublisher<Object> payloadBodyAndTrailers;
+    private final TestPublisher<Object> messageBody;
     private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
 
     public ProxyConnectConnectionFactoryFilterTest() {
@@ -85,7 +85,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         });
         when(connection.closeAsync()).thenReturn(connectionClose);
 
-        payloadBodyAndTrailers = new TestPublisher.Builder<>().build(subscriber -> {
+        messageBody = new TestPublisher.Builder<>().build(subscriber -> {
             subscriber.onSubscribe(new PublisherSource.Subscription() {
                 @Override
                 public void request(final long n) {
@@ -131,7 +131,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     private void configureRequestSend() {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(OK);
-        when(response.messageBody()).thenReturn(payloadBodyAndTrailers);
+        when(response.messageBody()).thenReturn(messageBody);
         when(connection.request(any(), any())).thenReturn(succeeded(response));
     }
 
@@ -174,7 +174,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     public void nonSuccessfulResponseCode() {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(INTERNAL_SERVER_ERROR);
-        when(response.messageBody()).thenReturn(payloadBodyAndTrailers);
+        when(response.messageBody()).thenReturn(messageBody);
         when(connection.request(any(), any())).thenReturn(succeeded(response));
 
         configureConnectRequest();
@@ -285,7 +285,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
         verify(connection).connect(any());
         verify(connection).request(any(), any());
         assertThat("CONNECT response payload body was " + (expected ? "was" : "unnecessarily") + " consumed",
-                payloadBodyAndTrailers.isSubscribed(), is(expected));
+                messageBody.isSubscribed(), is(expected));
     }
 
     private void assertConnectionClosed() {

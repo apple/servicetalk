@@ -75,13 +75,13 @@ abstract class AbstractConversionTest {
     void verifyAggregatedPayloadInfo(final PayloadInfo aggregatedInfo) {
         assertThat("Aggregated request not safe to aggregate.", aggregatedInfo.isSafeToAggregate(), is(true));
         assertThat("Mismatched trailer info.", aggregatedInfo.mayHaveTrailers(), is(payloadInfo.mayHaveTrailers()));
-        assertThat("Mismatched buffer info.", aggregatedInfo.onlyEmitsBuffer(), is(payloadInfo.onlyEmitsBuffer()));
+        assertThat(aggregatedInfo.isGenericTypeBuffer(), is(payloadInfo.isGenericTypeBuffer()));
     }
 
     void verifyPayloadInfo(final PayloadInfo newInfo) {
         assertThat("Mismatched aggregation info.", newInfo.isSafeToAggregate(), is(payloadInfo.isSafeToAggregate()));
         assertThat("Mismatched trailer info.", newInfo.mayHaveTrailers(), is(payloadInfo.mayHaveTrailers()));
-        assertThat("Mismatched buffer info.", newInfo.onlyEmitsBuffer(), is(payloadInfo.onlyEmitsBuffer()));
+        assertThat(newInfo.isGenericTypeBuffer(), is(payloadInfo.isGenericTypeBuffer()));
     }
 
     static class SingleSubscribePublisher extends Publisher<Object> {

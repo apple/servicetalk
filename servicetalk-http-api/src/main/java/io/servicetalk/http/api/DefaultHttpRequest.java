@@ -237,10 +237,10 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         final Publisher<Object> payload;
         if (trailers != null) {
             payload = from(payloadBody, trailers);
-            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailers(true);
+            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailersAndGenericTypeBuffer(true);
         } else {
             payload = from(payloadBody);
-            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailers(false);
+            payloadInfo = new DefaultPayloadInfo(this).setMayHaveTrailersAndGenericTypeBuffer(false);
         }
         return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(), encoding(),
                 original.payloadHolder().allocator(), payload, payloadInfo, original.payloadHolder().headersFactory());

@@ -187,25 +187,9 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
         return this;
     }
 
-    @Deprecated
-    @Override
-    public BlockingStreamingHttpRequest transformRawPayloadBody(
-            final UnaryOperator<BlockingIterable<?>> transformer) {
-        original.transformRawPayloadBody(bufferPublisher ->
-                fromIterable(transformer.apply(bufferPublisher.toIterable())));
-        return this;
-    }
-
     @Override
     public <T> BlockingStreamingHttpRequest transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         original.transform(trailersTransformer);
-        return this;
-    }
-
-    @Deprecated
-    @Override
-    public <T> BlockingStreamingHttpRequest transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
-        original.transformRaw(trailersTransformer);
         return this;
     }
 
