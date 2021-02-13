@@ -194,12 +194,11 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                             value = setCookieString.subSequence(begin, i);
                             // Increment by 3 because we are skipping DQUOTE SEMI SP
                             i += 3;
-                            begin = i;
                         } else {
                             isWrapped = true;
                             ++i;
-                            begin = i;
                         }
+                        begin = i;
                     } else if (value == null) {
                         throw new IllegalArgumentException("unexpected quote at index: " + i);
                     }
@@ -426,14 +425,15 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         // if equals(a) == equals(b) then a.hasCode() == b.hashCode()
         // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
         // [2] https://tools.ietf.org/html/rfc6265#section-5.1.4
-        return contentEqualsIgnoreCase(name, rhs.name()) &&
+        return name.equals(rhs.name()) && value.equals(rhs.value()) &&
                 contentEqualsIgnoreCase(domain, rhs.domain()) &&
                 Objects.equals(path, rhs.path());
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 + caseInsensitiveHashCode(name);
+        int hash = 31 + name.hashCode();
+        hash = 31 * hash + value.hashCode();
         if (domain != null) {
             hash = 31 * hash + caseInsensitiveHashCode(domain);
         }
@@ -445,7 +445,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + name + "]";
+        return getClass().getSimpleName() + '[' + name + ']';
     }
 
     private enum ParseState {

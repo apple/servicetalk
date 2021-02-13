@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
-import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 
@@ -135,18 +133,18 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
             return false;
         }
         final HttpCookiePair rhs = (HttpCookiePair) o;
-        return contentEqualsIgnoreCase(name, rhs.name()) && contentEqualsIgnoreCase(value, rhs.value());
+        return name.equals(rhs.name()) && value.equals(rhs.value());
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 + caseInsensitiveHashCode(name);
-        hash = 31 * hash + caseInsensitiveHashCode(value);
+        int hash = 31 + name.hashCode();
+        hash = 31 * hash + value.hashCode();
         return hash;
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + name + "]";
+        return getClass().getSimpleName() + '[' + name + ']';
     }
 }
