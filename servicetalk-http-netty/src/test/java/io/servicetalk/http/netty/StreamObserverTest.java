@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ public class StreamObserverTest {
         safeClose(client);
     }
 
-    private static void safeSync(Runnable runnable) {
+    static void safeSync(Runnable runnable) {
         try {
             runnable.run();
         } catch (Exception e) {
@@ -182,7 +182,11 @@ public class StreamObserverTest {
                 clientDataObserver);
     }
 
-    private static final class MulticastTransportEventsStreamingHttpConnectionFilter
+    /**
+     * Filter that allows users to subscribe to
+     * {@link FilterableStreamingHttpConnection#transportEventStream(HttpEventKey)}.
+     */
+    static final class MulticastTransportEventsStreamingHttpConnectionFilter
             extends StreamingHttpConnectionFilter {
 
         private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrent;

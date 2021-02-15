@@ -22,4 +22,13 @@
     <Method name="equals"/>
     <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
   </Match>
+
+  <!-- False-positive alerts, the invoked methods have side-effect -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.netty.StreamingHttpRequestWithContext"/>
+      <Class name="io.servicetalk.http.netty.AbsoluteAddressHttpRequesterFilter"/>
+    </Or>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
 </FindBugsFilter>
