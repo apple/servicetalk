@@ -17,7 +17,7 @@ package io.servicetalk.examples.grpc.compression;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 

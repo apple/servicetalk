@@ -27,7 +27,7 @@ abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
     }
 
     @Override
-    public ContentCodecBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
+    public ContentCodecBuilder maxAllowedPayloadSize(final int maxAllowedPayloadSize) {
         if (maxAllowedPayloadSize <= 0) {
             throw new IllegalArgumentException("maxAllowedPayloadSize: " + maxAllowedPayloadSize + " (expected > 0)");
         }

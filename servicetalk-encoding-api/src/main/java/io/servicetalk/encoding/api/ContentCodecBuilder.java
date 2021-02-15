@@ -29,7 +29,7 @@ public interface ContentCodecBuilder {
      * @return {@code this}
      * @see <a href="https://en.wikipedia.org/wiki/Zip_bomb">Zip Bomb</a>
      */
-    ContentCodecBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
+    ContentCodecBuilder maxAllowedPayloadSize(int maxAllowedPayloadSize);
 
     /**
      * Build and return an instance of the {@link ContentCodec} with the configuration of the builder.

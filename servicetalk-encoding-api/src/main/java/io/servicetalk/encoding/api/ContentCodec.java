@@ -51,7 +51,7 @@ public interface ContentCodec {
      * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to encode
-     * @param offset the offset after the current {@link Buffer}'s {@code readerInde  }to start reading from
+     * @param offset the offset after the current {@link Buffer}'s {@code readerIndex }to start reading from
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded

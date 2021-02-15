@@ -16,7 +16,7 @@
 package io.servicetalk.examples.http.compression;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.http.api.ContentCodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
