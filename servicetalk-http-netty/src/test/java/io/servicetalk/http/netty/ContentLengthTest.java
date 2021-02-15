@@ -173,14 +173,6 @@ public class ContentLengthTest extends AbstractNettyHttpServerTest {
         setResponseContentLengthAndVerify(response, is("12"));
     }
 
-    @Test
-    public void shouldCalculateResponseContentLengthFromTransformedRawMultipleItemPublisher() throws Exception {
-        StreamingHttpResponse response = newAggregatedResponse().payloadBody("Hello", textSerializer())
-                .toStreamingResponse().transformRawPayloadBody(payload -> payload.map(obj -> (Buffer) obj)
-                        .concat(Publisher.from(" ", "World", "!").map(DEFAULT_RO_ALLOCATOR::fromAscii)));
-        setResponseContentLengthAndVerify(response, is("12"));
-    }
-
     private static HttpRequest newAggregatedRequest() {
         return newAggregatedRequest(GET);
     }

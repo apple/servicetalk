@@ -45,15 +45,6 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     }
 
     /**
-     * Gets a {@link Publisher} that combines the raw payload body concatenated with the {@link HttpHeaders trailers}.
-     * @deprecated Use {@link #messageBody()}.
-     * @return a {@link Publisher} that combines the raw payload body concatenated with the
-     * {@link HttpHeaders trailers}.
-     */
-    @Deprecated
-    Publisher<Object> payloadBodyAndTrailers();
-
-    /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
      * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
@@ -133,16 +124,6 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
     /**
-     * Returns a {@link StreamingHttpResponse} with its underlying payload transformed. Note that the raw objects of the
-     * underlying {@link Publisher} may be exposed. The object types are not guaranteed to be homogeneous.
-     * @deprecated Use {@link #transformPayloadBody(UnaryOperator)}.
-     * @param transformer Responsible for transforming the payload body.
-     * @return {@code this}
-     */
-    @Deprecated
-    StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer);
-
-    /**
      * Transform the <a href="https://tools.ietf.org/html/rfc7230#section-3.3">message-body</a> which contains the
      * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
@@ -163,17 +144,6 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @return {@code this}
      */
     <T> StreamingHttpResponse transform(TrailersTransformer<T, Buffer> trailersTransformer);
-
-    /**
-     * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Object}s,
-     * with access to the trailers.
-     * @deprecated use {@link #transform(TrailersTransformer)}.
-     * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
-     * @param <T> The type of state used during the transformation.
-     * @return {@code this}
-     */
-    @Deprecated
-    <T> StreamingHttpResponse transformRaw(TrailersTransformer<T, Object> trailersTransformer);
 
     /**
      * Translates this {@link StreamingHttpResponse} to a {@link HttpResponse}.
