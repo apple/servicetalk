@@ -269,10 +269,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
-                        if (ownedRunnable != null) {
-                            ownedRunnable.run();
-                        }
-                        observer.streamClosed(cause);
+                        cleanupWhenError(cause, observer, ownedRunnable);
                         deliverErrorFromSource(subscriber, cause);
                         return;
                     }
@@ -280,9 +277,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     try {
                         subscriber.onSubscribe(sequentialCancellable);
                     } catch (Throwable cause) {
-                        if (ownedRunnable != null) {
-                            ownedRunnable.run();
-                        }
+                        cleanupErrorBeforeOpen(cause, promise, observer, ownedRunnable);
                         handleExceptionFromOnSubscribe(subscriber, cause);
                         return;
                     }
@@ -298,6 +293,27 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     }
                 }
             };
+        }
+
+        private static void cleanupErrorBeforeOpen(final Throwable cause,
+                                                   final Promise<Http2StreamChannel> promise,
+                                                   final StreamObserver observer,
+                                                   @Nullable final Runnable ownedRunnable) {
+            promise.addListener((FutureListener<Http2StreamChannel>) future -> {
+                if (future.cause() == null) {   // if succeeded, close the stream then clean up
+                    future.getNow().close().addListener(__ -> cleanupWhenError(cause, observer, ownedRunnable));
+                } else {
+                    cleanupWhenError(cause, observer, ownedRunnable);
+                }
+            });
+        }
+
+        private static void cleanupWhenError(final Throwable cause, final StreamObserver observer,
+                                             @Nullable final Runnable ownedRunnable) {
+            observer.streamClosed(cause);
+            if (ownedRunnable != null) {
+                ownedRunnable.run();
+            }
         }
 
         private void childChannelActive(Future<Http2StreamChannel> future,
@@ -353,10 +369,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
                         }
                     } else {
-                        streamObserver.streamClosed(cause);
-                        if (onCloseRunnable != null) {
-                            onCloseRunnable.run();
-                        }
+                        cleanupWhenError(cause, streamObserver, onCloseRunnable);
                     }
                     subscriber.onError(cause);
                     return;
@@ -378,10 +391,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     }
                 });
             } else {
-                streamObserver.streamClosed(futureCause);
-                if (onCloseRunnable != null) {
-                    onCloseRunnable.run();
-                }
+                cleanupWhenError(futureCause, streamObserver, onCloseRunnable);
                 subscriber.onError(futureCause);
             }
         }
