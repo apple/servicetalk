@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -579,7 +579,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    private void headerSetCookieRemovalAndIteration(HttpHeaders headers) {
+    private static void headerSetCookieRemovalAndIteration(HttpHeaders headers) {
         headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
                 "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
 
@@ -1288,9 +1288,9 @@ public class H2PriorKnowledgeFeatureParityTest {
     private static final class TestConnectionFilter extends StreamingHttpConnectionFilter {
         private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrent;
 
-        protected TestConnectionFilter(final FilterableStreamingHttpConnection delegate,
-                                       Queue<FilterableStreamingHttpConnection> connectionQueue,
-                                       Queue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue) {
+        TestConnectionFilter(final FilterableStreamingHttpConnection delegate,
+                             Queue<FilterableStreamingHttpConnection> connectionQueue,
+                             Queue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue) {
             super(delegate);
             maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicastToExactly(2);
             connectionQueue.add(delegate);
@@ -1306,7 +1306,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     @ChannelHandler.Sharable
-    private static final class EchoHttp2Handler extends ChannelDuplexHandler {
+    static final class EchoHttp2Handler extends ChannelDuplexHandler {
         static final EchoHttp2Handler INSTANCE = new EchoHttp2Handler();
 
         private EchoHttp2Handler() {
@@ -1336,11 +1336,11 @@ public class H2PriorKnowledgeFeatureParityTest {
             ctx.flush();
         }
 
-        private void onDataRead(ChannelHandlerContext ctx, Http2DataFrame data) {
+        private static void onDataRead(ChannelHandlerContext ctx, Http2DataFrame data) {
             ctx.write(new DefaultHttp2DataFrame(data.content().retainedDuplicate(), data.isEndStream()));
         }
 
-        private void onHeadersRead(ChannelHandlerContext ctx, Http2HeadersFrame headers) {
+        private static void onHeadersRead(ChannelHandlerContext ctx, Http2HeadersFrame headers) {
             if (headers.isEndStream()) {
                 ctx.write(new DefaultHttp2HeadersFrame(headers.headers(), true));
             } else {

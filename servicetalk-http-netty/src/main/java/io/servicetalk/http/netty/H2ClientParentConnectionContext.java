@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.ThrowableUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -41,6 +42,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OwnedRunnable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -68,6 +70,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -78,6 +81,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -239,27 +243,77 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     final StreamObserver observer = multiplexedObserver.onNewStream();
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
+                    Runnable ownedRunnable = null;
                     try {
                         final EventExecutor e = parentContext.nettyChannel().eventLoop();
                         promise = e.newPromise();
+                        // Take ownership of the Runnable associated with the request (if any) before we start opening
+                        // a new stream. If we move this action to childChannelActive, the
+                        // LoadBalancedStreamingHttpClient may prematurely mark the request as finished before netty
+                        // marks the stream as inactive. This code is responsible for running this Runnable in case of
+                        // any errors or stream closure.
+                        if (StreamingHttpRequestWithContext.class.equals(request.getClass())) {
+                            OwnedRunnable runnable = ((StreamingHttpRequestWithContext) request).runnable();
+                            if (runnable.own()) {
+                                ownedRunnable = runnable;
+                            } else {
+                                // The request is already cancelled and the cancel signal will eventually propagate
+                                // here. No need to try to open a stream, we can just fail fast:
+                                final Throwable cause = StacklessCancellationException.newInstance(this.getClass(),
+                                        "handleSubscribe");
+                                observer.streamClosed(cause);
+                                deliverErrorFromSource(subscriber, cause);
+                                return;
+                            }
+                        }   // Else user wrapped the request object => Runnable will always be owned by originator
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
-                        observer.streamClosed(cause);
+                        cleanupWhenError(cause, observer, ownedRunnable);
                         deliverErrorFromSource(subscriber, cause);
                         return;
                     }
-                    subscriber.onSubscribe(sequentialCancellable);
+
+                    try {
+                        subscriber.onSubscribe(sequentialCancellable);
+                    } catch (Throwable cause) {
+                        cleanupErrorBeforeOpen(cause, promise, observer, ownedRunnable);
+                        handleExceptionFromOnSubscribe(subscriber, cause);
+                        return;
+                    }
+
+                    final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
                         childChannelActive(promise, subscriber, sequentialCancellable, strategy, request, observer,
-                                allowDropTrailersReadFromTransport);
+                                allowDropTrailersReadFromTransport, onCloseRunnable);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
                                 future, subscriber, sequentialCancellable, strategy, request, observer,
-                                allowDropTrailersReadFromTransport));
+                                allowDropTrailersReadFromTransport, onCloseRunnable));
                     }
                 }
             };
+        }
+
+        private static void cleanupErrorBeforeOpen(final Throwable cause,
+                                                   final Promise<Http2StreamChannel> promise,
+                                                   final StreamObserver observer,
+                                                   @Nullable final Runnable ownedRunnable) {
+            promise.addListener((FutureListener<Http2StreamChannel>) future -> {
+                if (future.cause() == null) {   // if succeeded, close the stream then clean up
+                    future.getNow().close().addListener(__ -> cleanupWhenError(cause, observer, ownedRunnable));
+                } else {
+                    cleanupWhenError(cause, observer, ownedRunnable);
+                }
+            });
+        }
+
+        private static void cleanupWhenError(final Throwable cause, final StreamObserver observer,
+                                             @Nullable final Runnable ownedRunnable) {
+            observer.streamClosed(cause);
+            if (ownedRunnable != null) {
+                ownedRunnable.run();
+            }
         }
 
         private void childChannelActive(Future<Http2StreamChannel> future,
@@ -268,13 +322,17 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                         HttpExecutionStrategy strategy,
                                         StreamingHttpRequest request,
                                         StreamObserver streamObserver,
-                                        boolean allowDropTrailersReadFromTransport) {
+                                        boolean allowDropTrailersReadFromTransport,
+                                        @Nullable Runnable onCloseRunnable) {
             final SingleSource<StreamingHttpResponse> responseSingle;
             Throwable futureCause = future.cause(); // assume this doesn't throw
             if (futureCause == null) {
                 Http2StreamChannel streamChannel = null;
                 try {
                     streamChannel = future.getNow();
+                    if (onCloseRunnable != null) {
+                        streamChannel.closeFuture().addListener(f -> onCloseRunnable.run());
+                    }
                     parentContext.trackActiveStream(streamChannel);
 
                     final CloseHandler closeHandler = forNonPipelined(true, streamChannel.config());
@@ -310,6 +368,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             unexpected.addSuppressed(cause);
                             LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
                         }
+                    } else {
+                        cleanupWhenError(cause, streamObserver, onCloseRunnable);
                     }
                     subscriber.onError(cause);
                     return;
@@ -331,6 +391,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     }
                 });
             } else {
+                cleanupWhenError(futureCause, streamObserver, onCloseRunnable);
                 subscriber.onError(futureCause);
             }
         }
@@ -445,6 +506,23 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (completedUpdater.compareAndSet(this, 0, 1)) {
                 channel.writeAndFlush(Http2SettingsAckFrame.INSTANCE);
             }
+        }
+    }
+
+    private static final class StacklessCancellationException extends CancellationException {
+        private static final long serialVersionUID = 3235852873427231209L;
+
+        private StacklessCancellationException() { }
+
+        // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
+        // Classloader.
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+
+        static StacklessCancellationException newInstance(Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessCancellationException(), clazz, method);
         }
     }
 }
