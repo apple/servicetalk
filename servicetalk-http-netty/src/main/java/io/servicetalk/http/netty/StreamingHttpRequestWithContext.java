@@ -205,12 +205,6 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public Publisher<Object> payloadBodyAndTrailers() {
-        return delegate.payloadBodyAndTrailers();
-    }
-
-    @Override
     public Publisher<Object> messageBody() {
         return delegate.messageBody();
     }
@@ -249,13 +243,6 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public StreamingHttpRequest transformRawPayloadBody(final UnaryOperator<Publisher<?>> transformer) {
-        delegate.transformRawPayloadBody(transformer);
-        return this;
-    }
-
-    @Override
     public StreamingHttpRequest transformMessageBody(final UnaryOperator<Publisher<?>> transformer) {
         delegate.transformMessageBody(transformer);
         return this;
@@ -264,13 +251,6 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
     @Override
     public <T> StreamingHttpRequest transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         delegate.transform(trailersTransformer);
-        return this;
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public <T> StreamingHttpRequest transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
-        delegate.transformRaw(trailersTransformer);
         return this;
     }
 
