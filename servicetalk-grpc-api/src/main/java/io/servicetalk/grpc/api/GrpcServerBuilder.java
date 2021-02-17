@@ -252,7 +252,7 @@ public abstract class GrpcServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param services {@link GrpcService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
+     * @param services {@link GrpcBindableService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
@@ -295,7 +295,7 @@ public abstract class GrpcServerBuilder {
       * <p>
       * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
       *
-      * @param services {@link GrpcService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
+      * @param services {@link GrpcBindableService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
       * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
       * throws an {@link Exception} if the server could not be started.
       * @throws Exception if the server could not be started.

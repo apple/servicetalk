@@ -20,8 +20,24 @@ import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.squareup.javapoet.TypeSpec;
 
 interface GenerationContext {
+    /**
+     * Return a canonical and unique type name based upon the provided type name.
+     * The returned name will not conflict with any other identically named types
+     * in the same context.
+     *
+     * @param name The Java type name to deconflict
+     * @return The deconflicted, possibly unchanged, Java type name.
+     */
     String deconflictJavaTypeName(String name);
 
+    /**
+     * Create and return the builder for a service class described by the provided
+     * descriptor. The builder will be registered for the destination file and the
+     * generator responsible for filling in the builder will
+     *
+     * @param serviceProto The service descriptor being created.
+     * @return a new builder for the service class
+     */
     TypeSpec.Builder newServiceClassBuilder(ServiceDescriptorProto serviceProto);
 
     String methodPath(ServiceDescriptorProto serviceProto, MethodDescriptorProto methodProto);

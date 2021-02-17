@@ -16,7 +16,8 @@
 package io.servicetalk.grpc.api;
 
 /**
- * A <a href="https://www.grpc.io">gRPC</a> service that can generate factory instances bound to itself.
+ * A <a href="https://www.grpc.io">gRPC</a> service that can generate {@link GrpcServiceFactory factory} instances bound
+ * to itself.
  *
  * @param <F> Filter type
  * @param <S> Service Type

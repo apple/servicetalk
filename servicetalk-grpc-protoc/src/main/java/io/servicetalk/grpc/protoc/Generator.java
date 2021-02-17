@@ -158,6 +158,9 @@ final class Generator {
         }
     }
 
+    /**
+     * Manages state for code generation of a single service
+     */
     private static final class State {
         final ServiceDescriptorProto serviceProto;
 
@@ -204,7 +207,13 @@ final class Generator {
         this.messageTypesMap = messageTypesMap;
     }
 
-    void generate(final ServiceDescriptorProto serviceProto) {
+    /**
+     * Generate Service class for the provided proto service descriptor.
+     *
+     * @param serviceProto The service descriptor.
+     * @return The service class builder
+     */
+    TypeSpec.Builder generate(final ServiceDescriptorProto serviceProto) {
         final String name = context.deconflictJavaTypeName(
                 sanitizeIdentifier(serviceProto.getName(), false) + Service);
         final State state = new State(serviceProto, name);
@@ -225,6 +234,8 @@ final class Generator {
         addClientFilter(state, serviceClassBuilder);
         addClientFilterFactory(state, serviceClassBuilder);
         addClientFactory(state, serviceClassBuilder);
+
+        return serviceClassBuilder;
     }
 
     private TypeSpec.Builder addSerializationProviderInit(final State state,
@@ -348,7 +359,8 @@ final class Generator {
         return serviceClassBuilder;
     }
 
-    private TypeSpec.Builder addServiceFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
+    private static TypeSpec.Builder addServiceFilterFactory(final State state,
+                                                            final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.serviceFilterFactoryClass)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcServiceFilterFactory, state.serviceFilterClass,
@@ -650,7 +662,8 @@ final class Generator {
         return serviceClassBuilder;
     }
 
-    private TypeSpec.Builder addClientFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
+    private static TypeSpec.Builder addClientFilterFactory(final State state,
+                                                           final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.clientFilterFactoryClass)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClientFilterFactory, state.clientFilterClass,
@@ -1008,7 +1021,7 @@ final class Generator {
      * @param blocking If true then add the interface for blocking service otherwise add async service interface
      * @return The generated service interface
      */
-    private TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
+    private static TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
         final ClassName serviceClass = blocking ? state.blockingServiceClass : state.serviceClass;
         final String name = serviceClass.simpleName();
 
