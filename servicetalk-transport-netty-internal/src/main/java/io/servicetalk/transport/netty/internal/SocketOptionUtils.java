@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.epoll.EpollChannelOption;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -75,6 +76,12 @@ public final class SocketOptionUtils {
             final int writeBufferThreshold = (Integer) value;
             channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1,
                     writeBufferThreshold));
+        } else if (option == ServiceTalkSocketOptions.SO_BACKLOG) {
+            channelOpts.put(ChannelOption.SO_BACKLOG, value);
+        } else if (option == ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG) {
+            channelOpts.put(EpollChannelOption.TCP_FASTOPEN, value);
+        } else if (option == ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT) {
+            channelOpts.put(ChannelOption.TCP_FASTOPEN_CONNECT, value);
         } else {
             throw unsupported(option);
         }
@@ -135,6 +142,15 @@ public final class SocketOptionUtils {
         if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
             final WriteBufferWaterMark result = config.getOption(ChannelOption.WRITE_BUFFER_WATER_MARK);
             return result == null ? null : (T) Integer.valueOf(result.high());
+        }
+        if (option == ServiceTalkSocketOptions.SO_BACKLOG) {
+            return (T) config.getOption(ChannelOption.SO_BACKLOG);
+        }
+        if (option == ServiceTalkSocketOptions.TCP_FASTOPEN_BACKLOG) {
+            return (T) config.getOption(EpollChannelOption.TCP_FASTOPEN);
+        }
+        if (option == ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT) {
+            return (T) config.getOption(ChannelOption.TCP_FASTOPEN_CONNECT);
         }
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return (T) idleTimeoutMs;

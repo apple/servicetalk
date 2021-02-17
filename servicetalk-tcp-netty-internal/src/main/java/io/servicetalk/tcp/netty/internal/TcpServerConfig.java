@@ -16,14 +16,19 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import io.netty.util.NetUtil;
+import io.netty.channel.ChannelOption;
 
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -31,10 +36,12 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
 
+    @Nullable
+    @SuppressWarnings("rawtypes")
+    private Map<ChannelOption, Object> listenOptions;
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
     private Map<String, ServerSslConfig> sniConfig;
-    private int backlog = NetUtil.SOMAXCONN;
 
     TransportObserver transportObserver() {
         return transportObserver;
@@ -45,8 +52,10 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
         return sniConfig;
     }
 
-    int backlog() {
-        return backlog;
+    @Nullable
+    @SuppressWarnings("rawtypes")
+    Map<ChannelOption, Object> listenOptions() {
+        return listenOptions;
     }
 
     /**
@@ -73,17 +82,36 @@ public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
     }
 
     /**
+     * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
+     *
+     * @param <T> the type of the value
+     * @param option the option to apply
+     * @param value the value
+     * @throws IllegalArgumentException if the {@link SocketOption} is not supported
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
+     */
+    public <T> void listenSocketOption(final SocketOption<T> option, T value) {
+        if (listenOptions == null) {
+            listenOptions = new HashMap<>();
+        }
+        addOption(listenOptions, option, value);
+    }
+
+    /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
+     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @param backlog the backlog to use when accepting connections
      * @return {@code this}
      */
+    @Deprecated
     public TcpServerConfig backlog(final int backlog) {
         if (backlog < 0) {
             throw new IllegalArgumentException("backlog must be >= 0");
         }
-        this.backlog = backlog;
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
         return this;
     }
 

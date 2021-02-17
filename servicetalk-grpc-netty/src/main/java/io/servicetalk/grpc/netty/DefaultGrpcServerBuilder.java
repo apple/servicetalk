@@ -63,6 +63,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
+    @Deprecated
     @Override
     public GrpcServerBuilder backlog(final int backlog) {
         httpServerBuilder.backlog(backlog);
@@ -87,6 +88,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
+    @Override
+    public <T> GrpcServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+        httpServerBuilder.listenSocketOption(option, value);
+        return this;
+    }
+
+    @Deprecated
     @Override
     public GrpcServerBuilder enableWireLogging(final String loggerName) {
         httpServerBuilder.enableWireLogging(loggerName);

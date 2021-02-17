@@ -51,6 +51,7 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpServerBuilder backlog(final int backlog) {
         config.tcpConfig().backlog(backlog);
@@ -72,6 +73,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
         config.tcpConfig().socketOption(option, value);
+        return this;
+    }
+
+    @Override
+    public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
+        config.tcpConfig().listenSocketOption(option, value);
         return this;
     }
 

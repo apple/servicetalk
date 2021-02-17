@@ -16,17 +16,21 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.DomainWildcardMappingBuilder;
 import io.netty.util.Mapping;
 
+import java.net.SocketOption;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 
@@ -34,16 +38,18 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forServe
  * Read only view of {@link TcpServerConfig}.
  */
 public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<ServerSslConfig> {
+    @SuppressWarnings("rawtypes")
+    private final Map<ChannelOption, Object> listenOptions;
     private final TransportObserver transportObserver;
     @Nullable
     private final SslContext sslContext;
     @Nullable
     private final Mapping<String, SslContext> sniMapping;
-    private final int backlog;
     private final boolean alpnConfigured;
 
     ReadOnlyTcpServerConfig(final TcpServerConfig from) {
         super(from);
+        listenOptions = nonNullOptions(from.listenOptions());
         final TransportObserver transportObserver = from.transportObserver();
         this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
                 asSafeObserver(transportObserver);
@@ -72,7 +78,6 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
             sniMapping = null;
             alpnConfigured = false;
         }
-        backlog = from.backlog();
     }
 
     /**
@@ -112,11 +117,27 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     }
 
     /**
-     * Returns the maximum queue length for incoming connection indications (a request to connect).
+     * Returns the {@link SocketOption}s that are applied to the server socket channel which listens/accepts socket
+     * channels.
      *
+     * @return Unmodifiable map of options
+     */
+    @SuppressWarnings("rawtypes")
+    public Map<ChannelOption, Object> listenOptions() {
+        return listenOptions;
+    }
+
+    /**
+     * Returns the maximum queue length for incoming connection indications (a request to connect).
+     * @deprecated Use {@link #listenOptions()} with key {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @return backlog
      */
+    @Deprecated
     public int backlog() {
-        return backlog;
+        final Integer i = (Integer) listenOptions.get(ChannelOption.SO_BACKLOG);
+        if (i == null) {
+            throw new IllegalStateException(SO_BACKLOG + " has not been set");
+        }
+        return i;
     }
 }

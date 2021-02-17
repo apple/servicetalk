@@ -18,8 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
@@ -30,8 +33,14 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.net.InetSocketAddress;
+import java.net.SocketOption;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import static io.servicetalk.http.netty.TcpFastOpenTest.clientTcpFastOpenOptions;
+import static io.servicetalk.http.netty.TcpFastOpenTest.serverTcpFastOpenOptions;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslClientAuthMode.REQUIRE;
 import static io.servicetalk.transport.api.SslProvider.JDK;
@@ -39,6 +48,7 @@ import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -47,36 +57,74 @@ public class MutualSslTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private final SslProvider serverSslProvider;
     private final SslProvider clientSslProvider;
+    @SuppressWarnings("rawtypes")
+    private final Map<SocketOption, Object> serverListenOptions;
+    @SuppressWarnings("rawtypes")
+    private final Map<SocketOption, Object> clientOptions;
 
-    public MutualSslTest(final SslProvider serverSslProvider, final SslProvider clientSslProvider) {
+    public MutualSslTest(final SslProvider serverSslProvider, final SslProvider clientSslProvider,
+                         @SuppressWarnings("rawtypes") final Map<SocketOption, Object> serverListenOptions,
+                         @SuppressWarnings("rawtypes") final Map<SocketOption, Object> clientOptions) {
         this.serverSslProvider = serverSslProvider;
         this.clientSslProvider = clientSslProvider;
+        this.serverListenOptions = serverListenOptions;
+        this.clientOptions = clientOptions;
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1}")
+    @Parameterized.Parameters(name = "server={0} client={1} server opts={2} client opts={3}")
     public static Collection<Object[]> sslProviders() {
         return asList(
-                new Object[]{JDK, JDK},
-                new Object[]{JDK, OPENSSL},
-                new Object[]{OPENSSL, JDK},
-                new Object[]{OPENSSL, OPENSSL}
+                new Object[]{JDK, JDK, emptyMap(), emptyMap()},
+                new Object[]{JDK, OPENSSL, emptyMap(), emptyMap()},
+                new Object[]{OPENSSL, JDK, emptyMap(), emptyMap()},
+                new Object[]{OPENSSL, OPENSSL, emptyMap(), emptyMap()},
+                new Object[]{JDK, JDK, emptyMap(), clientTcpFastOpenOptions()},
+                new Object[]{JDK, OPENSSL, emptyMap(), clientTcpFastOpenOptions()},
+                new Object[]{OPENSSL, JDK, emptyMap(), clientTcpFastOpenOptions()},
+                new Object[]{OPENSSL, OPENSSL, emptyMap(), clientTcpFastOpenOptions()},
+                new Object[]{JDK, JDK, serverTcpFastOpenOptions(), emptyMap()},
+                new Object[]{JDK, OPENSSL, serverTcpFastOpenOptions(), emptyMap()},
+                new Object[]{OPENSSL, JDK, serverTcpFastOpenOptions(), emptyMap()},
+                new Object[]{OPENSSL, OPENSSL, serverTcpFastOpenOptions(), emptyMap()},
+                new Object[]{JDK, JDK, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
+                new Object[]{JDK, OPENSSL, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
+                new Object[]{OPENSSL, JDK, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
+                new Object[]{OPENSSL, OPENSSL, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()}
         );
     }
 
     @Test
     public void mutualSsl() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
-                .trustManager(DefaultTestCerts::loadClientCAPem)
-                .clientAuthMode(REQUIRE).provider(serverSslProvider).build())
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                        .trustManager(DefaultTestCerts::loadClientCAPem)
+                        .clientAuthMode(REQUIRE).provider(serverSslProvider).build());
+        for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : serverListenOptions.entrySet()) {
+            @SuppressWarnings("unchecked")
+            SocketOption<Object> option = entry.getKey();
+            serverBuilder.listenSocketOption(option, entry.getValue());
+        }
+        try (ServerContext serverContext = serverBuilder.listenBlockingAndAwait(
+                (ctx, request, responseFactory) -> responseFactory.ok());
+             BlockingHttpClient client = newClientBuilder(serverContext)
                      .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                     .provider(clientSslProvider).peerHost(serverPemHostname())
-                     .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
+                             .provider(clientSslProvider).peerHost(serverPemHostname())
+                             .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
                      .buildBlocking()) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
+    }
+
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+            ServerContext serverContext) {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress(serverHostAndPort(serverContext));
+        for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : clientOptions.entrySet()) {
+            @SuppressWarnings("unchecked")
+            SocketOption<Object> option = entry.getKey();
+            builder.socketOption(option, entry.getValue());
+        }
+        return builder;
     }
 }
