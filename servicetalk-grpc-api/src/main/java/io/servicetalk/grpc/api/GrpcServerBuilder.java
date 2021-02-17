@@ -73,7 +73,10 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     @Deprecated
-    public abstract GrpcServerBuilder backlog(int backlog);
+    public GrpcServerBuilder backlog(int backlog) {
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
+        return this;
+    }
 
     /**
      * Set the SSL/TLS configuration.

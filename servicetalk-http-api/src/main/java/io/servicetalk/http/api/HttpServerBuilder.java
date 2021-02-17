@@ -76,7 +76,10 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     @Deprecated
-    public abstract HttpServerBuilder backlog(int backlog);
+    public HttpServerBuilder backlog(int backlog) {
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
+        return this;
+    }
 
     /**
      * Set the SSL/TLS configuration.

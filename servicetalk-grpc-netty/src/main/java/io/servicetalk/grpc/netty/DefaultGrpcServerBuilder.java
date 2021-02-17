@@ -63,13 +63,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
-    @Deprecated
-    @Override
-    public GrpcServerBuilder backlog(final int backlog) {
-        httpServerBuilder.backlog(backlog);
-        return this;
-    }
-
     @Override
     public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
         httpServerBuilder.sslConfig(config);
