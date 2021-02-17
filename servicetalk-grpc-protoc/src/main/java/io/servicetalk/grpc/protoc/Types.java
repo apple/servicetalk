@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ final class Types {
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");
     static final ClassName GrpcRoutes = bestGuess(grpcApiPkg + ".GrpcRoutes");
     static final ClassName GrpcSerializationProvider = bestGuess(grpcApiPkg + ".GrpcSerializationProvider");
+    static final ClassName GrpcBindableService = bestGuess(grpcApiPkg + ".GrpcBindableService");
     static final ClassName GrpcService = bestGuess(grpcApiPkg + ".GrpcService");
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");

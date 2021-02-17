@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import static io.servicetalk.grpc.protoc.Types.Completable;
 import static io.servicetalk.grpc.protoc.Types.ContentCodec;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
 import static io.servicetalk.grpc.protoc.Types.FilterableGrpcClient;
+import static io.servicetalk.grpc.protoc.Types.GrpcBindableService;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
@@ -93,9 +94,11 @@ import static io.servicetalk.grpc.protoc.Words.INSTANCE;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
 import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
+import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
 import static io.servicetalk.grpc.protoc.Words.append;
 import static io.servicetalk.grpc.protoc.Words.appendServiceFilter;
+import static io.servicetalk.grpc.protoc.Words.bind;
 import static io.servicetalk.grpc.protoc.Words.builder;
 import static io.servicetalk.grpc.protoc.Words.client;
 import static io.servicetalk.grpc.protoc.Words.close;
@@ -123,6 +126,7 @@ import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.concat;
 import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PROTECTED;
@@ -130,6 +134,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
 final class Generator {
+
     private static final class RpcInterface {
         final MethodDescriptorProto methodProto;
         final boolean blocking;
@@ -156,21 +161,38 @@ final class Generator {
     private static final class State {
         final ServiceDescriptorProto serviceProto;
 
-        List<RpcInterface> serviceRpcInterfaces;
-        ClassName serviceClass;
-        ClassName blockingServiceClass;
-        ClassName serviceFilterClass;
-        ClassName serviceFilterFactoryClass;
+        final List<RpcInterface> serviceRpcInterfaces;
+        final ClassName serviceClass;
+        final ClassName blockingServiceClass;
+        final ClassName serviceFactoryClass;
+        final ClassName serviceFilterClass;
+        final ClassName serviceFilterFactoryClass;
 
-        List<ClientMetaData> clientMetaDatas;
-        ClassName clientClass;
-        ClassName filterableClientClass;
-        ClassName blockingClientClass;
-        ClassName clientFilterClass;
-        ClassName clientFilterFactoryClass;
+        final List<ClientMetaData> clientMetaDatas;
+        final ClassName clientClass;
+        final ClassName filterableClientClass;
+        final ClassName blockingClientClass;
+        final ClassName clientFilterClass;
+        final ClassName clientFilterFactoryClass;
 
-        private State(final ServiceDescriptorProto serviceProto) {
+        private State(final ServiceDescriptorProto serviceProto, String name) {
             this.serviceProto = serviceProto;
+
+            // Filled in during addServiceRpcInterfaces()
+            serviceRpcInterfaces = new ArrayList<>(2 * serviceProto.getMethodCount());
+            serviceClass = ClassName.bestGuess(name);
+            blockingServiceClass = ClassName.bestGuess(Blocking + name);
+            serviceFactoryClass = serviceClass.peerClass(Service + Factory);
+            serviceFilterClass = serviceClass.peerClass(serviceClass.simpleName() + Filter);
+            serviceFilterFactoryClass = serviceFilterClass.peerClass(serviceFilterClass.simpleName() + Factory);
+
+            // Filled in during addClientMetadata()
+            clientMetaDatas = new ArrayList<>(serviceProto.getMethodCount());
+            clientClass = ClassName.bestGuess(sanitizeIdentifier(serviceProto.getName(), false) + "Client");
+            filterableClientClass = clientClass.peerClass("Filterable" + clientClass.simpleName());
+            blockingClientClass = clientClass.peerClass(Blocking + clientClass.simpleName());
+            clientFilterClass = clientClass.peerClass(clientClass.simpleName() + Filter);
+            clientFilterFactoryClass = clientFilterClass.peerClass(clientFilterClass.simpleName() + Factory);
         }
     }
 
@@ -183,8 +205,12 @@ final class Generator {
     }
 
     void generate(final ServiceDescriptorProto serviceProto) {
-        final State state = new State(serviceProto);
-        final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto);
+        final String name = context.deconflictJavaTypeName(
+                sanitizeIdentifier(serviceProto.getName(), false) + Service);
+        final State state = new State(serviceProto, name);
+
+        final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto)
+                .addJavadoc("Class for $L", serviceProto.getName());
 
         addSerializationProviderInit(state, serviceClassBuilder);
 
@@ -201,7 +227,8 @@ final class Generator {
         addClientFactory(state, serviceClassBuilder);
     }
 
-    private void addSerializationProviderInit(final State state, final TypeSpec.Builder serviceClassBuilder) {
+    private TypeSpec.Builder addSerializationProviderInit(final State state,
+                                                          final TypeSpec.Builder serviceClassBuilder) {
         final CodeBlock.Builder staticInitBlockBuilder = CodeBlock.builder()
                 // TODO: Cache serializationProvider for each set of encoding types
                 .addStatement("$T builder = new $T()", ProtoBufSerializationProviderBuilder,
@@ -231,15 +258,17 @@ final class Generator {
                         .addCode(staticInitBlockBuilder.build())
                         .build()
                 );
+
+        return serviceClassBuilder;
     }
 
-    private void addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.serviceRpcInterfaces = new ArrayList<>(2 * state.serviceProto.getMethodCount());
+    private TypeSpec.Builder addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         state.serviceProto.getMethodList().forEach(methodProto -> {
             final String name = context.deconflictJavaTypeName(
                     sanitizeIdentifier(methodProto.getName(), false) + Rpc);
 
-            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL)
+            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH)
+                    .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
                     .initializer("$S", context.methodPath(state.serviceProto, methodProto));
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                     .addAnnotation(FunctionalInterface.class)
@@ -263,8 +292,9 @@ final class Generator {
             MethodDescriptorProto methodProto = rpcInterface.methodProto;
             final String name = context.deconflictJavaTypeName(Blocking + rpcInterface.className.simpleName());
 
-            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL);
-            pathSpecBuilder.initializer("$T.$L", rpcInterface.className, RPC_PATH);
+            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH)
+                    .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface fields
+                    .initializer("$T.$L", rpcInterface.className, RPC_PATH);
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                     .addAnnotation(FunctionalInterface.class)
                     .addModifiers(PUBLIC)
@@ -281,21 +311,29 @@ final class Generator {
             state.serviceRpcInterfaces.add(new RpcInterface(methodProto, true, ClassName.bestGuess(name)));
             serviceClassBuilder.addType(interfaceSpec);
         });
+
+        return serviceClassBuilder;
     }
 
-    private void addServiceInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
+    /**
+     * Define interfaces for the async and blocking Service which
+     * will extend all of the appropriate RPC interfaces
+     *
+     * @param state the generator state
+     * @param serviceClassBuilder the target service class builder for the service interfaces
+     * @return the service class builder
+     */
+    private TypeSpec.Builder addServiceInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         TypeSpec interfaceSpec = newServiceInterfaceSpec(state, false);
-        state.serviceClass = ClassName.bestGuess(interfaceSpec.name);
         serviceClassBuilder.addType(interfaceSpec);
 
         interfaceSpec = newServiceInterfaceSpec(state, true);
-        state.blockingServiceClass = ClassName.bestGuess(interfaceSpec.name);
         serviceClassBuilder.addType(interfaceSpec);
+
+        return serviceClassBuilder;
     }
 
-    private void addServiceFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.serviceFilterClass = state.serviceClass.peerClass(state.serviceClass.simpleName() + Filter);
-
+    private TypeSpec.Builder addServiceFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder classSpecBuilder =
                 newFilterDelegateCommonMethods(state.serviceFilterClass, state.serviceClass);
 
@@ -306,30 +344,37 @@ final class Generator {
                                 .addStatement("return $L.$L($L, $L)", delegate, n, ctx, request))));
 
         serviceClassBuilder.addType(classSpecBuilder.build());
+
+        return serviceClassBuilder;
     }
 
-    private void addServiceFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.serviceFilterFactoryClass = state.serviceFilterClass.peerClass(state.serviceFilterClass.simpleName() +
-                Factory);
-
+    private TypeSpec.Builder addServiceFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.serviceFilterFactoryClass)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcServiceFilterFactory, state.serviceFilterClass,
                         state.serviceClass))
                 .build());
+
+        return serviceClassBuilder;
     }
 
-    private void addServiceFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final ClassName serviceFactoryClass = state.serviceClass.peerClass("Service" + Factory);
-        final ClassName builderClass = serviceFactoryClass.nestedClass(Builder);
-        final ClassName serviceFromRoutesClass = builderClass.nestedClass(state.serviceClass.simpleName() +
-                "FromRoutes");
+    /**
+     * Add the ServiceFactory class
+     *
+     * @param state the generator state
+     * @param serviceClassBuilder the target service class builder for the service factory interfaces
+     * @return the service class builder
+     */
+    private TypeSpec.Builder addServiceFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
+        final ClassName builderClass = state.serviceFactoryClass.nestedClass(Builder);
+        final ClassName serviceFromRoutesClass = builderClass.nestedClass(
+                state.serviceClass.simpleName() + "FromRoutes");
 
         // TODO: Warn for path override and Validate all paths are defined.
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
                 .addModifiers(PUBLIC, STATIC, FINAL)
-                .addField(FieldSpec.builder(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addModifiers(PRIVATE)
+                .addField(FieldSpec.builder(GrpcSupportedCodings, supportedMessageCodings)
+                        .addModifiers(PRIVATE, FINAL)
                         .build()
                 )
                 .superclass(ParameterizedTypeName.get(GrpcRoutes, state.serviceClass))
@@ -337,7 +382,7 @@ final class Generator {
                         state.serviceClass))
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
-                        .addStatement("this.$L = java.util.Collections.emptyList()", supportedMessageCodings)
+                        .addStatement("this(java.util.Collections.emptyList())")
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
@@ -347,8 +392,7 @@ final class Generator {
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("super($L)", strategyFactory)
-                        .addStatement("this.$L = java.util.Collections.emptyList()", supportedMessageCodings)
+                        .addStatement("this($L, java.util.Collections.emptyList())", strategyFactory)
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
@@ -359,8 +403,8 @@ final class Generator {
                         .build())
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
-                        .returns(serviceFactoryClass)
-                        .addStatement("return new $T(this)", serviceFactoryClass)
+                        .returns(state.serviceFactoryClass)
+                        .addStatement("return new $T(this)", state.serviceFactoryClass)
                         .build())
                 .addMethod(methodBuilder("newServiceFromRoutes")
                         .addModifiers(PROTECTED)
@@ -415,28 +459,30 @@ final class Generator {
                 .addMethod(registerRoutesMethodSpecBuilder.build())
                 .build();
 
-        final TypeSpec.Builder serviceFactoryClassSpecBuilder = classBuilder(serviceFactoryClass)
+        final TypeSpec.Builder serviceFactoryClassSpecBuilder = classBuilder(state.serviceFactoryClass)
                 .addModifiers(PUBLIC, STATIC, FINAL)
                 .superclass(ParameterizedTypeName.get(GrpcServiceFactory, state.serviceFilterClass, state.serviceClass,
                         state.serviceFilterFactoryClass))
+                // Add ServiceFactory constructors for blocking and async services with and without content codings and
+                // execution strategy
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
-                        .addStatement("super(new $T().$L)", builderClass,
+                        .addStatement("this(new $T().$L)", builderClass,
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
                         .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, supportedMessageCodings,
+                        .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactory,
+                        .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
@@ -444,27 +490,27 @@ final class Generator {
                         .addParameter(state.serviceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("super(new $T($L, $L).$L)", builderClass, strategyFactory,
+                        .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
                                 supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
-                        .addStatement("super(new $T().$L)", builderClass,
+                        .addStatement("this(new $T().$L)", builderClass,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, supportedMessageCodings,
+                        .addStatement("this(new $T($L).$L)", builderClass, supportedMessageCodings,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactory,
+                        .addStatement("this(new $T($L).$L)", builderClass, strategyFactory,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
@@ -472,9 +518,10 @@ final class Generator {
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
-                        .addStatement("super(new $T($L, $L).$L)", builderClass, strategyFactory,
+                        .addStatement("this(new $T($L, $L).$L)", builderClass, strategyFactory,
                                 supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
+                // and the private constructor they all call
                 .addMethod(constructorBuilder()
                         .addModifiers(PRIVATE)
                         .addParameter(builderClass, builder, FINAL)
@@ -483,12 +530,12 @@ final class Generator {
                 .addMethod(methodBuilder(appendServiceFilter)
                         .addModifiers(PUBLIC)
                         .addAnnotation(Override.class)
-                        .returns(serviceFactoryClass)
+                        .returns(state.serviceFactoryClass)
                         .addParameter(state.serviceFilterFactoryClass, factory, FINAL)
                         .addStatement("super.$L($L)", appendServiceFilter, factory)
                         .addStatement("return this")
                         .build())
-                .addMethod(methodBuilder("appendServiceFilterFactory")
+                .addMethod(methodBuilder(appendServiceFilter + Factory)
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
                         .returns(state.serviceFilterFactoryClass)
@@ -499,11 +546,11 @@ final class Generator {
                 .addType(serviceBuilderType);
 
         serviceClassBuilder.addType(serviceFactoryClassSpecBuilder.build());
+
+        return serviceClassBuilder;
     }
 
-    private void addClientMetadata(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.clientMetaDatas = new ArrayList<>(state.serviceProto.getMethodCount());
-
+    private TypeSpec.Builder addClientMetadata(final State state, final TypeSpec.Builder serviceClassBuilder) {
         state.serviceRpcInterfaces.stream().filter(rpcInterface -> !rpcInterface.blocking).forEach(rpcInterface -> {
             MethodDescriptorProto methodProto = rpcInterface.methodProto;
             final String name = context.deconflictJavaTypeName(sanitizeIdentifier(methodProto.getName(), false) +
@@ -513,7 +560,8 @@ final class Generator {
             final TypeSpec classSpec = classBuilder(name)
                     .addModifiers(PUBLIC, STATIC, FINAL)
                     .superclass(DefaultGrpcClientMetadata)
-                    .addField(FieldSpec.builder(metaDataClassName, INSTANCE, PUBLIC, STATIC, FINAL)
+                    .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
+                            .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
                             .initializer("new $T()", metaDataClassName)
                             .build())
                     .addMethod(constructorBuilder()
@@ -542,13 +590,11 @@ final class Generator {
             state.clientMetaDatas.add(new ClientMetaData(methodProto, metaDataClassName));
             serviceClassBuilder.addType(classSpec);
         });
+
+        return serviceClassBuilder;
     }
 
-    private void addClientInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.clientClass = ClassName.bestGuess(sanitizeIdentifier(state.serviceProto.getName(), false) + "Client");
-        state.filterableClientClass = state.clientClass.peerClass("Filterable" + state.clientClass.simpleName());
-        state.blockingClientClass = state.clientClass.peerClass(Blocking + state.clientClass.simpleName());
-
+    private TypeSpec.Builder addClientInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder clientSpecBuilder = interfaceBuilder(state.clientClass)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(state.filterableClientClass)
@@ -583,11 +629,11 @@ final class Generator {
         serviceClassBuilder.addType(clientSpecBuilder.build())
                 .addType(filterableClientSpecBuilder.build())
                 .addType(blockingClientSpecBuilder.build());
+
+        return serviceClassBuilder;
     }
 
-    private void addClientFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.clientFilterClass = state.clientClass.peerClass(state.clientClass.simpleName() + Filter);
-
+    private TypeSpec.Builder addClientFilter(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
@@ -600,20 +646,21 @@ final class Generator {
                                 .addStatement("return $L.$L($L, $L)", delegate, n, metadata, request))));
 
         serviceClassBuilder.addType(classSpecBuilder.build());
+
+        return serviceClassBuilder;
     }
 
-    private void addClientFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.clientFilterFactoryClass = state.clientFilterClass.peerClass(state.clientFilterClass.simpleName() +
-                Factory);
-
+    private TypeSpec.Builder addClientFilterFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
         serviceClassBuilder.addType(interfaceBuilder(state.clientFilterFactoryClass)
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(GrpcClientFilterFactory, state.clientFilterClass,
                         state.filterableClientClass))
                 .build());
+
+        return serviceClassBuilder;
     }
 
-    private void addClientFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
+    private TypeSpec.Builder addClientFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
         final ClassName clientFactoryClass = state.clientClass.peerClass("Client" + Factory);
         final ClassName defaultClientClass = clientFactoryClass.peerClass(Default + state.clientClass.simpleName());
         final ClassName filterableClientToClientClass = clientFactoryClass.peerClass(
@@ -672,6 +719,8 @@ final class Generator {
                 .addType(newClientToBlockingClientClassSpec(state, clientToBlockingClientClass));
 
         serviceClassBuilder.addType(clientFactorySpecBuilder.build());
+
+        return serviceClassBuilder;
     }
 
     private TypeSpec newServiceFromRoutesClassSpec(final ClassName serviceFromRoutesClass,
@@ -952,18 +1001,39 @@ final class Generator {
         return typeSpecBuilder.build();
     }
 
+    /**
+     * Adds the service interface, either async or blocking, which extends all of the service RPC interfaces
+     *
+     * @param state The generator state
+     * @param blocking If true then add the interface for blocking service otherwise add async service interface
+     * @return The generated service interface
+     */
     private TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
-        final String name = context.deconflictJavaTypeName((blocking ? Blocking : "") +
-                sanitizeIdentifier(state.serviceProto.getName(), false) + "Service");
+        final ClassName serviceClass = blocking ? state.blockingServiceClass : state.serviceClass;
+        final String name = serviceClass.simpleName();
 
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addModifiers(PUBLIC)
+                .addSuperinterface(ParameterizedTypeName.get(GrpcBindableService,
+                        state.serviceFilterClass, state.serviceClass, state.serviceFilterFactoryClass))
+                // Generally redundant if there are any matching RPC interfaces
                 .addSuperinterface(blocking ? BlockingGrpcService : GrpcService);
 
         state.serviceRpcInterfaces.stream()
                 .filter(e -> e.blocking == blocking)
                 .map(e -> e.className)
                 .forEach(interfaceSpecBuilder::addSuperinterface);
+
+        // Add the default bindService method.
+        interfaceSpecBuilder.addMethod(methodBuilder(bind + Service)
+                .addJavadoc("Makes a {@link $T} bound to this instance implementing {@link $T}",
+                        state.serviceFactoryClass, serviceClass)
+                .addAnnotation(Override.class)
+                .addModifiers(PUBLIC)
+                .addModifiers(DEFAULT)
+                .returns(state.serviceFactoryClass)
+                .addStatement("return new $T(this)", state.serviceFactoryClass)
+                .build());
 
         return interfaceSpecBuilder.build();
     }

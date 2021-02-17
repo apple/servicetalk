@@ -44,21 +44,18 @@ public class CompressionExampleServer {
      */
     private static final List<ContentCodec> SUPPORTED_ENCODINGS =
             Collections.unmodifiableList(Arrays.asList(
-                    // For the purposes of this example we disable GZip for the response compression and use the
-                    // client's second choice (deflate) to demonstrate that negotiation of compression algorithm is
-                    // handled correctly.
-                    /* ContentCodings.gzipDefault(), */
+                    ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
                     ContentCodings.identity()
             ));
 
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
-                // Create a ServiceFactory that includes the encodings supported for requests and the preferred
-                // encodings for responses. Responses will automatically be compressed if the request includes
-                // a mutually agreeable compression encoding that the client indicates they will accept and that the
-                // server supports. Requests using unsupported encodings receive an error response in the "grpc-status".
-                .listenAndAwait(new ServiceFactory(new MyGreeterService(), SUPPORTED_ENCODINGS))
+                // Create Greeter service which uses default binding to create ServiceFactory.
+                // (see {@link MyGreeterService#bindService}). Alternately a non-default binding could be used by
+                // directly creating a ServiceFactory directly. i.e.
+                //    new ServiceFactory(new MyGreeterService(), strategyFactory, contentCodecs)
+                .listenAndAwait(new MyGreeterService())
                 .awaitShutdown();
     }
 
@@ -67,6 +64,15 @@ public class CompressionExampleServer {
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        }
+
+        @Override
+        public ServiceFactory bindService() {
+            // Create a ServiceFactory bound to this service and includes the encodings supported for requests and
+            // the preferred encodings for responses. Responses will automatically be compressed if the request includes
+            // a mutually agreeable compression encoding that the client indicates they will accept and that the
+            // server supports. Requests using unsupported encodings receive an error response in the "grpc-status".
+            return new ServiceFactory(this, SUPPORTED_ENCODINGS);
         }
     }
 }
