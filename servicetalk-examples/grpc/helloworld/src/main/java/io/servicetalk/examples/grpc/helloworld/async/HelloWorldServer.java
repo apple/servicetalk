@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
+import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.Greeter.ServiceFactory;
 import io.grpc.examples.helloworld.HelloReply;
@@ -30,7 +31,7 @@ public class HelloWorldServer {
 
     public static void main(String[] args) throws Exception {
         GrpcServers.forPort(8080)
-                .listenAndAwait(new ServiceFactory(new MyGreeterService()))
+                .listenAndAwait(new MyGreeterService())
                 .awaitShutdown();
     }
 

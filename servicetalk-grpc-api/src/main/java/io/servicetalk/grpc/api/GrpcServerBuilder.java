@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
@@ -251,6 +252,22 @@ public abstract class GrpcServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
+     * @param services {@link GrpcBindableService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    public final Single<ServerContext> listen(GrpcBindableService<?, ?, ?>... services) {
+        GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+                .map(GrpcBindableService::bindService)
+                .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+        return listen(factories);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     *
      * @param serviceFactories {@link GrpcServiceFactory}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
@@ -272,6 +289,23 @@ public abstract class GrpcServerBuilder {
     public final ServerContext listenAndAwait(GrpcServiceFactory<?, ?, ?>... serviceFactories) throws Exception {
         return awaitResult(listen(serviceFactories).toFuture());
     }
+
+     /**
+      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+      * <p>
+      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+      *
+      * @param services {@link GrpcBindableService}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
+      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+      * throws an {@link Exception} if the server could not be started.
+      * @throws Exception if the server could not be started.
+      */
+     public final ServerContext listenAndAwait(GrpcBindableService<?, ?, ?>... services) throws Exception {
+         GrpcServiceFactory<?, ?, ?>[] factories = Arrays.stream(services)
+                 .map(GrpcBindableService::bindService)
+                 .toArray(GrpcServiceFactory<?, ?, ?>[]::new);
+         return listenAndAwait(factories);
+     }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.

@@ -39,7 +39,10 @@ public final class CompressionExampleClient {
      */
     private static final List<ContentCodec> PREFERRED_ENCODINGS =
             Collections.unmodifiableList(Arrays.asList(
-                    ContentCodings.gzipDefault(),
+                    // For the purposes of this example we disable GZip compression and use the
+                    // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
+                    // handled correctly.
+                    // ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
                     ContentCodings.identity()
             ));
@@ -47,7 +50,7 @@ public final class CompressionExampleClient {
     /**
      * Metadata that, when provided to a sayHello, will cause the request to be compressed.
      */
-    private static final Greeter.SayHelloMetadata COMPRESS_REQUEST = new Greeter.SayHelloMetadata(ContentCodings.gzipDefault());
+    private static final Greeter.SayHelloMetadata COMPRESS_REQUEST = new Greeter.SayHelloMetadata(ContentCodings.deflateDefault());
 
     public static void main(String... args) throws Exception {
         try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory()

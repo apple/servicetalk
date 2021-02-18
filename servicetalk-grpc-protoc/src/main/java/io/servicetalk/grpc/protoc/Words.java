@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.grpc.protoc;
 final class Words {
     static final String append = "append";
     static final String appendServiceFilter = append + "ServiceFilter";
+    static final String bind = "bind";
     static final String builder = "builder";
     static final String client = "client";
     static final String close = "close";
@@ -42,7 +43,8 @@ final class Words {
     static final String requestEncoding = "requestEncoding";
     static final String supportedMessageCodings = "supportedMessageCodings";
     static final String strategyFactory = strategy + "Factory";
-
+    static final String Service = "Service";
+    static final String Bindable = "Bindable";
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
     static final String Call = "Call";
