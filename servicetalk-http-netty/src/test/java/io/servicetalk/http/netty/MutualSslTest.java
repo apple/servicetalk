@@ -35,7 +35,9 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -71,26 +73,25 @@ public class MutualSslTest {
         this.clientOptions = clientOptions;
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1} server opts={2} client opts={3}")
+    @Parameterized.Parameters(name = "{index}: server={0} client={1} server opts={2} client opts={3}")
     public static Collection<Object[]> sslProviders() {
-        return asList(
-                new Object[]{JDK, JDK, emptyMap(), emptyMap()},
-                new Object[]{JDK, OPENSSL, emptyMap(), emptyMap()},
-                new Object[]{OPENSSL, JDK, emptyMap(), emptyMap()},
-                new Object[]{OPENSSL, OPENSSL, emptyMap(), emptyMap()},
-                new Object[]{JDK, JDK, emptyMap(), clientTcpFastOpenOptions()},
-                new Object[]{JDK, OPENSSL, emptyMap(), clientTcpFastOpenOptions()},
-                new Object[]{OPENSSL, JDK, emptyMap(), clientTcpFastOpenOptions()},
-                new Object[]{OPENSSL, OPENSSL, emptyMap(), clientTcpFastOpenOptions()},
-                new Object[]{JDK, JDK, serverTcpFastOpenOptions(), emptyMap()},
-                new Object[]{JDK, OPENSSL, serverTcpFastOpenOptions(), emptyMap()},
-                new Object[]{OPENSSL, JDK, serverTcpFastOpenOptions(), emptyMap()},
-                new Object[]{OPENSSL, OPENSSL, serverTcpFastOpenOptions(), emptyMap()},
-                new Object[]{JDK, JDK, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
-                new Object[]{JDK, OPENSSL, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
-                new Object[]{OPENSSL, JDK, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()},
-                new Object[]{OPENSSL, OPENSSL, serverTcpFastOpenOptions(), clientTcpFastOpenOptions()}
-        );
+        final SslProvider[] providers = new SslProvider[] {JDK, OPENSSL};
+        @SuppressWarnings("rawtypes")
+        final List<Map<SocketOption, Object>> serverOpts = asList(emptyMap(), serverTcpFastOpenOptions());
+        @SuppressWarnings("rawtypes")
+        final List<Map<SocketOption, Object>> clientOpts = asList(emptyMap(), clientTcpFastOpenOptions());
+        final List<Object[]> results = new ArrayList<>(
+                providers.length * 2 * serverOpts.size() * clientOpts.size());
+        for (SslProvider serverProvider : providers) {
+            for (SslProvider clientProvider : providers) {
+                for (@SuppressWarnings("rawtypes") Map<SocketOption, Object> serverOpt : serverOpts) {
+                    for (@SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOpt : clientOpts) {
+                        results.add(new Object[] {serverProvider, clientProvider, serverOpt, clientOpt});
+                    }
+                }
+            }
+        }
+        return results;
     }
 
     @Test

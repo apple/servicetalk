@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.api.ServiceTalkSocketOptions.SO_BACKLOG;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 
@@ -135,9 +134,6 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     @Deprecated
     public int backlog() {
         final Integer i = (Integer) listenOptions.get(ChannelOption.SO_BACKLOG);
-        if (i == null) {
-            throw new IllegalStateException(SO_BACKLOG + " has not been set");
-        }
-        return i;
+        return i == null ? 0 : i;
     }
 }
