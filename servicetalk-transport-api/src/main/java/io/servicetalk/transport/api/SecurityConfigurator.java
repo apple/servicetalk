@@ -84,7 +84,7 @@ public interface SecurityConfigurator {
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a PKCS#8 private key in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
@@ -101,7 +101,7 @@ public interface SecurityConfigurator {
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a PKCS#8 private key in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.

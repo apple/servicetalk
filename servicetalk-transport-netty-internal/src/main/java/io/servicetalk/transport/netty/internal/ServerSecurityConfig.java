@@ -112,7 +112,7 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      *
      * @param keyCertChainSupplier a {@link Supplier} that will provide an input stream for a {@code X.509} certificate
      * chain in {@code PEM} format.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a PKCS#8 private key in PEM format.
      */
     public void keyManager(final Supplier<InputStream> keyCertChainSupplier, final Supplier<InputStream> keySupplier) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
@@ -126,7 +126,7 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      *
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a {@code X.509} certificate
      * chain in {@code PEM} format.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a PKCS#8 private key in PEM format.
      * @param keyPassword the password of the {@code keyInputStream}.
      */
     public void keyManager(final Supplier<InputStream> keyCertChainSupplier, final Supplier<InputStream> keySupplier,
