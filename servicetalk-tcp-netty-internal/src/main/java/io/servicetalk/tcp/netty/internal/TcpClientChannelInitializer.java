@@ -21,6 +21,7 @@ import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -58,7 +59,6 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
                                        final ConnectionObserver observer,
                                        final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-
         final SslContext sslContext = config.sslContext();
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
@@ -70,9 +70,11 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
         }
 
         if (sslContext != null) {
+            ReadOnlyClientSecurityConfig sslConfig = config.sslConfig();
+            assert sslConfig != null;
             delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
-                    config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort(), deferSslHandler));
+                    sslConfig.peerHost(), sslConfig.peerPort(), sslConfig.hostnameVerificationAlgorithm(),
+                    sslConfig.sniHostname(), deferSslHandler));
         }
 
         this.delegate = initWireLogger(delegate, config.wireLoggerConfig());

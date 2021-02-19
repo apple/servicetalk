@@ -21,6 +21,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
+import io.servicetalk.transport.netty.internal.SniServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
@@ -47,15 +48,15 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
 
         if (observer != NoopConnectionObserver.INSTANCE) {
             delegate = delegate.andThen(new ConnectionObserverInitializer(observer,
-                    config.sslContext() != null || config.domainNameMapping() != null));
+                    config.sslContext() != null || config.sniMapping() != null));
         }
 
         if (config.idleTimeoutMs() != null) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
-        if (config.domainNameMapping() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
+        if (config.sniMapping() != null) {
+            delegate = delegate.andThen(new SniServerChannelInitializer(config.sniMapping()));
         } else if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }

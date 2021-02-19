@@ -61,26 +61,16 @@ public interface PartitionedHttpClientSecurityConfigurator<U, R> extends ClientS
             String hostNameVerificationAlgorithm);
 
     @Override
-    PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                                         String hostNameVerificationHost);
-
-    @Override
-    PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                                         String hostNameVerificationHost,
-                                                                         int hostNameVerificationPort);
-
-    @Override
-    PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost);
-
-    @Override
-    PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost,
-                                                                         int hostNameVerificationPort);
+    PartitionedHttpClientSecurityConfigurator<U, R> disableHostnameVerification();
 
     @Override
     PartitionedHttpClientSecurityConfigurator<U, R> sniHostname(String sniHostname);
 
     @Override
-    PartitionedHttpClientSecurityConfigurator<U, R> disableHostnameVerification();
+    PartitionedHttpClientSecurityConfigurator<U, R> peerHost(String peerHost);
+
+    @Override
+    PartitionedHttpClientSecurityConfigurator<U, R> peerPort(int peerPort);
 
     @Override
     PartitionedHttpClientSecurityConfigurator<U, R> keyManager(KeyManagerFactory keyManagerFactory);

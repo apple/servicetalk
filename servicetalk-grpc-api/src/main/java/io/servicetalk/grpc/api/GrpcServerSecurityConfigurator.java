@@ -33,6 +33,17 @@ public interface GrpcServerSecurityConfigurator extends ServerSecurityConfigurat
     GrpcServerSecurityConfigurator trustManager(TrustManagerFactory trustManagerFactory);
 
     @Override
+    GrpcServerSecurityConfigurator keyManager(KeyManagerFactory keyManagerFactory);
+
+    @Override
+    GrpcServerSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                              Supplier<InputStream> keySupplier);
+
+    @Override
+    GrpcServerSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                              Supplier<InputStream> keySupplier, String keyPassword);
+
+    @Override
     GrpcServerSecurityConfigurator protocols(String... protocols);
 
     @Override
@@ -50,47 +61,12 @@ public interface GrpcServerSecurityConfigurator extends ServerSecurityConfigurat
     @Override
     GrpcServerSecurityConfigurator clientAuth(ClientAuth clientAuth);
 
-    /**
-     * Commit configuring server security.
-     *
-     * @param keyManagerFactory an {@link KeyManagerFactory}.
-     * @return Original {@link GrpcServerBuilder} that initiated the security configuration process.
-     */
-    GrpcServerBuilder commit(KeyManagerFactory keyManagerFactory);
+    @Override
+    GrpcServerSecurityConfigurator newSniConfig(String sniHostname);
 
     /**
      * Commit configuring server security.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a {@code X.509} certificate
-     * chain in {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a {@code KCS#8} private key in
-     * {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
      * @return Original {@link GrpcServerBuilder} that initiated the security configuration process.
      */
-    GrpcServerBuilder commit(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier);
-
-    /**
-     * Commit configuring server security.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a {@code X.509} certificate
-     * chain in {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a {@code KCS#8} private key in
-     * {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keyPassword the password of the {@code keyFile}.
-     * @return Original {@link GrpcServerBuilder} that initiated the security configuration process.
-     */
-    GrpcServerBuilder commit(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
-                             String keyPassword);
+    GrpcServerBuilder commit();
 }

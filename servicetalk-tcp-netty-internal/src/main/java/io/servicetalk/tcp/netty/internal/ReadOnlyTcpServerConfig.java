@@ -20,8 +20,8 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainNameMapping;
-import io.netty.util.DomainNameMappingBuilder;
+import io.netty.util.DomainWildcardMappingBuilder;
+import io.netty.util.Mapping;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ public final class ReadOnlyTcpServerConfig
     @Nullable
     private final SslContext sslContext;
     @Nullable
-    private final DomainNameMapping<SslContext> mappings;
+    private final Mapping<String, SslContext> mappings;
     private final int backlog;
 
     /**
@@ -59,7 +59,7 @@ public final class ReadOnlyTcpServerConfig
                 throw new IllegalStateException("No default security config defined but found SNI config mappings");
             }
             sslContext = forServer(securityConfig, supportedAlpnProtocols);
-            final DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
+            DomainWildcardMappingBuilder<SslContext> mappingBuilder = new DomainWildcardMappingBuilder<>(sslContext);
             for (Map.Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : from.sniConfigs().entrySet()) {
                 mappingBuilder.add(sniConfigEntries.getKey(),
                         forServer(sniConfigEntries.getValue(), supportedAlpnProtocols));
@@ -91,12 +91,12 @@ public final class ReadOnlyTcpServerConfig
     }
 
     /**
-     * Gets {@link DomainNameMapping}, if any.
+     * Gets the {@link Mapping} for SNI.
      *
-     * @return Configured mapping, {@code null} if none configured
+     * @return the {@link Mapping} for SNI, {@code null} if SNI isn't enabled.
      */
     @Nullable
-    public DomainNameMapping<SslContext> domainNameMapping() {
+    public Mapping<String, SslContext> sniMapping() {
         return mappings;
     }
 

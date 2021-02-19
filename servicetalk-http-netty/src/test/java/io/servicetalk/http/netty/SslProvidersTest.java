@@ -66,7 +66,7 @@ public class SslProvidersTest {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .secure()
                 .provider(serverSslProvider)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     assertThat(request.path(), is("/path"));

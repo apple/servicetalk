@@ -47,6 +47,27 @@ final class DefaultGrpcServerSecurityConfigurator implements GrpcServerSecurityC
     }
 
     @Override
+    public GrpcServerSecurityConfigurator keyManager(final KeyManagerFactory keyManagerFactory) {
+        delegate.keyManager(keyManagerFactory);
+        return this;
+    }
+
+    @Override
+    public GrpcServerSecurityConfigurator keyManager(final Supplier<InputStream> keyCertChainSupplier,
+                                                     final Supplier<InputStream> keySupplier) {
+        delegate.keyManager(keyCertChainSupplier, keySupplier);
+        return this;
+    }
+
+    @Override
+    public GrpcServerSecurityConfigurator keyManager(final Supplier<InputStream> keyCertChainSupplier,
+                                                     final Supplier<InputStream> keySupplier,
+                                                     final String keyPassword) {
+        delegate.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
+        return this;
+    }
+
+    @Override
     public GrpcServerSecurityConfigurator protocols(final String... protocols) {
         delegate.protocols(protocols);
         return this;
@@ -83,22 +104,13 @@ final class DefaultGrpcServerSecurityConfigurator implements GrpcServerSecurityC
     }
 
     @Override
-    public GrpcServerBuilder commit(final KeyManagerFactory keyManagerFactory) {
-        delegate.commit(keyManagerFactory);
-        return original;
+    public GrpcServerSecurityConfigurator newSniConfig(final String sniHostname) {
+        return new DefaultGrpcServerSecurityConfigurator(delegate.newSniConfig(sniHostname), original);
     }
 
     @Override
-    public GrpcServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
-                                    final Supplier<InputStream> keySupplier) {
-        delegate.commit(keyCertChainSupplier, keySupplier);
-        return original;
-    }
-
-    @Override
-    public GrpcServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
-                                    final Supplier<InputStream> keySupplier, final String keyPassword) {
-        delegate.commit(keyCertChainSupplier, keySupplier, keyPassword);
+    public GrpcServerBuilder commit() {
+        delegate.commit();
         return original;
     }
 }

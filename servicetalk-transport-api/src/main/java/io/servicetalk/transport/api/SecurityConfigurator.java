@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -64,6 +65,51 @@ public interface SecurityConfigurator {
      * @return {@code this}.
      */
     SecurityConfigurator trustManager(TrustManagerFactory trustManagerFactory);
+
+    /**
+     * Identifying certificate for this host. {@code keyManagerFactory} may be {@code null}, which disables mutual
+     * authentication. The {@link KeyManagerFactory} which take preference over any configured {@link Supplier}.
+     *
+     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * @return {@code this}.
+     */
+    SecurityConfigurator keyManager(KeyManagerFactory keyManagerFactory);
+
+    /**
+     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
+     * be {@code null}, which disables mutual authentication.
+     *
+     * @param keyCertChainSupplier a {@link Supplier} that will provide an input stream for a {@code X.509} certificate
+     * chain in {@code PEM} format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @return {@code this}.
+     */
+    SecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier);
+
+    /**
+     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
+     * be {@code null}, which disables mutual authentication.
+     *
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a {@code X.509} certificate
+     * chain in {@code PEM} format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keyPassword the password of the {@code keyInputStream}.
+     * @return {@code this}.
+     */
+    SecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                                    String keyPassword);
 
     /**
      * The SSL protocols to enable, in the order of preference.

@@ -110,7 +110,7 @@ public class Tls13Test {
             serverSecurityConfigurator.ciphers(singletonList(cipher));
         }
         try (ServerContext serverContext = serverSecurityConfigurator
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(request.payloadBody(textDeserializer()), equalTo("request-payload-body"));
                     SSLSession sslSession = ctx.sslSession();

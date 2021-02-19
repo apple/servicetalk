@@ -21,18 +21,36 @@ import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import java.io.InputStream;
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import static java.util.Objects.requireNonNull;
+
 final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityConfigurator {
     private final ServerSecurityConfig securityConfig = new ServerSecurityConfig();
-    private final Function<ReadOnlyServerSecurityConfig, HttpServerBuilder> configConsumer;
+    private final BiFunction<ReadOnlyServerSecurityConfig, Map<String, ReadOnlyServerSecurityConfig>,
+            HttpServerBuilder> configConsumer;
+    @Nullable
+    private Map<String, ReadOnlyServerSecurityConfig> sniMap;
+    @Nullable
+    private String sniHostname;
 
     DefaultHttpServerSecurityConfigurator(
-            final Function<ReadOnlyServerSecurityConfig, HttpServerBuilder> configConsumer) {
-        this.configConsumer = configConsumer;
+            final BiFunction<ReadOnlyServerSecurityConfig, Map<String, ReadOnlyServerSecurityConfig>,
+                                HttpServerBuilder> configConsumer) {
+        this.configConsumer = requireNonNull(configConsumer);
+    }
+
+    private DefaultHttpServerSecurityConfigurator(DefaultHttpServerSecurityConfigurator configurator,
+                                                  String sniHostname) {
+        this.configConsumer = configurator.configConsumer;
+        this.sniHostname = requireNonNull(sniHostname);
+        this.sniMap = requireNonNull(configurator.sniMap);
     }
 
     @Override
@@ -44,6 +62,27 @@ final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityC
     @Override
     public HttpServerSecurityConfigurator trustManager(final TrustManagerFactory trustManagerFactory) {
         securityConfig.trustManager(trustManagerFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerSecurityConfigurator keyManager(final KeyManagerFactory keyManagerFactory) {
+        securityConfig.keyManager(keyManagerFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerSecurityConfigurator keyManager(final Supplier<InputStream> keyCertChainSupplier,
+                                                     final Supplier<InputStream> keySupplier) {
+        securityConfig.keyManager(keyCertChainSupplier, keySupplier);
+        return this;
+    }
+
+    @Override
+    public HttpServerSecurityConfigurator keyManager(final Supplier<InputStream> keyCertChainSupplier,
+                                                     final Supplier<InputStream> keySupplier,
+                                                     final String keyPassword) {
+        securityConfig.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
         return this;
     }
 
@@ -84,22 +123,29 @@ final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityC
     }
 
     @Override
-    public HttpServerBuilder commit(final KeyManagerFactory keyManagerFactory) {
-        securityConfig.keyManager(keyManagerFactory);
-        return configConsumer.apply(securityConfig.asReadOnly());
+    public HttpServerSecurityConfigurator newSniConfig(final String sniHostname) {
+        requireNonNull(sniHostname);
+        if (this.sniHostname == null) {
+            assert sniMap == null;
+            sniMap = new HashMap<>(8);
+            // put the defaultConfig in null key slot, retrieve it later below.
+            sniMap.put(null, securityConfig.asReadOnly());
+        } else {
+            assert sniMap != null;
+            sniMap.put(sniHostname, securityConfig.asReadOnly());
+        }
+        return new DefaultHttpServerSecurityConfigurator(this, sniHostname);
     }
 
     @Override
-    public HttpServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
-                                    final Supplier<InputStream> keySupplier) {
-        securityConfig.keyManager(keyCertChainSupplier, keySupplier);
-        return configConsumer.apply(securityConfig.asReadOnly());
-    }
-
-    @Override
-    public HttpServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
-                                    final Supplier<InputStream> keySupplier, final String keyPassword) {
-        securityConfig.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
-        return configConsumer.apply(securityConfig.asReadOnly());
+    public HttpServerBuilder commit() {
+        if (sniHostname == null) {
+            assert sniMap == null;
+            return configConsumer.apply(securityConfig.asReadOnly(), null);
+        } else {
+            assert sniMap != null;
+            sniMap.put(sniHostname, securityConfig.asReadOnly());
+            return configConsumer.apply(sniMap.remove(null), sniMap); // retrieve defaultConfig from null key
+        }
     }
 }

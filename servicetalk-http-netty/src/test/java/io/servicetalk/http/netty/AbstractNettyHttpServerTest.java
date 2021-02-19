@@ -158,8 +158,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         if (sslEnabled) {
-            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey);
+            serverBuilder.secure().keyManager(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).commit();
         }
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);

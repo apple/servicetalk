@@ -854,7 +854,7 @@ public class ProtocolCompatibilityTest {
                 });
         return ssl ?
                 serverBuilder.secure().provider(OPENSSL)
-                        .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey) :
+                        .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit() :
                 serverBuilder;
     }
 

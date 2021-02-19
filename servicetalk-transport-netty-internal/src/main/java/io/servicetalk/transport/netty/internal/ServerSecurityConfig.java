@@ -151,6 +151,9 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      * @return This config as a {@link ReadOnlyServerSecurityConfig}.
      */
     public ReadOnlyServerSecurityConfig asReadOnly() {
+        if (keyManagerFactory == null && keyCertChainSupplier == null) {
+            throw new IllegalStateException("Server security config requires key material!");
+        }
         return new ReadOnlyServerSecurityConfig(this);
     }
 }

@@ -61,26 +61,16 @@ public interface GrpcClientSecurityConfigurator<U, R> extends ClientSecurityConf
             String hostNameVerificationAlgorithm);
 
     @Override
-    GrpcClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                              String hostNameVerificationHost);
-
-    @Override
-    GrpcClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                              String hostNameVerificationHost,
-                                                              int hostNameVerificationPort);
-
-    @Override
-    GrpcClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost);
-
-    @Override
-    GrpcClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost,
-                                                              int hostNameVerificationPort);
+    GrpcClientSecurityConfigurator<U, R> disableHostnameVerification();
 
     @Override
     GrpcClientSecurityConfigurator<U, R> sniHostname(String sniHostname);
 
     @Override
-    GrpcClientSecurityConfigurator<U, R> disableHostnameVerification();
+    GrpcClientSecurityConfigurator<U, R> peerHost(String peerHost);
+
+    @Override
+    GrpcClientSecurityConfigurator<U, R> peerPort(int peerPort);
 
     @Override
     GrpcClientSecurityConfigurator<U, R> keyManager(KeyManagerFactory keyManagerFactory);

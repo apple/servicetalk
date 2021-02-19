@@ -90,31 +90,8 @@ final class DefaultGrpcClientSecurityConfigurator<U, R> implements GrpcClientSec
     }
 
     @Override
-    public GrpcClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationAlgorithm,
-                                                                     final String hostNameVerificationHost) {
-        delegate.hostnameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public GrpcClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationAlgorithm,
-                                                                     final String hostNameVerificationHost,
-                                                                     final int hostNameVerificationPort) {
-        delegate.hostnameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost,
-                hostNameVerificationPort);
-        return this;
-    }
-
-    @Override
-    public GrpcClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationHost) {
-        delegate.hostnameVerification(hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public GrpcClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationHost,
-                                                                     final int hostNameVerificationPort) {
-        delegate.hostnameVerification(hostNameVerificationHost, hostNameVerificationPort);
+    public GrpcClientSecurityConfigurator<U, R> disableHostnameVerification() {
+        delegate.disableHostnameVerification();
         return this;
     }
 
@@ -125,8 +102,14 @@ final class DefaultGrpcClientSecurityConfigurator<U, R> implements GrpcClientSec
     }
 
     @Override
-    public GrpcClientSecurityConfigurator<U, R> disableHostnameVerification() {
-        delegate.disableHostnameVerification();
+    public GrpcClientSecurityConfigurator<U, R> peerHost(final String peerHost) {
+        delegate.peerHost(peerHost);
+        return this;
+    }
+
+    @Override
+    public GrpcClientSecurityConfigurator<U, R> peerPort(final int peerPort) {
+        delegate.peerPort(peerPort);
         return this;
     }
 

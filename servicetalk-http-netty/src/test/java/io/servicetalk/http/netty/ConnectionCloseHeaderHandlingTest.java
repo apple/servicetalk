@@ -141,7 +141,8 @@ public class ConnectionCloseHeaderHandlingTest {
                 // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
                 proxyTunnel = new ProxyTunnel();
                 proxyAddress = proxyTunnel.startProxy();
-                serverBuilder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+                serverBuilder.secure().keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .commit();
             } else {
                 proxyTunnel = null;
             }

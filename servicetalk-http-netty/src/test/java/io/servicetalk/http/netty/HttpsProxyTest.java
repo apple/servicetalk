@@ -94,7 +94,7 @@ public class HttpsProxyTest {
     public void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverIoExecutor = createIoExecutor(new IoThreadFactory("server-io-executor")))
-                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .secure().keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverAddress = serverHostAndPort(serverContext);

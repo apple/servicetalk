@@ -23,11 +23,8 @@ import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
-import io.netty.util.NetUtil;
 import io.netty.util.ReferenceCountUtil;
 
-import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
@@ -38,6 +35,7 @@ import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
 import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
+import static java.util.Collections.singletonList;
 
 /**
  * Utility for SSL.
@@ -48,42 +46,40 @@ final class SslUtils {
     }
 
     /**
-     * Creates a new {@link SslHandler} which will supports SNI if the {@link InetSocketAddress} was created from
-     * a hostname.
+     * Creates a new {@link SslHandler} which can also enable SNI.
      *
-     * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
+     * @param context the {@link SslContext} which will be used to create the {@link SslHandler}.
      * @param allocator the {@link ByteBufAllocator} which will be used to allocate direct memory if required for
-     * {@link SSLEngine}
+     * {@link SSLEngine}.
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerPort the non-authoritative port of the peer.
      * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
      * If this is {@code null} or empty then you will be vulnerable to a MITM attack.
-     * @param hostnameVerificationHost the non-authoritative name of the host.
-     * @param hostnameVerificationPort the non-authoritative port.
+     * @param sniHostname enable the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> TLS extension with
+     * this value as the {@code host_name}.
      * @return a {@link SslHandler}
      */
-    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator,
-                                 @Nullable String hostnameVerificationAlgorithm,
-                                 @Nullable String hostnameVerificationHost,
-                                 int hostnameVerificationPort) {
-        if (hostnameVerificationHost == null) {
-            return newHandler(context, allocator);
-        }
-
-        SslHandler handler = context.newHandler(allocator, hostnameVerificationHost, hostnameVerificationPort);
-        SSLEngine engine = handler.engine();
-        try {
-            SSLParameters parameters = engine.getSSLParameters();
-            parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
-            if (!NetUtil.isValidIpV4Address(hostnameVerificationHost) &&
-                    !NetUtil.isValidIpV6Address(hostnameVerificationHost)) {
-                // SNI doesn't permit IP addresses!
-                // https://tools.ietf.org/html/rfc6066#section-3
-                // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
-                parameters.setServerNames(Collections.singletonList(new SNIHostName(hostnameVerificationHost)));
+    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator, String peerHost, int peerPort,
+                                 @Nullable String hostnameVerificationAlgorithm, @Nullable String sniHostname) {
+        SslHandler handler = context.newHandler(allocator, peerHost, peerPort);
+        if (hostnameVerificationAlgorithm != null || sniHostname != null) {
+            SSLEngine engine = handler.engine();
+            try {
+                SSLParameters parameters = engine.getSSLParameters();
+                if (hostnameVerificationAlgorithm != null) {
+                    parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
+                }
+                if (sniHostname != null) {
+                    // https://tools.ietf.org/html/rfc6066#section-3
+                    // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
+                    // Multiple names of the same name_type are therefore now prohibited.
+                    parameters.setServerNames(singletonList(new SNIHostName(sniHostname)));
+                }
+                engine.setSSLParameters(parameters);
+            } catch (Throwable cause) {
+                ReferenceCountUtil.release(engine);
+                throw cause;
             }
-            engine.setSSLParameters(parameters);
-        } catch (Throwable cause) {
-            ReferenceCountUtil.release(engine);
-            throw cause;
         }
         return handler;
     }

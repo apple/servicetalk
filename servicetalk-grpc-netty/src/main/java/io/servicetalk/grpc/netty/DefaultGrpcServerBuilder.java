@@ -76,12 +76,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerSecurityConfigurator secure(final String... sniHostnames) {
-        HttpServerSecurityConfigurator secure = httpServerBuilder.secure(sniHostnames);
-        return new DefaultGrpcServerSecurityConfigurator(secure, this);
-    }
-
-    @Override
     public <T> GrpcServerBuilder socketOption(final SocketOption<T> option, final T value) {
         httpServerBuilder.socketOption(option, value);
         return this;

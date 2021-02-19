@@ -21,6 +21,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
@@ -57,8 +59,8 @@ public final class SslContextFactory {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.keyCertChainSupplier().get();
-                keySupplier = config.keySupplier().get();
+                keyCertChainSupplier = supplierNullSafe(config.keyCertChainSupplier());
+                keySupplier = supplierNullSafe(config.keySupplier());
                 builder.keyManager(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
@@ -98,8 +100,8 @@ public final class SslContextFactory {
             InputStream keyCertChainSupplier = null;
             InputStream keySupplier = null;
             try {
-                keyCertChainSupplier = config.keyCertChainSupplier().get();
-                keySupplier = config.keySupplier().get();
+                keyCertChainSupplier = supplierNullSafe(config.keyCertChainSupplier());
+                keySupplier = supplierNullSafe(config.keySupplier());
                 builder = SslContextBuilder.forServer(keyCertChainSupplier, keySupplier, config.keyPassword());
             } finally {
                 try {
@@ -138,11 +140,16 @@ public final class SslContextFactory {
         }
     }
 
+    @Nullable
+    private static <T> T supplierNullSafe(@Nullable Supplier<T> supplier) {
+        return supplier == null ? null : supplier.get();
+    }
+
     private static void configureTrustManager(ReadOnlySecurityConfig config, SslContextBuilder builder) {
         if (config.trustManagerFactory() != null) {
             builder.trustManager(config.trustManagerFactory());
         } else {
-            InputStream trustManagerStream = config.trustCertChainSupplier().get();
+            InputStream trustManagerStream = supplierNullSafe(config.trustCertChainSupplier());
             try {
                 builder.trustManager(trustManagerStream);
             } finally {

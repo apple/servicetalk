@@ -101,7 +101,7 @@ public class HttpConnectionContextProtocolTest {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config.protocols);
         if (config.secure) {
-            builder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            builder.secure().keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit();
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                 .payloadBody(ctx.protocol().name(), textSerializer()));

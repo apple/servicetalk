@@ -33,7 +33,7 @@ public final class HttpServerWithAlpn {
         HttpServers.forPort(8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
                 // Configure TLS certificates:
-                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .secure().keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->

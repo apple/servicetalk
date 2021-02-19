@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -51,6 +52,17 @@ public interface ServerSecurityConfigurator extends SecurityConfigurator {
     ServerSecurityConfigurator trustManager(TrustManagerFactory trustManagerFactory);
 
     @Override
+    ServerSecurityConfigurator keyManager(KeyManagerFactory keyManagerFactory);
+
+    @Override
+    ServerSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                          Supplier<InputStream> keySupplier);
+
+    @Override
+    ServerSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                                          String keyPassword);
+
+    @Override
     ServerSecurityConfigurator protocols(String... protocols);
 
     @Override
@@ -72,4 +84,13 @@ public interface ServerSecurityConfigurator extends SecurityConfigurator {
      * @return {@code this}.
      */
     ServerSecurityConfigurator clientAuth(ClientAuth clientAuth);
+
+    /**
+     * Create a new {@link ServerSecurityConfigurator} which is used when the client requests
+     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> for {@code sniHostname}.
+     * @param sniHostname The hostname to match in the TLS client_hello SNI extension.
+     * @return a new {@link ServerSecurityConfigurator} which is used when the client requests
+     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> for {@code sniHostname}.
+     */
+    ServerSecurityConfigurator newSniConfig(String sniHostname);
 }

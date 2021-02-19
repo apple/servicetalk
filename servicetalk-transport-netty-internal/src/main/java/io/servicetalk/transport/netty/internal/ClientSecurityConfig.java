@@ -29,19 +29,20 @@ import static java.util.Objects.requireNonNull;
  * Client security configuration.
  */
 public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
-
     /**
      * Creates new instance.
      *
-     * @param serverHostname Hostname for the server.
-     * @param serverPort Port for the server.
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerPort the non-authoritative port of the peer.
      */
-    public ClientSecurityConfig(final String serverHostname, final int serverPort) {
-        super(serverHostname, serverPort);
+    public ClientSecurityConfig(final String peerHost, final int peerPort) {
+        super(peerHost, peerPort);
     }
 
     /**
      * Determines what algorithm to use for hostname verification.
+     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
+     * Endpoint Identification Algorithm Name</a>
      *
      * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
      */
@@ -50,57 +51,19 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
     }
 
     /**
-     * Determines what algorithm to use for hostname verification.
-     *
-     * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * Set the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
      */
-    public void hostNameVerification(final String hostNameVerificationAlgorithm,
-                                     final String hostNameVerificationHost) {
-        this.hostnameVerificationAlgorithm = requireNonNull(hostNameVerificationAlgorithm);
-        this.hostNameVerificationHost = hostNameVerificationHost;
+    public void peerHost(final String peerHost) {
+        this.peerHost = requireNonNull(peerHost);
     }
 
     /**
-     * Determines what algorithm to use for hostname verification.
-     *
-     * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @param hostNameVerificationPort The port which maybe used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * Set the non-authoritative port of the peer.
+     * @param peerPort the non-authoritative port of the peer.
      */
-    public void hostNameVerification(final String hostNameVerificationAlgorithm,
-                                     final String hostNameVerificationHost, final int hostNameVerificationPort) {
-        this.hostnameVerificationAlgorithm = requireNonNull(hostNameVerificationAlgorithm);
-        this.hostNameVerificationHost = hostNameVerificationHost;
-        this.hostNameVerificationPort = hostNameVerificationPort;
-    }
-
-    /**
-     * Set the host name used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server
-     * identity</a>.
-     *
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     */
-    public void hostNameVerification(final String hostNameVerificationHost) {
-        this.hostNameVerificationHost = hostNameVerificationHost;
-    }
-
-    /**
-     * Set the host name and port used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server
-     * identity</a>.
-     *
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @param hostNameVerificationPort The port which maybe used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     */
-    public void hostNameVerification(final String hostNameVerificationHost, final int hostNameVerificationPort) {
-        this.hostNameVerificationHost = hostNameVerificationHost;
-        this.hostNameVerificationPort = hostNameVerificationPort;
+    public void peerPort(final int peerPort) {
+        this.peerPort = peerPort;
     }
 
     /**
@@ -117,8 +80,6 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
      */
     public void disableHostnameVerification() {
         hostnameVerificationAlgorithm = null;
-        hostNameVerificationHost = null;
-        hostNameVerificationPort = -1;
     }
 
     /**
@@ -232,6 +193,9 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
      * @return This config as a {@link ReadOnlyClientSecurityConfig}.
      */
     public ReadOnlyClientSecurityConfig asReadOnly() {
+        if (trustManagerFactory == null && trustCertChainSupplier == null) {
+            throw new IllegalStateException("Client security config requires trust material!");
+        }
         return new ReadOnlyClientSecurityConfig(this);
     }
 }

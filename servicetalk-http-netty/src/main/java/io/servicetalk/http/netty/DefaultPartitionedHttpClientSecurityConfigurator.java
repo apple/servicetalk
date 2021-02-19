@@ -92,31 +92,8 @@ final class DefaultPartitionedHttpClientSecurityConfigurator<U, R>
     }
 
     @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationAlgorithm, final String hostNameVerificationHost) {
-        delegate.hostnameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationAlgorithm, final String hostNameVerificationHost,
-            final int hostNameVerificationPort) {
-        delegate.hostnameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost,
-                hostNameVerificationPort);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationHost) {
-        delegate.hostnameVerification(hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> hostnameVerification(final String hostNameVerificationHost,
-                                                                                final int hostNameVerificationPort) {
-        delegate.hostnameVerification(hostNameVerificationHost, hostNameVerificationPort);
+    public PartitionedHttpClientSecurityConfigurator<U, R> disableHostnameVerification() {
+        delegate.disableHostnameVerification();
         return this;
     }
 
@@ -127,8 +104,14 @@ final class DefaultPartitionedHttpClientSecurityConfigurator<U, R>
     }
 
     @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> disableHostnameVerification() {
-        delegate.disableHostnameVerification();
+    public PartitionedHttpClientSecurityConfigurator<U, R> peerHost(final String peerHost) {
+        delegate.peerHost(peerHost);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientSecurityConfigurator<U, R> peerPort(final int peerPort) {
+        delegate.peerPort(peerPort);
         return this;
     }
 

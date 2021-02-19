@@ -23,27 +23,26 @@ import static java.util.Objects.requireNonNull;
  * Read-only security config for clients.
  */
 public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
+    /**
+     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
+     * Endpoint Identification Algorithm Name</a>.
+     */
     @Nullable
     protected String hostnameVerificationAlgorithm = "HTTPS";
-    @Nullable
-    protected String hostNameVerificationHost;
-    /**
-     * Only valid if {@link #hostNameVerificationHost} is valid.
-     */
-    protected int hostNameVerificationPort;
+    protected String peerHost;
+    protected int peerPort;
     @Nullable
     protected String sniHostname;
 
     /**
      * Creates new instance.
      *
-     * @param serverHostname Hostname for the server.
-     * @param serverPort Port for the server.
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerPort the non-authoritative port of the peer.
      */
-    protected ReadOnlyClientSecurityConfig(final String serverHostname, final int serverPort) {
-        hostNameVerificationHost = requireNonNull(serverHostname);
-        hostNameVerificationPort = serverPort;
-        sniHostname = serverHostname;
+    protected ReadOnlyClientSecurityConfig(final String peerHost, final int peerPort) {
+        this.peerHost = requireNonNull(peerHost);
+        this.peerPort = peerPort;
     }
 
     /**
@@ -54,8 +53,8 @@ public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
     protected ReadOnlyClientSecurityConfig(final ReadOnlyClientSecurityConfig from) {
         super(from);
         hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
-        hostNameVerificationHost = from.hostNameVerificationHost;
-        hostNameVerificationPort = from.hostNameVerificationPort;
+        peerHost = from.peerHost;
+        peerPort = from.peerPort;
         sniHostname = from.sniHostname;
     }
 
@@ -70,22 +69,19 @@ public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
     }
 
     /**
-     * Returns the host name verification host.
-     *
-     * @return The host name verification host.
+     * Get the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @return the non-authoritative name of the peer, will be used for host name verification (if enabled).
      */
-    @Nullable
-    public String hostnameVerificationHost() {
-        return hostNameVerificationHost;
+    public String peerHost() {
+        return peerHost;
     }
 
     /**
-     * Returns the host name verification port.
-     *
-     * @return The host name verification port.
+     * Get the non-authoritative port of the peer.
+     * @return the non-authoritative port of the peer.
      */
-    public int hostnameVerificationPort() {
-        return hostNameVerificationPort;
+    public int peerPort() {
+        return peerPort;
     }
 
     /**

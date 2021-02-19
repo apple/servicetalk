@@ -35,7 +35,7 @@ public final class HttpServerMutualTLS {
                 // The server only trusts the CA which signed the example clients's certificate.
                 .trustManager(DefaultTestCerts::loadClientCAPem)
                 // Specify the server's certificate/key pair to use to authenticate to the server.
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->

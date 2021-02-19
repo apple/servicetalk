@@ -120,7 +120,7 @@ public class AlpnClientAndServerTest {
                 .protocols(toProtocolConfigs(supportedProtocols))
                 .secure()
                 .provider(OPENSSL)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
                     requestVersion.put(request.version());

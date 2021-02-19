@@ -31,15 +31,14 @@ public final class HttpClientMutualTLS {
         // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                .secure()   // Start TLS configuration
+                .secure()
                 // Our self-signed certificates do not support hostname verification, but this MUST NOT be disabled in
                 // production because it may leave you vulnerable to MITM attacks.
                 .disableHostnameVerification()
                 // The client only trusts the CA which signed the example server's certificate.
                 .trustManager(DefaultTestCerts::loadServerCAPem)
                 // Specify the client's certificate/key pair to use to authenticate to the server.
-                .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey)
-                .commit()   // Finish TLS configuration
+                .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).commit()
                 .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));
             System.out.println(response.toString((name, value) -> value));

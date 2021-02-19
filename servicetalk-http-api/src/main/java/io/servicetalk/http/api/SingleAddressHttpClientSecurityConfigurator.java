@@ -61,26 +61,16 @@ public interface SingleAddressHttpClientSecurityConfigurator<U, R> extends Clien
             String hostNameVerificationAlgorithm);
 
     @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                                           String hostNameVerificationHost);
+    SingleAddressHttpClientSecurityConfigurator<U, R> disableHostnameVerification();
 
     @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationAlgorithm,
-                                                                           String hostNameVerificationHost,
-                                                                           int hostNameVerificationPort);
+    SingleAddressHttpClientSecurityConfigurator<U, R> peerHost(String peerHost);
 
     @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost);
-
-    @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(String hostNameVerificationHost,
-                                                                           int hostNameVerificationPort);
+    SingleAddressHttpClientSecurityConfigurator<U, R> peerPort(int peerPort);
 
     @Override
     SingleAddressHttpClientSecurityConfigurator<U, R> sniHostname(String sniHostname);
-
-    @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> disableHostnameVerification();
 
     @Override
     SingleAddressHttpClientSecurityConfigurator<U, R> keyManager(KeyManagerFactory keyManagerFactory);

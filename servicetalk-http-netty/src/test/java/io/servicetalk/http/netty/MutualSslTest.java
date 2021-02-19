@@ -67,7 +67,7 @@ public class MutualSslTest {
                 .provider(serverSslProvider)
                 .clientAuth(REQUIRE)
                 .trustManager(DefaultTestCerts::loadClientCAPem)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).commit()
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .secure()

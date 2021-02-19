@@ -76,31 +76,11 @@ public abstract class GrpcServerBuilder {
     /**
      * Initiate security configuration for this server. Calling any {@code commit} method on the returned
      * {@link GrpcServerSecurityConfigurator} will commit the configuration.
-     * <p>
-     * Additionally use {@link #secure(String...)} to define configurations for specific
-     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames. If such configuration is additionally
-     * defined then configuration using this method is used as default if the hostname does not match any of the
-     * specified hostnames.
      *
      * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
      * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
     public abstract GrpcServerSecurityConfigurator secure();
-
-    /**
-     * Initiate security configuration for this server for the passed {@code sniHostnames}.
-     * Calling any {@code commit} method on the returned {@link GrpcServerSecurityConfigurator} will commit the
-     * configuration.
-     * <p>
-     * When using this method, it is mandatory to also define the default configuration using {@link #secure()} which
-     * is used when the hostname does not match any of the specified {@code sniHostnames}.
-     *
-     * @param sniHostnames <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames for which this
-     * config is being defined.
-     * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    public abstract GrpcServerSecurityConfigurator secure(String... sniHostnames);
 
     /**
      * Add a {@link SocketOption} that is applied.

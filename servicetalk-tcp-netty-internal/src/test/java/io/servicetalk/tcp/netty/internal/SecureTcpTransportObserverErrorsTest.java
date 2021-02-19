@@ -100,7 +100,8 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
                 serverConfig.secure(serverSecurityConfig);
                 break;
             case WRONG_HOSTNAME_VERIFICATION:
-                clientSecurityConfig.hostNameVerification("HTTPS", "foo");
+                clientSecurityConfig.hostNameVerificationAlgorithm("HTTPS");
+                clientSecurityConfig.peerHost("foo");
                 clientConfig.secure(clientSecurityConfig);
                 serverConfig.secure(serverSecurityConfig);
                 break;

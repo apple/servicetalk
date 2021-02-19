@@ -29,14 +29,10 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forClien
  */
 public final class ReadOnlyTcpClientConfig
         extends AbstractReadOnlyTcpConfig<ReadOnlyClientSecurityConfig, ReadOnlyTcpClientConfig> {
-
     @Nullable
     private final SslContext sslContext;
     @Nullable
-    private final String sslHostnameVerificationAlgorithm;
-    @Nullable
-    private final String sslHostnameVerificationHost;
-    private final int sslHostnameVerificationPort;
+    private final ReadOnlyClientSecurityConfig sslConfig;
 
     /**
      * Copy constructor.
@@ -45,18 +41,8 @@ public final class ReadOnlyTcpClientConfig
      */
     ReadOnlyTcpClientConfig(final TcpClientConfig from, final List<String> supportedAlpnProtocols) {
         super(from, supportedAlpnProtocols.isEmpty() ? null : supportedAlpnProtocols.get(0));
-        final ReadOnlyClientSecurityConfig securityConfig = from.securityConfig();
-        if (securityConfig != null) {
-            sslContext = forClient(securityConfig, supportedAlpnProtocols);
-            sslHostnameVerificationAlgorithm = securityConfig.hostnameVerificationAlgorithm();
-            sslHostnameVerificationHost = securityConfig.hostnameVerificationHost();
-            sslHostnameVerificationPort = securityConfig.hostnameVerificationPort();
-        } else {
-            sslContext = null;
-            sslHostnameVerificationAlgorithm = null;
-            sslHostnameVerificationHost = null;
-            sslHostnameVerificationPort = -1;
-        }
+        sslConfig = from.securityConfig();
+        sslContext = sslConfig != null ? forClient(sslConfig, supportedAlpnProtocols) : null;
     }
 
     @Nullable
@@ -66,33 +52,12 @@ public final class ReadOnlyTcpClientConfig
     }
 
     /**
-     * Returns the hostname verification algorithm, if any.
+     * Get the {@link ReadOnlyClientSecurityConfig}.
      *
-     * @return hostname verification algorithm, {@code null} if none specified
+     * @return the {@link ReadOnlyClientSecurityConfig}.
      */
     @Nullable
-    public String sslHostnameVerificationAlgorithm() {
-        return sslHostnameVerificationAlgorithm;
-    }
-
-    /**
-     * Get the non-authoritative name of the host.
-     *
-     * @return the non-authoritative name of the host
-     */
-    @Nullable
-    public String sslHostnameVerificationHost() {
-        return sslHostnameVerificationHost;
-    }
-
-    /**
-     * Get the non-authoritative port.
-     * <p>
-     * Only valid if {@link #sslHostnameVerificationHost()} is not {@code null}.
-     *
-     * @return the non-authoritative port
-     */
-    public int sslHostnameVerificationPort() {
-        return sslHostnameVerificationPort;
+    public ReadOnlyClientSecurityConfig sslConfig() {
+        return sslConfig;
     }
 }

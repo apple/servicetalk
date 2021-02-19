@@ -20,6 +20,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLParameters;
 
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
@@ -29,37 +30,41 @@ import static java.util.Objects.requireNonNull;
  * SSL {@link ChannelInitializer} for clients.
  */
 public class SslClientChannelInitializer implements ChannelInitializer {
-
+    private final String peerHost;
+    private final int peerPort;
     @Nullable
     private final String hostnameVerificationAlgorithm;
     @Nullable
-    private final String hostnameVerificationHost;
-    private final int hostnameVerificationPort;
+    private final String sniHostname;
     private final SslContext sslContext;
     private final boolean deferSslHandler;
 
     /**
      * New instance.
      * @param sslContext to use for configuring SSL.
-     * @param hostnameVerificationAlgorithm hostname verification algorithm.
-     * @param hostnameVerificationHost the non-authoritative name of the host.
-     * @param hostnameVerificationPort the non-authoritative port.
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerPort the non-authoritative port of the peer.
+     * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
+     * If this is {@code null} or empty then you will be vulnerable to a MITM attack.
+     * @param sniHostname enable the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> TLS extension with
+     * this value as the {@code host_name}.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
-    public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
-                                       @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
+    public SslClientChannelInitializer(SslContext sslContext, String peerHost, int peerPort,
+                                       @Nullable String hostnameVerificationAlgorithm, @Nullable String sniHostname,
                                        final boolean deferSslHandler) {
         this.sslContext = requireNonNull(sslContext);
+        this.peerHost = requireNonNull(peerHost);
+        this.peerPort = peerPort;
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
-        this.hostnameVerificationHost = hostnameVerificationHost;
-        this.hostnameVerificationPort = hostnameVerificationPort;
+        this.sniHostname = sniHostname;
         this.deferSslHandler = deferSslHandler;
     }
 
     @Override
     public void init(Channel channel) {
-        final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
-                hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
+        final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR, peerHost, peerPort,
+                hostnameVerificationAlgorithm, sniHostname);
         channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler) : sslHandler);
     }
 }

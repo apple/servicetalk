@@ -58,16 +58,9 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     @Override
     public HttpServerSecurityConfigurator secure() {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig);
-            return DefaultHttpServerBuilder.this;
-        });
-    }
-
-    @Override
-    public HttpServerSecurityConfigurator secure(final String... sniHostnames) {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig, sniHostnames);
+        return new DefaultHttpServerSecurityConfigurator((defaultConfig, sniConfigs) -> {
+            config.tcpConfig().secure(defaultConfig);
+            config.tcpConfig().secure(sniConfigs);
             return DefaultHttpServerBuilder.this;
         });
     }

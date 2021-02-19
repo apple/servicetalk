@@ -32,6 +32,17 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
     ClientSecurityConfigurator trustManager(TrustManagerFactory trustManagerFactory);
 
     @Override
+    ClientSecurityConfigurator keyManager(KeyManagerFactory keyManagerFactory);
+
+    @Override
+    ClientSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                          Supplier<InputStream> keySupplier);
+
+    @Override
+    ClientSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                                          String keyPassword);
+
+    @Override
     ClientSecurityConfigurator protocols(String... protocols);
 
     @Override
@@ -51,72 +62,11 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
      *
      * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
-     * Supported algorithm names</a>.
+     * Endpoint Identification Algorithm Name</a>.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     ClientSecurityConfigurator hostnameVerificationAlgorithm(String hostNameVerificationAlgorithm);
-
-    /**
-     * Determines what algorithm to use for hostname verification.
-     *
-     * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
-     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
-     * Supported algorithm names</a>.
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @return {@code this}.
-     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
-     */
-    ClientSecurityConfigurator hostnameVerification(String hostNameVerificationAlgorithm,
-                                                    String hostNameVerificationHost);
-
-    /**
-     * Determines what algorithm to use for hostname verification.
-     *
-     * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
-     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
-     * Supported algorithm names</a>.
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @param hostNameVerificationPort The port which maybe used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @return {@code this}.
-     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
-     */
-    ClientSecurityConfigurator hostnameVerification(String hostNameVerificationAlgorithm,
-                                                    String hostNameVerificationHost, int hostNameVerificationPort);
-
-    /**
-     * Set the host name used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server
-     * identity</a>.
-     *
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @return {@code this}.
-     */
-    ClientSecurityConfigurator hostnameVerification(String hostNameVerificationHost);
-
-    /**
-     * Set the host name and port used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server
-     * identity</a>.
-     *
-     * @param hostNameVerificationHost the host name used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @param hostNameVerificationPort The port which maybe used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @return {@code this}.
-     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
-     */
-    ClientSecurityConfigurator hostnameVerification(String hostNameVerificationHost, int hostNameVerificationPort);
-
-    /**
-     * Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
-     *
-     * @param sniHostname The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
-     * @return {@code this}.
-     */
-    ClientSecurityConfigurator sniHostname(String sniHostname);
 
     /**
      * Disable verification of the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
@@ -126,48 +76,24 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
     ClientSecurityConfigurator disableHostnameVerification();
 
     /**
-     * Identifying certificate for this host. {@code keyManagerFactory} may be {@code null}, which disables mutual
-     * authentication. The {@link KeyManagerFactory} which take preference over any configured {@link Supplier}.
-     *
-     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * Set the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * @param peerHost the non-authoritative name of the peer, will be used for host name verification (if enabled).
      * @return {@code this}.
      */
-    ClientSecurityConfigurator keyManager(KeyManagerFactory keyManagerFactory);
+    ClientSecurityConfigurator peerHost(String peerHost);
 
     /**
-     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
-     * be {@code null}, which disables mutual authentication.
-     *
-     * @param keyCertChainSupplier a {@link Supplier} that will provide an input stream for a {@code X.509} certificate
-     * chain in {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * Set the non-authoritative port of the peer.
+     * @param peerPort the non-authoritative port of the peer.
      * @return {@code this}.
      */
-    ClientSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier,
-                                          Supplier<InputStream> keySupplier);
+    ClientSecurityConfigurator peerPort(int peerPort);
 
     /**
-     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
-     * be {@code null}, which disables mutual authentication.
+     * Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a {@code X.509} certificate
-     * chain in {@code PEM} format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keyPassword the password of the {@code keyInputStream}.
+     * @param sniHostname The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @return {@code this}.
      */
-    ClientSecurityConfigurator keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
-                                          String keyPassword);
+    ClientSecurityConfigurator sniHostname(String sniHostname);
 }

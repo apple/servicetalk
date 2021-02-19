@@ -160,7 +160,8 @@ public class SecurityHandshakeObserverTest {
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .secure()
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .commit()
                 .transportObserver(serverTransportObserver)
                 .listenStreamingAndAwait(new TestServiceStreaming());
 

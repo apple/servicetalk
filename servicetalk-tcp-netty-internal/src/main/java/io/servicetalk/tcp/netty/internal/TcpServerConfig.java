@@ -21,7 +21,6 @@ import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.util.NetUtil;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -63,19 +62,11 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
     /**
      * Add security related config.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames
-     * @param sniHostnames SNI hostnames for which this config is defined
+     * @param sniConfigs Map which provides configuration for individual SNI entries.
      * @return {@code this}
      */
-    public TcpServerConfig secure(final ReadOnlyServerSecurityConfig securityConfig, final String... sniHostnames) {
-        requireNonNull(securityConfig);
-        requireNonNull(sniHostnames);
-        if (sniConfigs == null) {
-            sniConfigs = new HashMap<>();
-        }
-        for (String sniHostname : sniHostnames) {
-            sniConfigs.put(sniHostname, securityConfig);
-        }
+    public TcpServerConfig secure(final Map<String, ReadOnlyServerSecurityConfig> sniConfigs) {
+        this.sniConfigs = sniConfigs;
         return this;
     }
 

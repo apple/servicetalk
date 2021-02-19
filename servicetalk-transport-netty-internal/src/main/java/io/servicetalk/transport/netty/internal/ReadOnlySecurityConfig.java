@@ -30,10 +30,8 @@ import static java.util.Collections.unmodifiableList;
  * A base security config for both client and server.
  */
 class ReadOnlySecurityConfig {
-    @SuppressWarnings("rawtypes")
-    private static final Supplier NULL_SUPPLIER = () -> null;
-
-    Supplier<InputStream> trustCertChainSupplier = nullSupplier();
+    @Nullable
+    Supplier<InputStream> trustCertChainSupplier;
     @Nullable
     TrustManagerFactory trustManagerFactory;
     @Nullable
@@ -46,8 +44,10 @@ class ReadOnlySecurityConfig {
 
     @Nullable
     protected KeyManagerFactory keyManagerFactory;
-    protected Supplier<InputStream> keyCertChainSupplier = nullSupplier();
-    protected Supplier<InputStream> keySupplier = nullSupplier();
+    @Nullable
+    protected Supplier<InputStream> keyCertChainSupplier;
+    @Nullable
+    protected Supplier<InputStream> keySupplier;
     @Nullable
     protected String keyPassword;
 
@@ -68,6 +68,7 @@ class ReadOnlySecurityConfig {
         keyPassword = from.keyPassword;
     }
 
+    @Nullable
     Supplier<InputStream> trustCertChainSupplier() {
         return trustCertChainSupplier;
     }
@@ -104,10 +105,12 @@ class ReadOnlySecurityConfig {
         return keyManagerFactory;
     }
 
+    @Nullable
     Supplier<InputStream> keyCertChainSupplier() {
         return keyCertChainSupplier;
     }
 
+    @Nullable
     Supplier<InputStream> keySupplier() {
         return keySupplier;
     }
@@ -115,10 +118,5 @@ class ReadOnlySecurityConfig {
     @Nullable
     String keyPassword() {
         return keyPassword;
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> Supplier<T> nullSupplier() {
-        return NULL_SUPPLIER;
     }
 }

@@ -33,9 +33,9 @@ final class DefaultSingleAddressHttpClientSecurityConfigurator<U, R>
     private final Function<ReadOnlyClientSecurityConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer;
 
     DefaultSingleAddressHttpClientSecurityConfigurator(
-            final String serverHostname, final int serverPort,
+            final String peerHost, final int peerPort,
             final Function<ReadOnlyClientSecurityConfig, SingleAddressHttpClientBuilder<U, R>> configConsumer) {
-        config = new ClientSecurityConfig(serverHostname, serverPort);
+        config = new ClientSecurityConfig(peerHost, peerPort);
         this.configConsumer = configConsumer;
     }
 
@@ -96,35 +96,6 @@ final class DefaultSingleAddressHttpClientSecurityConfigurator<U, R>
     }
 
     @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationAlgorithm, final String hostNameVerificationHost) {
-        config.hostNameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationAlgorithm, final String hostNameVerificationHost,
-            final int hostNameVerificationPort) {
-        config.hostNameVerification(hostNameVerificationAlgorithm, hostNameVerificationHost, hostNameVerificationPort);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationHost) {
-        config.hostNameVerification(hostNameVerificationHost);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> hostnameVerification(
-            final String hostNameVerificationHost, final int hostNameVerificationPort) {
-        config.hostNameVerification(hostNameVerificationHost, hostNameVerificationPort);
-        return this;
-    }
-
-    @Override
     public SingleAddressHttpClientSecurityConfigurator<U, R> sniHostname(final String sniHostname) {
         config.sniHostname(sniHostname);
         return this;
@@ -133,6 +104,18 @@ final class DefaultSingleAddressHttpClientSecurityConfigurator<U, R>
     @Override
     public SingleAddressHttpClientSecurityConfigurator<U, R> disableHostnameVerification() {
         config.disableHostnameVerification();
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientSecurityConfigurator<U, R> peerHost(final String peerHost) {
+        config.peerHost(peerHost);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientSecurityConfigurator<U, R> peerPort(final int peerPort) {
+        config.peerPort(peerPort);
         return this;
     }
 
