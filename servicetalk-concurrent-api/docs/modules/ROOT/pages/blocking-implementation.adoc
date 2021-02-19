@@ -31,7 +31,7 @@ request and read the HTTP response.
 2. Thread which is used to interact with the `Subscriber` corresponding to its `Subscription`s.
 
 Part 1. above is not governed by the
-link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[ReactiveStreams specification]
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams specification]
 and hence sources are free to use any thread. ServiceTalk typically will use Netty's `EventLoop` to do the actual work.
 Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in `Publisher`,
 `Subscriber` and `Subscription`.

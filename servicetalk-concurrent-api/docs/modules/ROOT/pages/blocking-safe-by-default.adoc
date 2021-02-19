@@ -28,7 +28,7 @@ image::blocking-scenarios.png[Data and control flow in an execution chain]
 
 As shown in the above picture, there are inherently two directions (data and control) of information flow for an
 execution chain and these
-link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#glossary[signals] can be triggered
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary[signals] can be triggered
 in parallel.
 
 **By default, in ServiceTalk, signals are not executed on an event loop thread, but instead executed using an

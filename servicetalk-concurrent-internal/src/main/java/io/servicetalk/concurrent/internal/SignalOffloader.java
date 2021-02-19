@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 
 /**
  * A contract to offload <a
- * href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#glossary">signals</a> to and
+ * href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary">signals</a> to and
  * from any asynchronous source.
  *
  * <h2>Caution</h2>

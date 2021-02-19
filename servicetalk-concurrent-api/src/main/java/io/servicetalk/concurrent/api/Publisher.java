@@ -2858,8 +2858,8 @@ public abstract class Publisher<T> {
      * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
      * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
      * depend upon the behavior of the {@code iterable} below. Make sure the {@link Executor} for this execution chain
      * can tolerate this responsiveness and any blocking behavior.
@@ -2881,8 +2881,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
      * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
      * depend upon the behavior of the {@code iterable} below. Make sure the {@link Executor} for this execution chain
      * can tolerate this responsiveness and any blocking behavior.
@@ -2908,8 +2908,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      * <p>
      * The Reactive Streams specification provides two criteria (
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
      * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
      * depend upon the behavior of the {@code stream} below. Make sure the {@link Executor} for this execution chain
      * can tolerate this responsiveness and any blocking behavior.

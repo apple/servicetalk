@@ -503,7 +503,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                         setTerminated();
                         safeOnError(original, throwable);
                         assert subscription != null;
-                        // Spec https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
+                        // Spec https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.13
                         // 2.13 states that a Subscriber MUST consider its Subscription cancelled if it throws from
                         // any of its methods.
                         // Even though calling Subscription here means that we may be invoking it concurrently,
@@ -630,7 +630,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             } catch (Throwable throwable) {
                 sendError(throwable);
                 // Cancel the Subscription as per Rule 2.13
-                // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
+                // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.13
                 // we may be violating the no concurrency on the Subscription rule, but the Subscriber/Subscription is
                 // invalid and we make a best effort to cleanup
                 safeCancel(c);
@@ -677,7 +677,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
             } catch (Throwable throwable) {
                 sendError(throwable);
                 // Cancel the Subscription as per Rule 2.13
-                // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.13
+                // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.13
                 // We may be violating the no concurrency on the Subscription rule, but the Subscriber/Subscription is
                 // invalid and we make a best effort to cleanup
                 safeCancel(c);
