@@ -28,7 +28,7 @@ final class BufferOutputStream extends OutputStream {
 
     @Override
     public void write(final int b) {
-        buffer.writeInt(b);
+        buffer.writeByte(b);
     }
 
     @Override
