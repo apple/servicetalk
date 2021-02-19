@@ -15,7 +15,8 @@
  */
 package io.servicetalk.encoding.api;
 
-import java.util.Objects;
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 
 abstract class AbstractContentCodec implements ContentCodec {
 
@@ -30,20 +31,20 @@ abstract class AbstractContentCodec implements ContentCodec {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof AbstractContentCodec)) {
             return false;
         }
         final AbstractContentCodec that = (AbstractContentCodec) o;
-        return name.equals(that.name);
+        return contentEquals(name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return caseInsensitiveHashCode(name);
     }
 
     @Override

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import org.junit.Test;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,6 +32,11 @@ public class DefaultHttpSetCookieTest {
                 is(new DefaultHttpSetCookie("foo", "bar")));
         assertThat(new DefaultHttpSetCookie("foo", "bar").hashCode(),
                 is(new DefaultHttpSetCookie("foo", "bar").hashCode()));
+
+        assertThat(new DefaultHttpSetCookie("foo", "bar"),
+                   is(new DefaultHttpSetCookie(newAsciiString("foo"), newAsciiString("bar"))));
+        assertThat(new DefaultHttpSetCookie("foo", "bar").hashCode(),
+                   is(new DefaultHttpSetCookie(newAsciiString("foo"), newAsciiString("bar")).hashCode()));
 
         // Domain is case-insensitive, other attributes are ignored:
         assertThat(new DefaultHttpSetCookie("foo", "bar", "/", "servicetalk.io", null, 1L, None, true, false, true),
@@ -47,13 +53,13 @@ public class DefaultHttpSetCookieTest {
         assertThat(new DefaultHttpSetCookie("foo", "bar"),
                 is(not(new DefaultHttpSetCookie("Foo", "bar"))));
         assertThat(new DefaultHttpSetCookie("foo", "bar").hashCode(),
-                is(not(new DefaultHttpSetCookie("Foo", "bar").hashCode())));
+                is(not(new DefaultHttpSetCookie("fooo", "bar").hashCode())));
 
         // Value is case-sensitive:
         assertThat(new DefaultHttpSetCookie("foo", "bar"),
                 is(not(new DefaultHttpSetCookie("foo", "Bar"))));
         assertThat(new DefaultHttpSetCookie("foo", "bar").hashCode(),
-                is(not(new DefaultHttpSetCookie("foo", "Bar").hashCode())));
+                is(not(new DefaultHttpSetCookie("foo", "barr").hashCode())));
 
         // Path is case-sensitive:
         assertThat(new DefaultHttpSetCookie("foo", "bar", "/path", "servicetalk.io",
@@ -62,7 +68,7 @@ public class DefaultHttpSetCookieTest {
                         null, 1L, None, true, false, true))));
         assertThat(new DefaultHttpSetCookie("foo", "bar", "/path", "servicetalk.io",
                         null, 1L, None, true, false, true).hashCode(),
-                is(not(new DefaultHttpSetCookie("foo", "bar", "/Path", "servicetalk.io",
+                is(not(new DefaultHttpSetCookie("foo", "bar", "/pathh", "servicetalk.io",
                         null, 1L, None, true, false, true).hashCode())));
 
         // Domain doesn't match:
