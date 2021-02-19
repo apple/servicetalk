@@ -52,7 +52,7 @@ public final class ServiceTalkSocketOptions {
      * <ul>
      *     <li>it may not be supported by the underlying transport (e.g. supported by Netty's
      *     <a href="https://netty.io/wiki/native-transports.html#using-the-linux-native-transport">linux EPOLL
-     *     transport</a></li>
+     *     transport</a>)</li>
      *     <li>the data that is written in TFO must be idempotent (see
      *     <a href="https://lwn.net/Articles/508865/">LWN article</a> for more info). The TLS client_hello
      *     <a href="https://tools.ietf.org/html/rfc7413#section-6.3.2">is idempotent</a> and this option is therefore
@@ -78,7 +78,7 @@ public final class ServiceTalkSocketOptions {
      * <p>
      * Note this option may not be supported by the underlying transport (e.g. supported by Netty's
      * <a href="https://netty.io/wiki/native-transports.html#using-the-linux-native-transport">linux EPOLL
-     * transport</a>.
+     * transport)</a>.
      */
     public static final SocketOption<Integer> TCP_FASTOPEN_BACKLOG =
             new ServiceTalkSocketOption<>("TCP_FASTOPEN_BACKLOG", Integer.class);

@@ -77,7 +77,7 @@ public final class SocketOptionUtils {
         @SuppressWarnings("unchecked")
         OptConverter<T> converter = (OptConverter<T>) SOCKET_OPT_MAP.get(option);
         if (converter != null) {
-            channelOpts.put(converter.option, converter.sockToChan.apply(value));
+            channelOpts.put(converter.option, converter.toChannelValue.apply(value));
         } else {
             throw unsupported(option);
         }
@@ -101,7 +101,7 @@ public final class SocketOptionUtils {
         @SuppressWarnings("unchecked")
         OptConverter<T> converter = (OptConverter<T>) SOCKET_OPT_MAP.get(option);
         if (converter != null) {
-            return (T) converter.chanToSock.apply(config.getOption(converter.option));
+            return (T) converter.toSocketValue.apply(config.getOption(converter.option));
         } else if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return (T) idleTimeoutMs;
         }
@@ -118,8 +118,8 @@ public final class SocketOptionUtils {
     }
 
     private static <T, R> void putOpt(ChannelOption<T> channelOpt, SocketOption<R> socketOpt,
-                                      Function<T, R> channelToSocket, Function<R, T> socketToChannel) {
-        SOCKET_OPT_MAP.put(socketOpt, new OptConverter<>(channelOpt, channelToSocket, socketToChannel));
+                                      Function<T, R> toSocketValue, Function<R, T> toChannelValue) {
+        SOCKET_OPT_MAP.put(socketOpt, new OptConverter<>(channelOpt, toSocketValue, toChannelValue));
     }
 
     @Nullable
@@ -129,15 +129,15 @@ public final class SocketOptionUtils {
 
     private static final class OptConverter<T> {
         private final ChannelOption<T> option;
-        private final Function<T, Object> chanToSock;
-        private final Function<Object, T> sockToChan;
+        private final Function<T, Object> toSocketValue;
+        private final Function<Object, T> toChannelValue;
 
         @SuppressWarnings("unchecked")
-        private OptConverter(final ChannelOption<T> option, final Function<T, ?> chanToSock,
-                             final Function<?, T> sockToChan) {
+        private OptConverter(final ChannelOption<T> option, final Function<T, ?> toSocketValue,
+                             final Function<?, T> toChannelValue) {
             this.option = option;
-            this.chanToSock = (Function<T, Object>) chanToSock;
-            this.sockToChan = (Function<Object, T>) sockToChan;
+            this.toSocketValue = (Function<T, Object>) toSocketValue;
+            this.toChannelValue = (Function<Object, T>) toChannelValue;
         }
     }
 }
