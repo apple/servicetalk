@@ -30,6 +30,7 @@ import static io.netty.util.AsciiString.of;
 import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.isTchar;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HeaderUtils.pathMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.ORIGIN;
@@ -271,6 +272,17 @@ public class HeaderUtilsTest {
             assertEquals("Unexpected result for byte: " + value,
                     originalValidateTokenLogic(value), isTchar(value));
         }
+    }
+
+    @Test
+    public void pathMatchesTest() {
+        assertTrue(pathMatches("/a/b/c", "/a/b/c"));
+        assertTrue(pathMatches("/a/b/cxxxx", "/a/b/c"));
+        assertTrue(pathMatches(new StringBuilder("/a/b/c"), new StringBuilder("/a/b/c")));
+        assertTrue(pathMatches("/a/b/c", new StringBuilder("/a/b/c")));
+
+        assertFalse(pathMatches("xxx/a/b/c", "/a/b/c"));
+        assertFalse(pathMatches(new StringBuilder("/a/b/c"), new StringBuilder("/a/B/c")));
     }
 
     private static boolean originalValidateTokenLogic(final byte value) {
