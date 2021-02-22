@@ -83,7 +83,7 @@ look into directly building on top of link:https://netty.io[Netty] instead.
 === Reactive core
 ServiceTalk's core design principles aim to enable large scale link:https://www.reactivemanifesto.org[reactive system].
 Responsiveness is an essential part of building a reactive system. ServiceTalk implements
-link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[Reactive Streams APIs]
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[Reactive Streams APIs]
 to provide flow controlled, responsive networking abstractions. Such flow controlled systems express a well coordinated
 upper bound on resources (e.g. memory) providing a high level of resiliency in presence of unexpected data spikes.
 

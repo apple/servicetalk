@@ -119,7 +119,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
         /**
          * The {@link Subscription} before wrapping to pass it to the downstream {@link PublisherSource.Subscriber}.
          * Doesn't need to be {@code volatile}, as it should be visible wrt JMM according to
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.11>RS spec 2.11</a>
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.11>RS spec 2.11</a>
          */
         @Nullable
         private Subscription rawSubscription;

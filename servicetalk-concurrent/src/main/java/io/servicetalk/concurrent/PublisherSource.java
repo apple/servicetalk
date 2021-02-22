@@ -23,11 +23,11 @@ import javax.annotation.Nullable;
  * <p>
  * This is a replica of the APIs provided by
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a> and follows the
- * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification">
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification">
  * Reactive Streams specifications</a>.
  * All implementations of this {@code PublisherSource} adhere to the rules as specified for a Reactive Streams
  * {@code Publisher} in
- * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#1-publisher-code">
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1-publisher-code">
  * Section 1</a> of the specifications.
  *
  * @param <T> Type of the items emitted by this {@code PublisherSource}.
@@ -47,11 +47,11 @@ public interface PublisherSource<T> {
      * <p>
      * This is a replica of the APIs provided by
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a> and follows the
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification">
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification">
      * Reactive Streams specifications</a>.
      * All implementations of this {@code Subscriber} adhere to the rules as specified for a Reactive Streams
      * {@code Subscriber} in
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2-subscriber-code">
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code">
      * Section 2</a> of the specifications.
      *
      * @param <T> Type of items received by this {@code Subscriber}.
@@ -62,7 +62,7 @@ public interface PublisherSource<T> {
          * Callback to receive a {@link Subscription} for this {@code Subscriber}.
          * <p>
          * See
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2-subscriber-code">
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code">
          * Reactive Streams specifications</a> for the rules about how and when this method will be invoked.
          *
          * @param subscription {@link Subscription} for this {@code Subscriber}.
@@ -73,7 +73,7 @@ public interface PublisherSource<T> {
          * Callback to receive a {@link T data} element for this {@code Subscriber}.
          * <p>
          * See
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2-subscriber-code">
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code">
          * Reactive Streams specifications</a> for the rules about how and when this method will be invoked.
          *
          * @param t A {@link T data} element.
@@ -84,7 +84,7 @@ public interface PublisherSource<T> {
          * Callback to receive an {@link Throwable error} for this {@code Subscriber}.
          * <p>
          * See
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2-subscriber-code">
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code">
          * Reactive Streams specifications</a> for the rules about how and when this method will be invoked.
          *
          * @param t {@link Throwable error} for this {@code Subscriber}.
@@ -95,7 +95,7 @@ public interface PublisherSource<T> {
          * Callback to signal completion of the {@link PublisherSource} for this {@code Subscriber}.
          * <p>
          * See
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2-subscriber-code">
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code">
          * Reactive Streams specifications</a> for the rules about how and when this method will be invoked.
          */
         void onComplete();
@@ -106,11 +106,11 @@ public interface PublisherSource<T> {
      * <p>
      * This is a replica of the APIs provided by
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm">Reactive Streams</a> and follows the
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification">
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification">
      * Reactive Streams specifications</a>.
      * All implementations of this {@code Subscription} adhere to the rules as specified for a Reactive Streams
      * {@code Subscription} in
-     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3-subscription-code">
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3-subscription-code">
      * Section 3</a> of the specifications.
      */
     interface Subscription extends Cancellable {
@@ -120,7 +120,7 @@ public interface PublisherSource<T> {
          * {@link Subscriber}.
          * <p>
          * See
-         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3-subscription-code">
+         * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3-subscription-code">
          * Reactive Streams specifications</a> for the rules about how and when this method will be invoked.
          *
          * @param n Number of items to request.
