@@ -318,7 +318,7 @@ public final class HeaderUtils {
         }
 
         if (requestPath.length() == cookiePath.length()) {
-            return requestPath.equals(cookiePath);
+            return contentEquals(requestPath, cookiePath);
         }
         final boolean actualStartsWithSlash = cookiePath.charAt(0) == '/';
         final int length = min(actualStartsWithSlash ? cookiePath.length() - 1 :
