@@ -58,9 +58,9 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStreamingHttpServiceTest {
     public AbstractFilterInterceptorTest(final RouterApi api) {

@@ -24,9 +24,9 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.fromFuture;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class FutureToSingleTest extends AbstractFutureToSingleTest {

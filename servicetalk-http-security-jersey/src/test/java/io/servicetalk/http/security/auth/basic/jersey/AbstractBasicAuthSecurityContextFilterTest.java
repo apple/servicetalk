@@ -62,8 +62,8 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static net.javacrumbs.jsonunit.fluent.JsonFluentAssert.assertThatJson;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractBasicAuthSecurityContextFilterTest {

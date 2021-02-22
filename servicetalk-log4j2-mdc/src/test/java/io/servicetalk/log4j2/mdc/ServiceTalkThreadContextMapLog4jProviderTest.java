@@ -20,9 +20,9 @@ import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class ServiceTalkThreadContextMapLog4jProviderTest {
     @Test

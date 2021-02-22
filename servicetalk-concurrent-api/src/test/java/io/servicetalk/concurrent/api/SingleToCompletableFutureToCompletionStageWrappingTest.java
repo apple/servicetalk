@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import static io.servicetalk.concurrent.api.Single.fromStage;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Rule

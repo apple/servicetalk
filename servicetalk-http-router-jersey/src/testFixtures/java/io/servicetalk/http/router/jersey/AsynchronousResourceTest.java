@@ -38,10 +38,10 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.IntStream.range;
 import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
