@@ -85,9 +85,9 @@ import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cache
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.glassfish.jersey.CommonProperties.getValue;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
 
