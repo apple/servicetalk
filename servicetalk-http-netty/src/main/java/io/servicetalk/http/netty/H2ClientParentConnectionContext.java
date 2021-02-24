@@ -241,6 +241,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                     final StreamObserver observer = multiplexedObserver.onNewStream();
+                    final StreamingHttpRequest originalRequest;
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
                     Runnable ownedRunnable = null;
@@ -253,7 +254,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         // marks the stream as inactive. This code is responsible for running this Runnable in case of
                         // any errors or stream closure.
                         if (StreamingHttpRequestWithContext.class.equals(request.getClass())) {
-                            OwnedRunnable runnable = ((StreamingHttpRequestWithContext) request).runnable();
+                            final StreamingHttpRequestWithContext wrappedRequest =
+                                    (StreamingHttpRequestWithContext) request;
+                            // Unwrap the original request to let the following transformations access the PayloadInfo
+                            originalRequest = wrappedRequest.unwrap();
+                            OwnedRunnable runnable = wrappedRequest.runnable();
                             if (runnable.own()) {
                                 ownedRunnable = runnable;
                             } else {
@@ -265,7 +270,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                 deliverErrorFromSource(subscriber, cause);
                                 return;
                             }
-                        }   // Else user wrapped the request object => Runnable will always be owned by originator
+                        } else {
+                            // User wrapped the original request object at the connection level
+                            // (after LoadBalancedStreamingHttpClient) => Runnable will always be owned by originator
+                            originalRequest = request;
+                        }
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
@@ -284,11 +293,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
                     final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
-                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, request, observer,
+                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, originalRequest, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
-                                future, subscriber, sequentialCancellable, strategy, request, observer,
+                                future, subscriber, sequentialCancellable, strategy, originalRequest, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable));
                     }
                 }
