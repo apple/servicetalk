@@ -241,7 +241,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                     final StreamObserver observer = multiplexedObserver.onNewStream();
-                    final StreamingHttpRequest originalRequest;
+                    final StreamingHttpRequest originalReq;
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
                     Runnable ownedRunnable = null;
@@ -257,7 +257,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             final StreamingHttpRequestWithContext wrappedRequest =
                                     (StreamingHttpRequestWithContext) request;
                             // Unwrap the original request to let the following transformations access the PayloadInfo
-                            originalRequest = wrappedRequest.unwrap();
+                            originalReq = wrappedRequest.unwrap();
                             OwnedRunnable runnable = wrappedRequest.runnable();
                             if (runnable.own()) {
                                 ownedRunnable = runnable;
@@ -273,7 +273,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         } else {
                             // User wrapped the original request object at the connection level
                             // (after LoadBalancedStreamingHttpClient) => Runnable will always be owned by originator
-                            originalRequest = request;
+                            originalReq = request;
                         }
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
@@ -293,11 +293,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
                     final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
-                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, originalRequest, observer,
+                        childChannelActive(promise, subscriber, sequentialCancellable, strategy, originalReq, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
-                                future, subscriber, sequentialCancellable, strategy, originalRequest, observer,
+                                future, subscriber, sequentialCancellable, strategy, originalReq, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable));
                     }
                 }
