@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import javax.annotation.Nonnull;
-
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
@@ -36,7 +34,7 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
      * @param cookieName The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>.
      * @param cookieValue The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-value</a>.
      */
-    public DefaultHttpCookiePair(final @Nonnull CharSequence cookieName, final @Nonnull CharSequence cookieValue) {
+    public DefaultHttpCookiePair(final CharSequence cookieName, final CharSequence cookieValue) {
         this(cookieName, cookieValue, false);
     }
 
@@ -146,7 +144,8 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
     @Override
     public int hashCode() {
         int hash = 31 + caseInsensitiveHashCode(name);
-        return 31 * hash + caseInsensitiveHashCode(value);
+        hash = 31 * hash + caseInsensitiveHashCode(value);
+        return hash;
     }
 
     @Override

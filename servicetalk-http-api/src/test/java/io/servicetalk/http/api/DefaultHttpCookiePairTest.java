@@ -57,7 +57,6 @@ public class DefaultHttpCookiePairTest {
         assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
                    is(not(new DefaultHttpCookiePair(newAsciiString("fooo"), newAsciiString("bar")).hashCode())));
 
-
         assertThat(new DefaultHttpCookiePair("foo", "bar", true),
                 is(not(new DefaultHttpCookiePair("foO", "bar", true))));
         assertThat(new DefaultHttpCookiePair("foo", "bar", true).hashCode(),
