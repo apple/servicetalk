@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.CharSequences;
 
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
@@ -416,6 +416,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
 
     @Override
     public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
         if (!(o instanceof HttpSetCookie)) {
             return false;
         }
@@ -425,20 +428,21 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         // if equals(a) == equals(b) then a.hasCode() == b.hashCode()
         // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
         // [2] https://tools.ietf.org/html/rfc6265#section-5.1.4
-        return name.equals(rhs.name()) && value.equals(rhs.value()) &&
-                contentEqualsIgnoreCase(domain, rhs.domain()) &&
-                Objects.equals(path, rhs.path());
+        return contentEquals(name, rhs.name()) &&
+               contentEquals(value, rhs.value()) &&
+               contentEqualsIgnoreCase(domain, rhs.domain()) &&
+               contentEquals(path, rhs.path());
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 + name.hashCode();
-        hash = 31 * hash + value.hashCode();
+        int hash = 31 + caseInsensitiveHashCode(name);
+        hash = 31 * hash + caseInsensitiveHashCode(value);
         if (domain != null) {
             hash = 31 * hash + caseInsensitiveHashCode(domain);
         }
         if (path != null) {
-            hash = 31 * hash + path.hashCode();
+            hash = 31 * hash + caseInsensitiveHashCode(path);
         }
         return hash;
     }

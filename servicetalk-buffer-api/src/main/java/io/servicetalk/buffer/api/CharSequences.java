@@ -144,7 +144,10 @@ public final class CharSequences {
      * @param b right hand side of comparison.
      * @return {@code true} if {@code a}'s content equals {@code b}.
      */
-    public static boolean contentEquals(final CharSequence a, final CharSequence b) {
+    public static boolean contentEquals(@Nullable final CharSequence a, @Nullable final CharSequence b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
         if (a == b) {
             return true;
         }

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import org.junit.Test;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -30,6 +31,12 @@ public class DefaultHttpCookiePairTest {
         assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
                 is(new DefaultHttpCookiePair("foo", "bar").hashCode()));
 
+        // comparing String and AsciiString
+        assertThat(new DefaultHttpCookiePair("foo", "bar"),
+                   is(new DefaultHttpCookiePair(newAsciiString("foo"), newAsciiString("bar"))));
+        assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
+                   is(new DefaultHttpCookiePair(newAsciiString("foo"), newAsciiString("bar")).hashCode()));
+
         // isWrapped attribute is ignored:
         assertThat(new DefaultHttpCookiePair("foo", "bar", true),
                 is(new DefaultHttpCookiePair("foo", "bar", false)));
@@ -41,24 +48,29 @@ public class DefaultHttpCookiePairTest {
     public void testNotEqual() {
         // Name is case-sensitive:
         assertThat(new DefaultHttpCookiePair("foo", "bar"),
-                is(not(new DefaultHttpCookiePair("Foo", "bar"))));
+                   is(not(new DefaultHttpCookiePair("Foo", "bar"))));
         assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
-                is(not(new DefaultHttpCookiePair("Foo", "bar").hashCode())));
+                is(not(new DefaultHttpCookiePair("fooo", "bar").hashCode())));
+
+        assertThat(new DefaultHttpCookiePair("foo", "bar"),
+                   is(not(new DefaultHttpCookiePair(newAsciiString("Foo"), newAsciiString("bar")))));
+        assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
+                   is(not(new DefaultHttpCookiePair(newAsciiString("fooo"), newAsciiString("bar")).hashCode())));
 
         assertThat(new DefaultHttpCookiePair("foo", "bar", true),
                 is(not(new DefaultHttpCookiePair("foO", "bar", true))));
         assertThat(new DefaultHttpCookiePair("foo", "bar", true).hashCode(),
-                is(not(new DefaultHttpCookiePair("foO", "bar", true).hashCode())));
+                is(not(new DefaultHttpCookiePair("fooo", "bar", true).hashCode())));
 
         // Value is case-sensitive:
         assertThat(new DefaultHttpCookiePair("foo", "bar"),
                 is(not(new DefaultHttpCookiePair("foo", "Bar"))));
         assertThat(new DefaultHttpCookiePair("foo", "bar").hashCode(),
-                is(not(new DefaultHttpCookiePair("foo", "Bar").hashCode())));
+                is(not(new DefaultHttpCookiePair("foo", "barr").hashCode())));
 
         assertThat(new DefaultHttpCookiePair("foo", "bar", false),
                 is(not(new DefaultHttpCookiePair("foo", "baR", false))));
         assertThat(new DefaultHttpCookiePair("foo", "bar", false),
-                is(not(new DefaultHttpCookiePair("foo", "baR", false).hashCode())));
+                is(not(new DefaultHttpCookiePair("foo", "barr", false).hashCode())));
     }
 }

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 
@@ -129,17 +131,20 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
 
     @Override
     public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
         if (!(o instanceof HttpCookiePair)) {
             return false;
         }
         final HttpCookiePair rhs = (HttpCookiePair) o;
-        return name.equals(rhs.name()) && value.equals(rhs.value());
+        return contentEquals(name, rhs.name()) && contentEquals(value, rhs.value());
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 + name.hashCode();
-        hash = 31 * hash + value.hashCode();
+        int hash = 31 + caseInsensitiveHashCode(name);
+        hash = 31 * hash + caseInsensitiveHashCode(value);
         return hash;
     }
 
