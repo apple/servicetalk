@@ -51,6 +51,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -287,7 +288,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
-            } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+            } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
@@ -343,7 +344,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             H2ProtocolConfig h2Config = roConfig.h2Config();
             assert h2Config != null;
             return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
-        } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+        } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
             H1ProtocolConfig h1Config = roConfig.h1Config();
             H2ProtocolConfig h2Config = roConfig.h2Config();
             // The client can't know which protocol will be negotiated on the connection/transport level, so just
@@ -529,15 +530,24 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
+    @Deprecated
     @Override
     public SingleAddressHttpClientSecurityConfigurator<U, R> secure() {
         assert address != null;
-        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(
-                unresolvedHostFunction(address).toString(), unresolvedPortFunction(address),
-                securityConfig -> {
-                    config.tcpConfig().secure(securityConfig);
+        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(sslConfig -> {
+                    sslConfig(sslConfig);
                     return DefaultSingleAddressHttpClientBuilder.this;
                 });
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
+        assert address != null;
+        // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
+        config.fallbackPeerHost(unresolvedHostFunction(address).toString());
+        config.fallbackPeerPort(unresolvedPortFunction(address));
+        config.tcpConfig().sslConfig(sslConfig);
+        return this;
     }
 
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {

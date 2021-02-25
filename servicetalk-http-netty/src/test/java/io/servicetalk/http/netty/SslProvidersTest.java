@@ -19,8 +19,10 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
@@ -39,8 +41,9 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -64,9 +67,9 @@ public class SslProvidersTest {
         payloadBody = randomString(payloadLength);
 
         serverContext = HttpServers.forAddress(localAddress(0))
-                .secure()
-                .provider(serverSslProvider)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new DefaultServerSslConfigBuilder(
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .provider(serverSslProvider).build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     assertThat(request.path(), is("/path"));
@@ -79,12 +82,8 @@ public class SslProvidersTest {
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .ioExecutor(NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io")))
-                .secure()
-                .disableHostnameVerification()
-                // required for generated test certificates
-                .trustManager(DefaultTestCerts::loadServerCAPem)
-                .provider(clientSslProvider)
-                .commit()
+                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).provider(clientSslProvider).build())
                 .buildBlocking();
     }
 

@@ -17,9 +17,10 @@ package io.servicetalk.examples.http.mutualtls;
 
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslClientAuthMode;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.REQUIRE;
 
 /**
  * A server that does mutual TLS.
@@ -28,14 +29,12 @@ public final class HttpServerMutualTLS {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
-                .secure()
-                // Require clients to authenticate them selves, otherwise a handshake may succeed without authenticating
-                // the client.
-                .clientAuth(REQUIRE)
-                // The server only trusts the CA which signed the example clients's certificate.
-                .trustManager(DefaultTestCerts::loadClientCAPem)
-                // Specify the server's certificate/key pair to use to authenticate to the server.
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey)
+                        // Require clients to authenticate, otherwise a handshake may succeed without authentication.
+                        .clientAuthMode(SslClientAuthMode.REQUIRE)
+                        // The server only trusts the CA which signed the example client's certificate.
+                        .trustManager(DefaultTestCerts::loadClientCAPem).build())
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->

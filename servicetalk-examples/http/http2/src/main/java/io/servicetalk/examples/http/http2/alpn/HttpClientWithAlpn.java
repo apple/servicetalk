@@ -19,6 +19,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -36,11 +37,7 @@ public final class HttpClientWithAlpn {
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
-                .secure()   // Start TLS configuration
-                .disableHostnameVerification()  // Our self-signed certificates do not support hostname verification,
-                // but this MUST NOT be disabled in production because it may leave you vulnerable to MITM attacks
-                .trustManager(DefaultTestCerts::loadServerCAPem)    // Custom trust manager for test certificates
-                .commit()   // Finish TLS configuration
+                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                 .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));
             System.out.println(response.toString((name, value) -> value));

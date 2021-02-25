@@ -24,11 +24,13 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -56,8 +58,8 @@ public abstract class HttpServerBuilder {
     /**
      * Configurations of various HTTP protocol versions.
      * <p>
-     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
-     * {@link #secure() secured}.
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections use
+     * {@link #sslConfig(ServerSslConfig)}.
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
@@ -76,31 +78,29 @@ public abstract class HttpServerBuilder {
     /**
      * Initiates security configuration for this server. Calling any {@code commit} method on the returned
      * {@link HttpServerSecurityConfigurator} will commit the configuration.
-     * <p>
-     * Additionally use {@link #secure(String...)} to define configurations for specific
-     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames. If such configuration is additionally
-     * defined then configuration using this method is used as default if the hostname does not match any of the
-     * specified hostnames.
-     *
+     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
      * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
      * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
+    @Deprecated
     public abstract HttpServerSecurityConfigurator secure();
 
     /**
-     * Initiates security configuration for this server for the passed {@code sniHostnames}.
-     * Calling any {@code commit} method on the returned {@link HttpServerSecurityConfigurator} will commit the
-     * configuration.
-     * <p>
-     * When using this method, it is mandatory to also define the default configuration using {@link #secure()} which
-     * is used when the hostname does not match any of the specified {@code sniHostnames}.
-     *
-     * @param sniHostnames <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames for which this
-     * config is being defined.
-     * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
+     * Set the SSL/TLS configuration.
+     * @param config The configuration to use.
+     * @return {@code this}.
      */
-    public abstract HttpServerSecurityConfigurator secure(String... sniHostnames);
+    public abstract HttpServerBuilder sslConfig(ServerSslConfig config);
+
+    /**
+     * Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.
+     * @param defaultConfig The configuration to use is the client certificate's SNI extension isn't present or the
+     * SNI hostname doesn't match any values in {@code sniMap}.
+     * @param sniMap A map where the keys are matched against the client certificate's SNI extension value in order
+     * to provide the corresponding {@link ServerSslConfig}.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
 
     /**
      * Adds a {@link SocketOption} that is applied.

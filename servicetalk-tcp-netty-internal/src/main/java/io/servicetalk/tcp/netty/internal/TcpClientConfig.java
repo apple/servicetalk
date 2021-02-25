@@ -15,14 +15,12 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
-
-import java.util.List;
+import io.servicetalk.transport.api.ClientSslConfig;
 
 /**
  * Configuration for TCP based clients.
  */
-public final class TcpClientConfig extends AbstractTcpConfig<ReadOnlyClientSecurityConfig, ReadOnlyTcpClientConfig> {
+public final class TcpClientConfig extends AbstractTcpConfig<ClientSslConfig> {
 
     /**
      * New instance.
@@ -39,8 +37,11 @@ public final class TcpClientConfig extends AbstractTcpConfig<ReadOnlyClientSecur
         super(from);
     }
 
-    @Override
-    public ReadOnlyTcpClientConfig asReadOnly(final List<String> supportedAlpnProtocols) {
-        return new ReadOnlyTcpClientConfig(this, supportedAlpnProtocols);
+    /**
+     * Create a read only view of this object.
+     * @return a read only view of this object.
+     */
+    public ReadOnlyTcpClientConfig asReadOnly() {
+        return new ReadOnlyTcpClientConfig(this);
     }
 }

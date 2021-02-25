@@ -31,7 +31,7 @@ final class ReadOnlyHttpClientConfig {
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
         final HttpConfig configs = from.protocolConfigs();
-        tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
+        tcpConfig = from.tcpConfig().asReadOnly();
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();
         connectAddress = from.connectAddress();

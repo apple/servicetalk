@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 
 import java.io.InputStream;
@@ -27,19 +29,10 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Client security configuration.
+ * @deprecated Use {@link ClientSslConfig}.
  */
+@Deprecated
 public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
-
-    /**
-     * Creates new instance.
-     *
-     * @param serverHostname Hostname for the server.
-     * @param serverPort Port for the server.
-     */
-    public ClientSecurityConfig(final String serverHostname, final int serverPort) {
-        super(serverHostname, serverPort);
-    }
-
     /**
      * Determines what algorithm to use for hostname verification.
      *
@@ -233,5 +226,55 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
      */
     public ReadOnlyClientSecurityConfig asReadOnly() {
         return new ReadOnlyClientSecurityConfig(this);
+    }
+
+    /**
+     * Build a new {@link ClientSslConfig}.
+     * @return a new {@link ClientSslConfig}.
+     */
+    public ClientSslConfig asSslConfig() {
+        final DefaultClientSslConfigBuilder builder;
+        if (trustManagerFactory != null) {
+            builder = new DefaultClientSslConfigBuilder(trustManagerFactory);
+        } else if (trustCertChainSupplier != null) {
+            builder = new DefaultClientSslConfigBuilder(trustCertChainSupplier);
+        } else {
+            throw new IllegalStateException("required trust material not set");
+        }
+
+        if (hostnameVerificationAlgorithm == null) {
+            builder.disableHostnameVerification();
+        } else {
+            builder.hostnameVerificationAlgorithm(hostnameVerificationAlgorithm);
+        }
+        if (hostNameVerificationHost != null) {
+            builder.peerHost(hostNameVerificationHost);
+            builder.peerPort(hostNameVerificationPort);
+        }
+        if (sniHostname != null) {
+            builder.sniHostname(sniHostname);
+        }
+
+        if (keyManagerFactory != null) {
+            builder.keyManager(keyManagerFactory);
+        } else if (keyCertChainSupplier != null) {
+            assert keySupplier != null;
+            builder.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
+        }
+        if (protocols != null) {
+            builder.sslProtocols(protocols);
+        }
+        if (ciphers != null) {
+            builder.ciphers(ciphers);
+        }
+        builder.sessionCacheSize(sessionCacheSize);
+        builder.sessionTimeout(sessionTimeout);
+
+        if (provider == SslProvider.JDK) {
+            builder.provider(io.servicetalk.transport.api.SslProvider.JDK);
+        } else if (provider == SslProvider.OPENSSL) {
+            builder.provider(io.servicetalk.transport.api.SslProvider.OPENSSL);
+        }
+        return builder.build();
     }
 }

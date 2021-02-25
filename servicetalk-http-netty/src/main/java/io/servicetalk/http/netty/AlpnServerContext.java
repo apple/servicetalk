@@ -53,7 +53,6 @@ final class AlpnServerContext {
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
-        assert config.h1Config() != null && config.h2Config() != null;
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         assert tcpConfig.sslContext() != null;
 

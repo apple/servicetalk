@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -35,6 +37,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -94,7 +97,8 @@ public class HttpsProxyTest {
     public void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverIoExecutor = createIoExecutor(new IoThreadFactory("server-io-executor")))
-                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).build())
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverAddress = serverHostAndPort(serverContext);
@@ -104,7 +108,8 @@ public class HttpsProxyTest {
         assert serverAddress != null && proxyAddress != null;
         client = HttpClients
                 .forSingleAddressViaProxy(serverAddress, proxyAddress)
-                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit()
+                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build())
                 .buildBlocking();
     }
 

@@ -16,20 +16,26 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
-import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
+import java.io.InputStream;
+import java.util.function.Supplier;
+
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
@@ -84,13 +90,21 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return clientTransportObserver;
     }
 
-    static ClientSecurityConfig defaultClientSecurityConfig(SslProvider provider) {
-        ClientSecurityConfig config = new ClientSecurityConfig("foo", -1);
-        config.disableHostnameVerification();
-        config.trustManager(DefaultTestCerts::loadServerCAPem);
-        config.provider(provider);
-        config.protocols("TLSv1.2");
-        return config;
+    static DefaultClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider) {
+        return defaultClientSslBuilder(provider, DefaultTestCerts::loadServerCAPem);
+    }
+
+    static DefaultClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider,
+                                                                 Supplier<InputStream> trustCertSupplier) {
+        return new DefaultClientSslConfigBuilder(trustCertSupplier)
+                .peerHost(serverPemHostname())
+                .peerPort(-1)
+                .provider(provider)
+                .sslProtocols("TLSv1.2");
+    }
+
+    static ClientSslConfig defaultClientSslConfig(SslProvider provider) {
+        return defaultClientSslBuilder(provider).build();
     }
 
     @Override
@@ -100,12 +114,14 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
-    static ServerSecurityConfig defaultServerSecurityConfig(SslProvider provider) {
-        ServerSecurityConfig config = new ServerSecurityConfig();
-        config.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
-        config.provider(provider);
-        config.protocols("TLSv1.2");
-        return config;
+    static DefaultServerSslConfigBuilder defaultServerSslBuilder(SslProvider provider) {
+        return new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .provider(provider)
+                .sslProtocols("TLSv1.2");
+    }
+
+    static ServerSslConfig defaultServerSslConfig(SslProvider provider) {
+        return defaultServerSslBuilder(provider).build();
     }
 
     static void verifyWriteObserver(DataObserver dataObserver, WriteObserver writeObserver,

@@ -47,6 +47,23 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class MultiAddressHttpClientBuilder<U, R>
         extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    /**
+     * Provides a method which can customize {@link SingleAddressHttpClientBuilder} for each new client.
+     * @param <U> The unresolved address type.
+     * @param <R> The resolved address type.
+     */
+    @FunctionalInterface
+    public interface SingleAddressConfigurator<U, R> {
+        /**
+         * Use the passed {@link SingleAddressHttpClientBuilder} to build a {@link StreamingHttpClient}.
+         * @param scheme The scheme parsed from the request URI.
+         * @param address The unresolved address.
+         * @param builder The builder to customize and build a {@link StreamingHttpClient}.
+         * @return The result of the customization and build operation.
+         */
+        StreamingHttpClient buildStreaming(String scheme, U address, SingleAddressHttpClientBuilder<U, R> builder);
+    }
+
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
@@ -79,12 +96,21 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
-     *
+     * @deprecated Use {@link #singleAddressConfigurator(SingleAddressConfigurator)}.
      * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
+    @Deprecated
     public abstract MultiAddressHttpClientBuilder<U, R> secure(
             BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction);
+
+    /**
+     * Set a function which can customize options for each client that is built.
+     * @param singleAddressConfigurator Customizes the builder and returns a {@link StreamingHttpClient}.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> singleAddressConfigurator(
+            SingleAddressConfigurator<U, R> singleAddressConfigurator);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(

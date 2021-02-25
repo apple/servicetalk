@@ -16,12 +16,15 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth;
+import io.servicetalk.transport.api.ServerSslConfig;
 
 import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.NONE;
 
 /**
  * Read-only security config for servers.
+ * @deprecated Use {@link ServerSslConfig}.
  */
+@Deprecated
 public class ReadOnlyServerSecurityConfig extends ReadOnlySecurityConfig {
 
     protected ClientAuth clientAuth = NONE;

@@ -15,11 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ClientSslConfig;
+
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
-
-import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
@@ -29,37 +29,25 @@ import static java.util.Objects.requireNonNull;
  * SSL {@link ChannelInitializer} for clients.
  */
 public class SslClientChannelInitializer implements ChannelInitializer {
-
-    @Nullable
-    private final String hostnameVerificationAlgorithm;
-    @Nullable
-    private final String hostnameVerificationHost;
-    private final int hostnameVerificationPort;
     private final SslContext sslContext;
+    private final ClientSslConfig sslConfig;
     private final boolean deferSslHandler;
 
     /**
      * New instance.
-     * @param sslContext to use for configuring SSL.
-     * @param hostnameVerificationAlgorithm hostname verification algorithm.
-     * @param hostnameVerificationHost the non-authoritative name of the host.
-     * @param hostnameVerificationPort the non-authoritative port.
+     * @param sslContext to use for configuring SSL with Netty.
+     * @param sslConfig contains additional SSL configuration used to create the {@link SslHandler}.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
-    public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
-                                       @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
-                                       final boolean deferSslHandler) {
+    public SslClientChannelInitializer(SslContext sslContext, ClientSslConfig sslConfig, boolean deferSslHandler) {
         this.sslContext = requireNonNull(sslContext);
-        this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
-        this.hostnameVerificationHost = hostnameVerificationHost;
-        this.hostnameVerificationPort = hostnameVerificationPort;
+        this.sslConfig = requireNonNull(sslConfig);
         this.deferSslHandler = deferSslHandler;
     }
 
     @Override
     public void init(Channel channel) {
-        final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
-                hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
+        final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR, sslConfig);
         channel.pipeline().addLast(deferSslHandler ? new DeferSslHandler(channel, sslHandler) : sslHandler);
     }
 }

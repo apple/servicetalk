@@ -125,11 +125,12 @@ public abstract class PartitionedHttpClientBuilder<U, R>
      * Initiates security configuration for this client. Calling
      * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
      * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
-     *
+     * @deprecated Use {@link #appendClientBuilderFilter(PartitionHttpClientBuilderConfigurator)}.
      * @return {@link PartitionHttpClientBuilderConfigurator} to configure security for this client. It is
      * mandatory to call {@link PartitionedHttpClientSecurityConfigurator#commit() commit} after all configuration is
      * done.
      */
+    @Deprecated
     public abstract PartitionedHttpClientSecurityConfigurator<U, R> secure();
 
     /**

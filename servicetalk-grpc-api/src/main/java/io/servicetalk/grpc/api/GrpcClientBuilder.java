@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -86,8 +87,12 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
 
+    @Deprecated
     @Override
     public abstract GrpcClientSecurityConfigurator<U, R> secure();
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
     @Override
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(

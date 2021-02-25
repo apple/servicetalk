@@ -22,11 +22,15 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link SecurityConfigurator} contract for servers.
+ * @deprecated Use {@link DefaultServerSslConfigBuilder}.
  */
+@Deprecated
 public interface ServerSecurityConfigurator extends SecurityConfigurator {
     /**
      * Indicates the state of the {@link SSLEngine} with respect to client authentication.
+     * @deprecated Use {@link SslClientAuthMode}.
      */
+    @Deprecated
     enum ClientAuth {
         /**
          * Indicates that the {@link SSLEngine} will not request client authentication.

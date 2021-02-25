@@ -19,8 +19,10 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslProvider;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,9 +32,10 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
-import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.REQUIRE;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslClientAuthMode.REQUIRE;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -63,19 +66,15 @@ public class MutualSslTest {
     @Test
     public void mutualSsl() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .secure()
-                .provider(serverSslProvider)
-                .clientAuth(REQUIRE)
+                .sslConfig(new DefaultServerSslConfigBuilder(
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .trustManager(DefaultTestCerts::loadClientCAPem)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .clientAuthMode(REQUIRE).provider(serverSslProvider).build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                     .secure()
-                     .provider(clientSslProvider)
-                     .disableHostnameVerification() // test certificates hostname isn't coordinated with each test
-                     .trustManager(DefaultTestCerts::loadServerCAPem)
-                     .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey)
-                     .commit()
+                     .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                     .provider(clientSslProvider).peerHost(serverPemHostname())
+                     .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
                      .buildBlocking()) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }

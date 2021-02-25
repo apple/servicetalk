@@ -24,9 +24,11 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link ClientSecurityConfigurator} for {@link PartitionedHttpClientSecurityConfigurator}.
+ * @deprecated TODO
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
+@Deprecated
 public interface PartitionedHttpClientSecurityConfigurator<U, R> extends ClientSecurityConfigurator {
     /**
      * Commit configuring client security.

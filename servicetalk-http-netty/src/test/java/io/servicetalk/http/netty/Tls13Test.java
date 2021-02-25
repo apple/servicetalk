@@ -19,12 +19,11 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpServerSecurityConfigurator;
-import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.ClassRule;
@@ -34,7 +33,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -46,8 +44,9 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
@@ -99,18 +98,17 @@ public class Tls13Test {
 
     @Test
     public void requiredCipher() throws Exception {
-        HttpServerSecurityConfigurator serverSecurityConfigurator = HttpServers.forAddress(localAddress(0))
+        DefaultServerSslConfigBuilder serverSslBuilder = new DefaultServerSslConfigBuilder(
+                DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslProtocols(TLS1_3).provider(serverSslProvider);
+        if (cipher != null) {
+            serverSslBuilder.ciphers(singletonList(cipher));
+        }
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
-                .secure()
-                .protocols(TLS1_3)
-                .provider(serverSslProvider);
-        if (cipher != null) {
-            serverSecurityConfigurator.ciphers(singletonList(cipher));
-        }
-        try (ServerContext serverContext = serverSecurityConfigurator
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(serverSslBuilder.build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(request.payloadBody(textDeserializer()), equalTo("request-payload-body"));
                     SSLSession sslSession = ctx.sslSession();
@@ -118,21 +116,17 @@ public class Tls13Test {
                     return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializer());
                 })) {
 
-            SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> clientSecurityConfigurator =
-                    HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+            DefaultClientSslConfigBuilder clientSslBuilder =
+                    new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .sslProtocols(TLS1_3).peerHost(serverPemHostname()).provider(clientSslProvider);
+            if (cipher != null) {
+                clientSslBuilder.ciphers(singletonList(cipher));
+            }
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                     .ioExecutor(CLIENT_CTX.ioExecutor())
                     .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
-                    .secure()
-                    .protocols(TLS1_3)
-                    .disableHostnameVerification()
-                    // required for generated test certificates
-                    .trustManager(DefaultTestCerts::loadServerCAPem)
-                    .provider(clientSslProvider);
-            if (cipher != null) {
-                clientSecurityConfigurator.ciphers(singletonList(cipher));
-            }
-            try (BlockingHttpClient client = clientSecurityConfigurator.commit().buildBlocking();
+                    .sslConfig(clientSslBuilder.build()).buildBlocking();
                  BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
                 SSLSession sslSession = connection.connectionContext().sslSession();

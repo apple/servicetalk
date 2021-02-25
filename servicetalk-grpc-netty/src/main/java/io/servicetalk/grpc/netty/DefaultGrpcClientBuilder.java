@@ -33,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -74,6 +75,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         return this;
     }
 
+    @Deprecated
     @Override
     public GrpcClientBuilder<U, R> enableWireLogging(final String loggerName) {
         httpClientBuilder.enableWireLogging(loggerName);
@@ -114,10 +116,17 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         return this;
     }
 
+    @Deprecated
     @Override
     public GrpcClientSecurityConfigurator<U, R> secure() {
         SingleAddressHttpClientSecurityConfigurator<U, R> httpConfigurator = httpClientBuilder.secure();
         return new DefaultGrpcClientSecurityConfigurator<>(httpConfigurator, this);
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> sslConfig(final ClientSslConfig sslConfig) {
+        httpClientBuilder.sslConfig(sslConfig);
+        return this;
     }
 
     @Override

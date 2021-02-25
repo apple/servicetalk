@@ -23,6 +23,8 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -39,6 +41,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -101,7 +104,8 @@ public class HttpConnectionContextProtocolTest {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config.protocols);
         if (config.secure) {
-            builder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            builder.sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).build());
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                 .payloadBody(ctx.protocol().name(), textSerializer()));
@@ -111,7 +115,8 @@ public class HttpConnectionContextProtocolTest {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext)).protocols(config.protocols);
         if (config.secure) {
-            builder.secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadServerCAPem).commit();
+            builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .peerHost(serverPemHostname()).build());
         }
         return builder.buildBlocking();
     }

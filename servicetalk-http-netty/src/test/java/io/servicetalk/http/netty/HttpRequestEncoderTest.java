@@ -93,7 +93,6 @@ import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -416,7 +415,7 @@ public class HttpRequestEncoderTest {
             CountDownLatch serverChannelLatch = new CountDownLatch(1);
             AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 
-            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig().asReadOnly(emptyList());
+            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig().asReadOnly();
             ServerContext serverContext = resources.prepend(
                     TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
