@@ -109,6 +109,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
 
     /**
      * Set the SSL/TLS configuration.
+     * @param sslConfig The configuration to use.
      * @return {@code this}.
      */
     SingleAddressGrpcClientBuilder<U, R, SDE> sslConfig(ClientSslConfig sslConfig);
