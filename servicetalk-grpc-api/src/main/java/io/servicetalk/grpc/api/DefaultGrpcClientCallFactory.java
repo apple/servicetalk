@@ -79,7 +79,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
-            initRequest(httpRequest, supportedCodings);
+            initRequest(httpRequest, supportedCodings, metadata.deadline());
             httpRequest.payloadBody(request.map(GrpcUtils::uncheckedCast),
                     serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
@@ -143,7 +143,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
-            initRequest(httpRequest, supportedCodings);
+            initRequest(httpRequest, supportedCodings, metadata.deadline());
             httpRequest.payloadBody(request, serializationProvider
                     .serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
@@ -210,7 +210,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                                           final List<ContentCodec> supportedCodings,
                                                           final Class<Req> requestClass) {
         final HttpRequest httpRequest = requestFactory.post(metadata.path());
-        initRequest(httpRequest, supportedCodings);
+        initRequest(httpRequest, supportedCodings, metadata.deadline());
         return httpRequest.payloadBody(uncheckedCast(rawReq),
                 serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
     }

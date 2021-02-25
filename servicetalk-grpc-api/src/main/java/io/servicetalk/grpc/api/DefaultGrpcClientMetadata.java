@@ -17,6 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.ContentCodings.identity;
@@ -31,8 +32,12 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
 
     private final ContentCodec requestEncoding;
 
+    @Nullable
+    private final Duration deadline;
+
     /**
-     * Creates a new instance.
+     * Creates a new instance which uses the provided path and the default execution strategy, no content codec
+     * (identity), or no deadline.
      *
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
@@ -40,12 +45,36 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
         this(path, (GrpcExecutionStrategy) null);
     }
 
+    /**
+     * Creates a new instance which uses the provided path and content codec, the default execution strategy,
+     * and no deadline.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     */
     protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
         this(path, null, requestEncoding);
     }
 
     /**
-     * Creates a new instance.
+     * Creates a new instance which uses the provided path, content codec and deadline and the default execution
+     * strategy.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param deadline A timeout deadline after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        final ContentCodec requestEncoding,
+                                        final Duration deadline) {
+        this(path, null, requestEncoding, deadline);
+    }
+
+    /**
+     * Creates a new instance which uses the provided path and execution strategy and the default content codec
+     * (identity) and no deadline.
      *
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
@@ -53,15 +82,44 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy) {
-        this(path, strategy, identity());
+        this(path, strategy, identity(), null);
     }
 
+    /**
+     * Creates a new instance which uses the provided path, content codec and the default execution
+     * strategy and no deadline.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
                                         final ContentCodec requestEncoding) {
+        this(path, strategy, requestEncoding, null);
+    }
+
+    /**
+     * Creates a new instance which uses the provided path, content codec and deadline and the default execution
+     * strategy.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param deadline A timeout deadline after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        @Nullable final GrpcExecutionStrategy strategy,
+                                        final ContentCodec requestEncoding,
+                                        @Nullable final Duration deadline) {
         super(path);
         this.strategy = strategy;
         this.requestEncoding = requestEncoding;
+        this.deadline = deadline;
     }
 
     @Override
@@ -72,5 +130,11 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Override
     public ContentCodec requestEncoding() {
         return requestEncoding;
+    }
+
+    @Override
+    @Nullable
+    public Duration deadline() {
+        return deadline;
     }
 }
