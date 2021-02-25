@@ -50,7 +50,8 @@ public final class CompressionExampleClient {
     /**
      * Metadata that, when provided to a sayHello, will cause the request to be compressed.
      */
-    private static final Greeter.SayHelloMetadata COMPRESS_REQUEST = new Greeter.SayHelloMetadata(ContentCodings.deflateDefault());
+    private static final Greeter.SayHelloMetadata COMPRESS_REQUEST =
+            new Greeter.SayHelloMetadata(ContentCodings.deflateDefault());
 
     public static void main(String... args) throws Exception {
         try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory()
