@@ -38,10 +38,13 @@ import io.servicetalk.http.api.TrailersTransformer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -60,10 +63,11 @@ import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
+import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Collections.singletonList;
 
 final class GrpcUtils {
-    private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
+    private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc+proto");
     private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
     private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
     private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
@@ -71,6 +75,7 @@ final class GrpcUtils {
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
+    private static final CharSequence GRPC_TIMEOUT_KEY = newAsciiString("grpc-timeout");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final List<ContentCodec> GRPC_ACCEPT_ENCODING_NONE = singletonList(identity());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
@@ -85,13 +90,50 @@ final class GrpcUtils {
                 }
             };
 
+    /**
+     * GRPC spec requires timeout value to be 8 or fewer integer digits.
+     */
+    private static final long EIGHT_NINES = 99999999L;
+
+    /**
+     * Maximum timeout which can be specified.
+     */
+    private static final Duration MAX_TIMEOUT = java.time.Duration.of(EIGHT_NINES, HOURS);
+
+    /**
+     * Conversions between time units
+     */
+    private static final LongUnaryOperator[] CONVERTERS = new LongUnaryOperator[] {
+            TimeUnit.NANOSECONDS::toMicros,
+            TimeUnit.MICROSECONDS::toMillis,
+            TimeUnit.MILLISECONDS::toSeconds,
+            TimeUnit.SECONDS::toMinutes,
+            TimeUnit.MINUTES::toHours,
+    };
+
+    /**
+     * Allowed time units
+     */
+    private static final char[] TIMEOUT_UNITS = "numSMH".toCharArray();
+
     private GrpcUtils() {
         // No instances.
     }
 
-    static void initRequest(final HttpRequestMetaData request, final List<ContentCodec> supportedEncodings) {
+    static void initRequest(final HttpRequestMetaData request,
+                            final List<ContentCodec> supportedEncodings,
+                            @Nullable Duration deadline) {
         assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
+        if (null != deadline && MAX_TIMEOUT.compareTo(deadline) >= 0) {
+            long timeout = deadline.toNanos(); // cannot overflow as we have already checked against safe maximum
+            int units = 0;
+            while (timeout > EIGHT_NINES) {
+                timeout = CONVERTERS[units].applyAsLong(timeout);
+                units++;
+            }
+            headers.set(GRPC_TIMEOUT_KEY, Long.toString(timeout) + ' ' + TIMEOUT_UNITS[units]);
+        }
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
