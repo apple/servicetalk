@@ -20,27 +20,20 @@ import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.ENTITY_ID_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.METADATA_SERIALIZER;
 import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
  * A service that returns {@link Metadata}s for an entity.
  */
 final class MetadataBackend implements HttpService {
-
-    private static final String ENTITY_ID_QP_NAME = "entityId";
-    private final HttpSerializationProvider serializer;
-
-    private MetadataBackend(HttpSerializationProvider serializer) {
-        this.serializer = serializer;
-    }
-
     @Override
     public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                        HttpResponseFactory responseFactory) {
@@ -51,13 +44,13 @@ final class MetadataBackend implements HttpService {
 
         // Create random names and author for the metadata
         Metadata metadata = new Metadata(entityId, randomString(15), randomString(5));
-        return succeeded(responseFactory.ok().payloadBody(metadata, serializer.serializerFor(Metadata.class)));
+        return succeeded(responseFactory.ok().payloadBody(metadata, METADATA_SERIALIZER));
     }
 
-    static StreamingHttpService newMetadataService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newMetadataService() {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/metadata")
-                .thenRouteTo(new MetadataBackend(serializer))
+                .thenRouteTo(new MetadataBackend())
                 .buildStreaming();
     }
 }

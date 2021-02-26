@@ -21,7 +21,7 @@ import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
@@ -41,7 +41,7 @@ public final class HttpClientWithAlpn {
                 .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));
             System.out.println(response.toString((name, value) -> value));
-            System.out.println(response.payloadBody(textDeserializer()));
+            System.out.println(response.payloadBody(textSerializerUtf8()));
         }
     }
 }

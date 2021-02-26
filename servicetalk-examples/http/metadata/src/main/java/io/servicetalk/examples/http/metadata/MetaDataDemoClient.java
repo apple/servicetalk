@@ -22,7 +22,7 @@ import io.servicetalk.http.netty.HttpClients;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LANGUAGE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Demonstrates a few features:
@@ -62,7 +62,7 @@ public final class MetaDataDemoClient {
                         response.headers().get(CONTENT_LANGUAGE));
             }
 
-            String responseBody = response.payloadBody(textDeserializer());
+            String responseBody = response.payloadBody(textSerializerUtf8());
             System.out.println("Response body: " + responseBody);
         }
     }

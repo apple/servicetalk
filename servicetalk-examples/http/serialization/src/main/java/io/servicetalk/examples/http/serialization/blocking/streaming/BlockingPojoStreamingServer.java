@@ -16,28 +16,25 @@
 package io.servicetalk.examples.http.serialization.blocking.streaming;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
 import io.servicetalk.http.api.HttpPayloadWriter;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.servicetalk.examples.http.serialization.SerializerUtils.REQ_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.RESP_STREAMING_SERIALIZER;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.CREATED;
 import static io.servicetalk.http.api.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class BlockingPojoStreamingServer {
-
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
 
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.forPort(8080)
                 .listenBlockingStreamingAndAwait((ctx, request, response) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
@@ -50,13 +47,11 @@ public final class BlockingPojoStreamingServer {
                                 .sendMetaData()
                                 .close();
                     } else {
-                        BlockingIterable<CreatePojoRequest> values = request
-                                .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
+                        BlockingIterable<CreatePojoRequest> values = request.payloadBody(REQ_STREAMING_SERIALIZER);
 
                         response.status(CREATED);
-                        try (HttpPayloadWriter<PojoResponse> writer = response.sendMetaData(
-                                serializer.serializerFor(PojoResponse.class))) {
-
+                        try (HttpPayloadWriter<PojoResponse> writer =
+                                     response.sendMetaData(RESP_STREAMING_SERIALIZER)) {
                             for (CreatePojoRequest req : values) {
                                 writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
                             }

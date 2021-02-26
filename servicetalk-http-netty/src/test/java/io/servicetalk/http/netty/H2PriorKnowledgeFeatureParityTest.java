@@ -115,7 +115,6 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -132,8 +131,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -257,7 +255,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpResponse response = client.request(client.newRequest(method, "/p")
                     .addQueryParameters(qpName, "bar"))
-                    .payloadBody(responseBody, textSerializer());
+                    .payloadBody(responseBody, textSerializerUtf8());
             assertThat("Unexpected response status.", response.status(), equalTo(OK));
         }
     }
@@ -271,8 +269,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             for (int i = 0; i < numberRequests; ++i) {
                 HttpResponse response = client.request((get ? client.get("/" + i) : client.post("/" + i))
-                        .payloadBody(responseBody, textSerializer()));
-                assertEquals(responseBody, response.payloadBody(textDeserializer()));
+                        .payloadBody(responseBody, textSerializerUtf8()));
+                assertEquals(responseBody, response.payloadBody(textSerializerUtf8()));
             }
         }
     }
@@ -468,8 +466,8 @@ class H2PriorKnowledgeFeatureParityTest {
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
-                    .payloadBody(textDeserializer()), isEmptyString());
+            assertThat(client.request(client.get("/").payloadBody("", textSerializerUtf8()))
+                    .payloadBody(textSerializerUtf8()), isEmptyString());
         }
     }
 
@@ -622,7 +620,7 @@ class H2PriorKnowledgeFeatureParityTest {
                         }).flatMap(req -> delegate.request(strategy, req));
                     }
                 }).buildBlocking()) {
-            HttpRequest request = client.get("/").payloadBody("a", textSerializer());
+            HttpRequest request = client.get("/").payloadBody("a", textSerializerUtf8());
             if (addTrailers) {
                 request.trailers().set("mytrailer", "myvalue");
             }
@@ -793,7 +791,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
                 .buildBlocking()) {
-            HttpRequest request = client.get("/").payloadBody("a", textSerializer());
+            HttpRequest request = client.get("/").payloadBody("a", textSerializerUtf8());
             if (addTrailers) {
                 request.trailers().set("mytrailer", "myvalue");
             }
@@ -949,8 +947,8 @@ class H2PriorKnowledgeFeatureParityTest {
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
-                    .payloadBody(textDeserializer()), isEmptyString());
+            assertThat(client.request(client.get("/").payloadBody("", textSerializerUtf8()))
+                    .payloadBody(textSerializerUtf8()), isEmptyString());
         }
     }
 
@@ -1026,10 +1024,10 @@ class H2PriorKnowledgeFeatureParityTest {
             try {
                 // We interleave the requests intentionally to make sure the internal transport sequences the
                 // reads and writes correctly.
-                HttpResponse response1 = client.request(request.payloadBody(responseBody1, textSerializer()));
-                HttpResponse response2 = client.request(request.payloadBody(responseBody2, textSerializer()));
-                assertEquals(responseBody1, response1.payloadBody(textDeserializer()));
-                assertEquals(responseBody2, response2.payloadBody(textDeserializer()));
+                HttpResponse response1 = client.request(request.payloadBody(responseBody1, textSerializerUtf8()));
+                HttpResponse response2 = client.request(request.payloadBody(responseBody2, textSerializerUtf8()));
+                assertEquals(responseBody1, response1.payloadBody(textSerializerUtf8()));
+                assertEquals(responseBody2, response2.payloadBody(textSerializerUtf8()));
             } finally {
                 reservedConnection.release();
             }
@@ -1062,7 +1060,7 @@ class H2PriorKnowledgeFeatureParityTest {
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializer());
+            HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializerUtf8());
             HttpResponse response = client.request(request);
             assertEquals(0, response.payloadBody().readableBytes());
             CharSequence responseTrailer = response.trailers().get(myTrailerName);
@@ -1083,10 +1081,10 @@ class H2PriorKnowledgeFeatureParityTest {
             String payloadBody = "foo";
             String myTrailerName = "mytrailer";
             String myTrailerValue = "myvalue";
-            HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializer());
+            HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializerUtf8());
             request.trailers().add(myTrailerName, myTrailerValue);
             HttpResponse response = client.request(request);
-            assertEquals(payloadBody, response.payloadBody(textDeserializer()));
+            assertEquals(payloadBody, response.payloadBody(textSerializerUtf8()));
             CharSequence responseTrailer = response.trailers().get(myTrailerName);
             assertNotNull(responseTrailer);
             assertEquals(0, responseTrailer.toString().compareToIgnoreCase(myTrailerValue));
@@ -1115,8 +1113,8 @@ class H2PriorKnowledgeFeatureParityTest {
 
             final String responseBody = "foo";
             HttpResponse response = client.request(client.post("/0")
-                    .payloadBody(responseBody, textSerializer()));
-            assertEquals(responseBody, response.payloadBody(textDeserializer()));
+                    .payloadBody(responseBody, textSerializerUtf8()));
+            assertEquals(responseBody, response.payloadBody(textSerializerUtf8()));
             assertNoAsyncErrors(errorQueue);
         }
     }
@@ -1141,8 +1139,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 .buildBlocking()) {
 
             final String responseBody = "foo";
-            HttpResponse response = client.request(client.post("/0").payloadBody(responseBody, textSerializer()));
-            assertEquals(responseBody, response.payloadBody(textDeserializer()));
+            HttpResponse response = client.request(client.post("/0").payloadBody(responseBody, textSerializerUtf8()));
+            assertEquals(responseBody, response.payloadBody(textSerializerUtf8()));
             assertNoAsyncErrors(errorQueue);
         }
     }
@@ -1395,7 +1393,7 @@ class H2PriorKnowledgeFeatureParityTest {
                     return responseFactory.ok()
                             .addTrailer(expectedTrailer, expectedTrailerValue)
                             .addHeader(CONTENT_LENGTH, expectedPayloadLength)
-                            .payloadBody(expectedPayload, textSerializer());
+                            .payloadBody(expectedPayload, textSerializerUtf8());
                 });
              BlockingHttpClient client = forSingleAddress(HostAndPort.of(
                      (InetSocketAddress) serverContext.listenAddress()))
@@ -1405,15 +1403,15 @@ class H2PriorKnowledgeFeatureParityTest {
             HttpResponse response = client.request(client.post("/")
                     .addTrailer(expectedTrailer, expectedTrailerValue)
                     .addHeader(CONTENT_LENGTH, expectedPayloadLength)
-                    .payloadBody(expectedPayload, textSerializer()));
+                    .payloadBody(expectedPayload, textSerializerUtf8()));
             assertThat(response.status(), is(OK));
-            assertThat(response.payloadBody(textDeserializer()), equalTo(expectedPayload));
+            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
             assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
 
             // Verify what server received:
             HttpRequest request = requestReceived.get();
-            assertThat(request.payloadBody(textDeserializer()), equalTo(expectedPayload));
+            assertThat(request.payloadBody(textSerializerUtf8()), equalTo(expectedPayload));
             assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
             assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
         }
@@ -1572,8 +1570,10 @@ class H2PriorKnowledgeFeatureParityTest {
                             try {
                                 headerConsumer.accept(request);
                             } catch (Throwable cause) {
-                                return succeeded(responseFactory.internalServerError()
-                                        .payloadBody(from(throwableToString(cause)), textSerializer()));
+                                return responseFactory.internalServerError()
+                                        .toResponse().map(resp ->
+                                                resp.payloadBody(throwableToString(cause), textSerializerUtf8())
+                                                        .toStreamingResponse());
                             }
                             StreamingHttpResponse resp = responseFactory.ok();
                             CharSequence contentType = request.headers().get(CONTENT_TYPE);

@@ -50,6 +50,7 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return this;
     }
 
+    @Deprecated
     @Override
     public StreamingHttpResponse encoding(final ContentCodec encoding) {
         super.encoding(encoding);
@@ -59,6 +60,11 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     @Override
     public Publisher<Buffer> payloadBody() {
         return payloadHolder.payloadBody();
+    }
+
+    @Override
+    public <T> Publisher<T> payloadBody(final HttpStreamingDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody(), payloadHolder.allocator());
     }
 
     @Override
@@ -72,18 +78,45 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
         return this;
     }
 
+    @Deprecated
     @Override
     public <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
-                                                      final HttpSerializer<T> serializer) {
-        payloadHolder.payloadBody(payloadBody, serializer);
+                                                 final HttpSerializer<T> serializer) {
+        payloadHolder.transformPayloadBody(bufPub ->
+                serializer.serialize(headers(), payloadBody, payloadHolder.allocator()));
         return this;
     }
 
     @Override
+    public <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
+                                                 final HttpStreamingSerializer<T> serializer) {
+        payloadHolder.payloadBody(payloadBody, serializer);
+        return this;
+    }
+
+    @Deprecated
+    @Override
     public <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
-                                                               HttpSerializer<T> serializer) {
+                                                          HttpSerializer<T> serializer) {
+        payloadHolder.transformPayloadBody(bufPub ->
+                serializer.serialize(headers(), transformer.apply(bufPub), payloadHolder.allocator()));
+        return this;
+    }
+
+    @Override
+    public <T> StreamingHttpResponse transformPayloadBody(final Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                          final HttpStreamingSerializer<T> serializer) {
         payloadHolder.transformPayloadBody(transformer, serializer);
         return this;
+    }
+
+    @Override
+    public <T, R> StreamingHttpResponse transformPayloadBody(final Function<Publisher<T>, Publisher<R>> transformer,
+                                                             final HttpStreamingDeserializer<T> deserializer,
+                                                             final HttpStreamingSerializer<R> serializer) {
+        return transformPayloadBody(bufPub ->
+                        transformer.apply(deserializer.deserialize(headers(), bufPub, payloadHolder.allocator())),
+                serializer);
     }
 
     @Override
@@ -101,6 +134,13 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     @Override
     public <T> StreamingHttpResponse transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
         payloadHolder.transform(trailersTransformer);
+        return this;
+    }
+
+    @Override
+    public <T, S> StreamingHttpResponse transform(final TrailersTransformer<T, S> trailersTransformer,
+                                                  final HttpStreamingDeserializer<S> serializer) {
+        payloadHolder.transform(trailersTransformer, serializer);
         return this;
     }
 

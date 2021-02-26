@@ -46,8 +46,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -177,9 +176,9 @@ class SecurityHandshakeObserverTest {
                  .buildBlocking()) {
 
             String content = "payload_body";
-            HttpResponse response = client.request(client.post(SVC_ECHO).payloadBody(content, textSerializer()));
+            HttpResponse response = client.request(client.post(SVC_ECHO).payloadBody(content, textSerializerUtf8()));
             assertThat(response.status(), is(OK));
-            assertThat(response.payloadBody(textDeserializer()), equalTo(content));
+            assertThat(response.payloadBody(textSerializerUtf8()), equalTo(content));
 
             verify(clientConnectionObserver).onSecurityHandshake();
             verify(clientSecurityHandshakeObserver).handshakeComplete(any(SSLSession.class));

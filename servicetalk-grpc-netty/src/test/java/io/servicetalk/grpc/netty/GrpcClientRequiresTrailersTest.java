@@ -16,38 +16,34 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.grpc.api.GrpcSerializationProvider;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
-import io.servicetalk.grpc.protobuf.ProtoBufSerializationProviderBuilder;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
@@ -58,52 +54,59 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GrpcClientRequiresTrailersTest {
-
-    private static final GrpcSerializationProvider SERIALIZATION_PROVIDER = new ProtoBufSerializationProviderBuilder()
-            .registerMessageType(TestRequest.class, TestRequest.parser())
-            .registerMessageType(TestResponse.class, TestResponse.parser())
-            .build();
-
     @Nullable
     private ServerContext serverContext;
     @Nullable
     private BlockingTesterClient client;
 
-    private void setUp(boolean streaming, boolean hasTrailers) throws Exception {
-        // Emulate gRPC server that does not add grpc-status to the trailers after payload body:
-        StreamingHttpService streamingService = (ctx, request, responseFactory) -> {
-            final StreamingHttpResponse response = responseFactory.ok()
-                    .version(request.version())
-                    .setHeader(CONTENT_TYPE, "application/grpc")
-                    .payloadBody(from(TestResponse.newBuilder().setMessage("response").build()),
-                            SERIALIZATION_PROVIDER.serializerFor(identity(), TestResponse.class));
-
-            if (hasTrailers) {
-                response.transform(new StatelessTrailersTransformer<Buffer>() {
+    private void setUp(boolean hasTrailers) throws Exception {
+        serverContext = GrpcServers.forAddress(localAddress(0))
+                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
-                    protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-                        return trailers.set("some-trailer", "some-value");
+                    public Single<StreamingHttpResponse> handle(
+                            final HttpServiceContext ctx, final StreamingHttpRequest request,
+                            final StreamingHttpResponseFactory responseFactory) {
+                        return delegate().handle(ctx, request, responseFactory).map(resp -> {
+                            // Emulate gRPC server that does not add grpc-status to the trailers after payload body:
+                            resp.transform(new StatelessTrailersTransformer<Buffer>() {
+                                @Override
+                                protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                                    trailers.remove("grpc-status");
+                                    return hasTrailers ? trailers.set("some-trailer", "some-value") : trailers;
+                                }
+                            });
+                            return resp;
+                        });
+                    }
+                })
+                .listenAndAwait(new TesterProto.Tester.TesterService() {
+                    @Override
+                    public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,
+                                                                  final Publisher<TestRequest> request) {
+                        return succeeded(newResponse());
+                    }
+
+                    @Override
+                    public Publisher<TestResponse> testResponseStream(final GrpcServiceContext ctx,
+                                                                      final TestRequest request) {
+                        return from(newResponse());
+                    }
+
+                    @Override
+                    public Publisher<TestResponse> testBiDiStream(final GrpcServiceContext ctx,
+                                                                  final Publisher<TestRequest> request) {
+                        return from(newResponse());
+                    }
+
+                    @Override
+                    public Single<TestResponse> test(final GrpcServiceContext ctx, final TestRequest request) {
+                        return succeeded(newResponse());
                     }
                 });
-            }
-            return succeeded(response);
-        };
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                .protocols(h2Default());
-        serverContext = streaming ? serverBuilder.listenStreamingAndAwait(streamingService) :
-                serverBuilder.listenAndAwait(toHttpService(streamingService));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .executionStrategy(noOffloadsStrategy())
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
-    }
-
-    static Stream<Arguments> params() {
-        return Stream.of(
-                Arguments.of(false, false),
-                Arguments.of(false, true),
-                Arguments.of(true, false),
-                Arguments.of(true, true));
     }
 
     @AfterEach
@@ -115,65 +118,69 @@ class GrpcClientRequiresTrailersTest {
         }
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testBlockingAggregated(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsGrpcStatusException(() -> client.test(request()));
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testBlockingAggregated(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsGrpcStatusException(() -> client.test(newRequest()));
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testBlockingRequestStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsGrpcStatusException(() -> client.testRequestStream(singletonList(request())));
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testBlockingRequestStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsGrpcStatusException(() -> client.testRequestStream(singletonList(newRequest())));
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testBlockingResponseStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsGrpcStatusException(() -> client.testResponseStream(request()).forEach(__ -> { /* noop */ }));
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testBlockingResponseStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsGrpcStatusException(() -> client.testResponseStream(newRequest()).forEach(__ -> { /* noop */ }));
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testBlockingBiDiStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsGrpcStatusException(() -> client.testBiDiStream(singletonList(request()))
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testBlockingBiDiStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsGrpcStatusException(() -> client.testBiDiStream(singletonList(newRequest()))
                 .forEach(__ -> { /* noop */ }));
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testAggregated(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsExecutionException(() -> client.asClient().test(request()).toFuture().get());
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testAggregated(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsExecutionException(() -> client.asClient().test(newRequest()).toFuture().get());
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testRequestStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsExecutionException(() -> client.asClient().testRequestStream(from(request())).toFuture().get());
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testRequestStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsExecutionException(() -> client.asClient().testRequestStream(from(newRequest())).toFuture().get());
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testResponseStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsExecutionException(() -> client.asClient().testResponseStream(request()).toFuture().get());
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testResponseStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsExecutionException(() -> client.asClient().testResponseStream(newRequest()).toFuture().get());
     }
 
-    @ParameterizedTest(name = "streaming={0} has-trailers={1}")
-    @MethodSource("params")
-    void testBiDiStreaming(boolean streaming, boolean hasTrailers) throws Exception {
-        setUp(streaming, hasTrailers);
-        assertThrowsExecutionException(() -> client.asClient().testBiDiStream(from(request())).toFuture().get());
+    @ParameterizedTest(name = "has-trailers={0}")
+    @ValueSource(booleans = {true, false})
+    void testBiDiStreaming(boolean hasTrailers) throws Exception {
+        setUp(hasTrailers);
+        assertThrowsExecutionException(() -> client.asClient().testBiDiStream(from(newRequest())).toFuture().get());
     }
 
-    private static TestRequest request() {
+    private static TestRequest newRequest() {
         return TestRequest.newBuilder().setName("request").build();
+    }
+
+    private static TestResponse newResponse() {
+        return TestResponse.newBuilder().setMessage("response").build();
     }
 
     private static void assertThrowsExecutionException(Executable executable) {

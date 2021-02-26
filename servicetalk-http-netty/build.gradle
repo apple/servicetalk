@@ -50,6 +50,7 @@ dependencies {
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
+  testImplementation project(":servicetalk-oio-api-internal")
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
   testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

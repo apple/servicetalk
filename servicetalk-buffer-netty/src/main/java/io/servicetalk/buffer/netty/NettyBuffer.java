@@ -711,6 +711,12 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
     }
 
     @Override
+    public Buffer writeCharSequence(CharSequence seq, Charset charset) {
+        buffer.writeCharSequence(seq, charset);
+        return this;
+    }
+
+    @Override
     public int indexOf(int fromIndex, int toIndex, byte value) {
         return buffer.indexOf(fromIndex, toIndex, value);
     }

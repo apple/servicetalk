@@ -44,6 +44,7 @@ import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+@Deprecated
 final class ProtoBufSerializationProvider<T extends MessageLite> implements SerializationProvider {
     private static final int LENGTH_PREFIXED_MESSAGE_HEADER_BYTES = 5;
 

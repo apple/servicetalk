@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.metadata;
 import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LANGUAGE;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Demonstration server to be used with {@link MetaDataDemoClient}.
@@ -55,7 +55,7 @@ public final class MetaDataDemoServer {
                             // Return the language in upper case, to demonstrate the case-insensitive compare
                             // in the client.
                             .addHeader(CONTENT_LANGUAGE, languageCode.toUpperCase())
-                            .payloadBody(helloText, textSerializer());
+                            .payloadBody(helloText, textSerializerUtf8());
                 })
                 .awaitShutdown();
     }

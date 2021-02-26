@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Extends the async 'Hello World!' example to demonstrate use of timeout filters and timeout operators. If a single
@@ -36,7 +36,6 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
  * operator.
  */
 public final class TimeoutClient {
-
     public static void main(String[] args) throws Exception {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("localhost", 8080)
@@ -51,23 +50,23 @@ public final class TimeoutClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(2);
 
             // first request, with default timeout from HttpClient (this will succeed)
-            client.request(client.get("/sayHello"))
+            client.request(client.get("/defaultTimeout"))
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
             // second request, with custom timeout that is lower than the client default (this will timeout)
-            client.request(client.get("/sayHello"))
+            client.request(client.get("/3secondTimeout"))
                     // This request and response must complete within 3 seconds or the request will be cancelled.
                     .timeout(Duration.ofSeconds(3))
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
             // block until requests are complete and afterFinally() has been called

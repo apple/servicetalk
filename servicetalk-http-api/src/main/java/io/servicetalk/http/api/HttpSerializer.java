@@ -22,21 +22,11 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory to address serialization concerns for HTTP request/response payload bodies.
- *
+ * @deprecated Use {@link HttpSerializer2} or {@link HttpStreamingSerializer}.
  * @param <T> The type of objects to serialize.
  */
-public interface HttpSerializer<T> {
-    /**
-     * Serialize an object of type {@link T} into a {@link Buffer}. If necessary the {@link HttpHeaders} should be
-     * updated to indicate the <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
-     *
-     * @param headers The {@link HttpHeaders} associated with the serialization operation.
-     * @param value The object to serialize.
-     * @param allocator The {@link BufferAllocator} used to create the returned {@link Buffer}.
-     * @return The result of the serialization operation.
-     */
-    Buffer serialize(HttpHeaders headers, T value, BufferAllocator allocator);
-
+@Deprecated
+public interface HttpSerializer<T> extends HttpSerializer2<T> {
     /**
      * Serialize an {@link BlockingIterable} of type {@link T} into an {@link BlockingIterable} of type
      * {@link Buffer}. If necessary the {@link HttpHeaders} should be updated to indicate the

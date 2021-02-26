@@ -32,7 +32,6 @@ public class BlockingHelloWorldServer {
     }
 
     private static final class MyGreeterService implements BlockingGreeterService {
-
         @Override
         public HelloReply sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             return HelloReply.newBuilder().setMessage("Hello " + request.getName()).build();

@@ -19,7 +19,7 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
@@ -37,8 +37,8 @@ public final class HttpServerWithAlpn {
                         .build())
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
-                .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("I negotiate HTTP/2 or HTTP/1.1 via ALPN!", textSerializer()))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
+                        .payloadBody("I negotiate HTTP/2 or HTTP/1.1 via ALPN!", textSerializerUtf8()))
                 .awaitShutdown();
     }
 }

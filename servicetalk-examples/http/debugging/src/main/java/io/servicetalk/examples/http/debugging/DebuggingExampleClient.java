@@ -28,8 +28,7 @@ import io.servicetalk.logging.api.LogLevel;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
@@ -172,13 +171,12 @@ public final class DebuggingExampleClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
             // Make a request with a payload.
-            HttpRequest request = client.post("/sayHello")
-                    .payloadBody("George", textSerializer());
+            HttpRequest request = client.post("/sayHello").payloadBody("George", textSerializerUtf8());
             client.request(request)
                     .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.payloadBody(textDeserializer()));
+                        System.out.println(resp.payloadBody(textSerializerUtf8()));
                     });
 
             // block until request is complete and afterFinally() is called

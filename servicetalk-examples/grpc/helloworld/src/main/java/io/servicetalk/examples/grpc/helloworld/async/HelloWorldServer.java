@@ -41,7 +41,6 @@ public class HelloWorldServer {
     }
 
     private static final class MyGreeterService implements GreeterService {
-
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());

@@ -44,7 +44,15 @@ import static java.util.stream.StreamSupport.stream;
 
 /**
  * Default implementation for {@link Serializer}.
+ * @deprecated Use implementations of following types:
+ * <ul>
+ *     <li>{@link io.servicetalk.serializer.api.Serializer}</li>
+ *     <li>{@link io.servicetalk.serializer.api.StreamingSerializer}</li>
+ *     <li>{@link io.servicetalk.serializer.api.Deserializer}</li>
+ *     <li>{@link io.servicetalk.serializer.api.StreamingDeserializer}</li>
+ * </ul>
  */
+@Deprecated
 public final class DefaultSerializer implements Serializer {
 
     /**

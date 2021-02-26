@@ -376,6 +376,11 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
+    public Buffer writeCharSequence(CharSequence seq, Charset charset) {
+        throw new ReadOnlyBufferException();
+    }
+
+    @Override
     public Buffer readSlice(int length) {
         checkReadableBytes0(length);
         Buffer buf = new ReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), length));

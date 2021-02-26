@@ -26,7 +26,7 @@ public final class BlockingProtocOptionsClient {
     public static void main(String[] args) throws Exception {
         try (GreeterSt.BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new GreeterSt.ClientFactory())) {
-            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Foo").build());
+            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Options").build());
             System.out.println(reply);
         }
     }

@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
@@ -49,13 +50,37 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Gets and deserializes the payload body.
+     * @deprecated Use {@link #payloadBody(HttpStreamingDeserializer)}.
      * @param deserializer The function that deserializes the underlying {@link BlockingIterable}.
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
+    @Deprecated
     default <T> BlockingIterable<T> payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
+
+    /**
+     * Gets and deserializes the payload body.
+     * @param deserializer The function that deserializes the underlying {@link BlockingIterable}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
+     */
+    <T> BlockingIterable<T> payloadBody(HttpStreamingDeserializer<T> deserializer);
+
+    /**
+     * Get the {@link BlockingStreamingHttpMessageBody} for this request.
+     * @return the {@link BlockingStreamingHttpMessageBody} for this request.
+     */
+    BlockingStreamingHttpMessageBody<Buffer> messageBody();
+
+    /**
+     * Get the {@link BlockingStreamingHttpMessageBody} for this request and deserialize to type {@link T}.
+     * @param deserializer The function that deserializes the underlying {@link BlockingIterable}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return the {@link BlockingStreamingHttpMessageBody} for this request and deserialize to type {@link T}.
+     */
+    <T> BlockingStreamingHttpMessageBody<T> messageBody(HttpStreamingDeserializer<T> deserializer);
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to {@code payloadBody}.
@@ -108,12 +133,30 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing payload body that is being replaced.
+     * @deprecated Use {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
      */
+    @Deprecated
     <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+
+    /**
+     * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpStreamingSerializer)} for
+     * more fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing payload body that is being replaced.
+     * @param payloadBody The new payload body, prior to serialization.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return {@code this}
+     */
+    <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpStreamingSerializer<T> serializer);
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
@@ -124,12 +167,47 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * <p>
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing payload body that is being replaced.
+     * @deprecated Use {@link #payloadBody(CloseableIterable, HttpStreamingSerializer)}.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return {@code this}
      */
+    @Deprecated
     <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
+
+    /**
+     * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpStreamingSerializer)} for
+     * more fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing payload body that is being replaced.
+     * @param payloadBody The new payload body, prior to serialization.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return {@code this}
+     */
+    <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody,
+                                                 HttpStreamingSerializer<T> serializer);
+
+    /**
+     * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
+     * serialization.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
+     * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more requests
+     * may be processed.
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return {@code this}
+     */
+    @Deprecated
+    <T> BlockingStreamingHttpRequest transformPayloadBody(
+            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
@@ -143,7 +221,28 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest transformPayloadBody(
-            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
+            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpStreamingSerializer<T> serializer);
+
+    /**
+     * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
+     * serialization.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
+     * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more requests
+     * may be processed.
+     * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)}.
+     * @param deserializer Used to deserialize the existing payload body.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to deserialize.
+     * @param <R> The type of objects to serialize.
+     * @return {@code this}
+     */
+    @Deprecated
+    default <T, R> BlockingStreamingHttpRequest transformPayloadBody(
+            Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
+            HttpSerializer<R> serializer) {
+        return transformPayloadBody(buffers -> transformer.apply(payloadBody(deserializer)), serializer);
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
@@ -158,11 +257,9 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param <R> The type of objects to serialize.
      * @return {@code this}
      */
-    default <T, R> BlockingStreamingHttpRequest transformPayloadBody(
-            Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
-            HttpSerializer<R> serializer) {
-        return transformPayloadBody(buffers -> transformer.apply(payloadBody(deserializer)), serializer);
-    }
+    <T, R> BlockingStreamingHttpRequest transformPayloadBody(
+            Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpStreamingDeserializer<T> deserializer,
+            HttpStreamingSerializer<R> serializer);
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s.
@@ -231,8 +328,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     @Override
     BlockingStreamingHttpRequest version(HttpProtocolVersion version);
 
+    @Deprecated
     @Override
     BlockingStreamingHttpRequest encoding(ContentCodec encoding);
+
+    @Override
+    BlockingStreamingHttpRequest requestEncoder(@Nullable BufferEncoder encoder);
 
     @Override
     BlockingStreamingHttpRequest method(HttpRequestMethod method);

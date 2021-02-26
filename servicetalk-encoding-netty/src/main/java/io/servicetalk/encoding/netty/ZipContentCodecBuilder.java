@@ -25,7 +25,9 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
  * Base class for Zip based content-codecs.
+ * @deprecated Use {@link ZipCompressionBuilder}.
  */
+@Deprecated
 public abstract class ZipContentCodecBuilder {
 
     private static final int DEFAULT_MAX_CHUNK_SIZE = 4 << 20; //4MiB

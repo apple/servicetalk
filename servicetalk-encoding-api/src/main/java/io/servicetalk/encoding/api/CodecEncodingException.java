@@ -19,7 +19,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Exception thrown when something goes wrong during encoding.
+ * @deprecated Use {@link BufferEncodingException}.
  */
+@Deprecated
 public final class CodecEncodingException extends RuntimeException {
 
     private static final long serialVersionUID = -3565785637300291924L;

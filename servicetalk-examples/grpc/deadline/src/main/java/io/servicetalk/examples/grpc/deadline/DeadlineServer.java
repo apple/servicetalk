@@ -24,7 +24,6 @@ import io.grpc.examples.deadline.HelloReply;
 import io.grpc.examples.deadline.HelloRequest;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
@@ -50,18 +49,9 @@ public class DeadlineServer {
 
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-
-             // Force a 5 second delay in the response.
-            return Single.defer(() -> {
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException woken) {
-                    Thread.interrupted();
-                }
-
-                return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())
-                        .subscribeShareContext();
-            });
+            // Force a 5 second delay in the response.
+            return ctx.executionContext().executor().timer(Duration.ofSeconds(5))
+                    .concat(succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()));
         }
     }
 }

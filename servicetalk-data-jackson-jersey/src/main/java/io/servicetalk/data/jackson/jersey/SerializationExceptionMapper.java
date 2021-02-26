@@ -15,7 +15,7 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
-import io.servicetalk.serialization.api.SerializationException;
+import io.servicetalk.serializer.api.SerializationException;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;

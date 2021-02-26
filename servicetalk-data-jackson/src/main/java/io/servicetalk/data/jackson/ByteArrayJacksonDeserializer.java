@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyList;
 
+@Deprecated
 final class ByteArrayJacksonDeserializer<T> extends AbstractJacksonDeserializer<T> {
     private final ByteArrayFeeder feeder;
 
