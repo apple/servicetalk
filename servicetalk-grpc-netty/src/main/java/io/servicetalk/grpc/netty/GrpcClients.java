@@ -19,10 +19,13 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.function.Function;
 
 /**
  * A factory to create <a href="https://www.grpc.io">gRPC</a> clients.
@@ -100,6 +103,21 @@ public final class GrpcClients {
      */
     public static GrpcClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
             final InetSocketAddress address) {
+        return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(address));
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
+     * ServiceDiscoverer}.
+     *
+     * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link GrpcClientBuilder#unresolvedAddressToHost(Function)}
+     * if you want to override that value or {@link GrpcClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @param <T> The type of {@link SocketAddress}.
+     * @return new builder for the address
+     */
+    public static <T extends SocketAddress> GrpcClientBuilder<T, T> forResolvedAddress(final T address) {
         return new DefaultGrpcClientBuilder<>(HttpClients.forResolvedAddress(address));
     }
 
