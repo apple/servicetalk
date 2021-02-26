@@ -24,6 +24,8 @@
       <Source name="~CompatProto\.java"/>
       <Source name="~EsProto\.java"/>
       <Source name="~TesterProto\.java"/>
+      <Source name="~HelloReply\.java"/>
+      <Source name="~HelloRequest\.java"/>
     </Or>
   </Match>
   <Match>
