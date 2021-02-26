@@ -59,9 +59,12 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * Create a new instance using {@code trustCertChainSupplier} to verify trusted servers.
      * @param trustCertChainSupplier the trusted certificates for verifying the remote endpoint's certificate. The input
      * stream should contain an {@code X.509} certificate chain in {@code PEM} format.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      */
     public DefaultClientSslConfigBuilder(Supplier<InputStream> trustCertChainSupplier) {
-        trustManager(requireNonNull(trustCertChainSupplier));
+        trustManager(trustCertChainSupplier);
     }
 
     @Override

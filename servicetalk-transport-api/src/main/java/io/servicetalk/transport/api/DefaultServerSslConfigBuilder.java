@@ -44,11 +44,14 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      * Create a new instance from a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM}
      * format and a {@code PKCS#8} private key in {@code PEM} format.
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keySupplier a {@link InputStream} which provides a {@code PKCS#8} private key in PEM format associated
-     * with. The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * with.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      */
     public DefaultServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier,
                                          Supplier<InputStream> keySupplier) {
@@ -59,11 +62,14 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      * Create a new instance from a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM}
      * format and a {@code PKCS#8} private key in {@code PEM} format.
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keySupplier a {@link InputStream} which provides a {@code PKCS#8} private key in PEM format associated
-     * with. The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * with.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      */
     public DefaultServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
