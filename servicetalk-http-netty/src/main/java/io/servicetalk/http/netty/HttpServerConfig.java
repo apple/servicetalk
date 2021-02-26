@@ -60,7 +60,8 @@ final class HttpServerConfig {
             if (sniMap == null) {
                 tcpConfig.sslConfig(sslConfig);
             } else {
-                // Make a copy in case the original map is unmodifiable.
+                // Make a copy in case the original map is unmodifiable. Use LinkedHashMap to preserve iteration order
+                // in case there is order precedence in the matching algorithm.
                 Map<String, ServerSslConfig> sniMapOverrides = new LinkedHashMap<>(sniMap.size());
                 for (Entry<String, ServerSslConfig> sniConfigEntry : sniMap.entrySet()) {
                     ServerSslConfig sniConfig = sniConfigEntry.getValue();
