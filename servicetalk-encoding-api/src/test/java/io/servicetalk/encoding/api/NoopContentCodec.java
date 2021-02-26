@@ -22,7 +22,9 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * Implementation of {@link ContentCodec} that doesn't modify the source {@link Buffer}.
+ * @deprecated Will be removed along with {@link ContentCodec}.
  */
+@Deprecated
 class NoopContentCodec implements ContentCodec {
 
     private final CharSequence name;

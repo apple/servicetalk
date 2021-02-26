@@ -30,6 +30,7 @@ class DefaultGrpcMetadata implements GrpcMetadata {
         this.path = requireNonNull(path, "path");
     }
 
+    @Deprecated
     @Override
     public String path() {
         return path;

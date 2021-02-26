@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 
 class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
 
@@ -33,6 +33,6 @@ class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
     @EnumSource(RouterApi.class)
     void postTooManyJsonMaps(RouterApi api) throws Exception {
         setUp(api);
-        sendAndAssertStatusOnly(post("/map", "{\"foo1\":\"bar1\"}{\"foo2\":\"bar2\"}", APPLICATION_JSON), BAD_REQUEST);
+        sendAndAssertStatusOnly(post("/map", "{\"foo1\":\"bar1\"}{\"foo2\":\"bar2\"}", APPLICATION_JSON), OK);
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.time.Duration;
@@ -38,11 +39,19 @@ public interface GrpcClientMetadata extends GrpcMetadata {
     /**
      * {@link ContentCodec} to use for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
-     *
+     * @deprecated Use {@link #requestCompressor()}.
      * @return {@link ContentCodec} to use for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
      */
+    @Deprecated
     ContentCodec requestEncoding();
+
+    /**
+     * Get the {@link BufferEncoder} to use to compress the request associated with this object.
+     * @return the {@link BufferEncoder} to use to compress the request associated with this object.
+     */
+    @Nullable
+    BufferEncoder requestCompressor();
 
     /**
      * Returns timeout duration after which the response is no longer wanted.

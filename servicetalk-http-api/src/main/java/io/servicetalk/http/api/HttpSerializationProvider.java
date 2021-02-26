@@ -21,7 +21,10 @@ import java.util.function.IntUnaryOperator;
 
 /**
  * A provider of {@link HttpSerializer}s and {@link HttpDeserializer}s.
+ * @deprecated Use {@link HttpSerializers}, {@link HttpSerializer2}, {@link HttpDeserializer2},
+ * {@link HttpStreamingSerializer}, and {@link HttpStreamingDeserializer}.
  */
+@Deprecated
 public interface HttpSerializationProvider {
 
     /**

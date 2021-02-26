@@ -15,23 +15,20 @@
  */
 package io.servicetalk.examples.http.serialization.async;
 
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.REQ_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.SerializerUtils.RESP_SERIALIZER;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoServer {
-
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.forPort(8080)
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
@@ -40,10 +37,10 @@ public final class PojoServer {
                     if (!POST.equals(request.method())) {
                         return succeeded(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
-                    CreatePojoRequest req = request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
+                    CreatePojoRequest req = request.payloadBody(REQ_SERIALIZER);
                     return succeeded(responseFactory.created()
                             .payloadBody(new PojoResponse(ThreadLocalRandom.current().nextInt(100), req.getValue()),
-                                    serializer.serializerFor(PojoResponse.class)));
+                                    RESP_SERIALIZER));
                 })
                 .awaitShutdown();
     }

@@ -17,7 +17,7 @@ package io.servicetalk.examples.http.http2.priorknowledge;
 
 import io.servicetalk.http.netty.HttpServers;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 /**
@@ -31,7 +31,7 @@ public final class Http2PriorKnowledgeServer {
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
                 // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
-                        responseFactory.ok().payloadBody("I speak HTTP/2!", textSerializer()))
+                        responseFactory.ok().payloadBody("I speak HTTP/2!", textSerializerUtf8()))
                 .awaitShutdown();
     }
 }

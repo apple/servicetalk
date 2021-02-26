@@ -21,7 +21,6 @@ import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +35,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RECOMMEND_LIST_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.RECOMMEND_STREAM_SERIALIZER;
+import static io.servicetalk.examples.http.service.composition.SerializerUtils.USER_ID_QP_NAME;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,22 +46,18 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * A service that generates {@link Recommendation}s for a user.
  */
 final class RecommendationBackend {
-
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
-            new TypeHolder<List<Recommendation>>() { };
-    private static final String USER_ID_QP_NAME = "userId";
     private static final String EXPECTED_ENTITY_COUNT_QP_NAME = "expectedEntityCount";
 
     private RecommendationBackend() {
         // No instances.
     }
 
-    static StreamingHttpService newRecommendationsService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newRecommendationsService() {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         routerBuilder.whenPathStartsWith("/recommendations/stream")
-                .thenRouteTo(new StreamingService(serializer));
+                .thenRouteTo(new StreamingService());
         routerBuilder.whenPathStartsWith("/recommendations/aggregated")
-                .thenRouteTo(new AggregatedService(serializer));
+                .thenRouteTo(new AggregatedService());
         return routerBuilder.buildStreaming();
     }
 
@@ -71,13 +68,6 @@ final class RecommendationBackend {
     }
 
     private static final class StreamingService implements StreamingHttpService {
-
-        private final HttpSerializationProvider serializer;
-
-        StreamingService(final HttpSerializationProvider serializer) {
-            this.serializer = serializer;
-        }
-
         @Override
         public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                     StreamingHttpResponseFactory responseFactory) {
@@ -97,19 +87,11 @@ final class RecommendationBackend {
                     // they are available.
                     .repeat(count -> true);
 
-            return succeeded(responseFactory.ok()
-                    .payloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
+            return succeeded(responseFactory.ok().payloadBody(recommendations, RECOMMEND_STREAM_SERIALIZER));
         }
     }
 
     private static final class AggregatedService implements HttpService {
-
-        private final HttpSerializationProvider serializer;
-
-        AggregatedService(final HttpSerializationProvider serializer) {
-            this.serializer = serializer;
-        }
-
         @Override
         public Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                            HttpResponseFactory responseFactory) {
@@ -128,8 +110,7 @@ final class RecommendationBackend {
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
-            return succeeded(responseFactory.ok()
-                    .payloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
+            return succeeded(responseFactory.ok().payloadBody(recommendations, RECOMMEND_LIST_SERIALIZER));
         }
     }
 }

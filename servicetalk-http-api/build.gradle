@@ -22,6 +22,7 @@ dependencies {
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
   api project(":servicetalk-serialization-api")
+  api project(":servicetalk-serializer-api")
   api project(":servicetalk-transport-api")
   api project(":servicetalk-oio-api")
   api project(":servicetalk-encoding-api")
@@ -31,6 +32,7 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-encoding-api-internal")
+  implementation project(":servicetalk-serializer-utils")
   implementation project(":servicetalk-utils-internal")
   implementation project(":servicetalk-oio-api-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"

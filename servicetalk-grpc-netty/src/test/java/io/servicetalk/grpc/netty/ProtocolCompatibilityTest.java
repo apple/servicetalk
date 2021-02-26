@@ -21,8 +21,15 @@ import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.BufferDecoderGroup;
+import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
+import io.servicetalk.encoding.api.BufferEncoder;
+import io.servicetalk.encoding.api.EmptyBufferDecoderGroup;
+import io.servicetalk.encoding.api.Identity;
+import io.servicetalk.encoding.netty.NettyBufferEncoders;
+import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
@@ -81,6 +88,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -94,8 +102,6 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
-import static io.servicetalk.encoding.api.Identity.identity;
-import static io.servicetalk.encoding.netty.ContentCodings.gzipDefault;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
@@ -620,18 +626,15 @@ class ProtocolCompatibilityTest {
                                                     final boolean streaming,
                                                     @Nullable final String compression) throws Exception {
         try {
-            final ContentCodec codec = serviceTalkCodingFor(compression);
-
+            final BufferEncoder compressor = serviceTalkCompression(compression);
+            final GrpcClientMetadata metadata = compressor == null ? DefaultGrpcClientMetadata.INSTANCE :
+                    new DefaultGrpcClientMetadata(compressor);
             if (!streaming) {
-                final ScalarCallMetadata metadata = codec == null ? ScalarCallMetadata.INSTANCE :
-                        new ScalarCallMetadata(codec);
                 final CompatResponse response1 = client.scalarCall(metadata,
                         CompatRequest.newBuilder().setId(1).build());
                 assertEquals(1000001, response1.getSize());
             } else {
                 // clientStreamingCall returns the "sum"
-                final ClientStreamingCallMetadata metadata = codec == null ? ClientStreamingCallMetadata.INSTANCE :
-                        new ClientStreamingCallMetadata(codec);
                 final CompatResponse response2 = client.clientStreamingCall(metadata, asList(
                         CompatRequest.newBuilder().setId(1).build(),
                         CompatRequest.newBuilder().setId(2).build(),
@@ -640,10 +643,8 @@ class ProtocolCompatibilityTest {
                 assertEquals(1000006, response2.getSize());
 
                 // serverStreamingCall returns a stream from 0 to N-1
-                final ServerStreamingCallMetadata serverMetadata = codec == null ?
-                        ServerStreamingCallMetadata.INSTANCE : new ServerStreamingCallMetadata(codec);
                 final BlockingIterable<CompatResponse> response3 =
-                        client.serverStreamingCall(serverMetadata, CompatRequest.newBuilder().setId(3).build());
+                        client.serverStreamingCall(metadata, CompatRequest.newBuilder().setId(3).build());
                 final List<CompatResponse> response3List = new ArrayList<>();
                 response3.forEach(response3List::add);
                 assertEquals(3, response3List.size());
@@ -652,9 +653,7 @@ class ProtocolCompatibilityTest {
                 assertEquals(1000002, response3List.get(2).getSize());
 
                 // bidirectionalStreamingCall basically echos also
-                final BidirectionalStreamingCallMetadata bidiMetadata = codec == null ?
-                        BidirectionalStreamingCallMetadata.INSTANCE : new BidirectionalStreamingCallMetadata(codec);
-                final BlockingIterable<CompatResponse> response4 = client.bidirectionalStreamingCall(bidiMetadata,
+                final BlockingIterable<CompatResponse> response4 = client.bidirectionalStreamingCall(metadata,
                         asList(CompatRequest.newBuilder().setId(3).build(),
                                 CompatRequest.newBuilder().setId(4).build(),
                                 CompatRequest.newBuilder().setId(5).build()
@@ -676,19 +675,17 @@ class ProtocolCompatibilityTest {
                                             final boolean streaming,
                                             @Nullable final String compression) {
         try {
-            final ContentCodec codec = serviceTalkCodingFor(compression);
+            final BufferEncoder compressor = serviceTalkCompression(compression);
+            final GrpcClientMetadata metadata = compressor == null ? DefaultGrpcClientMetadata.INSTANCE :
+                    new DefaultGrpcClientMetadata(compressor);
 
             if (!streaming) {
                 // scalarCall basically echos
-                final ScalarCallMetadata metadata = codec == null ? ScalarCallMetadata.INSTANCE :
-                        new ScalarCallMetadata(codec);
                 final Single<CompatResponse> response1 =
                         client.scalarCall(metadata, CompatRequest.newBuilder().setId(1).build());
                 assertEquals(1000001, response1.toFuture().get().getSize());
             } else {
                 // clientStreamingCall returns the "sum"
-                final ClientStreamingCallMetadata metadata = codec == null ? ClientStreamingCallMetadata.INSTANCE :
-                        new ClientStreamingCallMetadata(codec);
                 final Single<CompatResponse> response2 = client.clientStreamingCall(metadata, Publisher.from(
                         CompatRequest.newBuilder().setId(1).build(),
                         CompatRequest.newBuilder().setId(2).build(),
@@ -698,10 +695,8 @@ class ProtocolCompatibilityTest {
                 assertEquals(1000006, r.getSize());
 
                 // serverStreamingCall returns a stream from 0 to N-1
-                final ServerStreamingCallMetadata streamingCallMetadata = codec == null ?
-                        ServerStreamingCallMetadata.INSTANCE : new ServerStreamingCallMetadata(codec);
                 final Publisher<CompatResponse> response3 =
-                        client.serverStreamingCall(streamingCallMetadata, CompatRequest.newBuilder().setId(3).build());
+                        client.serverStreamingCall(metadata, CompatRequest.newBuilder().setId(3).build());
                 final List<CompatResponse> response3List = new ArrayList<>(response3.toFuture().get());
                 assertEquals(3, response3List.size());
                 assertEquals(1000000, response3List.get(0).getSize());
@@ -709,9 +704,7 @@ class ProtocolCompatibilityTest {
                 assertEquals(1000002, response3List.get(2).getSize());
 
                 // bidirectionalStreamingCall basically echos also
-                final BidirectionalStreamingCallMetadata bidiMetadata = codec == null ?
-                        BidirectionalStreamingCallMetadata.INSTANCE : new BidirectionalStreamingCallMetadata(codec);
-                final Publisher<CompatResponse> response4 = client.bidirectionalStreamingCall(bidiMetadata,
+                final Publisher<CompatResponse> response4 = client.bidirectionalStreamingCall(metadata,
                         Publisher.from(CompatRequest.newBuilder().setId(3).build(),
                                 CompatRequest.newBuilder().setId(4).build(),
                                 CompatRequest.newBuilder().setId(5).build()
@@ -780,11 +773,9 @@ class ProtocolCompatibilityTest {
                                                @Nullable final String expectMessage)
             throws Exception {
         try {
-            ContentCodec codec = serviceTalkCodingFor(compression);
-            BidirectionalStreamingCallMetadata metadata = BidirectionalStreamingCallMetadata.INSTANCE;
-            if (codec != null) {
-                metadata = new BidirectionalStreamingCallMetadata(codec);
-            }
+            BufferEncoder encoder = serviceTalkCompression(compression);
+            GrpcClientMetadata metadata = encoder == null ? DefaultGrpcClientMetadata.INSTANCE :
+                    new DefaultGrpcClientMetadata(encoder);
 
             final Publisher<CompatResponse> streamingResponse = client.bidirectionalStreamingCall(metadata,
                     Publisher.from(CompatRequest.newBuilder().setId(3).build(),
@@ -804,11 +795,9 @@ class ProtocolCompatibilityTest {
                                             @Nullable final String expectMessage)
             throws Exception {
         try {
-            ContentCodec codec = serviceTalkCodingFor(compression);
-            ScalarCallMetadata metadata = ScalarCallMetadata.INSTANCE;
-            if (codec != null) {
-                metadata = new ScalarCallMetadata(codec);
-            }
+            BufferEncoder encoder = serviceTalkCompression(compression);
+            GrpcClientMetadata metadata = encoder == null ? DefaultGrpcClientMetadata.INSTANCE :
+                    new DefaultGrpcClientMetadata(encoder);
 
             final Single<CompatResponse> scalarResponse =
                     client.scalarCall(metadata, CompatRequest.newBuilder().setId(1).build());
@@ -849,7 +838,7 @@ class ProtocolCompatibilityTest {
             throws InvalidProtocolBufferException {
         final GrpcStatus grpcStatus = statusException.status();
         assertNotNull(grpcStatus);
-        assertEquals(expectStatusCode, grpcStatus.code());
+        assertEquals(expectStatusCode, grpcStatus.code(), "grpcStatus: " + grpcStatus);
         if (null != expectMessage) {
             assertEquals(expectMessage, grpcStatus.description());
         }
@@ -955,8 +944,8 @@ class ProtocolCompatibilityTest {
         if (null != timeout) {
             builder.defaultTimeout(timeout);
         }
-        List<ContentCodec> codings = serviceTalkCodingsFor(compression);
-        return builder.build(new Compat.ClientFactory().supportedMessageCodings(codings));
+        return builder.build(new Compat.ClientFactory()
+                        .bufferDecoderGroup(serviceTalkDecompression(compression)));
     }
 
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode,
@@ -987,85 +976,93 @@ class ProtocolCompatibilityTest {
     }
 
     private static TestServerContext serviceTalkServerBlocking(final ErrorMode errorMode, final boolean ssl,
-                                                               @Nullable final String compression)
-            throws Exception {
-
-        List<ContentCodec> codings = serviceTalkCodingsFor(compression);
-
+                                                               @Nullable final String compression) throws Exception {
         final ServerContext serverContext = serviceTalkServerBuilder(ErrorMode.NONE, ssl, null)
-                .listenAndAwait(new ServiceFactory(new BlockingCompatService() {
-                    @Override
-                    public void bidirectionalStreamingCall(final GrpcServiceContext ctx,
-                                                           final BlockingIterable<CompatRequest> request,
-                                                           final GrpcPayloadWriter<CompatResponse> responseWriter)
-                            throws Exception {
-                        maybeThrowFromRpc(errorMode);
-                        for (CompatRequest requestItem : request) {
-                            responseWriter.write(computeResponse(requestItem.getId()));
-                        }
-                        responseWriter.close();
-                    }
+                .listenAndAwait(new ServiceFactory.Builder()
+                        .bufferDecoderGroup(serviceTalkDecompression(compression))
+                        .bufferEncoders(serviceTalkCompressions(compression))
+                        .addService(new BlockingCompatService() {
+                            @Override
+                            public void bidirectionalStreamingCall(
+                                    final GrpcServiceContext ctx, final BlockingIterable<CompatRequest> request,
+                                    final GrpcPayloadWriter<CompatResponse> responseWriter) throws Exception {
+                                maybeThrowFromRpc(errorMode);
+                                for (CompatRequest requestItem : request) {
+                                    responseWriter.write(computeResponse(requestItem.getId()));
+                                }
+                                responseWriter.close();
+                            }
 
-                    @Override
-                    public CompatResponse clientStreamingCall(final GrpcServiceContext ctx,
-                                                              final BlockingIterable<CompatRequest> request) {
-                        maybeThrowFromRpc(errorMode);
-                        int sum = 0;
-                        for (CompatRequest requestItem : request) {
-                            sum += requestItem.getId();
-                        }
-                        return computeResponse(sum);
-                    }
+                            @Override
+                            public CompatResponse clientStreamingCall(final GrpcServiceContext ctx,
+                                                                      final BlockingIterable<CompatRequest> request) {
+                                maybeThrowFromRpc(errorMode);
+                                int sum = 0;
+                                for (CompatRequest requestItem : request) {
+                                    sum += requestItem.getId();
+                                }
+                                return computeResponse(sum);
+                            }
 
-                    @Override
-                    public CompatResponse scalarCall(final GrpcServiceContext ctx, final CompatRequest request) {
-                        maybeThrowFromRpc(errorMode);
-                        return computeResponse(request.getId());
-                    }
+                            @Override
+                            public CompatResponse scalarCall(final GrpcServiceContext ctx,
+                                                             final CompatRequest request) {
+                                maybeThrowFromRpc(errorMode);
+                                return computeResponse(request.getId());
+                            }
 
-                    @Override
-                    public void serverStreamingCall(final GrpcServiceContext ctx, final CompatRequest request,
-                                                    final GrpcPayloadWriter<CompatResponse> responseWriter)
-                            throws Exception {
-                        maybeThrowFromRpc(errorMode);
-                        for (int i = 0; i < request.getId(); i++) {
-                            responseWriter.write(computeResponse(i));
-                        }
-                        responseWriter.close();
-                    }
-                }, codings));
+                            @Override
+                            public void serverStreamingCall(final GrpcServiceContext ctx, final CompatRequest request,
+                                                            final GrpcPayloadWriter<CompatResponse> responseWriter)
+                                    throws Exception {
+                                maybeThrowFromRpc(errorMode);
+                                for (int i = 0; i < request.getId(); i++) {
+                                    responseWriter.write(computeResponse(i));
+                                }
+                                responseWriter.close();
+                            }
+                        }).build());
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
     @Nullable
-    private static ContentCodec serviceTalkCodingFor(@Nullable final String compression) {
+    private static BufferEncoder serviceTalkCompression(@Nullable final String compression) {
         if (compression == null) {
             return null;
         }
 
-        if (compression.contentEquals(identity().name())) {
-            return identity();
+        if (compression.contentEquals(NettyBufferEncoders.gzipDefault().encodingName())) {
+            return NettyBufferEncoders.gzipDefault();
+        } else if (compression.contentEquals(Identity.identityEncoder().encodingName())) {
+            return Identity.identityEncoder();
         }
-
-        if (compression.contentEquals(gzipDefault().name())) {
-            return gzipDefault();
-        }
-
         throw new UnsupportedOperationException("Unsupported compression " + compression);
     }
 
-    private static List<ContentCodec> serviceTalkCodingsFor(@Nullable final String compression) {
-        List<ContentCodec> codings = new ArrayList<>();
-        if (compression != null) {
-            if (compression.contentEquals(gzipDefault().name())) {
-                codings.add(gzipDefault());
-            }
-
-            if (compression.contentEquals(identity().name())) {
-                codings.add(identity());
-            }
+    private static BufferDecoderGroup serviceTalkDecompression(@Nullable final String compression) {
+        if (compression == null) {
+            return EmptyBufferDecoderGroup.INSTANCE;
         }
-        return codings;
+        BufferDecoderGroupBuilder builder = new BufferDecoderGroupBuilder(2);
+        if (compression.contentEquals(NettyBufferEncoders.gzipDefault().encodingName())) {
+            builder.add(NettyBufferEncoders.gzipDefault(), true);
+        } else if (compression.contentEquals(Identity.identityEncoder().encodingName())) {
+            builder.add(Identity.identityEncoder(), false);
+        }
+        return builder.build();
+    }
+
+    private static List<BufferEncoder> serviceTalkCompressions(@Nullable final String compression) {
+        if (compression == null) {
+            return Collections.emptyList();
+        }
+        List<BufferEncoder> encoders = new ArrayList<>(2);
+        if (compression.contentEquals(NettyBufferEncoders.gzipDefault().encodingName())) {
+            encoders.add(NettyBufferEncoders.gzipDefault());
+        } else if (compression.contentEquals(Identity.identityEncoder().encodingName())) {
+            encoders.add(Identity.identityEncoder());
+        }
+        return encoders;
     }
 
     private static void maybeThrowFromRpc(final ErrorMode errorMode) {
@@ -1133,16 +1130,14 @@ class ProtocolCompatibilityTest {
             }
         };
 
-        List<ContentCodec> codings = serviceTalkCodingsFor(compression);
-
-        final ServiceFactory serviceFactory = strategy == defaultStrategy() ?
-                new ServiceFactory(compatService, codings) :
-                new ServiceFactory.Builder(codings)
-                        .bidirectionalStreamingCall(strategy, compatService)
-                        .clientStreamingCall(strategy, compatService)
-                        .scalarCall(strategy, compatService)
-                        .serverStreamingCall(strategy, compatService)
-                        .build();
+        final ServiceFactory serviceFactory = new ServiceFactory.Builder()
+                .bufferEncoders(serviceTalkCompressions(compression))
+                .bufferDecoderGroup(serviceTalkDecompression(compression))
+                .bidirectionalStreamingCall(strategy, compatService)
+                .clientStreamingCall(strategy, compatService)
+                .scalarCall(strategy, compatService)
+                .serverStreamingCall(strategy, compatService)
+                .build();
 
         serviceFactory.appendServiceFilter(delegate -> new Compat.CompatServiceFilter(delegate) {
             @Override
@@ -1231,6 +1226,13 @@ class ProtocolCompatibilityTest {
 
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(
+                    final GrpcClientMetadata metadata, final Publisher<CompatRequest> request) {
+                return bidirectionalStreamingCall(request);
+            }
+
+            @Deprecated
+            @Override
+            public Publisher<CompatResponse> bidirectionalStreamingCall(
                     final BidirectionalStreamingCallMetadata metadata, final Publisher<CompatRequest> request) {
                 return bidirectionalStreamingCall(request);
             }
@@ -1245,8 +1247,15 @@ class ProtocolCompatibilityTest {
                 return (Single<CompatResponse>) processor;
             }
 
+            @Deprecated
             @Override
             public Single<CompatResponse> clientStreamingCall(final ClientStreamingCallMetadata metadata,
+                                                              final Publisher<CompatRequest> request) {
+                return clientStreamingCall(request);
+            }
+
+            @Override
+            public Single<CompatResponse> clientStreamingCall(final GrpcClientMetadata metadata,
                                                               final Publisher<CompatRequest> request) {
                 return clientStreamingCall(request);
             }
@@ -1259,8 +1268,14 @@ class ProtocolCompatibilityTest {
                 return (Single<CompatResponse>) processor;
             }
 
+            @Deprecated
             @Override
             public Single<CompatResponse> scalarCall(final ScalarCallMetadata metadata, final CompatRequest request) {
+                return scalarCall(request);
+            }
+
+            @Override
+            public Single<CompatResponse> scalarCall(final GrpcClientMetadata metadata, final CompatRequest request) {
                 return scalarCall(request);
             }
 
@@ -1272,8 +1287,15 @@ class ProtocolCompatibilityTest {
                 return fromSource(processor);
             }
 
+            @Deprecated
             @Override
             public Publisher<CompatResponse> serverStreamingCall(final ServerStreamingCallMetadata metadata,
+                                                                 final CompatRequest request) {
+                return serverStreamingCall(request);
+            }
+
+            @Override
+            public Publisher<CompatResponse> serverStreamingCall(final GrpcClientMetadata metadata,
                                                                  final CompatRequest request) {
                 return serverStreamingCall(request);
             }
@@ -1365,7 +1387,7 @@ class ProtocolCompatibilityTest {
             }
 
             // Always include identity otherwise it's not available
-            dRegistry = dRegistry.with((Decompressor) id, true);
+            dRegistry = dRegistry.with((Decompressor) id, false);
             cRegistry.register(id);
 
             builder.decompressorRegistry(dRegistry);

@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -83,7 +83,7 @@ class HttpProxyTest {
     void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
-                        .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
+                        .payloadBody("host: " + request.headers().get(HOST), textSerializerUtf8())));
         serverAddress = serverHostAndPort(serverContext);
     }
 

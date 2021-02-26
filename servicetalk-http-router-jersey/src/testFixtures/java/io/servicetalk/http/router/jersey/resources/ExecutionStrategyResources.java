@@ -19,12 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
-import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.server.ManagedAsync;
@@ -47,6 +44,7 @@ import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.router.jersey.resources.SerializerUtils.MAP_STRING_STRING_SERIALIZER;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -64,8 +62,6 @@ public final class ExecutionStrategyResources {
 
     @Produces(APPLICATION_JSON)
     public abstract static class AbstractExecutionStrategyResource {
-        private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
-
         @Context
         private ConnectionContext ctx;
 
@@ -238,7 +234,7 @@ public final class ExecutionStrategyResources {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             return defer(() -> {
                 threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
-                return succeeded(SERIALIZER.serialize(threadingInfo, allocator));
+                return succeeded(MAP_STRING_STRING_SERIALIZER.serialize(threadingInfo, allocator));
             });
         }
 

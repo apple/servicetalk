@@ -20,7 +20,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
 import static io.servicetalk.examples.http.uds.blocking.UdsUtils.udsAddress;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket</a> client example.
@@ -30,7 +30,7 @@ public final class BlockingUdsClient {
         try (BlockingHttpClient client = HttpClients.forResolvedAddress(udsAddress()).buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            System.out.println(response.payloadBody(textDeserializer()));
+            System.out.println(response.payloadBody(textSerializerUtf8()));
         }
     }
 }

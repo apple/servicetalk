@@ -27,12 +27,14 @@ import java.lang.reflect.Type;
  * <pre>
  *  TypeHolder&lt;Set&lt;String&gt;&gt; holder = new TypeHolder&lt;Set&lt;String&gt;&gt;() { };
  * </pre>
- *
+ * @deprecated General {@link Type} serialization is not supported by all serializers. Defer
+ * to your specific {@link io.servicetalk.serializer.api.Serializer} implementation.
  * This implementation is based on the samples provided in
  * <a href="http://gafter.blogspot.com/2006/12/super-type-tokens.html">this article.</a>.
  *
  * @param <T> Type to be inferred.
  */
+@Deprecated
 public abstract class TypeHolder<T> {
 
     private final Type type;

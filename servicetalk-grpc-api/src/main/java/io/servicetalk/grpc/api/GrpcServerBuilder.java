@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
+import static io.servicetalk.grpc.api.GrpcUtils.GRPC_CONTENT_TYPE;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 
 /**
@@ -369,7 +370,8 @@ public abstract class GrpcServerBuilder {
         private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
+            return newErrorResponse(responseFactory, GRPC_CONTENT_TYPE, cause,
+                    ctx.executionContext().bufferAllocator());
         }
     }
 }

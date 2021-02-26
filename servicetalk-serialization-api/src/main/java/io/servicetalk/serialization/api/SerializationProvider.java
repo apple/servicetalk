@@ -18,10 +18,14 @@ package io.servicetalk.serialization.api;
 import io.servicetalk.buffer.api.Buffer;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /**
  * A provider of serialization implementation for {@link Serializer}.
+ * @deprecated General {@link Type} serialization is not supported by all serializers. Defer
+ * to your specific {@link io.servicetalk.serializer.api.Serializer} implementation.
  */
+@Deprecated
 public interface SerializationProvider {
 
     /**

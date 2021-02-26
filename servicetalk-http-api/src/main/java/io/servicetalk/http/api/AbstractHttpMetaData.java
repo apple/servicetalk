@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
  * Abstract base class for {@link HttpMetaData}.
  */
 abstract class AbstractHttpMetaData implements HttpMetaData {
+    @Deprecated
     @Nullable
     private ContentCodec encoding;
     private HttpProtocolVersion version;
@@ -33,17 +34,6 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers) {
         this.version = requireNonNull(version);
         this.headers = requireNonNull(headers);
-    }
-
-    AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers,
-                         @Nullable final ContentCodec encoding) {
-        this.version = requireNonNull(version);
-        this.headers = requireNonNull(headers);
-        this.encoding = encoding;
-    }
-
-    AbstractHttpMetaData(final AbstractHttpMetaData metaData) {
-        this(metaData.version, metaData.headers, metaData.encoding);
     }
 
     @Override
@@ -57,12 +47,14 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpMetaData encoding(final ContentCodec encoding) {
         this.encoding = requireNonNull(encoding);
         return this;
     }
 
+    @Deprecated
     @Override
     public ContentCodec encoding() {
         return encoding;

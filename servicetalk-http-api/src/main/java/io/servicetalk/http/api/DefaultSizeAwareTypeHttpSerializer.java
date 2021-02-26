@@ -29,11 +29,12 @@ import java.util.function.IntUnaryOperator;
 /**
  * An {@link HttpSerializer} that serializes a {@link TypeHolder} of type {@link T}. This {@link HttpSerializer} can
  * control sizes of intermediary {@link Buffer}s for serializing a stream.
- *
+ * @deprecated Will be removed with {@link HttpSerializer}.
  * @param <T> Type to serialize
  * @see DefaultClassHttpSerializer
  * @see DefaultTypeHttpSerializer
  */
+@Deprecated
 final class DefaultSizeAwareTypeHttpSerializer<T> implements HttpSerializer<T> {
 
     private final Consumer<HttpHeaders> addContentType;

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.examples.grpc.deadline;
 
+import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.transport.api.HostAndPort;
@@ -47,14 +48,14 @@ public final class DeadlineClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(2);
 
             // Make a request using default timeout (this will succeed)
-            client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
+            client.sayHello(HelloRequest.newBuilder().setName("DefaultTimeout").build())
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
                     .subscribe(System.out::println);
 
             // Set the timeout for completion of this gRPC call to 3 seconds (this will timeout)
-            Greeter.SayHelloMetadata metadata = new Greeter.SayHelloMetadata(Duration.ofSeconds(3));
-            client.sayHello(metadata, HelloRequest.newBuilder().setName("Bar").build())
+            client.sayHello(new DefaultGrpcClientMetadata(Duration.ofSeconds(3)),
+                            HelloRequest.newBuilder().setName("3SecondTimeout").build())
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
                     .subscribe(System.out::println);

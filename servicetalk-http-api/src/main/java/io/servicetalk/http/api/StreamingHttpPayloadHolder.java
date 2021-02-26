@@ -98,13 +98,14 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         }
     }
 
-    <T> void payloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
+    <T> void payloadBody(final Publisher<T> payloadBody, final HttpStreamingSerializer<T> serializer) {
         payloadBody(serializer.serialize(headers, payloadBody, allocator));
         // Because #serialize(...) method may apply operators, check the original payloadBody again:
         payloadInfo.setEmpty(payloadBody == empty());
     }
 
-    <T> void transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer, HttpSerializer<T> serializer) {
+    <T> void transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                  HttpStreamingSerializer<T> serializer) {
         transformPayloadBody(bufPub -> serializer.serialize(headers, transformer.apply(bufPub), allocator));
     }
 
@@ -131,6 +132,61 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         // The transformation does not support changing the presence of trailers in the message body or the type of
         // Publisher, or its content (e.g. payloadInfo assumed not impacted).
         messageBody = transformer.apply(messageBody());
+    }
+
+    <T, S> void transform(final TrailersTransformer<T, S> trailersTransformer,
+                          final HttpStreamingDeserializer<S> serializer) {
+        if (messageBody == null) {
+            messageBody = defer(() ->
+                    from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
+                            headersFactory.newEmptyTrailers())).subscribeShareContext());
+        } else {
+            final Publisher<?> oldMessageBody = messageBody;
+            messageBody = defer(() -> {
+                final Processor<HttpHeaders, HttpHeaders> trailersProcessor = newSingleProcessor();
+                final Publisher<Buffer> transformedPayloadBody = oldMessageBody.liftSync(
+                        new PreserveTrailersBufferOperator(trailersProcessor));
+                return merge(serializer.deserialize(headers, transformedPayloadBody, allocator),
+                        fromSource(trailersProcessor)).scanWith(() -> new ScanWithMapper<Object, Object>() {
+                    @Nullable
+                    private final T state = trailersTransformer.newState();
+                    @Nullable
+                    private HttpHeaders trailers;
+
+                    @Override
+                    public Object mapOnNext(@Nullable final Object next) {
+                        if (next instanceof HttpHeaders) {
+                            if (trailers != null) {
+                                throwDuplicateTrailersException(trailers, next);
+                            }
+                            trailers = (HttpHeaders) next;
+                            return trailersTransformer.payloadComplete(state, trailers);
+                        } else if (trailers != null) {
+                            throwOnNextAfterTrailersException(trailers, next);
+                        }
+                        @SuppressWarnings("unchecked")
+                        final S nextS = (S) requireNonNull(next);
+                        return trailersTransformer.accept(state, nextS);
+                    }
+
+                    @Override
+                    public Object mapOnError(final Throwable t) throws Throwable {
+                        return trailersTransformer.catchPayloadFailure(state, t, headersFactory.newEmptyTrailers());
+                    }
+
+                    @Override
+                    public Object mapOnComplete() {
+                        return trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers());
+                    }
+
+                    @Override
+                    public boolean mapTerminal() {
+                        return trailers == null;
+                    }
+                }).subscribeShareContext();
+            });
+        }
+        payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(true);
     }
 
     <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {

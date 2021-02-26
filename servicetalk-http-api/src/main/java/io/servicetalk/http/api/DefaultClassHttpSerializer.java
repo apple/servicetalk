@@ -26,11 +26,12 @@ import java.util.function.Consumer;
 
 /**
  * An {@link HttpSerializer} that serializes a {@link Class} of type {@link T}.
- *
+ * @deprecated Will be removed with {@link HttpSerializer}.
  * @param <T> Type to serialize
  * @see DefaultTypeHttpSerializer
  * @see DefaultSizeAwareClassHttpSerializer
  */
+@Deprecated
 final class DefaultClassHttpSerializer<T> implements HttpSerializer<T> {
 
     private final Consumer<HttpHeaders> addContentType;

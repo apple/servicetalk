@@ -232,17 +232,11 @@ public final class HeaderUtils {
         return headers.contains(CONTENT_LENGTH);
     }
 
-    static void addChunkedEncoding(final HttpHeaders headers) {
-        if (!isTransferEncodingChunked(headers)) {
-            headers.add(TRANSFER_ENCODING, CHUNKED);
-        }
-    }
-
-    static void setContentEncoding(final HttpHeaders headers, CharSequence encoding) {
+    static void addContentEncoding(final HttpHeaders headers, CharSequence encoding) {
         // H2 does not support TE / Transfer-Encoding, so we rely in the presentation encoding only.
         // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
-        headers.set(CONTENT_ENCODING, encoding);
-        headers.set(VARY, CONTENT_ENCODING);
+        headers.add(CONTENT_ENCODING, encoding);
+        headers.add(VARY, CONTENT_ENCODING);
     }
 
     static boolean hasContentEncoding(final HttpHeaders headers) {
@@ -667,12 +661,13 @@ public final class HeaderUtils {
      * If the name can not be matched to any of the supported encodings on this endpoint, then
      * a {@link UnsupportedContentEncodingException} is thrown.
      * If the matched encoding is {@link Identity#identity()} then this returns {@code null}.
-     *
+     * @deprecated Will be removed along with {@link ContentCodec}.
      * @param headers The headers to read the encoding name from
      * @param allowedEncodings The supported encodings for this endpoint
      * @return The {@link ContentCodec} that matches the name or null if matches to identity
      */
     @Nullable
+    @Deprecated
     static ContentCodec identifyContentEncodingOrNullIfIdentity(
             final HttpHeaders headers, final List<ContentCodec> allowedEncodings) {
 
@@ -751,18 +746,26 @@ public final class HeaderUtils {
         }
     }
 
+    /**
+     * Checks if the provider headers contain a {@code Content-Type} header that satisfies the supplied predicate.
+     *
+     * @param headers the {@link HttpHeaders} instance
+     * @param contentTypePredicate the content type predicate
+     */
+    static void deserializeCheckContentType(final HttpHeaders headers, Predicate<HttpHeaders> contentTypePredicate) {
+        if (!contentTypePredicate.test(headers)) {
+            throw new io.servicetalk.serializer.api.SerializationException(
+                    "Unexpected headers, can not deserialize. Headers: "
+                            + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
+        }
+    }
+
     private static Pattern compileCharsetRegex(String charsetName) {
         return compile(".*;\\s*charset=\"?" + quote(charsetName) + "\"?\\s*(;.*|$)", CASE_INSENSITIVE);
     }
 
     private static boolean hasCharset(final CharSequence contentTypeHeader) {
         return HAS_CHARSET_PATTERN.matcher(contentTypeHeader).matches();
-    }
-
-    private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
-        for (int i = 0; i < key.length(); ++i) {
-            validateToken((byte) key.charAt(i));
-        }
     }
 
     /**

@@ -1658,6 +1658,21 @@ public interface Buffer {
     Buffer writeUtf8(CharSequence seq, int ensureWritable);
 
     /**
+     * Encode a {@link CharSequence} encoded in {@link Charset} and write it to this buffer starting at
+     * {@code writerIndex} and increases the {@code writerIndex} by the number of the transferred bytes.
+     *
+     * @param seq the source of the data.
+     * @param charset the charset used for encoding.
+     * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
+     */
+    default Buffer writeCharSequence(CharSequence seq, Charset charset) {
+        byte[] bytes = seq.toString().getBytes(charset);
+        writeBytes(bytes);
+        return this;
+    }
+
+    /**
      * Locates the first occurrence of the specified {@code value} in this
      * buffer.  The search takes place from the specified {@code fromIndex}
      * (inclusive)  to the specified {@code toIndex} (exclusive).

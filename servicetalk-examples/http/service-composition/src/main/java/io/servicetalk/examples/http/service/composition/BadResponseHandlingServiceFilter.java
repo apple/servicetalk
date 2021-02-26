@@ -25,10 +25,8 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
  * Example service filter that returns a response with the exception message if the wrapped service completes with a
@@ -45,8 +43,8 @@ final class BadResponseHandlingServiceFilter implements StreamingHttpServiceFilt
                     if (cause instanceof BadResponseStatusException) {
                         // It's useful to include the exception message in the payload for demonstration purposes, but
                         // this is not recommended in production as it may leak internal information.
-                        return succeeded(responseFactory.internalServerError()
-                                .payloadBody(from(cause.getMessage()), textSerializer()));
+                        return responseFactory.internalServerError().toResponse().map(
+                                resp -> resp.payloadBody(cause.getMessage(), textSerializerUtf8()).toStreamingResponse());
                     }
                     return failed(cause);
                 });

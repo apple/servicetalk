@@ -22,12 +22,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
-import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.Serializer;
-import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -71,6 +67,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
+import static io.servicetalk.http.router.jersey.resources.SerializerUtils.MAP_STRING_OBJECT_SERIALIZER;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singletonMap;
@@ -95,11 +92,6 @@ import static javax.ws.rs.core.Response.status;
 @Path(PATH)
 public class AsynchronousResources {
     public static final String PATH = "/async";
-
-    private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
-    private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-            new TypeHolder<Map<String, Object>>() {
-            };
 
     @Context
     private ConnectionContext ctx;
@@ -130,9 +122,9 @@ public class AsynchronousResources {
         return fail ? defer(() -> failed(DELIBERATE_EXCEPTION)) :
                 requestContent.map(buf -> {
                     final Map<String, Object> responseContent =
-                            new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
+                            new HashMap<>(MAP_STRING_OBJECT_SERIALIZER.deserialize(buf, allocator));
                     responseContent.put("foo", "bar6");
-                    return SERIALIZER.serialize(responseContent, allocator);
+                    return MAP_STRING_OBJECT_SERIALIZER.serialize(responseContent, allocator);
                 });
     }
 

@@ -22,6 +22,10 @@ import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
 
+/**
+ * @deprecated Will be removed with {@link HttpSerializationProvider}.
+ */
+@Deprecated
 final class DefaultHttpSerializationProvider implements HttpSerializationProvider {
 
     private final Serializer serializer;

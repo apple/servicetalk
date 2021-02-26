@@ -19,7 +19,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 public final class BlockingHelloWorldClient {
 
@@ -27,7 +27,7 @@ public final class BlockingHelloWorldClient {
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            System.out.println(response.payloadBody(textDeserializer()));
+            System.out.println(response.payloadBody(textSerializerUtf8()));
         }
     }
 }

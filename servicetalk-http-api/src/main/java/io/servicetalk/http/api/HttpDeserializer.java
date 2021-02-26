@@ -21,10 +21,11 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory to address deserialization concerns for HTTP request/response payload bodies.
+ * @deprecated Use {@link HttpDeserializer2} or {@link HttpStreamingDeserializer}.
  * @param <T> The type of objects to deserialize.
  */
+@Deprecated
 public interface HttpDeserializer<T> {
-
     /**
      * Deserialize a single {@link Object} into a {@link T}.
      * @param headers The {@link HttpHeaders} associated with the {@code payload}.
@@ -36,6 +37,7 @@ public interface HttpDeserializer<T> {
 
     /**
      * Deserialize a {@link BlockingIterable} of {@link Object}s into a {@link BlockingIterable} of type {@link T}.
+     *
      * @param headers The {@link HttpHeaders} associated with the {@code payload}.
      * @param payload Provides the {@link Object}s to deserialize. The contents are assumed to be in memory, otherwise
      * this method may block.
@@ -45,6 +47,7 @@ public interface HttpDeserializer<T> {
 
     /**
      * Deserialize a {@link Publisher} of {@link Object}s into a {@link Publisher} of type {@link T}.
+     *
      * @param headers The {@link HttpHeaders} associated with the {@code payload}.
      * @param payload Provides the {@link Object}s to deserialize.
      * @return a {@link Publisher} of type {@link T} which is the result of the deserialization.

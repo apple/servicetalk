@@ -38,8 +38,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -95,10 +94,10 @@ class Tls13Test {
             .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
             .sslConfig(serverSslBuilder.build())
             .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                assertThat(request.payloadBody(textDeserializer()), equalTo("request-payload-body"));
+                assertThat(request.payloadBody(textSerializerUtf8()), equalTo("request-payload-body"));
                 SSLSession sslSession = ctx.sslSession();
                 assertThat(sslSession, is(notNullValue()));
-                return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializer());
+                return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializerUtf8());
             })) {
 
             ClientSslConfigBuilder clientSslBuilder =
@@ -121,11 +120,11 @@ class Tls13Test {
                     assertThat(sslSession.getCipherSuite(), equalTo(cipher));
                 }
                 HttpResponse response = client.request(client.post("/")
-                                                           .payloadBody("request-payload-body", textSerializer()));
+                                                           .payloadBody("request-payload-body", textSerializerUtf8()));
 
                 assertThat(response.status(), is(OK));
                 assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-                assertThat(response.payloadBody(textDeserializer()), equalTo(TLS1_3));
+                assertThat(response.payloadBody(textSerializerUtf8()), equalTo(TLS1_3));
             }
         }
     }

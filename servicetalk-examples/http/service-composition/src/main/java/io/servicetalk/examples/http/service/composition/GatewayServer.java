@@ -16,9 +16,7 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
@@ -38,7 +36,6 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
-import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -75,26 +72,21 @@ public final class GatewayServer {
             HttpClient ratingsClient =
                     newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources, "ratings backend").asClient();
 
-            // Use Jackson for serialization and deserialization.
-            // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
-            // HTTP focused serialization APIs.
-            HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
-
             // Gateway supports different endpoints for blocking, streaming or aggregated implementations.
             // We create a router to express these endpoints.
             HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
             final StreamingHttpService gatewayService =
                     routerBuilder.whenPathStartsWith("/recommendations/stream")
                             .thenRouteTo(new StreamingGatewayService(recommendationsClient, metadataClient,
-                                    ratingsClient, userClient, httpSerializer))
+                                    ratingsClient, userClient))
                             .whenPathStartsWith("/recommendations/aggregated")
                             .thenRouteTo(new GatewayService(recommendationsClient.asClient(),
-                                    metadataClient, ratingsClient, userClient, httpSerializer))
+                                    metadataClient, ratingsClient, userClient))
                             .whenPathStartsWith("/recommendations/blocking")
                             .thenRouteTo(new BlockingGatewayService(recommendationsClient.asBlockingClient(),
                                     metadataClient.asBlockingClient(),
                                     ratingsClient.asBlockingClient(),
-                                    userClient.asBlockingClient(), httpSerializer))
+                                    userClient.asBlockingClient()))
                             .buildStreaming();
 
             // Create configurable starter for HTTP server.

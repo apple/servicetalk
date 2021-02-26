@@ -19,7 +19,7 @@ package io.servicetalk.encoding.api;
  * Utility class that constructs and provides the default, always supported NOOP 'identity' {@link ContentCodec}.
  */
 public final class Identity {
-
+    @Deprecated
     private static final ContentCodec IDENTITY = new IdentityContentCodec();
 
     private Identity() {
@@ -28,9 +28,21 @@ public final class Identity {
 
     /**
      * Returns the default, always supported NOOP 'identity' {@link ContentCodec}.
+     * @deprecated Use {@link #identityEncoder()}.
      * @return the default, always supported NOOP 'identity' {@link ContentCodec}.
      */
+    @Deprecated
     public static ContentCodec identity() {
         return IDENTITY;
+    }
+
+    /**
+     * Get a {@link BufferEncoderDecoder} which provides
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.4">"no encoding"</a>.
+     * @return a {@link BufferEncoderDecoder} which provides
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.4">"no encoding"</a>.
+     */
+    public static BufferEncoderDecoder identityEncoder() {
+        return IdentityBufferEncoderDecoder.INSTANCE;
     }
 }

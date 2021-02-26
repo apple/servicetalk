@@ -53,8 +53,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@Deprecated
 class DefaultSerializerDeserializationTest {
-
     private static final TypeHolder<List<String>> TYPE_FOR_LIST = new TypeHolder<List<String>>() {
     };
 

@@ -30,9 +30,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding;
+import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
-import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
@@ -50,7 +50,9 @@ import static java.util.Collections.emptyList;
  * <p>
  * Append this filter before others that are expected to to see compressed content for this request/response, and after
  * other filters that expect to see/manipulate the original payload.
+ * @deprecated Use {@link ContentEncodingHttpServiceFilter}.
  */
+@Deprecated
 public final class ContentCodingHttpServiceFilter
         implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
@@ -144,7 +146,7 @@ public final class ContentCodingHttpServiceFilter
 
         ContentCodec coding = codingForResponse(requestHeaders, response, supportedEncodings);
         if (coding != null) {
-            setContentEncoding(response.headers(), coding.name());
+            addContentEncoding(response.headers(), coding.name());
             response.transformPayloadBody(bufferPublisher -> coding.encode(bufferPublisher, allocator));
         }
     }
