@@ -61,8 +61,8 @@ public class GrpcUdsTest {
                 .ioExecutor(ioExecutor)
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
-        BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
-                .buildBlocking(new ClientFactory())) {
+             BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
+                     .buildBlocking(new ClientFactory())) {
             assertEquals(expectedResponse,
                     client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
         }
