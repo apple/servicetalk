@@ -74,8 +74,9 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * contain an {@code X.509} certificate chain in {@code PEM} format.
      * @param trustCertChainSupplier the trusted certificates for verifying the remote endpoint's certificate. The input
      * stream should contain an {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
     T trustManager(Supplier<InputStream> trustCertChainSupplier) {
@@ -108,12 +109,14 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * Set a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM} format and
      * a {@code PKCS#8} private key in {@code PEM} format.
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keySupplier a {@link InputStream} which provides a {@code PKCS#8} private key in {@code PEM} format
-     * associated with. The responsibility to call {@link InputStream#close()} is transferred to callers of the
-     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
-     * {@link InputStream#close()}.
+     * associated with.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
     T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
@@ -126,12 +129,14 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * Set a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM} format and
      * a {@code PKCS#8} private key in {@code PEM} format protected by a password.
      * @param keyCertChainSupplier the {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keySupplier a {@link InputStream} which provides a {@code PKCS#8} private key in {@code PEM} format
-     * associated with. The responsibility to call {@link InputStream#close()} is transferred to callers of the
-     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
-     * {@link InputStream#close()}.
+     * associated with.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      * @return {@code this}.
      */

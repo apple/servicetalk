@@ -40,8 +40,9 @@ public interface SslConfig {
      * contain an {@code X.509} certificate chain in {@code PEM} format.
      * @return the trusted certificates for verifying the remote endpoint's certificate. The input stream should
      * contain an {@code X.509} certificate chain in {@code PEM} format.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      */
     @Nullable
     Supplier<InputStream> trustCertChainSupplier();
@@ -58,8 +59,9 @@ public interface SslConfig {
      * Get a {@link InputStream} which provides {@code X.509} certificate chain in {@code PEM} format associated with
      * {@link #keySupplier()}.
      * @return the certificate chain associated with {@link #keySupplier()}.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      */
     @Nullable
     Supplier<InputStream> keyCertChainSupplier();
@@ -69,8 +71,9 @@ public interface SslConfig {
      * {@link #keyCertChainSupplier()}.
      * @return a {@link InputStream} which provides a {@code PKCS#8} private key in {@code PEM} format associated with
      * {@link #keyCertChainSupplier()}.
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * <p>
+     * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
+     * caller is responsible for invoking {@link InputStream#close()}.
      */
     @Nullable
     Supplier<InputStream> keySupplier();
