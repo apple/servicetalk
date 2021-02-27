@@ -39,8 +39,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.function.Consumer;
-
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
@@ -139,41 +137,6 @@ public class AbstractH2DuplexHandlerTest {
     @Parameterized.Parameters(name = "variant = {0}")
     public static Variant[] data() {
         return Variant.values();
-    }
-
-    @Test
-    public void multipleContentLengthHeaders() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1", "2");
-        multipleContentLength(initHeaders, false);
-    }
-
-    @Test
-    public void multipleContentLengthHeadersEndStream() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1", "2");
-        multipleContentLength(initHeaders, true);
-    }
-
-    @Test
-    public void multipleContentLengthHeaderValues() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1, 2");
-        multipleContentLength(initHeaders, false);
-    }
-
-    @Test
-    public void multipleContentLengthHeaderValuesEndStream() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1, 2");
-        multipleContentLength(initHeaders, true);
-    }
-
-    private void multipleContentLength(Consumer<Http2Headers> initHeaders, boolean endStream) {
-        variant.writeOutbound(channel);
-
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        initHeaders.accept(headers);
-
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream)));
-        assertThat(e.getMessage(), startsWith("Multiple content-length values found"));
     }
 
     @Test

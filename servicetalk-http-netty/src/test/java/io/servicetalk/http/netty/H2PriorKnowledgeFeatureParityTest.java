@@ -88,6 +88,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -106,6 +107,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -143,6 +145,7 @@ import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
+import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -444,26 +447,93 @@ public class H2PriorKnowledgeFeatureParityTest {
     @Test
     public void clientSendsLargerContentLength() throws Exception {
         assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
-        clientSendsInvalidContentLength(1, false);
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
     @Test
     public void clientSendsLargerContentLengthTrailers() throws Exception {
         assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
-        clientSendsInvalidContentLength(1, true);
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
     @Test
     public void clientSendsSmallerContentLength() throws Exception {
-        clientSendsInvalidContentLength(-1, false);
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
     @Test
     public void clientSendsSmallerContentLengthTrailers() throws Exception {
-        clientSendsInvalidContentLength(-1, true);
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    private void clientSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+    @Test
+    public void clientSendsMultipleContentLengthHeaders() throws Exception {
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength))
+                        .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
+    }
+
+    @Test
+    public void clientSendsMultipleContentLengthHeadersTrailers() throws Exception {
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength))
+                        .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
+    }
+
+    @Test
+    public void clientSendsMultipleContentLengthValues() throws Exception {
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
+    }
+
+    @Test
+    public void clientSendsMultipleContentLengthValuesTrailers() throws Exception {
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
+    }
+
+    @Test
+    public void clientSendsSignedContentLength() throws Exception {
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "+" + contentLength));
+    }
+
+    @Test
+    public void clientSendsSignedContentLengthTrailers() throws Exception {
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "+" + contentLength));
+    }
+
+    @Test
+    public void clientSendsNegativeContentLength() throws Exception {
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "-" + contentLength));
+    }
+
+    @Test
+    public void clientSendsNegativeContentLengthTrailers() throws Exception {
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "-" + contentLength));
+    }
+
+    @Test
+    public void clientSendsMalformedContentLength() throws Exception {
+        clientSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
+    }
+
+    @Test
+    public void clientSendsMalformedContentLengthTrailers() throws Exception {
+        clientSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
+    }
+
+    private void clientSendsInvalidContentLength(boolean addTrailers,
+                                                 BiConsumer<HttpHeaders, Integer> headersModifier) throws Exception {
         assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -476,8 +546,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                                                                     final StreamingHttpRequest request) {
                         return request.toRequest().map(req -> {
                             req.headers().remove(TRANSFER_ENCODING);
-                            req.headers().set(CONTENT_LENGTH,
-                                    String.valueOf(req.payloadBody().readableBytes() + contentLengthAdder));
+                            headersModifier.accept(req.headers(), req.payloadBody().readableBytes());
                             return req.toStreamingRequest();
                         }).flatMap(req -> delegate.request(strategy, req));
                     }
@@ -490,8 +559,11 @@ public class H2PriorKnowledgeFeatureParityTest {
                 assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
-                    reservedConn.request(request);
-                    assertThrows(ClosedChannelException.class, () -> reservedConn.request(client.get("/")));
+                    assertThrows(IOException.class, () -> {
+                        // Either the current request or the next one should fail
+                        reservedConn.request(request);
+                        reservedConn.request(client.get("/"));
+                    });
                 }
             }
         }
@@ -500,26 +572,93 @@ public class H2PriorKnowledgeFeatureParityTest {
     @Test
     public void serverSendsLargerContentLength() throws Exception {
         assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
-        serverSendsInvalidContentLength(1, false);
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
     @Test
     public void serverSendsLargerContentLengthTrailers() throws Exception {
         assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
-        serverSendsInvalidContentLength(1, true);
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength + 1)));
     }
 
     @Test
     public void serverSendsSmallerContentLength() throws Exception {
-        serverSendsInvalidContentLength(-1, false);
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
     @Test
     public void serverSendsSmallerContentLengthTrailers() throws Exception {
-        serverSendsInvalidContentLength(-1, true);
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength - 1)));
     }
 
-    private void serverSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+    @Test
+    public void serverSendsMultipleContentLengthHeaders() throws Exception {
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength))
+                        .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
+    }
+
+    @Test
+    public void serverSendsMultipleContentLengthHeadersTrailers() throws Exception {
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, valueOf(contentLength))
+                        .add(CONTENT_LENGTH, valueOf(contentLength - 1)));
+    }
+
+    @Test
+    public void serverSendsMultipleContentLengthValues() throws Exception {
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
+    }
+
+    @Test
+    public void serverSendsMultipleContentLengthValuesTrailers() throws Exception {
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + ", " + (contentLength - 1)));
+    }
+
+    @Test
+    public void serverSendsSignedContentLength() throws Exception {
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "+" + contentLength));
+    }
+
+    @Test
+    public void serverSendsSignedContentLengthTrailers() throws Exception {
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "+" + contentLength));
+    }
+
+    @Test
+    public void serverSendsNegativeContentLength() throws Exception {
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "-" + contentLength));
+    }
+
+    @Test
+    public void serverSendsNegativeContentLengthTrailers() throws Exception {
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, "-" + contentLength));
+    }
+
+    @Test
+    public void serverSendsMalformedContentLength() throws Exception {
+        serverSendsInvalidContentLength(false, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
+    }
+
+    @Test
+    public void serverSendsMalformedContentLengthTrailers() throws Exception {
+        serverSendsInvalidContentLength(true, (headers, contentLength) ->
+                headers.set(CONTENT_LENGTH, contentLength + "_" + contentLength));
+    }
+
+    private void serverSendsInvalidContentLength(boolean addTrailers,
+                                                 BiConsumer<HttpHeaders, Integer> headersModifier) throws Exception {
         assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
@@ -532,8 +671,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                         // honored during "streaming -> aggregated -> streaming" conversion.
                         pub -> addTrailers ? pub : pub.filter(i -> i instanceof Buffer)).toResponse().map(aggResp -> {
                             aggResp.headers().remove(TRANSFER_ENCODING);
-                            aggResp.headers().set(CONTENT_LENGTH,
-                                    String.valueOf(aggResp.payloadBody().readableBytes() + contentLengthAdder));
+                            headersModifier.accept(aggResp.headers(), aggResp.payloadBody().readableBytes());
                             return aggResp.toStreamingResponse();
                         }));
             }
@@ -551,8 +689,11 @@ public class H2PriorKnowledgeFeatureParityTest {
                         either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
-                    reservedConn.request(request);
-                    assertThrows(DecoderException.class, () -> reservedConn.request(client.get("/")));
+                    assertThrows(DecoderException.class, () -> {
+                        // Either the current request or the next one should fail
+                        reservedConn.request(request);
+                        reservedConn.request(client.get("/"));
+                    });
                 }
             }
         }
@@ -1113,7 +1254,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     @Test
     public void trailersWithContentLength() throws Exception {
         final String expectedPayload = "Hello World!";
-        final String expectedPayloadLength = String.valueOf(expectedPayload.length());
+        final String expectedPayloadLength = valueOf(expectedPayload.length());
         final String expectedTrailer = "foo";
         final String expectedTrailerValue = "bar";
         final AtomicReference<HttpRequest> requestReceived = new AtomicReference<>();

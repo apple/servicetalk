@@ -27,8 +27,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
@@ -37,10 +35,12 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
+import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
@@ -48,7 +48,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
-import static io.servicetalk.http.netty.HeaderUtils.contentLength;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
@@ -167,15 +166,14 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         h2HeadersSanitizeForH1(h2Headers);
         if (httpStatus != null) {
             final int statusCode = httpStatus.code();
-            final long contentLength = contentLength(h2Headers.valueIterator(HttpHeaderNames.CONTENT_LENGTH),
-                    h2Headers::getAll);
-            if (contentLength < 0) {
+            final Long contentLength = h2Headers.getLong(CONTENT_LENGTH);
+            if (contentLength == null) {
                 if (fullResponse) {
                     if (responseMayHaveContent(statusCode, method)) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
                     }
                 } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {
-                    h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+                    h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
                 throw new IllegalArgumentException("content-length (" + contentLength +
