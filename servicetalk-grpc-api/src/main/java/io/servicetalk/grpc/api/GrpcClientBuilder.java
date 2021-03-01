@@ -36,6 +36,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -91,6 +92,13 @@ public abstract class GrpcClientBuilder<U, R>
     @Override
     public abstract GrpcClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
     public abstract GrpcClientBuilder<U, R> serviceDiscoverer(

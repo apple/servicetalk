@@ -200,8 +200,7 @@ public final class HttpClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
-     * ServiceDiscoverer}.
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
@@ -215,8 +214,7 @@ public final class HttpClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
-     * and DNS {@link ServiceDiscoverer}.
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
@@ -232,8 +230,7 @@ public final class HttpClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
-     * ServiceDiscoverer}.
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
@@ -247,8 +244,7 @@ public final class HttpClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
-     * and DNS {@link ServiceDiscoverer}.
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}

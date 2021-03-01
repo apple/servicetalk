@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -35,6 +36,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 interface SingleAddressGrpcClientBuilder<U, R,
@@ -114,6 +116,29 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * @return {@code this}
      */
     SingleAddressGrpcClientBuilder<U, R, SDE> autoRetryStrategy(AutoRetryStrategyProvider autoRetryStrategyProvider);
+
+    /**
+     * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
+     * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
+     * be used in the event of proxying.
+     *
+     * @param unresolvedAddressToHostFunction invoked to convert the {@link U} unresolved address type into a
+     * {@link CharSequence} suitable for use in
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
+     * @return {@code this}
+     */
+    SingleAddressGrpcClientBuilder<U, R, SDE> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
+
+    /**
+     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * <p>
+     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     *
+     * @return {@code this}
+     * @see #unresolvedAddressToHost(Function)
+     */
+    SingleAddressGrpcClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.

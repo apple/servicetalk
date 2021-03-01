@@ -37,6 +37,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -123,6 +124,19 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         httpClientBuilder.autoRetryStrategy(autoRetryStrategyProvider);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> unresolvedAddressToHost(
+            final Function<U, CharSequence> unresolvedAddressToHostFunction) {
+        httpClientBuilder.unresolvedAddressToHost(unresolvedAddressToHostFunction);
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> disableHostHeaderFallback() {
+        httpClientBuilder.disableHostHeaderFallback();
         return this;
     }
 
