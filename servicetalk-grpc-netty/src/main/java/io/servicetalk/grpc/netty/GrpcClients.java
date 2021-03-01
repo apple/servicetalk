@@ -84,8 +84,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect to.
      * @return new builder for the address
@@ -95,8 +94,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code InetSocketAddress} to connect to.
      * @return new builder for the address
@@ -107,8 +105,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
-     * ServiceDiscoverer}.
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link GrpcClientBuilder#unresolvedAddressToHost(Function)}
