@@ -97,6 +97,9 @@ public interface SslConfig {
 
     /**
      * Get the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
+     * <p>
+     * Note that each ALPN protocol typically requires corresponding configuration at the protocol layer and as a result
+     * maybe inferred and overridden by the protocol layer.
      * @return the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      */
     @Nullable

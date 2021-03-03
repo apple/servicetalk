@@ -58,7 +58,8 @@ public abstract class HttpServerBuilder {
     /**
      * Configurations of various HTTP protocol versions.
      * <p>
-     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections use
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for
+     * <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> in case the connections use
      * {@link #sslConfig(ServerSslConfig)}.
      *
      * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
