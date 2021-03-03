@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -46,7 +47,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.test.Verifiers.stepVerifier;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -157,7 +157,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
         firstRequestReceivedLatch.await();
 
         AtomicReference<Cancellable> cancellable = new AtomicReference<>();
-        stepVerifier(requester.request(defaultStrategy(), newRequest(requester, "second"))
+        StepVerifiers.create(requester.request(defaultStrategy(), newRequest(requester, "second"))
                         .whenOnSuccess(responses::add)) // Add response to the queue to verify that we never receive it
                 .expectCancellableConsumed(cancellable::set)
                 .then(() -> {

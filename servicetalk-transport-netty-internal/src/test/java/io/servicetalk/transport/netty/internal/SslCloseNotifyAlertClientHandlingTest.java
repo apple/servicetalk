@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.test.StepVerifiers;
 
 import org.junit.Test;
 
@@ -23,7 +24,6 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.api.test.Verifiers.stepVerifier;
 
 public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotifyAlertHandlingTest {
 
@@ -34,7 +34,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void afterExchangeIdleConnection() {
         sendRequest();
-        stepVerifier(conn.read())
+        StepVerifiers.create(conn.read())
                 .then(() -> channel.writeInbound(BEGIN))
                 .expectNext(BEGIN)
                 .then(() -> channel.writeInbound(END))
@@ -47,7 +47,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void afterRequestBeforeReadingResponse() {
         sendRequest();
-        stepVerifier(conn.read())
+        StepVerifiers.create(conn.read())
                 .then(this::closeNotifyAndVerifyClosing)
                 .expectError(ClosedChannelException.class)
                 .verify();
@@ -56,7 +56,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void afterRequestWhileReadingResponse() {
         sendRequest();
-        stepVerifier(conn.read())
+        StepVerifiers.create(conn.read())
                 .then(() -> channel.writeInbound(BEGIN))
                 .expectNext(BEGIN)
                 .then(this::closeNotifyAndVerifyClosing)
@@ -67,7 +67,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileWritingRequestBeforeReadingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        stepVerifier(conn.write(fromSource(writeSource)).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start writing request
                     writeMsg(writeSource, BEGIN);
@@ -80,7 +80,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileWritingRequestAndReadingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        stepVerifier(conn.write(fromSource(writeSource)).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start writing request
                     writeMsg(writeSource, BEGIN);
@@ -96,7 +96,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
     @Test
     public void whileWritingRequestAfterReadingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        stepVerifier(conn.write(fromSource(writeSource)).merge(conn.read()))
+        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
                     // Start writing request
                     writeMsg(writeSource, BEGIN);
@@ -112,7 +112,7 @@ public class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotif
 
     private void sendRequest() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        stepVerifier(conn.write(fromSource(writeSource)))
+        StepVerifiers.create(conn.write(fromSource(writeSource)))
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
