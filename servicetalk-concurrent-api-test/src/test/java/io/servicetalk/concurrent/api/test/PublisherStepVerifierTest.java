@@ -57,8 +57,8 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class PublisherStepVerifierTest {
     private static final AsyncContextMap.Key<Integer> ASYNC_KEY = AsyncContextMap.Key.newKey();
@@ -729,19 +729,14 @@ public class PublisherStepVerifierTest {
     }
 
     static void verifyException(Supplier<Duration> verifier, String classNamePrefix, String failedTestMethod) {
-        try {
-            verifier.get();
-        } catch (StepAssertionError error) {
-            StackTraceElement[] stackTraceElements = error.getStackTrace();
-            assertThat(stackTraceElements.length, greaterThanOrEqualTo(1));
-            assertThat("first stacktrace element expected <class: " + classNamePrefix +
-                    "> actual: " + stackTraceElements[0] + " error: " + error,
-                    stackTraceElements[0].getClassName(), startsWith(classNamePrefix));
-            StackTraceElement testMethodStackTrace = error.testMethodStackTrace();
-            assertEquals("unexpected test method failure: " + testMethodStackTrace, failedTestMethod,
-                    testMethodStackTrace.getMethodName());
-            return;
-        }
-        fail();
+        StepAssertionError error = assertThrows(StepAssertionError.class, verifier::get);
+        StackTraceElement[] stackTraceElements = error.getStackTrace();
+        assertThat(stackTraceElements.length, greaterThanOrEqualTo(1));
+        assertThat("first stacktrace element expected <class: " + classNamePrefix + "> actual: " +
+                        stackTraceElements[0] + " error: " + error,
+                stackTraceElements[0].getClassName(), startsWith(classNamePrefix));
+        StackTraceElement testMethodStackTrace = error.testMethodStackTrace();
+        assertEquals("unexpected test method failure: " + testMethodStackTrace, failedTestMethod,
+                testMethodStackTrace.getMethodName());
     }
 }
