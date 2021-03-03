@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -26,15 +27,18 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
+import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
+import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
+import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,9 +68,12 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -77,14 +84,16 @@ public class FlushStrategyOnServerTest {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
 
-    private final OutboundWriteEventsInterceptor interceptor;
-    private final EmbeddedDuplexChannel channel;
-    private final AtomicBoolean useAggregatedResponse;
-    private final NettyHttpServerConnection serverConnection;
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    private final Param param;
+    private final OutboundWriteEventsInterceptor interceptor;
+    private final AtomicBoolean useAggregatedResponse;
     private final HttpHeadersFactory headersFactory;
+
+    private ServerContext serverContext;
+    private BlockingHttpClient client;
 
     private enum Param {
         NO_OFFLOAD(noOffloadsStrategy()),
@@ -96,29 +105,11 @@ public class FlushStrategyOnServerTest {
         }
     }
 
-    public FlushStrategyOnServerTest(final Param param) throws Exception {
-        interceptor = new OutboundWriteEventsInterceptor();
-        channel = new EmbeddedDuplexChannel(false, interceptor);
-        useAggregatedResponse = new AtomicBoolean();
-        StreamingHttpService service = (ctx, request, responseFactory) -> {
-            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());
-            if (useAggregatedResponse.get()) {
-                return resp.toResponse().map(HttpResponse::toStreamingResponse);
-            }
-            return succeeded(resp);
-        };
-
-        DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
-                fromNettyEventLoop(channel.eventLoop()), EXECUTOR_RULE.executor(), param.executionStrategy);
-
-        final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
-        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
-        serverConnection = initChannel(channel, httpExecutionContext, config,
-                new TcpServerChannelInitializer(config.tcpConfig(), connectionObserver), service, true,
-                connectionObserver, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
-                .toFuture().get();
-        serverConnection.process(true);
-        headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+    public FlushStrategyOnServerTest(final Param param) {
+        this.param = param;
+        this.interceptor = new OutboundWriteEventsInterceptor();
+        this.useAggregatedResponse = new AtomicBoolean();
+        this.headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     }
 
     @Parameters(name = "{index}: strategy = {0}")
@@ -126,12 +117,43 @@ public class FlushStrategyOnServerTest {
         return Arrays.stream(Param.values()).map(s -> new Param[]{s}).toArray(Param[][]::new);
     }
 
+    @Before
+    public void setup() throws Exception {
+        final StreamingHttpService service = (ctx, request, responseFactory) -> {
+            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());
+            if (useAggregatedResponse.get()) {
+                return resp.toResponse().map(HttpResponse::toStreamingResponse);
+            }
+            return succeeded(resp);
+        };
+
+        final DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
+                globalExecutionContext().ioExecutor(), EXECUTOR_RULE.executor(), param.executionStrategy);
+
+        final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
+        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
+        final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly(emptyList());
+
+        serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
+                httpExecutionContext, null,
+                (channel, observer) -> initChannel(channel, httpExecutionContext, config,
+                        new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
+                                .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
+                        true, connectionObserver),
+                connection -> connection.process(true))
+                .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+
+        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                .protocols(h1Default())
+                .buildBlocking();
+    }
+
     @After
     public void tearDown() throws Exception {
         try {
-            serverConnection.closeAsyncGracefully().toFuture().get();
+            client.close();
         } finally {
-            channel.close().syncUninterruptibly();
+            serverContext.close();
         }
     }
 
@@ -216,10 +238,7 @@ public class FlushStrategyOnServerTest {
                 headersFactory.newHeaders().set(TRANSFER_ENCODING, CHUNKED), DEFAULT_ALLOCATOR,
                 from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()), false,
                 headersFactory);
-        channel.writeInbound(req);
-        for (Object item : req.messageBody().toFuture().get()) {
-            channel.writeInbound(item);
-        }
+        client.request(req.toRequest().toFuture().get());
     }
 
     static class OutboundWriteEventsInterceptor extends ChannelOutboundHandlerAdapter {
