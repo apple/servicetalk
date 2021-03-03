@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 
 /**
  * Specifies the configuration for client side TLS/SSL.
+ * @see ClientSslConfigBuilder
  */
 public interface ClientSslConfig extends SslConfig {
     /**

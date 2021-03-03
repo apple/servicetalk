@@ -17,7 +17,7 @@ package io.servicetalk.examples.http.mutualtls;
 
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslClientAuthMode;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -29,8 +29,7 @@ public final class HttpServerMutualTLS {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
-                .sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                        DefaultTestCerts::loadServerKey)
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         // Require clients to authenticate, otherwise a handshake may succeed without authentication.
                         .clientAuthMode(SslClientAuthMode.REQUIRE)
                         // The server only trusts the CA which signed the example client's certificate.

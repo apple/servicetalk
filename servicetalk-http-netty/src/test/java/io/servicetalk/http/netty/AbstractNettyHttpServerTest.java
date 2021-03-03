@@ -37,13 +37,13 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
@@ -161,7 +161,7 @@ public abstract class AbstractNettyHttpServerTest {
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         if (sslEnabled) {
-            serverBuilder.sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+            serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
         }
         if (serviceFilterFactory != null) {
@@ -174,7 +174,7 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            clientBuilder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+            clientBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .peerHost(serverPemHostname()).build());
         }
         if (connectionFactoryFilter != null) {

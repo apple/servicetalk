@@ -25,9 +25,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -114,7 +114,7 @@ public class SslAndNonSslConnectionsTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = HttpServers.forAddress(localAddress(0))
-                .sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
                 .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
@@ -151,7 +151,7 @@ public class SslAndNonSslConnectionsTest {
     public void secureClientToNonSecureServerClosesConnection() throws Exception {
         assert serverCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .buildBlocking()) {
             expectedException.expect(instanceOf(ClosedChannelException.class));
@@ -178,7 +178,7 @@ public class SslAndNonSslConnectionsTest {
     public void singleAddressClientWithSslToSecureServer() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .buildBlocking()) {
             testRequestResponse(client, "/", true);
@@ -189,7 +189,7 @@ public class SslAndNonSslConnectionsTest {
     public void hostNameVerificationIsEnabledByDefault() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                 .buildBlocking()) {
             expectedException.expect(instanceOf(SSLHandshakeException.class));
             // Hostname verification failure
@@ -202,7 +202,7 @@ public class SslAndNonSslConnectionsTest {
     public void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .appendClientBuilderFilter((scheme, address, builder) ->
-                        builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build()).buildStreaming())
                 .buildBlocking()) {
             testRequestResponse(client, secureRequestTarget, true);
@@ -214,7 +214,7 @@ public class SslAndNonSslConnectionsTest {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .appendClientBuilderFilter((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
-                        builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }
                 }).buildBlocking()) {
@@ -229,7 +229,7 @@ public class SslAndNonSslConnectionsTest {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .appendClientBuilderFilter((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
-                        builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }
                 }).buildBlocking()) {

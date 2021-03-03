@@ -17,15 +17,15 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
 import io.servicetalk.transport.api.ConnectionObserver.ReadObserver;
 import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -90,13 +90,13 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return clientTransportObserver;
     }
 
-    static DefaultClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider) {
+    static ClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider) {
         return defaultClientSslBuilder(provider, DefaultTestCerts::loadServerCAPem);
     }
 
-    static DefaultClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider,
-                                                                 Supplier<InputStream> trustCertSupplier) {
-        return new DefaultClientSslConfigBuilder(trustCertSupplier)
+    static ClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider,
+                                                          Supplier<InputStream> trustCertSupplier) {
+        return new ClientSslConfigBuilder(trustCertSupplier)
                 .peerHost(serverPemHostname())
                 .peerPort(-1)
                 .provider(provider)
@@ -114,8 +114,8 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
-    static DefaultServerSslConfigBuilder defaultServerSslBuilder(SslProvider provider) {
-        return new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+    static ServerSslConfigBuilder defaultServerSslBuilder(SslProvider provider) {
+        return new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .provider(provider)
                 .sslProtocols("TLSv1.2");
     }

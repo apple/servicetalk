@@ -23,10 +23,10 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,7 +104,7 @@ public class HttpConnectionContextProtocolTest {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config.protocols);
         if (config.secure) {
-            builder.sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+            builder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
@@ -115,7 +115,7 @@ public class HttpConnectionContextProtocolTest {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext)).protocols(config.protocols);
         if (config.secure) {
-            builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+            builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .peerHost(serverPemHostname()).build());
         }
         return builder.buildBlocking();

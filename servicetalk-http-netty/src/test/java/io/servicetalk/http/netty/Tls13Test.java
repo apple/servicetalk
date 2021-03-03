@@ -20,9 +20,9 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -98,7 +98,7 @@ public class Tls13Test {
 
     @Test
     public void requiredCipher() throws Exception {
-        DefaultServerSslConfigBuilder serverSslBuilder = new DefaultServerSslConfigBuilder(
+        ServerSslConfigBuilder serverSslBuilder = new ServerSslConfigBuilder(
                 DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .sslProtocols(TLS1_3).provider(serverSslProvider);
         if (cipher != null) {
@@ -116,8 +116,8 @@ public class Tls13Test {
                     return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializer());
                 })) {
 
-            DefaultClientSslConfigBuilder clientSslBuilder =
-                    new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+            ClientSslConfigBuilder clientSslBuilder =
+                    new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .sslProtocols(TLS1_3).peerHost(serverPemHostname()).provider(clientSslProvider);
             if (cipher != null) {
                 clientSslBuilder.ciphers(singletonList(cipher));

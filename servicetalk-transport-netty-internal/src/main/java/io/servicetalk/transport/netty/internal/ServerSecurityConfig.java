@@ -15,10 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslClientAuthMode;
 
 import java.io.InputStream;
@@ -165,12 +165,12 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      * @return a new {@link ServerSslConfig}.
      */
     public ServerSslConfig asSslConfig() {
-        final DefaultServerSslConfigBuilder builder;
+        final ServerSslConfigBuilder builder;
         if (keyManagerFactory != null) {
-            builder = new DefaultServerSslConfigBuilder(keyManagerFactory);
+            builder = new ServerSslConfigBuilder(keyManagerFactory);
         } else if (keyCertChainSupplier != null) {
             assert keySupplier != null;
-            builder = new DefaultServerSslConfigBuilder(keyCertChainSupplier, keySupplier, keyPassword);
+            builder = new ServerSslConfigBuilder(keyCertChainSupplier, keySupplier, keyPassword);
         } else {
             throw new IllegalStateException("required key material not set");
         }

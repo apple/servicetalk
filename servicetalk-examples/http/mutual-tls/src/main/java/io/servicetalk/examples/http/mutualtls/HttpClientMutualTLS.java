@@ -19,7 +19,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 
@@ -32,7 +32,7 @@ public final class HttpClientMutualTLS {
         // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         // Specify the client's certificate/key pair to use to authenticate to the server.
                         .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
                 .buildBlocking()) {

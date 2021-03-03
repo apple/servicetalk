@@ -19,11 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -97,7 +97,7 @@ public abstract class AbstractTcpServerTest {
         TcpClientConfig tcpClientConfig = new TcpClientConfig();
         if (sslEnabled) {
             HostAndPort serverHostAndPort = AddressUtils.serverHostAndPort(serverContext);
-            tcpClientConfig.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+            tcpClientConfig.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .peerHost(serverPemHostname())
                     .peerPort(serverHostAndPort.port())
                     .build());
@@ -120,7 +120,7 @@ public abstract class AbstractTcpServerTest {
     TcpServerConfig getTcpServerConfig() {
         TcpServerConfig tcpServerConfig = new TcpServerConfig();
         if (sslEnabled) {
-            tcpServerConfig.sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+            tcpServerConfig.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
         }
         tcpServerConfig.enableWireLogging("servicetalk-tests-wire-logger");

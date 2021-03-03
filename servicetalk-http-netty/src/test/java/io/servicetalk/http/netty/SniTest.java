@@ -18,10 +18,10 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import org.junit.Test;
 
@@ -95,26 +95,26 @@ public class SniTest {
     @Test
     public void noSniClientDefaultServerFallbackSuccess() throws Exception {
         sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())
                 .buildBlocking());
     }
 
     private static BlockingHttpClient newClient(ServerContext serverContext) {
         return HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .sniHostname(SNI_HOSTNAME).peerHost(serverPemHostname()).build())
                 .buildBlocking();
     }
 
     private static ServerSslConfig untrustedServerConfig() {
         // Need a key that won't be trusted by the client, just use the client's key.
-        return new DefaultServerSslConfigBuilder(DefaultTestCerts::loadClientPem,
+        return new ServerSslConfigBuilder(DefaultTestCerts::loadClientPem,
                 DefaultTestCerts::loadClientKey).build();
     }
 
     private static ServerSslConfig trustedServerConfig() {
-        return new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+        return new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                 DefaultTestCerts::loadServerKey).build();
     }
 }

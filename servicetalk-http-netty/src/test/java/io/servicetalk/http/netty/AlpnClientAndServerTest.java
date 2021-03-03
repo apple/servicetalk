@@ -23,10 +23,10 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import io.netty.handler.codec.DecoderException;
 import org.junit.After;
@@ -120,7 +120,7 @@ public class AlpnClientAndServerTest {
     private ServerContext startServer(List<String> supportedProtocols) throws Exception {
         return HttpServers.forAddress(localAddress(0))
                 .protocols(toProtocolConfigs(supportedProtocols))
-                .sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).provider(OPENSSL).build())
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
@@ -133,7 +133,7 @@ public class AlpnClientAndServerTest {
     private static BlockingHttpClient startClient(HostAndPort hostAndPort, List<String> supportedProtocols) {
         return HttpClients.forSingleAddress(hostAndPort)
                 .protocols(toProtocolConfigs(supportedProtocols))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).provider(OPENSSL).build())
                 .buildBlocking();
     }

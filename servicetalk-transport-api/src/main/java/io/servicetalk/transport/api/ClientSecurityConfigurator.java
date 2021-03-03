@@ -23,7 +23,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link SecurityConfigurator} contract for clients.
- * @deprecated Use {@link DefaultClientSslConfigBuilder}.
+ * @deprecated Use {@link ClientSslConfigBuilder}.
  */
 @Deprecated
 public interface ClientSecurityConfigurator extends SecurityConfigurator {

@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default builder for {@link ClientSslConfig} objects.
  */
-public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilder<DefaultClientSslConfigBuilder> {
+public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<ClientSslConfigBuilder> {
     /**
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
      * Endpoint Identification Algorithm Name</a>.
@@ -45,14 +45,14 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * Create a new instance using this JVM's {@link TrustManagerFactory#getDefaultAlgorithm()} and default
      * {@link TrustManagerFactory}.
      */
-    public DefaultClientSslConfigBuilder() {
+    public ClientSslConfigBuilder() {
     }
 
     /**
      * Create a new instance using {@code tmf} to verify trusted servers.
      * @param tmf The {@link TrustManagerFactory} used to verify trusted servers.
      */
-    public DefaultClientSslConfigBuilder(TrustManagerFactory tmf) {
+    public ClientSslConfigBuilder(TrustManagerFactory tmf) {
         trustManager(requireNonNull(tmf));
     }
 
@@ -64,25 +64,25 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
      */
-    public DefaultClientSslConfigBuilder(Supplier<InputStream> trustCertChainSupplier) {
+    public ClientSslConfigBuilder(Supplier<InputStream> trustCertChainSupplier) {
         trustManager(trustCertChainSupplier);
     }
 
     @Override
-    public DefaultClientSslConfigBuilder keyManager(KeyManagerFactory kmf) {
+    public ClientSslConfigBuilder keyManager(KeyManagerFactory kmf) {
         return super.keyManager(kmf);
     }
 
     @Override
-    public DefaultClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
-                                                    Supplier<InputStream> keySupplier) {
+    public ClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                             Supplier<InputStream> keySupplier) {
         return super.keyManager(keyCertChainSupplier, keySupplier);
     }
 
     @Override
-    public DefaultClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
-                                                    Supplier<InputStream> keySupplier,
-                                                    @Nullable String keyPassword) {
+    public ClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
+                                             Supplier<InputStream> keySupplier,
+                                             @Nullable String keyPassword) {
         return super.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
     }
 
@@ -96,7 +96,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
-    public DefaultClientSslConfigBuilder hostnameVerificationAlgorithm(String algorithm) {
+    public ClientSslConfigBuilder hostnameVerificationAlgorithm(String algorithm) {
         this.hostnameVerificationAlgorithm = requireNonNull(algorithm);
         return this;
     }
@@ -110,7 +110,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     @Deprecated
-    public DefaultClientSslConfigBuilder disableHostnameVerification() {
+    public ClientSslConfigBuilder disableHostnameVerification() {
         hostnameVerificationAlgorithm = null;
         return this;
     }
@@ -120,7 +120,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * @param peerHost the non-authoritative name of the peer.
      * @return {@code this}.
      */
-    public DefaultClientSslConfigBuilder peerHost(String peerHost) {
+    public ClientSslConfigBuilder peerHost(String peerHost) {
         if (peerHost.isEmpty()) {
             throw new IllegalArgumentException("peerHost cannot be empty");
         }
@@ -134,7 +134,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      * @return {@code this}.
      */
-    public DefaultClientSslConfigBuilder peerPort(int peerPort) {
+    public ClientSslConfigBuilder peerPort(int peerPort) {
         if (peerPort < -1) {
             throw new IllegalArgumentException("peerPort: " + peerPort + "(expected >=-1)");
         }
@@ -147,7 +147,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * @param sniHostname <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @return {@code this}.
      */
-    public DefaultClientSslConfigBuilder sniHostname(String sniHostname) {
+    public ClientSslConfigBuilder sniHostname(String sniHostname) {
         if (sniHostname.isEmpty()) {
             throw new IllegalArgumentException("sniHostname cannot be empty");
         }
@@ -167,7 +167,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
     }
 
     @Override
-    protected DefaultClientSslConfigBuilder thisT() {
+    protected ClientSslConfigBuilder thisT() {
         return this;
     }
 

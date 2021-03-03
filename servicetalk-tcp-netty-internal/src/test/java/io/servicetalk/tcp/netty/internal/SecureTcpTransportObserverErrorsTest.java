@@ -17,8 +17,8 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -76,8 +76,8 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
         this.errorReason = errorReason;
         this.clientProvider = clientProvider;
         this.serverProvider = serverProvider;
-        DefaultClientSslConfigBuilder clientSslBuilder = defaultClientSslBuilder(clientProvider);
-        DefaultServerSslConfigBuilder serverSslBuilder = defaultServerSslBuilder(serverProvider);
+        ClientSslConfigBuilder clientSslBuilder = defaultClientSslBuilder(clientProvider);
+        ServerSslConfigBuilder serverSslBuilder = defaultServerSslBuilder(serverProvider);
         switch (errorReason) {
             case SECURE_CLIENT_TO_PLAIN_SERVER:
                 clientConfig.sslConfig(clientSslBuilder.build());

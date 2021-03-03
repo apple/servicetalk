@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
@@ -67,7 +67,7 @@ public class SslProvidersTest {
         payloadBody = randomString(payloadLength);
 
         serverContext = HttpServers.forAddress(localAddress(0))
-                .sslConfig(new DefaultServerSslConfigBuilder(
+                .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .provider(serverSslProvider).build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
@@ -82,7 +82,7 @@ public class SslProvidersTest {
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .ioExecutor(NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io")))
-                .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).provider(clientSslProvider).build())
                 .buildBlocking();
     }

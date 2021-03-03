@@ -26,12 +26,12 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
@@ -144,7 +144,7 @@ public class ConnectionCloseHeaderHandlingTest {
                 // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
                 proxyTunnel = new ProxyTunnel();
                 proxyAddress = proxyTunnel.startProxy();
-                serverBuilder.sslConfig(new DefaultServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build());
             } else {
                 proxyTunnel = null;
@@ -195,7 +195,7 @@ public class ConnectionCloseHeaderHandlingTest {
                     });
 
             client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
-                    .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                             .peerHost(serverPemHostname()).build()) :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
                     .ioExecutor(CLIENT_CTX.ioExecutor())

@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default builder for {@link ServerSslConfig} objects.
  */
-public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilder<DefaultServerSslConfigBuilder> {
+public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<ServerSslConfigBuilder> {
     private SslClientAuthMode clientAuthMode = NONE;
 
     /**
@@ -36,7 +36,7 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      *
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshakes.
      */
-    public DefaultServerSslConfigBuilder(KeyManagerFactory kmf) {
+    public ServerSslConfigBuilder(KeyManagerFactory kmf) {
         keyManager(kmf);
     }
 
@@ -53,8 +53,8 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      * Each invocation of the {@link Supplier} should provide an independent instance of {@link InputStream} and the
      * caller is responsible for invoking {@link InputStream#close()}.
      */
-    public DefaultServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier,
-                                         Supplier<InputStream> keySupplier) {
+    public ServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier,
+                                  Supplier<InputStream> keySupplier) {
         keyManager(keyCertChainSupplier, keySupplier);
     }
 
@@ -72,18 +72,18 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      * caller is responsible for invoking {@link InputStream#close()}.
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      */
-    public DefaultServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
-                                         @Nullable String keyPassword) {
+    public ServerSslConfigBuilder(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                                  @Nullable String keyPassword) {
         keyManager(keyCertChainSupplier, keySupplier, keyPassword);
     }
 
     @Override
-    public DefaultServerSslConfigBuilder trustManager(TrustManagerFactory tmf) {
+    public ServerSslConfigBuilder trustManager(TrustManagerFactory tmf) {
         return super.trustManager(tmf);
     }
 
     @Override
-    public DefaultServerSslConfigBuilder trustManager(Supplier<InputStream> trustCertChainSupplier) {
+    public ServerSslConfigBuilder trustManager(Supplier<InputStream> trustCertChainSupplier) {
         return super.trustManager(trustCertChainSupplier);
     }
 
@@ -92,7 +92,7 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
      * @param clientAuthMode the {@link SslClientAuthMode} which determines how client authentication should be done.
      * @return {@code this}.
      */
-    public DefaultServerSslConfigBuilder clientAuthMode(SslClientAuthMode clientAuthMode) {
+    public ServerSslConfigBuilder clientAuthMode(SslClientAuthMode clientAuthMode) {
         this.clientAuthMode = requireNonNull(clientAuthMode);
         return this;
     }
@@ -108,7 +108,7 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
     }
 
     @Override
-    protected DefaultServerSslConfigBuilder thisT() {
+    protected ServerSslConfigBuilder thisT() {
         return this;
     }
 

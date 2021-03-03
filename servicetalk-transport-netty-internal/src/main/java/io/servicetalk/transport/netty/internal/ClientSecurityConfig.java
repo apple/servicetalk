@@ -16,7 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ClientSslConfig;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 
 import java.io.InputStream;
@@ -246,11 +246,11 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
      * @return a new {@link ClientSslConfig}.
      */
     public ClientSslConfig asSslConfig() {
-        final DefaultClientSslConfigBuilder builder;
+        final ClientSslConfigBuilder builder;
         if (trustManagerFactory != null) {
-            builder = new DefaultClientSslConfigBuilder(trustManagerFactory);
+            builder = new ClientSslConfigBuilder(trustManagerFactory);
         } else if (trustCertChainSupplier != null) {
-            builder = new DefaultClientSslConfigBuilder(trustCertChainSupplier);
+            builder = new ClientSslConfigBuilder(trustCertChainSupplier);
         } else {
             throw new IllegalStateException("required trust material not set");
         }

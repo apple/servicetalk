@@ -22,7 +22,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * An abstraction to configure SSL/TLS.
- * @deprecated Use {@link DefaultServerSslConfigBuilder} or {@link DefaultClientSslConfigBuilder}.
+ * @deprecated Use {@link ServerSslConfigBuilder} or {@link ClientSslConfigBuilder}.
  */
 @Deprecated
 public interface SecurityConfigurator {

@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
-import io.servicetalk.transport.api.DefaultServerSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 
 import org.junit.Rule;
@@ -66,13 +66,13 @@ public class MutualSslTest {
     @Test
     public void mutualSsl() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .sslConfig(new DefaultServerSslConfigBuilder(
+                .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .trustManager(DefaultTestCerts::loadClientCAPem)
                 .clientAuthMode(REQUIRE).provider(serverSslProvider).build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                     .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                      .provider(clientSslProvider).peerHost(serverPemHostname())
                      .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
                      .buildBlocking()) {
