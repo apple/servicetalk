@@ -660,7 +660,8 @@ public class PublisherStepVerifierTest {
 
     @Test
     public void asyncContextOnError() {
-        StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION)).publishAndSubscribeOn(EXECUTOR_RULE.executor()))
+        StepVerifiers.create(from("foo").concat(failed(DELIBERATE_EXCEPTION))
+                        .publishAndSubscribeOn(EXECUTOR_RULE.executor()))
                 .expectSubscriptionConsumed(s -> {
                     assertNotNull(s);
                     AsyncContext.put(ASYNC_KEY, 10);
