@@ -31,87 +31,72 @@ import static io.servicetalk.concurrent.api.test.TimeSources.nanoTimeNormalized;
  * asynchronous sources {@link Publisher}, {@link Single}, and {@link Completable}.
  * <p>
  * The steps are typically from the perspective of a {@link Subscriber}'s lifecycle.
- *
- * @deprecated Use {@link StepVerifiers} instead.
  */
-@Deprecated
-public final class Verifiers {
-    private Verifiers() {
+public final class StepVerifiers {
+    private StepVerifiers() {
     }
 
     /**
-     * Create a new {@link PublisherFirstStep}.
+     * Creates a new {@link PublisherFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#create(Publisher)} instead.
      * @param source The {@link Publisher} to verify.
      * @param <T> The type of {@link Publisher}.
      * @return A {@link PublisherFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static <T> PublisherFirstStep<T> stepVerifier(Publisher<T> source) {
-        return stepVerifierForSource(toSource(source));
+    public static <T> PublisherFirstStep<T> create(Publisher<T> source) {
+        return createForSource(toSource(source));
     }
 
     /**
-     * Create a new {@link PublisherFirstStep}.
+     * Creates a new {@link PublisherFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#createForSource(PublisherSource)} instead.
      * @param source The {@link PublisherSource} to verify.
      * @param <T> The type of {@link PublisherSource}.
      * @return A {@link PublisherFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static <T> PublisherFirstStep<T> stepVerifierForSource(PublisherSource<T> source) {
+    public static <T> PublisherFirstStep<T> createForSource(PublisherSource<T> source) {
         return new InlinePublisherFirstStep<>(source, nanoTimeNormalized());
     }
 
     /**
-     * Create a new {@link SingleFirstStep}.
+     * Creates a new {@link SingleFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#create(Single)} instead.
      * @param source The {@link Single} to verify.
      * @param <T> The type of {@link Single}.
      * @return A {@link SingleFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static <T> SingleFirstStep<T> stepVerifier(Single<T> source) {
-        return stepVerifierForSource(toSource(source));
+    public static <T> SingleFirstStep<T> create(Single<T> source) {
+        return createForSource(toSource(source));
     }
 
     /**
-     * Create a new {@link SingleFirstStep}.
+     * Creates a new {@link SingleFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#createForSource(SingleSource)} instead.
      * @param source The {@link SingleSource} to verify.
      * @param <T> The type of {@link SingleSource}.
      * @return A {@link SingleFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static <T> SingleFirstStep<T> stepVerifierForSource(SingleSource<T> source) {
+    public static <T> SingleFirstStep<T> createForSource(SingleSource<T> source) {
         return new InlineSingleFirstStep<>(source, nanoTimeNormalized());
     }
 
     /**
-     * Create a new {@link CompletableFirstStep}.
+     * Creates a new {@link CompletableFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#create(Completable)} instead.
      * @param source The {@link Completable} to verify.
      * @return A {@link CompletableFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static CompletableFirstStep stepVerifier(Completable source) {
-        return stepVerifierForSource(toSource(source));
+    public static CompletableFirstStep create(Completable source) {
+        return createForSource(toSource(source));
     }
 
     /**
-     * Create a new {@link CompletableFirstStep}.
+     * Creates a new {@link CompletableFirstStep}.
      *
-     * @deprecated Use {@link StepVerifiers#createForSource(CompletableSource)} instead.
      * @param source The {@link CompletableSource} to verify.
      * @return A {@link CompletableFirstStep} that can be used to verify {@code source}'s signal emission(s).
      */
-    @Deprecated
-    public static CompletableFirstStep stepVerifierForSource(CompletableSource source) {
+    public static CompletableFirstStep createForSource(CompletableSource source) {
         return new InlineCompletableFirstStep(source, nanoTimeNormalized());
     }
 }
