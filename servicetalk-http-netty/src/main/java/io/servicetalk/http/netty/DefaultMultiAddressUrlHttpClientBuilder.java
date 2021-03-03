@@ -261,11 +261,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
 
             if (singleAddressConfigurator != null) {
-                return singleAddressConfigurator.buildStreaming(urlKey.scheme, urlKey.hostAndPort,
-                        buildContext.builder);
-            }
-
-            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+                singleAddressConfigurator.configure(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
+            } else if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
                 final SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
                         buildContext.builder.secure();
                 if (sslConfigFunction != null) {
@@ -396,9 +393,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> singleAddressConfigurator(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientBuilderFilter(
             final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator) {
-        this.singleAddressConfigurator = requireNonNull(singleAddressConfigurator);
+        requireNonNull(singleAddressConfigurator);
+        if (this.singleAddressConfigurator == null) {
+            this.singleAddressConfigurator = singleAddressConfigurator;
+        } else {
+            this.singleAddressConfigurator = this.singleAddressConfigurator.append(singleAddressConfigurator);
+        }
         return this;
     }
 

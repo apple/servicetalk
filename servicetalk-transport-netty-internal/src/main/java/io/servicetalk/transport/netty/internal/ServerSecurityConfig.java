@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import static io.servicetalk.transport.netty.internal.ClientSecurityConfig.toList;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
@@ -71,7 +72,7 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      * @param ciphers the ciphers to use.
      */
     public void ciphers(final Iterable<String> ciphers) {
-        this.ciphers = requireNonNull(ciphers);
+        this.ciphers = toList(ciphers);
     }
 
     /**

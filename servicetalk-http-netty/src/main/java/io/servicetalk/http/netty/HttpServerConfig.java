@@ -74,9 +74,11 @@ final class HttpServerConfig {
     }
 
     @Nullable
-    static List<String> httpAlpnProtocols(@Nullable List<String> sslConfigAlpn,
-                                          List<String> fallbackAlpnProtocols) {
-        return sslConfigAlpn == null && !fallbackAlpnProtocols.isEmpty() ? fallbackAlpnProtocols : sslConfigAlpn;
+    static List<String> httpAlpnProtocols(@SuppressWarnings("unused") @Nullable List<String> sslConfigAlpn,
+                                          List<String> httpAlpn) {
+        // We ignore sslConfigAlpn because otherwise we would need to coordinate the HttpProtocolConfig and associated
+        // channel initialization with which ALPN protocol is selected.
+        return !httpAlpn.isEmpty() ? httpAlpn : null;
     }
 
     private static final class DelegatingHttpServerSslConfig extends DelegatingServerSslConfig {

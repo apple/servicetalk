@@ -35,7 +35,8 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      */
     @Nullable
     private String hostnameVerificationAlgorithm = "HTTPS";
-    private String peerHost = "";
+    @Nullable
+    private String peerHost;
     private int peerPort = -1;
     @Nullable
     private String sniHostname;
@@ -115,33 +116,42 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
     }
 
     /**
-     * Set the non-authoritative name of the peer, will be used for host name verification.
-     * @param peerHost the non-authoritative name of the peer, will be used for host name verification.
+     * Set the non-authoritative name of the peer.
+     * @param peerHost the non-authoritative name of the peer.
      * @return {@code this}.
      */
     public DefaultClientSslConfigBuilder peerHost(String peerHost) {
-        this.peerHost = requireNonNull(peerHost);
+        if (peerHost.isEmpty()) {
+            throw new IllegalArgumentException("peerHost cannot be empty");
+        }
+        this.peerHost = peerHost;
         return this;
     }
 
     /**
      * Set the non-authoritative port of the peer.
-     * @param peerPort the non-authoritative port of the peer.
+     * @param peerPort the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
+     * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      * @return {@code this}.
      */
     public DefaultClientSslConfigBuilder peerPort(int peerPort) {
+        if (peerPort < -1) {
+            throw new IllegalArgumentException("peerPort: " + peerPort + "(expected >=-1)");
+        }
         this.peerPort = peerPort;
         return this;
     }
 
     /**
-     * set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
-     *
+     * Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @param sniHostname <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @return {@code this}.
      */
     public DefaultClientSslConfigBuilder sniHostname(String sniHostname) {
-        this.sniHostname = requireNonNull(sniHostname);
+        if (sniHostname.isEmpty()) {
+            throw new IllegalArgumentException("sniHostname cannot be empty");
+        }
+        this.sniHostname = sniHostname;
         return this;
     }
 
@@ -150,7 +160,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
      * @return a new {@link ClientSslConfig}.
      */
     public ClientSslConfig build() {
-        return new AbstractClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
+        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
                 keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), sessionCacheSize(), sessionTimeout(),
                 provider());
@@ -161,28 +171,29 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
         return this;
     }
 
-    private static final class AbstractClientSslConfig extends AbstractSslConfig implements ClientSslConfig {
+    private static final class DefaultClientSslConfig extends AbstractSslConfig implements ClientSslConfig {
         @Nullable
         private final String hostnameVerificationAlgorithm;
+        @Nullable
         private final String peerHost;
         private final int peerPort;
         @Nullable
         private final String sniHostname;
 
-        AbstractClientSslConfig(@Nullable final String hostnameVerificationAlgorithm, final String peerHost,
-                                final int peerPort, @Nullable final String sniHostname,
-                                @Nullable final TrustManagerFactory trustManagerFactory,
-                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
-                                @Nullable final KeyManagerFactory keyManagerFactory,
-                                @Nullable final Supplier<InputStream> keyCertChainSupplier,
-                                @Nullable final Supplier<InputStream> keySupplier, @Nullable final String keyPassword,
-                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
-                                @Nullable final Iterable<String> ciphers, final long sessionCacheSize,
-                                final long sessionTimeout, @Nullable final SslProvider provider) {
+        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm, @Nullable final String peerHost,
+                               final int peerPort, @Nullable final String sniHostname,
+                               @Nullable final TrustManagerFactory trustManagerFactory,
+                               @Nullable final Supplier<InputStream> trustCertChainSupplier,
+                               @Nullable final KeyManagerFactory keyManagerFactory,
+                               @Nullable final Supplier<InputStream> keyCertChainSupplier,
+                               @Nullable final Supplier<InputStream> keySupplier, @Nullable final String keyPassword,
+                               @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
+                               @Nullable final List<String> ciphers, final long sessionCacheSize,
+                               final long sessionTimeout, @Nullable final SslProvider provider) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
                     keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout, provider);
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
-            this.peerHost = requireNonNull(peerHost);
+            this.peerHost = peerHost;
             this.peerPort = peerPort;
             this.sniHostname = sniHostname;
         }
@@ -193,6 +204,7 @@ public final class DefaultClientSslConfigBuilder extends AbstractSslConfigBuilde
             return hostnameVerificationAlgorithm;
         }
 
+        @Nullable
         @Override
         public String peerHost() {
             return peerHost;

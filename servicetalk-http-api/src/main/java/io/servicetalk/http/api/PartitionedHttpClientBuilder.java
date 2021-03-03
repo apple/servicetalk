@@ -25,6 +25,7 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -107,6 +108,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
@@ -125,7 +127,9 @@ public abstract class PartitionedHttpClientBuilder<U, R>
      * Initiates security configuration for this client. Calling
      * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
      * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #appendClientBuilderFilter(PartitionHttpClientBuilderConfigurator)}.
+     * @deprecated Use {@link #appendClientBuilderFilter(PartitionHttpClientBuilderConfigurator)} and create a
+     * {@link PartitionHttpClientBuilderConfigurator} that invokes
+     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
      * @return {@link PartitionHttpClientBuilderConfigurator} to configure security for this client. It is
      * mandatory to call {@link PartitionedHttpClientSecurityConfigurator#commit() commit} after all configuration is
      * done.

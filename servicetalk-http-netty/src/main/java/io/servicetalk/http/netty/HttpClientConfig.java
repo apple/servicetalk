@@ -23,9 +23,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.isValidIpV4Address;
 import static io.netty.util.NetUtil.isValidIpV6Address;
-import static io.netty.util.internal.StringUtil.isNullOrEmpty;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
-import static java.util.Objects.requireNonNull;
 
 final class HttpClientConfig {
 
@@ -33,8 +31,9 @@ final class HttpClientConfig {
     private final HttpConfig protocolConfigs;
     @Nullable
     private CharSequence connectAddress;
-    private String fallbackPeerHost = "";
-    private int fallbackPeerPort;
+    @Nullable
+    private String fallbackPeerHost;
+    private int fallbackPeerPort = -1;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
@@ -66,8 +65,8 @@ final class HttpClientConfig {
         this.connectAddress = connectAddress;
     }
 
-    void fallbackPeerHost(String fallbackPeerHost) {
-        this.fallbackPeerHost = requireNonNull(fallbackPeerHost);
+    void fallbackPeerHost(@Nullable String fallbackPeerHost) {
+        this.fallbackPeerHost = fallbackPeerHost;
     }
 
     void fallbackPeerPort(int fallbackPeerPort) {
@@ -84,27 +83,28 @@ final class HttpClientConfig {
     }
 
     private void applySslConfigOverrides() {
-        final List<String> fallbackAlpnProtocols = protocolConfigs.supportedAlpnProtocols();
+        final List<String> httpAlpnProtocols = protocolConfigs.supportedAlpnProtocols();
         ClientSslConfig sslConfig = tcpConfig.sslConfig();
         if (sslConfig != null) {
-            final List<String> sslConfigAlpn = sslConfig.alpnProtocols();
-            final String sslConfigPeerHost = sslConfig.peerHost();
-            final int sslConfigPeerPort = sslConfig.peerPort();
-            final String sslConfigSni = sslConfig.sniHostname();
+            final List<String> configAlpn = sslConfig.alpnProtocols();
+            final String configPeerHost = sslConfig.peerHost();
+            final int configPeerPort = sslConfig.peerPort();
+            final String configSni = sslConfig.sniHostname();
             tcpConfig.sslConfig(new DelegatingClientSslConfig(sslConfig) {
                 @Nullable
-                private final List<String> alpnProtocols = httpAlpnProtocols(sslConfigAlpn, fallbackAlpnProtocols);
-                private final String peerHost = isNullOrEmpty(sslConfigPeerHost) ? fallbackPeerHost : sslConfigPeerHost;
-                private final int peerPort = sslConfigPeerPort < 0 ? fallbackPeerPort : sslConfigPeerPort;
+                private final List<String> alpnProtocols = httpAlpnProtocols(configAlpn, httpAlpnProtocols);
                 @Nullable
-                private final String sniHostname = sslConfigSni != null ? sslConfigSni :
-                        filterSniName(fallbackPeerHost);
+                private final String peerHost = configPeerHost == null ? fallbackPeerHost : configPeerHost;
+                private final int peerPort = configPeerPort < 0 ? fallbackPeerPort : configPeerPort;
+                @Nullable
+                private final String sniHostname = configSni == null ? filterSniName(fallbackPeerHost) : configSni;
 
                 @Override
                 public List<String> alpnProtocols() {
                     return alpnProtocols;
                 }
 
+                @Nullable
                 @Override
                 public String peerHost() {
                     return peerHost;
@@ -124,9 +124,9 @@ final class HttpClientConfig {
     }
 
     @Nullable
-    private static String filterSniName(String peerHost) {
+    private static String filterSniName(@Nullable String peerHost) {
         // https://tools.ietf.org/html/rfc6066#section-3
         // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
-        return peerHost.isEmpty() || isValidIpV4Address(peerHost) || isValidIpV6Address(peerHost) ? null : peerHost;
+        return peerHost == null || isValidIpV4Address(peerHost) || isValidIpV6Address(peerHost) ? null : peerHost;
     }
 }

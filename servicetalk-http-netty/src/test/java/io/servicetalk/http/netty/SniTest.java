@@ -96,7 +96,7 @@ public class SniTest {
     public void noSniClientDefaultServerFallbackSuccess() throws Exception {
         sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                        .sniHostname("").peerHost(serverPemHostname()).build())
+                        .peerHost(serverPemHostname()).build())
                 .buildBlocking());
     }
 

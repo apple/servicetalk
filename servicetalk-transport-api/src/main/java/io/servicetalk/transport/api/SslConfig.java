@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
@@ -107,12 +108,13 @@ public interface SslConfig {
      * @return the cipher suites to enable, in the order of preference.
      */
     @Nullable
-    Iterable<String> ciphers();
+    List<String> ciphers();
 
     /**
      * Get the size of the cache used for storing SSL session objects.
      *
      * @return the size of the cache used for storing SSL session objects.
+     * @see SSLSessionContext#setSessionCacheSize(int)
      */
     long sessionCacheSize();
 
@@ -120,6 +122,7 @@ public interface SslConfig {
      * Get the timeout for the cached SSL session objects, in seconds.
      *
      * @return the timeout for the cached SSL session objects, in seconds.
+     * @see SSLSessionContext#setSessionTimeout(int)
      */
     long sessionTimeout();
 

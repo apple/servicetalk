@@ -122,7 +122,7 @@ public final class DefaultServerSslConfigBuilder extends AbstractSslConfigBuilde
                                @Nullable final Supplier<InputStream> keyCertChainSupplier,
                                @Nullable final Supplier<InputStream> keySupplier, @Nullable final String keyPassword,
                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
-                               @Nullable final Iterable<String> ciphers, final long sessionCacheSize,
+                               @Nullable final List<String> ciphers, final long sessionCacheSize,
                                final long sessionTimeout, @Nullable final SslProvider provider) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
                     keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout, provider);

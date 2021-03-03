@@ -201,7 +201,7 @@ public class SslAndNonSslConnectionsTest {
     @Test
     public void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
-                .singleAddressConfigurator((scheme, address, builder) ->
+                .appendClientBuilderFilter((scheme, address, builder) ->
                         builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build()).buildStreaming())
                 .buildBlocking()) {
@@ -212,14 +212,12 @@ public class SslAndNonSslConnectionsTest {
     @Test
     public void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
-                .singleAddressConfigurator((scheme, address, builder) -> {
+                .appendClientBuilderFilter((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
                         builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }
-                    return builder.buildStreaming();
-                })
-                .buildBlocking()) {
+                }).buildBlocking()) {
             testRequestResponse(client, secureRequestTarget, true);
             resetMocks();
             testRequestResponse(client, requestTarget, false);
@@ -229,14 +227,12 @@ public class SslAndNonSslConnectionsTest {
     @Test
     public void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
-                .singleAddressConfigurator((scheme, address, builder) -> {
+                .appendClientBuilderFilter((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
                         builder.sslConfig(new DefaultClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build());
                     }
-                    return builder.buildStreaming();
-                })
-                .buildBlocking()) {
+                }).buildBlocking()) {
             testRequestResponse(client, requestTarget, false);
             resetMocks();
             testRequestResponse(client, secureRequestTarget, true);

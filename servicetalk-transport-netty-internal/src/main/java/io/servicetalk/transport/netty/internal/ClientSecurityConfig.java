@@ -20,6 +20,8 @@ import io.servicetalk.transport.api.DefaultClientSslConfigBuilder;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -149,7 +151,18 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
      * @param ciphers the ciphers to use.
      */
     public void ciphers(final Iterable<String> ciphers) {
-        this.ciphers = requireNonNull(ciphers);
+        this.ciphers = toList(ciphers);
+    }
+
+    static <T> List<T> toList(final Iterable<T> ciphers) {
+        final List<T> list;
+        if (ciphers instanceof List) {
+            list = (List<T>) ciphers;
+        } else {
+            list = new ArrayList<>();
+            ciphers.forEach(list::add);
+        }
+        return list;
     }
 
     /**

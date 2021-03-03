@@ -79,6 +79,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -544,8 +545,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
         assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
-        config.fallbackPeerHost(unresolvedHostFunction(address).toString());
-        config.fallbackPeerPort(unresolvedPortFunction(address));
+        setFallbackHostAndPort(config, address);
         config.tcpConfig().sslConfig(sslConfig);
         return this;
     }
@@ -572,34 +572,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return address.toString();
     }
 
-    private CharSequence unresolvedHostFunction(final U address) {
+    private void setFallbackHostAndPort(HttpClientConfig config, U address) {
         if (address instanceof HostAndPort) {
-            return ((HostAndPort) address).hostName();
+            HostAndPort hostAndPort = (HostAndPort) address;
+            config.fallbackPeerHost(hostAndPort.hostName());
+            config.fallbackPeerPort(hostAndPort.port());
+        } else if (address instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
+            config.fallbackPeerHost(inetSocketAddress.getHostString());
+            config.fallbackPeerPort(inetSocketAddress.getPort());
+        } else {
+            CharSequence cs = hostToCharSequenceFunction.apply(address);
+            if (cs == null) {
+                config.fallbackPeerHost(null);
+                config.fallbackPeerPort(-1);
+            } else {
+                int colon = CharSequences.indexOf(cs, ':', 0);
+                if (colon < 0) {
+                    config.fallbackPeerHost(cs.toString());
+                    config.fallbackPeerPort(-1);
+                } else {
+                    config.fallbackPeerHost(cs.subSequence(0, colon).toString());
+                    config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString()));
+                }
+            }
         }
-        if (address instanceof InetSocketAddress) {
-            return ((InetSocketAddress) address).getHostString();
-        }
-        CharSequence cs = hostToCharSequenceFunction.apply(address);
-        int colon = CharSequences.indexOf(cs, ':', 0);
-        if (colon < 0) {
-            return cs;
-        }
-        return cs.subSequence(0, colon);
-    }
-
-    private int unresolvedPortFunction(final U address) {
-        if (address instanceof HostAndPort) {
-            return ((HostAndPort) address).port();
-        }
-        if (address instanceof InetSocketAddress) {
-            return ((InetSocketAddress) address).getPort();
-        }
-        CharSequence cs = hostToCharSequenceFunction.apply(address);
-        int colon = CharSequences.indexOf(cs, ':', 0);
-        if (colon < 0) {
-            return -1;
-        }
-        return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
     private static final class NoopServiceDiscoverer<OriginalAddress, ResolvedAddress>

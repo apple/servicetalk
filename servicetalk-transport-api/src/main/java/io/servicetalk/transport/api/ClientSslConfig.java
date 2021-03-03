@@ -33,21 +33,26 @@ public interface ClientSslConfig extends SslConfig {
     String hostnameVerificationAlgorithm();
 
     /**
-     * Get the non-authoritative name of the peer, will be used for host name verification (if enabled).
-     * @return the non-authoritative name of the peer, will be used for host name verification (if enabled).
+     * Get the non-authoritative name of the peer.
+     * @return the non-authoritative name of the peer, or {@code null} if unavailable (which may disable
+     * {@link #hostnameVerificationAlgorithm() hostname verification} and
+     * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      */
+    @Nullable
     String peerHost();
 
     /**
      * Get the non-authoritative port of the peer.
-     * @return the non-authoritative port of the peer.
+     * @return the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
+     * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      */
     int peerPort();
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      *
-     * @return The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
+     * @return The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name, or {@code null} to not
+     * enable SNI.
      */
     @Nullable
     String sniHostname();

@@ -40,7 +40,7 @@ abstract class AbstractSslConfig implements SslConfig {
     @Nullable
     private final List<String> alpnProtocols;
     @Nullable
-    private final Iterable<String> ciphers;
+    private final List<String> ciphers;
     private final long sessionCacheSize;
     private final long sessionTimeout;
     @Nullable
@@ -53,7 +53,7 @@ abstract class AbstractSslConfig implements SslConfig {
                       @Nullable final Supplier<InputStream> keySupplier,
                       @Nullable final String keyPassword, @Nullable final List<String> sslProtocols,
                       @Nullable final List<String> alpnProtocols,
-                      @Nullable final Iterable<String> ciphers, final long sessionCacheSize,
+                      @Nullable final List<String> ciphers, final long sessionCacheSize,
                       final long sessionTimeout, @Nullable final SslProvider provider) {
         this.trustManagerFactory = trustManagerFactory;
         this.trustCertChainSupplier = trustCertChainSupplier;
@@ -119,7 +119,7 @@ abstract class AbstractSslConfig implements SslConfig {
 
     @Nullable
     @Override
-    public final Iterable<String> ciphers() {
+    public final List<String> ciphers() {
         return ciphers;
     }
 

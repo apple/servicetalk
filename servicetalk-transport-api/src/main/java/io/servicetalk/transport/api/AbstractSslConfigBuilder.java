@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import static java.util.Arrays.asList;
@@ -48,7 +49,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     @Nullable
     private List<String> alpnProtocols;
     @Nullable
-    private Iterable<String> ciphers;
+    private List<String> ciphers;
     private long sessionCacheSize;
     private long sessionTimeout;
     @Nullable
@@ -61,6 +62,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      */
     T trustManager(TrustManagerFactory tmf) {
         this.trustManagerFactory = requireNonNull(tmf);
+        trustCertChainSupplier = null;
         return thisT();
     }
 
@@ -81,6 +83,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      */
     T trustManager(Supplier<InputStream> trustCertChainSupplier) {
         this.trustCertChainSupplier = requireNonNull(trustCertChainSupplier);
+        trustManagerFactory = null;
         return thisT();
     }
 
@@ -97,6 +100,9 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      */
     T keyManager(KeyManagerFactory kmf) {
         this.keyManagerFactory = requireNonNull(kmf);
+        keyCertChainSupplier = null;
+        keySupplier = null;
+        keyPassword = null;
         return thisT();
     }
 
@@ -122,6 +128,8 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
+        keyPassword = null;
+        keyManagerFactory = null;
         return thisT();
     }
 
@@ -145,6 +153,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
         this.keyPassword = keyPassword;
+        keyManagerFactory = null;
         return thisT();
     }
 
@@ -171,7 +180,10 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @see SSLEngine#setEnabledProtocols(String[])
      */
     public T sslProtocols(List<String> protocols) {
-        this.sslProtocols = requireNonNull(protocols);
+        if (protocols.isEmpty()) {
+            throw new IllegalArgumentException("protocols cannot be empty");
+        }
+        this.sslProtocols = protocols;
         return thisT();
     }
 
@@ -193,11 +205,17 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
 
     /**
      * Set the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
+     * <p>
+     * Note that each ALPN protocol typically requires corresponding configuration at the protocol layer and as a result
+     * maybe inferred and overridden at the protocol layer.
      * @param protocols the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      * @return {@code this}.
      */
     public T alpnProtocols(final List<String> protocols) {
-        this.alpnProtocols = requireNonNull(protocols);
+        if (protocols.isEmpty()) {
+            throw new IllegalArgumentException("protocols cannot be empty");
+        }
+        this.alpnProtocols = protocols;
         return thisT();
     }
 
@@ -221,8 +239,11 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param ciphers the ciphers to use.
      * @return {@code this}.
      */
-    public T ciphers(final Iterable<String> ciphers) {
-        this.ciphers = requireNonNull(ciphers);
+    public T ciphers(final List<String> ciphers) {
+        if (ciphers.isEmpty()) {
+            throw new IllegalArgumentException("ciphers cannot be empty");
+        }
+        this.ciphers = ciphers;
         return thisT();
     }
 
@@ -237,7 +258,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     }
 
     @Nullable
-    final Iterable<String> ciphers() {
+    final List<String> ciphers() {
         return ciphers;
     }
 
@@ -246,6 +267,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param sessionCacheSize the size of the cache used for storing SSL session objects.
      * @return {@code this}.
+     * @see SSLSessionContext#setSessionCacheSize(int)
      */
     public T sessionCacheSize(long sessionCacheSize) {
         this.sessionCacheSize = sessionCacheSize;
@@ -261,6 +283,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      *
      * @param sessionTimeout the timeout for the cached SSL session objects, in seconds.
      * @return {@code this}.
+     * @see SSLSessionContext#setSessionTimeout(int)
      */
     public T sessionTimeout(long sessionTimeout) {
         this.sessionTimeout = sessionTimeout;

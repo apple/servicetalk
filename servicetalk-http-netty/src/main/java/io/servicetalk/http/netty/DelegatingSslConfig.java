@@ -88,7 +88,7 @@ abstract class DelegatingSslConfig<T extends SslConfig> implements SslConfig {
 
     @Nullable
     @Override
-    public Iterable<String> ciphers() {
+    public List<String> ciphers() {
         return delegate.ciphers();
     }
 

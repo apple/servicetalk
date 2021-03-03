@@ -40,7 +40,7 @@ class ReadOnlySecurityConfig {
     @Nullable
     List<String> protocols;
     @Nullable
-    Iterable<String> ciphers;
+    List<String> ciphers;
     long sessionCacheSize;
     long sessionTimeout;
     SslProvider provider = SslProvider.AUTO;
@@ -87,7 +87,7 @@ class ReadOnlySecurityConfig {
     }
 
     @Nullable
-    Iterable<String> ciphers() {
+    List<String> ciphers() {
         return ciphers;
     }
 

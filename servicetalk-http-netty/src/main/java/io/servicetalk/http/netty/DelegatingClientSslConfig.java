@@ -30,6 +30,7 @@ class DelegatingClientSslConfig extends DelegatingSslConfig<ClientSslConfig> imp
         return delegate().hostnameVerificationAlgorithm();
     }
 
+    @Nullable
     @Override
     public String peerHost() {
         return delegate().peerHost();

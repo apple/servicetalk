@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -55,13 +56,27 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @FunctionalInterface
     public interface SingleAddressConfigurator<U, R> {
         /**
-         * Use the passed {@link SingleAddressHttpClientBuilder} to build a {@link StreamingHttpClient}.
+         * Configures the passed {@link SingleAddressHttpClientBuilder} for the given {@code scheme} and
+         * {@code address}.
          * @param scheme The scheme parsed from the request URI.
          * @param address The unresolved address.
          * @param builder The builder to customize and build a {@link StreamingHttpClient}.
-         * @return The result of the customization and build operation.
          */
-        StreamingHttpClient buildStreaming(String scheme, U address, SingleAddressHttpClientBuilder<U, R> builder);
+        void configure(String scheme, U address, SingleAddressHttpClientBuilder<U, R> builder);
+
+        /**
+         * Appends the passed {@link SingleAddressConfigurator} to this {@link SingleAddressConfigurator} such that this
+         * {@link SingleAddressConfigurator} is applied first and then the passed {@link SingleAddressConfigurator}.
+         *
+         * @param toAppend {@link SingleAddressConfigurator} to append
+         * @return A composite {@link SingleAddressConfigurator} after the append operation.
+         */
+        default SingleAddressConfigurator<U, R> append(SingleAddressConfigurator<U, R> toAppend) {
+            return (scheme, address, builder) -> {
+                configure(scheme, address, builder);
+                toAppend.configure(scheme, address, builder);
+            };
+        }
     }
 
     @Override
@@ -96,7 +111,8 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
-     * @deprecated Use {@link #singleAddressConfigurator(SingleAddressConfigurator)}.
+     * @deprecated Use {@link #appendClientBuilderFilter(SingleAddressConfigurator)} and create a
+     * {@link SingleAddressConfigurator} that invokes {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
      * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
@@ -109,7 +125,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @param singleAddressConfigurator Customizes the builder and returns a {@link StreamingHttpClient}.
      * @return {@code this}
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> singleAddressConfigurator(
+    public abstract MultiAddressHttpClientBuilder<U, R> appendClientBuilderFilter(
             SingleAddressConfigurator<U, R> singleAddressConfigurator);
 
     @Override
@@ -142,6 +158,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract
     MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    @Deprecated
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);

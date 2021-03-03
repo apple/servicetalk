@@ -26,7 +26,6 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
@@ -37,6 +36,7 @@ import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
 import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
+import static java.util.Collections.singletonList;
 
 /**
  * Utility for SSL.
@@ -66,10 +66,10 @@ final class SslUtils {
             if (hostnameVerificationAlgorithm != null) {
                 parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
             }
-            if (sniHostname != null && !sniHostname.isEmpty()) {
+            if (sniHostname != null) {
                 // https://tools.ietf.org/html/rfc6066#section-3
                 // Multiple names of the same name_type are therefore now prohibited.
-                parameters.setServerNames(Collections.singletonList(new SNIHostName(sniHostname)));
+                parameters.setServerNames(singletonList(new SNIHostName(sniHostname)));
             }
             engine.setSSLParameters(parameters);
         } catch (Throwable cause) {

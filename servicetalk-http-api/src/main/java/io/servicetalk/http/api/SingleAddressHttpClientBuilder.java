@@ -102,6 +102,16 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    /**
+     * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
+     * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
+     * be used in the event of proxying.
+     *
+     * @param unresolvedAddressToHostFunction invoked to convert the {@link U} unresolved address type into a
+     * {@link CharSequence} suitable for use in
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
+     * @return {@code this}
+     */
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
