@@ -56,6 +56,10 @@ final class StreamingHttpRequestWithContext implements StreamingHttpRequest {
         return runnable;
     }
 
+    StreamingHttpRequest unwrap() {
+        return delegate;
+    }
+
     @Override
     public HttpProtocolVersion version() {
         return delegate.version();
