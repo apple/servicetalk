@@ -25,6 +25,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_9
 }
 
+compileJava {
+    options.compilerArgs.addAll(['--release', '9'])
+}
+
 dependencies {
     api project(":servicetalk-concurrent-api")
 
