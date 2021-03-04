@@ -5,17 +5,21 @@ on:
     tags-ignore:
       - "[0-9]+.[0-9]+.[0-9]+"
 jobs:
-  build-jdk8:
+  build:
+    name: Snapshot JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
       - name: Check SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 0; else exit 1; fi
-      - name: Set up JDK 8
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v1
         with:
-          java-version: 8
+          java-version: ${{ matrix.java }}
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
@@ -35,35 +39,56 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
           CI: true
-        run: ./gradlew --parallel --max-workers=4 clean check && ./gradlew publish
+        run: |
+          # Build arguments to feed to the single gradlew publish command
+          if [ "${{ matrix.java }}" = "8" ]; then
+            FIRST_GRADLE_TARGETS=" clean check"
+            SECOND_GRADLE_TARGETS=" publish"
+          else
+            FIRST_GRADLE_TARGETS=""
+            SECOND_GRADLE_TARGETS=""
+
+            # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
+            # and extract the projects that require jdk9+.
+            while read -r line
+            do
+              javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
+              if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
+              then
+                currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
+                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:clean :$currDir:check"
+                SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
+              fi
+            done < <(./gradlew printJavaTargetCompatibility)
+          fi
+
+          # Execute the gradlew command to publish the build
+          ./gradlew --parallel --max-workers=4$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@fd75ee04fbef040d0198e50ad153fcf997a0cf78
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
-          check_name: Test Report
+          check_name: Test Report JDK ${{ matrix.java }}
       - name: Publish Checkstyle Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
         with:
-          name: Checkstyle Report
+          name: Checkstyle Report JDK ${{ matrix.java }}
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish PMD Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
         with:
-          name: PMD Report
+          name: PMD Report JDK ${{ matrix.java }}
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish SpotBugs Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
         with:
-          name: SpotBugs Report
+          name: SpotBugs Report JDK ${{ matrix.java }}
           path: '**/build/reports/spotbugs/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -69,21 +69,19 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
-          check_name: Test Report
+          check_name: Test Report JDK ${{ matrix.java }}
       - name: Publish Checkstyle Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/checkstyle-github-action@50292990e18466f2c5d95d04ff5fab931254fa5f
         with:
-          name: Checkstyle Report
+          name: Checkstyle Report JDK ${{ matrix.java }}
           path: '**/build/reports/checkstyle/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish PMD Report
         if: always()
-        # v1.2
         uses: jwgmeligmeyling/pmd-github-action@322e346bd76a0757c4d54ff9209e245965aa066d
         with:
-          name: PMD Report
+          name: PMD Report JDK ${{ matrix.java }}
           path: '**/build/reports/pmd/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish SpotBugs Report
@@ -91,6 +89,6 @@ jobs:
         # v1.2
         uses: jwgmeligmeyling/spotbugs-github-action@b8e2c3523acb34c87f14e18cbcd2d87db8c8584e
         with:
-          name: SpotBugs Report
+          name: SpotBugs Report JDK ${{ matrix.java }}
           path: '**/build/reports/spotbugs/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
