@@ -52,6 +52,7 @@ import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -232,7 +233,7 @@ final class GrpcUtils {
         final GrpcStatusCode statusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
-            throw new GrpcStatus(INTERNAL, null, "Response does not contain " +
+            throw new GrpcStatus(UNKNOWN, null, "Response does not contain " +
                     GRPC_STATUS_CODE_TRAILER + " header or trailer").asException();
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
