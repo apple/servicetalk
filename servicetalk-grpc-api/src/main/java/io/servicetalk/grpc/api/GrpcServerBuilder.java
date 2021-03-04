@@ -359,8 +359,6 @@ public abstract class GrpcServerBuilder {
     }
 
     private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
-        private static final Logger LOGGER = LoggerFactory.getLogger(CatchAllHttpServiceFilter.class);
-
         CatchAllHttpServiceFilter(final StreamingHttpService service) {
             super(service);
         }
@@ -378,10 +376,9 @@ public abstract class GrpcServerBuilder {
             return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
         }
 
-        private Single<StreamingHttpResponse> convertToGrpcErrorResponse(
+        private static Single<StreamingHttpResponse> convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            LOGGER.error("Unexpected error from service {}.", delegate(), cause);
             return succeeded(newErrorResponse(responseFactory, null, cause,
                     ctx.executionContext().bufferAllocator()));
         }
