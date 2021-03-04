@@ -36,3 +36,14 @@ task validateLocalDocSite(type: Exec) {
   commandLine './gradlew', 'clean', 'validateLocalSite'
 }
 quality.dependsOn validateLocalDocSite
+
+subprojects {
+  // Used by ci-release.yaml to determine which modules need to be built/released with JDK11.
+  task printJavaTargetCompatibility {
+    doLast {
+      if (project.parent == project.rootProject) {
+        println("version: " + project.properties.targetCompatibility + " name: " + project.name)
+      }
+    }
+  }
+}

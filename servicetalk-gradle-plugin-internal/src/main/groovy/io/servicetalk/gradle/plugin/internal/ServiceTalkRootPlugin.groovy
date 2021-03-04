@@ -51,8 +51,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         }
 
         gradle.projectsEvaluated {
-          subprojects.findAll {!it.name.contains("examples") &&
-              !(it.name.contains("jdkflow") && !JavaVersion.current().isJava9Compatible())}.each { prj ->
+          subprojects.findAll {!it.name.contains("examples")}.each { prj ->
             prj.tasks.withType(Javadoc).each { javadocTask ->
               source += javadocTask.source
               classpath += javadocTask.classpath
