@@ -265,10 +265,8 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .recoverWith(cause -> {
-                                            return succeeded(newErrorResponse(responseFactory, finalServiceContext,
-                                                    cause, ctx.executionContext().bufferAllocator()));
-                                        });
+                                        .recoverWith(cause -> succeeded(newErrorResponse(responseFactory,
+                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator())));
                             } catch (Throwable t) {
                                 return succeeded(newErrorResponse(responseFactory, serviceContext, t,
                                         ctx.executionContext().bufferAllocator()));
