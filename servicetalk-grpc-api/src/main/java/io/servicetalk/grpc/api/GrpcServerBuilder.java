@@ -35,9 +35,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.Arrays;
