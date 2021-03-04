@@ -98,7 +98,7 @@ public interface AsyncContextMap {
      * @return {@code true} if this context contains a key/value entry corresponding to {@code key}.
      * {@code false} otherwise.
      * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the implementation doesn't
-     * support {@code null} keys or values.s
+     * support {@code null} keys or values.
      */
     boolean containsKey(AsyncContextMap.Key<?> key);
 
@@ -135,7 +135,7 @@ public interface AsyncContextMap {
      * Put all the key/value pairs into this {@link AsyncContextMap}.
      *
      * @param map The entries to insert into this {@link AsyncContextMap}.
-     * @throws ConcurrentModificationException Done on a best effort basis if {@code entries} is detected to be modified
+     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
      * while attempting to put all entries.
      * @throws NullPointerException if {@code key}s or {@code value}s from {@code map} are {@code null} and the
      * implementation doesn't support {@code null} keys or values.

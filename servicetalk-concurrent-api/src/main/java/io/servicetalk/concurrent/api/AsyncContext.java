@@ -92,7 +92,7 @@ public final class AsyncContext {
      * Convenience method for to put all the key/value pairs into the current context.
      *
      * @param map contains the key/value pairs that will be added.
-     * @throws ConcurrentModificationException Done on a best effort basis if {@code entries} is detected to be modified
+     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
      * while attempting to put all entries.
      * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
      * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
