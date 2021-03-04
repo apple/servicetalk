@@ -23,7 +23,7 @@ import io.grpc.examples.errors.Greeter.BlockingGreeterClient;
 import io.grpc.examples.errors.HelloRequest;
 
 /**
- * Extends the async "Hello World" example to include support for application error propagation.
+ * Extends the blocking "Hello World" example to include support for application error propagation.
  */
 public final class ErrorExampleClient {
     public static void main(String... args) throws Exception {
