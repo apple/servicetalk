@@ -4,17 +4,21 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
 jobs:
-  build-jdk8:
+  build:
+    name: Release JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
       - name: Check NO SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 1; else exit 0; fi
-      - name: Set up JDK 8
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v1
         with:
-          java-version: 8
+          java-version: ${{ matrix.java }}
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
@@ -34,7 +38,31 @@ jobs:
           SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
           CI: true
-        run: ./gradlew --parallel --max-workers=4 -PreleaseBuild=true clean check && ./gradlew -PreleaseBuild=true publish
+        run: |
+          # Build arguments to feed to the single gradlew publish command
+          if [ "${{ matrix.java }}" = "8" ]; then
+            FIRST_GRADLE_TARGETS=" clean check"
+            SECOND_GRADLE_TARGETS=" publish"
+          else
+            FIRST_GRADLE_TARGETS=""
+            SECOND_GRADLE_TARGETS=""
+
+            # Execute the printJavaTargetCompatibility task to get the java target compatibility for each subproject
+            # and extract the projects that require jdk9+.
+            while read -r line
+            do
+              javaTarget=$(echo "$line" | sed -e 's/^version: \(.*\) name:.*/\1/g')
+              if [ "$javaTarget" = "1.9" ] || [ "$javaTarget" = "1.10" ] || [ "$javaTarget" -gt "8" ] 2> /dev/null
+              then
+                currDir=$(echo "$line" | sed -e 's/^version:.* name: \(.*\)$/\1/g')
+                FIRST_GRADLE_TARGETS="$FIRST_GRADLE_TARGETS :$currDir:clean :$currDir:check"
+                SECOND_GRADLE_TARGETS="$SECOND_GRADLE_TARGETS :$currDir:publish"
+              fi
+            done < <(./gradlew printJavaTargetCompatibility)
+          fi
+
+          # Execute the gradlew command to publish the build
+          ./gradlew --parallel --max-workers=4 -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew -PreleaseBuild=true$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@fd75ee04fbef040d0198e50ad153fcf997a0cf78
