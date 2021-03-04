@@ -59,7 +59,8 @@ final class ConcurrentAsyncContextMap implements AsyncContextMap {
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public <T> T put(final Key<T> key, final T value) {
+    public <T> T put(final Key<T> key, @Nullable final T value) {
+        assert value != null;
         return (T) theMap.put(key, value);
     }
 
