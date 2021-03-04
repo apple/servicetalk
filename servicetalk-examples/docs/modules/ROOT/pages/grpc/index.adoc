@@ -80,9 +80,23 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-str
 
 Extends the async "Hello World" example to demonstrate compression of the response body.
 
-* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleServer.java[CompressionExampleServer] - Waits for hello request from the client and responds with a compressed greeting response.
-* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleClient.java[CompressionExampleClient] - Sends a hello request to the server and receives a compressed greeting response.
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleServer.java[CompressionExampleServer] - Waits for hello request from the client and responds with a compressed greeting response.
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleClient.java[CompressionExampleClient] - Sends a hello request to the server and receives a
+  compressed greeting response.
 
+[#errors]
+== Application Errors
+The gRPC protocol supports propagating application level errors, and also provides serialization/deserialization of
+these objects. This example demonstrates a server returning an application level error to the client via the gRPC
+transport. The client intentionally omits the `token` field which is required, and the server returns an application
+level error. In this case the application level error type happens to be defined in
+link:https://github.com/googleapis/googleapis/blob/master/google/rpc/error_details.proto[error_details.proto], but it
+could be any protobuf object.
+
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java[ErrorExampleServer] - Requires each request has a non-empty `token` field or else returns an
+error.
+* link:{source-root}/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java[ErrorExampleClient] - Sends a request with missing `token` field to simulate an error
+  condition on the server.
 
 [#protoc-options]
 == Protoc Options
