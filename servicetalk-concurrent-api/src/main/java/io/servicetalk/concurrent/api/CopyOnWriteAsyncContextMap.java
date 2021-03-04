@@ -67,7 +67,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
 
     @Nullable
     @Override
-    public <T> T put(final Key<T> key, final T value) {
+    public <T> T put(final Key<T> key, @Nullable final T value) {
         return map.put(key, value, this, mapUpdater);
     }
 
@@ -124,7 +124,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         int size();
 
         @Nullable
-        <T> T put(Key<T> key, T value, CopyOnWriteAsyncContextMap owner,
+        <T> T put(Key<T> key, @Nullable T value, CopyOnWriteAsyncContextMap owner,
                   AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater);
 
         CopyAsyncContextMap putAll(Map<Key<?>, Object> map);
@@ -170,7 +170,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
 
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, final T value,
+        public <T> T put(final Key<T> key, @Nullable final T value,
                          CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             return mapUpdater.compareAndSet(owner, this, new OneAsyncContextMap(key, value)) ? null :
@@ -279,7 +279,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
 
         @SuppressWarnings("unchecked")
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert this.key != null;
             if (this.key.equals(key)) {
@@ -700,7 +700,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
 
         @SuppressWarnings("unchecked")
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert keyOne != null && keyTwo != null;
             if (keyOne.equals(key)) {
@@ -1165,7 +1165,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert keyOne != null && keyTwo != null && keyThree != null;
             if (keyOne.equals(key)) {
@@ -1623,7 +1623,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null;
             if (keyOne.equals(key)) {
@@ -2057,7 +2057,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null;
             if (keyOne.equals(key)) {
@@ -2483,7 +2483,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public <T> T put(final Key<T> key, final T value, CopyOnWriteAsyncContextMap owner,
+        public <T> T put(final Key<T> key, @Nullable final T value, CopyOnWriteAsyncContextMap owner,
                          AtomicReferenceFieldUpdater<CopyOnWriteAsyncContextMap, CopyAsyncContextMap> mapUpdater) {
             assert keyOne != null && keyTwo != null && keyThree != null && keyFour != null && keyFive != null &&
                     keySix != null;

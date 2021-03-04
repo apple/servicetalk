@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -77,9 +78,13 @@ public final class AsyncContext {
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
      * @param value the value to put.
      * @param <T>   The type of object associated with {@code key}.
+     * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
+     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * implementation.
      * @see AsyncContextMap#put(AsyncContextMap.Key, Object)
      */
-    public static <T> void put(AsyncContextMap.Key<T> key, T value) {
+    public static <T> void put(AsyncContextMap.Key<T> key, @Nullable T value) {
         current().put(key, value);
     }
 
@@ -87,6 +92,12 @@ public final class AsyncContext {
      * Convenience method for to put all the key/value pairs into the current context.
      *
      * @param map contains the key/value pairs that will be added.
+     * @throws ConcurrentModificationException done on a best effort basis if {@code entries} is detected to be modified
+     * while attempting to put all entries.
+     * @throws NullPointerException if {@code key} or {@code value} is {@code null} and the underlying
+     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * implementation.
      * @see AsyncContextMap#putAll(Map)
      */
     public static void putAll(Map<AsyncContextMap.Key<?>, Object> map) {
@@ -97,6 +108,8 @@ public final class AsyncContext {
      * Convenience method to remove a key/value pair from the current context.
      *
      * @param key The key to remove.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * implementation.
      * @see AsyncContextMap#remove(AsyncContextMap.Key)
      */
     public static void remove(AsyncContextMap.Key<?> key) {
@@ -107,6 +120,8 @@ public final class AsyncContext {
      * Convenience method to remove all the key/value pairs from the current context.
      *
      * @param entries A {@link Iterable} which contains all the keys to remove.
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * implementation.
      * @see AsyncContextMap#removeAll(Iterable)
      */
     public static void removeAll(Iterable<AsyncContextMap.Key<?>> entries) {
@@ -116,6 +131,8 @@ public final class AsyncContext {
     /**
      * Convenience method to clear all the key/value pairs from the current context.
      *
+     * @throws UnsupportedOperationException if this method is not supported by the underlying {@link AsyncContextMap}
+     * implementation.
      * @see AsyncContextMap#clear()
      */
     public static void clear() {
@@ -127,7 +144,11 @@ public final class AsyncContext {
      *
      * @param key the key to lookup.
      * @param <T> The anticipated type of object associated with {@code key}.
-     * @return the value associated with {@code key}, or {@code null} if no value is associated.
+     * @return the value associated with {@code key}, or {@code null} if no value is associated. {@code null} can
+     * also indicate the value associated with {@code key} is {@code null} (if {@code null} values are supported by the
+     * underlying {@link AsyncContextMap} implementation).
+     * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
+     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
      * @see AsyncContextMap#get(AsyncContextMap.Key)
      */
     @Nullable
@@ -141,6 +162,8 @@ public final class AsyncContext {
      * @param key the key to lookup.
      * @return {@code true} if the current context contains a key/value entry corresponding to {@code key}.
      * {@code false} otherwise.
+     * @throws NullPointerException (optional behavior) if {@code key} is {@code null} and the underlying
+     * {@link AsyncContextMap} implementation doesn't support {@code null} keys or values.
      * @see AsyncContextMap#containsKey(AsyncContextMap.Key)
      */
     public static boolean containsKey(AsyncContextMap.Key<?> key) {
@@ -164,6 +187,7 @@ public final class AsyncContext {
      * if the consumer wants to keep iterating or {@code false} to stop iteration at the current key/value pair.
      * @return {@code null} if {@code consumer} iterated through all key/value pairs or the {@link AsyncContextMap.Key}
      * at which the iteration stopped.
+     * @throws NullPointerException if {@code consumer} is null.
      * @see AsyncContextMap#forEach(BiPredicate)
      */
     @Nullable
