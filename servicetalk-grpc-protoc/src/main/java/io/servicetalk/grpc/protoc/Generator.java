@@ -681,8 +681,8 @@ final class Generator {
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc("@param " + metadata + " the metadata associated with this client call." +
-                                            lineSeparator());
+                                    b.addJavadoc("@param " + metadata +
+                                            " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
                             }));
@@ -903,11 +903,9 @@ final class Generator {
             } else {
                 methodSpecBuilder.returns(outClass);
                 if (printJavaDocs) {
-                    if (flags.contains(CLIENT)) {
-                        methodSpecBuilder.addJavadoc("@return the response from the server." + lineSeparator());
-                    } else {
-                        methodSpecBuilder.addJavadoc("@return the response to send to the client" + lineSeparator());
-                    }
+                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
+                            "@return the response from the server." :
+                            "@return the response to send to the client") + lineSeparator());
                 }
             }
             methodSpecBuilder.addException(Exception.class);
@@ -927,39 +925,29 @@ final class Generator {
             } else {
                 methodSpecBuilder.addParameter(inClass, request, mods);
                 if (printJavaDocs) {
-                    if (flags.contains(CLIENT)) {
-                        methodSpecBuilder.addJavadoc("@param " + request + " the request to send to the server." +
-                                lineSeparator());
-                    } else {
-                        methodSpecBuilder.addJavadoc("@param " + request + " the request from the client." +
-                                lineSeparator());
-                    }
+                    methodSpecBuilder.addJavadoc("@param " + request +
+                            (flags.contains(CLIENT) ?
+                                    " the request to send to the server." :
+                                    " the request from the client.") +
+                            lineSeparator());
                 }
             }
 
             if (methodProto.getServerStreaming()) {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Publisher, outClass));
                 if (printJavaDocs) {
-                    if (flags.contains(CLIENT)) {
-                        methodSpecBuilder.addJavadoc("@return used to read a stream of type {@link $T} from the server."
-                                + lineSeparator(), outClass);
-                    } else {
-                        methodSpecBuilder.addJavadoc("@return used to write a stream of type {@link $T} to the client." +
-                                lineSeparator(), outClass);
-                    }
+                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
+                                    "@return used to read a stream of type {@link $T} from the server." :
+                                    "@return used to write a stream of type {@link $T} to the client.")
+                                    + lineSeparator(), outClass);
                 }
             } else {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Single, outClass));
                 if (printJavaDocs) {
-                    if (flags.contains(CLIENT)) {
-                        methodSpecBuilder.addJavadoc(
-                                "@return a {@link $T} which completes when the response is received from the server." +
-                                        lineSeparator(), Single);
-                    } else {
-                        methodSpecBuilder.addJavadoc(
-                                "@return a {@link $T} which sends the response to the client when it terminates." +
-                                        lineSeparator(), Single);
-                    }
+                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
+                            "@return a {@link $T} which completes when the response is received from the server." :
+                            "@return a {@link $T} which sends the response to the client when it terminates.")
+                            + lineSeparator(), Single);
                 }
             }
         }
