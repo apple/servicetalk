@@ -101,8 +101,7 @@ final class StringUtils {
         return options;
     }
 
-    static String escapeJavaDoc(String rawJavaDoc) {
-        StringBuilder sb = new StringBuilder(rawJavaDoc.length() * 2);
+    static void escapeJavaDoc(String rawJavaDoc, StringBuilder sb) {
         char prev = '*';
         for (int i = 0; i < rawJavaDoc.length(); ++i) {
             char c = rawJavaDoc.charAt(i);
@@ -151,6 +150,5 @@ final class StringUtils {
             }
             prev = c;
         }
-        return sb.toString();
     }
 }

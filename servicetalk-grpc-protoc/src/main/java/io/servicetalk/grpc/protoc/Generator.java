@@ -371,8 +371,11 @@ final class Generator {
     private void extractJavaDocComments(State state, int methodIndex, MethodSpec.Builder b) {
         String serviceComments = serviceCommentsMap.getLeadingComments(state.serviceIndex, methodIndex);
         if (serviceComments != null) {
-            b.addJavadoc(COMMENT_PRE_TAG + lineSeparator()).addJavadoc(escapeJavaDoc(serviceComments))
-             .addJavadoc(COMMENT_POST_TAG + lineSeparator());
+            StringBuilder sb = new StringBuilder(serviceComments.length() * 2);
+            sb.append(COMMENT_PRE_TAG).append(lineSeparator());
+            escapeJavaDoc(serviceComments, sb);
+            sb.append(COMMENT_POST_TAG).append(lineSeparator());
+            b.addJavadoc(sb.toString());
         }
     }
 
