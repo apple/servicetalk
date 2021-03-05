@@ -22,6 +22,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -47,13 +48,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
@@ -75,7 +72,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 @RunWith(Parameterized.class)
@@ -83,13 +79,13 @@ public class FlushStrategyOnServerTest {
 
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
+    public static final String USE_AGGREGATED_RESP = "aggregated-resp";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final Param param;
     private final OutboundWriteEventsInterceptor interceptor;
-    private final AtomicBoolean useAggregatedResponse;
     private final HttpHeadersFactory headersFactory;
 
     private ServerContext serverContext;
@@ -108,7 +104,6 @@ public class FlushStrategyOnServerTest {
     public FlushStrategyOnServerTest(final Param param) {
         this.param = param;
         this.interceptor = new OutboundWriteEventsInterceptor();
-        this.useAggregatedResponse = new AtomicBoolean();
         this.headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     }
 
@@ -121,7 +116,7 @@ public class FlushStrategyOnServerTest {
     public void setup() throws Exception {
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());
-            if (useAggregatedResponse.get()) {
+            if (request.headers().get(USE_AGGREGATED_RESP) != null) {
                 return resp.toResponse().map(HttpResponse::toStreamingResponse);
             }
             return succeeded(resp);
@@ -159,83 +154,78 @@ public class FlushStrategyOnServerTest {
 
     @Test
     public void aggregatedResponsesFlushOnEnd() throws Exception {
-        useAggregatedResponse.set(true);
-        sendARequest();
+        sendARequest(true);
         assertAggregatedResponseWrite();
     }
 
     @Test
     public void twoAggregatedResponsesFlushOnEnd() throws Exception {
-        useAggregatedResponse.set(true);
-        sendARequest();
+        sendARequest(true);
         assertAggregatedResponseWrite();
 
-        useAggregatedResponse.set(true);
-        sendARequest();
+        sendARequest(true);
         assertAggregatedResponseWrite();
     }
 
     @Test
     public void twoStreamingResponsesFlushOnEach() throws Exception {
-        useAggregatedResponse.set(false);
-        sendARequest();
+        sendARequest(false);
         verifyStreamingResponseWrite();
 
-        useAggregatedResponse.set(false);
-        sendARequest();
+        sendARequest(false);
         verifyStreamingResponseWrite();
     }
 
     @Test
     public void streamingResponsesFlushOnEach() throws Exception {
-        useAggregatedResponse.set(false);
-        sendARequest();
+        sendARequest(false);
         verifyStreamingResponseWrite();
     }
 
     @Test
     public void aggregatedAndThenStreamingResponse() throws Exception {
-        useAggregatedResponse.set(true);
-        sendARequest();
+        sendARequest(true);
         assertAggregatedResponseWrite();
 
-        useAggregatedResponse.set(false);
-        sendARequest();
+        sendARequest(false);
         verifyStreamingResponseWrite();
     }
 
     @Test
     public void streamingAndThenAggregatedResponse() throws Exception {
-        useAggregatedResponse.set(false);
-        sendARequest();
+        sendARequest(false);
         verifyStreamingResponseWrite();
 
-        useAggregatedResponse.set(true);
-        sendARequest();
+        sendARequest(true);
         assertAggregatedResponseWrite();
     }
 
     private void assertAggregatedResponseWrite() throws Exception {
         // aggregated response; headers, single payload and CRLF
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3));
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(3));
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
     }
 
     private void verifyStreamingResponseWrite() throws Exception {
         // headers
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(1));
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(1));
         // one chunk; chunk header payload and CRLF
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3));
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(3));
         // one chunk; chunk header payload and CRLF
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(3));
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(3));
         // trailers
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), hasSize(1));
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(1));
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
     }
 
-    private void sendARequest() throws Exception {
-        StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1,
-                headersFactory.newHeaders().set(TRANSFER_ENCODING, CHUNKED), DEFAULT_ALLOCATOR,
+    private void sendARequest(final boolean useAggregatedResp) throws Exception {
+        HttpHeaders headers = headersFactory.newHeaders();
+        headers.set(TRANSFER_ENCODING, CHUNKED);
+        if (useAggregatedResp) {
+            headers.set(USE_AGGREGATED_RESP, "true");
+        }
+
+        StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1, headers, DEFAULT_ALLOCATOR,
                 from(DEFAULT_ALLOCATOR.fromAscii("Hello"), headersFactory.newTrailers()), false,
                 headersFactory);
         client.request(req.toRequest().toFuture().get());
@@ -243,13 +233,14 @@ public class FlushStrategyOnServerTest {
 
     static class OutboundWriteEventsInterceptor extends ChannelOutboundHandlerAdapter {
 
+        private static final Object MSG = new Object();
         private static final Object FLUSH = new Object();
 
         private final BlockingQueue<Object> writeEvents = new LinkedBlockingDeque<>();
 
         @Override
         public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
-            writeEvents.add(msg);
+            writeEvents.add(MSG);
             ctx.write(msg, promise);
         }
 
@@ -259,14 +250,15 @@ public class FlushStrategyOnServerTest {
             ctx.flush();
         }
 
-        Collection<Object> takeWritesTillFlush() throws Exception {
-            List<Object> writes = new ArrayList<>();
+        int takeWritesTillFlush() throws Exception {
+            int count = 0;
             for (;;) {
                 Object evt = writeEvents.take();
                 if (evt == FLUSH) {
-                    return writes;
+                    return count;
                 }
-                writes.add(evt);
+
+                count++;
             }
         }
 
