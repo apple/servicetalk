@@ -102,7 +102,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     @Nullable
     private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
     @Nullable
-    private SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator;
+    private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -116,7 +116,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, singleAddressConfigurator);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, singleAddressInitializer);
 
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             FilterableStreamingHttpClient urlClient = closeables.prepend(
@@ -233,19 +233,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Nullable
         private final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
         @Nullable
-        private final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator;
+        private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction,
-                @Nullable final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator) {
+                @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.sslConfigFunction = sslConfigFunction;
-            this.singleAddressConfigurator = singleAddressConfigurator;
+            this.singleAddressInitializer = singleAddressInitializer;
         }
 
         @Override
@@ -273,8 +273,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 }
             }
 
-            if (singleAddressConfigurator != null) {
-                singleAddressConfigurator.configure(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
+            if (singleAddressInitializer != null) {
+                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
             }
 
             return buildContext.build();
@@ -399,14 +399,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientBuilderFilter(
-            final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator) {
-        requireNonNull(singleAddressConfigurator);
-        if (this.singleAddressConfigurator == null) {
-            this.singleAddressConfigurator = singleAddressConfigurator;
-        } else {
-            this.singleAddressConfigurator = this.singleAddressConfigurator.append(singleAddressConfigurator);
-        }
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> initializer(
+            final SingleAddressInitializer<HostAndPort, InetSocketAddress> initializer) {
+        this.singleAddressInitializer = requireNonNull(initializer);
         return this;
     }
 
