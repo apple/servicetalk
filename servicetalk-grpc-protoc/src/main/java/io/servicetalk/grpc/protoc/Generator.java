@@ -97,6 +97,9 @@ import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
 import static io.servicetalk.grpc.protoc.Words.Filter;
 import static io.servicetalk.grpc.protoc.Words.INSTANCE;
+import static io.servicetalk.grpc.protoc.Words.JAVADOC_PARAM;
+import static io.servicetalk.grpc.protoc.Words.JAVADOC_RETURN;
+import static io.servicetalk.grpc.protoc.Words.JAVADOC_THROWS;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
 import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
@@ -311,7 +314,7 @@ final class Generator {
                         b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
                         if (printJavaDocs) {
                             extractJavaDocComments(state, methodIndex, b);
-                            b.addJavadoc("@param " + ctx + " context associated with this service and request." +
+                            b.addJavadoc(JAVADOC_PARAM + ctx + " context associated with this service and request." +
                                     lineSeparator());
                         }
                         return b;
@@ -346,7 +349,7 @@ final class Generator {
                         b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
                         if (printJavaDocs) {
                             extractJavaDocComments(state, methodIndex, b);
-                            b.addJavadoc("@param " + ctx + " context associated with this service and request." +
+                            b.addJavadoc(JAVADOC_PARAM + ctx + " context associated with this service and request." +
                                     lineSeparator());
                         }
                         return b;
@@ -368,9 +371,8 @@ final class Generator {
     private void extractJavaDocComments(State state, int methodIndex, MethodSpec.Builder b) {
         String serviceComments = serviceCommentsMap.getLeadingComments(state.serviceIndex, methodIndex);
         if (serviceComments != null) {
-            b.addJavadoc(COMMENT_PRE_TAG + lineSeparator())
-                    .addJavadoc(escapeJavaDoc(serviceComments))
-                    .addJavadoc(COMMENT_POST_TAG + lineSeparator());
+            b.addJavadoc(COMMENT_PRE_TAG + lineSeparator()).addJavadoc(escapeJavaDoc(serviceComments))
+             .addJavadoc(COMMENT_POST_TAG + lineSeparator());
         }
     }
 
@@ -673,7 +675,13 @@ final class Generator {
             ClientMetaData clientMetaData = state.clientMetaDatas.get(i);
             clientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            (__, b) -> b.addModifiers(ABSTRACT)));
+                            (__, b) -> {
+                                b.addModifiers(ABSTRACT);
+                                if (printJavaDocs) {
+                                    extractJavaDocComments(state, methodIndex, b);
+                                }
+                                return b;
+                            }));
 
             filterableClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
@@ -681,7 +689,7 @@ final class Generator {
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc("@param " + metadata +
+                                    b.addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -689,13 +697,19 @@ final class Generator {
 
             blockingClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            (__, b) -> b.addModifiers(ABSTRACT)))
+                            (__, b) -> {
+                                b.addModifiers(ABSTRACT);
+                                if (printJavaDocs) {
+                                    extractJavaDocComments(state, methodIndex, b);
+                                }
+                                return b;
+                            }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
                             (__, b) -> {
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc("@param " + metadata +
+                                    b.addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -864,20 +878,20 @@ final class Generator {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(ClassName.get(Iterable.class),
                             inClass), request, mods);
                     if (printJavaDocs) {
-                        methodSpecBuilder.addJavadoc("@param " + request +
+                        methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                                 " used to send a stream of type {@link $T} to the server." + lineSeparator(), inClass);
                     }
                 } else {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(BlockingIterable, inClass), request, mods);
                     if (printJavaDocs) {
-                        methodSpecBuilder.addJavadoc("@param " + request +
+                        methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                             " used to read the stream of type {@link $T} from the client." + lineSeparator(), inClass);
                     }
                 }
             } else {
                 methodSpecBuilder.addParameter(inClass, request, mods);
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc("@param " + request + " the request from the client." +
+                    methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request + " the request from the client." +
                             lineSeparator());
                 }
             }
@@ -887,14 +901,14 @@ final class Generator {
                     methodSpecBuilder.returns(ParameterizedTypeName.get(BlockingIterable, outClass));
                     if (printJavaDocs) {
                         methodSpecBuilder.addJavadoc(
-                                "@return used to read the response stream of type {@link $T} from the server."
+                                JAVADOC_RETURN + "used to read the response stream of type {@link $T} from the server."
                                         + lineSeparator(), outClass);
                     }
                 } else {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
                             responseWriter, mods);
                     if (printJavaDocs) {
-                        methodSpecBuilder.addJavadoc("@param " + responseWriter +
+                        methodSpecBuilder.addJavadoc(JAVADOC_PARAM + responseWriter +
                                 " used to write a stream of type {@link $T} to the client." + lineSeparator() +
                                 "The implementation of this method is responsible for calling {@link $T#close()}." +
                                 lineSeparator(), outClass, GrpcPayloadWriter);
@@ -903,50 +917,50 @@ final class Generator {
             } else {
                 methodSpecBuilder.returns(outClass);
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
-                            "@return the response from the server." :
-                            "@return the response to send to the client") + lineSeparator());
+                    methodSpecBuilder.addJavadoc(JAVADOC_RETURN + (flags.contains(CLIENT) ?
+                            "the response from the server." :
+                            "the response to send to the client") + lineSeparator());
                 }
             }
             methodSpecBuilder.addException(Exception.class);
             if (printJavaDocs) {
-                methodSpecBuilder.addJavadoc("@throws $T if an unexpected application error occurs." + lineSeparator(),
-                        Exception.class)
-                        .addJavadoc("@throws $T if an expected application exception occurs. Its contents will be " +
-                                "serialized and propagated to the peer.", GrpcStatusException);
+                methodSpecBuilder.addJavadoc(JAVADOC_THROWS + "$T if an unexpected application error occurs." +
+                                lineSeparator(), Exception.class)
+                        .addJavadoc(JAVADOC_THROWS +
+                                "$T if an expected application exception occurs. Its contents will be serialized and " +
+                                "propagated to the peer.", GrpcStatusException);
             }
         } else {
             if (methodProto.getClientStreaming()) {
                 methodSpecBuilder.addParameter(ParameterizedTypeName.get(Publisher, inClass), request, mods);
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc("@param " + request +
+                    methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                             " used to read a stream of type {@link $T} from the client." + lineSeparator(), inClass);
                 }
             } else {
                 methodSpecBuilder.addParameter(inClass, request, mods);
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc("@param " + request +
+                    methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                             (flags.contains(CLIENT) ?
                                     " the request to send to the server." :
-                                    " the request from the client.") +
-                            lineSeparator());
+                                    " the request from the client.") + lineSeparator());
                 }
             }
 
             if (methodProto.getServerStreaming()) {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Publisher, outClass));
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
-                                    "@return used to read a stream of type {@link $T} from the server." :
-                                    "@return used to write a stream of type {@link $T} to the client.")
+                    methodSpecBuilder.addJavadoc(JAVADOC_RETURN + (flags.contains(CLIENT) ?
+                                    "used to read a stream of type {@link $T} from the server." :
+                                    "used to write a stream of type {@link $T} to the client.")
                                     + lineSeparator(), outClass);
                 }
             } else {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Single, outClass));
                 if (printJavaDocs) {
-                    methodSpecBuilder.addJavadoc((flags.contains(CLIENT) ?
-                            "@return a {@link $T} which completes when the response is received from the server." :
-                            "@return a {@link $T} which sends the response to the client when it terminates.")
+                    methodSpecBuilder.addJavadoc(JAVADOC_RETURN + (flags.contains(CLIENT) ?
+                            "a {@link $T} which completes when the response is received from the server." :
+                            "a {@link $T} which sends the response to the client when it terminates.")
                             + lineSeparator(), Single);
                 }
             }

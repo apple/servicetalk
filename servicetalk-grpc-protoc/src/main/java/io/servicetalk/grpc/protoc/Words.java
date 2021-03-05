@@ -57,6 +57,9 @@ final class Words {
     static final String RPC_PATH = "PATH";
     static final String COMMENT_PRE_TAG = "<pre>";
     static final String COMMENT_POST_TAG = "</pre>";
+    static final String JAVADOC_PARAM = "@param ";
+    static final String JAVADOC_RETURN = "@return ";
+    static final String JAVADOC_THROWS = "@throws ";
 
     private Words() {
         // no instance
