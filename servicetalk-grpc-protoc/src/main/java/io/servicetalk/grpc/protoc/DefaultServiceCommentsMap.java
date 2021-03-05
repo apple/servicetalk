@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 final class DefaultServiceCommentsMap implements ServiceCommentsMap {
     private static final int SERVICE_PATH;
     private static final int METHOD_PATH;
-    private final Map<Long, String> commentMap;
+    private final Map<Long, String> commentMap = new HashMap<>();
 
     static {
         int servicePath = -1;
@@ -45,7 +45,6 @@ final class DefaultServiceCommentsMap implements ServiceCommentsMap {
     }
 
     DefaultServiceCommentsMap(SourceCodeInfo sourceCodeInfo) {
-        commentMap = new HashMap<>();
         for (SourceCodeInfo.Location location : sourceCodeInfo.getLocationList()) {
             if (location.hasLeadingComments() && location.getPathCount() == 4 &&
                     location.getPath(0) == SERVICE_PATH && location.getPath(2) == METHOD_PATH) {
