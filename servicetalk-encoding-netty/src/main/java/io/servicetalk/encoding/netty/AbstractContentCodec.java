@@ -17,7 +17,7 @@ package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
-import java.util.Objects;
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 
 abstract class AbstractContentCodec implements ContentCodec {
 
@@ -32,20 +32,22 @@ abstract class AbstractContentCodec implements ContentCodec {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public final boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+
+        if (!(o instanceof AbstractContentCodec)) {
             return false;
         }
+
         final AbstractContentCodec that = (AbstractContentCodec) o;
-        return name.equals(that.name);
+        return contentEquals(name, that.name);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(name);
+    public final int hashCode() {
+        return name.hashCode();
     }
 
     @Override

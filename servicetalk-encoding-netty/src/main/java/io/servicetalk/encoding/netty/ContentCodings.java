@@ -16,8 +16,6 @@
 package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodecBuilder;
-import io.servicetalk.encoding.netty.DefaultContentCodecBuilder.SnappyContentCodecBuilder;
 import io.servicetalk.encoding.netty.DefaultContentCodecBuilder.ZipContentCodecBuilder;
 
 /**
@@ -28,8 +26,6 @@ public final class ContentCodings {
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 
     private static final ContentCodec DEFAULT_DEFLATE = deflate().build();
-
-    private static final ContentCodec SNAPPY_DEFAULT = snappy().build();
 
     private ContentCodings() {
     }
@@ -76,23 +72,5 @@ public final class ContentCodings {
      */
     public static ZipContentCodecBuilder deflate() {
         return new DefaultContentCodecBuilder.DeflateContentCodecBuilder();
-    }
-
-    /**
-     * Returns a Snappy based {@link ContentCodecBuilder} that allows building
-     * a customizable {@link ContentCodec}.
-     * @return a Snappy based {@link ContentCodecBuilder} that allows building
-     * a customizable Snappy {@link ContentCodec}
-     */
-    public static SnappyContentCodecBuilder snappy() {
-        return new SnappyContentCodecBuilder();
-    }
-
-    /**
-     * Returns the default Snappy based {@link ContentCodec}.
-     * @return default Snappy based {@link ContentCodec}
-     */
-    public static ContentCodec snappyDefault() {
-        return SNAPPY_DEFAULT;
     }
 }

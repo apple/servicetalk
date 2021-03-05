@@ -43,7 +43,7 @@ public final class ContentCodings {
     /**
      * Returns the default GZIP {@link ContentCodec}.
      * @return default GZIP based {@link ContentCodec}
-     * @deprecated API replaced by <code>io.servicetalk.encoding.netty.ContentCodings#gzipDefault()</code>
+     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#gzipDefault()}
      */
     @Deprecated
     public static ContentCodec gzipDefault() {

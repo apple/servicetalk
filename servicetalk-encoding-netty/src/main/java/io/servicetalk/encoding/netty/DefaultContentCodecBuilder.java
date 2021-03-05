@@ -16,98 +16,81 @@
 package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodecBuilder;
 
 import io.netty.handler.codec.compression.JdkZlibDecoder;
 import io.netty.handler.codec.compression.JdkZlibEncoder;
-import io.netty.handler.codec.compression.SnappyFrameDecoder;
-import io.netty.handler.codec.compression.SnappyFrameEncoder;
 import io.netty.handler.codec.compression.ZlibWrapper;
+
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
-    private static final int DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD = 16 << 20; //16MiB
-
-    private int maxAllowedPayloadSize = DEFAULT_MAX_ALLOWED_DECOMPRESSED_PAYLOAD;
-
-    protected int maxAllowedPayloadSize() {
-        return maxAllowedPayloadSize;
-    }
-
-    @Override
-    public ContentCodecBuilder maxAllowedPayloadSize(final int maxAllowedPayloadSize) {
-        if (maxAllowedPayloadSize <= 0) {
-            throw new IllegalArgumentException("maxAllowedPayloadSize: " + maxAllowedPayloadSize + " (expected > 0)");
-        }
-
-        this.maxAllowedPayloadSize = maxAllowedPayloadSize;
-        return this;
-    }
-
+    /**
+     * Base class for Zip based content-codecs.
+     */
     public abstract static class ZipContentCodecBuilder extends DefaultContentCodecBuilder {
 
+        private static final int DEFAULT_MAX_CHUNK_SIZE = 4 << 20; //4MiB
+
+        private int maxChunkSize = DEFAULT_MAX_CHUNK_SIZE;
         private int compressionLevel = 6;
 
         /**
          * Sets the compression level for this codec's encoder.
          * @param compressionLevel 1 yields the fastest compression and 9 yields the best compression.
-         * 0 means no compression. The default compression level is 6
-         * @return <code>this</code>
+         * 0 means no compression.
+         * @return {@code this}
          */
         public ZipContentCodecBuilder withCompressionLevel(final int compressionLevel) {
             this.compressionLevel = compressionLevel;
             return this;
         }
 
+        /**
+         * Returns the compression level for this codec.
+         * @return return the compression level set for this codec.
+         */
         protected int compressionLevel() {
             return compressionLevel;
+        }
+
+        protected int maxChunkSize() {
+            return maxChunkSize;
+        }
+
+        public ContentCodecBuilder maxChunkSize(final int maxChunkSize) {
+            if (maxChunkSize <= 0) {
+                throw new IllegalArgumentException("maxChunkSize: " + maxChunkSize + " (expected > 0)");
+            }
+
+            this.maxChunkSize = maxChunkSize;
+            return this;
         }
     }
 
     static final class GzipContentCodecBuilder extends ZipContentCodecBuilder {
+
+        public static final CharSequence GZIP = newAsciiString("gzip");
+
         @Override
         public ContentCodec build() {
-            return new NettyChannelContentCodec("gzip",
+            return new NettyChannelContentCodec(GZIP,
                     () -> new JdkZlibEncoder(ZlibWrapper.GZIP, compressionLevel()),
-                    () -> new JdkZlibDecoder(ZlibWrapper.GZIP, maxAllowedPayloadSize())
+                    () -> new JdkZlibDecoder(ZlibWrapper.GZIP, maxChunkSize())
             );
         }
     }
 
     static final class DeflateContentCodecBuilder extends ZipContentCodecBuilder {
+
+        public static final CharSequence DEFLATE = newAsciiString("deflate");
+
         @Override
         public ContentCodec build() {
-            return new NettyChannelContentCodec("deflate",
+            return new NettyChannelContentCodec(DEFLATE,
                     () -> new JdkZlibEncoder(ZlibWrapper.ZLIB, compressionLevel()),
-                    () -> new JdkZlibDecoder(ZlibWrapper.ZLIB, maxAllowedPayloadSize())
+                    () -> new JdkZlibDecoder(ZlibWrapper.ZLIB, maxChunkSize())
             );
-        }
-    }
-
-    public static final class SnappyContentCodecBuilder extends DefaultContentCodecBuilder {
-
-        private boolean validateChecksums;
-
-        /**
-         * Force snappy to validate checksums, <code>false</code> by default.
-         * @param validateChecksums If true, the checksum field will be validated against the actual uncompressed data,
-         * and if the checksums do not match, a suitable DecompressionException will be thrown
-         * @return <code>this</code>
-         */
-        public SnappyContentCodecBuilder validateChecksums(boolean validateChecksums) {
-            this.validateChecksums = validateChecksums;
-            return this;
-        }
-
-        @Override
-        protected int maxAllowedPayloadSize() {
-            throw new UnsupportedOperationException("Max allowed payload size is not supported for snappy.");
-        }
-
-        @Override
-        public ContentCodec build() {
-            return new NettyChannelContentCodec("snappy", SnappyFrameEncoder::new,
-                    () -> new SnappyFrameDecoder(validateChecksums));
         }
     }
 }

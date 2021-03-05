@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.encoding.netty;
 
-apply plugin: "java"
-apply from: "../../gradle/idea.gradle"
+import io.servicetalk.encoding.api.ContentCodec;
 
-dependencies {
-  implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-encoding-netty")
-  implementation project(":servicetalk-http-netty")
+/**
+ * Builder for {@link ContentCodec}.
+ */
+public interface ContentCodecBuilder {
 
-  runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    /**
+     * Build and return an instance of the {@link ContentCodec} with the configuration of the builder.
+     * @return the {@link ContentCodec} with the configuration of the builder
+     */
+    ContentCodec build();
 }
