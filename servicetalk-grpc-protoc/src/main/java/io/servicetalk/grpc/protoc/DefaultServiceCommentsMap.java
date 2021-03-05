@@ -25,24 +25,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 final class DefaultServiceCommentsMap implements ServiceCommentsMap {
-    private static final int SERVICE_PATH;
-    private static final int METHOD_PATH;
+    private static final int SERVICE_PATH =
+            getFieldNumber(FileDescriptorProto.getDescriptor().findFieldByName("service"));
+    private static final int METHOD_PATH =
+            getFieldNumber(ServiceDescriptorProto.getDescriptor().findFieldByName("method"));
     private final Map<Long, String> commentMap = new HashMap<>();
-
-    static {
-        int servicePath = -1;
-        int methodPath = -1;
-        FieldDescriptor serviceFieldDescriptor = FileDescriptorProto.getDescriptor().findFieldByName("service");
-        if (serviceFieldDescriptor != null) {
-            servicePath = serviceFieldDescriptor.getNumber();
-            FieldDescriptor methodFieldDescriptor = ServiceDescriptorProto.getDescriptor().findFieldByName("method");
-            if (methodFieldDescriptor != null) {
-                methodPath = methodFieldDescriptor.getNumber();
-            }
-        }
-        SERVICE_PATH = servicePath;
-        METHOD_PATH = methodPath;
-    }
 
     DefaultServiceCommentsMap(SourceCodeInfo sourceCodeInfo) {
         for (SourceCodeInfo.Location location : sourceCodeInfo.getLocationList()) {
@@ -68,5 +55,9 @@ final class DefaultServiceCommentsMap implements ServiceCommentsMap {
 
     private static long combineIndex(final int serviceIndex, final int methodIndex) {
         return (((long) serviceIndex) << 32) | methodIndex;
+    }
+
+    private static int getFieldNumber(@Nullable FieldDescriptor fieldDescriptor) {
+        return fieldDescriptor == null ? -1 : fieldDescriptor.getNumber();
     }
 }
