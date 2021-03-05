@@ -16,14 +16,13 @@
 package io.servicetalk.grpc.protoc;
 
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.DescriptorProtos.SourceCodeInfo;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-
-import static com.google.protobuf.DescriptorProtos.ServiceDescriptorProto.getDescriptor;
 
 final class DefaultServiceCommentsMap implements ServiceCommentsMap {
     private static final int SERVICE_PATH;
@@ -36,7 +35,7 @@ final class DefaultServiceCommentsMap implements ServiceCommentsMap {
         FieldDescriptor serviceFieldDescriptor = FileDescriptorProto.getDescriptor().findFieldByName("service");
         if (serviceFieldDescriptor != null) {
             servicePath = serviceFieldDescriptor.getNumber();
-            FieldDescriptor methodFieldDescriptor = getDescriptor().findFieldByName("method");
+            FieldDescriptor methodFieldDescriptor = ServiceDescriptorProto.getDescriptor().findFieldByName("method");
             if (methodFieldDescriptor != null) {
                 methodPath = methodFieldDescriptor.getNumber();
             }

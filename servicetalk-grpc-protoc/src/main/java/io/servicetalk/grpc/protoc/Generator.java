@@ -1140,7 +1140,7 @@ final class Generator {
      * @param blocking If true then add the interface for blocking service otherwise add async service interface
      * @return The generated service interface
      */
-    private static TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
+    private TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
         final ClassName serviceClass = blocking ? state.blockingServiceClass : state.serviceClass;
         final String name = serviceClass.simpleName();
 
@@ -1157,9 +1157,12 @@ final class Generator {
                 .forEach(interfaceSpecBuilder::addSuperinterface);
 
         // Add the default bindService method.
-        interfaceSpecBuilder.addMethod(methodBuilder(bind + Service)
-                .addJavadoc("Makes a {@link $T} bound to this instance implementing {@link $T}",
-                        state.serviceFactoryClass, serviceClass)
+        MethodSpec.Builder b = methodBuilder(bind + Service);
+        if (printJavaDocs) {
+            b.addJavadoc("Makes a {@link $T} bound to this instance implementing {@link $T}",
+                    state.serviceFactoryClass, serviceClass);
+        }
+        interfaceSpecBuilder.addMethod(b
                 .addAnnotation(Override.class)
                 .addModifiers(PUBLIC)
                 .addModifiers(DEFAULT)
