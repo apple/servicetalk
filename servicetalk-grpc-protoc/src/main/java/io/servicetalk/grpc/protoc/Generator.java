@@ -17,6 +17,7 @@ package io.servicetalk.grpc.protoc;
 
 import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
+import com.google.protobuf.DescriptorProtos.SourceCodeInfo;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -39,6 +40,8 @@ import static com.squareup.javapoet.TypeSpec.interfaceBuilder;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.BLOCKING;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.CLIENT;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.INTERFACE;
+import static io.servicetalk.grpc.protoc.NoopServiceCommentsMap.NOOP_MAP;
+import static io.servicetalk.grpc.protoc.StringUtils.escapeJavaDoc;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
 import static io.servicetalk.grpc.protoc.Types.AllGrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.AsyncCloseable;
@@ -73,6 +76,7 @@ import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFilterFactory;
+import static io.servicetalk.grpc.protoc.Types.GrpcStatusException;
 import static io.servicetalk.grpc.protoc.Types.GrpcSupportedCodings;
 import static io.servicetalk.grpc.protoc.Types.ProtoBufSerializationProviderBuilder;
 import static io.servicetalk.grpc.protoc.Types.Publisher;
@@ -86,6 +90,8 @@ import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
 import static io.servicetalk.grpc.protoc.Words.Blocking;
 import static io.servicetalk.grpc.protoc.Words.Builder;
+import static io.servicetalk.grpc.protoc.Words.COMMENT_POST_TAG;
+import static io.servicetalk.grpc.protoc.Words.COMMENT_PRE_TAG;
 import static io.servicetalk.grpc.protoc.Words.Call;
 import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
@@ -116,12 +122,14 @@ import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.onClose;
 import static io.servicetalk.grpc.protoc.Words.request;
 import static io.servicetalk.grpc.protoc.Words.requestEncoding;
+import static io.servicetalk.grpc.protoc.Words.responseWriter;
 import static io.servicetalk.grpc.protoc.Words.routes;
 import static io.servicetalk.grpc.protoc.Words.rpc;
 import static io.servicetalk.grpc.protoc.Words.service;
 import static io.servicetalk.grpc.protoc.Words.strategy;
 import static io.servicetalk.grpc.protoc.Words.strategyFactory;
 import static io.servicetalk.grpc.protoc.Words.supportedMessageCodings;
+import static java.lang.System.lineSeparator;
 import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.concat;
@@ -163,6 +171,7 @@ final class Generator {
      */
     private static final class State {
         final ServiceDescriptorProto serviceProto;
+        final int serviceIndex;
 
         final List<RpcInterface> serviceRpcInterfaces;
         final ClassName serviceClass;
@@ -178,8 +187,9 @@ final class Generator {
         final ClassName clientFilterClass;
         final ClassName clientFilterFactoryClass;
 
-        private State(final ServiceDescriptorProto serviceProto, String name) {
+        private State(final ServiceDescriptorProto serviceProto, String name, int serviceIndex) {
             this.serviceProto = serviceProto;
+            this.serviceIndex = serviceIndex;
 
             // Filled in during addServiceRpcInterfaces()
             serviceRpcInterfaces = new ArrayList<>(2 * serviceProto.getMethodCount());
@@ -201,25 +211,33 @@ final class Generator {
 
     private final GenerationContext context;
     private final Map<String, ClassName> messageTypesMap;
+    private final ServiceCommentsMap serviceCommentsMap;
+    private final boolean printJavaDocs;
 
-    Generator(final GenerationContext context, final Map<String, ClassName> messageTypesMap) {
+    Generator(final GenerationContext context, final Map<String, ClassName> messageTypesMap,
+              final boolean printJavaDocs, SourceCodeInfo sourceCodeInfo) {
         this.context = context;
         this.messageTypesMap = messageTypesMap;
+        this.serviceCommentsMap = printJavaDocs ? new DefaultServiceCommentsMap(sourceCodeInfo) : NOOP_MAP;
+        this.printJavaDocs = printJavaDocs;
     }
 
     /**
      * Generate Service class for the provided proto service descriptor.
      *
      * @param serviceProto The service descriptor.
+     * @param serviceIndex The index of the service within the current file (0 based).
      * @return The service class builder
      */
-    TypeSpec.Builder generate(final ServiceDescriptorProto serviceProto) {
+    TypeSpec.Builder generate(final ServiceDescriptorProto serviceProto, final int serviceIndex) {
         final String name = context.deconflictJavaTypeName(
                 sanitizeIdentifier(serviceProto.getName(), false) + Service);
-        final State state = new State(serviceProto, name);
+        final State state = new State(serviceProto, name, serviceIndex);
 
-        final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto)
-                .addJavadoc("Class for $L", serviceProto.getName());
+        final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto);
+        if (printJavaDocs) {
+            serviceClassBuilder.addJavadoc("Class for $L", serviceProto.getName());
+        }
 
         addSerializationProviderInit(state, serviceClassBuilder);
 
@@ -274,7 +292,10 @@ final class Generator {
     }
 
     private TypeSpec.Builder addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        state.serviceProto.getMethodList().forEach(methodProto -> {
+        List<MethodDescriptorProto> methodDescriptorProtoList = state.serviceProto.getMethodList();
+        for (int i = 0; i < methodDescriptorProtoList.size(); ++i) {
+            final int methodIndex = i;
+            MethodDescriptorProto methodProto = methodDescriptorProtoList.get(i);
             final String name = context.deconflictJavaTypeName(
                     sanitizeIdentifier(methodProto.getName(), false) + Rpc);
 
@@ -286,7 +307,15 @@ final class Generator {
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
                     .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(INTERFACE),
-                            (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
+                            (__, b) -> {
+                        b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                        if (printJavaDocs) {
+                            extractJavaDocComments(state, methodIndex, b);
+                            b.addJavadoc("@param " + ctx + " context associated with this service and request." +
+                                    lineSeparator());
+                        }
+                        return b;
+                    }))
                     .addSuperinterface(GrpcService);
 
             if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
@@ -296,10 +325,12 @@ final class Generator {
             final TypeSpec interfaceSpec = interfaceSpecBuilder.build();
             state.serviceRpcInterfaces.add(new RpcInterface(methodProto, false, ClassName.bestGuess(name)));
             serviceClassBuilder.addType(interfaceSpec);
-        });
+        }
 
         List<RpcInterface> asyncRpcInterfaces = new ArrayList<>(state.serviceRpcInterfaces);
-        asyncRpcInterfaces.forEach(rpcInterface -> {
+        for (int i = 0; i < asyncRpcInterfaces.size(); ++i) {
+            final int methodIndex = i;
+            RpcInterface rpcInterface = asyncRpcInterfaces.get(i);
             MethodDescriptorProto methodProto = rpcInterface.methodProto;
             final String name = context.deconflictJavaTypeName(Blocking + rpcInterface.className.simpleName());
 
@@ -311,7 +342,15 @@ final class Generator {
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
                     .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(BLOCKING, INTERFACE),
-                            (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
+                            (__, b) -> {
+                        b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
+                        if (printJavaDocs) {
+                            extractJavaDocComments(state, methodIndex, b);
+                            b.addJavadoc("@param " + ctx + " context associated with this service and request." +
+                                    lineSeparator());
+                        }
+                        return b;
+                    }))
                     .addSuperinterface(BlockingGrpcService);
 
             if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
@@ -321,9 +360,18 @@ final class Generator {
             final TypeSpec interfaceSpec = interfaceSpecBuilder.build();
             state.serviceRpcInterfaces.add(new RpcInterface(methodProto, true, ClassName.bestGuess(name)));
             serviceClassBuilder.addType(interfaceSpec);
-        });
+        }
 
         return serviceClassBuilder;
+    }
+
+    private void extractJavaDocComments(State state, int methodIndex, MethodSpec.Builder b) {
+        String serviceComments = serviceCommentsMap.getLeadingComments(state.serviceIndex, methodIndex);
+        if (serviceComments != null) {
+            b.addJavadoc(COMMENT_PRE_TAG + lineSeparator())
+                    .addJavadoc(escapeJavaDoc(serviceComments))
+                    .addJavadoc(COMMENT_POST_TAG + lineSeparator());
+        }
     }
 
     /**
@@ -620,23 +668,39 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addSuperinterface(ParameterizedTypeName.get(BlockingGrpcClient, state.clientClass));
 
-        state.clientMetaDatas.forEach(clientMetaData -> {
+        for (int i = 0; i < state.clientMetaDatas.size(); ++i) {
+            final int methodIndex = i;
+            ClientMetaData clientMetaData = state.clientMetaDatas.get(i);
             clientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             (__, b) -> b.addModifiers(ABSTRACT)));
 
             filterableClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            (__, b) -> b.addModifiers(ABSTRACT)
-                                    .addParameter(clientMetaData.className, metadata)));
+                            (__, b) -> {
+                                b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
+                                if (printJavaDocs) {
+                                    extractJavaDocComments(state, methodIndex, b);
+                                    b.addJavadoc("@param " + metadata + " the metadata associated with this client call." +
+                                            lineSeparator());
+                                }
+                                return b;
+                            }));
 
             blockingClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
                             (__, b) -> b.addModifiers(ABSTRACT)))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            (__, b) -> b.addModifiers(ABSTRACT)
-                                    .addParameter(clientMetaData.className, metadata)));
-        });
+                            (__, b) -> {
+                                b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
+                                if (printJavaDocs) {
+                                    extractJavaDocComments(state, methodIndex, b);
+                                    b.addJavadoc("@param " + metadata +
+                                            " the metadata associated with this client call." + lineSeparator());
+                                }
+                                return b;
+                            }));
+        }
 
         serviceClassBuilder.addType(clientSpecBuilder.build())
                 .addType(filterableClientSpecBuilder.build())
@@ -795,41 +859,108 @@ final class Generator {
         final Modifier[] mods = flags.contains(INTERFACE) ? new Modifier[0] : new Modifier[]{FINAL};
 
         if (flags.contains(BLOCKING)) {
-            methodSpecBuilder.addException(Exception.class);
-
             if (methodProto.getClientStreaming()) {
                 if (flags.contains(CLIENT)) {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(ClassName.get(Iterable.class),
                             inClass), request, mods);
+                    if (printJavaDocs) {
+                        methodSpecBuilder.addJavadoc("@param " + request +
+                                " used to send a stream of type {@link $T} to the server." + lineSeparator(), inClass);
+                    }
                 } else {
-                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(BlockingIterable, inClass), request,
-                            mods);
+                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(BlockingIterable, inClass), request, mods);
+                    if (printJavaDocs) {
+                        methodSpecBuilder.addJavadoc("@param " + request +
+                            " used to read the stream of type {@link $T} from the client." + lineSeparator(), inClass);
+                    }
                 }
             } else {
                 methodSpecBuilder.addParameter(inClass, request, mods);
+                if (printJavaDocs) {
+                    methodSpecBuilder.addJavadoc("@param " + request + " the request from the client." +
+                            lineSeparator());
+                }
             }
 
             if (methodProto.getServerStreaming()) {
                 if (flags.contains(CLIENT)) {
                     methodSpecBuilder.returns(ParameterizedTypeName.get(BlockingIterable, outClass));
+                    if (printJavaDocs) {
+                        methodSpecBuilder.addJavadoc(
+                                "@return used to read the response stream of type {@link $T} from the server."
+                                        + lineSeparator(), outClass);
+                    }
                 } else {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
-                            "responseWriter", mods);
+                            responseWriter, mods);
+                    if (printJavaDocs) {
+                        methodSpecBuilder.addJavadoc("@param " + responseWriter +
+                                " used to write a stream of type {@link $T} to the client." + lineSeparator() +
+                                "The implementation of this method is responsible for calling {@link $T#close()}." +
+                                lineSeparator(), outClass, GrpcPayloadWriter);
+                    }
                 }
             } else {
                 methodSpecBuilder.returns(outClass);
+                if (printJavaDocs) {
+                    if (flags.contains(CLIENT)) {
+                        methodSpecBuilder.addJavadoc("@return the response from the server." + lineSeparator());
+                    } else {
+                        methodSpecBuilder.addJavadoc("@return the response to send to the client" + lineSeparator());
+                    }
+                }
+            }
+            methodSpecBuilder.addException(Exception.class);
+            if (printJavaDocs) {
+                methodSpecBuilder.addJavadoc("@throws $T if an unexpected application error occurs." + lineSeparator(),
+                        Exception.class)
+                        .addJavadoc("@throws $T if an expected application exception occurs. Its contents will be " +
+                                "serialized and propagated to the peer.", GrpcStatusException);
             }
         } else {
             if (methodProto.getClientStreaming()) {
                 methodSpecBuilder.addParameter(ParameterizedTypeName.get(Publisher, inClass), request, mods);
+                if (printJavaDocs) {
+                    methodSpecBuilder.addJavadoc("@param " + request +
+                            " used to read a stream of type {@link $T} from the client." + lineSeparator(), inClass);
+                }
             } else {
                 methodSpecBuilder.addParameter(inClass, request, mods);
+                if (printJavaDocs) {
+                    if (flags.contains(CLIENT)) {
+                        methodSpecBuilder.addJavadoc("@param " + request + " the request to send to the server." +
+                                lineSeparator());
+                    } else {
+                        methodSpecBuilder.addJavadoc("@param " + request + " the request from the client." +
+                                lineSeparator());
+                    }
+                }
             }
 
             if (methodProto.getServerStreaming()) {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Publisher, outClass));
+                if (printJavaDocs) {
+                    if (flags.contains(CLIENT)) {
+                        methodSpecBuilder.addJavadoc("@return used to read a stream of type {@link $T} from the server."
+                                + lineSeparator(), outClass);
+                    } else {
+                        methodSpecBuilder.addJavadoc("@return used to write a stream of type {@link $T} to the client." +
+                                lineSeparator(), outClass);
+                    }
+                }
             } else {
                 methodSpecBuilder.returns(ParameterizedTypeName.get(Single, outClass));
+                if (printJavaDocs) {
+                    if (flags.contains(CLIENT)) {
+                        methodSpecBuilder.addJavadoc(
+                                "@return a {@link $T} which completes when the response is received from the server." +
+                                        lineSeparator(), Single);
+                    } else {
+                        methodSpecBuilder.addJavadoc(
+                                "@return a {@link $T} which sends the response to the client when it terminates." +
+                                        lineSeparator(), Single);
+                    }
+                }
             }
         }
 

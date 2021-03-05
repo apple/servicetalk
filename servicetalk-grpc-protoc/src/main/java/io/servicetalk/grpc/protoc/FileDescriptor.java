@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.protoc;
 
+import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileOptions;
@@ -107,6 +108,10 @@ final class FileDescriptor implements GenerationContext {
                 multipleClassFiles ? javaPackageName() : javaPackageName() + '.' + outerJavaClassName(),
                 messageTypesMap);
         return messageTypesMap;
+    }
+
+    DescriptorProtos.SourceCodeInfo sourceCodeInfo() {
+        return protoFile.getSourceCodeInfo();
     }
 
     private void addMessageTypes(final List<DescriptorProto> messageTypes,
