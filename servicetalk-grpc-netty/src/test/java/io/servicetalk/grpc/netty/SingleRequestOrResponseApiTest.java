@@ -226,6 +226,7 @@ public class SingleRequestOrResponseApiTest {
             for (int i = 0; i < numberOfResponses; i++) {
                 responseWriter.write(newResponse());
             }
+            responseWriter.close();
         }
 
         @Override

@@ -875,6 +875,7 @@ public class ProtocolCompatibilityTest {
                         for (CompatRequest requestItem : request) {
                             responseWriter.write(computeResponse(requestItem.getId()));
                         }
+                        responseWriter.close();
                     }
 
                     @Override
@@ -902,6 +903,7 @@ public class ProtocolCompatibilityTest {
                         for (int i = 0; i < request.getId(); i++) {
                             responseWriter.write(computeResponse(i));
                         }
+                        responseWriter.close();
                     }
                 }, codings));
         return TestServerContext.fromServiceTalkServerContext(serverContext);
