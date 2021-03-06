@@ -81,26 +81,16 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod)
+        return canAddContentLength(response) && responseMayHaveContent(response.status().code(), requestMethod)
                 // HEAD requests should either have the content-length already set (= what GET will return) or
                 // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
                 && !isHeadResponse(requestMethod);
-    }
-
-    static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
-        return !hasContentHeaders(request.headers()) && clientMaySendPayloadBodyFor(request.method());
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
         return !TRACE.equals(requestMethod);
-    }
-
-    static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
-                                                  final HttpRequestMethod requestMethod) {
-        return !hasContentHeaders(response.headers()) &&
-                canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod);
     }
 
     static boolean canAddResponseTransferEncodingProtocol(final int statusCode,
@@ -112,8 +102,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return !hasContentHeaders(metadata.headers()) &&
-                isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
+        return !hasContentHeaders(metadata.headers()) && isSafeToAggregate(metadata) &&
+                (!mayHaveTrailers(metadata) || metadata.version().major() > 1);
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
@@ -144,8 +134,8 @@ final class HeaderUtils {
         return POST.equals(requestMethod) || PUT.equals(requestMethod) || PATCH.equals(requestMethod);
     }
 
-    static boolean shouldAddZeroContentLength(final int statusCode,
-                                              final HttpRequestMethod requestMethod) {
+    static boolean responseMayHaveContent(final int statusCode,
+                                          final HttpRequestMethod requestMethod) {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -240,21 +230,26 @@ final class HeaderUtils {
         });
     }
 
-    static StreamingHttpResponse addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
-                                                                        final HttpRequestMethod requestMethod) {
-        if (canAddResponseTransferEncoding(response, requestMethod)) {
+    static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
+                                                       final HttpRequestMethod requestMethod) {
+        if (responseMayHaveContent(response.status().code(), requestMethod) &&
+                canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
-        return response;
     }
 
     static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
-        if (canAddRequestTransferEncoding(request)) {
+        if (clientMaySendPayloadBodyFor(request.method()) && canAddTransferEncodingChunked(request)) {
             request.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
     }
 
-    private static boolean hasContentHeaders(final HttpHeaders headers) {
+    private static boolean canAddTransferEncodingChunked(HttpMetaData metaData) {
+        final HttpHeaders headers = metaData.headers();
+        return !isTransferEncodingChunked(headers) && (!headers.contains(CONTENT_LENGTH) || mayHaveTrailers(metaData));
+    }
+
+    static boolean hasContentHeaders(final HttpHeaders headers) {
         return headers.contains(CONTENT_LENGTH) || isTransferEncodingChunked(headers);
     }
 

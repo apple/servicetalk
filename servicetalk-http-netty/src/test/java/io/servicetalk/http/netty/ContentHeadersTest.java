@@ -52,6 +52,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -366,7 +367,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
         if (headers.contains(CONTENT_LENGTH)) {
             return "content-length present";
         }
-        if (!headers.contains(TRANSFER_ENCODING, CHUNKED)) {
+        if (!isTransferEncodingChunked(headers)) {
             return "No transfer-encoding: chunked";
         }
         return null;
@@ -374,7 +375,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     @Nullable
     static String assertContentLength(final HttpHeaders headers, final int contentLength) {
-        if (headers.contains(TRANSFER_ENCODING, CHUNKED)) {
+        if (isTransferEncodingChunked(headers)) {
             return "transfer-encoding present";
         }
         if (!headers.contains(CONTENT_LENGTH)) {
@@ -388,7 +389,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     @Nullable
     static String assertNeither(final HttpHeaders headers) {
-        if (headers.contains(TRANSFER_ENCODING, CHUNKED)) {
+        if (isTransferEncodingChunked(headers)) {
             return "transfer-encoding present";
         }
         if (headers.contains(CONTENT_LENGTH)) {

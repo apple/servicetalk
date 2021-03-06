@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -266,7 +267,7 @@ public abstract class AbstractNettyHttpServerTest {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersion version,
+    void assertResponse(final HttpResponseMetaData response, final HttpProtocolVersion version,
                         final HttpResponseStatus status) {
         assertEquals(status, response.status());
         assertEquals(version, response.version());
