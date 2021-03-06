@@ -83,6 +83,12 @@ public final class ReflectionUtils {
      * Try to call {@link AccessibleObject#setAccessible(boolean)} but will catch any {@link SecurityException} and
      * {@link java.lang.reflect.InaccessibleObjectException} (for JDK 9) and return it.
      * The caller must check if it returns {@code null} and if not handle the returned exception.
+     * @param object The object to attempt to make accessible.
+     * @param checkAccessible {@code true} to respect system property configuration which may limit
+     * {@link AccessibleObject#setAccessible(boolean)} attempts. {@code false} to try regardless of system property
+     * configuration.
+     * @return a {@link Throwable} indicating the exception that occurred while attempting to make {@code object}
+     * accessible, or {@code null} if the operation was successful.
      */
     @SuppressWarnings("JavadocReference")
     @Nullable
