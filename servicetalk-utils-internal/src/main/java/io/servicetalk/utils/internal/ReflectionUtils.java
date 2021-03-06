@@ -86,7 +86,7 @@ public final class ReflectionUtils {
      */
     @SuppressWarnings("JavadocReference")
     @Nullable
-    static Throwable trySetAccessible(final AccessibleObject object, final boolean checkAccessible) {
+    public static Throwable trySetAccessible(final AccessibleObject object, final boolean checkAccessible) {
         if (checkAccessible && !IS_EXPLICIT_TRY_REFLECTION_SET_ACCESSIBLE) {
             return new UnsupportedOperationException("Reflective setAccessible(true) disabled");
         }
