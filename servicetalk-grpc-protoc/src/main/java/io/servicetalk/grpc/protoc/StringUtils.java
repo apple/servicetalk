@@ -100,4 +100,55 @@ final class StringUtils {
         }
         return options;
     }
+
+    static void escapeJavaDoc(String rawJavaDoc, StringBuilder sb) {
+        char prev = '*';
+        for (int i = 0; i < rawJavaDoc.length(); ++i) {
+            char c = rawJavaDoc.charAt(i);
+            switch (c) {
+                case '*':
+                    // Avoid "/*".
+                    if (prev == '/') {
+                        sb.append("&#42;");
+                    } else {
+                        sb.append(c);
+                    }
+                    break;
+                case '/':
+                    // Avoid "*/".
+                    if (prev == '*') {
+                        sb.append("&#47;");
+                    } else {
+                        sb.append(c);
+                    }
+                    break;
+                case '@':
+                    // '@' starts javadoc tags including the @deprecated tag, which will
+                    // cause a compile-time error if inserted before a declaration that
+                    // does not have a corresponding @Deprecated annotation.
+                    sb.append("&#64;");
+                    break;
+                case '<':
+                    // Avoid interpretation as HTML.
+                    sb.append("&lt;");
+                    break;
+                case '>':
+                    // Avoid interpretation as HTML.
+                    sb.append("&gt;");
+                    break;
+                case '&':
+                    // Avoid interpretation as HTML.
+                    sb.append("&amp;");
+                    break;
+                case '\\':
+                    // Java interprets Unicode escape sequences anywhere!
+                    sb.append("&#92;");
+                    break;
+                default:
+                    sb.append(c);
+                    break;
+            }
+            prev = c;
+        }
+    }
 }

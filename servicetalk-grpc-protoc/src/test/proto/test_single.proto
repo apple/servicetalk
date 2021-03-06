@@ -25,6 +25,14 @@ package test.single;
 
 // The greeting service definition.
 service Greeter {
+    // /*
+    //*/
+    // @hello
+    // <open tag
+    // >close tag
+    // &foo
+    // \bar
+    // /hello
     rpc SayHello (UserRequest) returns (HelloReply) {}
     rpc SayHelloToFromMany (stream UserRequest) returns (stream HelloReply) {}
     rpc SayHelloToMany (UserRequest) returns (stream HelloReply) {}

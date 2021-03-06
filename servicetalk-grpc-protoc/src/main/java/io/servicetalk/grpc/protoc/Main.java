@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.protoc;
 
+import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
 import com.squareup.javapoet.ClassName;
@@ -30,6 +31,7 @@ import java.util.Set;
 
 import static com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest.parseFrom;
 import static io.servicetalk.grpc.protoc.StringUtils.parseOptions;
+import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -55,6 +57,17 @@ public final class Main {
      * </pre>
      */
     private static final String TYPE_NAME_SUFFIX_OPTION = "typeNameSuffix";
+    /**
+     * Supports an option to disable javaDoc generation.
+     * <pre>
+     * task.plugins {
+     *   servicetalk_grpc {
+     *     option 'javaDocs=false'
+     *   }
+     * }
+     * </pre>
+     */
+    private static final String PRINT_JAVA_DOCS_OPTION = "javaDocs";
     private Main() {
         // no instances
     }
@@ -104,6 +117,7 @@ public final class Main {
         final Map<String, String> optionsMap = request.hasParameter() ?
                 parseOptions(request.getParameter()) : emptyMap();
         final String typeSuffixValue = optionsMap.get(TYPE_NAME_SUFFIX_OPTION);
+        final boolean printJavaDocs = parseBoolean(optionsMap.getOrDefault(PRINT_JAVA_DOCS_OPTION, "true"));
 
         final List<FileDescriptor> fileDescriptors = request.getProtoFileList().stream()
                 .map(protoFile -> new FileDescriptor(protoFile, typeSuffixValue)).collect(toList());
@@ -114,13 +128,17 @@ public final class Main {
                 .flatMap(Set::stream)
                 .collect(toMap(Entry::getKey, Entry::getValue));
 
-        fileDescriptors.stream()
-                .filter(f -> filesToGenerate.contains(f.protoFileName()))
-                .forEach(f -> {
-                    final Generator generator = new Generator(f, messageTypesMap);
-                    f.protoServices().forEach(generator::generate);
-                    f.writeTo(responseBuilder);
-                });
+        for (FileDescriptor f : fileDescriptors) {
+            if (filesToGenerate.contains(f.protoFileName())) {
+                final Generator generator = new Generator(f, messageTypesMap, printJavaDocs, f.sourceCodeInfo());
+                List<ServiceDescriptorProto> serviceDescriptorProtoList = f.protoServices();
+                for (int i = 0; i < serviceDescriptorProtoList.size(); ++i) {
+                    ServiceDescriptorProto serviceDescriptor = serviceDescriptorProtoList.get(i);
+                    generator.generate(serviceDescriptor, i);
+                }
+                f.writeTo(responseBuilder);
+            }
+        }
 
         return responseBuilder.build();
     }
