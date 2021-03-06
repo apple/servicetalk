@@ -16,14 +16,17 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-if(!JavaVersion.current().isJava9Compatible()){
+if (!JavaVersion.current().isJava9Compatible()) {
     project.tasks.all { task -> task.enabled = false }
 }
-
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_9
     targetCompatibility = JavaVersion.VERSION_1_9
+}
+
+compileJava {
+    options.compilerArgs.addAll(['--release', '9'])
 }
 
 dependencies {

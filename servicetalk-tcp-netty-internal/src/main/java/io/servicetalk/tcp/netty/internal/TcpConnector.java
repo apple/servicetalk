@@ -286,16 +286,12 @@ public final class TcpConnector {
         void connectFailed(final Throwable cause) {
             if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 target.onError(cause);
-            } else {
-                LOGGER.error("Connection failed.", cause);
             }
         }
 
         void unexpectedFailure(final Throwable cause) {
             if (terminatedUpdater.compareAndSet(this, 0, 1)) {
                 target.onError(cause);
-            } else {
-                LOGGER.error("Unexpected exception during connect.", cause);
             }
         }
     }

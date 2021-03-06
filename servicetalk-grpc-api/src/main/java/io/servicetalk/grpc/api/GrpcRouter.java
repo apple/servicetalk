@@ -55,9 +55,6 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -94,8 +91,6 @@ import static java.util.Collections.unmodifiableMap;
  * implementation of a <a href="https://www.grpc.io">gRPC</a> method.
  */
 final class GrpcRouter {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouter.class);
-
     private final Map<String, RouteProvider> routes;
     private final Map<String, RouteProvider> streamingRoutes;
     private final Map<String, RouteProvider> blockingRoutes;
@@ -270,14 +265,9 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .recoverWith(cause -> {
-                                            LOGGER.error("Unexpected exception from route: {}, path: {}.", route, path,
-                                                    cause);
-                                            return succeeded(newErrorResponse(responseFactory, finalServiceContext,
-                                                    cause, ctx.executionContext().bufferAllocator()));
-                                        });
+                                        .recoverWith(cause -> succeeded(newErrorResponse(responseFactory,
+                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator())));
                             } catch (Throwable t) {
-                                LOGGER.error("Unexpected exception from route: {}, path: {}.", route, path, t);
                                 return succeeded(newErrorResponse(responseFactory, serviceContext, t,
                                         ctx.executionContext().bufferAllocator()));
                             }
@@ -476,7 +466,6 @@ final class GrpcRouter {
                                         ctx.executionContext().bufferAllocator()).payloadBody(response,
                                                 serializationProvider.serializerFor(responseEncoding, responseClass));
                             } catch (Throwable t) {
-                                LOGGER.error("Unexpected exception from route: {}, path: {}.", route, path, t);
                                 return newErrorResponse(responseFactory, serviceContext, t,
                                         ctx.executionContext().bufferAllocator());
                             }

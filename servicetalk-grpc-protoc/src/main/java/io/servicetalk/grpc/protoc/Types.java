@@ -55,6 +55,7 @@ final class Types {
     static final ClassName FilterableGrpcClient = bestGuess(grpcApiPkg + ".FilterableGrpcClient");
     static final ClassName GrpcExecutionContext = bestGuess(grpcApiPkg + ".GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
+    static final ClassName GrpcStatusException = bestGuess(grpcApiPkg + ".GrpcStatusException");
     static final ClassName ContentCodec = bestGuess(encodingApiPkg + ".ContentCodec");
     static final TypeName GrpcSupportedCodings = ParameterizedTypeName.get(List, ContentCodec);
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");

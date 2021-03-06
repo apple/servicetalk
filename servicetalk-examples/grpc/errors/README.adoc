@@ -1,0 +1,3 @@
+== ServiceTalk gRPC Application Errors Example
+
+Extends "Hello World" ServiceTalk gRPC example to demonstrate how services can return application level errors which are propagated to the client via the gRPC transport.

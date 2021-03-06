@@ -33,8 +33,8 @@ final class Words {
     static final String factory = "factory";
     static final String onClose = "onClose";
     static final String metadata = "metadata";
-    static final String path = "path";
     static final String request = "request";
+    static final String responseWriter = "responseWriter";
     static final String routes = "routes";
     static final String rpc = "rpc";
     static final String initSerializationProvider = "initSerializationProvider";
@@ -44,7 +44,6 @@ final class Words {
     static final String supportedMessageCodings = "supportedMessageCodings";
     static final String strategyFactory = strategy + "Factory";
     static final String Service = "Service";
-    static final String Bindable = "Bindable";
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
     static final String Call = "Call";
@@ -56,6 +55,11 @@ final class Words {
     static final String To = "To";
     static final String INSTANCE = "INSTANCE";
     static final String RPC_PATH = "PATH";
+    static final String COMMENT_PRE_TAG = "<pre>";
+    static final String COMMENT_POST_TAG = "</pre>";
+    static final String JAVADOC_PARAM = "@param ";
+    static final String JAVADOC_RETURN = "@return ";
+    static final String JAVADOC_THROWS = "@throws ";
 
     private Words() {
         // no instance

@@ -35,9 +35,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.Arrays;
@@ -359,8 +356,6 @@ public abstract class GrpcServerBuilder {
     }
 
     private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
-        private static final Logger LOGGER = LoggerFactory.getLogger(CatchAllHttpServiceFilter.class);
-
         CatchAllHttpServiceFilter(final StreamingHttpService service) {
             super(service);
         }
@@ -378,10 +373,9 @@ public abstract class GrpcServerBuilder {
             return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
         }
 
-        private Single<StreamingHttpResponse> convertToGrpcErrorResponse(
+        private static Single<StreamingHttpResponse> convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            LOGGER.error("Unexpected error from service {}.", delegate(), cause);
             return succeeded(newErrorResponse(responseFactory, null, cause,
                     ctx.executionContext().bufferAllocator()));
         }
