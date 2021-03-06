@@ -232,7 +232,7 @@ final class HeaderUtils {
 
     static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
                                                        final HttpRequestMethod requestMethod) {
-        if (responseMayHaveContent(response.status().code(), requestMethod) &&
+        if (canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod) &&
                 canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
