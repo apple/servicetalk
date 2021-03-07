@@ -61,7 +61,7 @@ public CompletionStage<String> doWorkCompletionStage(String state) {
 }
 ----
 
-The way to call this method may like this:
+Here is an example how to call `doWorkCompletionStage` and converting the result from `CompletionStage` to `Single`:
 [source, java]
 ----
 public Single<String> handleRequest(StringBuilder mutableInput) {
