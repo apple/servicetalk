@@ -51,6 +51,31 @@ available, there is an implicit association between the source and the work it r
 powerful as it means that work can be re-done without invoking the method that created the source. Thus enabling us to
 generically implement retries on the sources as opposed to the methods that create the sources.
 
+=== Lazy Execution Interoperability
+ServiceTalk provides utilities to interoperate with hot/eager sources. For example assume the following method exists
+and is you need to convert into a `Single`:
+[source, java]
+----
+public CompletionStage<String> doWorkCompletionStage(String state) {
+  // Assume pre-existing asynchronous implementation exists
+}
+----
+
+The way to call this method may like this:
+[source, java]
+----
+public Single<String> handleRequest(StringBuilder mutableInput) {
+  Single.defer(() -> {
+    // Any state that may change across invocations associated with the async operation should be computed inside the
+    // Supplier. This defers the work to compute the state, and will be re-run if there is a re-subscribe (e.g. to retry
+    // the operation). Deferring state computation is not unique to interoperability, and is a general characteristics
+    // of cold/lazy sources.
+    String newRequest = "new request" + mutableInput.toString();
+    return Single.fromStage(doWorkCompletionStage(newRequest));
+  });
+}
+----
+
 == Specifications
 
 As defined <<Interoperability, above>>, ServiceTalk defines its own interfaces (specifications consistent with the
