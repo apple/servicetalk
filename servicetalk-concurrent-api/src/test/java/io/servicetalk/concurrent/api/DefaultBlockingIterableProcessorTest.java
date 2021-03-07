@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -28,13 +26,11 @@ import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DefaultBlockingIterableProcessorTest {
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     private final BlockingIterable.Processor<Integer> processor;
 
@@ -65,17 +61,15 @@ public class DefaultBlockingIterableProcessorTest {
     }
 
     @Test
-    public void hasNextTimesout() throws TimeoutException {
+    public void hasNextTimesout() {
         BlockingIterator<Integer> iterator = processor.iterator();
-        expectedException.expect(instanceOf(TimeoutException.class));
-        iterator.hasNext(1, TimeUnit.SECONDS);
+        assertThrows(TimeoutException.class, () -> iterator.hasNext(10, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void nextTimesout() throws TimeoutException {
+    public void nextTimesout() {
         BlockingIterator<Integer> iterator = processor.iterator();
-        expectedException.expect(instanceOf(TimeoutException.class));
-        iterator.next(1, TimeUnit.SECONDS);
+        assertThrows(TimeoutException.class, () -> iterator.next(10, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -90,8 +84,7 @@ public class DefaultBlockingIterableProcessorTest {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.close();
         iterator.close();
-        expectedException.expect(instanceOf(CancellationException.class));
-        iterator.hasNext();
+        assertThrows(CancellationException.class, () -> iterator.hasNext());
     }
 
     @Test
@@ -99,23 +92,20 @@ public class DefaultBlockingIterableProcessorTest {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.fail(DELIBERATE_EXCEPTION);
         iterator.close();
-        expectedException.expect(instanceOf(CancellationException.class));
-        iterator.hasNext();
+        assertThrows(CancellationException.class, () -> iterator.hasNext());
     }
 
     @Test
     public void postIteratorCloseHasNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
-        expectedException.expect(instanceOf(CancellationException.class));
-        iterator.hasNext();
+        assertThrows(CancellationException.class, () -> iterator.hasNext());
     }
 
     @Test
     public void postIteratorCloseNextThrows() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
         iterator.close();
-        expectedException.expect(instanceOf(CancellationException.class));
-        iterator.next();
+        assertThrows(CancellationException.class, () -> iterator.next());
     }
 }

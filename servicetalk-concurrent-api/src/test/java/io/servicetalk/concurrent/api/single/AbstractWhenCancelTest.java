@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,21 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenCancelTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test
@@ -53,17 +52,19 @@ public abstract class AbstractWhenCancelTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
-        try {
-            toSource(doCancel(single, () -> {
-                throw DELIBERATE_EXCEPTION;
-            })).subscribe(listener);
-            listener.awaitSubscription().cancel();
-        } finally {
-            single.verifyCancelled();
-        }
+
+        Exception e = assertThrows(DeliberateException.class, () -> {
+            try {
+                toSource(doCancel(single, () -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(listener);
+                listener.awaitSubscription().cancel();
+            } finally {
+                single.verifyCancelled();
+            }
+        });
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     protected abstract <T> Single<T> doCancel(Single<T> single, Runnable runnable);

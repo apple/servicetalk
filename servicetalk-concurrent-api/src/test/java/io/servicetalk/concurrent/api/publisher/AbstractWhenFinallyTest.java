@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,28 +20,24 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
 
     final TestPublisher<String> publisher = new TestPublisher<>();
     final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
@@ -155,9 +151,8 @@ abstract class AbstractWhenFinallyTest {
         try {
             doFinally(publisher, mock).subscribe(subscriber);
             publisher.onSubscribe(subscription);
-            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            subscriber.awaitSubscription().cancel();
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> subscriber.awaitSubscription().cancel());
+            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             verify(mock).cancel();
             verifyNoMoreInteractions(mock);

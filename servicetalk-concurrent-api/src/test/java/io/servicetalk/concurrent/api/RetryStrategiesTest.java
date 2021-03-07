@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
@@ -71,7 +71,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testBackoffCauseFilter() throws Exception {
+    public void testBackoffCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffFullJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofDays(10), timerExecutor));
     }
@@ -103,7 +103,7 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffCauseFilter() throws Exception {
+    public void testExpBackoffCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffFullJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofDays(10), timerExecutor));
     }
@@ -139,12 +139,12 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffWithJitterCauseFilter() throws Exception {
+    public void testExpBackoffWithJitterCauseFilter() {
         testCauseFilter(retryWithExponentialBackoffDeltaJitter(1, cause -> cause instanceof IllegalStateException,
                 ofSeconds(1), ofMillis(10), ofDays(10), timerExecutor));
     }
 
-    private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) throws Exception {
+    private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
         io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
                 strategy.invokeAndListen(DELIBERATE_EXCEPTION);

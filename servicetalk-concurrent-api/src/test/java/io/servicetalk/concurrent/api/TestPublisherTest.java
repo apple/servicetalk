@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,11 +37,10 @@ import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TestPublisherTest {
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
 
     private final TestPublisherSubscriber<String> subscriber1 = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<String> subscriber2 = new TestPublisherSubscriber<>();
@@ -61,11 +58,12 @@ public class TestPublisherTest {
         subscriber1.awaitOnComplete();
 
         source.subscribe(subscriber2);
-        expected.expect(RuntimeException.class);
-        expected.expectMessage("Unexpected exception(s) encountered");
-        expected.expectCause(allOf(instanceOf(IllegalStateException.class), hasProperty("message",
-                startsWith("Duplicate subscriber"))));
-        source.onComplete();
+
+        Exception e = assertThrows(RuntimeException.class, () -> source.onComplete());
+        assertEquals("Unexpected exception(s) encountered", e.getMessage());
+        assertThat(e.getCause(), allOf(instanceOf(IllegalStateException.class),
+                                       hasProperty("message",
+                                                   startsWith("Duplicate subscriber"))));
     }
 
     @Test

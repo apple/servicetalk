@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public final class SubscribeTest {
 
     private LegacyTestCompletable source;
     private Cancellable cancellable;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         source = new LegacyTestCompletable();
         cancellable = source.subscribe();

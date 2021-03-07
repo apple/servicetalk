@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeoutException;
 
@@ -27,16 +26,14 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class BlockingProcessorSignalsHolderTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final DefaultBlockingProcessorSignalsHolder<Integer> buffer;
     @SuppressWarnings("unchecked")
     private final ProcessorSignalsConsumer<Integer> consumer = mock(ProcessorSignalsConsumer.class);
@@ -55,8 +52,8 @@ public class BlockingProcessorSignalsHolderTest {
 
     @Test
     public void consumeEmpty() {
-        assertThrows("Unexpected consume when empty.", TimeoutException.class,
-                () -> buffer.consume(consumer, 1, MILLISECONDS));
+        assertThrows(TimeoutException.class,
+                () -> buffer.consume(consumer, 1, MILLISECONDS), "Unexpected consume when empty.");
         verifyZeroInteractions(consumer);
     }
 

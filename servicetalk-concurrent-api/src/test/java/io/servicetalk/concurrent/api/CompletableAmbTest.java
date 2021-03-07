@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 import java.util.function.BiFunction;
@@ -31,103 +31,133 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Parameterized.class)
 public class CompletableAmbTest {
 
-    private final TestCompletable first = new TestCompletable();
-    private final TestCompletable second = new TestCompletable();
-    private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
-    private final TestCancellable cancellable = new TestCancellable();
+    private TestCompletable first;
+    private TestCompletable second;
+    private TestCompletableSubscriber subscriber;
+    private TestCancellable cancellable;
 
-    public CompletableAmbTest(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+    @BeforeEach
+    void beforeEach() {
+        first = new TestCompletable();
+        second = new TestCompletable();
+        subscriber = new TestCompletableSubscriber();
+        cancellable = new TestCancellable();
+    }
+
+    private void setUp(final BiFunction<Completable, Completable, Completable> ambSupplier) {
         toSource(ambSupplier.apply(first, second)).subscribe(subscriber);
         subscriber.awaitSubscription();
         assertThat("First source not subscribed.", first.isSubscribed(), is(true));
         assertThat("Second source not subscribed.", second.isSubscribed(), is(true));
     }
 
-    @Parameterized.Parameters
     public static Collection<BiFunction<Completable, Completable, Completable>> data() {
         return asList(Completable::ambWith,
                 (first, second) -> amb(first, second),
                 (first, second) -> amb(asList(first, second)));
     }
 
-    @Test
-    public void successFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @Test
-    public void successSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @Test
-    public void failFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @Test
-    public void failSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @Test
-    public void successFirstThenSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successFirstThenSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
     }
 
-    @Test
-    public void successSecondThenFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successSecondThenFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();
     }
 
-    @Test
-    public void failFirstThenSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failFirstThenSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void failSecondThenFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failSecondThenFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void successFirstThenSecondFail() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successFirstThenSecondFail(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void successSecondThenFirstFail() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void successSecondThenFirstFail(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void failFirstThenSecondSuccess() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failFirstThenSecondSuccess(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
     }
 
-    @Test
-    public void failSecondThenFirstSuccess() {
+    @ParameterizedTest(name = "{displayName} [{index}]")
+    @MethodSource("data")
+    public void failSecondThenFirstSuccess(final BiFunction<Completable, Completable, Completable> ambSupplier) {
+        setUp(ambSupplier);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();

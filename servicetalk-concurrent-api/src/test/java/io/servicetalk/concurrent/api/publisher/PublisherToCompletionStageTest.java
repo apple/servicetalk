@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
 import java.util.concurrent.CompletionStage;
@@ -38,24 +36,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherToCompletionStageTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private static ExecutorService jdkExecutor;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
@@ -177,14 +171,13 @@ public class PublisherToCompletionStageTest {
     }
 
     @Test
-    public void futureFail() throws Exception {
+    public void futureFail() {
         Future<? extends Collection<String>> f = publisher.toFuture();
         jdkExecutor.execute(() -> {
             publisher.onNext("Hello", "World");
             publisher.onError(DELIBERATE_EXCEPTION);
         });
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        f.get();
+        Exception e = assertThrows(ExecutionException.class, () -> f.get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }

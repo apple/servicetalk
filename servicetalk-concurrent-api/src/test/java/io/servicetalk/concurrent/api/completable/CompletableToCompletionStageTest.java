@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -34,33 +32,31 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableToCompletionStageTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private static ExecutorService jdkExecutor;
 
     private LegacyTestCompletable source;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() {
         source = new LegacyTestCompletable();
     }
 
@@ -128,11 +124,10 @@ public class CompletableToCompletionStageTest {
     }
 
     @Test
-    public void futureFail() throws Exception {
+    public void futureFail() {
         Future<Void> f = source.toFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        f.get();
+        Exception e = assertThrows(ExecutionException.class, () -> f.get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }

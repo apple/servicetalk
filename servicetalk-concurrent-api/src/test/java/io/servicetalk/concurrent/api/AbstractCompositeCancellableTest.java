@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +31,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
+    @RegisterExtension
+    public static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.newExtension();
 
     protected abstract T newCompositeCancellable();
 

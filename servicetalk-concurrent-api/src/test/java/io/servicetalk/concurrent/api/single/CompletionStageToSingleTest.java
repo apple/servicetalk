@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Single.fromStage;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
     @Override
@@ -33,12 +35,11 @@ public class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
     }
 
     @Test
-    public void failure() throws Exception {
+    public void failure() {
         CompletableFuture<String> future = new CompletableFuture<>();
         Single<String> single = from(future);
         jdkExecutor.execute(() -> future.completeExceptionally(DELIBERATE_EXCEPTION));
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        single.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> single.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 }

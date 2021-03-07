@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -30,10 +29,8 @@ import static io.servicetalk.concurrent.api.Executors.from;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SchedulerOffloadTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     public static final String EXPECTED_THREAD_PREFIX = "jdk-executor";
     @Nullable
@@ -42,7 +39,7 @@ public class SchedulerOffloadTest {
     public SchedulerOffloadTest() {
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();

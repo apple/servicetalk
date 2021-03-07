@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,27 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Verifier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class CompositeCancellableTest {
 
-    @Rule
+
+    @RegisterExtension
     public final MockedCancellableHolder holder = new MockedCancellableHolder();
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testEmpty() {
-        holder.init(0);
+        assertThrows(IllegalArgumentException.class, () -> holder.init(0));
     }
 
     @Test
@@ -78,11 +80,11 @@ public class CompositeCancellableTest {
         for (Cancellable component : holder.components) {
             doThrow(new DeliberateException()).when(component).cancel();
         }
-        assertThrows("Unexpected exception from cancel.", DeliberateException.class, cancellable::cancel);
+        assertThrows(DeliberateException.class, cancellable::cancel, "Unexpected exception from cancel.");
         holder.verify();
     }
 
-    private static class MockedCancellableHolder extends Verifier {
+    static class MockedCancellableHolder implements AfterEachCallback {
         @SuppressWarnings("NotNullFieldNotInitialized")
         Cancellable[] components;
 
@@ -94,13 +96,17 @@ public class CompositeCancellableTest {
             return CompositeCancellable.create(components);
         }
 
-        @Override
         protected void verify() {
             for (Cancellable component : components) {
                 if (component != null) {
                     Mockito.verify(component).cancel();
                 }
             }
+        }
+
+        @Override
+        public void afterEach(ExtensionContext context) throws Exception {
+            verify();
         }
     }
 }

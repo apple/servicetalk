@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,21 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenCancelTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
 
     @Test
@@ -47,17 +46,18 @@ public abstract class AbstractWhenCancelTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-
         LegacyTestCompletable completable = new LegacyTestCompletable();
-        try {
-            toSource(doCancel(completable, () -> {
-                throw DELIBERATE_EXCEPTION;
-            })).subscribe(listener);
-            listener.awaitSubscription().cancel();
-        } finally {
-            completable.verifyCancelled();
-        }
+        DeliberateException e = assertThrows(DELIBERATE_EXCEPTION.getClass(), () -> {
+            try {
+                toSource(doCancel(completable, () -> {
+                    throw DELIBERATE_EXCEPTION;
+                })).subscribe(listener);
+                listener.awaitSubscription().cancel();
+            } finally {
+                completable.verifyCancelled();
+            }
+        });
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     protected abstract Completable doCancel(Completable completable, Runnable runnable);

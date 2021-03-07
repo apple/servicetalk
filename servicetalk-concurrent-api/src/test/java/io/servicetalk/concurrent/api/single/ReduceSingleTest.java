@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,15 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.rules.Verifier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,15 +38,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ReduceSingleTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
-    @Rule
-    public final ReducerRule reducerRule = new ReducerRule();
+    @RegisterExtension
+    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
 
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
@@ -55,7 +51,7 @@ public class ReduceSingleTest {
 
     @Test
     public void testSingleItem() {
-        reducerRule.listen(publisher, listenerRule);
+        listen(publisher, listenerRule);
         publisher.onNext("Hello");
         publisher.onComplete();
         assertThat(listenerRule.awaitOnSuccess(), is("Hello"));
@@ -63,14 +59,14 @@ public class ReduceSingleTest {
 
     @Test
     public void testEmpty() {
-        reducerRule.listen(publisher, listenerRule);
+        listen(publisher, listenerRule);
         publisher.onComplete();
         assertThat(listenerRule.awaitOnSuccess(), is("")); // Empty string as exactly one item is required.
     }
 
     @Test
     public void testMultipleItems() {
-        reducerRule.listen(publisher, listenerRule);
+        listen(publisher, listenerRule);
         publisher.onNext("Hello1", "Hello2", "Hello3");
         publisher.onComplete();
         assertThat(listenerRule.awaitOnSuccess(), is("Hello1Hello2Hello3"));
@@ -78,7 +74,7 @@ public class ReduceSingleTest {
 
     @Test
     public void testError() {
-        reducerRule.listen(publisher, listenerRule);
+        listen(publisher, listenerRule);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(listenerRule.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
@@ -128,10 +124,10 @@ public class ReduceSingleTest {
         from("Hello").beforeRequest(__ -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
-                        currentThread()));
+                                              currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).collect(ArrayList::new, (objects, s) -> {
+        }).subscribeOn(executorExtension.executor()).collect(ArrayList::new, (objects, s) -> {
             objects.add(s);
             return objects;
         }).toFuture().get();
@@ -139,11 +135,7 @@ public class ReduceSingleTest {
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
-    private static class ReducerRule extends Verifier {
-
-        ReducerRule listen(TestPublisher<String> testPublisher, TestSingleSubscriber<String> listenerRule) {
-            toSource(testPublisher.collect(() -> "", (r, s) -> r + s)).subscribe(listenerRule);
-            return this;
-        }
+    private void listen(TestPublisher<String> testPublisher, TestSingleSubscriber<String> listenerRule) {
+        toSource(testPublisher.collect(() -> "", (r, s) -> r + s)).subscribe(listenerRule);
     }
 }

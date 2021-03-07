@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
-
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class SingleExecutorPreservationTest {
-    @ClassRule
-    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test");
+    @RegisterExtension
+    public static final ExecutorExtension EXEC = ExecutorExtension.withNamePrefix("test");
 
     private Single<String> single;
 
-    @Before
+    @BeforeEach
     public void setupSingle() {
         single = Single.<String>never().publishAndSubscribeOnOverride(EXEC.executor());
     }
@@ -38,7 +37,7 @@ public class SingleExecutorPreservationTest {
     @Test
     public void testTimeoutSingle() {
         assertSame(EXEC.executor(), single.idleTimeout(1, MILLISECONDS).executor());
-        assertSame(EXEC.executor(), single.idleTimeout(Duration.ofMillis(1)).executor());
+        assertSame(EXEC.executor(), single.idleTimeout(ofMillis(1)).executor());
     }
 
     @Test

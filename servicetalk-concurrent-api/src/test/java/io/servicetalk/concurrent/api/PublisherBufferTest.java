@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.annotation.Nullable;
 
@@ -37,12 +36,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherBufferTest {
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
     public static final int BUFFER_SIZE_HINT = 8;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final TestPublisher<Integer> original = new TestPublisher<>();
     private final TestPublisher<SumAccumulator> boundaries = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> bufferSubscriber = new TestPublisherSubscriber<>();
@@ -228,7 +225,7 @@ public class PublisherBufferTest {
         verifyCancelled(original);
     }
 
-    @Ignore("Accumulator will not emit boundary ATM")
+    @Disabled("Accumulator will not emit boundary ATM")
     @Test
     public void accumulateEmitsBoundary() {
         bufferSubscriber.awaitSubscription().request(1);

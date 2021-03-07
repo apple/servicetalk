@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -34,21 +33,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableConcatWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private TestPublisherSubscriber<Integer> subscriber;
     private TestCompletable source;
     private TestPublisher<Integer> next;
     private TestSubscription subscription;
     private TestCancellable cancellable;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() {
         subscriber = new TestPublisherSubscriber<>();
         cancellable = new TestCancellable();
         source = new TestCompletable.Builder().disableAutoOnSubscribe().build();
@@ -143,17 +140,17 @@ public class CompletableConcatWithPublisherTest {
     public void sourceError() {
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
     }
 
     @Test
     public void cancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
-        assertTrue("Original completable not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertTrue(cancellable.isCancelled(), "Original completable not cancelled.");
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
         triggerNextSubscribe();
-        assertTrue("Next source not cancelled.", subscription.isCancelled());
+        assertTrue(subscription.isCancelled(), "Next source not cancelled.");
     }
 
     @Test
@@ -161,8 +158,8 @@ public class CompletableConcatWithPublisherTest {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().request(1);
         subscriber.awaitSubscription().cancel();
-        assertTrue("Original completable not cancelled.", cancellable.isCancelled());
-        assertFalse("Next source subscribed unexpectedly.", next.isSubscribed());
+        assertTrue(cancellable.isCancelled(), "Original completable not cancelled.");
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
     }
 
     @Test
@@ -170,8 +167,8 @@ public class CompletableConcatWithPublisherTest {
         triggerNextSubscribe();
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
-        assertFalse("Original completable cancelled unexpectedly.", cancellable.isCancelled());
-        assertTrue("Next source not cancelled.", subscription.isCancelled());
+        assertFalse(cancellable.isCancelled(), "Original completable cancelled unexpectedly.");
+        assertTrue(subscription.isCancelled(), "Next source not cancelled.");
     }
 
     private void triggerNextSubscribe() {
