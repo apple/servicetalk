@@ -79,12 +79,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder enableWireLogging(final String loggerName) {
-        config.tcpConfig().enableWireLogging(loggerName);
-        return this;
-    }
-
-    @Override
     public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);

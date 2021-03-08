@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
-import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -73,18 +72,6 @@ public final class H2ProtocolConfigBuilder {
             final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector) {
         this.headersSensitivityDetector = requireNonNull(headersSensitivityDetector);
         return this;
-    }
-
-    /**
-     * Enables a logger for HTTP/2 frames.
-     *
-     * @deprecated Use {@link #enableFrameLogging(String, LogLevel, BooleanSupplier)} instead.
-     * @param loggerName provides the logger to log HTTP/2 frames.
-     * @return {@code this}
-     */
-    @Deprecated
-    public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
-        return enableFrameLogging(loggerName, TRACE, () -> false);
     }
 
     /**

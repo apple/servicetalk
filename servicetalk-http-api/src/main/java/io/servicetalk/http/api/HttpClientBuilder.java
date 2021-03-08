@@ -57,10 +57,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     @Override
     public abstract <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
     @Override
     public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName,
                                                                    LogLevel logLevel,

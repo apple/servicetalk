@@ -54,9 +54,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
     @Override
     <T> SingleAddressGrpcClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
-
     @Deprecated
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName, LogLevel logLevel,

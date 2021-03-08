@@ -65,10 +65,6 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
     @Override
-    @Deprecated
-    public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
-
-    @Override
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName, LogLevel logLevel,
                                                               BooleanSupplier logUserData);
 

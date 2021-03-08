@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
@@ -122,15 +121,6 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
      */
     public final void flushStrategy(final FlushStrategy flushStrategy) {
         this.flushStrategy = requireNonNull(flushStrategy);
-    }
-
-    /**
-     * Enable wire-logging for all connections. All wire events will be logged at trace level.
-     *
-     * @param loggerName The name of the logger to log wire events
-     */
-    public final void enableWireLogging(final String loggerName) {
-        enableWireLogging(loggerName, TRACE, () -> false);
     }
 
     /**

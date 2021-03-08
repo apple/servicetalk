@@ -52,10 +52,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     @Override
     public abstract <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
-
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                            LogLevel logLevel,

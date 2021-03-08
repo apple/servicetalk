@@ -59,10 +59,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract <T> MultiAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
-    @Deprecated
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
-
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                           LogLevel logLevel,
