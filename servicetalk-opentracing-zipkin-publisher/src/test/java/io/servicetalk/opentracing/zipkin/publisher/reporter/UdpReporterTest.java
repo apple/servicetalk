@@ -42,6 +42,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.newSpan;
 import static io.servicetalk.opentracing.zipkin.publisher.reporter.SpanUtils.verifySpan;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -122,6 +123,7 @@ public class UdpReporterTest {
     private static UdpReporter buildReporter(InetSocketAddress remoteAddress, Codec codec) {
         return new UdpReporter.Builder(remoteAddress)
                 .codec(codec)
+                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .build();
     }
 

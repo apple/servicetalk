@@ -18,9 +18,13 @@ package io.servicetalk.opentracing.zipkin.publisher.reporter;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.logging.api.UserDataLoggerConfig;
+import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -33,11 +37,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.MaxMessagesRecvByteBufAllocator;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import zipkin2.CheckResult;
 import zipkin2.Component;
 import zipkin2.Span;
@@ -45,10 +46,12 @@ import zipkin2.reporter.Reporter;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -77,7 +80,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         ).eventLoopGroup();
         try {
             final Bootstrap bootstrap = buildBootstrap(group, builder.codec, builder.collectorAddress,
-                    builder.loggerName);
+                    builder.wireLoggerConfig);
             channel = bootstrap.bind(0).sync().channel();
         } catch (InterruptedException e) {
             currentThread().interrupt(); // Reset the interrupted flag.
@@ -102,7 +105,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         @Nullable
         private Executor executor;
         @Nullable
-        private String loggerName;
+        private UserDataLoggerConfig wireLoggerConfig;
 
         /**
          * Create a new {@link UdpReporter.Builder} for a given collectorAddress.
@@ -147,15 +150,30 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
         }
 
         /**
-         * Enables wire-logging for udp packets sent.
+         * Enables wire-logging for UDP packets sent.
          * <p>
-         * All wire events will be logged at {@link Level#TRACE TRACE} level.
+         * All wire events will be logged at {@link LogLevel#TRACE TRACE} level.
          *
+         * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead.
          * @param loggerName The name of the logger to log wire events.
          * @return {@code this}
          */
+        @Deprecated
         public Builder enableWireLogging(String loggerName) {
-            this.loggerName = loggerName;
+            return enableWireLogging(loggerName, TRACE, () -> false);
+        }
+
+        /**
+         * Enables wire-logging for UDP packets sent.
+         *
+         * @param loggerName The name of the logger to log wire events.
+         * @param logLevel The level to log at.
+         * @param logUserData {@code true} to include user data. {@code false} to exclude user data and log only
+         * network events.
+         * @return {@code this}
+         */
+        public Builder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData) {
+            wireLoggerConfig = new DefaultUserDataLoggerConfig(loggerName, logLevel, logUserData);
             return this;
         }
 
@@ -172,7 +190,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
     }
 
     private static Bootstrap buildBootstrap(EventLoopGroup group, Codec codec, SocketAddress collectorAddress,
-                                            @Nullable String loggerName) {
+                                            @Nullable UserDataLoggerConfig wireLoggerConfig) {
         if (!(collectorAddress instanceof InetSocketAddress)) {
             throw new IllegalArgumentException("collectorAddress " + collectorAddress +
                     " is invalid for UDP");
@@ -184,8 +202,9 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
                 .handler(new ChannelInitializer<Channel>() {
                     @Override
                     protected void initChannel(final Channel ch) {
-                        if (loggerName != null) {
-                            ch.pipeline().addLast(new LoggingHandler(loggerName, LogLevel.TRACE));
+                        if (wireLoggerConfig != null) {
+                            new WireLoggingInitializer(wireLoggerConfig.loggerName(), wireLoggerConfig.logLevel(),
+                                    wireLoggerConfig.logUserData()).init(ch);
                         }
                         ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                             @Override
