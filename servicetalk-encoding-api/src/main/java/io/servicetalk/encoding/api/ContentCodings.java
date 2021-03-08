@@ -55,7 +55,7 @@ public final class ContentCodings {
      * a customizable {@link ContentCodec}.
      * @return a GZIP based {@link ContentCodecBuilder} that allows building
      *          a customizable GZIP {@link ContentCodec}
-     * @deprecated API replaced by <code>io.servicetalk.encoding.netty.ContentCodings#gzip()</code>
+     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#gzip()}
      */
     @Deprecated
     public static ContentCodecBuilder gzip() {
@@ -65,7 +65,7 @@ public final class ContentCodings {
     /**
      * Returns the default DEFLATE based {@link ContentCodec}.
      * @return default DEFLATE based {@link ContentCodec}
-     * @deprecated API replaced by <code>io.servicetalk.encoding.netty.ContentCodings#deflateDefault()</code>
+     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#deflateDefault()}
      */
     @Deprecated
     public static ContentCodec deflateDefault() {
@@ -77,7 +77,7 @@ public final class ContentCodings {
      * a customizable {@link ContentCodec}.
      * @return a DEFLATE based {@link ContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link ContentCodec}
-     * @deprecated API replaced by <code>io.servicetalk.encoding.netty.ContentCodings#deflate()</code>
+     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#deflate()}
      */
     @Deprecated
     public static ContentCodecBuilder deflate() {
