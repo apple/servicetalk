@@ -53,7 +53,7 @@ generically implement retries on the sources as opposed to the methods that crea
 
 === Lazy Execution Interoperability
 ServiceTalk provides utilities to interoperate with hot/eager sources. For example assume the following method exists
-and is you need to convert into a `Single`:
+and you need to convert into a `Single`:
 [source, java]
 ----
 public CompletionStage<String> doWorkCompletionStage(String state) {
@@ -68,7 +68,7 @@ public Single<String> handleRequest(StringBuilder mutableInput) {
   Single.defer(() -> {
     // Any state that may change across invocations associated with the async operation should be computed inside the
     // Supplier. This defers the work to compute the state, and will be re-run if there is a re-subscribe (e.g. to retry
-    // the operation). Deferring state computation is not unique to interoperability, and is a general characteristics
+    // the operation). Deferring state computation is not unique to interoperability, and is a general characteristic
     // of cold/lazy sources.
     String newRequest = "new request" + mutableInput.toString();
     return Single.fromStage(doWorkCompletionStage(newRequest));
