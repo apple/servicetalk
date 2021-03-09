@@ -93,10 +93,7 @@ public final class DefaultExecutorTest {
 
     @AfterEach
     public void tearDown() {
-        if (executor != null) {
-            executor.closeAsync().subscribe();
-            executor = null;
-        }
+        executor.closeAsync().subscribe();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] - {1}")

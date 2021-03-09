@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -59,6 +60,7 @@ public class SignalOffloaderCompletableTest {
 
     private static final Logger LOGGER = getLogger(SignalOffloaderCompletableTest.class);
 
+    @Nullable
     private OffloaderHolder state;
 
     private void init(Supplier<OffloaderHolder> stateSupplier) {
