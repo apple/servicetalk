@@ -514,4 +514,13 @@ public class FromInputStreamPublisherTest {
         }
         assertThat(complete.get(), equalTo(true));
     }
+
+    @Test
+    public void dontFailWhenInputStreamAvailableExceedsVmArraySizeLimit() throws Throwable {
+        when(inputStream.available()).thenReturn(MAX_VALUE);
+        when(inputStream.read(any(), anyInt(), anyInt())).thenReturn(-1);
+        toSource(pub).subscribe(sub1);
+        sub1.awaitSubscription().request(1);
+        sub1.awaitOnComplete();
+    }
 }
