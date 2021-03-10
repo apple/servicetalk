@@ -56,7 +56,6 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -304,18 +303,6 @@ public class AbstractH2DuplexHandlerTest {
     }
 
     @Test
-    public void singleHeadersFrameWithContentLength() {
-        variant.writeOutbound(channel);
-
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        headers.setInt(CONTENT_LENGTH, 1);
-
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, true)));
-        assertThat(e.getMessage(), containsString("not equal to the actual length"));
-    }
-
-    @Test
     public void singleHeadersFrameWithZeroContentLength() {
         variant.writeOutbound(channel);
 
@@ -329,55 +316,5 @@ public class AbstractH2DuplexHandlerTest {
         HttpHeaders trailers = channel.readInbound();
         assertThat(trailers.isEmpty(), is(true));
         assertThat(channel.inboundMessages(), is(empty()));
-    }
-
-    @Test
-    public void lessThanActual() {
-        invalidContentLength(3, "hello", false);
-    }
-
-    @Test
-    public void lessThanActualWithTrailers() {
-        invalidContentLength(3, "hello", true);
-    }
-
-    @Test
-    public void notEqualToActualLength() {
-        invalidContentLength(10, "hello", false);
-    }
-
-    @Test
-    public void notEqualToActualLengthWithTrailers() {
-        invalidContentLength(10, "hello", true);
-    }
-
-    private void invalidContentLength(int contentLength, String content, boolean addTrailers) {
-        variant.writeOutbound(channel);
-
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        headers.setInt(CONTENT_LENGTH, contentLength);
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers));
-
-        HttpMetaData metaData = channel.readInbound();
-        assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(contentLength)));
-
-        final IllegalArgumentException e;
-        if (addTrailers) {
-            if (contentLength < content.length()) {
-                e = assertThrows(IllegalArgumentException.class, () -> channel.writeInbound(new DefaultHttp2DataFrame(
-                        writeAscii(UnpooledByteBufAllocator.DEFAULT, content))));
-            } else {
-                channel.writeInbound(new DefaultHttp2DataFrame(writeAscii(UnpooledByteBufAllocator.DEFAULT, content)));
-                Buffer buffer = channel.readInbound();
-                assertThat(buffer, is(equalTo(DEFAULT_ALLOCATOR.fromAscii(content))));
-
-                e = assertThrows(IllegalArgumentException.class, () -> channel.writeInbound(
-                        new DefaultHttp2HeadersFrame(new DefaultHttp2Headers().set("trailer", "value"), true)));
-            }
-        } else {
-            e = assertThrows(IllegalArgumentException.class, () -> channel.writeInbound(new DefaultHttp2DataFrame(
-                    writeAscii(UnpooledByteBufAllocator.DEFAULT, content), true)));
-        }
-        assertThat(e.getMessage(), containsString("not equal to the actual length"));
     }
 }

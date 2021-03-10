@@ -66,6 +66,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
@@ -93,6 +94,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -124,6 +126,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -147,9 +150,11 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -159,6 +164,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -432,6 +438,124 @@ public class H2PriorKnowledgeFeatureParityTest {
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
                     .payloadBody(textDeserializer()), isEmptyString());
+        }
+    }
+
+    @Test
+    public void clientSendsLargerContentLength() throws Exception {
+        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        clientSendsInvalidContentLength(1, false);
+    }
+
+    @Test
+    public void clientSendsLargerContentLengthTrailers() throws Exception {
+        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        clientSendsInvalidContentLength(1, true);
+    }
+
+    @Test
+    public void clientSendsSmallerContentLength() throws Exception {
+        clientSendsInvalidContentLength(-1, false);
+    }
+
+    @Test
+    public void clientSendsSmallerContentLengthTrailers() throws Exception {
+        clientSendsInvalidContentLength(-1, true);
+    }
+
+    private void clientSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy)
+                .appendClientFilter(client1 -> new StreamingHttpClientFilter(client1) {
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        return request.toRequest().map(req -> {
+                            req.headers().remove(TRANSFER_ENCODING);
+                            req.headers().set(CONTENT_LENGTH,
+                                    String.valueOf(req.payloadBody().readableBytes() + contentLengthAdder));
+                            return req.toStreamingRequest();
+                        }).flatMap(req -> delegate.request(strategy, req));
+                    }
+                }).buildBlocking()) {
+            HttpRequest request = client.get("/").payloadBody("a", textSerializer());
+            if (addTrailers) {
+                request.trailers().set("mytrailer", "myvalue");
+            }
+            if (h2PriorKnowledge) {
+                assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
+            } else {
+                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
+                try {
+                    reservedConn.request(request);
+                    assertThrows(ClosedChannelException.class, () -> reservedConn.request(client.get("/")));
+                } finally {
+                    safeRelease(reservedConn);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void serverSendsLargerContentLength() throws Exception {
+        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        serverSendsInvalidContentLength(1, false);
+    }
+
+    @Test
+    public void serverSendsLargerContentLengthTrailers() throws Exception {
+        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        serverSendsInvalidContentLength(1, true);
+    }
+
+    @Test
+    public void serverSendsSmallerContentLength() throws Exception {
+        serverSendsInvalidContentLength(-1, false);
+    }
+
+    @Test
+    public void serverSendsSmallerContentLengthTrailers() throws Exception {
+        serverSendsInvalidContentLength(-1, true);
+    }
+
+    private void serverSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return delegate().handle(ctx, request, responseFactory).flatMap(resp ->
+                        resp.toResponse().map(aggResp -> {
+                            aggResp.headers().remove(TRANSFER_ENCODING);
+                            aggResp.headers().set(CONTENT_LENGTH,
+                                    String.valueOf(aggResp.payloadBody().readableBytes() + contentLengthAdder));
+                            return aggResp.toStreamingResponse();
+                        }));
+            }
+        });
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy)
+                .buildBlocking()) {
+            HttpRequest request = client.get("/").payloadBody("a", textSerializer());
+            if (addTrailers) {
+                request.trailers().set("mytrailer", "myvalue");
+            }
+            if (h2PriorKnowledge) {
+                assertThat(assertThrows(Throwable.class, () -> client.request(request)),
+                        either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
+            } else {
+                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
+                try {
+                    reservedConn.request(request);
+                    assertThrows(DecoderException.class, () -> reservedConn.request(client.get("/")));
+                } finally {
+                    safeRelease(reservedConn);
+                }
+            }
         }
     }
 
@@ -1430,6 +1554,15 @@ public class H2PriorKnowledgeFeatureParityTest {
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
             trailers.add(trailerName, Integer.toString(contentSize.get()));
             return trailers;
+        }
+    }
+
+    @Nullable
+    private static void safeRelease(ReservedBlockingHttpConnection connection) {
+        try {
+            connection.release();
+        } catch (Throwable ignored) {
+            // ignore
         }
     }
 }
