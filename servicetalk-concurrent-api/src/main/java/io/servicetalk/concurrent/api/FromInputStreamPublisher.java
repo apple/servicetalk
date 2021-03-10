@@ -45,6 +45,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class FromInputStreamPublisher extends Publisher<byte[]> implements PublisherSource<byte[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FromInputStreamPublisher.class);
+    private static final int DEFAULT_READ_CHUNK_SIZE = 65536;
     private static final AtomicIntegerFieldUpdater<FromInputStreamPublisher> subscribedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(FromInputStreamPublisher.class, "subscribed");
 
@@ -62,6 +63,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
     private volatile int subscribed;
 
     private final InputStream stream;
+    private final int readChunkSize;
 
     /**
      * A new instance.
@@ -69,7 +71,22 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
      * @param stream the {@link InputStream} to expose as a {@link Publisher}
      */
     FromInputStreamPublisher(final InputStream stream) {
+        this(stream, DEFAULT_READ_CHUNK_SIZE);
+    }
+
+    /**
+     * A new instance.
+     *
+     * @param stream the {@link InputStream} to expose as a {@link Publisher}
+     * @param readChunkSize the maximum length of {@code byte[]} chunks which will be read from the {@link InputStream}
+     * and emitted by the {@link Publisher}.
+     */
+    FromInputStreamPublisher(final InputStream stream, final int readChunkSize) {
         this.stream = requireNonNull(stream);
+        if (readChunkSize <= 0) {
+            throw new IllegalArgumentException("readChunkSize: " + readChunkSize + " (expected: >0)");
+        }
+        this.readChunkSize = readChunkSize;
     }
 
     @Override
@@ -81,7 +98,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
     protected void handleSubscribe(final Subscriber<? super byte[]> subscriber) {
         if (subscribedUpdater.compareAndSet(this, 0, 1)) {
             try {
-                subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber));
+                subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber, readChunkSize));
             } catch (Throwable t) {
                 handleExceptionFromOnSubscribe(subscriber, t);
             }
@@ -100,6 +117,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
 
         private final InputStream stream;
         private final Subscriber<? super byte[]> subscriber;
+        private final int readChunkSize;
         /**
          * Contains the outstanding demand or {@link #TERMINAL_SENT} indicating when {@link InputStream} and {@link
          * Subscription} are terminated.
@@ -110,9 +128,11 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private int writeIdx;
         private boolean ignoreRequests;
 
-        InputStreamPublisherSubscription(final InputStream stream, final Subscriber<? super byte[]> subscriber) {
+        InputStreamPublisherSubscription(final InputStream stream, final Subscriber<? super byte[]> subscriber,
+                                         final int readChunkSize) {
             this.stream = stream;
             this.subscriber = subscriber;
+            this.readChunkSize = readChunkSize;
         }
 
         @Override
@@ -168,7 +188,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         // This method honors the estimated available bytes that can be read without blocking
         private int fillBufferAvoidingBlocking(int available) throws IOException {
             if (buffer == null) {
-                buffer = new byte[available];
+                buffer = new byte[min(available, readChunkSize)];
             }
             while (writeIdx != buffer.length && available > 0) {
                 int len = min(buffer.length - writeIdx, available);
