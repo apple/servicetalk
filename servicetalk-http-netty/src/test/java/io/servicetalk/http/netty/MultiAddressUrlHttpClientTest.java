@@ -67,7 +67,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -104,7 +103,6 @@ public class MultiAddressUrlHttpClientTest {
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
                 .serviceDiscoverer(sdThatSupportsInvalidHostname())
-                .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .buildStreaming());
 
         httpService = (ctx, request, factory) -> {
