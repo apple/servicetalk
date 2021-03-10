@@ -32,6 +32,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public class DefaultSingleAddressHttpClientBuilderTest {
     @Test
     public void hostToCharSequenceFunctionIPv4() throws Exception {
