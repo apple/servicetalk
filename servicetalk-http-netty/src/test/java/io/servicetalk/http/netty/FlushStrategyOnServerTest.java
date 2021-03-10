@@ -70,7 +70,6 @@ import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -127,7 +126,7 @@ public class FlushStrategyOnServerTest {
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
         final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
-        final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly(emptyList());
+        final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
 
         serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
                 httpExecutionContext, null,
