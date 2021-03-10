@@ -530,11 +530,13 @@ final class GrpcRouter {
                                 setStatusOk(payloadWriter.trailers(), ctx.executionContext().bufferAllocator());
                                 route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
                             } catch (Throwable t) {
-                                // Override OK status with error details in case of failure
-                                final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
-                                setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
-                            } finally {
-                                grpcPayloadWriter.close();
+                                try {
+                                    final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
+                                    setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
+                                } finally {
+                                    // Error is propagated in trailers, payload should close normally.
+                                    grpcPayloadWriter.close();
+                                }
                             }
                         }
 

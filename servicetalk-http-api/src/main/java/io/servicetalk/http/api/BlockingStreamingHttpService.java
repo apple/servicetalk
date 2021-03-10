@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.oio.api.PayloadWriter;
 
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -27,7 +28,8 @@ public interface BlockingStreamingHttpService extends GracefulAutoCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
-     * @param response to send to the client.
+     * @param response to send to the client. The implementation of this method is responsible for calling
+     * {@link PayloadWriter#close()} on the {@link BlockingStreamingHttpServerResponse#payloadWriter()}.
      * @throws Exception If an exception occurs during request processing.
      */
     void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,

@@ -26,6 +26,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
+import static io.servicetalk.http.netty.HeaderUtils.contentLength;
 
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -100,7 +102,6 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 if (httpMethod != null) {
                     fireFullRequest(ctx, h2Headers, httpMethod, path);
                 } else {
-                    validateContentLengthMatch();
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
@@ -135,7 +136,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
         h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
         h2HeadersSanitizeForH1(h2Headers);
         if (httpMethod != null) {
-            final long contentLength = contentLength(h2Headers);
+            final long contentLength = contentLength(h2Headers.valueIterator(HttpHeaderNames.CONTENT_LENGTH),
+                    h2Headers::getAll);
             if (clientMaySendPayloadBodyFor(httpMethod)) {
                 if (contentLength < 0) {
                     if (fullRequest) {
@@ -143,8 +145,6 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                     } else {
                         h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
-                } else if (fullRequest && contentLength > 0) {
-                    handleUnexpectedContentLength();
                 }
             } else if (contentLength >= 0) {
                 throw new IllegalArgumentException("content-length (" + contentLength +

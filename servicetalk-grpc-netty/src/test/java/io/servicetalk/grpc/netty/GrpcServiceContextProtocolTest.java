@@ -185,13 +185,15 @@ public class GrpcServiceContextProtocolTest {
         @Override
         public void testBiDiStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request,
                                    GrpcPayloadWriter<TestResponse> responseWriter) throws Exception {
-           responseWriter.write(newResponse(ctx));
+            responseWriter.write(newResponse(ctx));
+            responseWriter.close();
         }
 
         @Override
         public void testResponseStream(GrpcServiceContext ctx, TestRequest request,
                                        GrpcPayloadWriter<TestResponse> responseWriter) throws Exception {
             responseWriter.write(newResponse(ctx));
+            responseWriter.close();
         }
     }
 }

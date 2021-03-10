@@ -43,8 +43,11 @@ import io.servicetalk.grpc.netty.CompatProto.Compat.ServerStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ServiceFactory;
 import io.servicetalk.grpc.netty.CompatProto.RequestContainer.CompatRequest;
 import io.servicetalk.grpc.netty.CompatProto.ResponseContainer.CompatResponse;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
@@ -100,6 +103,9 @@ import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
 import static io.servicetalk.encoding.api.ContentCodings.identity;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
@@ -832,6 +838,20 @@ public class ProtocolCompatibilityTest {
             builder.secure().disableHostnameVerification().provider(OPENSSL)
                     .trustManager(DefaultTestCerts::loadServerCAPem).commit();
         }
+        // TODO(scott): remove after https://github.com/grpc/grpc-java/issues/7953 is resolved.
+        builder.appendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return Single.defer(() -> {
+                    // Force chunked transfer encoding as a workaround for grpc-java bug.
+                    request.headers().remove(CONTENT_LENGTH);
+                    request.headers().set(TRANSFER_ENCODING, CHUNKED);
+                    return delegate.request(strategy, request).subscribeShareContext();
+                });
+            }
+        });
         List<ContentCodec> codings = serviceTalkCodingsFor(compression);
         return builder.build(new Compat.ClientFactory().supportedMessageCodings(codings));
     }
@@ -875,6 +895,7 @@ public class ProtocolCompatibilityTest {
                         for (CompatRequest requestItem : request) {
                             responseWriter.write(computeResponse(requestItem.getId()));
                         }
+                        responseWriter.close();
                     }
 
                     @Override
@@ -902,6 +923,7 @@ public class ProtocolCompatibilityTest {
                         for (int i = 0; i < request.getId(); i++) {
                             responseWriter.write(computeResponse(i));
                         }
+                        responseWriter.close();
                     }
                 }, codings));
         return TestServerContext.fromServiceTalkServerContext(serverContext);
