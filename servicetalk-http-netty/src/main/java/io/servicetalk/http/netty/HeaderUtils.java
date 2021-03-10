@@ -23,6 +23,7 @@ import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -84,7 +85,7 @@ final class HeaderUtils {
         return canAddContentLength(response) && responseMayHaveContent(response.status().code(), requestMethod)
                 // HEAD requests should either have the content-length already set (= what GET will return) or
                 // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
-                && !isHeadResponse(requestMethod);
+                && !HEAD.equals(requestMethod);
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
@@ -103,7 +104,7 @@ final class HeaderUtils {
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
         return !hasContentHeaders(metadata.headers()) && isSafeToAggregate(metadata) &&
-                (!mayHaveTrailers(metadata) || metadata.version().major() > 1);
+                (metadata.version().major() > 1 || !mayHaveTrailers(metadata));
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
@@ -169,10 +170,6 @@ final class HeaderUtils {
                 return !sawHeaders;
             }
         };
-    }
-
-    private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
-        return HEAD.equals(requestMethod);
     }
 
     private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
@@ -244,9 +241,14 @@ final class HeaderUtils {
         }
     }
 
-    private static boolean canAddTransferEncodingChunked(HttpMetaData metaData) {
+    private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
         final HttpHeaders headers = metaData.headers();
-        return !isTransferEncodingChunked(headers) && (!headers.contains(CONTENT_LENGTH) || mayHaveTrailers(metaData));
+        return !isTransferEncodingChunked(headers) && (!headers.contains(CONTENT_LENGTH) ||
+                (chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)));
+    }
+
+    private static boolean chunkedSupported(final HttpProtocolVersion version) {
+        return version.major() == 1 && version.minor() > 0;
     }
 
     static boolean hasContentHeaders(final HttpHeaders headers) {
