@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
+import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
@@ -31,6 +32,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -49,18 +51,22 @@ import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
+import io.netty.handler.codec.EmptyHeaders;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
@@ -591,9 +597,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 if (colon < 0) {
                     config.fallbackPeerHost(cs.toString());
                     config.fallbackPeerPort(-1);
+                } else if (cs.charAt(0) == '[') {
+                    colon = CharSequences.indexOf(cs, ']', 1);
+                    if (colon < 0) {
+                        throw new IllegalArgumentException("unable to find end ']' of IPv6 address: " + cs);
+                    }
+                    config.fallbackPeerHost(cs.subSequence(1, colon).toString());
+                    ++colon;
+                    if (colon >= cs.length()) {
+                        config.fallbackPeerPort(-1);
+                    } else if (cs.charAt(colon) != ':') {
+                        throw new IllegalArgumentException("':' expected after ']' for IPv6 address: " + cs);
+                    } else {
+                        config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
+                    }
                 } else {
                     config.fallbackPeerHost(cs.subSequence(0, colon).toString());
-                    config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString()));
+                    config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
                 }
             }
         }

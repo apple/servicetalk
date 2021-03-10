@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.net.ssl.SSLParameters;
+
 /**
  * Specifies the configuration for server side TLS/SSL.
  * @see ServerSslConfigBuilder
@@ -24,6 +26,8 @@ public interface ServerSslConfig extends SslConfig {
      * Get the client authentication mode.
      *
      * @return the client authentication mode.
+     * @see SSLParameters#getNeedClientAuth()
+     * @see SSLParameters#getWantClientAuth()
      */
     SslClientAuthMode clientAuthMode();
 }

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import static io.servicetalk.transport.api.SslClientAuthMode.NONE;
@@ -91,6 +92,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
      * Set the {@link SslClientAuthMode} which determines how client authentication should be done.
      * @param clientAuthMode the {@link SslClientAuthMode} which determines how client authentication should be done.
      * @return {@code this}.
+     * @see SSLParameters#getNeedClientAuth()
+     * @see SSLParameters#getWantClientAuth()
      */
     public ServerSslConfigBuilder clientAuthMode(SslClientAuthMode clientAuthMode) {
         this.clientAuthMode = requireNonNull(clientAuthMode);

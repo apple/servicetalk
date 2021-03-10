@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -119,6 +120,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * Set the non-authoritative name of the peer.
      * @param peerHost the non-authoritative name of the peer.
      * @return {@code this}.
+     * @see SSLEngine#getPeerHost()
      */
     public ClientSslConfigBuilder peerHost(String peerHost) {
         if (peerHost.isEmpty()) {
@@ -133,6 +135,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @param peerPort the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
      * @return {@code this}.
+     * @see SSLEngine#getPeerPort()
      */
     public ClientSslConfigBuilder peerPort(int peerPort) {
         if (peerPort < -1) {
@@ -146,6 +149,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * Set the <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @param sniHostname <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
      * @return {@code this}.
+     * @see SSLParameters#setServerNames(List)
      */
     public ClientSslConfigBuilder sniHostname(String sniHostname) {
         if (sniHostname.isEmpty()) {

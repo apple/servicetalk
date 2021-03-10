@@ -273,6 +273,9 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @see SSLSessionContext#setSessionCacheSize(int)
      */
     public T sessionCacheSize(long sessionCacheSize) {
+        if (sessionCacheSize < 0) {
+            throw new IllegalArgumentException("sessionCacheSize: " + sessionCacheSize + " (expected >=0)");
+        }
         this.sessionCacheSize = sessionCacheSize;
         return thisT();
     }
@@ -289,6 +292,9 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @see SSLSessionContext#setSessionTimeout(int)
      */
     public T sessionTimeout(long sessionTimeout) {
+        if (sessionTimeout < 0) {
+            throw new IllegalArgumentException("sessionTimeout: " + sessionTimeout + " (expected >=0)");
+        }
         this.sessionTimeout = sessionTimeout;
         return thisT();
     }
@@ -304,7 +310,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      */
     public T provider(SslProvider provider) {
-        this.provider = provider;
+        this.provider = requireNonNull(provider);
         return thisT();
     }
 

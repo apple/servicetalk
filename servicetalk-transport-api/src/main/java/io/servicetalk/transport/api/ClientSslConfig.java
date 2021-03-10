@@ -15,7 +15,10 @@
  */
 package io.servicetalk.transport.api;
 
+import java.util.List;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 
 /**
  * Specifies the configuration for client side TLS/SSL.
@@ -29,6 +32,7 @@ public interface ClientSslConfig extends SslConfig {
      * @return The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
      * Endpoint Identification Algorithm Name</a>.
+     * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     @Nullable
     String hostnameVerificationAlgorithm();
@@ -38,6 +42,7 @@ public interface ClientSslConfig extends SslConfig {
      * @return the non-authoritative name of the peer, or {@code null} if unavailable (which may disable
      * {@link #hostnameVerificationAlgorithm() hostname verification} and
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
+     * @see SSLEngine#getPeerHost()
      */
     @Nullable
     String peerHost();
@@ -46,6 +51,7 @@ public interface ClientSslConfig extends SslConfig {
      * Get the non-authoritative port of the peer.
      * @return the non-authoritative port of the peer, or {@code -1} if unavailable (which may prevent
      * <a href="https://tools.ietf.org/html/rfc5077">session resumption</a>).
+     * @see SSLEngine#getPeerPort()
      */
     int peerPort();
 
@@ -54,6 +60,7 @@ public interface ClientSslConfig extends SslConfig {
      *
      * @return The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name, or {@code null} to not
      * enable SNI.
+     * @see SSLParameters#setServerNames(List) 
      */
     @Nullable
     String sniHostname();
