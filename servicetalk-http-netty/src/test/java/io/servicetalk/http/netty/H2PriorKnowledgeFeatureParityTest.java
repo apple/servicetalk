@@ -83,7 +83,6 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -492,10 +491,9 @@ public class H2PriorKnowledgeFeatureParityTest {
                 ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
                 try {
                     reservedConn.request(request);
-                    assertThrows(ClosedChannelException.class, () ->
-                            reservedConn.request(client.get("/").payloadBody("a", textSerializer())));
+                    assertThrows(ClosedChannelException.class, () -> reservedConn.request(client.get("/")));
                 } finally {
-                    assertThrows(IllegalStateException.class, reservedConn::release);
+                    safeRelease(reservedConn);
                 }
             }
         }
@@ -547,16 +545,15 @@ public class H2PriorKnowledgeFeatureParityTest {
                 request.trailers().set("mytrailer", "myvalue");
             }
             if (h2PriorKnowledge) {
-                assertThat(invokeThrowableRunnable(() -> client.request(request)),
+                assertThat(assertThrows(Throwable.class, () -> client.request(request)),
                         either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
             } else {
                 ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
                 try {
                     reservedConn.request(request);
-                    assertThrows(DecoderException.class, () ->
-                            reservedConn.request(client.get("/").payloadBody("a", textSerializer())));
+                    assertThrows(DecoderException.class, () -> reservedConn.request(client.get("/")));
                 } finally {
-                    invokeThrowableRunnable(reservedConn::release);
+                    safeRelease(reservedConn);
                 }
             }
         }
@@ -1561,12 +1558,11 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     @Nullable
-    private static Throwable invokeThrowableRunnable(ThrowingRunnable runnable) {
+    private static void safeRelease(ReservedBlockingHttpConnection connection) {
         try {
-            runnable.run();
-        } catch (Throwable cause) {
-            return cause;
+            connection.release();
+        } catch (Throwable ignored) {
+            // ignore
         }
-        return null;
     }
 }
