@@ -86,6 +86,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         if (readChunkSize <= 0) {
             throw new IllegalArgumentException("readChunkSize: " + readChunkSize + " (expected: >0)");
         }
+        this.readChunkSize = readChunkSize;
     }
 
     @Override
