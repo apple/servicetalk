@@ -309,7 +309,7 @@ final class Generator {
                     .addAnnotation(FunctionalInterface.class)
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
-                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(INTERFACE),
+                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(INTERFACE), printJavaDocs,
                             (__, b) -> {
                         b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
                         if (printJavaDocs) {
@@ -344,7 +344,7 @@ final class Generator {
                     .addAnnotation(FunctionalInterface.class)
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
-                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(BLOCKING, INTERFACE),
+                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(BLOCKING, INTERFACE), printJavaDocs,
                             (__, b) -> {
                         b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx);
                         if (printJavaDocs) {
@@ -374,7 +374,7 @@ final class Generator {
             StringBuilder sb = new StringBuilder(serviceComments.length() * 2);
             sb.append(COMMENT_PRE_TAG).append(lineSeparator());
             escapeJavaDoc(serviceComments, sb);
-            sb.append(COMMENT_POST_TAG).append(lineSeparator());
+            sb.append(COMMENT_POST_TAG).append(lineSeparator()).append(lineSeparator());
             b.addJavadoc(sb.toString());
         }
     }
@@ -402,7 +402,7 @@ final class Generator {
                 newFilterDelegateCommonMethods(state.serviceFilterClass, state.serviceClass);
 
         state.serviceProto.getMethodList().forEach(methodProto ->
-                classSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class),
+                classSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class), false,
                         (n, b) -> b.addAnnotation(Override.class)
                                 .addParameter(GrpcServiceContext, ctx, FINAL)
                                 .addStatement("return $L.$L($L, $L)", delegate, n, ctx, request))));
@@ -678,7 +678,7 @@ final class Generator {
             ClientMetaData clientMetaData = state.clientMetaDatas.get(i);
             clientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            (__, b) -> {
+                            printJavaDocs, (__, b) -> {
                                 b.addModifiers(ABSTRACT);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -688,7 +688,7 @@ final class Generator {
 
             filterableClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                            (__, b) -> {
+                            printJavaDocs, (__, b) -> {
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -700,7 +700,7 @@ final class Generator {
 
             blockingClientSpecBuilder
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            (__, b) -> {
+                            printJavaDocs, (__, b) -> {
                                 b.addModifiers(ABSTRACT);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -708,7 +708,7 @@ final class Generator {
                                 return b;
                             }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
-                            (__, b) -> {
+                            printJavaDocs, (__, b) -> {
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -734,7 +734,7 @@ final class Generator {
 
         state.clientMetaDatas.forEach(clientMetaData ->
                 classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
-                        (n, b) -> b.addAnnotation(Override.class)
+                        false, (n, b) -> b.addAnnotation(Override.class)
                                 .addParameter(clientMetaData.className, metadata)
                                 .addStatement("return $L.$L($L, $L)", delegate, n, metadata, request))));
 
@@ -842,7 +842,7 @@ final class Generator {
             serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.$L)", routeName, routes,
                     routeFactoryMethodName(methodProto), rpc.className, RPC_PATH);
 
-            serviceFromRoutesSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class),
+            serviceFromRoutesSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class), false,
                     (name, builder) ->
                             builder.addAnnotation(Override.class)
                                     .addParameter(GrpcServiceContext, ctx, FINAL)
@@ -862,6 +862,7 @@ final class Generator {
     }
 
     private MethodSpec newRpcMethodSpec(final MethodDescriptorProto methodProto, final EnumSet<NewRpcMethodFlag> flags,
+                                        final boolean printJavaDocs,
                                         final BiFunction<String, MethodSpec.Builder, MethodSpec.Builder>
                                                 methodBuilderCustomizer) {
 
@@ -1056,11 +1057,11 @@ final class Generator {
             typeSpecBuilder
                     .addField(ParameterizedTypeName.get(clientCallClass(clientMetaData.methodProto, blocking),
                             inClass, outClass), callFieldName, PRIVATE, FINAL)
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags,
+                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE,
                                             request)))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags,
+                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (__, b) -> b.addAnnotation(Override.class)
                                     .addParameter(clientMetaData.className, metadata, FINAL)
                                     .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)));
@@ -1097,10 +1098,10 @@ final class Generator {
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, client));
 
         state.clientMetaDatas.forEach(clientMetaData -> typeSpecBuilder
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT),
+                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
                         (n, b) -> b.addAnnotation(Override.class)
                                 .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE, request)))
-                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT),
+                .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT), false,
                         (n, b) -> b.addAnnotation(Override.class)
                                 .addParameter(clientMetaData.className, metadata, FINAL)
                                 .addStatement("return $L.$L($L, $L)", client, n, metadata, request))));
@@ -1136,11 +1137,11 @@ final class Generator {
                     ".toIterable()" : ".toFuture().get()";
 
             typeSpecBuilder
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT),
+                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addStatement("return $L.$L($L)$L", client, n, requestExpression,
                                             responseConversionExpression)))
-                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT),
+                    .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, CLIENT), false,
                             (n, b) -> b.addAnnotation(Override.class)
                                     .addParameter(clientMetaData.className, metadata, FINAL)
                                     .addStatement("return $L.$L($L, $L)$L", client, n, metadata, requestExpression,
