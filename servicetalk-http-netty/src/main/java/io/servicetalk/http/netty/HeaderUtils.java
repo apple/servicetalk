@@ -242,13 +242,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
-        final HttpHeaders headers = metaData.headers();
-        return !isTransferEncodingChunked(headers) && (!headers.contains(CONTENT_LENGTH) ||
-                (chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)));
-    }
-
-    private static boolean chunkedSupported(final HttpProtocolVersion version) {
-        return version.major() == 1 && version.minor() > 0;
+        final HttpProtocolVersion version = metaData.version();
+        return (version.major() == 1 && version.minor() > 0) && !hasContentHeaders(metaData.headers());
     }
 
     static boolean hasContentHeaders(final HttpHeaders headers) {

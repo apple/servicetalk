@@ -158,7 +158,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -443,13 +442,13 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientSendsLargerContentLength() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         clientSendsInvalidContentLength(1, false);
     }
 
     @Test
     public void clientSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         clientSendsInvalidContentLength(1, true);
     }
 
@@ -488,12 +487,9 @@ public class H2PriorKnowledgeFeatureParityTest {
             if (h2PriorKnowledge) {
                 assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
             } else {
-                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
-                try {
+                try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     reservedConn.request(request);
                     assertThrows(ClosedChannelException.class, () -> reservedConn.request(client.get("/")));
-                } finally {
-                    safeRelease(reservedConn);
                 }
             }
         }
@@ -501,13 +497,13 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void serverSendsLargerContentLength() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         serverSendsInvalidContentLength(1, false);
     }
 
     @Test
     public void serverSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         serverSendsInvalidContentLength(1, true);
     }
 
@@ -548,12 +544,9 @@ public class H2PriorKnowledgeFeatureParityTest {
                 assertThat(assertThrows(Throwable.class, () -> client.request(request)),
                         either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
             } else {
-                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
-                try {
+                try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     reservedConn.request(request);
                     assertThrows(DecoderException.class, () -> reservedConn.request(client.get("/")));
-                } finally {
-                    safeRelease(reservedConn);
                 }
             }
         }
@@ -1019,7 +1012,7 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientRespectsSettingsFrame() throws Exception {
-        assumeTrue(h2PriorKnowledge);   // only h2 supports settings frames
+        assumeTrue("Only HTTP/2 supports SETTINGS frames", h2PriorKnowledge);
 
         int expectedMaxConcurrent = 1;
         BlockingQueue<FilterableStreamingHttpConnection> connectionQueue = new LinkedBlockingQueue<>();
@@ -1139,35 +1132,33 @@ public class H2PriorKnowledgeFeatureParityTest {
                     .payloadBody(expectedPayload, textSerializer()));
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textDeserializer()), equalTo(expectedPayload));
-            assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
-            assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
+            assertHeaders(response.headers(), expectedPayloadLength);
+            assertTrailers(h2PriorKnowledge, response.trailers(), expectedTrailer, expectedTrailerValue);
 
             // Verify what server received:
             HttpRequest request = requestReceived.get();
             assertThat(request.payloadBody(textDeserializer()), equalTo(expectedPayload));
-            assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
-            assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
+            assertHeaders(request.headers(), expectedPayloadLength);
+            assertTrailers(h2PriorKnowledge, request.trailers(), expectedTrailer, expectedTrailerValue);
         }
     }
 
-    private static void assertHeaders(boolean h2PriorKnowledge, HttpHeaders headers, String expectedPayloadLength) {
+    private static void assertHeaders(HttpHeaders headers, String expectedPayloadLength) {
+        // http/1.x doesn't support trailers with content-length, trailers will be dropped.
+        // http/2 doesn't support "chunked" encoding, it removes "transfer-encoding" header and preserves
+        // content-length:
+        assertThat("Unexpected content-length", headers.get(CONTENT_LENGTH), contentEqualTo(expectedPayloadLength));
+        assertThat("Unexpected transfer-encoding: chunked", isTransferEncodingChunked(headers), is(false));
+    }
+
+    private static void assertTrailers(boolean h2PriorKnowledge, HttpHeaders trailers,
+                                       String expectedTrailer, String expectedTrailerValue) {
         if (h2PriorKnowledge) {
-            // http/2 doesn't support "chunked" encoding, it removes "transfer-encoding" header and preserves
-            // content-length:
-            assertThat(headers.get(CONTENT_LENGTH), contentEqualTo(expectedPayloadLength));
-            assertThat(isTransferEncodingChunked(headers), is(false));
-        } else {
-            // http/1.x doesn't allow trailers with content-length, but it switches to "chunked" encoding when trailers
-            // are present and removes content-length header:
-            assertThat(headers.get(CONTENT_LENGTH), nullValue());
-            assertThat(isTransferEncodingChunked(headers), is(true));
+            // only http/2 supports trailers with content-length header
+            CharSequence trailer = trailers.get(expectedTrailer);
+            assertThat("Unexpected trailer " + expectedTrailer, trailer, notNullValue());
+            assertThat("Unexpected trailer " + expectedTrailer, trailer.toString(), is(expectedTrailerValue));
         }
-    }
-
-    private static void assertTrailers(HttpHeaders trailers, String expectedTrailer, String expectedTrailerValue) {
-        CharSequence trailer = trailers.get(expectedTrailer);
-        assertNotNull(trailer);
-        assertThat(trailer.toString(), is(expectedTrailerValue));
     }
 
     @Ignore("100 continue is not yet supported")
@@ -1256,7 +1247,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                     } else {
                         resp = responseFactory.ok();
                     }
-                    resp = resp.transformMessageBody(pub -> request.messageBody());
+                    resp = resp.transformMessageBody(pub -> pub.ignoreElements().merge(request.messageBody()));
                     CharSequence contentType = request.headers().get(CONTENT_TYPE);
                     if (contentType != null) {
                         resp.headers().add(CONTENT_TYPE, contentType);
@@ -1554,15 +1545,6 @@ public class H2PriorKnowledgeFeatureParityTest {
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
             trailers.add(trailerName, Integer.toString(contentSize.get()));
             return trailers;
-        }
-    }
-
-    @Nullable
-    private static void safeRelease(ReservedBlockingHttpConnection connection) {
-        try {
-            connection.release();
-        } catch (Throwable ignored) {
-            // ignore
         }
     }
 }

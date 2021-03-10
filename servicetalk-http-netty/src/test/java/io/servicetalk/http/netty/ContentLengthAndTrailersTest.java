@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpResponse;
@@ -26,7 +25,6 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import org.junit.Test;
@@ -36,7 +34,6 @@ import org.junit.runners.Parameterized;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -46,6 +43,7 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
+import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,12 +67,22 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
         protocol(protocol.config);
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
             @Override
-            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
-                                                        StreamingHttpRequest request,
-                                                        StreamingHttpResponseFactory responseFactory) {
-                // Use transform to simulate access to trailers
-                request = request.transform(new StatelessTrailersTransformer<>());
-                return delegate().handle(ctx, request, responseFactory);
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                // Use transform to simulate access to request trailers
+                return delegate().handle(ctx, request.transform(new StatelessTrailersTransformer<>()), responseFactory)
+                        .map(response -> {
+                            final HttpHeaders headers = request.headers();
+                            if (headers.contains(CONTENT_LENGTH)) {
+                                response.setHeader(CLIENT_CONTENT_LENGTH, mergeValues(headers.values(CONTENT_LENGTH)));
+                            }
+                            if (headers.contains(TRANSFER_ENCODING)) {
+                                response.setHeader(CLIENT_TRANSFER_ENCODING,
+                                        mergeValues(headers.values(TRANSFER_ENCODING)));
+                            }
+                            return response;
+                        });
             }
         });
     }
@@ -82,26 +90,6 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     @Parameterized.Parameters(name = "protocol={0}")
     public static HttpProtocol[] data() {
         return HttpProtocol.values();
-    }
-
-    @Override
-    protected void service(StreamingHttpService service) {
-        super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) -> {
-            final HttpResponse response = responseFactory.ok();
-
-            final HttpHeaders headers = request.headers();
-            if (headers.contains(CONTENT_LENGTH)) {
-                response.setHeader(CLIENT_CONTENT_LENGTH, mergeValues(headers.values(CONTENT_LENGTH)));
-            }
-            if (headers.contains(TRANSFER_ENCODING)) {
-                response.setHeader(CLIENT_TRANSFER_ENCODING, mergeValues(headers.values(TRANSFER_ENCODING)));
-            }
-            if (!request.trailers().isEmpty()) {
-                response.setTrailers(request.trailers());
-            }
-
-            return response.payloadBody(request.payloadBody());
-        }, strategy -> strategy).adaptor()));
     }
 
     @Test
@@ -130,7 +118,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                 .toStreamingRequest(),
                 // HTTP/2 may have content-length and trailers at the same time
-                r -> r, protocol == HTTP_2, protocol != HTTP_2, true);
+                r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
     @Test
@@ -151,7 +139,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
                 // HTTP/2 may have content-length and trailers at the same time
-                r -> r, protocol == HTTP_2, protocol != HTTP_2, true);
+                r -> r, true, false, protocol == HTTP_2);
     }
 
     @Test
@@ -165,7 +153,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                             }
                         }),
                 // HTTP/2 may have content-length and trailers at the same time
-                r -> r, protocol == HTTP_2, protocol != HTTP_2, true);
+                r -> r, true, false, protocol == HTTP_2);
     }
 
     @Test
@@ -174,7 +162,6 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
-                // HTTP/2 may have content-length and trailers at the same time
                 r -> r, false, true, true);
     }
 
@@ -188,8 +175,33 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                                 return trailers.add(TRAILER_NAME, TRAILER_VALUE);
                             }
                         }),
-                // HTTP/2 may have content-length and trailers at the same time
                 r -> r, false, true, true);
+    }
+
+    @Test
+    public void trailersContentLengthAndTransferEncodingAddedForAggregatedRequest() throws Exception {
+        test(r -> r.toRequest().toFuture().get()
+                        .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                        .setHeader(TRANSFER_ENCODING, CHUNKED)
+                        .addTrailer(TRAILER_NAME, TRAILER_VALUE)
+                        .toStreamingRequest(),
+                // HTTP/2 may have content-length and trailers at the same time
+                r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
+    }
+
+    @Test
+    public void trailersContentLengthAndTransferEncodingAddedForStreamingRequest() throws Exception {
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                        .setHeader(TRANSFER_ENCODING, CHUNKED)
+                        .transform(new StatelessTrailersTransformer<Buffer>() {
+
+                            @Override
+                            protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                                return trailers.add(TRAILER_NAME, TRAILER_VALUE);
+                            }
+                        }),
+                // HTTP/2 may have content-length and trailers at the same time
+                r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
     @Test
@@ -215,7 +227,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                       Transformer<StreamingHttpResponse> responseTransformer,
                       boolean hasContentLength, boolean chunked, boolean hasTrailers) throws Exception {
 
-        StreamingHttpRequest request = requestTransformer.transform(streamingHttpConnection().post("/")
+        StreamingHttpRequest request = requestTransformer.transform(streamingHttpConnection().post(SVC_ECHO)
                 .payloadBody(from(CONTENT), textSerializer()));
         HttpResponse response = responseTransformer.transform(makeRequest(request)).toResponse().toFuture().get();
         assertResponse(response, protocol.version, OK);
@@ -223,11 +235,9 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
         HttpHeaders headers = response.headers();
         assertThat("Unexpected content-length on the response", mergeValues(headers.values(CONTENT_LENGTH)),
-                hasTrailers && protocol == HTTP_1 ? contentEqualTo("") :
-                        contentEqualTo(valueOf(CONTENT.length())));
-        assertThat("Unexpected transfer-encoding on the response",
-                mergeValues(headers.values(TRANSFER_ENCODING)),
-                hasTrailers && protocol == HTTP_1 ? contentEqualTo(CHUNKED) : contentEqualTo(""));
+                hasContentLength ? contentEqualTo(valueOf(CONTENT.length())) : contentEqualTo(""));
+        assertThat("Unexpected transfer-encoding on the response", mergeValues(headers.values(TRANSFER_ENCODING)),
+                chunked ? contentEqualTo(CHUNKED) : contentEqualTo(""));
 
         assertThat("Unexpected content-length on the request", headers.get(CLIENT_CONTENT_LENGTH),
                 hasContentLength ? contentEqualTo(valueOf(CONTENT.length())) : nullValue());
