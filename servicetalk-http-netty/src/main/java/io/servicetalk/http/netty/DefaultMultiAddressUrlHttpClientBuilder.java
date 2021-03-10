@@ -51,6 +51,8 @@ import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClien
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -222,7 +224,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
-
+        private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
         private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
@@ -260,15 +262,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
 
+            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+                if (sslConfigFunction != null) {
+                    SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
+                            buildContext.builder.secure();
+                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
+                    securityConfigurator.commit();
+                } else {
+                    buildContext.builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
+                }
+            }
+
             if (singleAddressConfigurator != null) {
                 singleAddressConfigurator.configure(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
-            } else if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
-                final SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
-                        buildContext.builder.secure();
-                if (sslConfigFunction != null) {
-                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
-                }
-                securityConfigurator.commit();
             }
 
             return buildContext.build();
