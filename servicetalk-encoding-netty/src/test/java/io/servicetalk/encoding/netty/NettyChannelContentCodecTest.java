@@ -30,7 +30,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,12 +61,6 @@ public class NettyChannelContentCodecTest {
                 ContentCodings.gzipDefault(),
                 ContentCodings.deflateDefault(),
         };
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testEncodingOfReadOnlyBuffer() {
-        Buffer source = DEFAULT_RO_ALLOCATOR.fromAscii(INPUT);
-        codec.encode(source, DEFAULT_ALLOCATOR);
     }
 
     @Test
