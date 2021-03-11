@@ -139,7 +139,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
                 // HTTP/2 may have content-length and trailers at the same time
-                r -> r, true, false, protocol == HTTP_2);
+                r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
     @Test
@@ -153,7 +153,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                             }
                         }),
                 // HTTP/2 may have content-length and trailers at the same time
-                r -> r, true, false, protocol == HTTP_2);
+                r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
     @Test

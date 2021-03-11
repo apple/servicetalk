@@ -158,6 +158,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -166,6 +167,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
@@ -463,6 +465,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private void clientSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -518,13 +521,17 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private void serverSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return delegate().handle(ctx, request, responseFactory).flatMap(resp ->
-                        resp.toResponse().map(aggResp -> {
+                return delegate().handle(ctx, request, responseFactory).flatMap(resp -> resp.transformMessageBody(
+                        // Filter out trailers when we do not expect them. Because we echo the payload body publisher
+                        // of the request that comes from network, it always has empty trailers. Presence of those is
+                        // honored during "streaming -> aggregated -> streaming" conversion.
+                        pub -> addTrailers ? pub : pub.filter(i -> i instanceof Buffer)).toResponse().map(aggResp -> {
                             aggResp.headers().remove(TRANSFER_ENCODING);
                             aggResp.headers().set(CONTENT_LENGTH,
                                     String.valueOf(aggResp.payloadBody().readableBytes() + contentLengthAdder));
@@ -1132,33 +1139,35 @@ public class H2PriorKnowledgeFeatureParityTest {
                     .payloadBody(expectedPayload, textSerializer()));
             assertThat(response.status(), is(OK));
             assertThat(response.payloadBody(textDeserializer()), equalTo(expectedPayload));
-            assertHeaders(response.headers(), expectedPayloadLength);
-            assertTrailers(h2PriorKnowledge, response.trailers(), expectedTrailer, expectedTrailerValue);
+            assertHeaders(h2PriorKnowledge, response.headers(), expectedPayloadLength);
+            assertTrailers(response.trailers(), expectedTrailer, expectedTrailerValue);
 
             // Verify what server received:
             HttpRequest request = requestReceived.get();
             assertThat(request.payloadBody(textDeserializer()), equalTo(expectedPayload));
-            assertHeaders(request.headers(), expectedPayloadLength);
-            assertTrailers(h2PriorKnowledge, request.trailers(), expectedTrailer, expectedTrailerValue);
+            assertHeaders(h2PriorKnowledge, request.headers(), expectedPayloadLength);
+            assertTrailers(request.trailers(), expectedTrailer, expectedTrailerValue);
         }
     }
 
-    private static void assertHeaders(HttpHeaders headers, String expectedPayloadLength) {
-        // http/1.x doesn't support trailers with content-length, trailers will be dropped.
-        // http/2 doesn't support "chunked" encoding, it removes "transfer-encoding" header and preserves
-        // content-length:
-        assertThat("Unexpected content-length", headers.get(CONTENT_LENGTH), contentEqualTo(expectedPayloadLength));
-        assertThat("Unexpected transfer-encoding: chunked", isTransferEncodingChunked(headers), is(false));
-    }
-
-    private static void assertTrailers(boolean h2PriorKnowledge, HttpHeaders trailers,
-                                       String expectedTrailer, String expectedTrailerValue) {
+    private static void assertHeaders(boolean h2PriorKnowledge, HttpHeaders headers, String expectedPayloadLength) {
         if (h2PriorKnowledge) {
-            // only http/2 supports trailers with content-length header
-            CharSequence trailer = trailers.get(expectedTrailer);
-            assertThat("Unexpected trailer " + expectedTrailer, trailer, notNullValue());
-            assertThat("Unexpected trailer " + expectedTrailer, trailer.toString(), is(expectedTrailerValue));
+            // http/2 doesn't support "chunked" encoding, it removes "transfer-encoding" header and preserves
+            // content-length:
+            assertThat(headers.get(CONTENT_LENGTH), contentEqualTo(expectedPayloadLength));
+            assertThat(isTransferEncodingChunked(headers), is(false));
+        } else {
+            // http/1.x doesn't allow trailers with content-length, but it switches to "chunked" encoding when trailers
+            // are present and removes content-length header:
+            assertThat(headers.get(CONTENT_LENGTH), nullValue());
+            assertThat(isTransferEncodingChunked(headers), is(true));
         }
+    }
+
+    private static void assertTrailers(HttpHeaders trailers, String expectedTrailer, String expectedTrailerValue) {
+        CharSequence trailer = trailers.get(expectedTrailer);
+        assertNotNull(trailer);
+        assertThat(trailer.toString(), is(expectedTrailerValue));
     }
 
     @Ignore("100 continue is not yet supported")
