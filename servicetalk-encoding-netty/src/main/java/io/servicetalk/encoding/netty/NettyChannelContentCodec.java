@@ -64,7 +64,6 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        requireNonNull(src);
         requireNonNull(allocator);
 
         final Buffer slice = src.slice(src.readerIndex() + offset, length);
@@ -180,7 +179,6 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        requireNonNull(src);
         requireNonNull(allocator);
 
         final Buffer slice = src.slice(src.readerIndex() + offset, length);
