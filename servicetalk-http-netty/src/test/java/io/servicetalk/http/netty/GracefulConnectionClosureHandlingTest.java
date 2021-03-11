@@ -31,10 +31,12 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -75,6 +77,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -169,7 +172,8 @@ public class GracefulConnectionClosureHandlingTest {
             // Dummy proxy helps to emulate old intermediate systems that do not support half-closed TCP connections
             proxyTunnel = new ProxyTunnel();
             proxyAddress = proxyTunnel.startProxy();
-            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).build());
         } else {
             proxyTunnel = null;
         }
@@ -199,9 +203,8 @@ public class GracefulConnectionClosureHandlingTest {
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
 
         client = (viaProxy ? HttpClients.forSingleAddressViaProxy(serverHostAndPort(serverContext), proxyAddress)
-                .secure().disableHostnameVerification()
-                .trustManager(DefaultTestCerts::loadServerCAPem)
-                .commit() :
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).build()) :
                 HttpClients.forResolvedAddress(serverContext.listenAddress()))
                 .protocols(protocol.config)
                 .ioExecutor(CLIENT_CTX.ioExecutor())

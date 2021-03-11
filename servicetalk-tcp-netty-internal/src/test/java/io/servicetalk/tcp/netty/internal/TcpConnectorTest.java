@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.nio.charset.Charset.defaultCharset;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -94,7 +93,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         final CountDownLatch activeLatch = new CountDownLatch(1);
 
         NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
-                serverContext.listenAddress(), new TcpClientConfig().asReadOnly(emptyList()), false,
+                serverContext.listenAddress(), new TcpClientConfig().asReadOnly(), false,
                 CLIENT_CTX, (channel, connectionObserver) -> DefaultNettyConnection.initChannel(channel,
                         CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), o -> true,
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> {

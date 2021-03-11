@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
-import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import java.io.InputStream;
@@ -26,12 +26,13 @@ import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+@Deprecated
 final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityConfigurator {
     private final ServerSecurityConfig securityConfig = new ServerSecurityConfig();
-    private final Function<ReadOnlyServerSecurityConfig, HttpServerBuilder> configConsumer;
+    private final Function<ServerSslConfig, HttpServerBuilder> configConsumer;
 
     DefaultHttpServerSecurityConfigurator(
-            final Function<ReadOnlyServerSecurityConfig, HttpServerBuilder> configConsumer) {
+            final Function<ServerSslConfig, HttpServerBuilder> configConsumer) {
         this.configConsumer = configConsumer;
     }
 
@@ -86,20 +87,20 @@ final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityC
     @Override
     public HttpServerBuilder commit(final KeyManagerFactory keyManagerFactory) {
         securityConfig.keyManager(keyManagerFactory);
-        return configConsumer.apply(securityConfig.asReadOnly());
+        return configConsumer.apply(securityConfig.asSslConfig());
     }
 
     @Override
     public HttpServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
                                     final Supplier<InputStream> keySupplier) {
         securityConfig.keyManager(keyCertChainSupplier, keySupplier);
-        return configConsumer.apply(securityConfig.asReadOnly());
+        return configConsumer.apply(securityConfig.asSslConfig());
     }
 
     @Override
     public HttpServerBuilder commit(final Supplier<InputStream> keyCertChainSupplier,
                                     final Supplier<InputStream> keySupplier, final String keyPassword) {
         securityConfig.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
-        return configConsumer.apply(securityConfig.asReadOnly());
+        return configConsumer.apply(securityConfig.asSslConfig());
     }
 }

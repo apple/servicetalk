@@ -15,14 +15,12 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
 import io.netty.util.NetUtil;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -31,11 +29,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * Configuration for TCP based servers.
  */
-public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
+public final class TcpServerConfig extends AbstractTcpConfig<ServerSslConfig> {
 
     private TransportObserver transportObserver = NoopTransportObserver.INSTANCE;
     @Nullable
-    private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
+    private Map<String, ServerSslConfig> sniConfig;
     private int backlog = NetUtil.SOMAXCONN;
 
     TransportObserver transportObserver() {
@@ -43,8 +41,8 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
     }
 
     @Nullable
-    Map<String, ReadOnlyServerSecurityConfig> sniConfigs() {
-        return sniConfigs;
+    public Map<String, ServerSslConfig> sniConfig() {
+        return sniConfig;
     }
 
     int backlog() {
@@ -61,21 +59,16 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
     }
 
     /**
-     * Add security related config.
+     * Add SSL/TLS and SNI related config.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames
-     * @param sniHostnames SNI hostnames for which this config is defined
+     * @param defaultSslConfig the default {@link ServerSslConfig} used when no SNI match is found.
+     * @param sniConfig client SNI hostname values are matched against keys in this {@link Map} and if a match is
+     * found the corresponding {@link ServerSslConfig} is used.
      * @return {@code this}
      */
-    public TcpServerConfig secure(final ReadOnlyServerSecurityConfig securityConfig, final String... sniHostnames) {
-        requireNonNull(securityConfig);
-        requireNonNull(sniHostnames);
-        if (sniConfigs == null) {
-            sniConfigs = new HashMap<>();
-        }
-        for (String sniHostname : sniHostnames) {
-            sniConfigs.put(sniHostname, securityConfig);
-        }
+    public TcpServerConfig sslConfig(ServerSslConfig defaultSslConfig, Map<String, ServerSslConfig> sniConfig) {
+        sslConfig(defaultSslConfig);
+        this.sniConfig = requireNonNull(sniConfig);
         return this;
     }
 
@@ -94,8 +87,11 @@ public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecur
         return this;
     }
 
-    @Override
-    public ReadOnlyTcpServerConfig asReadOnly(final List<String> supportedAlpnProtocols) {
-        return new ReadOnlyTcpServerConfig(this, supportedAlpnProtocols);
+    /**
+     * Create a read only view of this object.
+     * @return a read only view of this object.
+     */
+    public ReadOnlyTcpServerConfig asReadOnly() {
+        return new ReadOnlyTcpServerConfig(this);
     }
 }

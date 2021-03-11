@@ -21,6 +21,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -101,6 +102,16 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    /**
+     * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
+     * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
+     * be used in the event of proxying.
+     *
+     * @param unresolvedAddressToHostFunction invoked to convert the {@link U} unresolved address type into a
+     * {@link CharSequence} suitable for use in
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
+     * @return {@code this}
+     */
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
@@ -119,10 +130,18 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
      * Initiates security configuration for this client. Calling
      * {@link SingleAddressHttpClientSecurityConfigurator#commit()} on the returned
      * {@link SingleAddressHttpClientSecurityConfigurator} will commit the configuration.
-     *
+     * @deprecated Use {@link #sslConfig(ClientSslConfig)}.
      * @return {@link SingleAddressHttpClientSecurityConfigurator} to configure security for this client. It is
      * mandatory to call {@link SingleAddressHttpClientSecurityConfigurator#commit() commit} after all configuration is
      * done.
      */
+    @Deprecated
     public abstract SingleAddressHttpClientSecurityConfigurator<U, R> secure();
+
+    /**
+     * Set the SSL/TLS configuration.
+     * @param sslConfig The configuration to use.
+     * @return {@code this}.
+     */
+    public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 }

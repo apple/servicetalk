@@ -17,10 +17,10 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
-import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import io.netty.handler.ssl.NotSslRecordException;
 import org.junit.Test;
@@ -39,9 +39,9 @@ import javax.net.ssl.SSLProtocolException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
-import static io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth.REQUIRE;
+import static io.servicetalk.transport.api.SslClientAuthMode.REQUIRE;
+import static io.servicetalk.transport.api.SslProvider.JDK;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -76,11 +76,11 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
         this.errorReason = errorReason;
         this.clientProvider = clientProvider;
         this.serverProvider = serverProvider;
-        ClientSecurityConfig clientSecurityConfig = defaultClientSecurityConfig(clientProvider);
-        ServerSecurityConfig serverSecurityConfig = defaultServerSecurityConfig(serverProvider);
+        ClientSslConfigBuilder clientSslBuilder = defaultClientSslBuilder(clientProvider);
+        ServerSslConfigBuilder serverSslBuilder = defaultServerSslBuilder(serverProvider);
         switch (errorReason) {
             case SECURE_CLIENT_TO_PLAIN_SERVER:
-                clientConfig.secure(clientSecurityConfig);
+                clientConfig.sslConfig(clientSslBuilder.build());
                 // In this scenario server may close the connection with or without an exception, depending on OS events
                 // Using CountDownLatch to verify that any of these two methods was invoked:
                 doAnswer(__ -> {
@@ -97,40 +97,41 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
                 }).when(serverConnectionObserver).connectionClosed();
                 break;
             case PLAIN_CLIENT_TO_SECURE_SERVER:
-                serverConfig.secure(serverSecurityConfig);
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case WRONG_HOSTNAME_VERIFICATION:
-                clientSecurityConfig.hostNameVerification("HTTPS", "foo");
-                clientConfig.secure(clientSecurityConfig);
-                serverConfig.secure(serverSecurityConfig);
+                clientSslBuilder.hostnameVerificationAlgorithm("HTTPS");
+                clientSslBuilder.peerHost("foo");
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case UNTRUSTED_SERVER_CERTIFICATE:
-                clientSecurityConfig.trustManager(() -> null);
-                clientConfig.secure(clientSecurityConfig);
-                serverConfig.secure(serverSecurityConfig);
+                clientSslBuilder = defaultClientSslBuilder(clientProvider, () -> null);
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case UNTRUSTED_CLIENT_CERTIFICATE:
-                clientSecurityConfig.keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey);
-                clientConfig.secure(clientSecurityConfig);
-                serverSecurityConfig.clientAuth(REQUIRE);
-                serverConfig.secure(serverSecurityConfig);
+                clientSslBuilder.keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey);
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverSslBuilder.clientAuthMode(REQUIRE);
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case MISSED_CLIENT_CERTIFICATE:
-                clientConfig.secure(clientSecurityConfig);
-                serverSecurityConfig.clientAuth(REQUIRE);
-                serverConfig.secure(serverSecurityConfig);
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverSslBuilder.clientAuthMode(REQUIRE);
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case NOT_MATCHING_PROTOCOLS:
-                clientSecurityConfig.protocols("TLSv1.2");
-                clientConfig.secure(clientSecurityConfig);
-                serverSecurityConfig.protocols("TLSv1.1");
-                serverConfig.secure(serverSecurityConfig);
+                clientSslBuilder.sslProtocols("TLSv1.2");
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverSslBuilder.sslProtocols("TLSv1.1");
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case NOT_MATCHING_CIPHERS:
-                clientSecurityConfig.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"));
-                clientConfig.secure(clientSecurityConfig);
-                serverSecurityConfig.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"));
-                serverConfig.secure(serverSecurityConfig);
+                clientSslBuilder.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"));
+                clientConfig.sslConfig(clientSslBuilder.build());
+                serverSslBuilder.ciphers(singletonList("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"));
+                serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorReason);

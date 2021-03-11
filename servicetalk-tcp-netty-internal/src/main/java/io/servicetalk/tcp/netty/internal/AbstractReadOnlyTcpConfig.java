@@ -33,10 +33,8 @@ import static java.util.Collections.unmodifiableMap;
  * Read only view of {@link AbstractTcpConfig}.
  *
  * @param <SecurityConfig> type of security configuration
- * @param <ReadOnlyView> type of read-only view
  */
-abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
-
+abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
     @Nullable
@@ -44,16 +42,12 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     private final FlushStrategy flushStrategy;
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
-    @Nullable
-    private final String preferredAlpnProtocol;
 
-    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig, ReadOnlyView> from,
-                                        @Nullable final String preferredAlpnProtocol) {
+    protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig> from) {
         options = from.options() == null ? emptyMap() : unmodifiableMap(new HashMap<>(from.options()));
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
-        this.preferredAlpnProtocol = preferredAlpnProtocol;
     }
 
     /**
@@ -93,27 +87,6 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     public final UserDataLoggerConfig wireLoggerConfig() {
         return wireLoggerConfig;
-    }
-
-    /**
-     * Returns {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
-     * configured.
-     *
-     * @return {@code true} if the <a href="https://tools.ietf.org/html/rfc7301#section-6">TLS ALPN Extension</a> is
-     * configured
-     */
-    public boolean isAlpnConfigured() {
-        return preferredAlpnProtocol != null;
-    }
-
-    /**
-     * Get the preferred ALPN protocol. If a protocol sensitive decision must be made without knowing which protocol is
-     * negotiated (e.g. at the client level) this protocol can be used as a best guess.
-     * @return the preferred ALPN protocol.
-     */
-    @Nullable
-    public String preferredAlpnProtocol() {
-        return preferredAlpnProtocol;
     }
 
     /**

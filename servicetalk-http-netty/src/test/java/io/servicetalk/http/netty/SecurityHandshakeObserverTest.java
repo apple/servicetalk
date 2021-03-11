@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.DataObserver;
@@ -32,6 +33,7 @@ import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -52,6 +54,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
@@ -159,18 +162,16 @@ public class SecurityHandshakeObserverTest {
         try (ServerContext serverContext = serverBuilderFactory.apply(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .secure()
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new ServerSslConfigBuilder(
+                        DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
                 .transportObserver(serverTransportObserver)
                 .listenStreamingAndAwait(new TestServiceStreaming());
 
              BlockingHttpClient client = clientBuilderFactory.apply(serverHostAndPort(serverContext))
                      .ioExecutor(CLIENT_CTX.ioExecutor())
                      .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                     .secure()
-                     .disableHostnameVerification()
-                     .trustManager(DefaultTestCerts::loadServerCAPem)
-                     .commit()
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                             .peerHost(serverPemHostname()).build())
                      .appendConnectionFactoryFilter(
                              new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
                      .buildBlocking()) {

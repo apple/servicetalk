@@ -22,12 +22,16 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * An abstraction to configure SSL/TLS.
+ * @deprecated Use {@link ServerSslConfigBuilder} or {@link ClientSslConfigBuilder}.
  */
+@Deprecated
 public interface SecurityConfigurator {
 
     /**
      * The provider to use for {@link SSLEngine}.
+     * @deprecated Use {@link io.servicetalk.transport.api.SslProvider}.
      */
+    @Deprecated
     enum SslProvider {
         /**
          * Use the stock JDK implementation.

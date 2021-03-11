@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -65,7 +64,7 @@ public final class TcpClient {
      * @param observer {@link TransportObserver} for the newly created connection.
      */
     public TcpClient(TcpClientConfig config, TransportObserver observer) {
-        this.config = config.asReadOnly(emptyList());
+        this.config = config.asReadOnly();
         this.observer = requireNonNull(observer);
     }
 

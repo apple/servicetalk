@@ -15,6 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.ConnectionObserverInitializer;
@@ -70,9 +71,9 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
         }
 
         if (sslContext != null) {
-            delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
-                    config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort(), deferSslHandler));
+            ClientSslConfig sslConfig = config.sslConfig();
+            assert sslConfig != null;
+            delegate = delegate.andThen(new SslClientChannelInitializer(sslContext, sslConfig, deferSslHandler));
         }
 
         this.delegate = initWireLogger(delegate, config.wireLoggerConfig());

@@ -358,6 +358,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
+    @Deprecated
     @Override
     public PartitionedHttpClientSecurityConfigurator<U, R> secure() {
         return new DefaultPartitionedHttpClientSecurityConfigurator<>(builderTemplate.secure(), this);

@@ -51,12 +51,13 @@ import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClien
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
@@ -100,6 +101,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
     private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
+    @Nullable
+    private SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -113,7 +116,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, singleAddressConfigurator);
 
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             FilterableStreamingHttpClient urlClient = closeables.prepend(
@@ -192,13 +195,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    private static class UrlKey {
-
-        @Nullable
+    private static final class UrlKey {
         final String scheme;
         final HostAndPort hostAndPort;
 
-        UrlKey(@Nullable final String scheme, final HostAndPort hostAndPort) {
+        UrlKey(final String scheme, final HostAndPort hostAndPort) {
             this.scheme = scheme;
             this.hostAndPort = hostAndPort;
         }
@@ -213,17 +214,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             }
 
             final UrlKey urlKey = (UrlKey) o;
-            return Objects.equals(scheme, urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
+            return scheme.equals(urlKey.scheme) && hostAndPort.equals(urlKey.hostAndPort);
         }
 
         @Override
         public int hashCode() {
-            return 31 * hostAndPort.hashCode() + Objects.hashCode(scheme);
+            return 31 * hostAndPort.hashCode() + scheme.hashCode();
         }
     }
 
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
-
+        private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
         private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
@@ -231,16 +232,20 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
         private final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
+        @Nullable
+        private final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
+                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction,
+                @Nullable final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.sslConfigFunction = sslConfigFunction;
+            this.singleAddressConfigurator = singleAddressConfigurator;
         }
 
         @Override
@@ -253,17 +258,23 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
             }
 
-            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
-                final SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
-                        buildContext.builder.secure();
-                if (sslConfigFunction != null) {
-                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
-                }
-                securityConfigurator.commit();
-            }
-
             if (clientFilterFactory != null) {
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
+            }
+
+            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+                if (sslConfigFunction != null) {
+                    SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
+                            buildContext.builder.secure();
+                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
+                    securityConfigurator.commit();
+                } else {
+                    buildContext.builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
+                }
+            }
+
+            if (singleAddressConfigurator != null) {
+                singleAddressConfigurator.configure(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
             }
 
             return buildContext.build();
@@ -379,10 +390,23 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         return this;
     }
 
+    @Deprecated
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> secure(
             final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
         this.sslConfigFunction = requireNonNull(sslConfigFunction);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientBuilderFilter(
+            final SingleAddressConfigurator<HostAndPort, InetSocketAddress> singleAddressConfigurator) {
+        requireNonNull(singleAddressConfigurator);
+        if (this.singleAddressConfigurator == null) {
+            this.singleAddressConfigurator = singleAddressConfigurator;
+        } else {
+            this.singleAddressConfigurator = this.singleAddressConfigurator.append(singleAddressConfigurator);
+        }
         return this;
     }
 
