@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
@@ -60,7 +60,7 @@ public final class ProtoBufSerializationProviderBuilder {
     private final Map<Class, Map<ContentCodec, HttpSerializer>> serializers = new HashMap<>();
     private final Map<Class, Map<ContentCodec, HttpDeserializer>> deserializers = new HashMap<>();
 
-    private List<ContentCodec> supportedCodings = singletonList(identity());
+    private List<ContentCodec> supportedCodings = singletonList(IDENTITY);
 
     /**
      * Set the supported message encodings for the serializers and deserializers.
@@ -74,8 +74,8 @@ public final class ProtoBufSerializationProviderBuilder {
     public <T extends MessageLite> ProtoBufSerializationProviderBuilder
     supportedMessageCodings(final List<ContentCodec> supportedCodings) {
         this.supportedCodings = new ArrayList<>(supportedCodings);
-        if (!this.supportedCodings.contains(identity())) {
-            this.supportedCodings.add(identity()); // Always supported
+        if (!this.supportedCodings.contains(IDENTITY)) {
+            this.supportedCodings.add(IDENTITY); // Always supported
         }
         return this;
     }
@@ -258,7 +258,7 @@ public final class ProtoBufSerializationProviderBuilder {
 
         private void addContentHeaders(final HttpHeaders headers) {
             headers.set(CONTENT_TYPE, APPLICATION_GRPC_PROTO);
-            if (codec != identity()) {
+            if (codec != IDENTITY) {
                 headers.set(GRPC_MESSAGE_ENCODING_KEY, codec.name());
             }
         }

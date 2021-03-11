@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
@@ -73,7 +73,7 @@ final class GrpcUtils {
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
-    private static final List<ContentCodec> GRPC_ACCEPT_ENCODING_NONE = singletonList(identity());
+    private static final List<ContentCodec> GRPC_ACCEPT_ENCODING_NONE = singletonList(IDENTITY);
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
 
@@ -246,7 +246,7 @@ final class GrpcUtils {
                                                 final List<ContentCodec> allowedEncodings) {
         final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         if (encoding == null) {
-            return identity();
+            return IDENTITY;
         }
 
         ContentCodec enc = encodingFor(allowedEncodings, encoding);
@@ -276,7 +276,7 @@ final class GrpcUtils {
 
         CharSequence acceptEncHeaderValue = httpMetaData.headers().get(GRPC_ACCEPT_ENCODING_KEY);
         ContentCodec encoding = HeaderUtils.negotiateAcceptedEncoding(acceptEncHeaderValue, allowedCodings);
-        return encoding == null ? identity() : encoding;
+        return encoding == null ? IDENTITY : encoding;
     }
 
     private static void initResponse(final HttpResponseMetaData response, @Nullable final GrpcServiceContext context) {
@@ -336,7 +336,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
         StringBuilder builder = new StringBuilder();
         for (ContentCodec codec : codings) {
-            if (codec == identity()) {
+            if (codec == IDENTITY) {
                 continue;
             }
 

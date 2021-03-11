@@ -17,13 +17,20 @@ package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
+import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
+import static java.util.Objects.requireNonNull;
 
 abstract class AbstractContentCodec implements ContentCodec {
 
     private final CharSequence name;
 
     AbstractContentCodec(final CharSequence name) {
+        requireNonNull(name);
+        if (name.length() == 0) {
+            throw new IllegalArgumentException("Name length " + name.length() + " (expected > 0).");
+        }
+
         this.name = name;
     }
 
@@ -47,7 +54,7 @@ abstract class AbstractContentCodec implements ContentCodec {
 
     @Override
     public final int hashCode() {
-        return name.hashCode();
+        return caseInsensitiveHashCode(name);
     }
 
     @Override

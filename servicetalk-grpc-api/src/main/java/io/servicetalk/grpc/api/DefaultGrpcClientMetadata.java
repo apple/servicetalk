@@ -19,7 +19,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
@@ -53,7 +53,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy) {
-        this(path, strategy, identity());
+        this(path, strategy, IDENTITY);
     }
 
     protected DefaultGrpcClientMetadata(final String path,

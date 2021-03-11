@@ -44,7 +44,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.grpc.api.GrpcStatusCode.OK;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
@@ -64,55 +64,54 @@ public final class GrpcClientValidatesContentTypeTest {
             .build();
 
     public static final Function<Boolean, HttpSerializer<TesterProto.TestResponse>> SERIALIZER_OVERRIDING_CONTENT_TYPE =
-            (withCharset) ->
-        new HttpSerializer<TesterProto.TestResponse>() {
+            (withCharset) -> new HttpSerializer<TesterProto.TestResponse>() {
 
-            final HttpSerializer<TesterProto.TestResponse> delegate = SERIALIZATION_PROVIDER
-                    .serializerFor(identity(), TesterProto.TestResponse.class);
+                final HttpSerializer<TesterProto.TestResponse> delegate = SERIALIZATION_PROVIDER
+                        .serializerFor(IDENTITY, TesterProto.TestResponse.class);
 
-            @Override
-            public Buffer serialize(final HttpHeaders headers, final TesterProto.TestResponse value,
-                                    final BufferAllocator allocator) {
-                try {
-                    return delegate.serialize(headers, value, allocator);
-                } finally {
-                    headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                @Override
+                public Buffer serialize(final HttpHeaders headers, final TesterProto.TestResponse value,
+                                        final BufferAllocator allocator) {
+                    try {
+                        return delegate.serialize(headers, value, allocator);
+                    } finally {
+                        headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                    }
                 }
-            }
 
-            @Override
-            public BlockingIterable<Buffer> serialize(final HttpHeaders headers,
-                                                      final BlockingIterable<TesterProto.TestResponse> value,
-                                                      final BufferAllocator allocator) {
-                try {
-                    return delegate.serialize(headers, value, allocator);
-                } finally {
-                    headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                @Override
+                public BlockingIterable<Buffer> serialize(final HttpHeaders headers,
+                                                          final BlockingIterable<TesterProto.TestResponse> value,
+                                                          final BufferAllocator allocator) {
+                    try {
+                        return delegate.serialize(headers, value, allocator);
+                    } finally {
+                        headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                    }
                 }
-            }
 
-            @Override
-            public Publisher<Buffer> serialize(final HttpHeaders headers,
-                                               final Publisher<TesterProto.TestResponse> value,
-                                               final BufferAllocator allocator) {
-                try {
-                    return delegate.serialize(headers, value, allocator);
-                } finally {
-                    headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                @Override
+                public Publisher<Buffer> serialize(final HttpHeaders headers,
+                                                   final Publisher<TesterProto.TestResponse> value,
+                                                   final BufferAllocator allocator) {
+                    try {
+                        return delegate.serialize(headers, value, allocator);
+                    } finally {
+                        headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                    }
                 }
-            }
 
-            @Override
-            public HttpPayloadWriter<TesterProto.TestResponse> serialize(final HttpHeaders headers,
-                                                                         final HttpPayloadWriter<Buffer> payloadWriter,
-                                                                         final BufferAllocator allocator) {
-                try {
-                    return delegate.serialize(headers, payloadWriter, allocator);
-                } finally {
-                    headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                @Override
+                public HttpPayloadWriter<TesterProto.TestResponse> serialize(
+                        final HttpHeaders headers, final HttpPayloadWriter<Buffer> payloadWriter,
+                        final BufferAllocator allocator) {
+                    try {
+                        return delegate.serialize(headers, payloadWriter, allocator);
+                    } finally {
+                        headers.set(CONTENT_TYPE, headers.get(CONTENT_TYPE) + (withCharset ? "; charset=UTF-8" : ""));
+                    }
                 }
-            }
-        };
+            };
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

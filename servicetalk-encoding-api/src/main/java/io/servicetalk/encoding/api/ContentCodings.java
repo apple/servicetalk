@@ -20,10 +20,12 @@ import io.servicetalk.encoding.api.DefaultContentCodecBuilder.GzipContentCodecBu
 
 /**
  * Common available encoding implementations.
+ * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings}
  */
+@Deprecated
 public final class ContentCodings {
 
-    private static final ContentCodec IDENTITY = IdentityContentCodec.INSTANCE;
+    private static final ContentCodec IDENTITY = ContentCodec.IDENTITY;
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 
@@ -43,9 +45,7 @@ public final class ContentCodings {
     /**
      * Returns the default GZIP {@link ContentCodec}.
      * @return default GZIP based {@link ContentCodec}
-     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#gzipDefault()}
      */
-    @Deprecated
     public static ContentCodec gzipDefault() {
         return DEFAULT_GZIP;
     }
@@ -55,9 +55,7 @@ public final class ContentCodings {
      * a customizable {@link ContentCodec}.
      * @return a GZIP based {@link ContentCodecBuilder} that allows building
      *          a customizable GZIP {@link ContentCodec}
-     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#gzip()}
      */
-    @Deprecated
     public static ContentCodecBuilder gzip() {
         return new GzipContentCodecBuilder();
     }
@@ -65,9 +63,7 @@ public final class ContentCodings {
     /**
      * Returns the default DEFLATE based {@link ContentCodec}.
      * @return default DEFLATE based {@link ContentCodec}
-     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#deflateDefault()}
      */
-    @Deprecated
     public static ContentCodec deflateDefault() {
         return DEFAULT_DEFLATE;
     }
@@ -77,9 +73,7 @@ public final class ContentCodings {
      * a customizable {@link ContentCodec}.
      * @return a DEFLATE based {@link ContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link ContentCodec}
-     * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings#deflate()}
      */
-    @Deprecated
     public static ContentCodecBuilder deflate() {
         return new DeflateContentCodecBuilder();
     }

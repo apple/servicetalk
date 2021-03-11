@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,15 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
- * NOOP Message encoding codec.
+ * Default, always supported NOOP 'identity' {@link ContentCodec}.
  */
-final class IdentityContentCodec extends AbstractContentCodec {
+public final class IdentityContentCodec implements ContentCodec {
 
     private static final CharSequence NAME = "identity";
 
-    public static final ContentCodec INSTANCE = new IdentityContentCodec();
-
-    private IdentityContentCodec() {
-        super(NAME);
+    @Override
+    public CharSequence name() {
+        return NAME;
     }
 
     @Override
@@ -38,13 +37,13 @@ final class IdentityContentCodec extends AbstractContentCodec {
     }
 
     @Override
-    public Publisher<Buffer> encode(final Publisher<Buffer> from, final BufferAllocator allocator) {
-        return from;
+    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        return src;
     }
 
     @Override
-    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        return src;
+    public Publisher<Buffer> encode(final Publisher<Buffer> from, final BufferAllocator allocator) {
+        return from;
     }
 
     @Override

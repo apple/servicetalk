@@ -16,7 +16,6 @@
 package io.servicetalk.encoding.netty;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.netty.DefaultContentCodecBuilder.ZipContentCodecBuilder;
 
 /**
  * Common available encoding implementations.
@@ -35,7 +34,7 @@ public final class ContentCodings {
      * @return the default, always supported 'identity' {@link ContentCodec}
      */
     public static ContentCodec identity() {
-        return io.servicetalk.encoding.api.ContentCodings.identity();
+        return ContentCodec.IDENTITY;
     }
 
     /**
@@ -47,13 +46,13 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a GZIP based {@link ContentCodecBuilder} that allows building
+     * Returns a GZIP based {@link ZipContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a GZIP based {@link ContentCodecBuilder} that allows building
+     * @return a GZIP based {@link ZipContentCodecBuilder} that allows building
      * a customizable GZIP {@link ContentCodec}
      */
     public static ZipContentCodecBuilder gzip() {
-        return new DefaultContentCodecBuilder.GzipContentCodecBuilder();
+        return new ZipContentCodecBuilder.GzipContentCodecBuilder();
     }
 
     /**
@@ -65,12 +64,12 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a DEFLATE based {@link ContentCodecBuilder} that allows building
+     * Returns a DEFLATE based {@link ZipContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a DEFLATE based {@link ContentCodecBuilder} that allows building
+     * @return a DEFLATE based {@link ZipContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link ContentCodec}
      */
     public static ZipContentCodecBuilder deflate() {
-        return new DefaultContentCodecBuilder.DeflateContentCodecBuilder();
+        return new ZipContentCodecBuilder.DeflateContentCodecBuilder();
     }
 }

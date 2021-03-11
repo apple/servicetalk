@@ -15,6 +15,7 @@
  */
 package io.servicetalk.encoding.api;
 
+@Deprecated
 abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
 
     private static final int CHUNK_SIZE = 1 << 10; //1KiB
@@ -27,7 +28,7 @@ abstract class DefaultContentCodecBuilder implements ContentCodecBuilder {
     }
 
     @Override
-    public ContentCodecBuilder maxAllowedPayloadSize(final int maxAllowedPayloadSize) {
+    public ContentCodecBuilder setMaxAllowedPayloadSize(final int maxAllowedPayloadSize) {
         if (maxAllowedPayloadSize <= 0) {
             throw new IllegalArgumentException("maxAllowedPayloadSize: " + maxAllowedPayloadSize + " (expected > 0)");
         }

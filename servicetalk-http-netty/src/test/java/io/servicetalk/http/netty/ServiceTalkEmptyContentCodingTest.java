@@ -21,7 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 
 @RunWith(Parameterized.class)
@@ -36,7 +36,7 @@ public class ServiceTalkEmptyContentCodingTest extends ServiceTalkContentCodingT
     protected void assertResponse(final StreamingHttpResponse response) throws Throwable {
         verifyNoErrors();
 
-        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
+        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, IDENTITY.name()).toString());
     }
 
     @Override

@@ -21,6 +21,8 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.encoding.api.CodecDecodingException;
+import io.servicetalk.encoding.api.CodecEncodingException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -68,12 +71,8 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
             throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
         }
 
-        if (length <= 0) {
-            throw new IllegalArgumentException("Invalid length: " + length + " (expected > 0");
-        }
-
         if (length > availableBytes) {
-            throw new IllegalStateException("Invalid length: " + length + " (expected <= " + availableBytes);
+            throw new IllegalArgumentException("Invalid length: " + length + " (expected <= " + availableBytes);
         }
 
         final MessageToByteEncoder<ByteBuf> encoder = encoderSupplier.get();
@@ -85,7 +84,12 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
             // May produce footer
             preparePendingData(channel);
-            return requireNonNull(drainChannelOutToSingleBuffer(channel, allocator));
+
+            final Buffer buffer = drainChannelQueueToSingleBuffer(channel.outboundMessages(), allocator);
+            if (buffer == null) {
+                throw new CodecEncodingException("Encoder didn't return any output.");
+            }
+            return buffer;
         } catch (Throwable e) {
             LOGGER.error("Error while encoding with {}", name(), e);
             safeCleanup(channel);
@@ -104,15 +108,21 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                     private final MessageToByteEncoder<ByteBuf> encoder = encoderSupplier.get();
                     private final EmbeddedChannel channel = newEmbeddedChannel(encoder, allocator);
 
+                    @Nullable
+                    PublisherSource.Subscription subscription;
+
                     @Override
                     public void onSubscribe(PublisherSource.Subscription subscription) {
+                        this.subscription = subscription;
                         subscriber.onSubscribe(subscription);
                     }
 
                     @Override
                     public void onNext(Buffer next) {
+                        assert subscription != null;
+
                         if (next == null) {
-                            return;
+                            throw new NullPointerException();
                         }
 
                         // onNext will produce AT-MOST N items (from upstream)
@@ -120,18 +130,22 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                         if (next == END_OF_STREAM) {
                             // May produce footer
                             preparePendingData(channel);
-                            Buffer buffer = drainChannelOutToSingleBuffer(channel, allocator);
+                            Buffer buffer = drainChannelQueueToSingleBuffer(channel.outboundMessages(), allocator);
                             if (buffer != null) {
                                 subscriber.onNext(buffer);
+                            } else {
+                                subscriber.onNext(EMPTY_BUFFER);
                             }
 
                             return;
                         }
 
                         channel.writeOutbound(toByteBuf(next));
-                        Buffer buffer = drainChannelOutToSingleBuffer(channel, allocator);
+                        Buffer buffer = drainChannelQueueToSingleBuffer(channel.outboundMessages(), allocator);
                         if (buffer != null) {
                             subscriber.onNext(buffer);
+                        } else {
+                            subscription.request(1);
                         }
                     }
 
@@ -143,7 +157,13 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
                     @Override
                     public void onComplete() {
-                        cleanup(channel);
+                        try {
+                            cleanup(channel);
+                        } catch (Throwable t) {
+                            subscriber.onError(t);
+                            return;
+                        }
+
                         subscriber.onComplete();
                     }
                 });
@@ -157,12 +177,8 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
             throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
         }
 
-        if (length <= 0) {
-            throw new IllegalArgumentException("Invalid length: " + length + " (expected > 0)");
-        }
-
         if (length > availableBytes) {
-            throw new IllegalStateException("Invalid length: " + length + " (expected <= " + availableBytes);
+            throw new IllegalArgumentException("Invalid length: " + length + " (expected <= " + availableBytes);
         }
 
         final ByteToMessageDecoder decoder = decoderSupplier.get();
@@ -171,7 +187,12 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         try {
             ByteBuf origin = toByteBuf(src, offset, length);
             channel.writeInbound(origin);
-            return newBufferFrom(channel.readInbound());
+
+            Buffer buffer = drainChannelQueueToSingleBuffer(channel.inboundMessages(), allocator);
+            if (buffer == null) {
+                throw new CodecDecodingException("Decoder didn't return any output.");
+            }
+            return buffer;
         } catch (Throwable e) {
             LOGGER.error("Error while decoding with {}", name(), e);
             throwException(e);
@@ -201,18 +222,17 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
             @Override
             public void onNext(@Nullable final Buffer src) {
                 assert subscription != null;
-
-                if (src == null) {
-                    return;
-                }
-
-                // onNext will produce AT-MOST N items (as received)
                 if (!channel.isOpen()) {
                     throw new IllegalStateException("Stream encoder previously closed but more input arrived ");
                 }
 
+                if (src == null) {
+                    throw new NullPointerException();
+                }
+
+                // onNext will produce AT-MOST N items (as received)
                 channel.writeInbound(toByteBuf(src));
-                Buffer buffer = drainChannelInToSingleBuffer(channel, allocator);
+                Buffer buffer = drainChannelQueueToSingleBuffer(channel.inboundMessages(), allocator);
 
                 if (buffer != null && buffer.readableBytes() > 0) {
                     subscriber.onNext(buffer);
@@ -230,7 +250,13 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
             @Override
             public void onComplete() {
-                cleanup(channel);
+                try {
+                    cleanup(channel);
+                } catch (Throwable t) {
+                    subscriber.onError(t);
+                    return;
+                }
+
                 subscriber.onComplete();
             }
         });
@@ -243,11 +269,11 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
     }
 
     private static ByteBuf toByteBuf(final Buffer buffer) {
-        return BufferUtils.toByteBuf(buffer);
+        return BufferUtils.extractByteBufOrCreate(buffer);
     }
 
     private static ByteBuf toByteBuf(final Buffer buffer, final int offset, final int length) {
-        return BufferUtils.toByteBuf(buffer.readerIndex(buffer.readerIndex() + offset).readSlice(length));
+        return BufferUtils.extractByteBufOrCreate(buffer.readerIndex(buffer.readerIndex() + offset).readSlice(length));
     }
 
     private static void preparePendingData(final EmbeddedChannel channel) {
@@ -255,45 +281,25 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
             channel.close().syncUninterruptibly().get();
             channel.checkException();
         } catch (InterruptedException | ExecutionException ex) {
-            LOGGER.error("Unexpected exception from EmbeddedChannel", ex);
+            throwException(ex);
         }
     }
 
     @Nullable
-    private static Buffer drainChannelInToSingleBuffer(
-            final EmbeddedChannel channel, final BufferAllocator allocator) {
-        if (channel.inboundMessages().isEmpty()) {
+    private static Buffer drainChannelQueueToSingleBuffer(
+            final Queue<Object> queue, final BufferAllocator allocator) {
+        if (queue.isEmpty()) {
             return null;
         }
 
-        if (channel.inboundMessages().size() == 1) {
-            return newBufferFrom(channel.readInbound());
-        } else {
-            CompositeBuffer compositeBuffer = allocator.newCompositeBuffer();
-            ByteBuf part;
-            while ((part = channel.readInbound()) != null) {
-                compositeBuffer.addBuffer(newBufferFrom(part));
-            }
-
-            return compositeBuffer;
-        }
-    }
-
-    @Nullable
-    private static Buffer drainChannelOutToSingleBuffer(
-            final EmbeddedChannel channel, final BufferAllocator allocator) {
-        if (channel.outboundMessages().isEmpty()) {
-            return null;
-        }
-
-        if (channel.outboundMessages().size() == 1) {
-            return newBufferFrom(channel.readOutbound());
+        if (queue.size() == 1) {
+            return newBufferFrom((ByteBuf) queue.poll());
         } else {
             int accumulateSize = 0;
 
-            List<Buffer> parts = new ArrayList<>(channel.outboundMessages().size());
+            List<Buffer> parts = new ArrayList<>(queue.size());
             ByteBuf part;
-            while ((part = channel.readOutbound()) != null) {
+            while ((part = (ByteBuf) queue.poll()) != null) {
                 parts.add(newBufferFrom(part));
                 accumulateSize += part.readableBytes();
             }
@@ -321,13 +327,14 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     private static void cleanup(final EmbeddedChannel channel) {
         boolean wasNotEmpty = channel.finishAndReleaseAll();
-        channel.checkException();
         assert !wasNotEmpty;
     }
 
     private static void safeCleanup(final EmbeddedChannel channel) {
         try {
             cleanup(channel);
+        } catch (AssertionError error) {
+          throw error;
         } catch (Throwable t) {
             LOGGER.error("Error while closing embedded channel", t);
         }

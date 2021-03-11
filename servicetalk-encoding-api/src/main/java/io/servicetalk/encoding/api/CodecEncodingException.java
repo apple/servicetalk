@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.encoding.netty;
-
-import io.servicetalk.encoding.api.ContentCodec;
+package io.servicetalk.encoding.api;
 
 /**
- * Builder for {@link ContentCodec}.
+ * Exception thrown when something went wrong during encoding.
  */
-public interface ContentCodecBuilder {
+public final class CodecEncodingException extends RuntimeException {
+
+    private static final long serialVersionUID = -3565785637300291924L;
 
     /**
-     * Build and return an instance of the {@link ContentCodec} with the configuration of the builder.
-     * @return the {@link ContentCodec} with the configuration of the builder
+     * New instance.
+     *
+     * @param reason the reason of this exception.
      */
-    ContentCodec build();
+    public CodecEncodingException(String reason) {
+        super(reason);
+    }
 }

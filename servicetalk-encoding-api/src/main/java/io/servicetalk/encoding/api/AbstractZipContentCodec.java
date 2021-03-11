@@ -41,6 +41,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
+@Deprecated
 abstract class AbstractZipContentCodec extends AbstractContentCodec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractZipContentCodec.class);

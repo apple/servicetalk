@@ -25,13 +25,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.split;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 public final class HeaderUtils {
 
-    private static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(identity());
+    private static final List<ContentCodec> NONE_CONTENT_ENCODING_SINGLETON = singletonList(IDENTITY);
 
     private HeaderUtils() {
         // no instances
@@ -57,7 +57,7 @@ public final class HeaderUtils {
 
         // Fast path, server has no encodings configured or has only identity configured as encoding
         if (serverSupportedEncodings.isEmpty() ||
-                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(identity()))) {
+                (serverSupportedEncodings.size() == 1 && serverSupportedEncodings.contains(IDENTITY))) {
             return null;
         }
 
@@ -84,12 +84,12 @@ public final class HeaderUtils {
                                                          final List<ContentCodec> serverSupportedEncodings) {
         // Fast path, Client has no encodings configured, or has identity as the only encoding configured
         if (clientSupportedEncodings == NONE_CONTENT_ENCODING_SINGLETON ||
-                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(identity()))) {
+                (clientSupportedEncodings.size() == 1 && clientSupportedEncodings.contains(IDENTITY))) {
             return null;
         }
 
         for (ContentCodec encoding : serverSupportedEncodings) {
-            if (encoding != identity() && clientSupportedEncodings.contains(encoding)) {
+            if (encoding != IDENTITY && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }
@@ -135,8 +135,8 @@ public final class HeaderUtils {
         }
 
         // Identity is always supported, regardless of its presence in the allowed-list
-        if (CharSequences.contentEquals(name, identity().name())) {
-            return identity();
+        if (CharSequences.contentEquals(name, IDENTITY.name())) {
+            return IDENTITY;
         }
 
         for (ContentCodec enumEnc : allowedList) {

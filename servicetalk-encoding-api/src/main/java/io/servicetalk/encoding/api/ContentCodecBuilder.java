@@ -17,7 +17,10 @@ package io.servicetalk.encoding.api;
 
 /**
  * Builder for {@link ContentCodec}.
+ * @deprecated encoding-api based solution is being replaced with a netty implementation available under
+ * servicetalk-encoding-netty dependency.
  */
+@Deprecated
 public interface ContentCodecBuilder {
 
     /**
@@ -29,7 +32,7 @@ public interface ContentCodecBuilder {
      * @return {@code this}
      * @see <a href="https://en.wikipedia.org/wiki/Zip_bomb">Zip Bomb</a>
      */
-    ContentCodecBuilder maxAllowedPayloadSize(int maxAllowedPayloadSize);
+    ContentCodecBuilder setMaxAllowedPayloadSize(int maxAllowedPayloadSize);
 
     /**
      * Build and return an instance of the {@link ContentCodec} with the configuration of the builder.

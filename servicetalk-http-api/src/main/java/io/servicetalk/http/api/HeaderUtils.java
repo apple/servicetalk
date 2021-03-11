@@ -37,7 +37,7 @@ import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.forEachByte;
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.buffer.api.CharSequences.regionMatches;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
@@ -686,7 +686,7 @@ public final class HeaderUtils {
             throw new UnsupportedContentEncodingException(encoding.toString());
         }
 
-        return enc == identity() ? null : enc;
+        return enc == IDENTITY ? null : enc;
     }
 
     /**
