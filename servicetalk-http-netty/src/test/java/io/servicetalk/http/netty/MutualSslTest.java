@@ -58,16 +58,16 @@ public class MutualSslTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @DataPoints("serverSslProvider")
-    public static final SslProvider[] serverSslProvider = new SslProvider[] {JDK, OPENSSL};
+    public static final SslProvider[] SERVER_PROVIDERS = {JDK, OPENSSL};
     @DataPoints("clientSslProvider")
-    public static final SslProvider[] clientSslProvider = new SslProvider[] {JDK, OPENSSL};
+    public static final SslProvider[] CLIENT_PROVIDERS = {JDK, OPENSSL};
     @DataPoints("serverListenOptions")
     @SuppressWarnings("rawtypes")
-    public static final List<Map<SocketOption, Object>> serverListenOptions =
+    public static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
             asList(emptyMap(), serverTcpFastOpenOptions());
     @DataPoints("clientOptions")
     @SuppressWarnings("rawtypes")
-    public static final List<Map<SocketOption, Object>> clientOptions = asList(emptyMap(), clientTcpFastOpenOptions());
+    public static final List<Map<SocketOption, Object>> CLIENT_OPTIONS = asList(emptyMap(), clientTcpFastOpenOptions());
 
     @Theory
     public void mutualSsl(@FromDataPoints("serverSslProvider") SslProvider serverSslProvider,
