@@ -104,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Compression">Compression</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#route-guide">Route Guide</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -197,6 +200,9 @@
           <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-client-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-client-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -242,6 +248,9 @@
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../0.37/index.html">0.37</a>
@@ -309,6 +318,9 @@
           <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-examples/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-examples/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -372,6 +384,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-grpc-api/0.37/index.html">0.37</a>
@@ -439,6 +454,9 @@
           <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-http-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-http-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -502,6 +520,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-router-jersey/0.37/index.html">0.37</a>
@@ -569,6 +590,9 @@
           <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-data-jackson-jersey/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -634,6 +658,9 @@
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-loadbalancer/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -694,6 +721,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-security-jersey/0.37/index.html">0.37</a>
@@ -759,6 +789,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../servicetalk/0.37/index.html">0.37</a>
@@ -838,6 +871,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="asynchronous-primitives.html">SNAPSHOT</a>
+    <a class="version" href="../0.38/asynchronous-primitives.html">0.38</a>
     <a class="version" href="../0.37/asynchronous-primitives.html">0.37</a>
     <a class="version" href="../0.36/asynchronous-primitives.html">0.36</a>
     <a class="version" href="../0.35/asynchronous-primitives.html">0.35</a>
@@ -934,6 +968,37 @@ powerful as it means that work can be re-done without invoking the method that c
 generically implement retries on the sources as opposed to the methods that create the sources.</p>
 </li>
 </ul>
+</div>
+<div class="sect2">
+<h3 id="lazy-execution-interoperability"><a class="anchor" href="#lazy-execution-interoperability"></a><a class="link" href="#lazy-execution-interoperability">Lazy Execution Interoperability</a></h3>
+<div class="paragraph">
+<p>ServiceTalk provides utilities to interoperate with hot/eager sources. For example assume the following method exists
+and you need to convert into a <code>Single</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public CompletionStage&lt;String&gt; doWorkCompletionStage(String state) {
+  // Assume pre-existing asynchronous implementation exists
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here is an example how to call <code>doWorkCompletionStage</code> and converting the result from <code>CompletionStage</code> to <code>Single</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public Single&lt;String&gt; handleRequest(StringBuilder mutableInput) {
+  Single.defer(() -&gt; {
+    // Any state that may change across invocations associated with the async operation should be computed inside the
+    // Supplier. This defers the work to compute the state, and will be re-run if there is a re-subscribe (e.g. to retry
+    // the operation). Deferring state computation is not unique to interoperability, and is a general characteristic
+    // of cold/lazy sources.
+    String newRequest = "new request" + mutableInput.toString();
+    return Single.fromStage(doWorkCompletionStage(newRequest));
+  });
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>

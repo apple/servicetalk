@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>HTTP Examples :: ServiceTalk Docs</title>
+    <meta name="generator" content="Antora 2.0.0">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+<meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
+<meta name="keywords" content="servicetalk, java, reactive, reactive-streams, microservices, framework, http, http2, rpc, grpc, netty">
+<link rel="stylesheet" href="../../../_/css/site-extra.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-151504011-1"></script>
+<script>function gtag(){dataLayer.push(arguments)};window.dataLayer=window.dataLayer||[];gtag('js',new Date());gtag('config','UA-151504011-1')</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="navbar-item">
+        <a href="https://github.com/apple/servicetalk">ServiceTalk</a>
+        <span class="separator">//</span>
+        <a href="../../..">Docs</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="main-wrapper">
+    <div class="navigation-container"
+      data-component="servicetalk-examples" data-version="0.38">
+    <aside class="navigation">
+        <div class="panels">
+            <div class="navigation-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Examples</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concepts</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk/0.38/programming-paradigms.html">Programming Paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk/0.38/blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk/0.38/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk/0.38/async-context.html">Async context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk/0.38/performance.html">Performance</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Examples</span>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Compression">Compression</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Serialization">Serialization</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#JAXRS">JAX-RS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#MetaData">MetaData</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#HTTP2">HTTP/2</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Mutual-TLS">Mutual TLS</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#uds">Unix Domain Sockets</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="service-composition.html">Service Composition</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../grpc/index.html">gRPC</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#HelloWorld">Hello World</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#Compression">Compression</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#route-guide">Route Guide</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#protoc-options">Protoc Options</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <span class="nav-text">Concurrent API</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-concurrent-api/0.38/asynchronous-primitives.html">Asynchronous primitives</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../../servicetalk-concurrent-api/0.38/blocking-safe-by-default.html">Blocking safe by default</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../../servicetalk-concurrent-api/0.38/blocking-implementation.html">Implementation details</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-concurrent-api/0.38/async-context.html">Async Context</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../../servicetalk-http-api/0.38/index.html">HTTP</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-http-api/0.38/programming-paradigms.html">Programming paradigms</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-http-api/0.38/blocking-safe-by-default.html">Blocking safe by default</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-http-api/0.38/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <button class="nav-toggle"></button>
+    <a class="nav-link" href="../../../servicetalk-http-router-jersey/0.38/index.html">JAX-RS Router (Jersey)</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../../servicetalk-http-router-jersey/0.38/evolve-to-async.html">Evolving to asynchronous</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../../servicetalk-http-security-jersey/0.38/index.html">Security</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../../servicetalk-data-jackson-jersey/0.38/index.html">JSON (Jackson)</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk-grpc-api/0.38/index.html">gRPC</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk-loadbalancer/0.38/index.html">Load Balancing</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk-client-api/0.38/service-discovery.html">Service Discovery</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk/0.38/javadoc/index.html">Javadoc</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../../servicetalk/0.38/contributing.html">Contributing</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+            <div class="navigation-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Examples</span>
+    <span class="version">0.38</span>
+  </div>
+  <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-client-api/0.25/index.html">0.25</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Concurrent API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component is-current">
+      <span class="title">Examples</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version is-current">
+          <a href="../index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">gRPC</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">HTTP</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JAX-RS Router (Jersey)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">JSON (Jackson)</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Load balancing</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">Security</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+    <li class="component">
+      <span class="title">ServiceTalk</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.37/index.html">0.37</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.36/index.html">0.36</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.35/index.html">0.35</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.34/index.html">0.34</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.33/index.html">0.33</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.32/index.html">0.32</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.31/index.html">0.31</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.30/index.html">0.30</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.29/index.html">0.29</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.28/index.html">0.28</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.27/index.html">0.27</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.26/index.html">0.26</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.24/index.html">0.24</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.23/index.html">0.23</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.22/index.html">0.22</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.21/index.html">0.21</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.19/index.html">0.19</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+        </div>
+    </aside>
+</div>
+    <main class="main">
+        <div class="toolbar" role="navigation">
+  <button class="navigation-toggle"></button>
+  <a href="../../../servicetalk/SNAPSHOT/index.html" class="home-link"></a>
+<nav class="crumbs" aria-label="breadcrumbs">
+        <ul>
+                <li class="crumb">Examples</li>
+                <li class="crumb"><a href="index.html">HTTP</a></li>
+        </ul>
+</nav>
+<div class="page-versions">
+  <button class="versions-menu-toggle" title="Show other versions of page">0.38</button>
+  <div class="versions-menu">
+    <a class="version" href="../../SNAPSHOT/http/index.html">SNAPSHOT</a>
+    <a class="version is-current" href="index.html">0.38</a>
+    <a class="version" href="../../0.37/http/index.html">0.37</a>
+    <a class="version" href="../../0.36/http/index.html">0.36</a>
+    <a class="version" href="../../0.35/http/index.html">0.35</a>
+    <a class="version" href="../../0.34/http/index.html">0.34</a>
+    <a class="version" href="../../0.33/http/index.html">0.33</a>
+    <a class="version" href="../../0.32/http/index.html">0.32</a>
+    <a class="version" href="../../0.31/http/index.html">0.31</a>
+    <a class="version" href="../../0.30/http/index.html">0.30</a>
+    <a class="version" href="../../0.29/http/index.html">0.29</a>
+    <a class="version" href="../../0.28/http/index.html">0.28</a>
+    <a class="version" href="../../0.27/http/index.html">0.27</a>
+    <a class="version" href="../../0.26/http/index.html">0.26</a>
+    <a class="version" href="../../0.25/http/index.html">0.25</a>
+    <a class="version" href="../../0.24/http/index.html">0.24</a>
+    <a class="version" href="../../0.23/http/index.html">0.23</a>
+    <a class="version" href="../../0.22/http/index.html">0.22</a>
+    <a class="version" href="../../0.21/http/index.html">0.21</a>
+    <a class="version" href="../../0.20/http/index.html">0.20</a>
+    <a class="version" href="../../0.19/http/index.html">0.19</a>
+  </div>
+</div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/docs/modules/ROOT/pages/http/index.adoc">Edit this Page</a></div>
+</div>
+        <article class="doc">
+<h1>HTTP Examples</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http"><code>http</code></a>
+folder contains examples for the <a href="https://tools.ietf.org/html/rfc7231">HTTP</a> protocol.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="HelloWorld"><a class="anchor" href="#HelloWorld"></a><a class="link" href="#HelloWorld">Hello World</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An obligatory "Hello World" example for HTTP.</p>
+</div>
+<div class="sect2">
+<h3 id="asynchronous-aggregated"><a class="anchor" href="#asynchronous-aggregated"></a><a class="link" href="#asynchronous-aggregated">Asynchronous + Aggregated</a></h3>
+<div class="paragraph">
+<p>This example demonstrates asynchronous request processing where the payload body is aggregated into a single object
+instead of a stream.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">HelloWorldServer</a> - a server that demonstrates the asynchronous API and
+responds with a simple <code>Hello World!</code> response body as a <code>text/plain</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java">HelloWorldClient</a> - a client that sends a <code>GET</code> request to the
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">server</a> and receives the response as a single content.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java">HelloWorldUrlClient</a> - a client that sends a <code>GET</code> request to the
+specified URL in absolute-form and receives the response as a single content.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="asynchronous-streaming"><a class="anchor" href="#asynchronous-streaming"></a><a class="link" href="#asynchronous-streaming">Asynchronous + Streaming</a></h3>
+<div class="paragraph">
+<p>This example demonstrates asynchronous request processing where the payload body is a stream.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">HelloWorldStreamingServer</a> - a server that responds with a
+stream of <code>text/plain</code> payload body for every request.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java">HelloWorldStreamingClient</a> - a client that sends a <code>GET</code>
+request to the <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">server</a> and receives the response payload
+body as a stream of buffers.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingUrlClient.java">HelloWorldStreamingUrlClient</a> - a client that sends a
+<code>GET</code> request to the specified URL in absolute-form and receives the response payload body as a stream of buffers.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="blocking-aggregated"><a class="anchor" href="#blocking-aggregated"></a><a class="link" href="#blocking-aggregated">Blocking + Aggregated</a></h3>
+<div class="paragraph">
+<p>This example demonstrates blocking request processing where the payload body is aggregated into a single object. The
+APIs will block if content is requested but there is no content available.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a> - a server that demonstrates the
+blocking API and responds with a simple <code>Hello World!</code> response body as a <code>text/plain</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a> - a client that sends a <code>GET</code> request to
+the <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">server</a> and receives the response payload body as one aggregated
+object.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java">BlockingHelloWorldUrlClient</a> - a client that sends a <code>GET</code>
+request to the specified URL in absolute-form and receives the response payload body as one aggregated object.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="blocking-streaming"><a class="anchor" href="#blocking-streaming"></a><a class="link" href="#blocking-streaming">Blocking + Streaming</a></h3>
+<div class="paragraph">
+<p>This example demonstrates blocking request processing where the payload body is a blocking iterable stream.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">BlockingHelloWorldStreamingServer</a> - a server
+that responds with an iterable stream of <code>text/plain</code> payload body for every request.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java">BlockingHelloWorldStreamingClient</a> - a client
+that sends a <code>GET</code> request to the <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">server</a> and
+receives the response payload body as a blocking iterable stream of buffers.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java">BlockingHelloWorldStreamingUrlClient</a> - a
+client that sends a <code>GET</code> request to the specified URL in absolute-form and receives the response payload body as a
+blocking iterable stream of buffers.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Compression"><a class="anchor" href="#Compression"></a><a class="link" href="#Compression">Compression</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Extends the async "Hello World" example to demonstrate content encoding compression filters. No separate example is
+needed for the other API variants as the usage of content encoding filters is the same for all API styles.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">CompressionFilterExampleServer</a> - a server that demonstrates
+the asynchronous API and responds with a simple <code>Hello World!</code> response body, optionally customized for a specific name for <code>POST</code> requests, as a <code>text/plain</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a client that
+sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
+receives a response greeting the posted name as a single content.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Serialization"><a class="anchor" href="#Serialization"></a><a class="link" href="#Serialization">Serialization</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A similar to "Hello World" examples, which demonstrate
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async">asynchronous-aggregated</a>,
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming">asynchronous-streaming</a>,
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking">blocking-aggregated</a>, and
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming">blocking-streaming</a>
+client and server with JSON serialization of simple pojo classes.</p>
+</div>
+<div class="paragraph">
+<p>Client sends a <code>POST</code> request with a JSON payload <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java">PojoRequest</a> and expects a response
+with <code>Content-Type: application/json</code> and <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java">MyPojo</a> as a payload.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="JAXRS"><a class="anchor" href="#JAXRS"></a><a class="link" href="#JAXRS">JAX-RS</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ServiceTalk provides a JAX-RS implementation that can plugin to ServiceTalk APIs.
+This example demonstrates how to use these APIs, and how different API variations (e.g. asynchronous/blocking and
+aggregated/streaming) are exposed.</p>
+</div>
+<div class="sect2">
+<h3 id="hello-world"><a class="anchor" href="#hello-world"></a><a class="link" href="#hello-world">Hello world</a></h3>
+<div class="paragraph">
+<p>A simple "Hello World" example built using JAX-RS.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsServer.java">HelloWorldJaxRsServer</a> - a JAX-RS based hello world server that demonstrates how to
+write blocking as well as asynchronous resource methods.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> - a JAX-RS resource having different methods for
+blocking and asynchronous interactions.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This example does not have a client yet but one can use curl to send requests like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>curl http://localhost:8080/greetings/hello</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>More examples of how to use the resource can be found in the
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> javadocs.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="MetaData"><a class="anchor" href="#MetaData"></a><a class="link" href="#MetaData">MetaData</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates some of the basic functionality of the
+<a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java">HttpMetaData</a> classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Setting and getting response status.</p>
+</li>
+<li>
+<p>Setting and getting query parameters.</p>
+</li>
+<li>
+<p>Setting, checking, and getting headers.</p>
+</li>
+<li>
+<p>Printing headers without redaction/filtering.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java">MetaDataDemoServer</a> - A server that provides greetings in various languages.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java">MetaDataDemoClient</a> - A client that requests greetings in various languages.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the metadata API is the same
+across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Mutual-TLS"><a class="anchor" href="#Mutual-TLS"></a><a class="link" href="#Mutual-TLS">Mutual TLS</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how client and server can be configured to do mutual authentication via TLS.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the TLS/SSL configuration API is
+the same across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="HTTP2"><a class="anchor" href="#HTTP2"></a><a class="link" href="#HTTP2">HTTP/2</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>These examples demonstrate how users can configure <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> transport in
+ServiceTalk.</p>
+</div>
+<div class="sect2">
+<h3 id="http2-with-prior-knowledge"><a class="anchor" href="#http2-with-prior-knowledge"></a><a class="link" href="#http2-with-prior-knowledge">HTTP/2 with Prior-Knowledge</a></h3>
+<div class="paragraph">
+<p>This example demonstrates how to configure using
+<a href="https://tools.ietf.org/html/rfc7540#section-3.4">HTTP/2 transport with Prior-Knowledge</a> for HTTP clients and servers:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java">Http2PriorKnowledgeServer</a> -
+A server that uses HTTP/2 with Prior Knowledge.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java">Http2PriorKnowledgeClient</a> -
+A client that uses HTTP/2 with Prior Knowledge.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="http2-via-alpn-for-secure-connections"><a class="anchor" href="#http2-via-alpn-for-secure-connections"></a><a class="link" href="#http2-via-alpn-for-secure-connections">HTTP/2 via ALPN for secure connections</a></h3>
+<div class="paragraph">
+<p>For secure TLS connections <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> could be used to negotiate the
+communication protocol:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java">HttpServerWithAlpn</a> -
+A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java">HttpClientWithAlpn</a> -
+A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it if the peer does not support ALPN extension.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Your runtime must support ALPN extension for TLS. The recommended way is to use OpenSSL provider and add
+<a href="https://netty.io/wiki/forked-tomcat-native.html#artifacts">netty-tcnative</a> artifact to the classpath. If OpenSSL is
+not available, make sure your JVM version supports ALPN or use
+<a href="https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html">another provider</a> that supports it.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+These examples use the <a href="#blocking-aggregated">blocking + aggregated</a> API for demonstration purposes, as the
+builder API is the same across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="service-composition"><a class="anchor" href="#service-composition"></a><a class="link" href="#service-composition">Service Composition</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An advanced example which demonstrates a composition of various ServiceTalks services in one application.
+For more information see <a href="service-composition.html" class="page">Service Composition</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="uds"><a class="anchor" href="#uds"></a><a class="link" href="#uds">Unix Domain Sockets (UDS)</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how client and server can use unix domain sockets. See
+the <a href="https://github.com/apple/servicetalk/blob/0.38.0/servicetalk-examples/http/uds">uds example code</a> for more details.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This example uses the <a href="#blocking-aggregated">blocking + aggregated</a> API, as the UDS configuration API is the
+same across all the HTTP APIs.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</article>
+    </main>
+</div>
+<footer class="footer">
+  <p></p>
+</footer>
+<script src="../../../_/js/site.js"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

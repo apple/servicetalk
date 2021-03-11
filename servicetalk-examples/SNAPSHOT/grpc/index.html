@@ -104,6 +104,9 @@
     <a class="nav-link" href="#Compression">Compression</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#route-guide">Route Guide</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -197,6 +200,9 @@
           <a href="../../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-client-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-client-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -242,6 +248,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-concurrent-api/0.37/index.html">0.37</a>
@@ -309,6 +318,9 @@
           <a href="../index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -372,6 +384,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-grpc-api/0.37/index.html">0.37</a>
@@ -439,6 +454,9 @@
           <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-http-api/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-http-api/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -502,6 +520,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-router-jersey/0.37/index.html">0.37</a>
@@ -569,6 +590,9 @@
           <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-data-jackson-jersey/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -634,6 +658,9 @@
           <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.38/index.html">0.38</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-loadbalancer/0.37/index.html">0.37</a>
         </li>
         <li class="version">
@@ -694,6 +721,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-security-jersey/0.37/index.html">0.37</a>
@@ -759,6 +789,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.38/index.html">0.38</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk/0.37/index.html">0.37</a>
@@ -838,6 +871,7 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="index.html">SNAPSHOT</a>
+    <a class="version" href="../../0.38/grpc/index.html">0.38</a>
     <a class="version" href="../../0.37/grpc/index.html">0.37</a>
     <a class="version" href="../../0.36/grpc/index.html">0.36</a>
     <a class="version" href="../../0.35/grpc/index.html">0.35</a>
@@ -980,10 +1014,36 @@ and the following clients:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleServer.java">CompressionExampleServer</a> - Waits for hello request from the client and responds with a compressed greeting response.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleServer.java">CompressionExampleServer</a> - Waits for hello request from the client and responds with a compressed greeting response.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/async/CompressionExampleClient.java">CompressionExampleClient</a> - Sends a hello request to the server and receives a compressed greeting response.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleClient.java">CompressionExampleClient</a> - Sends a hello request to the server and receives a
+compressed greeting response.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="errors"><a class="anchor" href="#errors"></a><a class="link" href="#errors">Application Errors</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The gRPC protocol supports propagating application level errors, and also provides serialization/deserialization of
+these objects. This example demonstrates a server returning an application level error to the client via the gRPC
+transport. The client intentionally omits the <code>token</code> field which is required, and the server returns an application
+level error. In this case the application level error type happens to be defined in
+<a href="https://github.com/googleapis/googleapis/blob/master/google/rpc/error_details.proto">error_details.proto</a>, but it
+could be any protobuf object.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
+error.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error
+condition on the server.</p>
 </li>
 </ul>
 </div>
