@@ -18,7 +18,7 @@ package io.servicetalk.encoding.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Exception thrown when something went wrong during encoding.
+ * Exception thrown when something goes wrong during encoding.
  */
 public final class CodecEncodingException extends RuntimeException {
 

@@ -67,7 +67,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         requireNonNull(allocator);
 
         if (src.readableBytes() == 0) {
-            return src;
+            throw new CodecEncodingException(this, "No data to encode.");
         }
 
         if (offset < 0 || offset >= src.readableBytes()) {
@@ -189,7 +189,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         requireNonNull(allocator);
 
         if (src.readableBytes() == 0) {
-            return src;
+            throw new CodecDecodingException(this, "No data to decode.");
         }
 
         if (offset < 0 || offset >= src.readableBytes()) {

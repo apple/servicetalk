@@ -16,7 +16,7 @@
 package io.servicetalk.encoding.api;
 
 /**
- * Exception thrown when something went wrong during decoding.
+ * Exception thrown when something goes wrong during decoding.
  */
 public final class CodecDecodingException extends RuntimeException {
 
