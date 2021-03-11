@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,33 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.encoding.api;
+package io.servicetalk.encoding.netty;
 
-import io.servicetalk.encoding.api.DefaultContentCodecBuilder.DeflateContentCodecBuilder;
-import io.servicetalk.encoding.api.DefaultContentCodecBuilder.GzipContentCodecBuilder;
+import io.servicetalk.encoding.api.ContentCodec;
 
 /**
  * Common available encoding implementations.
- * @deprecated API replaced by {@code io.servicetalk.encoding.netty.ContentCodings}
  */
-@Deprecated
 public final class ContentCodings {
-
-    private static final ContentCodec IDENTITY = Identity.identity();
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 
     private static final ContentCodec DEFAULT_DEFLATE = deflate().build();
 
     private ContentCodings() {
-    }
-
-    /**
-     * Returns the default, always supported 'identity' {@link ContentCodec}.
-     * @return the default, always supported 'identity' {@link ContentCodec}
-     */
-    public static ContentCodec identity() {
-        return IDENTITY;
     }
 
     /**
@@ -51,13 +38,13 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a GZIP based {@link ContentCodecBuilder} that allows building
+     * Returns a GZIP based {@link ZipContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a GZIP based {@link ContentCodecBuilder} that allows building
-     *          a customizable GZIP {@link ContentCodec}
+     * @return a GZIP based {@link ZipContentCodecBuilder} that allows building
+     * a customizable GZIP {@link ContentCodec}
      */
-    public static ContentCodecBuilder gzip() {
-        return new GzipContentCodecBuilder();
+    public static ZipContentCodecBuilder gzip() {
+        return new ZipContentCodecBuilder.GzipContentCodecBuilder();
     }
 
     /**
@@ -69,12 +56,12 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns a DEFLATE based {@link ContentCodecBuilder} that allows building
+     * Returns a DEFLATE based {@link ZipContentCodecBuilder} that allows building
      * a customizable {@link ContentCodec}.
-     * @return a DEFLATE based {@link ContentCodecBuilder} that allows building
+     * @return a DEFLATE based {@link ZipContentCodecBuilder} that allows building
      *          a customizable DEFLATE {@link ContentCodec}
      */
-    public static ContentCodecBuilder deflate() {
-        return new DeflateContentCodecBuilder();
+    public static ZipContentCodecBuilder deflate() {
+        return new ZipContentCodecBuilder.DeflateContentCodecBuilder();
     }
 }

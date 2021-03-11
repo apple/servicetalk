@@ -35,8 +35,8 @@ public interface ContentCodec {
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes available to read
-     * {@code src.readableBytes()}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes available to read {@link Buffer#readableBytes()}.
      *
      * @param src the {@link Buffer} to encode
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
@@ -48,10 +48,11 @@ public interface ContentCodec {
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to encode
-     * @param offset the offset after the current {@link Buffer}'s {@code readerInde  }to start reading from
+     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
@@ -60,8 +61,8 @@ public interface ContentCodec {
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes available to read
-     * {@code src.readableBytes()}.
+     * This call increases the {{@link Buffer#readerIndex()} of the {@code src} with the number of
+     * bytes available to read {@link Buffer#readableBytes()}.
      *
      * @param src the {@link Buffer} to decode
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
@@ -73,10 +74,11 @@ public interface ContentCodec {
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to decode
-     * @param offset the offset after the current {@link Buffer}'s {@code readerIndex} to start reading from
+     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded

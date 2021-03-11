@@ -21,7 +21,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 
 @RunWith(Parameterized.class)

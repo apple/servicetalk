@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.encoding.api;
+package io.servicetalk.encoding.netty;
+
+import io.servicetalk.encoding.api.ContentCodec;
 
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 
-@Deprecated
 abstract class AbstractContentCodec implements ContentCodec {
 
     private final CharSequence name;
 
     AbstractContentCodec(final CharSequence name) {
+        if (name.length() <= 0) {
+            throw new IllegalArgumentException("Name should not be blank.");
+        }
+
         this.name = name;
     }
 
@@ -32,19 +37,21 @@ abstract class AbstractContentCodec implements ContentCodec {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
+
         if (!(o instanceof AbstractContentCodec)) {
             return false;
         }
+
         final AbstractContentCodec that = (AbstractContentCodec) o;
         return contentEquals(name, that.name);
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return caseInsensitiveHashCode(name);
     }
 

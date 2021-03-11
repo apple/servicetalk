@@ -19,7 +19,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.

@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;

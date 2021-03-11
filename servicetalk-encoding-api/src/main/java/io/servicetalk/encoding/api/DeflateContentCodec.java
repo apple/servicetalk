@@ -22,6 +22,7 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+@Deprecated
 final class DeflateContentCodec extends AbstractZipContentCodec {
 
     private static final CharSequence NAME = "deflate";

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: "java"
-apply from: "../../gradle/idea.gradle"
+@ElementsAreNonnullByDefault
+package io.servicetalk.encoding.netty;
 
-dependencies {
-  implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-encoding-netty")
-  implementation project(":servicetalk-http-netty")
-
-  runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

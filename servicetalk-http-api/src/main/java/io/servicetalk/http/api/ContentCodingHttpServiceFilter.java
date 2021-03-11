@@ -28,7 +28,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;

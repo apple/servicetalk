@@ -47,6 +47,7 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-encoding-api-internal")
+  testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"

@@ -24,7 +24,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
 import static io.servicetalk.http.api.HeaderUtils.setAcceptEncoding;
 import static io.servicetalk.http.api.HeaderUtils.setContentEncoding;

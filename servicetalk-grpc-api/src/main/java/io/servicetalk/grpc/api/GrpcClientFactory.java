@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;

@@ -45,7 +45,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpApiConversions.toHttpService;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
