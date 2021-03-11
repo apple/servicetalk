@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.SecurityConfigurator;
+import io.servicetalk.transport.api.ClientSslConfig;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
@@ -23,11 +23,9 @@ import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
-import io.netty.util.NetUtil;
 import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
@@ -38,6 +36,7 @@ import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
 import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
+import static java.util.Collections.singletonList;
 
 /**
  * Utility for SSL.
@@ -54,31 +53,23 @@ final class SslUtils {
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param allocator the {@link ByteBufAllocator} which will be used to allocate direct memory if required for
      * {@link SSLEngine}
-     * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
-     * If this is {@code null} or empty then you will be vulnerable to a MITM attack.
-     * @param hostnameVerificationHost the non-authoritative name of the host.
-     * @param hostnameVerificationPort the non-authoritative port.
+     * @param sslConfig used to obtain configuration for the {@link SslHandler}.
      * @return a {@link SslHandler}
      */
-    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator,
-                                 @Nullable String hostnameVerificationAlgorithm,
-                                 @Nullable String hostnameVerificationHost,
-                                 int hostnameVerificationPort) {
-        if (hostnameVerificationHost == null) {
-            return newHandler(context, allocator);
-        }
-
-        SslHandler handler = context.newHandler(allocator, hostnameVerificationHost, hostnameVerificationPort);
+    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator, ClientSslConfig sslConfig) {
+        SslHandler handler = context.newHandler(allocator, sslConfig.peerHost(), sslConfig.peerPort());
         SSLEngine engine = handler.engine();
         try {
+            String hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
+            String sniHostname = sslConfig.sniHostname();
             SSLParameters parameters = engine.getSSLParameters();
-            parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
-            if (!NetUtil.isValidIpV4Address(hostnameVerificationHost) &&
-                    !NetUtil.isValidIpV6Address(hostnameVerificationHost)) {
-                // SNI doesn't permit IP addresses!
+            if (hostnameVerificationAlgorithm != null) {
+                parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
+            }
+            if (sniHostname != null) {
                 // https://tools.ietf.org/html/rfc6066#section-3
-                // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
-                parameters.setServerNames(Collections.singletonList(new SNIHostName(hostnameVerificationHost)));
+                // Multiple names of the same name_type are therefore now prohibited.
+                parameters.setServerNames(singletonList(new SNIHostName(sniHostname)));
             }
             engine.setSSLParameters(parameters);
         } catch (Throwable cause) {
@@ -105,8 +96,8 @@ final class SslUtils {
      * @param supportedAlpnProtocols the list of supported ALPN protocols.
      * @return the new {@link ApplicationProtocolConfig}.
      */
-    static ApplicationProtocolConfig nettyApplicationProtocol(List<String> supportedAlpnProtocols) {
-        if (supportedAlpnProtocols.isEmpty()) {
+    static ApplicationProtocolConfig nettyApplicationProtocol(@Nullable List<String> supportedAlpnProtocols) {
+        if (supportedAlpnProtocols == null || supportedAlpnProtocols.isEmpty()) {
             return ApplicationProtocolConfig.DISABLED;
         }
         return new ApplicationProtocolConfig(ALPN, NO_ADVERTISE, ACCEPT, supportedAlpnProtocols);
@@ -120,21 +111,22 @@ final class SslUtils {
      * @return the netty provider.
      */
     @Nullable
-    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider, boolean alpn) {
-        switch (provider) {
-            case AUTO:
-                if (alpn) {
-                    if (isAlpnSupported(SslProvider.OPENSSL)) {
-                        return SslProvider.OPENSSL;
-                    } else if (isAlpnSupported(SslProvider.JDK)) {
-                        return SslProvider.JDK;
-                    } else {
-                        throw new IllegalStateException("ALPN configured but not supported by the current classpath: " +
+    static SslProvider toNettySslProvider(@Nullable io.servicetalk.transport.api.SslProvider provider, boolean alpn) {
+        if (provider == null) {
+            if (alpn) {
+                if (isAlpnSupported(SslProvider.OPENSSL)) {
+                    return SslProvider.OPENSSL;
+                } else if (isAlpnSupported(SslProvider.JDK)) {
+                    return SslProvider.JDK;
+                } else {
+                    throw new IllegalStateException("ALPN configured but not supported by the current classpath: " +
                             "add OPENSSL support (https://netty.io/wiki/forked-tomcat-native.html) or configure " +
                             "ALPN for JDK (https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html)");
-                    }
                 }
-                return null;
+            }
+            return null;
+        }
+        switch (provider) {
             case JDK:
                 if (alpn && !isAlpnSupported(SslProvider.JDK)) {
                     throw new IllegalStateException(

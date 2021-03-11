@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static java.util.Collections.emptyList;
 
 /**
  * A utility to create a TCP server for tests.
@@ -61,7 +60,7 @@ public class TcpServer {
      * @param config for the server.
      */
     public TcpServer(TcpServerConfig config) {
-        this.config = config.asReadOnly(emptyList());
+        this.config = config.asReadOnly();
     }
 
     /**

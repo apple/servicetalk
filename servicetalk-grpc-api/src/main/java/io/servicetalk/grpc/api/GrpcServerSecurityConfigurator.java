@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.transport.api.ServerSecurityConfigurator;
+import io.servicetalk.transport.api.ServerSslConfig;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
@@ -24,7 +25,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link ServerSecurityConfigurator} for {@link GrpcServerBuilder}.
+ * @deprecated Use {@link GrpcServerBuilder#sslConfig(ServerSslConfig)}.
  */
+@Deprecated
 public interface GrpcServerSecurityConfigurator extends ServerSecurityConfigurator {
     @Override
     GrpcServerSecurityConfigurator trustManager(Supplier<InputStream> trustCertChainSupplier);

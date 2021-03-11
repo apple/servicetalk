@@ -38,11 +38,13 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
@@ -73,6 +75,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -159,8 +162,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .transportObserver(serverTransportObserver)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         if (sslEnabled) {
-            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey);
+            serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).build());
         }
         if (serviceFilterFactory != null) {
             serverBuilder.appendServiceFilter(serviceFilterFactory);
@@ -172,8 +175,8 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            clientBuilder.secure().disableHostnameVerification()
-                    .trustManager(DefaultTestCerts::loadServerCAPem).commit();
+            clientBuilder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .peerHost(serverPemHostname()).build());
         }
         if (connectionFactoryFilter != null) {
             clientBuilder.appendConnectionFactoryFilter(connectionFactoryFilter);

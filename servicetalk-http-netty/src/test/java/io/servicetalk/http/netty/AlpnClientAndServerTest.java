@@ -23,8 +23,10 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import io.netty.handler.codec.DecoderException;
 import org.junit.After;
@@ -49,7 +51,8 @@ import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -82,7 +85,7 @@ public class AlpnClientAndServerTest {
                                    List<String> clientSideProtocols,
                                    @Nullable HttpProtocolVersion expectedProtocol,
                                    @Nullable Class<? extends Throwable> expectedExceptionType) throws Exception {
-        serverContext = startServer(serverSideProtocols, expectedProtocol);
+        serverContext = startServer(serverSideProtocols);
         client = startClient(serverHostAndPort(serverContext), clientSideProtocols);
         this.expectedProtocol = expectedProtocol;
         this.expectedExceptionType = expectedExceptionType;
@@ -114,13 +117,11 @@ public class AlpnClientAndServerTest {
         });
     }
 
-    private ServerContext startServer(List<String> supportedProtocols,
-                                      @Nullable HttpProtocolVersion expectedProtocol) throws Exception {
+    private ServerContext startServer(List<String> supportedProtocols) throws Exception {
         return HttpServers.forAddress(localAddress(0))
                 .protocols(toProtocolConfigs(supportedProtocols))
-                .secure()
-                .provider(OPENSSL)
-                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).provider(OPENSSL).build())
                 .listenBlocking((ctx, request, responseFactory) -> {
                     serviceContext.put(ctx);
                     requestVersion.put(request.version());
@@ -132,12 +133,8 @@ public class AlpnClientAndServerTest {
     private static BlockingHttpClient startClient(HostAndPort hostAndPort, List<String> supportedProtocols) {
         return HttpClients.forSingleAddress(hostAndPort)
                 .protocols(toProtocolConfigs(supportedProtocols))
-                .secure()
-                .disableHostnameVerification()
-                // required for generated test certificates
-                .trustManager(DefaultTestCerts::loadServerCAPem)
-                .provider(OPENSSL)
-                .commit()
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(serverPemHostname()).provider(OPENSSL).build())
                 .buildBlocking();
     }
 

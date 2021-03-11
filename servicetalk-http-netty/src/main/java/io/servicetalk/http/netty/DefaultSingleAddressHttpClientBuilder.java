@@ -51,6 +51,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -78,6 +79,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -287,7 +289,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         ctx.builder.connectionFilterFactory, reqRespFactory,
                         ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
                         connectionFactoryFilter, ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
-            } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+            } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
@@ -343,7 +345,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             H2ProtocolConfig h2Config = roConfig.h2Config();
             assert h2Config != null;
             return new DefaultStreamingHttpRequestResponseFactory(allocator, h2Config.headersFactory(), HTTP_2_0);
-        } else if (roConfig.tcpConfig().isAlpnConfigured()) {
+        } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
             H1ProtocolConfig h1Config = roConfig.h1Config();
             H2ProtocolConfig h2Config = roConfig.h2Config();
             // The client can't know which protocol will be negotiated on the connection/transport level, so just
@@ -529,15 +531,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return this;
     }
 
+    @Deprecated
     @Override
     public SingleAddressHttpClientSecurityConfigurator<U, R> secure() {
         assert address != null;
-        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(
-                unresolvedHostFunction(address).toString(), unresolvedPortFunction(address),
-                securityConfig -> {
-                    config.tcpConfig().secure(securityConfig);
+        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(sslConfig -> {
+                    sslConfig(sslConfig);
                     return DefaultSingleAddressHttpClientBuilder.this;
                 });
+    }
+
+    @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
+        assert address != null;
+        // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
+        setFallbackHostAndPort(config, address);
+        config.tcpConfig().sslConfig(sslConfig);
+        return this;
     }
 
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
@@ -562,34 +572,45 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return address.toString();
     }
 
-    private CharSequence unresolvedHostFunction(final U address) {
+    private void setFallbackHostAndPort(HttpClientConfig config, U address) {
         if (address instanceof HostAndPort) {
-            return ((HostAndPort) address).hostName();
+            HostAndPort hostAndPort = (HostAndPort) address;
+            config.fallbackPeerHost(hostAndPort.hostName());
+            config.fallbackPeerPort(hostAndPort.port());
+        } else if (address instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
+            config.fallbackPeerHost(inetSocketAddress.getHostString());
+            config.fallbackPeerPort(inetSocketAddress.getPort());
+        } else {
+            CharSequence cs = hostToCharSequenceFunction.apply(address);
+            if (cs == null) {
+                config.fallbackPeerHost(null);
+                config.fallbackPeerPort(-1);
+            } else {
+                int colon = CharSequences.indexOf(cs, ':', 0);
+                if (colon < 0) {
+                    config.fallbackPeerHost(cs.toString());
+                    config.fallbackPeerPort(-1);
+                } else if (cs.charAt(0) == '[') {
+                    colon = CharSequences.indexOf(cs, ']', 1);
+                    if (colon < 0) {
+                        throw new IllegalArgumentException("unable to find end ']' of IPv6 address: " + cs);
+                    }
+                    config.fallbackPeerHost(cs.subSequence(1, colon).toString());
+                    ++colon;
+                    if (colon >= cs.length()) {
+                        config.fallbackPeerPort(-1);
+                    } else if (cs.charAt(colon) != ':') {
+                        throw new IllegalArgumentException("':' expected after ']' for IPv6 address: " + cs);
+                    } else {
+                        config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
+                    }
+                } else {
+                    config.fallbackPeerHost(cs.subSequence(0, colon).toString());
+                    config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
+                }
+            }
         }
-        if (address instanceof InetSocketAddress) {
-            return ((InetSocketAddress) address).getHostString();
-        }
-        CharSequence cs = hostToCharSequenceFunction.apply(address);
-        int colon = CharSequences.indexOf(cs, ':', 0);
-        if (colon < 0) {
-            return cs;
-        }
-        return cs.subSequence(0, colon);
-    }
-
-    private int unresolvedPortFunction(final U address) {
-        if (address instanceof HostAndPort) {
-            return ((HostAndPort) address).port();
-        }
-        if (address instanceof InetSocketAddress) {
-            return ((InetSocketAddress) address).getPort();
-        }
-        CharSequence cs = hostToCharSequenceFunction.apply(address);
-        int colon = CharSequences.indexOf(cs, ':', 0);
-        if (colon < 0) {
-            return -1;
-        }
-        return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
     private static final class NoopServiceDiscoverer<OriginalAddress, ResolvedAddress>

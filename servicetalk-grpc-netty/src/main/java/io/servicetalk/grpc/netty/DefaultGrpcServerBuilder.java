@@ -35,10 +35,12 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
@@ -69,6 +71,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return this;
     }
 
+    @Deprecated
     @Override
     public GrpcServerSecurityConfigurator secure() {
         HttpServerSecurityConfigurator secure = httpServerBuilder.secure();
@@ -76,9 +79,15 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerSecurityConfigurator secure(final String... sniHostnames) {
-        HttpServerSecurityConfigurator secure = httpServerBuilder.secure(sniHostnames);
-        return new DefaultGrpcServerSecurityConfigurator(secure, this);
+    public GrpcServerBuilder sslConfig(final ServerSslConfig config) {
+        httpServerBuilder.sslConfig(config);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
+        httpServerBuilder.sslConfig(defaultConfig, sniMap);
+        return this;
     }
 
     @Override

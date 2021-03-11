@@ -29,9 +29,11 @@ dependencies {
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-aarch_64"
-  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
+  implementation "io.netty:netty-transport-native-epoll:$nettyVersion"
+  runtimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
+  runtimeOnly "io.netty:netty-transport-native-epoll:$nettyVersion:linux-aarch_64"
+  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion"
+  runtimeOnly "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))

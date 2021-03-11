@@ -17,18 +17,24 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth;
+import io.servicetalk.transport.api.ServerSslConfig;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslClientAuthMode;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import static io.servicetalk.transport.netty.internal.ClientSecurityConfig.toList;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Server security configuration.
+ * @deprecated Use {@link ServerSslConfig}.
  */
+@Deprecated
 public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
 
     /**
@@ -66,7 +72,7 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      * @param ciphers the ciphers to use.
      */
     public void ciphers(final Iterable<String> ciphers) {
-        this.ciphers = requireNonNull(ciphers);
+        this.ciphers = toList(ciphers);
     }
 
     /**
@@ -152,5 +158,53 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      */
     public ReadOnlyServerSecurityConfig asReadOnly() {
         return new ReadOnlyServerSecurityConfig(this);
+    }
+
+    /**
+     * Build a new {@link ServerSslConfig}.
+     * @return a new {@link ServerSslConfig}.
+     */
+    public ServerSslConfig asSslConfig() {
+        final ServerSslConfigBuilder builder;
+        if (keyManagerFactory != null) {
+            builder = new ServerSslConfigBuilder(keyManagerFactory);
+        } else if (keyCertChainSupplier != null) {
+            assert keySupplier != null;
+            builder = new ServerSslConfigBuilder(keyCertChainSupplier, keySupplier, keyPassword);
+        } else {
+            throw new IllegalStateException("required key material not set");
+        }
+
+        if (clientAuth == ClientAuth.OPTIONAL) {
+            builder.clientAuthMode(SslClientAuthMode.OPTIONAL);
+        } else if (clientAuth == ClientAuth.REQUIRE) {
+            builder.clientAuthMode(SslClientAuthMode.REQUIRE);
+        } else if (clientAuth == ClientAuth.NONE) {
+            builder.clientAuthMode(SslClientAuthMode.NONE);
+        } else {
+            throw new IllegalStateException("unsupported ClientAuth: " + clientAuth);
+        }
+
+        if (trustManagerFactory != null) {
+            builder.trustManager(trustManagerFactory);
+        } else if (trustCertChainSupplier != null) {
+            builder.trustManager(trustCertChainSupplier);
+        }
+
+        if (protocols != null) {
+            builder.sslProtocols(protocols);
+        }
+        if (ciphers != null) {
+            builder.ciphers(ciphers);
+        }
+        builder.sessionCacheSize(sessionCacheSize);
+        builder.sessionTimeout(sessionTimeout);
+
+        if (provider == SslProvider.JDK) {
+            builder.provider(io.servicetalk.transport.api.SslProvider.JDK);
+        } else if (provider == SslProvider.OPENSSL) {
+            builder.provider(io.servicetalk.transport.api.SslProvider.OPENSSL);
+        }
+        return builder.build();
     }
 }

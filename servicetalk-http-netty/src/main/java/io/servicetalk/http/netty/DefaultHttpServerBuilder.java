@@ -27,10 +27,12 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
@@ -56,20 +58,25 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         return this;
     }
 
+    @Deprecated
     @Override
     public HttpServerSecurityConfigurator secure() {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig);
+        return new DefaultHttpServerSecurityConfigurator(config -> {
+            this.config.tcpConfig().sslConfig(config);
             return DefaultHttpServerBuilder.this;
         });
     }
 
     @Override
-    public HttpServerSecurityConfigurator secure(final String... sniHostnames) {
-        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
-            config.tcpConfig().secure(securityConfig, sniHostnames);
-            return DefaultHttpServerBuilder.this;
-        });
+    public HttpServerBuilder sslConfig(final ServerSslConfig config) {
+        this.config.tcpConfig().sslConfig(config);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
+        this.config.tcpConfig().sslConfig(defaultConfig, sniMap);
+        return this;
     }
 
     @Override

@@ -45,6 +45,14 @@ public final class DefaultTestCerts {
     }
 
     /**
+     * Get the hostname contained within {@link #loadServerPem()} which should match for client hostname verification.
+     * @return hostname contained within {@link #loadServerPem()} which should match for client hostname verification.
+     */
+    public static String serverPemHostname() {
+        return "localhost";
+    }
+
+    /**
      * Load the certificate of the Certificate Authority used to sign the {@link #loadServerPem()}.
      *
      * @return an {@link InputStream} whose contents is the certificate of the Certificate Authority used to sign the

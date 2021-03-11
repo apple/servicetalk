@@ -52,7 +52,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -108,7 +110,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
-import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
+import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -835,8 +838,8 @@ public class ProtocolCompatibilityTest {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
         if (ssl) {
-            builder.secure().disableHostnameVerification().provider(OPENSSL)
-                    .trustManager(DefaultTestCerts::loadServerCAPem).commit();
+            builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                    .peerHost(serverPemHostname()).build());
         }
         // TODO(scott): remove after https://github.com/grpc/grpc-java/issues/7953 is resolved.
         builder.appendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
@@ -887,8 +890,8 @@ public class ProtocolCompatibilityTest {
                     }
                 });
         return ssl ?
-                serverBuilder.secure().provider(OPENSSL)
-                        .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey) :
+                serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
+                        DefaultTestCerts::loadServerKey).provider(OPENSSL).build()) :
                 serverBuilder;
     }
 

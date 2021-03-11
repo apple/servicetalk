@@ -15,7 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
+import io.servicetalk.transport.api.ClientSslConfig;
 
 import io.netty.handler.ssl.SslContext;
 
@@ -27,36 +27,16 @@ import static io.servicetalk.transport.netty.internal.SslContextFactory.forClien
 /**
  Read only view of {@link TcpClientConfig}.
  */
-public final class ReadOnlyTcpClientConfig
-        extends AbstractReadOnlyTcpConfig<ReadOnlyClientSecurityConfig, ReadOnlyTcpClientConfig> {
-
+public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<ClientSslConfig> {
     @Nullable
     private final SslContext sslContext;
     @Nullable
-    private final String sslHostnameVerificationAlgorithm;
-    @Nullable
-    private final String sslHostnameVerificationHost;
-    private final int sslHostnameVerificationPort;
+    private final ClientSslConfig sslConfig;
 
-    /**
-     * Copy constructor.
-     *
-     * @param from Source to copy from.
-     */
-    ReadOnlyTcpClientConfig(final TcpClientConfig from, final List<String> supportedAlpnProtocols) {
-        super(from, supportedAlpnProtocols.isEmpty() ? null : supportedAlpnProtocols.get(0));
-        final ReadOnlyClientSecurityConfig securityConfig = from.securityConfig();
-        if (securityConfig != null) {
-            sslContext = forClient(securityConfig, supportedAlpnProtocols);
-            sslHostnameVerificationAlgorithm = securityConfig.hostnameVerificationAlgorithm();
-            sslHostnameVerificationHost = securityConfig.hostnameVerificationHost();
-            sslHostnameVerificationPort = securityConfig.hostnameVerificationPort();
-        } else {
-            sslContext = null;
-            sslHostnameVerificationAlgorithm = null;
-            sslHostnameVerificationHost = null;
-            sslHostnameVerificationPort = -1;
-        }
+    ReadOnlyTcpClientConfig(final TcpClientConfig from) {
+        super(from);
+        sslConfig = from.sslConfig();
+        sslContext = sslConfig == null ? null : forClient(sslConfig);
     }
 
     @Nullable
@@ -66,33 +46,26 @@ public final class ReadOnlyTcpClientConfig
     }
 
     /**
-     * Returns the hostname verification algorithm, if any.
-     *
-     * @return hostname verification algorithm, {@code null} if none specified
+     * Get the preferred ALPN protocol. If a protocol sensitive decision must be made without knowing which protocol is
+     * negotiated (e.g. at the client level) this protocol can be used as a best guess.
+     * @return the preferred ALPN protocol.
      */
     @Nullable
-    public String sslHostnameVerificationAlgorithm() {
-        return sslHostnameVerificationAlgorithm;
+    public String preferredAlpnProtocol() {
+        if (sslConfig == null) {
+            return null;
+        }
+        List<String> alpnProtocols = sslConfig.alpnProtocols();
+        return alpnProtocols != null && !alpnProtocols.isEmpty() ? alpnProtocols.get(0) : null;
     }
 
     /**
-     * Get the non-authoritative name of the host.
+     * Get the {@link ClientSslConfig}.
      *
-     * @return the non-authoritative name of the host
+     * @return the {@link ClientSslConfig}, or {@code null} if SSL/TLS is not configured.
      */
     @Nullable
-    public String sslHostnameVerificationHost() {
-        return sslHostnameVerificationHost;
-    }
-
-    /**
-     * Get the non-authoritative port.
-     * <p>
-     * Only valid if {@link #sslHostnameVerificationHost()} is not {@code null}.
-     *
-     * @return the non-authoritative port
-     */
-    public int sslHostnameVerificationPort() {
-        return sslHostnameVerificationPort;
+    public ClientSslConfig sslConfig() {
+        return sslConfig;
     }
 }

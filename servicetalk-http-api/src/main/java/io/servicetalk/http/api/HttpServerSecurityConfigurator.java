@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ServerSecurityConfigurator;
+import io.servicetalk.transport.api.ServerSslConfig;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
@@ -24,7 +25,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A {@link ServerSecurityConfigurator} for {@link HttpServerBuilder}.
+ * @deprecated Use {@link HttpServerBuilder#sslConfig(ServerSslConfig)}.
  */
+@Deprecated
 public interface HttpServerSecurityConfigurator extends ServerSecurityConfigurator {
     @Override
     HttpServerSecurityConfigurator trustManager(Supplier<InputStream> trustCertChainSupplier);
