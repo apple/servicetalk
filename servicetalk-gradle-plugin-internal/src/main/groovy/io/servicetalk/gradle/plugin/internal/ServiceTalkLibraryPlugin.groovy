@@ -167,8 +167,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
 
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
-            "-XX:+AggressiveOpts", "-XX:+TieredCompilation", "-XX:+UseBiasedLocking",
-                "-XX:+OptimizeStringConcat", "-XX:+HeapDumpOnOutOfMemoryError"
+                "-XX:+HeapDumpOnOutOfMemoryError"
       }
     }
   }
