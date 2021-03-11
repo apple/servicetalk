@@ -630,18 +630,56 @@ abstract class HttpObjectDecoderTest {
 
     @Test
     public void multipleContentLengthHeaders() {
-        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Content-Length: 1" + "\r\n" +
                 "Content-Length: 2" + "\r\n" +
                 "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), startsWith("Multiple content-length values found"));
     }
 
     @Test
     public void multipleContentLengthHeaderValues() {
-        assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
                 "Host: servicetalk.io" + "\r\n" +
                 "Content-Length: 1, 2" + "\r\n" +
                 "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), startsWith("Multiple content-length values found"));
+    }
+
+    @Test
+    public void signedPositiveContentLengthHeaderValues() {
+        malformedContentLengthHeaderValue("+1");
+    }
+
+    @Test
+    public void signedNegativeContentLengthHeaderValues() {
+        malformedContentLengthHeaderValue("-1");
+    }
+
+    @Test
+    public void malformedContentLengthHeaderValueWithSP() {
+        malformedContentLengthHeaderValue("1 2");
+    }
+
+    @Test
+    public void malformedContentLengthHeaderValueWithLetter() {
+        malformedContentLengthHeaderValue("1a2");
+    }
+
+    @Test
+    public void malformedContentLengthHeaderValueWithSymbol() {
+        malformedContentLengthHeaderValue("1-2");
+    }
+
+    public void malformedContentLengthHeaderValue(String value) {
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(startLineForContent() + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Content-Length: " + value + "\r\n" +
+                "Connection: keep-alive" + "\r\n\r\n"));
+        assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+        assertThat(e.getCause().getMessage(), startsWith("Malformed 'content-length' value"));
     }
 }

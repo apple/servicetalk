@@ -885,7 +885,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static long getContentLength(final HttpMetaData message) {
         final HttpHeaders headers = message.headers();
-        final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH), headers::values);
+        final long contentLength = HeaderUtils.contentLength(headers.valuesIterator(CONTENT_LENGTH));
         if (contentLength >= 0) {
             return contentLength;
         }
