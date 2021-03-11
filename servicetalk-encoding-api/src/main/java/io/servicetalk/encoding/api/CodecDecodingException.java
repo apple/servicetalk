@@ -47,8 +47,8 @@ public final class CodecDecodingException extends RuntimeException {
     }
 
     /**
-     * Returns the codec in use when this Exception occurred.
-     * @return the codec in use when this Exception occurred.
+     * Returns the codec in use when this exception occurred.
+     * @return the codec in use when this exception occurred.
      */
     public ContentCodec codec() {
         return codec;

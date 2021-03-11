@@ -88,6 +88,11 @@ public class NettyChannelContentCodecTest {
         testEncode(DEFAULT_ALLOCATOR, 10, 0);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testEncodeWithOffsetAndOverflowLength() {
+        testEncode(DEFAULT_ALLOCATOR, 1023, 0);
+    }
+
     @Test
     public void testEncodeWithOffsetAndReadOnlyBuffer() {
         testEncode(DEFAULT_RO_ALLOCATOR, 10);

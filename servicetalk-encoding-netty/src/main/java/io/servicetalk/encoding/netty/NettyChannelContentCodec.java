@@ -42,6 +42,7 @@ import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLO
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelContentCodec extends AbstractContentCodec {
@@ -76,8 +77,9 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         }
 
         final int availableBytes = src.readableBytes() - offset;
-        if (length > availableBytes || length < 0) {
-            throw new IllegalArgumentException("Invalid length: " + length + " (expected 0 - " + availableBytes + ")");
+        if (length > availableBytes || length < 1) {
+            final String expected = availableBytes == 1 ? valueOf(availableBytes) : "1 - " + availableBytes;
+            throw new IllegalArgumentException("Invalid length: " + length + " (expected " + expected + ")");
         }
 
         final MessageToByteEncoder<ByteBuf> encoder = encoderSupplier.get();
@@ -198,8 +200,9 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         }
 
         final int availableBytes = src.readableBytes() - offset;
-        if (length > availableBytes || length < 0) {
-            throw new IllegalArgumentException("Invalid length: " + length + " (expected 0 - " + availableBytes + ")");
+        if (length > availableBytes || length < 1) {
+            final String expected = availableBytes == 1 ? valueOf(availableBytes) : "1 - " + availableBytes;
+            throw new IllegalArgumentException("Invalid length: " + length + " (expected " + expected + ")");
         }
 
         final ByteToMessageDecoder decoder = decoderSupplier.get();
