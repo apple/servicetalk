@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.CodecDecodingException;
 import io.servicetalk.encoding.api.CodecEncodingException;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -63,7 +64,6 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        requireNonNull(src);
         requireNonNull(allocator);
 
         final Buffer slice = src.slice(src.readerIndex() + offset, length);
@@ -93,7 +93,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         } catch (CodecEncodingException e) {
             throw e;
         } catch (Throwable e) {
-            throw new CodecEncodingException(this, e, "");
+            throw wrapEncodingException(this, e);
         } finally {
             safeCleanup(channel);
         }
@@ -153,7 +153,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                                 subscription.request(1);
                             }
                         } catch (Throwable t) {
-                            throw new CodecEncodingException(NettyChannelContentCodec.this, t, "");
+                            throw wrapEncodingException(NettyChannelContentCodec.this, t);
                         }
                     }
 
@@ -168,7 +168,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                         try {
                             cleanup(channel);
                         } catch (Throwable t) {
-                            subscriber.onError(new CodecEncodingException(NettyChannelContentCodec.this, t, ""));
+                            subscriber.onError(wrapEncodingException(NettyChannelContentCodec.this, t));
                             return;
                         }
 
@@ -179,7 +179,6 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-        requireNonNull(src);
         requireNonNull(allocator);
 
         final Buffer slice = src.slice(src.readerIndex() + offset, length);
@@ -207,7 +206,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         } catch (CodecDecodingException e) {
             throw e;
         } catch (Throwable e) {
-            throw new CodecDecodingException(this, e, "");
+            throw wrapDecodingException(this, e);
         } finally {
             safeCleanup(channel);
         }
@@ -235,7 +234,8 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
             public void onNext(@Nullable final Buffer src) {
                 assert subscription != null;
                 if (!channel.isOpen()) {
-                    throw new IllegalStateException("Stream decoder previously closed but more input arrived");
+                    throw new CodecDecodingException(NettyChannelContentCodec.this,
+                            "Stream decoder previously closed but more input arrived");
                 }
 
                 if (src == null) {
@@ -254,7 +254,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                         subscription.request(1);
                     }
                 } catch (Throwable e) {
-                    throw new CodecDecodingException(NettyChannelContentCodec.this, e, "");
+                    throw wrapDecodingException(NettyChannelContentCodec.this, e);
                 }
             }
 
@@ -269,7 +269,7 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
                 try {
                     cleanup(channel);
                 } catch (Throwable t) {
-                    subscriber.onError(new CodecDecodingException(NettyChannelContentCodec.this, t, ""));
+                    subscriber.onError(wrapDecodingException(NettyChannelContentCodec.this, t));
                     return;
                 }
 
@@ -347,5 +347,13 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         } catch (Throwable t) {
             LOGGER.error("Error while closing embedded channel", t);
         }
+    }
+
+    private static CodecEncodingException wrapEncodingException(final ContentCodec codec, final Throwable cause) {
+        return new CodecEncodingException(codec, "Unexpected exception during encoding", cause);
+    }
+
+    private static CodecDecodingException wrapDecodingException(final ContentCodec codec, final Throwable cause) {
+        return new CodecDecodingException(codec, "Unexpected exception during decoding", cause);
     }
 }

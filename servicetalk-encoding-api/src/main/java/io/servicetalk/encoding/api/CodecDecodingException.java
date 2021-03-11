@@ -39,16 +39,17 @@ public final class CodecDecodingException extends RuntimeException {
      * New instance.
      *
      * @param codec the codec in use.
-     * @param cause the cause of the exception.
      * @param message the reason of this exception.
+     * @param cause the cause of the exception.
      */
-    public CodecDecodingException(final ContentCodec codec, final Throwable cause, final String message) {
+    public CodecDecodingException(final ContentCodec codec, final String message, final Throwable cause) {
         super(message, cause);
         this.codec = codec;
     }
 
     /**
      * Returns the codec in use when this exception occurred.
+     *
      * @return the codec in use when this exception occurred.
      */
     public ContentCodec codec() {
