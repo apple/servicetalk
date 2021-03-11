@@ -130,7 +130,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * <p>
      * The transformation is not expected to change the presence of trailers in the message body. For example behavior
      * is undefined if a {@link HttpHeaders} object is inserted to or removed from to the returned {@link Publisher}.
-     * To add trailers use {@link #transform(TrailersTransformer)}.
+     * To add or clear trailers use {@link #transform(TrailersTransformer)}.
      * @param transformer Responsible for transforming the message-body.
      * @return {@code this}.
      */
@@ -138,7 +138,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s,
-     * with access to the trailers.
+     * with access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a>s.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}

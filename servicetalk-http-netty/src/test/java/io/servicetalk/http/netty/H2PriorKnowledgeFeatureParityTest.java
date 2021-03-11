@@ -166,6 +166,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
@@ -442,13 +443,13 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientSendsLargerContentLength() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         clientSendsInvalidContentLength(1, false);
     }
 
     @Test
     public void clientSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         clientSendsInvalidContentLength(1, true);
     }
 
@@ -463,6 +464,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private void clientSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -487,12 +489,9 @@ public class H2PriorKnowledgeFeatureParityTest {
             if (h2PriorKnowledge) {
                 assertThrows(Http2Exception.H2StreamResetException.class, () -> client.request(request));
             } else {
-                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
-                try {
+                try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     reservedConn.request(request);
                     assertThrows(ClosedChannelException.class, () -> reservedConn.request(client.get("/")));
-                } finally {
-                    safeRelease(reservedConn);
                 }
             }
         }
@@ -500,13 +499,13 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void serverSendsLargerContentLength() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         serverSendsInvalidContentLength(1, false);
     }
 
     @Test
     public void serverSendsLargerContentLengthTrailers() throws Exception {
-        assumeTrue(h2PriorKnowledge); // http/1.x will timeout waiting for more payload.
+        assumeTrue("HTTP/1.x will timeout waiting for more payload", h2PriorKnowledge);
         serverSendsInvalidContentLength(1, true);
     }
 
@@ -521,13 +520,17 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     private void serverSendsInvalidContentLength(int contentLengthAdder, boolean addTrailers) throws Exception {
+        assumeFalse("HTTP/1.1 does not support Content-Length with trailers", !h2PriorKnowledge && addTrailers);
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return delegate().handle(ctx, request, responseFactory).flatMap(resp ->
-                        resp.toResponse().map(aggResp -> {
+                return delegate().handle(ctx, request, responseFactory).flatMap(resp -> resp.transformMessageBody(
+                        // Filter out trailers when we do not expect them. Because we echo the payload body publisher
+                        // of the request that comes from network, it always has empty trailers. Presence of those is
+                        // honored during "streaming -> aggregated -> streaming" conversion.
+                        pub -> addTrailers ? pub : pub.filter(i -> i instanceof Buffer)).toResponse().map(aggResp -> {
                             aggResp.headers().remove(TRANSFER_ENCODING);
                             aggResp.headers().set(CONTENT_LENGTH,
                                     String.valueOf(aggResp.payloadBody().readableBytes() + contentLengthAdder));
@@ -547,12 +550,9 @@ public class H2PriorKnowledgeFeatureParityTest {
                 assertThat(assertThrows(Throwable.class, () -> client.request(request)),
                         either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
             } else {
-                ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request);
-                try {
+                try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     reservedConn.request(request);
                     assertThrows(DecoderException.class, () -> reservedConn.request(client.get("/")));
-                } finally {
-                    safeRelease(reservedConn);
                 }
             }
         }
@@ -1017,7 +1017,7 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientRespectsSettingsFrame() throws Exception {
-        assumeTrue(h2PriorKnowledge);   // only h2 supports settings frames
+        assumeTrue("Only HTTP/2 supports SETTINGS frames", h2PriorKnowledge);
 
         int expectedMaxConcurrent = 1;
         BlockingQueue<FilterableStreamingHttpConnection> connectionQueue = new LinkedBlockingQueue<>();
@@ -1254,7 +1254,7 @@ public class H2PriorKnowledgeFeatureParityTest {
                     } else {
                         resp = responseFactory.ok();
                     }
-                    resp = resp.transformMessageBody(pub -> request.messageBody());
+                    resp = resp.transformMessageBody(pub -> pub.ignoreElements().merge(request.messageBody()));
                     CharSequence contentType = request.headers().get(CONTENT_TYPE);
                     if (contentType != null) {
                         resp.headers().add(CONTENT_TYPE, contentType);
@@ -1552,15 +1552,6 @@ public class H2PriorKnowledgeFeatureParityTest {
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
             trailers.add(trailerName, Integer.toString(contentSize.get()));
             return trailers;
-        }
-    }
-
-    @Nullable
-    private static void safeRelease(ReservedBlockingHttpConnection connection) {
-        try {
-            connection.release();
-        } catch (Throwable ignored) {
-            // ignore
         }
     }
 }

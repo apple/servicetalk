@@ -23,6 +23,7 @@ import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -81,26 +82,16 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod)
+        return canAddContentLength(response) && responseMayHaveContent(response.status().code(), requestMethod)
                 // HEAD requests should either have the content-length already set (= what GET will return) or
                 // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
-                && !isHeadResponse(requestMethod);
-    }
-
-    static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
-        return !hasContentHeaders(request.headers()) && clientMaySendPayloadBodyFor(request.method());
+                && !HEAD.equals(requestMethod);
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
         return !TRACE.equals(requestMethod);
-    }
-
-    static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
-                                                  final HttpRequestMethod requestMethod) {
-        return !hasContentHeaders(response.headers()) &&
-                canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod);
     }
 
     static boolean canAddResponseTransferEncodingProtocol(final int statusCode,
@@ -112,8 +103,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return !hasContentHeaders(metadata.headers()) &&
-                isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
+        return isSafeToAggregate(metadata) && (metadata.version().major() > 1 || !mayHaveTrailers(metadata)) &&
+                !hasContentHeaders(metadata.headers());
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
@@ -144,8 +135,8 @@ final class HeaderUtils {
         return POST.equals(requestMethod) || PUT.equals(requestMethod) || PATCH.equals(requestMethod);
     }
 
-    static boolean shouldAddZeroContentLength(final int statusCode,
-                                              final HttpRequestMethod requestMethod) {
+    static boolean responseMayHaveContent(final int statusCode,
+                                          final HttpRequestMethod requestMethod) {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -179,10 +170,6 @@ final class HeaderUtils {
                 return !sawHeaders;
             }
         };
-    }
-
-    private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
-        return HEAD.equals(requestMethod);
     }
 
     private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
@@ -240,21 +227,31 @@ final class HeaderUtils {
         });
     }
 
-    static StreamingHttpResponse addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
-                                                                        final HttpRequestMethod requestMethod) {
-        if (canAddResponseTransferEncoding(response, requestMethod)) {
+    static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
+                                                       final HttpRequestMethod requestMethod) {
+        if (canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod) &&
+                canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
-        return response;
     }
 
     static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
-        if (canAddRequestTransferEncoding(request)) {
+        if (clientMaySendPayloadBodyFor(request.method()) && canAddTransferEncodingChunked(request)) {
             request.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
     }
 
-    private static boolean hasContentHeaders(final HttpHeaders headers) {
+    private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
+        final HttpHeaders headers = metaData.headers();
+        return ((chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)) ||
+                !headers.contains(CONTENT_LENGTH)) && !isTransferEncodingChunked(headers);
+    }
+
+    private static boolean chunkedSupported(final HttpProtocolVersion version) {
+        return version.major() == 1 && version.minor() > 0;
+    }
+
+    static boolean hasContentHeaders(final HttpHeaders headers) {
         return headers.contains(CONTENT_LENGTH) || isTransferEncodingChunked(headers);
     }
 

@@ -175,7 +175,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s,
-     * with access to the trailers.
+     * with access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a>s.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}

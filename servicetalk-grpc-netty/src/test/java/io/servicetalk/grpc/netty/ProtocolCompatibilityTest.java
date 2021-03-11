@@ -862,6 +862,20 @@ public class ProtocolCompatibilityTest {
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode, final boolean ssl) {
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
+                // TODO(scott): remove after https://github.com/grpc/grpc-java/issues/7953 is resolved.
+                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory responseFactory) {
+                        return delegate().handle(ctx, request, responseFactory).map(response -> {
+                            // Force chunked transfer encoding as a workaround for grpc-java bug.
+                            response.headers().remove(CONTENT_LENGTH);
+                            response.headers().set(TRANSFER_ENCODING, CHUNKED);
+                            return response;
+                        });
+                    }
+                })
                 .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

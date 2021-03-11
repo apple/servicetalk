@@ -49,7 +49,7 @@ import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
 import static io.servicetalk.http.netty.HeaderUtils.contentLength;
-import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -171,13 +171,13 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     h2Headers::getAll);
             if (contentLength < 0) {
                 if (fullResponse) {
-                    if (shouldAddZeroContentLength(httpStatus.code(), method)) {
+                    if (responseMayHaveContent(statusCode, method)) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
                     }
                 } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {
                     h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
                 }
-            } else if (!shouldAddZeroContentLength(statusCode, method)) {
+            } else if (!responseMayHaveContent(statusCode, method)) {
                 throw new IllegalArgumentException("content-length (" + contentLength +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");

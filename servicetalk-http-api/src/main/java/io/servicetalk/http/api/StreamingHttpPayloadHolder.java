@@ -38,9 +38,7 @@ import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
-import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -52,7 +50,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
-    private final boolean h1TrailersSupported;
     @Nullable
     private Publisher<?> messageBody;
 
@@ -64,7 +61,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(messageBodyInfo);
         this.headersFactory = requireNonNull(headersFactory);
-        this.h1TrailersSupported = h1TrailersSupported(version);
         this.messageBody = messageBody;
     }
 
@@ -128,10 +124,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
-        if (h1TrailersSupported) {
-            // This transform adds trailers, and for http/1.1 we need `transfer-encoding: chunked` not `content-length`.
-            addChunkedEncoding(headers);
-        }
         if (messageBody == null) {
             messageBody = from(trailersTransformer.payloadComplete(trailersTransformer.newState(),
                     headersFactory.newEmptyTrailers()));
