@@ -171,7 +171,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     h2Headers::getAll);
             if (contentLength < 0) {
                 if (fullResponse) {
-                    if (responseMayHaveContent(httpStatus.code(), method)) {
+                    if (responseMayHaveContent(statusCode, method)) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
                     }
                 } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {

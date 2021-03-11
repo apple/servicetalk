@@ -103,8 +103,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return !hasContentHeaders(metadata.headers()) && isSafeToAggregate(metadata) &&
-                (metadata.version().major() > 1 || !mayHaveTrailers(metadata));
+        return isSafeToAggregate(metadata) && (metadata.version().major() > 1 || !mayHaveTrailers(metadata)) &&
+                !hasContentHeaders(metadata.headers());
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
@@ -243,8 +243,8 @@ final class HeaderUtils {
 
     private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
         final HttpHeaders headers = metaData.headers();
-        return !isTransferEncodingChunked(headers) && (!headers.contains(CONTENT_LENGTH) ||
-                (chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)));
+        return ((chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)) ||
+                !headers.contains(CONTENT_LENGTH)) && !isTransferEncodingChunked(headers);
     }
 
     private static boolean chunkedSupported(final HttpProtocolVersion version) {
