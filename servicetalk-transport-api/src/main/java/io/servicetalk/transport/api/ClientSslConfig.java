@@ -60,7 +60,7 @@ public interface ClientSslConfig extends SslConfig {
      *
      * @return The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name, or {@code null} to not
      * enable SNI.
-     * @see SSLParameters#setServerNames(List) 
+     * @see SSLParameters#setServerNames(List)
      */
     @Nullable
     String sniHostname();
