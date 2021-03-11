@@ -16,6 +16,6 @@
 
 name: servicetalk-client-api
 title: Client API
-version: '0.38'
+version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc
