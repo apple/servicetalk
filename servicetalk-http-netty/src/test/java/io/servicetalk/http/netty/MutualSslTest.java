@@ -28,15 +28,15 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.FromDataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,49 +53,30 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(Parameterized.class)
+@RunWith(Theories.class)
 public class MutualSslTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final SslProvider serverSslProvider;
-    private final SslProvider clientSslProvider;
+    @DataPoints("serverSslProvider")
+    public static final SslProvider[] serverSslProvider = new SslProvider[] {JDK, OPENSSL};
+    @DataPoints("clientSslProvider")
+    public static final SslProvider[] clientSslProvider = new SslProvider[] {JDK, OPENSSL};
+    @DataPoints("serverListenOptions")
     @SuppressWarnings("rawtypes")
-    private final Map<SocketOption, Object> serverListenOptions;
+    public static final List<Map<SocketOption, Object>> serverListenOptions =
+            asList(emptyMap(), serverTcpFastOpenOptions());
+    @DataPoints("clientOptions")
     @SuppressWarnings("rawtypes")
-    private final Map<SocketOption, Object> clientOptions;
+    public static final List<Map<SocketOption, Object>> clientOptions = asList(emptyMap(), clientTcpFastOpenOptions());
 
-    public MutualSslTest(final SslProvider serverSslProvider, final SslProvider clientSslProvider,
-                         @SuppressWarnings("rawtypes") final Map<SocketOption, Object> serverListenOptions,
-                         @SuppressWarnings("rawtypes") final Map<SocketOption, Object> clientOptions) {
-        this.serverSslProvider = serverSslProvider;
-        this.clientSslProvider = clientSslProvider;
-        this.serverListenOptions = serverListenOptions;
-        this.clientOptions = clientOptions;
-    }
-
-    @Parameterized.Parameters(name = "{index}: server={0} client={1} server opts={2} client opts={3}")
-    public static Collection<Object[]> sslProviders() {
-        final SslProvider[] providers = new SslProvider[] {JDK, OPENSSL};
-        @SuppressWarnings("rawtypes")
-        final List<Map<SocketOption, Object>> serverOpts = asList(emptyMap(), serverTcpFastOpenOptions());
-        @SuppressWarnings("rawtypes")
-        final List<Map<SocketOption, Object>> clientOpts = asList(emptyMap(), clientTcpFastOpenOptions());
-        final List<Object[]> results = new ArrayList<>(
-                providers.length * 2 * serverOpts.size() * clientOpts.size());
-        for (SslProvider serverProvider : providers) {
-            for (SslProvider clientProvider : providers) {
-                for (@SuppressWarnings("rawtypes") Map<SocketOption, Object> serverOpt : serverOpts) {
-                    for (@SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOpt : clientOpts) {
-                        results.add(new Object[] {serverProvider, clientProvider, serverOpt, clientOpt});
-                    }
-                }
-            }
-        }
-        return results;
-    }
-
-    @Test
-    public void mutualSsl() throws Exception {
+    @Theory
+    public void mutualSsl(@FromDataPoints("serverSslProvider") SslProvider serverSslProvider,
+                          @FromDataPoints("clientSslProvider") SslProvider clientSslProvider,
+                          @SuppressWarnings("rawtypes")
+                          @FromDataPoints("serverListenOptions") Map<SocketOption, Object> serverListenOptions,
+                          @SuppressWarnings("rawtypes")
+                          @FromDataPoints("serverListenOptions") Map<SocketOption, Object> clientOptions)
+            throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
@@ -108,7 +89,7 @@ public class MutualSslTest {
         }
         try (ServerContext serverContext = serverBuilder.listenBlockingAndAwait(
                 (ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = newClientBuilder(serverContext)
+             BlockingHttpClient client = newClientBuilder(serverContext, clientOptions)
                      .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .provider(clientSslProvider).peerHost(serverPemHostname())
                              .keyManager(DefaultTestCerts::loadClientPem, DefaultTestCerts::loadClientKey).build())
@@ -118,7 +99,7 @@ public class MutualSslTest {
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
-            ServerContext serverContext) {
+            ServerContext serverContext, @SuppressWarnings("rawtypes") Map<SocketOption, Object> clientOptions) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext));
         for (@SuppressWarnings("rawtypes") Entry<SocketOption, Object> entry : clientOptions.entrySet()) {
