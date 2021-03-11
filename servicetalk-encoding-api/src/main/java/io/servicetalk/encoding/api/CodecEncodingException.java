@@ -30,10 +30,10 @@ public final class CodecEncodingException extends RuntimeException {
      * New instance.
      *
      * @param codec the codec in use.
-     * @param reason the reason of this exception.
+     * @param message the reason of this exception.
      */
-    public CodecEncodingException(final ContentCodec codec, final String reason) {
-        super(reason);
+    public CodecEncodingException(final ContentCodec codec, final String message) {
+        super(message);
         this.codec = requireNonNull(codec);
     }
 
@@ -42,9 +42,10 @@ public final class CodecEncodingException extends RuntimeException {
      *
      * @param codec the codec in use.
      * @param cause the cause of the exception.
+     * @param message the reason of this exception.
      */
-    public CodecEncodingException(final ContentCodec codec, final Throwable cause) {
-        super(cause);
+    public CodecEncodingException(final ContentCodec codec, final Throwable cause, final String message) {
+        super(message, cause);
         this.codec = requireNonNull(codec);
     }
 

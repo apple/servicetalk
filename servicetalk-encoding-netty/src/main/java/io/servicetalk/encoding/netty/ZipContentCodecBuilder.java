@@ -33,6 +33,10 @@ public abstract class ZipContentCodecBuilder {
     private int maxChunkSize = DEFAULT_MAX_CHUNK_SIZE;
     private int compressionLevel = 6;
 
+    ZipContentCodecBuilder() {
+        // pkg private
+    }
+
     /**
      * Sets the compression level for this codec's encoder.
      * @param compressionLevel 1 yields the fastest compression and 9 yields the best compression,

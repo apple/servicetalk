@@ -21,6 +21,7 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.encoding.api.CodecDecodingException;
+import io.servicetalk.encoding.api.CodecEncodingException;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import org.junit.Rule;
@@ -83,12 +84,12 @@ public class NettyChannelContentCodecTest {
         testEncode(DEFAULT_ALLOCATOR, 10);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = CodecEncodingException.class)
     public void testEncodeWithOffsetAndZeroLength() {
         testEncode(DEFAULT_ALLOCATOR, 10, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = CodecEncodingException.class)
     public void testEncodeWithOffsetAndOverflowLength() {
         testEncode(DEFAULT_ALLOCATOR, 1023, 0);
     }
