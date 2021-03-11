@@ -172,7 +172,14 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s,
-     * with access to the trailers.
+     * with access to the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a>s.
+     * <p>
+     * Trailers are supported only when the {@link HttpProtocolVersion#HTTP_1_1 HTTP/1.1} version is used or above.
+     * HTTP/1.1 uses <a href="https://tools.ietf.org/html/rfc7230#section-4.1">Chunked Transfer Coding</a> to deliver
+     * trailers that does not support {@link HttpHeaderNames#CONTENT_LENGTH Content-Length} header. When trailers are
+     * going to be present, the {@link HttpHeaderNames#CONTENT_LENGTH Content-Length} header must be removed.
+     * {@link HttpProtocolVersion#HTTP_2_0 HTTP/2} version and above support trailers with
+     * {@link HttpHeaderNames#CONTENT_LENGTH Content-Length} header.
      * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
