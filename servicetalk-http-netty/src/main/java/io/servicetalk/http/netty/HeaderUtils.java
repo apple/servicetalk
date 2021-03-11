@@ -53,7 +53,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static java.lang.Character.isDigit;
 import static java.lang.Long.parseLong;
 
 final class HeaderUtils {
@@ -304,7 +303,8 @@ final class HeaderUtils {
         }
 
         char firstChar = firstValue.charAt(0);
-        if (!isDigit(firstChar)) {   // prevent signed content-length values: -digit or +digit
+        if (firstChar < '0' || firstChar > '9') {   // allow numbers only in ASCII or ISO-8859-1 encoding
+            // prevent signed content-length values: -digit or +digit
             throw malformedCL(firstValue);
         }
         final long value;
