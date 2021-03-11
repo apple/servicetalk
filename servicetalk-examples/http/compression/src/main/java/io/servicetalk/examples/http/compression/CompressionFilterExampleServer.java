@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.compression;
 
 import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
 import io.servicetalk.http.netty.HttpServers;
@@ -42,21 +43,21 @@ public final class CompressionFilterExampleServer {
             Collections.unmodifiableList(Arrays.asList(
                     ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
-                    ContentCodings.identity()
+                    Identity.identity()
             ));
 
-     /**
+    /**
      * Supported encodings for the response in preferred order. These will be matched against the list of encodings
       * provided by the client to choose a mutually agreeable encoding.
      */
     private static final List<ContentCodec> SUPPORTED_RESP_ENCODINGS =
-             Collections.unmodifiableList(Arrays.asList(
-                     // For the purposes of this example we disable GZip for the response compression and use the client's second
-                     // choice (deflate) to demonstrate that negotiation of compression algorithm is handled correctly.
-                     /* ContentCodings.gzipDefault(), */
-                     ContentCodings.deflateDefault(),
-                     ContentCodings.identity()
-             ));
+            Collections.unmodifiableList(Arrays.asList(
+                    // For the purposes of this example we disable GZip for the response compression and use the client's second
+                    // choice (deflate) to demonstrate that negotiation of compression algorithm is handled correctly.
+                    /* ContentCodings.gzipDefault(), */
+                    ContentCodings.deflateDefault(),
+                    Identity.identity()
+            ));
 
     public static void main(String... args) throws Exception {
         HttpServers.forPort(8080)

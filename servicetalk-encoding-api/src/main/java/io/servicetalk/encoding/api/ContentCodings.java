@@ -25,7 +25,7 @@ import io.servicetalk.encoding.api.DefaultContentCodecBuilder.GzipContentCodecBu
 @Deprecated
 public final class ContentCodings {
 
-    private static final ContentCodec IDENTITY = ContentCodec.IDENTITY;
+    private static final ContentCodec IDENTITY = Identity.identity();
 
     private static final ContentCodec DEFAULT_GZIP = gzip().build();
 

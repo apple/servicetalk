@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
@@ -46,7 +46,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
     @Nullable
     private FilterFactory filterFactory;
 
-    private List<ContentCodec> supportedCodings = singletonList(IDENTITY);
+    private List<ContentCodec> supportedCodings = singletonList(identity());
 
     /**
      * Create a new client that follows the specified <a href="https://www.grpc.io">gRPC</a>

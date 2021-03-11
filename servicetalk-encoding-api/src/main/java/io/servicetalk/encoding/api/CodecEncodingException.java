@@ -15,6 +15,8 @@
  */
 package io.servicetalk.encoding.api;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Exception thrown when something went wrong during encoding.
  */
@@ -22,12 +24,35 @@ public final class CodecEncodingException extends RuntimeException {
 
     private static final long serialVersionUID = -3565785637300291924L;
 
+    private final ContentCodec codec;
+
     /**
      * New instance.
      *
+     * @param codec the codec in use.
      * @param reason the reason of this exception.
      */
-    public CodecEncodingException(String reason) {
+    public CodecEncodingException(final ContentCodec codec, final String reason) {
         super(reason);
+        this.codec = requireNonNull(codec);
+    }
+
+    /**
+     * New instance.
+     *
+     * @param codec the codec in use.
+     * @param cause the cause of the exception.
+     */
+    public CodecEncodingException(final ContentCodec codec, final Throwable cause) {
+        super(cause);
+        this.codec = requireNonNull(codec);
+    }
+
+    /**
+     * Returns the codec in use when this Exception occurred.
+     * @return the codec in use when this Exception occurred.
+     */
+    public ContentCodec codec() {
+        return codec;
     }
 }

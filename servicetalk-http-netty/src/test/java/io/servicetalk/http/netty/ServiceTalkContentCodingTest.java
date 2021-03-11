@@ -52,7 +52,7 @@ import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.ContentCodec.IDENTITY;
+import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
@@ -101,12 +101,12 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                                 .map((String::trim)).collect(toList());
 
                         final List<String> expectedReqAcceptedEncodings = clientSupportedEncodings.stream()
-                                .filter((enc) -> enc != IDENTITY)
+                                .filter((enc) -> enc != identity())
                                 .map((ContentCodec::name))
                                 .map(CharSequence::toString)
                                 .collect(toList());
 
-                        if (reqEncoding != IDENTITY) {
+                        if (reqEncoding != identity()) {
                             assertTrue("Request encoding should be present in the request headers",
                                     contentEquals(reqEncoding.name(),
                                             request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")));
@@ -144,7 +144,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                         List<ContentCodec> server = scenario.serverSupported;
                         List<ContentCodec> client = scenario.clientSupported;
 
-                        ContentCodec expected = IDENTITY;
+                        ContentCodec expected = identity();
                         for (ContentCodec codec : client) {
                             if (server.contains(codec)) {
                                 expected = codec;
@@ -154,7 +154,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
                         try {
                             assertEquals(expected, encodingFor(client, response.headers()
-                                    .get(CONTENT_ENCODING, IDENTITY.name())));
+                                    .get(CONTENT_ENCODING, identity().name())));
                         } catch (Throwable t) {
                             errors.add(t);
                             throw t;
@@ -226,7 +226,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
     protected void assertResponse(final StreamingHttpResponse response) throws Throwable {
         verifyNoErrors();
 
-        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, IDENTITY.name()).toString());
+        assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
 
         String responsePayload = response.payloadBody(textDeserializer()).collect(StringBuilder::new,
                 StringBuilder::append).toFuture().get().toString();
@@ -259,7 +259,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         final List<ContentCodec> serverSupportedEncodings = scenario.serverSupported;
 
         if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-            assertEquals(IDENTITY.name().toString(), contentEncodingValue);
+            assertEquals(identity().name().toString(), contentEncodingValue);
         } else {
             assertNotNull("Response encoding not in the client supported list " +
                     "[" + clientSupportedEncodings + "]", encodingFor(clientSupportedEncodings, contentEncodingValue));

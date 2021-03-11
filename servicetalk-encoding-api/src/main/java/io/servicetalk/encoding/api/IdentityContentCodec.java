@@ -19,12 +19,14 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.
  */
-public final class IdentityContentCodec implements ContentCodec {
+final class IdentityContentCodec implements ContentCodec {
 
-    private static final CharSequence NAME = "identity";
+    private static final CharSequence NAME = newAsciiString("identity");
 
     @Override
     public CharSequence name() {

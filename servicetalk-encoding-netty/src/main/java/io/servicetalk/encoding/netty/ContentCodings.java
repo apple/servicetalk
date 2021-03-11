@@ -30,14 +30,6 @@ public final class ContentCodings {
     }
 
     /**
-     * Returns the default, always supported 'identity' {@link ContentCodec}.
-     * @return the default, always supported 'identity' {@link ContentCodec}
-     */
-    public static ContentCodec identity() {
-        return ContentCodec.IDENTITY;
-    }
-
-    /**
      * Returns the default GZIP {@link ContentCodec}.
      * @return default GZIP based {@link ContentCodec}
      */

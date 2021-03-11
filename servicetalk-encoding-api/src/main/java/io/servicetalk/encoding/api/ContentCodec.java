@@ -27,11 +27,6 @@ import io.servicetalk.concurrent.api.Publisher;
 public interface ContentCodec {
 
     /**
-     * Returns the default, always supported NOOP 'identity' {@link ContentCodec}.
-     */
-    ContentCodec IDENTITY = new IdentityContentCodec();
-
-    /**
      * A unique textual representation for the coding.
      *
      * @return a unique textual representation for the coding.

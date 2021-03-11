@@ -17,6 +17,7 @@ package io.servicetalk.examples.grpc.compression;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
@@ -46,7 +47,7 @@ public class CompressionExampleServer {
             Collections.unmodifiableList(Arrays.asList(
                     ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
-                    ContentCodings.identity()
+                    Identity.identity()
             ));
 
     public static void main(String... args) throws Exception {

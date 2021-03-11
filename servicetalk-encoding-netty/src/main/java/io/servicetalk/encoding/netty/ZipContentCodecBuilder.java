@@ -35,29 +35,17 @@ public abstract class ZipContentCodecBuilder {
 
     /**
      * Sets the compression level for this codec's encoder.
-     * @param compressionLevel 1 yields the fastest compression and 9 yields the best compression.
+     * @param compressionLevel 1 yields the fastest compression and 9 yields the best compression,
      * 0 means no compression.
      * @return {@code this}
      */
     public final ZipContentCodecBuilder withCompressionLevel(final int compressionLevel) {
+        if (compressionLevel < 0 || compressionLevel > 9) {
+            throw new IllegalArgumentException("compressionLevel: " + compressionLevel + " (expected: 0-9)");
+        }
+
         this.compressionLevel = compressionLevel;
         return this;
-    }
-
-    /**
-     * Returns the compression level for this codec.
-     * @return return the compression level set for this codec.
-     */
-    protected final int compressionLevel() {
-        return compressionLevel;
-    }
-
-    /**
-     * Returns the max chunk size allowed to inflate during decoding.
-     * @return Returns the max chunk size allowed to inflate during decoding.
-     */
-    protected final int maxChunkSize() {
-        return maxChunkSize;
     }
 
     /**
@@ -78,7 +66,23 @@ public abstract class ZipContentCodecBuilder {
      * Build and return an instance of the {@link ContentCodec} with the configuration of the builder.
      * @return the {@link ContentCodec} with the configuration of the builder
      */
-    abstract ContentCodec build();
+    public abstract ContentCodec build();
+
+    /**
+     * Returns the compression level for this codec.
+     * @return return the compression level set for this codec.
+     */
+    final int compressionLevel() {
+        return compressionLevel;
+    }
+
+    /**
+     * Returns the max chunk size allowed to inflate during decoding.
+     * @return Returns the max chunk size allowed to inflate during decoding.
+     */
+    final int maxChunkSize() {
+        return maxChunkSize;
+    }
 
     static final class GzipContentCodecBuilder extends ZipContentCodecBuilder {
 

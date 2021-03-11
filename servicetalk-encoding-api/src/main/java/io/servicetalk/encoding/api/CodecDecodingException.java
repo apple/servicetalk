@@ -22,12 +22,35 @@ public final class CodecDecodingException extends RuntimeException {
 
     private static final long serialVersionUID = 5569510372715687762L;
 
+    private final ContentCodec codec;
+
     /**
      * New instance.
      *
+     * @param codec the codec in use.
      * @param reason the reason of this exception.
      */
-    public CodecDecodingException(String reason) {
+    public CodecDecodingException(final ContentCodec codec, final String reason) {
         super(reason);
+        this.codec = codec;
+    }
+
+    /**
+     * New instance.
+     *
+     * @param codec the codec in use.
+     * @param cause the cause of the exception.
+     */
+    public CodecDecodingException(final ContentCodec codec, final Throwable cause) {
+        super(cause);
+        this.codec = codec;
+    }
+
+    /**
+     * Returns the codec in use when this Exception occurred.
+     * @return the codec in use when this Exception occurred.
+     */
+    public ContentCodec codec() {
+        return codec;
     }
 }

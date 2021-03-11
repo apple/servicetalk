@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.compression;
 
 import io.servicetalk.encoding.api.ContentCodec;
+import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.http.api.ContentCodingHttpRequesterFilter;
 import io.servicetalk.http.api.HttpClient;
@@ -43,7 +44,7 @@ public final class CompressionFilterExampleClient {
             Collections.unmodifiableList(Arrays.asList(
                     ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
-                    ContentCodings.identity()
+                    Identity.identity()
             ));
 
     public static void main(String... args) throws Exception {
