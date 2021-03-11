@@ -78,7 +78,6 @@ import static io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder.toAggreg
 import static io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder.toBlocking;
 import static io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder.toBlockingStreaming;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
-import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -138,7 +137,6 @@ public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
                 String.class).toLowerCase().contains("servicetalk");
 
         HttpServerBuilder httpServerBuilder = serverBuilder
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator());
 
@@ -159,9 +157,7 @@ public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
                 throw new IllegalArgumentException(api.name());
         }
         final HostAndPort hostAndPort = serverHostAndPort(serverContext);
-        httpClient = HttpClients.forSingleAddress(hostAndPort)
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
-                .buildStreaming();
+        httpClient = HttpClients.forSingleAddress(hostAndPort).buildStreaming();
         hostHeader = hostHeader(hostAndPort);
     }
 
