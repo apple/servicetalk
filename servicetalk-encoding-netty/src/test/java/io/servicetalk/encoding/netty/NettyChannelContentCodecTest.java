@@ -83,7 +83,7 @@ public class NettyChannelContentCodecTest {
         testEncode(DEFAULT_ALLOCATOR, 10);
     }
 
-    @Test(expected = CodecDecodingException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testEncodeWithOffsetAndZeroLength() {
         testEncode(DEFAULT_ALLOCATOR, 10, 0);
     }
