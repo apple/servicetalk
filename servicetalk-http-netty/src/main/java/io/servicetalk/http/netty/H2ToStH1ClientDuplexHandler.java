@@ -175,7 +175,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     }
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
-                throw new IllegalArgumentException("content-length (" + h2Headers.getLong(CONTENT_LENGTH) +
+                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");
             }

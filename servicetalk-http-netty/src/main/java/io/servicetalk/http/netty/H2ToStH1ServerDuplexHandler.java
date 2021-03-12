@@ -145,7 +145,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                     }
                 }
             } else if (containsContentLength) {
-                throw new IllegalArgumentException("content-length (" + h2Headers.getLong(CONTENT_LENGTH) +
+                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for " + httpMethod.name() + " request");
             }
         }
