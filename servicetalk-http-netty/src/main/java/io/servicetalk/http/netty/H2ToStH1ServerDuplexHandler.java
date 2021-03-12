@@ -143,7 +143,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                         h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
                 }
-            } else if (contentLength >= 0L) {
+            } else if (contentLength != null) {
                 throw new IllegalArgumentException("content-length (" + contentLength +
                         ") header is not expected for " + httpMethod.name() + " request");
             }
