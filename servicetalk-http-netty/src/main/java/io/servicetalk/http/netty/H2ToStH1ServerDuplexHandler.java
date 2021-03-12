@@ -47,6 +47,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
+import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -134,17 +135,17 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
         h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
         h2HeadersSanitizeForH1(h2Headers);
         if (httpMethod != null) {
-            final Long contentLength = h2Headers.getLong(CONTENT_LENGTH);
+            final boolean containsContentLength = h2Headers.contains(CONTENT_LENGTH);
             if (clientMaySendPayloadBodyFor(httpMethod)) {
-                if (contentLength == null) {
-                    if (fullRequest) {
+                if (!containsContentLength) {
+                    if (fullRequest && shouldAddZeroContentLength(httpMethod)) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
                     } else {
                         h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
                 }
-            } else if (contentLength >= 0L) {
-                throw new IllegalArgumentException("content-length (" + contentLength +
+            } else if (containsContentLength) {
+                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for " + httpMethod.name() + " request");
             }
         }
