@@ -82,10 +82,7 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && responseMayHaveContent(response.status().code(), requestMethod)
-                // HEAD requests should either have the content-length already set (= what GET will return) or
-                // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
-                && !HEAD.equals(requestMethod);
+        return canAddContentLength(response) && serverMaySendPayloadBodyFor(response.status().code(), requestMethod);
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
@@ -94,8 +91,7 @@ final class HeaderUtils {
         return !TRACE.equals(requestMethod);
     }
 
-    static boolean canAddResponseTransferEncodingProtocol(final int statusCode,
-                                                          final HttpRequestMethod requestMethod) {
+    static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
         return !HEAD.equals(requestMethod) && !isEmptyResponseStatus(statusCode)
@@ -229,7 +225,7 @@ final class HeaderUtils {
 
     static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
                                                        final HttpRequestMethod requestMethod) {
-        if (canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod) &&
+        if (serverMaySendPayloadBodyFor(response.status().code(), requestMethod) &&
                 canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }

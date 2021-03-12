@@ -47,8 +47,8 @@ import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMet
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
-import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
+import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
@@ -166,17 +166,16 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         h2HeadersSanitizeForH1(h2Headers);
         if (httpStatus != null) {
             final int statusCode = httpStatus.code();
-            final Long contentLength = h2Headers.getLong(CONTENT_LENGTH);
-            if (contentLength == null) {
-                if (fullResponse) {
-                    if (responseMayHaveContent(statusCode, method)) {
+            if (!h2Headers.contains(CONTENT_LENGTH)) {
+                if (serverMaySendPayloadBodyFor(statusCode, method)) {
+                    if (fullResponse) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
+                    } else {
+                        h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
-                } else if (canAddResponseTransferEncodingProtocol(statusCode, method)) {
-                    h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
-                throw new IllegalArgumentException("content-length (" + contentLength +
+                throw new IllegalArgumentException("content-length (" + h2Headers.getLong(CONTENT_LENGTH) +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");
             }
