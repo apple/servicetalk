@@ -75,7 +75,7 @@ public class MutualSslTest {
                           @SuppressWarnings("rawtypes")
                           @FromDataPoints("serverListenOptions") Map<SocketOption, Object> serverListenOptions,
                           @SuppressWarnings("rawtypes")
-                          @FromDataPoints("serverListenOptions") Map<SocketOption, Object> clientOptions)
+                          @FromDataPoints("clientOptions") Map<SocketOption, Object> clientOptions)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(
