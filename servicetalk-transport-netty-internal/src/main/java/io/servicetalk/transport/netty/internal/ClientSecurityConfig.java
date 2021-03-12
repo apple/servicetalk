@@ -252,7 +252,7 @@ public class ClientSecurityConfig extends ReadOnlyClientSecurityConfig {
         } else if (trustCertChainSupplier != null) {
             builder = new ClientSslConfigBuilder(trustCertChainSupplier);
         } else {
-            throw new IllegalStateException("required trust material not set");
+            builder = new ClientSslConfigBuilder();
         }
 
         if (hostnameVerificationAlgorithm == null) {
