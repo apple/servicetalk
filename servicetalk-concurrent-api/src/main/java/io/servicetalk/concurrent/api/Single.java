@@ -549,14 +549,15 @@ public abstract class Single<T> {
      * }</pre>
      * @param other The other {@link Single} to zip with.
      * @param zipper Used to combine the completed results for each item from {@code singles}.
-     * @param <U> The type of {@code other}.
+     * @param <T2> The type of {@code other}.
      * @param <R> The result type of the combinator.
      * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
      * by {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
-    public final <U, R> Single<R> zipWith(Single<U> other, BiFunction<? super T, ? super U, ? extends R> zipper) {
-        return SingleZipper.zip(this, other, zipper);
+    public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
+                                           BiFunction<? super T, ? super T2, ? extends R> zipper) {
+        return zip(this, other, zipper);
     }
 
     /**
@@ -1895,6 +1896,32 @@ public abstract class Single<T> {
      * <pre>{@code
      *      CompletableFuture<T1> f1 = ...; // s1
      *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture.allOf(f1, f2).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <R> The result type of the combinator.
+     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
+                                            BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
      *      CompletableFuture<T3> f3 = ...; // s3
      *      CompletableFuture.allOf(f1, f2, f3).get(); // wait for all futures to complete
      *      return zipper.apply(f1.get(), f2.get(), f3.get());
@@ -1956,8 +1983,8 @@ public abstract class Single<T> {
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
-     *      Function<? super CompletableFuture<?>, ? extends R> zipper = ...;
-     *      CompletableFuture<?> futures = ...; // Provided Futures (analogous to the Singles here)
+     *      Function<? super CompletableFuture<?>[], ? extends R> zipper = ...;
+     *      CompletableFuture<?>[] futures = ...; // Provided Futures (analogous to the Singles here)
      *      CompletableFuture.allOf(futures).get(); // wait for all futures to complete
      *      return zipper.apply(futures);
      * }</pre>
