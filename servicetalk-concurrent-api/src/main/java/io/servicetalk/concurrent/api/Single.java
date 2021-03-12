@@ -32,6 +32,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -533,6 +534,29 @@ public abstract class Single<T> {
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
         return new SingleConcatWithPublisher<>(this, next, executor);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T> f1 = ...; // this
+     *      CompletableFuture<T2> other = ...;
+     *      CompletableFuture.allOf(f1, other).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), other.get());
+     * }</pre>
+     * @param other The other {@link Single} to zip with.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <U> The type of {@code other}.
+     * @param <R> The result type of the combinator.
+     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public final <U, R> Single<R> zipWith(Single<U> other, BiFunction<? super T, ? super U, ? extends R> zipper) {
+        return SingleZipper.zip(this, other, zipper);
     }
 
     /**
@@ -1861,6 +1885,92 @@ public abstract class Single<T> {
      */
     public static <T> Single<T> anyOf(final Iterable<Single<? extends T>> singles) {
         return amb(singles);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <R> The result type of the combinator.
+     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, R> Single<R> zip(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, s3, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture<T4> f4 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3, f4).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get(), f4.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param s4 The forth {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <T4> The type for the forth {@link Single}.
+     * @param <R> The result type of the combinator.
+     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, T4, R> Single<R> zip(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
+            Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, s3, s4, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Function<? super CompletableFuture<?>, ? extends R> zipper = ...;
+     *      CompletableFuture<?> futures = ...; // Provided Futures (analogous to the Singles here)
+     *      CompletableFuture.allOf(futures).get(); // wait for all futures to complete
+     *      return zipper.apply(futures);
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param singles The collection of {@link Single}s that when complete provides the results to "zip" (aka combine)
+     * together.
+     * @param <R> The result type of the combinator.
+     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * by {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <R> Single<R> zip(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
+        return SingleZipper.zip(zipper, singles);
     }
 
     //
