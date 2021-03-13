@@ -55,7 +55,9 @@ final class From2Publisher<T> extends AbstractSynchronousPublisher<T> {
 
         @Override
         public void cancel() {
-            state = CANCELLED;
+            if (state != TERMINATED) {
+                state = CANCELLED;
+            }
         }
 
         @Override
