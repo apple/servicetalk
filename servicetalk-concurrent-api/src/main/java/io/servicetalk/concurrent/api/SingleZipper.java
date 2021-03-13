@@ -36,12 +36,18 @@ final class SingleZipper {
                                      BiFunction<? super T1, ? super T2, ? extends R> zipper) {
         return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)))
                 .flatMapMergeSingle(identity(), 2)
-                .collect(() -> new ArrayList<ZipArg>(2), (list, zipArg) -> {
-                    list.add(zipArg);
-                    return list;
-                }).map(list -> {
-                    list.sort(ZIP_ARG_COMPARATOR);
-                    return zipper.apply((T1) list.get(0).value, (T2) list.get(1).value);
+                .collect(ZipResult2::new, (result, zipArg) -> {
+                    if (result.z1 == null) {
+                        result.z1 = zipArg;
+                    } else {
+                        result.z2 = zipArg;
+                    }
+                    return result;
+                }).map(result -> {
+                    assert result.z1 != null && result.z2 != null;
+                    return result.z1.index < result.z2.index ?
+                            zipper.apply((T1) result.z1.value, (T2) result.z2.value) :
+                            zipper.apply((T1) result.z2.value, (T2) result.z1.value);
                 });
     }
 
@@ -50,12 +56,31 @@ final class SingleZipper {
                                          Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
         return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)), s3.map(v -> new ZipArg(2, v)))
                 .flatMapMergeSingle(identity(), 3)
-                .collect(() -> new ArrayList<ZipArg>(3), (list, zipArg) -> {
-                    list.add(zipArg);
-                    return list;
-                }).map(list -> {
-                    list.sort(ZIP_ARG_COMPARATOR);
-                    return zipper.apply((T1) list.get(0).value, (T2) list.get(1).value, (T3) list.get(2).value);
+                .collect(ZipResult3::new, (result, zipArg) -> {
+                    if (result.z1 == null) {
+                        result.z1 = zipArg;
+                    } else if (result.z2 == null) {
+                        result.z2 = zipArg;
+                    } else {
+                        result.z3 = zipArg;
+                    }
+                    return result;
+                }).map(result -> {
+                    assert result.z1 != null && result.z2 != null && result.z3 != null;
+                    if (result.z1.index < result.z2.index) {
+                        if (result.z2.index < result.z3.index) {
+                            return zipper.apply((T1) result.z1.value, (T2) result.z2.value, (T3) result.z3.value);
+                        }
+                        return result.z1.index < result.z3.index ?
+                                zipper.apply((T1) result.z1.value, (T2) result.z3.value, (T3) result.z2.value) :
+                                zipper.apply((T1) result.z3.value, (T2) result.z1.value, (T3) result.z2.value);
+                    }
+                    if (result.z2.index < result.z3.index) {
+                        return result.z1.index < result.z3.index ?
+                                zipper.apply((T1) result.z2.value, (T2) result.z1.value, (T3) result.z3.value) :
+                                zipper.apply((T1) result.z2.value, (T2) result.z3.value, (T3) result.z1.value);
+                    }
+                    return zipper.apply((T1) result.z3.value, (T2) result.z2.value, (T3) result.z1.value);
                 });
     }
 
@@ -109,5 +134,21 @@ final class SingleZipper {
             this.index = index;
             this.value = value;
         }
+    }
+
+    private static final class ZipResult2 {
+        @Nullable
+        private ZipArg z1;
+        @Nullable
+        private ZipArg z2;
+    }
+
+    private static final class ZipResult3 {
+        @Nullable
+        private ZipArg z1;
+        @Nullable
+        private ZipArg z2;
+        @Nullable
+        private ZipArg z3;
     }
 }
