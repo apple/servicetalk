@@ -2837,6 +2837,41 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Creates a new {@link Publisher} that emits {@code v1} and {@code v2} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     *
+     * @param v1 The first value that the returned {@link Publisher} will emit.
+     * @param v2 The second value that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits {@code v1} and {@code v2} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     */
+    public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2) {
+        return new From2Publisher<>(v1, v2);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
+     * then {@link Subscriber#onComplete()}.
+     *
+     * @param v1 The first value that the returned {@link Publisher} will emit.
+     * @param v2 The second value that the returned {@link Publisher} will emit.
+     * @param v3 The second value that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
+     * then {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     */
+    public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
+        return new From3Publisher<>(v1, v2, v3);
+    }
+
+    /**
      * Creates a new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      *
