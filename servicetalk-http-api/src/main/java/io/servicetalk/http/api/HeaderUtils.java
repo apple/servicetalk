@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
@@ -666,7 +666,7 @@ public final class HeaderUtils {
      * header of a request or a response.
      * If the name can not be matched to any of the supported encodings on this endpoint, then
      * a {@link UnsupportedContentEncodingException} is thrown.
-     * If the matched encoding is {@link ContentCodings#identity()} then this returns {@code null}.
+     * If the matched encoding is {@link Identity#identity()} then this returns {@code null}.
      *
      * @param headers The headers to read the encoding name from
      * @param allowedEncodings The supported encodings for this endpoint

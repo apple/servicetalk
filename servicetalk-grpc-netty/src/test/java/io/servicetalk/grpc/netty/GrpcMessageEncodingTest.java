@@ -28,6 +28,7 @@ import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamMetadata;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -66,7 +67,6 @@ import static io.grpc.internal.GrpcUtil.MESSAGE_ENCODING;
 import static io.servicetalk.buffer.api.Buffer.asInputStream;
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
-import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -91,8 +91,10 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.zip.GZIPInputStream.GZIP_MAGIC;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -209,16 +211,13 @@ public class GrpcMessageEncodingTest {
                             return buffer;
                         })));
 
-                        final List<String> actualReqAcceptedEncodings = stream(request.headers()
-                                .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
-                                    .map(String::trim).collect(toList());
-
-                        final List<String> expectedReqAcceptedEncodings = encodingsAsStrings(clientSupportedEncodings);
-
-                        assertTrue("Request encoding should be present in the request headers",
-                                contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING, "identity")));
-                        if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
-                            assertEquals(expectedReqAcceptedEncodings, actualReqAcceptedEncodings);
+                        assertValidCodingHeader(clientSupportedEncodings, request.headers());
+                        if (reqEncoding == identity()) {
+                            assertThat("Message-Encoding should NOT be present in the headers if identity",
+                                    request.headers().contains(MESSAGE_ENCODING), is(false));
+                        } else {
+                            assertTrue("Message-Encoding should be present in the headers if not identity",
+                                    contentEquals(reqEncoding.name(), request.headers().get(MESSAGE_ENCODING)));
                         }
                     } catch (Throwable t) {
                         errors.add(t);
@@ -240,54 +239,47 @@ public class GrpcMessageEncodingTest {
                 private void handle0(final List<ContentCodec> clientSupportedEncodings,
                                      final List<ContentCodec> serverSupportedEncodings,
                                      final StreamingHttpResponse response) {
-                    final List<String> actualRespAcceptedEncodings = stream(response.headers()
-                            .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
-                            .map((String::trim)).collect(toList());
 
-                    final List<String> expectedRespAcceptedEncodings = encodingsAsStrings(serverSupportedEncodings);
+                    assertValidCodingHeader(serverSupportedEncodings, response.headers());
 
-                    if (!expectedRespAcceptedEncodings.isEmpty() && !actualRespAcceptedEncodings.isEmpty()) {
-                        assertEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings);
-                    }
-
-                    final String respEncName = response.headers()
-                            .get(MESSAGE_ENCODING, "identity").toString();
-
-                    if (clientSupportedEncodings.isEmpty() || serverSupportedEncodings.isEmpty()) {
-                        assertThat(identity().name(), contentEqualTo(respEncName));
+                    if (clientSupportedEncodings.isEmpty() || serverSupportedEncodings.isEmpty() ||
+                            disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
+                        assertThat("Response shouldn't contain Message-Encoding header if identity",
+                                response.headers().contains(MESSAGE_ENCODING), is(false));
                     } else {
-                        if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
-                            assertEquals(identity().name().toString(), respEncName);
-                        } else {
-                            ContentCodec expected = identity();
-                            for (ContentCodec codec : clientSupportedEncodings) {
-                                if (serverSupportedEncodings.contains(codec)) {
-                                    expected = codec;
-                                    break;
-                                }
+                        ContentCodec expected = identity();
+                        for (ContentCodec codec : clientSupportedEncodings) {
+                            if (serverSupportedEncodings.contains(codec)) {
+                                expected = codec;
+                                break;
                             }
+                        }
 
-                            assertEquals(expected, encodingFor(clientSupportedEncodings, response.headers()
-                                    .get(MESSAGE_ENCODING, identity().name())));
+                        if (expected == identity()) {
+                            assertThat("Response shouldn't contain Message-Encoding header if identity",
+                                    response.headers().contains(MESSAGE_ENCODING), is(false));
+                        } else {
+                            assertEquals(expected, encodingFor(clientSupportedEncodings,
+                                    response.headers().get(MESSAGE_ENCODING)));
                         }
                     }
 
                     response.transformPayloadBody(bufferPublisher -> bufferPublisher.map((buffer -> {
                         try {
-                            final ContentCodec respEnc =
-                                    encodingFor(clientSupportedEncodings, valueOf(response.headers()
-                                            .get(MESSAGE_ENCODING, "identity")));
+                            final ContentCodec respEnc = encodingFor(clientSupportedEncodings,
+                                    valueOf(response.headers().get(MESSAGE_ENCODING)));
 
                             if (buffer.readableBytes() > 0) {
                                 byte compressedFlag = buffer.getByte(0);
-                                assertEquals(respEnc != identity() ? 1 : 0, compressedFlag);
+                                assertEquals(respEnc != null ? 1 : 0, compressedFlag);
 
-                                if (respEnc == gzipDefault() || respEnc.name().equals(CUSTOM_ENCODING.name())) {
+                                if (respEnc != null &&
+                                        (respEnc == gzipDefault() || respEnc.name().equals(CUSTOM_ENCODING.name()))) {
                                     int actualHeader = buffer.getShortLE(5) & 0xFFFF;
                                     assertEquals(GZIP_MAGIC, actualHeader);
                                 }
 
-                                if (respEnc != identity()) {
+                                if (respEnc != null) {
                                     assertTrue("Compressed content length should be less than the original " +
                                             "payload size", buffer.readableBytes() < PAYLOAD_SIZE);
                                 } else {
@@ -421,16 +413,19 @@ public class GrpcMessageEncodingTest {
 
     @Test
     public void test() throws Throwable {
-        if (expectedSuccess) {
-            assertSuccessful(requestEncoding);
-        } else {
-            assertUnimplemented(requestEncoding);
+        try {
+            if (expectedSuccess) {
+                assertSuccessful(requestEncoding);
+            } else {
+                assertUnimplemented(requestEncoding);
+            }
+        } catch (Throwable t) {
+            throwAsyncErrors();
+            throw t;
         }
-
-        verifyNoErrors();
     }
 
-    private void verifyNoErrors() throws Throwable {
+    private void throwAsyncErrors() throws Throwable {
         if (!errors.isEmpty()) {
             throw errors.get(0);
         }
@@ -471,6 +466,23 @@ public class GrpcMessageEncodingTest {
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {
         assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.UNIMPLEMENTED));
+    }
+
+    private static void assertValidCodingHeader(final List<ContentCodec> supportedEncodings,
+                                                final HttpHeaders headers) {
+        if (supportedEncodings.size() == 1 && supportedEncodings.contains(identity())) {
+            assertThat(headers, not(contains(MESSAGE_ACCEPT_ENCODING)));
+        } else {
+            final List<String> actualRespAcceptedEncodings = stream(headers
+                    .get(MESSAGE_ACCEPT_ENCODING, "NOT_PRESENT").toString().split(","))
+                    .map((String::trim)).collect(toList());
+
+            final List<String> expectedRespAcceptedEncodings = encodingsAsStrings(supportedEncodings);
+
+            if (!expectedRespAcceptedEncodings.isEmpty() && !actualRespAcceptedEncodings.isEmpty()) {
+                assertEquals(expectedRespAcceptedEncodings, actualRespAcceptedEncodings);
+            }
+        }
     }
 
     @Nonnull
