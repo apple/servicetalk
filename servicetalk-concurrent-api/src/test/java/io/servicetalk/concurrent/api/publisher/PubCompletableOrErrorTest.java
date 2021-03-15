@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -32,7 +30,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PubCompletableOrErrorTest {
     private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
 

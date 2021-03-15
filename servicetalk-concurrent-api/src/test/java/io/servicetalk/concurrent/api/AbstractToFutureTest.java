@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractToFutureTest<T> {
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> exec = ExecutorExtension.newExtension();
+    public final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
 
     protected final Cancellable mockCancellable = Mockito.mock(Cancellable.class);
 

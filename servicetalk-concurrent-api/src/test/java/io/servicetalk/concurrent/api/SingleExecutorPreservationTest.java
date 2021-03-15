@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class SingleExecutorPreservationTest {
     @RegisterExtension
-    public static final ExecutorExtension EXEC = ExecutorExtension.withNamePrefix("test");
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Single<String> single;
 

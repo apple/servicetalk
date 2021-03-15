@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -26,7 +25,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +54,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public final class SequentialSubscriptionTest {
     private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
     private SequentialSubscription s;

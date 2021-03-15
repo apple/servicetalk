@@ -18,11 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.annotation.Nullable;
 
@@ -38,7 +36,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ScanWithPublisherTest {
     @Test
     public void scanWithComplete() {

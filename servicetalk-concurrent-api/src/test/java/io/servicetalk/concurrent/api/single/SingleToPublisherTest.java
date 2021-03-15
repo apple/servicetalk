@@ -20,11 +20,9 @@ import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -43,11 +41,10 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleToPublisherTest {
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 

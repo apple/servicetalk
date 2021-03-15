@@ -18,12 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +52,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class FromInputStreamPublisherTest {
 
     private final TestPublisherSubscriber<byte[]> sub1 = new TestPublisherSubscriber<>();

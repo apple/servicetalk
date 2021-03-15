@@ -17,21 +17,24 @@ package io.servicetalk.concurrent.api;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 
 /**
- * An {@link org.junit.jupiter.api.extension.Extension} wrapper for an {@link Executor}.
+ * An {@link Extension} wrapper for an {@link Executor}.
  * @param <E> The type of {@link Executor}.
  */
 public final class ExecutorExtension<E extends Executor> implements BeforeEachCallback, AfterEachCallback {
 
     private final Supplier<E> eSupplier;
+    @Nullable
     private E executor;
 
     private ExecutorExtension(final Supplier<E> eSupplier) {
@@ -43,7 +46,7 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
      *
      * @return a new {@link ExecutorExtension}.
      */
-    public static ExecutorExtension<Executor> newExtension() {
+    public static ExecutorExtension<Executor> withCachedExecutor() {
         return new ExecutorExtension<>(Executors::newCachedThreadExecutor);
     }
 
@@ -75,7 +78,7 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
      * @param namePrefix the name to prefix thread names with.
      * @return a new {@link ExecutorExtension}.
      */
-    public static ExecutorExtension<Executor> withNamePrefix(String namePrefix) {
+    public static ExecutorExtension<Executor> withCachedExecutor(String namePrefix) {
         return new ExecutorExtension<>(() ->
                 newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
     }
@@ -88,6 +91,7 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
      * not been called yet.
      */
     public E executor() {
+        assert executor != null : "Executor was not initialized";
         return executor;
     }
 
@@ -97,11 +101,11 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
     }
 
     @Override
-    public void afterEach(ExtensionContext context) {
-        try {
-            executor.closeAsync().toFuture().get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw new RuntimeException(e);
+    public void afterEach(ExtensionContext context) throws ExecutionException, InterruptedException {
+        if (executor == null) {
+            return;
         }
+
+        executor.closeAsync().toFuture().get();
     }
 }

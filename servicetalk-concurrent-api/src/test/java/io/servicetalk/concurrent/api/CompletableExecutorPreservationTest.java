@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class CompletableExecutorPreservationTest {
     @RegisterExtension
-    public static final ExecutorExtension EXEC = ExecutorExtension.withNamePrefix("test");
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Completable completable;
 

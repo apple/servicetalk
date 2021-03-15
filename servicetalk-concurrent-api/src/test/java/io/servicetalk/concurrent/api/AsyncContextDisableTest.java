@@ -16,10 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class AsyncContextDisableTest {
     private static final Key<String> K1 = Key.newKey("k1");
 

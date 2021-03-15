@@ -19,16 +19,12 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestReporter;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
@@ -66,29 +61,101 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public final class DefaultExecutorTest {
 
     private static final int UNBOUNDED = -1;
     private Executor executor;
 
-    public static Stream<Arguments> executors() {
-        // Use new executor for each test per parameter.
-        return Stream.of(
-                newArguments(() -> newFixedSizeExecutor(2), "fixed-size-2", true, 2),
-                newArguments(() -> io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor(), "cached",
-                        true, UNBOUNDED),
-                newArguments(() -> {
-                    ExecutorService service = Executors.newCachedThreadPool();
-                    //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
-                    return from(command -> service.execute(command));
-                }, "simple-executor", false, UNBOUNDED),
-                newArguments(() -> from(newScheduledThreadPool(2)), "scheduled",
-                        true,
-                        UNBOUNDED /*Size defines core size, else is unbounded*/),
-                newArguments(() -> from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
-                                new SynchronousQueue<>()), newScheduledThreadPool(2)),
-                        "different-executors", true, 2));
+    private enum ExecutorParam {
+        FIXED_SIZE {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return newFixedSizeExecutor(2);
+            }
+
+            @Override
+            int size() {
+                return 2;
+            }
+        },
+        CACHED {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor();
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        SIMPLE {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                ExecutorService service = Executors.newCachedThreadPool();
+                //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
+                return from(command -> service.execute(command));
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        SCHEDULED {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return from(newScheduledThreadPool(2));
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        DIFFERENT_EXECUTORS {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
+                        new SynchronousQueue<>()), newScheduledThreadPool(2));
+            }
+
+            @Override
+            int size() {
+                return 2;
+            }
+        };
+
+        abstract boolean supportsCancellation();
+
+        abstract Executor get();
+
+        abstract int size();
     }
 
     @AfterEach
@@ -96,21 +163,19 @@ public final class DefaultExecutorTest {
         executor.closeAsync().subscribe();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void execution(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                          int size, TestReporter testReporter) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void execution(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task task = new Task();
         executor.execute(task);
         task.awaitDone();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void longRunningTasksDoesNotHaltOthers(Supplier<Executor> executorSupplier, String name,
-                                                  boolean supportsCancellation, int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void longRunningTasksDoesNotHaltOthers(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task awaitForever = Task.newAwaitForeverTask();
         executor.execute(awaitForever);
         Task task = new Task();
@@ -118,11 +183,10 @@ public final class DefaultExecutorTest {
         task.awaitDone();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void interDependentTasksCanRun(Supplier<Executor> executorSupplier, String name,
-                                          boolean supportsCancellation, int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void interDependentTasksCanRun(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task first = new Task();
         Task second = new Task(() -> {
             try {
@@ -136,22 +200,21 @@ public final class DefaultExecutorTest {
         second.awaitDone();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void scheduledTasks(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                               int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void scheduledTasks(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task scheduled = new Task();
         executor.schedule(scheduled, 1, MILLISECONDS);
         scheduled.awaitDone();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void cancelExecute(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                              int size) throws Throwable {
-        executor = executorSupplier.get();
-        assumeTrue(supportsCancellation, () -> "Ignoring executor: " + name + ", it does not support cancellation.");
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void cancelExecute(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
+        assumeTrue(executorParam.supportsCancellation(),
+                () -> "Ignoring executor: " + executorParam + ", it does not support cancellation.");
         CountDownLatch latch = new CountDownLatch(1);
         Task awaitTillCancelled = Task.awaitFor(latch);
         Cancellable cancellable = executor.execute(awaitTillCancelled);
@@ -162,14 +225,14 @@ public final class DefaultExecutorTest {
         assertThat(e.getCause(), instanceOf(InterruptedException.class));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void executeRejection(Supplier<Executor> executorSupplier, String name,
-                                 boolean supportsCancellation, int size) {
-        executor = executorSupplier.get();
-        assumeTrue(size > 0, () -> "Ignoring executor: " + name + ", it has an unbounded thread pool.");
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void executeRejection(ExecutorParam executorParam) {
+        executor = executorParam.get();
+        assumeTrue(executorParam.size() > 0,
+                () -> "Ignoring executor: " + executorParam + ", it has an unbounded thread pool.");
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < executorParam.size(); i++) {
             executor.execute(Task.newAwaitForeverTask());
         }
         Task reject = new Task();
@@ -179,41 +242,35 @@ public final class DefaultExecutorTest {
     @Test
     public void rejectSchedule() {
         executor = from(new RejectAllScheduler());
-        assertThrows(RejectedExecutionException.class, () -> {
-            executor.schedule(() -> {
-            }, 1, SECONDS);
-        });
+        assertThrows(RejectedExecutionException.class, () -> executor.schedule(() -> {
+        }, 1, SECONDS));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void timerRaw(Supplier<Executor> executorSupplier, String name,
-                         boolean supportsCancellation, int size) throws Exception {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void timerRaw(ExecutorParam executorParam) throws Exception {
+        executor = executorParam.get();
         executor.timer(1, NANOSECONDS).toFuture().get();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void timerDuration(Supplier<Executor> executorSupplier, String name,
-                              boolean supportsCancellation, int size) throws Exception {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void timerDuration(ExecutorParam executorParam) throws Exception {
+        executor = executorParam.get();
         executor.timer(ofNanos(1)).toFuture().get();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void timerRawCancel(Supplier<Executor> executorSupplier, String name,
-                               boolean supportsCancellation, int size) throws InterruptedException {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void timerRawCancel(ExecutorParam executorParam) throws InterruptedException {
+        executor = executorParam.get();
         timerCancel(executor.timer(100, MILLISECONDS));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void timerDurationCancel(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                                    int size) throws InterruptedException {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void timerDurationCancel(ExecutorParam executorParam) throws InterruptedException {
+        executor = executorParam.get();
         timerCancel(executor.timer(ofNanos(1)));
     }
 
@@ -261,21 +318,19 @@ public final class DefaultExecutorTest {
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitRunnable(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                               int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitRunnable(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task submitted = new Task();
         executor.submit(submitted).toFuture().get();
         submitted.awaitDone();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitRunnableSupplier(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                                       int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitRunnableSupplier(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         Task submitted1 = new Task();
         Task submitted2 = new Task();
         AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
@@ -300,45 +355,40 @@ public final class DefaultExecutorTest {
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitRunnableThrows(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                                     int size) {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitRunnableThrows(ExecutorParam executorParam) {
+        executor = executorParam.get();
         Executable executable = () -> executor.submit((Runnable) () -> {
             throw DELIBERATE_EXCEPTION;
         }).toFuture().get();
         assertThrowsExecutionException(executable, DeliberateException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitRunnableSupplierThrows(Supplier<Executor> executorSupplier, String name,
-                                             boolean supportsCancellation,
-                                             int size) {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitRunnableSupplierThrows(ExecutorParam executorParam) {
+        executor = executorParam.get();
         Executable executable = () -> executor.submitRunnable(() -> () -> {
             throw DELIBERATE_EXCEPTION;
         }).toFuture().get();
         assertThrowsExecutionException(executable, DeliberateException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitCallable(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                               int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitCallable(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         CallableTask<Integer> submitted = new CallableTask<>(() -> 1);
         Integer result = awaitIndefinitelyNonNull(executor.submit(submitted));
         submitted.awaitDone();
         assertThat(result, is(1));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitCallableSupplier(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
-                                       int size) throws Throwable {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitCallableSupplier(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
         CallableTask<Integer> submitted1 = new CallableTask<>(() -> 1);
         CallableTask<Integer> submitted2 = new CallableTask<>(() -> 2);
         AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
@@ -366,22 +416,20 @@ public final class DefaultExecutorTest {
         assertThrowsExecutionException(executable, RejectedExecutionException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitCallableThrows(Supplier<Executor> executorSupplier, String name,
-                                     boolean supportsCancellation, int size) {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitCallableThrows(ExecutorParam executorParam) {
+        executor = executorParam.get();
         Executable executable = () -> executor.submit((Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
         }).toFuture().get();
         assertThrowsExecutionException(executable, DeliberateException.class);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - {1}")
-    @MethodSource("executors")
-    public void submitCallableSupplierThrows(Supplier<Executor> executorSupplier, String name,
-                                             boolean supportsCancellation, int size) {
-        executor = executorSupplier.get();
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void submitCallableSupplierThrows(ExecutorParam executorParam) {
+        executor = executorParam.get();
         Executable executable = () -> executor.submitCallable(() -> (Callable<Integer>) () -> {
             throw DELIBERATE_EXCEPTION;
         }).toFuture().get();
@@ -391,11 +439,6 @@ public final class DefaultExecutorTest {
     private static void assertThrowsExecutionException(Executable executable, Class cause) {
         ExecutionException e = assertThrows(ExecutionException.class, executable);
         assertThat(e.getCause(), instanceOf(cause));
-    }
-
-    private static Arguments newArguments(Supplier<Executor> executorSupplier, String name,
-                                          boolean supportsCancellation, int size) {
-        return Arguments.of(executorSupplier, name, supportsCancellation, size);
     }
 
     private static final class CallableTask<V> implements Callable<V> {

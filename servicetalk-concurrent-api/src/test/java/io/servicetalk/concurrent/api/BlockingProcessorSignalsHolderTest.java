@@ -15,10 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeoutException;
 
@@ -32,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class BlockingProcessorSignalsHolderTest {
     private final DefaultBlockingProcessorSignalsHolder<Integer> buffer;
     @SuppressWarnings("unchecked")

@@ -20,19 +20,14 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.from;
@@ -53,39 +48,58 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.slf4j.LoggerFactory.getLogger;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SignalOffloaderSingleTest {
 
-    private static final Logger LOGGER = getLogger(SignalOffloaderSingleTest.class);
+    private enum OffloaderTestParam {
+        THREAD_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(ThreadBasedSignalOffloader::new);
+            }
 
-    private OffloaderHolder state;
+            @Override
+            boolean isSupportsTermination() {
+                return true;
+            }
+        },
+        TASK_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(TaskBasedSignalOffloader::new);
+            }
 
-    private void init(Supplier<OffloaderHolder> stateSupplier) {
-        this.state = stateSupplier.get();
+            @Override
+            boolean isSupportsTermination() {
+                return false;
+            }
+        };
+
+        abstract OffloaderHolder get();
+
+        abstract boolean isSupportsTermination();
     }
 
-    @SuppressWarnings("unused")
-    public static Stream<Arguments> offloaders() {
-        return Stream.of(
-                Arguments.of((Supplier<OffloaderHolder>) () ->
-                        new OffloaderHolder(ThreadBasedSignalOffloader::new), true),
-                Arguments.of((Supplier<OffloaderHolder>) () ->
-                        new OffloaderHolder(TaskBasedSignalOffloader::new), false));
+    @Nullable
+    private OffloaderHolder state;
+
+    private void init(OffloaderTestParam offloader) {
+        this.state = offloader.get();
     }
 
     @AfterEach
-    public void tearDown() {
-        state.shutdown();
+    public void tearDown() throws Exception {
+        if (state != null) {
+            state.shutdown();
+            state = null;
+        }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void offloadingSubscriberShouldNotOffloadCancellable(Supplier<OffloaderHolder> stateSupplier,
-                                                                @SuppressWarnings("unused") boolean supportsTermination)
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void offloadingSubscriberShouldNotOffloadCancellable(OffloaderTestParam offloader)
             throws Exception {
-        init(stateSupplier);
+        init(offloader);
         Subscriber<? super String> offloadedSubscriber = state.offloader.offloadCancellable(state.subscriber);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(offloadedSubscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
@@ -94,13 +108,11 @@ public class SignalOffloaderSingleTest {
                 .awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void offloadingCancellableShouldNotOffloadSubscriber(Supplier<OffloaderHolder> stateSupplier,
-                                                                @SuppressWarnings("unused")
-                                                                        boolean supportsTermination)
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void offloadingCancellableShouldNotOffloadSubscriber(OffloaderTestParam offloader)
             throws Exception {
-        init(stateSupplier);
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadCancellable(state.subscriber);
 
         Cancellable received = state.sendOnSubscribe(offloaded);
@@ -109,24 +121,21 @@ public class SignalOffloaderSingleTest {
                 .awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void offloadSubscriber(Supplier<OffloaderHolder> stateSupplier,
-                                  @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void offloadSubscriber(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnSuccessOffloaded(offloaded)
                 .awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void cancelShouldTerminateOffloadingWithMultipleEntities(Supplier<OffloaderHolder> stateSupplier,
-                                                                    @SuppressWarnings("unused")
-                                                                            boolean supportsTermination)
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void cancelShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
-        init(stateSupplier);
+        init(offloader);
         Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
         Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         Cancellable received = state.verifyOnSubscribeOffloaded(offloadedSubscriber);
@@ -134,81 +143,72 @@ public class SignalOffloaderSingleTest {
                 .awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onErrorShouldTerminateOffloadingWithMultipleEntities(Supplier<OffloaderHolder> stateSupplier,
-                                                                     @SuppressWarnings("unused")
-                                                                             boolean supportsTermination)
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onErrorShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
-        init(stateSupplier);
+        init(offloader);
         Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
         Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         state.verifyOnSubscribeOffloaded(offloadedSubscriber);
         state.verifyOnErrorOffloaded(offloadedSubscriber).awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onSuccessShouldTerminateOffloadingWithMultipleEntities(Supplier<OffloaderHolder> stateSupplier,
-                                                                       @SuppressWarnings("unused")
-                                                                               boolean supportsTermination)
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onSuccessShouldTerminateOffloadingWithMultipleEntities(OffloaderTestParam offloader)
             throws Exception {
-        init(stateSupplier);
+        init(offloader);
         Subscriber<? super String> offloadedCancellable = state.offloader.offloadCancellable(state.subscriber);
         Subscriber<? super String> offloadedSubscriber = state.offloader.offloadSubscriber(offloadedCancellable);
         state.verifyOnSubscribeOffloaded(offloadedSubscriber);
         state.verifyOnSuccessOffloaded(offloadedSubscriber).awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onSuccessSupportsNull(Supplier<OffloaderHolder> stateSupplier,
-                                      @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onSuccessSupportsNull(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnSuccessOffloaded(offloaded, null).awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onSubscribeThrows(Supplier<OffloaderHolder> stateSupplier,
-                                  @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onSubscribeThrows(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloadedWhenThrows(offloaded);
         state.awaitTermination();
         verify(state.cancellable).cancel();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onSuccessThrows(Supplier<OffloaderHolder> stateSupplier,
-                                @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onSuccessThrows(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnSuccessOffloadedWhenThrows(offloaded);
         state.awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void onErrorThrows(Supplier<OffloaderHolder> stateSupplier,
-                              @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void onErrorThrows(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnErrorOffloadedWhenThrows(offloaded);
         state.awaitTermination();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void offloadPostTermination(Supplier<OffloaderHolder> stateSupplier,
-                                       @SuppressWarnings("unused") boolean supportsTermination) throws Exception {
-        init(stateSupplier);
-        assumeTrue(supportsTermination, "Termination test not supported by this offloader.");
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void offloadPostTermination(OffloaderTestParam offloader) throws Exception {
+        assumeTrue(offloader.isSupportsTermination(), "Termination test not supported by this offloader.");
+        init(offloader);
         Subscriber<? super String> offloaded = state.offloader.offloadSubscriber(state.subscriber);
         state.verifyOnSubscribeOffloaded(offloaded);
         state.verifyOnErrorOffloaded(offloaded);
@@ -216,15 +216,14 @@ public class SignalOffloaderSingleTest {
         assertThrows(IllegalStateException.class, () -> state.offloader.offloadSubscriber(state.subscriber));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void executorRejectsForHandleSubscribe(Supplier<OffloaderHolder> stateSupplier,
-                                                  @SuppressWarnings("unused") boolean supportsTermination) {
-        init(stateSupplier);
-        ThreadBasedSignalOffloader offloader = new ThreadBasedSignalOffloader(from(task -> {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void executorRejectsForHandleSubscribe(OffloaderTestParam offloader) {
+        init(offloader);
+        ThreadBasedSignalOffloader rejectOffloader = new ThreadBasedSignalOffloader(from(task -> {
             throw new RejectedExecutionException();
         }));
-        offloader.offloadSubscribe(state.subscriber, __ -> {
+        rejectOffloader.offloadSubscribe(state.subscriber, __ -> {
         });
         verify(state.subscriber).onSubscribe(any(Cancellable.class));
         ArgumentCaptor<Throwable> errorCaptor = ArgumentCaptor.forClass(Throwable.class);
@@ -235,10 +234,10 @@ public class SignalOffloaderSingleTest {
 
     private static final class OffloaderHolder {
 
-        private Executor executor;
-        private SignalOffloader offloader;
-        private Cancellable cancellable;
-        private Subscriber<String> subscriber;
+        private final Executor executor;
+        private final SignalOffloader offloader;
+        private final Cancellable cancellable;
+        private final Subscriber<String> subscriber;
 
         OffloaderHolder(Function<Executor, SignalOffloader> offloaderFactory) {
             executor = from(java.util.concurrent.Executors.newSingleThreadExecutor());
@@ -247,12 +246,8 @@ public class SignalOffloaderSingleTest {
             subscriber = mockSubscriber();
         }
 
-        void shutdown() {
-            try {
-                executor.closeAsync().toFuture().get();
-            } catch (Exception e) {
-                LOGGER.warn("Failed to close the executor {}.", executor, e);
-            }
+        void shutdown() throws Exception {
+            executor.closeAsync().toFuture().get();
         }
 
         void awaitTermination() throws Exception {

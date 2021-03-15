@@ -15,10 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -28,7 +25,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Test
     public void wrappedTerminationTerminates() throws Exception {

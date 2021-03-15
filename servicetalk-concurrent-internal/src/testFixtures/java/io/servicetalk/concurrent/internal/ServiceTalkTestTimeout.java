@@ -22,24 +22,15 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestTimedOutException;
 
-import java.lang.management.LockInfo;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MonitorInfo;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
@@ -143,7 +134,7 @@ public final class ServiceTalkTestTimeout extends Timeout {
                 // test failed; have caller re-throw the exception thrown by the test
                 return e.getCause();
             } catch (TimeoutException e) {
-                dumpAllStacks(); // dump all stacks before interrupting any thread
+                TimeoutTracingInfoExtension.dumpAllStacks(); // dump all stacks before interrupting any thread
                 onTimeout.run();
                 return createTimeoutException(thread);
             }
@@ -179,57 +170,6 @@ public final class ServiceTalkTestTimeout extends Timeout {
             void awaitStarted() throws InterruptedException {
                 startLatch.await();
             }
-        }
-
-        private static void dumpAllStacks() {
-            ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-            List<ThreadInfo> threadInfos = Stream.of(bean.getThreadInfo(bean.getAllThreadIds(),
-                    bean.isObjectMonitorUsageSupported(), bean.isSynchronizerUsageSupported()))
-                    .filter(Objects::nonNull) // filter out dead threads
-                    .sorted(Comparator.comparing(ThreadInfo::getThreadName))
-                    .collect(Collectors.toList());
-            StringBuilder sb = new StringBuilder(threadInfos.size() * 4096);
-            for (ThreadInfo info : threadInfos) {
-                sb.append('"').append(info.getThreadName()).append('"');
-                sb.append(" #").append(info.getThreadId());
-                sb.append(" ").append(info.getThreadState().toString().toLowerCase());
-                if (info.getLockName() != null) {
-                    sb.append(" on ").append(info.getLockName());
-                }
-                if (info.getLockOwnerName() != null) {
-                    sb.append(" owned by \"").append(info.getLockOwnerName()).append("\" #")
-                            .append(info.getLockOwnerId());
-                }
-                if (info.isSuspended()) {
-                    sb.append(" (suspended)");
-                }
-                if (info.isInNative()) {
-                    sb.append(" (in native)");
-                }
-                sb.append("\n");
-
-                sb.append("  java.lang.Thread.State: ").append(info.getThreadState()).append("\n");
-                StackTraceElement[] stackTrace = info.getStackTrace();
-                for (int i = 0; i < stackTrace.length; ++i) {
-                    sb.append("\t  at ").append(stackTrace[i]).append("\n");
-                    for (MonitorInfo mi : info.getLockedMonitors()) {
-                        if (mi.getLockedStackDepth() == i) {
-                            sb.append("\t  - locked ").append(mi).append("\n");
-                        }
-                    }
-                }
-                sb.append("\n");
-
-                LockInfo[] locks = info.getLockedSynchronizers();
-                if (locks.length > 0) {
-                    sb.append("\t  Number of locked synchronizers = ").append(locks.length).append("\n");
-                    for (LockInfo li : locks) {
-                        sb.append("\t  - ").append(li).append("\n");
-                    }
-                    sb.append("\n");
-                }
-            }
-            System.out.println(sb.toString());
         }
     }
 }

@@ -17,10 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -44,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public final class PublisherAsBlockingIterableTest {
 
     private final TestPublisher<Integer> source = new TestPublisher<>();

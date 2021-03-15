@@ -15,13 +15,12 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.NoSuchElementException;
@@ -35,10 +34,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PubFirstOrErrorTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
 

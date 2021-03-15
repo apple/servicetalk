@@ -47,7 +47,7 @@ public abstract class AbstractWhenCancelTest {
     @Test
     public void testCallbackThrowsError() {
         LegacyTestCompletable completable = new LegacyTestCompletable();
-        DeliberateException e = assertThrows(DELIBERATE_EXCEPTION.getClass(), () -> {
+        DeliberateException e = assertThrows(DeliberateException.class, () -> {
             try {
                 toSource(doCancel(completable, () -> {
                     throw DELIBERATE_EXCEPTION;

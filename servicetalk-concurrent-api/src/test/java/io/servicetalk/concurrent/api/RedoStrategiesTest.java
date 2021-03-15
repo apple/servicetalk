@@ -15,10 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,13 +33,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class RedoStrategiesTest {
 
     protected LinkedBlockingQueue<LegacyTestCompletable> timers;
     protected Executor timerExecutor;
 
-    @SuppressWarnings("unchecked")
     @BeforeEach
     public void setUp() {
         timers = new LinkedBlockingQueue<>();

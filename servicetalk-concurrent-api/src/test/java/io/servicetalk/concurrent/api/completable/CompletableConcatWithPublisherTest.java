@@ -19,12 +19,10 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -36,7 +34,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableConcatWithPublisherTest {
     private TestPublisherSubscriber<Integer> subscriber;
     private TestCompletable source;

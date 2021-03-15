@@ -19,9 +19,8 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Collection;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Completable.amb;
@@ -38,6 +37,29 @@ public class CompletableAmbTest {
     private TestCompletableSubscriber subscriber;
     private TestCancellable cancellable;
 
+    private enum AmbParam {
+        AMB_WITH {
+            @Override
+            BiFunction<Completable, Completable, Completable> get() {
+                return Completable::ambWith;
+            }
+        },
+        AMB_VARARGS {
+            @Override
+            BiFunction<Completable, Completable, Completable> get() {
+                return (first, second) -> amb(first, second);
+            }
+        },
+        AMB_ITERABLE {
+            @Override
+            BiFunction<Completable, Completable, Completable> get() {
+                return (first, second) -> amb(asList(first, second));
+            }
+        };
+
+        abstract BiFunction<Completable, Completable, Completable> get();
+    }
+
     @BeforeEach
     void beforeEach() {
         first = new TestCompletable();
@@ -53,111 +75,105 @@ public class CompletableAmbTest {
         assertThat("Second source not subscribed.", second.isSubscribed(), is(true));
     }
 
-    public static Collection<BiFunction<Completable, Completable, Completable>> data() {
-        return asList(Completable::ambWith,
-                (first, second) -> amb(first, second),
-                (first, second) -> amb(asList(first, second)));
-    }
-
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirst(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecond(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirst(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecond(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successFirstThenSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirstThenSecond(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successSecondThenFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecondThenFirst(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failFirstThenSecond(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirstThenSecond(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failSecondThenFirst(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecondThenFirst(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successFirstThenSecondFail(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirstThenSecondFail(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void successSecondThenFirstFail(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecondThenFirstFail(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failFirstThenSecondSuccess(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirstThenSecondSuccess(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onComplete();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}]")
-    @MethodSource("data")
-    public void failSecondThenFirstSuccess(final BiFunction<Completable, Completable, Completable> ambSupplier) {
-        setUp(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecondThenFirstSuccess(final AmbParam ambParam) {
+        setUp(ambParam.get());
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onComplete();

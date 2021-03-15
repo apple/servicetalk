@@ -16,14 +16,12 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-import static io.servicetalk.concurrent.api.ExecutorExtension.withNamePrefix;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -34,7 +32,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleAmbWithAsyncTest {
     private static final String FIRST_EXECUTOR_THREAD_NAME_PREFIX = "first";
     private static final String SECOND_EXECUTOR_THREAD_NAME_PREFIX = "second";
@@ -47,9 +44,9 @@ public class SingleAmbWithAsyncTest {
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL_2 = 3;
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> firstExec = withNamePrefix(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
+    final ExecutorExtension<Executor> firstExec = withCachedExecutor(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
     @RegisterExtension
-    public final ExecutorExtension<Executor> secondExec = withNamePrefix(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
+    final ExecutorExtension<Executor> secondExec = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
 
     @Test
     public void offloadSuccessFromFirst() throws Exception {

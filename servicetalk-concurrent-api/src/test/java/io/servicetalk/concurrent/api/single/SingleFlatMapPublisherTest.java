@@ -15,17 +15,16 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -48,10 +47,9 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public final class SingleFlatMapPublisherTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()

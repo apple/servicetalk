@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
 import java.util.concurrent.CompletionStage;
@@ -38,7 +36,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherToCompletionStageTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();

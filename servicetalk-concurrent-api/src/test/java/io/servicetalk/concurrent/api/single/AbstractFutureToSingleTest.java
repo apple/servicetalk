@@ -18,12 +18,10 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public abstract class AbstractFutureToSingleTest {
     static ExecutorService jdkExecutor;
 

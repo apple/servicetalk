@@ -18,14 +18,12 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -50,7 +48,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 @Timeout(30)
 public final class PublisherGroupByConcurrencyTest {
     private final TestPublisherSubscriber<Integer> groupsSubscriber = new TestPublisherSubscriber<>();

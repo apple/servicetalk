@@ -16,14 +16,13 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,10 +37,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableToPublisherTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 

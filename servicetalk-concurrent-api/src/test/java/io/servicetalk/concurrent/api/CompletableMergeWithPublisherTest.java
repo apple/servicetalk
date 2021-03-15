@@ -17,11 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.stubbing.Answer;
 
@@ -31,7 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.servicetalk.concurrent.api.ExecutorExtension.newExtension;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -52,10 +50,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableMergeWithPublisherTest {
     @RegisterExtension
-    public final ExecutorExtension<Executor> executorExtension = newExtension();
+    final ExecutorExtension<Executor> executorExtension = withCachedExecutor();
     private final TestSubscription subscription = new TestSubscription();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();

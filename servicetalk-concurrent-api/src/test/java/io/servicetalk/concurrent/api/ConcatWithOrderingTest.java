@@ -15,15 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ConcatWithOrderingTest {
 
     protected final StringBuilder sb = new StringBuilder();

@@ -18,11 +18,9 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
 
@@ -36,7 +34,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public abstract class AbstractWhenSubscriberTest {
     @SuppressWarnings("unchecked")
     private final Subscriber<String> subscriber = (Subscriber<String>) mock(Subscriber.class);

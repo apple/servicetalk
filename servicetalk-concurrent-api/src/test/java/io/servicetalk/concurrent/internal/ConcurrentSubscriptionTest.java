@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ConcurrentSubscriptionTest {
     private final TestSubscription subscription = new TestSubscription();
 

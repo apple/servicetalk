@@ -17,11 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.lang.ref.ReferenceQueue;
@@ -44,10 +42,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableProcessorTest {
     @RegisterExtension
-    public static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.newExtension();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
     private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
     private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
 

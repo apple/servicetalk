@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -32,10 +31,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ConcatWithCompletableTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
     private LegacyTestSingle<String> single = new LegacyTestSingle<>();
     private LegacyTestCompletable completable = new LegacyTestCompletable();

@@ -18,10 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.function.BiFunction;
-import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.Single.amb;
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -42,8 +41,31 @@ public class SingleAmbSubscribeThrowsTest {
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
     private Single<Integer> amb;
 
-    private void init(final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
-        amb = ambSupplier.apply(defer(() -> {
+    private enum AmbParam {
+        AMB_WITH {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return Single::ambWith;
+            }
+        },
+        AMB_VARARGS {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(first, second);
+            }
+        },
+        AMB_ITERABLE {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(asList(first, second));
+            }
+        };
+
+        abstract BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get();
+    }
+
+    private void init(final AmbParam ambParam) {
+        amb = ambParam.get().apply(defer(() -> {
             if (throwFromFirst) {
                 throw DELIBERATE_EXCEPTION;
             }
@@ -56,16 +78,10 @@ public class SingleAmbSubscribeThrowsTest {
         }));
     }
 
-    public static Stream<BiFunction<Single<Integer>, Single<Integer>, Single<Integer>>> data() {
-        return Stream.of(Single::ambWith,
-                (first, second) -> amb(first, second),
-                (first, second) -> amb(asList(first, second)));
-    }
-
-    @ParameterizedTest
-    @MethodSource("data")
-    public void firstSubscribeThrows(final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
-        init(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void firstSubscribeThrows(final AmbParam ambParam) {
+        init(ambParam);
         throwFromFirst = true;
         subscribeToAmbAndVerifyFail();
         second.onSubscribe(cancellable);
@@ -74,10 +90,10 @@ public class SingleAmbSubscribeThrowsTest {
         second.onSuccess(2);
     }
 
-    @ParameterizedTest
-    @MethodSource("data")
-    public void secondSubscribeThrows(final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
-        init(ambSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void secondSubscribeThrows(final AmbParam ambParam) {
+        init(ambParam);
         throwFromSecond = true;
         subscribeToAmbAndVerifyFail();
         first.onSubscribe(cancellable);

@@ -20,11 +20,9 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
@@ -61,10 +59,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherConcatMapIterableTest {
     @RegisterExtension
-    public static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.newExtension();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<List<String>> publisher = new TestPublisher<>();
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();

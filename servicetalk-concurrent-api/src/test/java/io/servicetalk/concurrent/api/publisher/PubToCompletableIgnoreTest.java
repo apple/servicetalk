@@ -17,14 +17,13 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.DeferredEmptySubscription;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,10 +38,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PubToCompletableIgnoreTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
     private final TestCompletableSubscriber listenerRule = new TestCompletableSubscriber();
 
     @Test

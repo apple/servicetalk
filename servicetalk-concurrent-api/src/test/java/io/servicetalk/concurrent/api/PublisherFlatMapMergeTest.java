@@ -18,13 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -75,7 +73,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
     @Nullable

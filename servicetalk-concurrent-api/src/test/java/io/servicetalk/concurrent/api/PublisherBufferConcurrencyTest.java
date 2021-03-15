@@ -17,11 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +28,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
-import static io.servicetalk.concurrent.api.ExecutorExtension.withNamePrefix;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofMillis;
@@ -43,13 +41,12 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherBufferConcurrencyTest {
     private static final String THREAD_NAME_PREFIX = "buffer-concurrency-test";
     private static final Key<Integer> CTX_KEY = Key.newKey("foo");
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> executorExtension = withNamePrefix(THREAD_NAME_PREFIX);
+    final ExecutorExtension<Executor> executorExtension = withCachedExecutor(THREAD_NAME_PREFIX);
 
     @Test
     public void largeRun() throws Exception {

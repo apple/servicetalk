@@ -23,11 +23,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +33,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -46,38 +41,40 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.slf4j.LoggerFactory.getLogger;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SignalOffloaderConcurrentSingleTest {
-    private static final Logger LOGGER = getLogger(SignalOffloaderConcurrentSingleTest.class);
-
     private OffloaderHolder state;
 
-    private void init(Supplier<OffloaderHolder> stateSupplier) {
-        this.state = stateSupplier.get();
+    private enum OffloaderTestParam {
+        THREAD_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(ThreadBasedSignalOffloader::new);
+            }
+        },
+        TASK_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(TaskBasedSignalOffloader::new);
+            }
+        };
+
+        abstract OffloaderHolder get();
     }
 
-    @SuppressWarnings("unused")
-    public static Stream<Arguments> offloaders() {
-        return Stream.of(
-            Arguments.of((Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(ThreadBasedSignalOffloader::new), true),
-            Arguments.of((Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(TaskBasedSignalOffloader::new), false));
+    private void init(OffloaderTestParam offloader) {
+        this.state = offloader.get();
     }
 
     @AfterEach
-    public void tearDown() {
+    public void tearDown() throws Exception {
         state.shutdown();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] - thread based: {1}")
-    @MethodSource("offloaders")
-    public void concurrentSignalsMultipleEntities(Supplier<OffloaderHolder> stateSupplier,
-                                                  @SuppressWarnings("unused") boolean supportsTermination)
-            throws Exception {
-        init(stateSupplier);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void concurrentSignalsMultipleEntities(OffloaderTestParam offloader) throws Exception {
+        init(offloader);
         final int entityCount = 100;
         final OffloaderHolder.SubscriberCancellablePair[] pairs =
                 new OffloaderHolder.SubscriberCancellablePair[entityCount];
@@ -112,13 +109,9 @@ public class SignalOffloaderConcurrentSingleTest {
             offloader = offloaderFactory.apply(executor);
         }
 
-        void shutdown() {
-            try {
-                executor.closeAsync().toFuture().get();
-                emitters.shutdownNow();
-            } catch (Exception e) {
-                LOGGER.warn("Failed to close the executor {}.", executor, e);
-            }
+        void shutdown() throws Exception {
+            executor.closeAsync().toFuture().get();
+            emitters.shutdownNow();
         }
 
         void awaitTermination() throws Exception {
@@ -137,13 +130,13 @@ public class SignalOffloaderConcurrentSingleTest {
 
             final SubscriberImpl subscriber;
             final CancellableImpl cancellable;
-            private SingleSource.Subscriber<? super Integer> offloadCancellable;
             private SingleSource.Subscriber<? super Integer> offloadSubscriber;
 
             SubscriberCancellablePair(SubscriberImpl subscriber, CancellableImpl cancellable) {
                 this.subscriber = subscriber;
                 this.cancellable = cancellable;
-                offloadCancellable = offloader.offloadCancellable(this.subscriber);
+                SingleSource.Subscriber<? super Integer> offloadCancellable =
+                        offloader.offloadCancellable(this.subscriber);
                 offloadSubscriber = offloader.offloadSubscriber(offloadCancellable);
             }
 

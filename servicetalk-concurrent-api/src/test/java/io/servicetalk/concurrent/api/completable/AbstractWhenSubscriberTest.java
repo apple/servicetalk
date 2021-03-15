@@ -18,12 +18,10 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
 
@@ -35,11 +33,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public abstract class AbstractWhenSubscriberTest {
     final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private CompletableSource.Subscriber subscriber;
-    @SuppressWarnings("unchecked")
+
     @BeforeEach
     public void setUp() {
         subscriber = mock(CompletableSource.Subscriber.class);

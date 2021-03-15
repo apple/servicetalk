@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -47,7 +45,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class BufferStrategiesTest {
     private final BlockingQueue<TestCompletable> timers = new LinkedBlockingDeque<>();
     private final Executor executor = mock(Executor.class);

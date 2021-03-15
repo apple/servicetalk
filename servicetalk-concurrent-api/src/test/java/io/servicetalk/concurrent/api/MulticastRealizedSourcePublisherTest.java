@@ -18,10 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +44,6 @@ import static org.hamcrest.core.Is.is;
  * {@link Subscriber#onSubscribe(Subscription)}.
  */
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class MulticastRealizedSourcePublisherTest {
 
     @Test

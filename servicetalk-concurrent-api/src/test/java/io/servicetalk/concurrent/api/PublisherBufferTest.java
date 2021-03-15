@@ -16,13 +16,11 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.annotation.Nullable;
 
@@ -36,7 +34,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class PublisherBufferTest {
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
     public static final int BUFFER_SIZE_HINT = 8;

@@ -26,12 +26,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class TimeoutPublisherTest {
     @RegisterExtension
     public final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();

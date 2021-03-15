@@ -20,12 +20,10 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -39,7 +37,6 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleConcatWithPublisherTest {
     private TestPublisherSubscriber<Integer> subscriber;
     private TestSingle<Integer> source;

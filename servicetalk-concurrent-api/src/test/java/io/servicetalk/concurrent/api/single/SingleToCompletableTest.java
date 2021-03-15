@@ -15,11 +15,10 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -30,10 +29,9 @@ import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleToCompletableTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     @Test
     public void subscribeOnOriginalIsPreserved() throws InterruptedException {

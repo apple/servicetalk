@@ -17,15 +17,14 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CompletableFuture;
@@ -40,11 +39,10 @@ import static io.servicetalk.concurrent.api.Single.fromStage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletionStageAsyncContextTest {
     private static final Key<Integer> K1 = newKey("k1");
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.withNamePrefix(ST_THREAD_PREFIX_NAME);
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final AtomicInteger threadCount = new AtomicInteger();

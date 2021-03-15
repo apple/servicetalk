@@ -15,16 +15,15 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CancellationException;
@@ -58,10 +57,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SingleToCompletionStageTest {
     @RegisterExtension
-    public final ExecutorExtension executorExtension = ExecutorExtension.withNamePrefix(ST_THREAD_PREFIX_NAME);
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
 
     private LegacyTestSingle<String> source;
     private static ExecutorService jdkExecutor;

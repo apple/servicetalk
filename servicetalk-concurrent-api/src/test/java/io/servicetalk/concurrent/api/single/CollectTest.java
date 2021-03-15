@@ -15,10 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +33,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CollectTest {
 
     @Test

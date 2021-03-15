@@ -19,10 +19,8 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.ExecutionException;
 
@@ -34,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class SubscribeThrowsTest {
 
     @Test

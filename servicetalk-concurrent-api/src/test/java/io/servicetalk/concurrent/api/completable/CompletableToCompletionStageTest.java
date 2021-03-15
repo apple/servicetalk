@@ -16,13 +16,11 @@
 package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.LegacyTestCompletable;
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +35,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class CompletableToCompletionStageTest {
     private static ExecutorService jdkExecutor;
 

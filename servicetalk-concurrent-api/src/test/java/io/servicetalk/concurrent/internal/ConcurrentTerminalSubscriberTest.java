@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -44,10 +43,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public class ConcurrentTerminalSubscriberTest {
     @RegisterExtension
-    public final ExecutorExtension<Executor> executorExtension = ExecutorExtension.newExtension();
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<Integer> publisher =
             new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();

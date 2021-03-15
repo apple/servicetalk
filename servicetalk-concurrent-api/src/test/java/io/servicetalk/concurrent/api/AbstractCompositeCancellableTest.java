@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 
 public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
     @RegisterExtension
-    public static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.newExtension();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     protected abstract T newCompositeCancellable();
 

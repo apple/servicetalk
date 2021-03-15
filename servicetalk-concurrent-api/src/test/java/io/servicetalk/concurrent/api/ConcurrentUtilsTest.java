@@ -15,12 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -39,7 +36,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(TimeoutTracingInfoExtension.class)
 public final class ConcurrentUtilsTest {
     private static final AtomicIntegerFieldUpdater<ConcurrentUtilsTest> lockUpdater =
             AtomicIntegerFieldUpdater.newUpdater(ConcurrentUtilsTest.class, "lock");
