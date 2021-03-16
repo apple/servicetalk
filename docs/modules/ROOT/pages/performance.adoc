@@ -588,7 +588,7 @@ link:https://wiki.mozilla.org/Security/Server_Side_TLS[Mozilla Server Side TLS])
 // add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
 
 BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
-        .secure().provider(SecurityConfigurator.SslProvider.OPENSSL).commit()
+        .sslConfig(new ServerSslConfigBuilder(..).provider(OPENSSL).build())
         .buildBlocking();
 HttpResponse resp = client.request(client.get("/"));
 ----

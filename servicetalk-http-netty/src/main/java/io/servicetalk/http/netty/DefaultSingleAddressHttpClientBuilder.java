@@ -45,7 +45,6 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -529,16 +528,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         influencerChainBuilder.add(loadBalancerFactory);
         return this;
-    }
-
-    @Deprecated
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> secure() {
-        assert address != null;
-        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(sslConfig -> {
-                    sslConfig(sslConfig);
-                    return DefaultSingleAddressHttpClientBuilder.this;
-                });
     }
 
     @Override

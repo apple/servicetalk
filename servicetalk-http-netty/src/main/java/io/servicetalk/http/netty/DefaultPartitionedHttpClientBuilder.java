@@ -45,7 +45,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
-import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -361,12 +360,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     public PartitionedHttpClientBuilder<U, R> appendClientFilter(final StreamingHttpClientFilterFactory function) {
         builderTemplate.appendClientFilter(function);
         return this;
-    }
-
-    @Deprecated
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> secure() {
-        return new DefaultPartitionedHttpClientSecurityConfigurator<>(builderTemplate.secure(), this);
     }
 
     @Override

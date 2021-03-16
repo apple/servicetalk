@@ -96,18 +96,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
                                                                      StreamingHttpConnectionFilterFactory factory);
 
     /**
-     * Initiate security configuration for this client. Calling
-     * {@link GrpcClientSecurityConfigurator#commit()} on the returned {@link GrpcClientSecurityConfigurator} will
-     * commit the configuration.
-     * @deprecated Use {@link #sslConfig(ClientSslConfig)}.
-     * @return {@link GrpcClientSecurityConfigurator} to configure security for this client. It is
-     * mandatory to call {@link GrpcClientSecurityConfigurator#commit() commit} after all configuration is
-     * done.
-     */
-    @Deprecated
-    GrpcClientSecurityConfigurator<U, R> secure();
-
-    /**
      * Set the SSL/TLS configuration.
      * @param sslConfig The configuration to use.
      * @return {@code this}.
