@@ -63,7 +63,7 @@ jobs:
           fi
 
           # Execute the gradlew command to publish the build
-          ./gradlew --parallel --max-workers=4$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
+          ./gradlew --parallel$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@fd75ee04fbef040d0198e50ad153fcf997a0cf78

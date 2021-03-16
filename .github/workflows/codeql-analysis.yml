@@ -24,6 +24,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
       - name: Execute gradle build
-        run: ./gradlew --parallel --max-workers=4 clean assemble
+        run: ./gradlew --parallel clean assemble
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1

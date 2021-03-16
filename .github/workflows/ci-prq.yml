@@ -30,7 +30,7 @@ jobs:
       - name: Build with Gradle
         env:
           CI: true
-        run: ./gradlew --parallel --max-workers=4 clean quality
+        run: ./gradlew --parallel clean quality
       - name: Upload CheckStyle Results
         if: always()
         uses: actions/upload-artifact@v2
