@@ -64,25 +64,17 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer encode(final Buffer src, final BufferAllocator allocator) {
-        return encode(src, 0, src.readableBytes(), allocator);
-    }
-
-    @Override
-    public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         requireNonNull(allocator);
 
-        final Buffer slice = src.slice(src.readerIndex() + offset, length);
-        if (slice.readableBytes() == 0) {
+        if (src.readableBytes() == 0) {
             throw new CodecEncodingException(this, "No data to encode.");
         }
-        // Consume input buffer
-        src.skipBytes(offset + length);
 
         final MessageToByteEncoder<ByteBuf> encoder = encoderSupplier.get();
         final EmbeddedChannel channel = newEmbeddedChannel(encoder, allocator);
 
         try {
-            ByteBuf origin = extractByteBufOrCreate(slice);
+            ByteBuf origin = extractByteBufOrCreate(src);
             channel.writeOutbound(origin);
 
             // May produce footer
@@ -102,6 +94,14 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         } finally {
             safeCleanup(channel);
         }
+    }
+
+    @Override
+    public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        final Buffer slice = src.slice(src.readerIndex() + offset, length);
+        // Consume input buffer
+        src.skipBytes(offset + length);
+        return encode(slice, allocator);
     }
 
     @Override
@@ -184,26 +184,17 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
 
     @Override
     public Buffer decode(final Buffer src, final BufferAllocator allocator) {
-        return decode(src, 0, src.readableBytes(), allocator);
-    }
-
-    @Override
-    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         requireNonNull(allocator);
 
-        final Buffer slice = src.slice(src.readerIndex() + offset, length);
-        if (slice.readableBytes() == 0) {
+        if (src.readableBytes() == 0) {
             throw new CodecEncodingException(this, "No data to encode.");
         }
-
-        // Consume input buffer
-        src.skipBytes(offset + length);
 
         final ByteToMessageDecoder decoder = decoderSupplier.get();
         final EmbeddedChannel channel = newEmbeddedChannel(decoder, allocator);
 
         try {
-            ByteBuf origin = extractByteBufOrCreate(slice);
+            ByteBuf origin = extractByteBufOrCreate(src);
             channel.writeInbound(origin);
 
             Buffer buffer = drainChannelQueueToSingleBuffer(channel.inboundMessages(), allocator);
@@ -220,6 +211,14 @@ final class NettyChannelContentCodec extends AbstractContentCodec {
         } finally {
             safeCleanup(channel);
         }
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+        final Buffer slice = src.slice(src.readerIndex() + offset, length);
+        // Consume input buffer
+        src.skipBytes(offset + length);
+        return decode(slice, allocator);
     }
 
     @Override
