@@ -42,9 +42,7 @@ public interface ContentCodec {
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
      */
-    default Buffer encode(Buffer src, BufferAllocator allocator) {
-        return encode(src, 0, src.readableBytes(), allocator);
-    }
+    Buffer encode(Buffer src, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
@@ -56,7 +54,10 @@ public interface ContentCodec {
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
+     * @deprecated Use the plain {@link #encode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
+     * where needed.
      */
+    @Deprecated
     Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
@@ -68,9 +69,7 @@ public interface ContentCodec {
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
      */
-    default Buffer decode(Buffer src, BufferAllocator allocator) {
-        return decode(src, 0, src.readableBytes(), allocator);
-    }
+    Buffer decode(Buffer src, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
@@ -82,7 +81,10 @@ public interface ContentCodec {
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
+     * @deprecated Use the plain {@link #decode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
+     * where needed.
      */
+    @Deprecated
     Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
