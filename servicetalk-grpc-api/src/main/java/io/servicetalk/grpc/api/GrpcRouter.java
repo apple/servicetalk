@@ -403,11 +403,11 @@ final class GrpcRouter {
                             return request.firstOrError()
                                     .onErrorMap(t -> {
                                         if (t instanceof NoSuchElementException) {
-                                            return new GrpcStatus(INVALID_ARGUMENT, null,
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
                                                     SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
                                                     .asException();
                                         } else if (t instanceof IllegalArgumentException) {
-                                            return new GrpcStatus(INVALID_ARGUMENT, null,
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
                                                     MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
                                         } else {
                                             return t;
