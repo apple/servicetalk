@@ -74,6 +74,7 @@ final class GrpcUtils {
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
+    private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
 
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
@@ -285,10 +286,12 @@ final class GrpcUtils {
         final HttpHeaders headers = response.headers();
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
-        final CharSequence acceptedEncoding = context == null ? null :
-                acceptedEncodingsHeaderValueOrCached(context.supportedMessageCodings());
-        if (acceptedEncoding != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+        if (context != null) {
+            final CharSequence acceptedEncoding =
+                    acceptedEncodingsHeaderValueOrCached(context.supportedMessageCodings());
+            if (acceptedEncoding != null) {
+                headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            }
         }
     }
 
@@ -339,20 +342,20 @@ final class GrpcUtils {
 
     @Nullable
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
             if (codec == identity()) {
                 continue;
             }
-
-            if (builder.length() > 0) {
-                builder.append(", ");
-            }
-
-            builder.append(codec.name());
+            builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);
         }
 
-        return builder.length() > 0 ? newAsciiString(builder.toString()) : null;
+        if (builder.length() > CONTENT_ENCODING_SEPARATOR.length()) {
+            builder.setLength(builder.length() - CONTENT_ENCODING_SEPARATOR.length());
+            return newAsciiString(builder.toString());
+        }
+
+        return null;
     }
 
     @SuppressWarnings("unchecked")

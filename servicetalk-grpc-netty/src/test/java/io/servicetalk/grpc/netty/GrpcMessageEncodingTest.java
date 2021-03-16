@@ -50,9 +50,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.zip.DeflaterOutputStream;
@@ -171,7 +172,7 @@ public class GrpcMessageEncodingTest {
         }
     };
 
-    private static final BiFunction<TestEncodingScenario, List<Throwable>, StreamingHttpServiceFilterFactory>
+    private static final BiFunction<TestEncodingScenario, BlockingQueue<Throwable>, StreamingHttpServiceFilterFactory>
             REQ_RESP_VERIFIER = (options, errors) -> new StreamingHttpServiceFilterFactory() {
         @Override
         public StreamingHttpServiceFilter create(final StreamingHttpService service) {
@@ -343,7 +344,7 @@ public class GrpcMessageEncodingTest {
     private final TesterClient client;
     private final ContentCodec requestEncoding;
     private final boolean expectedSuccess;
-    private final List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+    private final BlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     public GrpcMessageEncodingTest(final List<ContentCodec> serverSupportedCodings,
                                    final List<ContentCodec> clientSupportedCodings,
@@ -426,8 +427,9 @@ public class GrpcMessageEncodingTest {
     }
 
     private void throwAsyncErrors() throws Throwable {
-        if (!errors.isEmpty()) {
-            throw errors.get(0);
+        final Throwable error = errors.poll();
+        if (error != null) {
+            throw error;
         }
     }
 
