@@ -584,9 +584,8 @@ link:https://wiki.mozilla.org/Security/Server_Side_TLS[Mozilla Server Side TLS])
 
 [source, java]
 ----
-
-// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
-
+// You can force the provider to OPENSSL as demonstrated below, or don't specify the provider and OPENSSL will be used
+// if available on the classpath (currently runtime dependency of ServiceTalk).
 BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
         .sslConfig(new ServerSslConfigBuilder(..).provider(OPENSSL).build())
         .buildBlocking();
