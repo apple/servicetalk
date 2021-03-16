@@ -16,7 +16,7 @@
 
 if (!repositories) {
   repositories {
-    jcenter()
+    mavenCentral()
   }
 }
 
