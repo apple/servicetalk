@@ -77,7 +77,7 @@ final class RangeIntPublisher extends AbstractSynchronousPublisher<Integer> {
                 return;
             }
             pendingN = addWithOverflowProtection(pendingN, n);
-            for (; pendingN > 0 && index < end; --pendingN, index += min(stride, (long) end - index)) {
+            for (; pendingN > 0 && index < end; --pendingN, index += (int) min(stride, (long) end - index)) {
                 try {
                     subscriber.onNext(index);
                 } catch (Throwable cause) {
