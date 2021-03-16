@@ -294,7 +294,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorComplete(Predicate<? super Throwable> predicate) {
-        return onErrorResume(predicate, t -> Publisher.empty());
+        return new OnErrorCompletePublisher<>(this, predicate, executor);
     }
 
     /**
@@ -458,8 +458,32 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> onErrorMap(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Throwable> mapper) {
-        requireNonNull(mapper);
-        return onErrorResume(predicate, t -> Publisher.failed(mapper.apply(t)));
+        return new OnErrorMapPublisher<>(this, predicate, mapper, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     List<T> results;
+     *     try {
+     *         results = resultOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *         results = nextFactory.apply(cause);
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
+     * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
     }
 
     /**
@@ -526,34 +550,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> onErrorResume(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
-        requireNonNull(predicate);
-        requireNonNull(nextFactory);
-        return onErrorResume(t -> predicate.test(t) ? nextFactory.apply(t) : Publisher.failed(t));
-    }
-
-    /**
-     * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     List<T> results;
-     *     try {
-     *         results = resultOfThisPublisher();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
-     *         results = nextFactory.apply(cause);
-     *     }
-     *     return results;
-     * }</pre>
-     *
-     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
-     * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
-     * {@link Publisher} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
-     */
-    public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
-        return new ResumePublisher<>(this, nextFactory, executor);
+        return new OnErrorResumePublisher<>(this, predicate, nextFactory, executor);
     }
 
     /**

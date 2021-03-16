@@ -284,8 +284,30 @@ public abstract class Single<T> {
      */
     public final Single<T> onErrorMap(Predicate<? super Throwable> predicate,
                                       Function<? super Throwable, ? extends Throwable> mapper) {
-        requireNonNull(mapper);
-        return onErrorResume(predicate, t -> Single.failed(mapper.apply(t)));
+        return new OnErrorMapSingle<>(this, predicate, mapper, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     */
+    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
     }
 
     /**
@@ -352,32 +374,7 @@ public abstract class Single<T> {
      */
     public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
-        requireNonNull(predicate);
-        requireNonNull(nextFactory);
-        return onErrorResume(t -> predicate.test(t) ? nextFactory.apply(t) : Single.failed(t));
-    }
-
-    /**
-     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     T result;
-     *     try {
-     *         result = resultOfThisSingle();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
-     *         result = nextFactory.apply(cause);
-     *     }
-     *     return result;
-     * }</pre>
-     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
-     * {@link Single} provided by the passed {@code nextFactory}.
-     */
-    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
-        return new ResumeSingle<>(this, nextFactory, executor);
+        return new OnErrorResumeSingle<>(this, predicate, nextFactory, executor);
     }
 
     /**

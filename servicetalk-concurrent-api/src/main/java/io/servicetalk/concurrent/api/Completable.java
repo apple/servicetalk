@@ -169,7 +169,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorComplete(Predicate<? super Throwable> predicate) {
-        return onErrorResume(predicate, t -> Completable.completed());
+        return new OnErrorCompleteCompletable(this, predicate, executor);
     }
 
     /**
@@ -242,8 +242,29 @@ public abstract class Completable {
      */
     public final Completable onErrorMap(Predicate<? super Throwable> predicate,
                                         Function<? super Throwable, ? extends Throwable> mapper) {
-        requireNonNull(mapper);
-        return onErrorResume(predicate, t -> Completable.failed(mapper.apply(t)));
+        return new OnErrorMapCompletable(this, predicate, mapper, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Completable} by using another {@link Completable} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Completable is like re-throwing (nextFactory shouldn't throw).
+     *         nextFactory.apply(cause);
+     *     }
+     * }</pre>
+     *
+     * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
+     * @return A {@link Completable} that recovers from an error from this {@link Completable} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
+     */
+    public final Completable onErrorResume(Function<? super Throwable, ? extends Completable> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
     }
 
     /**
@@ -306,31 +327,7 @@ public abstract class Completable {
      */
     public final Completable onErrorResume(Predicate<? super Throwable> predicate,
                                            Function<? super Throwable, ? extends Completable> nextFactory) {
-        requireNonNull(predicate);
-        requireNonNull(nextFactory);
-        return onErrorResume(t -> predicate.test(t) ? nextFactory.apply(t) : Completable.failed(t));
-    }
-
-    /**
-     * Recover from any error emitted by this {@link Completable} by using another {@link Completable} provided by the
-     * passed {@code nextFactory}.
-     * <p>
-     * This method provides similar capabilities to a try/catch block in sequential programming:
-     * <pre>{@code
-     *     try {
-     *         resultOfThisCompletable();
-     *     } catch (Throwable cause) {
-     *         // Note that nextFactory returning a error Completable is like re-throwing (nextFactory shouldn't throw).
-     *         nextFactory.apply(cause);
-     *     }
-     * }</pre>
-     *
-     * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
-     * @return A {@link Completable} that recovers from an error from this {@link Completable} by using another
-     * {@link Completable} provided by the passed {@code nextFactory}.
-     */
-    public final Completable onErrorResume(Function<? super Throwable, ? extends Completable> nextFactory) {
-        return new ResumeCompletable(this, nextFactory, executor);
+        return new OnErrorResumeCompletable(this, predicate, nextFactory, executor);
     }
 
     /**
