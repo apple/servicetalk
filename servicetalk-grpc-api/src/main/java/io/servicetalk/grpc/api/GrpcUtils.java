@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
@@ -61,7 +61,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
-import static java.util.Collections.singletonList;
 
 final class GrpcUtils {
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
@@ -73,9 +72,9 @@ final class GrpcUtils {
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
-    private static final List<ContentCodec> GRPC_ACCEPT_ENCODING_NONE = singletonList(identity());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
+    private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
 
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
@@ -96,7 +95,10 @@ final class GrpcUtils {
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
-        headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncodingsHeaderValueOrCached(supportedEncodings));
+        final CharSequence acceptedEncoding = acceptedEncodingsHeaderValueOrCached(supportedEncodings);
+        if (acceptedEncoding != null) {
+            headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+        }
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
@@ -263,7 +265,7 @@ final class GrpcUtils {
      * <p>
      * If no supported codings are configured then the result is always {@code identity}
      * If no accepted codings are present in the request then the result is always {@code identity}
-     * In all other cases, the first matching encoding (that is NOT {@link ContentCodings#identity()}) is preferred,
+     * In all other cases, the first matching encoding (that is NOT {@link Identity#identity()}) is preferred,
      * otherwise {@code identity} is returned.
      *
      * @param httpMetaData The client metadata to extract relevant headers from.
@@ -285,8 +287,11 @@ final class GrpcUtils {
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
         if (context != null) {
-            headers.set(GRPC_ACCEPT_ENCODING_KEY,
-                    acceptedEncodingsHeaderValueOrCached(context.supportedMessageCodings()));
+            final CharSequence acceptedEncoding =
+                    acceptedEncodingsHeaderValueOrCached(context.supportedMessageCodings());
+            if (acceptedEncoding != null) {
+                headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+            }
         }
     }
 
@@ -324,30 +329,33 @@ final class GrpcUtils {
     }
 
     /**
-     * Construct the gRPC header {@code grpc-accept-encoding} representation of the given codings.
+     * Construct the gRPC header {@code grpc-accept-encoding} representation of the given context.
      *
      * @param codings the list of codings to be used in the string representation.
-     * @return a comma separated string representation of the codings for use as a header value
+     * @return a comma separated string representation of the codings for use as a header value or {@code null} if
+     * the only supported coding is {@link Identity#identity()}.
      */
+    @Nullable
     private static CharSequence acceptedEncodingsHeaderValueOrCached(final List<ContentCodec> codings) {
         return ENCODINGS_HEADER_CACHE.computeIfAbsent(codings, (__) -> acceptedEncodingsHeaderValue0(codings));
     }
 
+    @Nullable
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
             if (codec == identity()) {
                 continue;
             }
-
-            if (builder.length() > 0) {
-                builder.append(", ");
-            }
-
-            builder.append(codec.name());
+            builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);
         }
 
-        return newAsciiString(builder.toString());
+        if (builder.length() > CONTENT_ENCODING_SEPARATOR.length()) {
+            builder.setLength(builder.length() - CONTENT_ENCODING_SEPARATOR.length());
+            return newAsciiString(builder.toString());
+        }
+
+        return null;
     }
 
     @SuppressWarnings("unchecked")

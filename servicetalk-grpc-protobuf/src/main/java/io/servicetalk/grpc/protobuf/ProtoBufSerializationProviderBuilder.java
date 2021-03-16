@@ -65,7 +65,7 @@ public final class ProtoBufSerializationProviderBuilder {
     /**
      * Set the supported message encodings for the serializers and deserializers.
      * The encodings will be advertised on the endpoint's headers and also used to validate each encoded message
-     * {@link io.servicetalk.encoding.api.ContentCodings#identity()} is always supported regardless of the config passed
+     * {@link io.servicetalk.encoding.api.Identity#identity()} is always supported regardless of the config passed
      *
      * @param supportedCodings the set of allowed encodings
      * @param <T> Type of {@link MessageLite} to register.
