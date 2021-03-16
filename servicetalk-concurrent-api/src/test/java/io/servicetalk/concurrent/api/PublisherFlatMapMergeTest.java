@@ -124,7 +124,7 @@ public class PublisherFlatMapMergeTest {
         }).when(mockSubscriber).onNext(any());
 
         Processor<Integer, Integer> processor = newPublisherProcessor();
-        toSource(fromSource(processor).flatMapMergeDelayError(i -> from(i + 10).recoverWith(cause ->
+        toSource(fromSource(processor).flatMapMergeDelayError(i -> from(i + 10).onErrorResume(cause ->
                 from(i + 20).concat(failed(cause))))).subscribe(mockSubscriber);
 
         latchOnSubscribe.await();
@@ -932,7 +932,7 @@ public class PublisherFlatMapMergeTest {
                     }
                     throw new DeliberateException();
                 }).toPublisher(), 1024, 500)
-                .recoverWith(t -> {
+                .onErrorResume(t -> {
                     error.set(t);
                     return Publisher.empty();
                 }).collect(ArrayList::new, (ints, s) -> {

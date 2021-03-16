@@ -124,9 +124,9 @@ public class NettyChannelContentCodecTest {
 
         final AtomicReference<Exception> error = new AtomicReference<>();
         codec.decode(Publisher.from(EMPTY_BUFFER, encoded), DEFAULT_ALLOCATOR)
-                .recoverWith(t -> {
+                .onErrorComplete(t -> {
                     error.set((Exception) t);
-                    return Publisher.empty();
+                    return true;
                 }).toFuture().get();
 
         throw error.get();

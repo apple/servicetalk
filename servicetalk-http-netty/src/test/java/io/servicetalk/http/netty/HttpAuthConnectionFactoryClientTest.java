@@ -103,7 +103,7 @@ public class HttpAuthConnectionFactoryClientTest {
                 final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
             return delegate.newConnection(resolvedAddress, observer).flatMap(cnx ->
                     cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))
-                            .recoverWith(cause -> {
+                            .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();
                                 return failed(new IllegalStateException("failed auth"));
                             })

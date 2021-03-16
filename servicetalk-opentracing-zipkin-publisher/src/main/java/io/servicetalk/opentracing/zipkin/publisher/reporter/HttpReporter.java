@@ -187,9 +187,9 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
                     }
                 })
                 .ignoreElement()
-                .onErrorResume(cause -> {
+                .onErrorComplete(cause -> {
                     LOGGER.error("Failed to send a span, ignoring.", cause);
-                    return completed();
+                    return true;
                 });
     }
 

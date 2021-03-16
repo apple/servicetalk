@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final Publisher<T> original;
-    private final Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
+    private final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-    ResumePublisher(Publisher<T> original, Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
+    ResumePublisher(Publisher<T> original, Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory,
                     Executor executor) {
         super(executor);
         this.original = original;
@@ -55,10 +55,10 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Nullable
         private SequentialSubscription sequentialSubscription;
         @Nullable
-        private Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
+        private Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
-                         Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
+                         Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;

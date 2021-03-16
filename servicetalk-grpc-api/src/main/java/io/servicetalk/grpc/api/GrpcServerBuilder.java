@@ -370,7 +370,7 @@ public abstract class GrpcServerBuilder {
             } catch (Throwable cause) {
                 return convertToGrpcErrorResponse(ctx, responseFactory, cause);
             }
-            return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+            return handle.onErrorResume(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
         }
 
         private static Single<StreamingHttpResponse> convertToGrpcErrorResponse(

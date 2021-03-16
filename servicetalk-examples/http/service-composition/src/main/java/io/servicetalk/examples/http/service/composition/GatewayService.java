@@ -118,7 +118,7 @@ final class GatewayService implements HttpService {
                                     // response with a static "unavailable" rating when the rating service is
                                     // unavailable or provides a bad response. This is typically referred to as a
                                     // "fallback".
-                                    .recoverWith(cause -> succeeded(new Rating(recommendation.getEntityId(), -1)));
+                                    .onErrorReturn(cause -> new Rating(recommendation.getEntityId(), -1));
 
                     // The below asynchronously queries metadata, user and rating backends and zips them into a single
                     // FullRecommendation instance.

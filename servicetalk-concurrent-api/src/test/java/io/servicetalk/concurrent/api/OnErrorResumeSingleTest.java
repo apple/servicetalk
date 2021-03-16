@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ResumeSingleTest {
+public final class OnErrorResumeSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
     private TestSingle<Integer> first;
@@ -44,7 +44,7 @@ public final class ResumeSingleTest {
         subscriber = new TestSingleSubscriber<>();
         first = new TestSingle<>();
         second = new TestSingle<>();
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
     }
 
     @Test
@@ -96,7 +96,7 @@ public final class ResumeSingleTest {
         first = new TestSingle<>();
         subscriber = new TestSingleSubscriber<>();
         DeliberateException ex = new DeliberateException();
-        toSource(first.recoverWith(throwable -> {
+        toSource(first.onErrorResume(throwable -> {
             throw ex;
         })).subscribe(subscriber);
 

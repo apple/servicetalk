@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private final Single<T> original;
-    private final Function<Throwable, ? extends Single<? extends T>> nextFactory;
+    private final Function<? super Throwable, ? extends Single<? extends T>> nextFactory;
 
     /**
      * New instance.
@@ -38,7 +38,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
      * @param original Source.
      * @param nextFactory For creating the next {@link Single}.
      */
-    ResumeSingle(Single<T> original, Function<Throwable, ? extends Single<? extends T>> nextFactory,
+    ResumeSingle(Single<T> original, Function<? super Throwable, ? extends Single<? extends T>> nextFactory,
                  Executor executor) {
         super(executor);
         this.original = original;
@@ -60,10 +60,10 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         @Nullable
         private SequentialCancellable sequentialCancellable;
         @Nullable
-        private Function<Throwable, ? extends Single<? extends T>> nextFactory;
+        private Function<? super Throwable, ? extends Single<? extends T>> nextFactory;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
-                         Function<Throwable, ? extends Single<? extends T>> nextFactory,
+                         Function<? super Throwable, ? extends Single<? extends T>> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;

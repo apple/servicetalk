@@ -64,7 +64,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -265,8 +264,8 @@ final class GrpcRouter {
                                                 .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(responseEncoding,
                                                                 responseClass)))
-                                        .recoverWith(cause -> succeeded(newErrorResponse(responseFactory,
-                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator())));
+                                        .onErrorReturn(cause -> newErrorResponse(responseFactory,
+                                                finalServiceContext, cause, ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
                                 return succeeded(newErrorResponse(responseFactory, serviceContext, t,
                                         ctx.executionContext().bufferAllocator()));
@@ -402,16 +401,16 @@ final class GrpcRouter {
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
                             return request.firstOrError()
-                                    .recoverWith(t -> {
+                                    .onErrorMap(t -> {
                                         if (t instanceof NoSuchElementException) {
-                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                            return new GrpcStatus(INVALID_ARGUMENT, null,
                                                     SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
-                                                    .asException());
+                                                    .asException();
                                         } else if (t instanceof IllegalArgumentException) {
-                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
-                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException());
+                                            return new GrpcStatus(INVALID_ARGUMENT, null,
+                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
                                         } else {
-                                            return failed(t);
+                                            return t;
                                         }
                                     })
                                     .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));

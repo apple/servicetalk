@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
-    private final Function<Throwable, ? extends Completable> nextFactory;
+    private final Function<? super Throwable, ? extends Completable> nextFactory;
 
-    ResumeCompletable(Completable original, Function<Throwable, ? extends Completable> nextFactory,
+    ResumeCompletable(Completable original, Function<? super Throwable, ? extends Completable> nextFactory,
                       Executor executor) {
         super(executor);
         this.original = original;
@@ -53,9 +53,9 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
         @Nullable
         private SequentialCancellable sequentialCancellable;
         @Nullable
-        private Function<Throwable, ? extends Completable> nextFactory;
+        private Function<? super Throwable, ? extends Completable> nextFactory;
 
-        ResumeSubscriber(Subscriber subscriber, Function<Throwable, ? extends Completable> nextFactory,
+        ResumeSubscriber(Subscriber subscriber, Function<? super Throwable, ? extends Completable> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
