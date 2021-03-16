@@ -2859,7 +2859,7 @@ public abstract class Publisher<T> {
      *
      * @param v1 The first value that the returned {@link Publisher} will emit.
      * @param v2 The second value that the returned {@link Publisher} will emit.
-     * @param v3 The second value that the returned {@link Publisher} will emit.
+     * @param v3 The third value that the returned {@link Publisher} will emit.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      *
      * @return A new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
