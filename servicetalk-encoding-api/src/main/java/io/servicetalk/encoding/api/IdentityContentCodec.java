@@ -34,6 +34,16 @@ final class IdentityContentCodec implements ContentCodec {
     }
 
     @Override
+    public Buffer encode(final Buffer src, final BufferAllocator allocator) {
+        return src;
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final BufferAllocator allocator) {
+        return src;
+    }
+
+    @Override
     public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         return src;
     }

@@ -115,16 +115,13 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public Buffer encode(final Buffer src, final int offset, final int length,
-                             final BufferAllocator allocator) {
-            src.readerIndex(src.readerIndex() + offset);
-
+        public Buffer encode(final Buffer src, final BufferAllocator allocator) {
             final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
             DeflaterOutputStream output = null;
             try {
                 output = new GZIPOutputStream(asOutputStream(dst));
-                output.write(src.array(), src.arrayOffset() + src.readerIndex(), length);
-                src.readerIndex(src.readerIndex() + length);
+                output.write(src.array(), src.arrayOffset() + src.readerIndex(), src.readableBytes());
+                src.skipBytes(src.readableBytes());
                 output.finish();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -136,10 +133,12 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public Buffer decode(final Buffer src, final int offset, final int length,
-                             final BufferAllocator allocator) {
-            src.readerIndex(src.readerIndex() + offset);
+        public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+            throw new UnsupportedOperationException();
+        }
 
+        @Override
+        public Buffer decode(final Buffer src, final BufferAllocator allocator) {
             final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
             InflaterInputStream input = null;
             try {
@@ -154,6 +153,11 @@ public class GrpcMessageEncodingTest {
             }
 
             return dst;
+        }
+
+        @Override
+        public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

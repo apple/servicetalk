@@ -158,7 +158,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                         Buffer buffer = toDeserialize;
                         int decodedLengthOfData = lengthOfData;
                         if (compressed) {
-                            buffer = codec.decode(toDeserialize, 0, lengthOfData, DEFAULT_ALLOCATOR);
+                            buffer = codec.decode(toDeserialize.readSlice(lengthOfData), DEFAULT_ALLOCATOR);
                             decodedLengthOfData = buffer.readableBytes();
                         }
 
@@ -306,7 +306,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             Buffer serialized = DEFAULT_ALLOCATOR.newBuffer(size);
             serialize0(msg, serialized);
 
-            Buffer encoded = codec.encode(serialized, 0, serialized.readableBytes(), DEFAULT_ALLOCATOR);
+            Buffer encoded = codec.encode(serialized, DEFAULT_ALLOCATOR);
 
             destination.writeByte(FLAG_COMPRESSED);
             destination.writeInt(encoded.readableBytes());

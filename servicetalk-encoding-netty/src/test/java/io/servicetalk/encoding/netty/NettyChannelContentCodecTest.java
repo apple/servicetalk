@@ -76,41 +76,31 @@ public class NettyChannelContentCodecTest {
 
     @Test
     public void testEncode() {
-        testEncode(DEFAULT_ALLOCATOR, 0);
+        testEncode(DEFAULT_ALLOCATOR);
     }
 
     @Test
-    public void testEncodeWithOffset() {
-        testEncode(DEFAULT_ALLOCATOR, 10);
+    public void testEncodeWithReadOnlyBuffer() {
+        testEncode(DEFAULT_RO_ALLOCATOR);
     }
 
     @Test(expected = CodecEncodingException.class)
     public void testEncodeWithOffsetAndZeroLength() {
-        testEncode(DEFAULT_ALLOCATOR, 10, 0);
+        testEncode(DEFAULT_ALLOCATOR, 0);
     }
 
-    @Test(expected = CodecEncodingException.class)
-    public void testEncodeWithOffsetAndOverflowLength() {
-        testEncode(DEFAULT_ALLOCATOR, 1023, 0);
+    private void testEncode(final BufferAllocator allocator) {
+        testEncode(allocator, INPUT.length());
     }
 
-    @Test
-    public void testEncodeWithOffsetAndReadOnlyBuffer() {
-        testEncode(DEFAULT_RO_ALLOCATOR, 10);
-    }
-
-    private void testEncode(final BufferAllocator allocator, final int offset) {
-        testEncode(allocator, offset, INPUT.length() - offset);
-    }
-
-    private void testEncode(final BufferAllocator allocator, final int offset, final int length) {
+    private void testEncode(final BufferAllocator allocator, final int length) {
         Buffer source = allocator.fromAscii(INPUT);
-        Buffer encoded = codec.encode(source, offset, length, DEFAULT_ALLOCATOR);
+        Buffer encoded = codec.encode(source.readSlice(length), DEFAULT_ALLOCATOR);
 
         assertThat(encoded, notNullValue());
 
         Buffer decoded = codec.decode(encoded, DEFAULT_ALLOCATOR);
-        assertThat(decoded.toString(US_ASCII), equalTo(INPUT.substring(offset)));
+        assertThat(decoded.toString(US_ASCII), equalTo(INPUT.substring(0, length)));
     }
 
     @Test(expected = CodecDecodingException.class)

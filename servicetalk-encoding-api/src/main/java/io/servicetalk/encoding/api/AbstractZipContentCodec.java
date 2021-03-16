@@ -66,6 +66,11 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
     abstract InflaterInputStream newInflaterInputStream(InputStream in) throws IOException;
 
     @Override
+    public Buffer encode(final Buffer src, final BufferAllocator allocator) {
+        return encode(src, 0, src.readableBytes(), allocator);
+    }
+
+    @Override
     public final Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
         if (offset < 0) {
             throw new IllegalArgumentException("Invalid offset: " + offset + " (expected >= 0)");
@@ -185,6 +190,11 @@ abstract class AbstractZipContentCodec extends AbstractContentCodec {
                         subscriber.onComplete();
                     }
                 });
+    }
+
+    @Override
+    public Buffer decode(final Buffer src, final BufferAllocator allocator) {
+        return decode(src, 0, src.readableBytes(), allocator);
     }
 
     @Override
