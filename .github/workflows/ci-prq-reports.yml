@@ -16,6 +16,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: checkstyle-results-${{ matrix.java }}
       - name: Publish Checkstyle Report
@@ -38,6 +39,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: pmd-results-${{ matrix.java }}
       - name: Publish PMD Report
@@ -60,6 +62,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: completed
           commit: ${{ github.event.workflow_run.head_commit.id }}
           name: spotbugs-results-${{ matrix.java }}
       - name: Publish SpotBugs Report
