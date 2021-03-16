@@ -90,7 +90,6 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
             try {
                 next = predicate.test(t) ? requireNonNull(nextFactory.apply(t)) : null;
             } catch (Throwable throwable) {
-                throwable.addSuppressed(t);
                 subscriber.onError(throwable);
                 return;
             }

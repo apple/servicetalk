@@ -89,7 +89,6 @@ final class OnErrorResumeCompletable extends AbstractNoHandleSubscribeCompletabl
             try {
                 next = predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
             } catch (Throwable t) {
-                t.addSuppressed(throwable);
                 subscriber.onError(t);
                 return;
             }
