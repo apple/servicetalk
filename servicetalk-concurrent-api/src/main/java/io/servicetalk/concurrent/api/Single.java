@@ -537,8 +537,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -550,9 +550,9 @@ public abstract class Single<T> {
      * @param other The other {@link Single} to zip with.
      * @param zipper Used to combine the completed results for each item from {@code singles}.
      * @param <T2> The type of {@code other}.
-     * @param <R> The result type of the combinator.
-     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
@@ -1889,7 +1889,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
      * by {@code singles}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
@@ -1904,9 +1904,9 @@ public abstract class Single<T> {
      * @param zipper Used to combine the completed results for each item from {@code singles}.
      * @param <T1> The type for the first {@link Single}.
      * @param <T2> The type for the second {@link Single}.
-     * @param <R> The result type of the combinator.
-     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
@@ -1915,8 +1915,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code singles}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1933,9 +1933,9 @@ public abstract class Single<T> {
      * @param <T1> The type for the first {@link Single}.
      * @param <T2> The type for the second {@link Single}.
      * @param <T3> The type for the third {@link Single}.
-     * @param <R> The result type of the combinator.
-     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zip(
@@ -1945,8 +1945,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code singles}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1960,15 +1960,15 @@ public abstract class Single<T> {
      * @param s1 The first {@link Single} to zip.
      * @param s2 The second {@link Single} to zip.
      * @param s3 The third {@link Single} to zip.
-     * @param s4 The forth {@link Single} to zip.
+     * @param s4 The fourth {@link Single} to zip.
      * @param zipper Used to combine the completed results for each item from {@code singles}.
      * @param <T1> The type for the first {@link Single}.
      * @param <T2> The type for the second {@link Single}.
      * @param <T3> The type for the third {@link Single}.
-     * @param <T4> The type for the forth {@link Single}.
-     * @param <R> The result type of the combinator.
-     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * @param <T4> The type for the fourth {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zip(
@@ -1978,8 +1978,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Create a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1991,9 +1991,9 @@ public abstract class Single<T> {
      * @param zipper Used to combine the completed results for each item from {@code singles}.
      * @param singles The collection of {@link Single}s that when complete provides the results to "zip" (aka combine)
      * together.
-     * @param <R> The result type of the combinator.
-     * @return a new {@link Single} that emits the results of a specified combinator {@link Function} to items emitted
-     * by {@code singles}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <R> Single<R> zip(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {

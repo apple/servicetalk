@@ -18,11 +18,11 @@ package io.servicetalk.concurrent.api;
 import javax.annotation.Nullable;
 
 /**
- * A functional interface that accepts 3 arguments and generates a return value.
+ * A functional interface that accepts 4 arguments and generates a return value.
  * @param <T1> The type of the first argument.
  * @param <T2> The type of the second argument.
  * @param <T3> The type of the third argument.
- * @param <T4> The type of the forth argument.
+ * @param <T4> The type of the fourth argument.
  * @param <R> The result of the function.
  */
 @FunctionalInterface

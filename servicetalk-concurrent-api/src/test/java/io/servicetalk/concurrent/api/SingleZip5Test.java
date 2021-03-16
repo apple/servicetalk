@@ -37,7 +37,7 @@ public class SingleZip5Test {
     private final TestSingle<Integer> first = new TestSingle<>();
     private final TestSingle<Double> second = new TestSingle<>();
     private final TestSingle<Short> third = new TestSingle<>();
-    private final TestSingle<Byte> forth = new TestSingle<>();
+    private final TestSingle<Byte> fourth = new TestSingle<>();
     private final TestSingle<Boolean> fifth = new TestSingle<>();
     private final TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
 
@@ -52,7 +52,7 @@ public class SingleZip5Test {
     }
 
     private void allComplete(boolean inOrderCompletion) {
-        toSource(zip(combineFunc(), first, second, third, forth, fifth)).subscribe(subscriber);
+        toSource(zip(combineFunc(), first, second, third, fourth, fifth)).subscribe(subscriber);
         subscriber.awaitSubscription();
         int i = 3;
         double d = 10.23;
@@ -63,11 +63,11 @@ public class SingleZip5Test {
             first.onSuccess(i);
             second.onSuccess(d);
             third.onSuccess(s);
-            forth.onSuccess(b);
+            fourth.onSuccess(b);
             fifth.onSuccess(bool);
         } else {
             fifth.onSuccess(bool);
-            forth.onSuccess(b);
+            fourth.onSuccess(b);
             third.onSuccess(s);
             second.onSuccess(d);
             first.onSuccess(i);
@@ -101,7 +101,7 @@ public class SingleZip5Test {
     }
 
     private void justError(int errorNum) {
-        toSource(zip(combineFunc(), first, second, third, forth, fifth)).subscribe(subscriber);
+        toSource(zip(combineFunc(), first, second, third, fourth, fifth)).subscribe(subscriber);
         subscriber.awaitSubscription();
         if (errorNum == 1) {
             first.onError(DELIBERATE_EXCEPTION);
@@ -110,7 +110,7 @@ public class SingleZip5Test {
         } else if (errorNum == 3) {
             third.onError(DELIBERATE_EXCEPTION);
         } else if (errorNum == 4) {
-            forth.onError(DELIBERATE_EXCEPTION);
+            fourth.onError(DELIBERATE_EXCEPTION);
         } else {
             fifth.onError(DELIBERATE_EXCEPTION);
         }
@@ -128,17 +128,17 @@ public class SingleZip5Test {
     }
 
     private void errorAfterComplete(boolean inOrderCompletion) {
-        toSource(zip(combineFunc(), first, second, third, forth, fifth)).subscribe(subscriber);
+        toSource(zip(combineFunc(), first, second, third, fourth, fifth)).subscribe(subscriber);
         subscriber.awaitSubscription();
         if (inOrderCompletion) {
             first.onSuccess(10);
             second.onSuccess(22.2);
             third.onSuccess((short) 22);
-            forth.onSuccess((byte) 9);
+            fourth.onSuccess((byte) 9);
             fifth.onError(DELIBERATE_EXCEPTION);
         } else {
             fifth.onSuccess(true);
-            forth.onSuccess((byte) 9);
+            fourth.onSuccess((byte) 9);
             third.onSuccess((short) 22);
             second.onSuccess(10.1);
             first.onError(DELIBERATE_EXCEPTION);
@@ -164,7 +164,7 @@ public class SingleZip5Test {
             return subscriber1;
         });
         TestCancellable cancellable4 = new TestCancellable();
-        TestSingle<Byte> forth = new TestSingle.Builder<Byte>().disableAutoOnSubscribe().build(subscriber1 -> {
+        TestSingle<Byte> fourth = new TestSingle.Builder<Byte>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable4);
             return subscriber1;
         });
@@ -173,7 +173,7 @@ public class SingleZip5Test {
             subscriber1.onSubscribe(cancellable5);
             return subscriber1;
         });
-        toSource(zip(combineFunc(), first, second, third, forth, fifth)).subscribe(subscriber);
+        toSource(zip(combineFunc(), first, second, third, fourth, fifth)).subscribe(subscriber);
         subscriber.awaitSubscription().cancel();
         cancellable1.awaitCancelled();
         cancellable2.awaitCancelled();
@@ -195,7 +195,7 @@ public class SingleZip5Test {
             return subscriber1;
         });
         TestCancellable cancellable4 = new TestCancellable();
-        TestSingle<Byte> forth = new TestSingle.Builder<Byte>().disableAutoOnSubscribe().build(subscriber1 -> {
+        TestSingle<Byte> fourth = new TestSingle.Builder<Byte>().disableAutoOnSubscribe().build(subscriber1 -> {
             subscriber1.onSubscribe(cancellable4);
             return subscriber1;
         });
@@ -204,7 +204,7 @@ public class SingleZip5Test {
             subscriber1.onSubscribe(cancellable5);
             return subscriber1;
         });
-        toSource(zip(combineFunc(), first, second, third, forth, fifth)).subscribe(subscriber);
+        toSource(zip(combineFunc(), first, second, third, fourth, fifth)).subscribe(subscriber);
         Cancellable c = subscriber.awaitSubscription();
         second.onSuccess(10.1);
         c.cancel();
