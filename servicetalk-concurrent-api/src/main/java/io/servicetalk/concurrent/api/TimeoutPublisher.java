@@ -33,15 +33,42 @@ import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * Publisher which cancels the subscription after the specified duration if not completed. Two timer modes are offered:
+ * <ul>
+ *     <li>An absolute timeout which requires that the publisher receive all items and complete (or error)
+ *     <li>A mode which resets the timer for each items received by {@link Subscriber#onNext(Object) onNext} providing
+ *     an "idle" timeout.
+ * </ul>
+ *
+ * <p/>For either timer mode the timer begins with the subscription.
+ *
+ * @param <T> Type of items
+ */
 final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
     private final io.servicetalk.concurrent.Executor timeoutExecutor;
+    /**
+     * non-negative nanoseconds until the timeout
+     */
     private final long durationNs;
+    /**
+     * If true then reset the timeout at every {@link TimeoutSubscriber#onNext(Object)} otherwise never reset after
+     * subscribe
+     */
+    private final boolean resetAtOnNext;
 
     TimeoutPublisher(final Publisher<T> original,
                      final Executor executor,
                      final Duration duration) {
         this(original, executor, duration, executor);
+    }
+
+    TimeoutPublisher(final Publisher<T> original,
+                     final Executor executor,
+                     final Duration duration,
+                     final boolean resetAtOnNext) {
+        this(original, executor, duration, resetAtOnNext, executor);
     }
 
     TimeoutPublisher(final Publisher<T> original,
@@ -55,7 +82,15 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                      final Executor publisherExecutor,
                      final Duration duration,
                      final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        this(original, publisherExecutor, duration.toNanos(), timeoutExecutor);
+        this(original, publisherExecutor, duration.toNanos(), true, timeoutExecutor);
+    }
+
+    TimeoutPublisher(final Publisher<T> original,
+                     final Executor publisherExecutor,
+                     final Duration duration,
+                     final boolean resetAtOnNext,
+                     final io.servicetalk.concurrent.Executor timeoutExecutor) {
+        this(original, publisherExecutor, duration.toNanos(), resetAtOnNext, timeoutExecutor);
     }
 
     TimeoutPublisher(final Publisher<T> original,
@@ -63,12 +98,13 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                      final long duration,
                      final TimeUnit unit,
                      final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        this(original, publisherExecutor, unit.toNanos(duration), timeoutExecutor);
+        this(original, publisherExecutor, unit.toNanos(duration), true, timeoutExecutor);
     }
 
     private TimeoutPublisher(final Publisher<T> original,
                              final Executor publisherExecutor,
                              final long durationNs,
+                             final boolean resetAtOnNext,
                              final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(publisherExecutor);
         this.original = requireNonNull(original);
@@ -76,6 +112,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // We use the duration in arithmetic below to determine the expiration time for the "next timer" below. So
         // lets cap this at 0 to simplify overflow at that time.
         this.durationNs = max(0, durationNs);
+        this.resetAtOnNext = resetAtOnNext;
     }
 
     @Override
@@ -122,7 +159,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          */
         @Nullable
         private volatile Cancellable timerCancellable;
-        private volatile long lastOnNextNs;
+        private volatile long lastResetNS;
 
         private TimeoutSubscriber(TimeoutPublisher<X> parent,
                                   Subscriber<? super X> target,
@@ -141,7 +178,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                                     AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader, contextProvider);
             try {
-                s.lastOnNextNs = nanoTime();
+                s.lastResetNS = nanoTime();
                 // CAS is just in case the timer fired, the run method schedule a new timer before this thread is able
                 // to set the initial timer value. in this case we don't want to overwrite the active timer.
                 //
@@ -170,7 +207,9 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onNext(final X x) {
-            lastOnNextNs = nanoTime();
+            if (parent.resetAtOnNext) {
+                lastResetNS = nanoTime();
+            }
             target.onNext(x);
         }
 
@@ -228,7 +267,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             // Instead of recursion we use a 2 level for loop structure.
             for (;;) {
-                final long nextTimeoutNs = parent.durationNs - (nanoTime() - lastOnNextNs);
+                final long nextTimeoutNs = parent.durationNs - (nanoTime() - lastResetNS);
                 if (nextTimeoutNs <= 0) { // Timeout!
                     offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
                             "ms"));

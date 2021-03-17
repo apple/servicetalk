@@ -1654,6 +1654,41 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> withTimeout(Duration duration) {
+        return withTimeout(duration, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> withTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutPublisher<>(this, executor, duration, false, timeoutExecutor);
+    }
+
+    /**
      * Emits items emitted by {@code next} {@link Publisher} after {@code this} {@link Publisher} terminates
      * successfully.
      * <p>
