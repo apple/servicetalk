@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class OnErrorOnErrorResumeSingleTest {
+public final class OnErrorResumeSingleTest {
 
     private TestSingleSubscriber<Integer> subscriber;
     private TestSingle<Integer> first;

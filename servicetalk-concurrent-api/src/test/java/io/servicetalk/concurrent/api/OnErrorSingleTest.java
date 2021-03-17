@@ -18,7 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -28,8 +29,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class OnErrorSingleTest {
-    private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
-    private final TestSingle<Integer> first = new TestSingle<>();
+    private TestSingleSubscriber<Integer> subscriber;
+    private TestSingle<Integer> first;
+
+    @BeforeEach
+    public void setUp() {
+        subscriber = new TestSingleSubscriber<>();
+        first = new TestSingle<>();
+    }
 
     @Test
     public void onErrorReturnMatch() {

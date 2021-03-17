@@ -18,7 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -28,8 +29,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class OnErrorPublisherTest {
-    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private final TestPublisher<Integer> first = new TestPublisher<>();
+    private TestPublisherSubscriber<Integer> subscriber;
+    private TestPublisher<Integer> first;
+
+    @BeforeEach
+    public void setUp() {
+        subscriber = new TestPublisherSubscriber<>();
+        first = new TestPublisher<>();
+    }
 
     @Test
     public void onErrorComplete() {

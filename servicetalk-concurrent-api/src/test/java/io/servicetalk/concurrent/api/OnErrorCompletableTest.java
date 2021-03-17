@@ -18,7 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
@@ -28,8 +29,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class OnErrorCompletableTest {
-    private final TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
-    private final TestCompletable first = new TestCompletable();
+    private TestCompletableSubscriber subscriber;
+    private TestCompletable first;
+
+    @BeforeEach
+    public void setUp() {
+        subscriber = new TestCompletableSubscriber();
+        first = new TestCompletable();
+    }
 
     @Test
     public void onErrorComplete() {
