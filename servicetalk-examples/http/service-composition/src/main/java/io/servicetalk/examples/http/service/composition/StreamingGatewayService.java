@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
+import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**

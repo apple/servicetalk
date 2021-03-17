@@ -35,7 +35,7 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
+import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
