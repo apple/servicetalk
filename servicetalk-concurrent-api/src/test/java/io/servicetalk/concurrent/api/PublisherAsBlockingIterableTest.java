@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,21 +33,16 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public final class PublisherAsBlockingIterableTest {
-
-    @Rule
-    public final ExpectedException expected = none();
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     private final TestPublisher<Integer> source = new TestPublisher<>();
 
@@ -64,8 +56,7 @@ public final class PublisherAsBlockingIterableTest {
 
     @Test
     public void removeNotSupported() {
-        expected.expect(instanceOf(UnsupportedOperationException.class));
-        source.toIterable().iterator().remove();
+        assertThrows(UnsupportedOperationException.class, () -> source.toIterable().iterator().remove());
     }
 
     @Test
@@ -80,19 +71,16 @@ public final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        expected.expect(sameInstance(de));
-        iterator.next();
+        assertSame(de, assertThrows(DeliberateException.class, () -> iterator.next()));
     }
 
     @Test
     public void doubleHashNextWithError() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = Publisher.<Integer>failed(de)
-                .toIterable().iterator();
+        Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
-        expected.expect(sameInstance(de));
-        iterator.next();
+        assertSame(de, assertThrows(DeliberateException.class, () -> iterator.next()));
     }
 
     @Test
@@ -105,8 +93,7 @@ public final class PublisherAsBlockingIterableTest {
     public void nextWithEmpty() {
         Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
-        expected.expect(instanceOf(NoSuchElementException.class));
-        iterator.next();
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
     }
 
     @Test
@@ -119,15 +106,10 @@ public final class PublisherAsBlockingIterableTest {
         assertThat("hasNext timed out.", iterator.hasNext(-1, MILLISECONDS), is(true));
         assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(1));
         assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(2));
-        expected.expect(instanceOf(TimeoutException.class));
-        try {
-            iterator.hasNext(10, MILLISECONDS);
-            fail("expected exception");
-        } catch (TimeoutException e) {
-            assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
-            assertTrue(subscription.isCancelled());
-            throw e;
-        }
+
+        assertThrows(TimeoutException.class, () -> iterator.hasNext(10, MILLISECONDS));
+        assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
@@ -140,14 +122,11 @@ public final class PublisherAsBlockingIterableTest {
         assertThat("hasNext timed out.", iterator.hasNext(-1, MILLISECONDS), is(true));
         assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(1));
         assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(2));
-        expected.expect(instanceOf(TimeoutException.class));
-        try {
-            iterator.next(10, MILLISECONDS);
-        } catch (TimeoutException e) {
-            assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
-            assertTrue(subscription.isCancelled());
-            throw e;
-        }
+
+        assertThrows(TimeoutException.class, () -> iterator.next(10, MILLISECONDS));
+
+        assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
+        assertTrue(subscription.isCancelled());
     }
 
     @Test
@@ -194,12 +173,11 @@ public final class PublisherAsBlockingIterableTest {
         source.onNext(2);
         assertThat("Unexpected item found.", iterator.next(), is(2));
         source.onComplete();
-        expected.expect(instanceOf(NoSuchElementException.class));
-        iterator.next();
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
     }
 
     @Test
-    public void nextWithTimeoutWithoutHasNextAndTerminal() throws TimeoutException {
+    public void nextWithTimeoutWithoutHasNextAndTerminal() {
         BlockingIterator<Integer> iterator = source.toIterable().iterator();
         assertTrue(source.isSubscribed());
         source.onNext(1);
@@ -207,8 +185,7 @@ public final class PublisherAsBlockingIterableTest {
         source.onNext(2);
         assertThat("Unexpected item found.", iterator.next(), is(2));
         source.onComplete();
-        expected.expect(instanceOf(NoSuchElementException.class));
-        iterator.next(10, MILLISECONDS);
+        assertThrows(NoSuchElementException.class, () -> iterator.next(10, MILLISECONDS));
     }
 
     @Test
@@ -257,8 +234,8 @@ public final class PublisherAsBlockingIterableTest {
         DeliberateException de = new DeliberateException();
         source.onError(de);
         assertThat("Item not expected but found.", iterator.hasNext(), is(true));
-        expected.expect(is(de));
-        iterator.next();
+        Exception e = assertThrows(DeliberateException.class, () -> iterator.next());
+        assertThat(e, is(de));
     }
 
     @Test
@@ -333,8 +310,8 @@ public final class PublisherAsBlockingIterableTest {
         source.onError(de);
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
-        expected.expect(sameInstance(de));
-        iterator.next();
+        Exception e = assertThrows(DeliberateException.class, () -> iterator.next());
+        assertThat(e, sameInstance(de));
     }
 
     @Test

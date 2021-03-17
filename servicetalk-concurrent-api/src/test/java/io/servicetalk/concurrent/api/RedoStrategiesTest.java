@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,15 +35,11 @@ import static org.mockito.Mockito.when;
 
 public class RedoStrategiesTest {
 
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-
     protected LinkedBlockingQueue<LegacyTestCompletable> timers;
     protected Executor timerExecutor;
 
-    @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() {
         timers = new LinkedBlockingQueue<>();
         timerExecutor = mock(Executor.class);
         when(timerExecutor.timer(anyLong(), any(TimeUnit.class))).thenAnswer(invocation -> {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -59,29 +56,26 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PublisherFlatMapSingleTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> source = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
     private static ExecutorService executorService;
     private static Executor executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         executorService = Executors.newFixedThreadPool(10);
         executor = io.servicetalk.concurrent.api.Executors.from(executorService);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         executor.closeAsync().toFuture().get();
     }
@@ -535,7 +529,7 @@ public class PublisherFlatMapSingleTest {
     }
 
     @Test
-    public void testEmitFromQueue() throws Exception {
+    public void testEmitFromQueue() {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
         io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<Integer> subscriber =
                 new io.servicetalk.concurrent.test.internal.TestPublisherSubscriber<>();

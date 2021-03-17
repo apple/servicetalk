@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
@@ -31,7 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -41,8 +39,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atMost;
@@ -53,10 +51,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class CompletableMergeWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = newRule();
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = withCachedExecutor();
     private final TestSubscription subscription = new TestSubscription();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();
@@ -394,8 +390,8 @@ public class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestCancellable testCancellable = new TestCancellable();
         CountDownLatch latch = new CountDownLatch(1);
-        toSource(applyMerge(completable.publishOn(executorRule.executor()), delayError,
-                publisher.publishOn(executorRule.executor())).afterOnNext(item -> {
+        toSource(applyMerge(completable.publishOn(executorExtension.executor()), delayError,
+                            publisher.publishOn(executorExtension.executor())).afterOnNext(item -> {
             // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
             // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
             // the downstream subscriber until after all the onNext events have completed.
@@ -439,7 +435,7 @@ public class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable();
         toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 barrier.await();
             } catch (Exception e) {
@@ -483,7 +479,7 @@ public class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {
@@ -576,7 +572,7 @@ public class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorRule.executor().submit(() -> {
+        Future<Void> f = executorExtension.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {

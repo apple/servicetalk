@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,15 +31,11 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public final class PublisherAsInputStreamTest {
-
-    @Rule
-    public final ExpectedException expected = none();
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
 
@@ -144,8 +138,7 @@ public final class PublisherAsInputStreamTest {
         Character[] src = {'1', '2', '3', '4'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         stream.close();
-        expected.expect(instanceOf(IOException.class));
-        stream.read();
+        assertThrows(IOException.class, () -> stream.read());
     }
 
     @Test

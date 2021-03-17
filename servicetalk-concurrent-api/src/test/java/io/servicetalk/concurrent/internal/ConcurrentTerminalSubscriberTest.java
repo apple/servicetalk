@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -34,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -45,10 +44,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class ConcurrentTerminalSubscriberTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<Executor> executorRule = ExecutorRule.newRule();
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<Integer> publisher =
             new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
@@ -190,7 +187,7 @@ public class ConcurrentTerminalSubscriberTest {
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        executorRule.executor().execute(() -> {
+        executorExtension.executor().execute(() -> {
             if (firstOnComplete) {
                 publisher.onComplete();
             } else {
@@ -253,7 +250,7 @@ public class ConcurrentTerminalSubscriberTest {
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscription.awaitRequestN(1);
-        executorRule.executor().execute(() -> publisher.onNext(1));
+        executorExtension.executor().execute(() -> publisher.onNext(1));
         onNextEnterBarrier.await();
         if (onComplete) {
             publisher.onComplete();
@@ -299,7 +296,7 @@ public class ConcurrentTerminalSubscriberTest {
 
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
-        executorRule.executor().execute(() -> publisher.onSubscribe(subscription));
+        executorExtension.executor().execute(() -> publisher.onSubscribe(subscription));
         subscription.awaitRequestN(1);
         if (onNext) {
             publisher.onNext(1);

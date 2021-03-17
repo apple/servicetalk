@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.function.Consumer;
@@ -33,8 +31,6 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenOnErrorTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @Test

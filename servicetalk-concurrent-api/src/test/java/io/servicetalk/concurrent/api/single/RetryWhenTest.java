@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
@@ -41,8 +39,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -52,9 +51,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class RetryWhenTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
     private final TestSingleSubscriber<Integer> subscriberRule = new TestSingleSubscriber<>();
 
     private LegacyTestSingle<Integer> source;
@@ -63,8 +59,8 @@ public class RetryWhenTest {
     private Executor executor;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() {
         source = new LegacyTestSingle<>(false, false);
         shouldRetry = (BiIntFunction<Throwable, Completable>) mock(BiIntFunction.class);
         retrySignal = new LegacyTestCompletable();
@@ -75,7 +71,7 @@ public class RetryWhenTest {
         toSource(source.retryWhen(shouldRetry)).subscribe(subscriberRule);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
@@ -96,9 +92,8 @@ public class RetryWhenTest {
                                 // terminate before we add another entity in the next subscribe. So, we return an
                                 // asynchronously completed Completable.
                                 executor.submit(() -> { }) : failed(t));
-        expectedException.expect(instanceOf(ExecutionException.class));
-        expectedException.expectCause(is(DELIBERATE_EXCEPTION));
-        source.toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> source.toFuture().get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test

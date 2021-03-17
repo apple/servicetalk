@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -30,9 +26,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class SingleToCompletableFutureToCompletionStageWrappingTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     @Test
     public void wrappedTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")

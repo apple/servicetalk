@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,16 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -53,18 +51,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SingleToCompletionStageTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.withNamePrefix(ST_THREAD_PREFIX_NAME);
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
 
     private LegacyTestSingle<String> source;
     private static ExecutorService jdkExecutor;
@@ -73,36 +68,36 @@ public class SingleToCompletionStageTest {
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
     private static final String COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX = "Thread-";
+    private static final String JUNIT_THREAD_PREFIX = "Test worker";
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool(
                 r -> new Thread(r, JDK_THREAD_NAME_PREFIX + '-' + threadCount.incrementAndGet()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeTest() {
-        source = new LegacyTestSingle<>(executorRule.executor(), true, true);
+        source = new LegacyTestSingle<>(executorExtension.executor(), true, true);
     }
 
     @Test
-    public void completableFutureFromSingleToCompletionStageToCompletableFutureFailure() throws Exception {
+    public void completableFutureFromSingleToCompletionStageToCompletableFutureFailure() {
         CompletableFuture<Long> input = new CompletableFuture<>();
         CompletableFuture<Long> output = Single.fromStage(input).toCompletionStage().toCompletableFuture()
                 .whenComplete((v, c) -> { })
                 .thenApply(l -> l + 1)
                 .whenComplete((v, c) -> { });
         input.completeExceptionally(DELIBERATE_EXCEPTION);
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        output.get();
+        ExecutionException e = assertThrows(ExecutionException.class, () -> output.get());
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -768,21 +763,25 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingCancellationBeforeListen() throws Exception {
-        CompletionStage<String> stage = source.toCompletionStage();
-        CompletableFuture<String> future = stage.toCompletableFuture();
-        AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        future.cancel(true);
-        stage.whenComplete((s, t) -> {
-            causeRef.set(t);
-            latch.countDown();
-        });
-        assertTrue(latch.await(100, MILLISECONDS));
-        assertTrue(future.isCancelled());
-        assertTrue(future.isDone());
-        thrown.expect(CancellationException.class);
-        future.get();
+    public void blockingCancellationBeforeListen() {
+        assertThrows(CancellationException.class,
+                () -> {
+
+                    CompletionStage<String> stage = source.toCompletionStage();
+
+                    CompletableFuture<String> future = stage.toCompletableFuture();
+                    AtomicReference<Throwable> causeRef = new AtomicReference<>();
+                    CountDownLatch latch = new CountDownLatch(1);
+                    future.cancel(true);
+                    stage.whenComplete((s, t) -> {
+                        causeRef.set(t);
+                        latch.countDown();
+                    });
+                    assertTrue(latch.await(100, MILLISECONDS));
+                    assertTrue(future.isCancelled());
+                    assertTrue(future.isDone());
+                    future.get();
+                });
     }
 
     @Test
@@ -802,24 +801,25 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingCancellationAfterListen() throws Exception {
-        CountDownLatch cancelLatch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.afterCancel(cancelLatch::countDown).toCompletionStage();
-        CompletableFuture<String> future = stage.toCompletableFuture();
-        AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        stage.whenComplete((s, t) -> {
-            causeRef.set(t);
-            latch.countDown();
+    public void blockingCancellationAfterListen() {
+        assertThrows(CancellationException.class, () -> {
+            CountDownLatch cancelLatch = new CountDownLatch(1);
+            CompletionStage<String> stage = source.afterCancel(cancelLatch::countDown).toCompletionStage();
+            CompletableFuture<String> future = stage.toCompletableFuture();
+            AtomicReference<Throwable> causeRef = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(1);
+            stage.whenComplete((s, t) -> {
+                causeRef.set(t);
+                latch.countDown();
+            });
+            future.cancel(true);
+            latch.await();
+            assertTrue(future.isCancelled());
+            assertTrue(future.isDone());
+            assertThat(causeRef.get(), is(instanceOf(CancellationException.class)));
+            cancelLatch.await();
+            future.get();
         });
-        future.cancel(true);
-        latch.await();
-        assertTrue(future.isCancelled());
-        assertTrue(future.isDone());
-        assertThat(causeRef.get(), is(instanceOf(CancellationException.class)));
-        cancelLatch.await();
-        thrown.expect(CancellationException.class);
-        future.get();
     }
 
     @Test
@@ -829,7 +829,7 @@ public class SingleToCompletionStageTest {
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         stage = stage.whenComplete((s, t) -> causeRef.compareAndSet(null, t))
-                     .whenComplete((s, t) -> causeRef.compareAndSet(null, t));
+                .whenComplete((s, t) -> causeRef.compareAndSet(null, t));
 
         stage.whenComplete((s, t) -> {
             causeRef.compareAndSet(null, t);
@@ -915,53 +915,55 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetAsyncError() throws Exception {
+    public void blockingGetAsyncError() {
         blockingGetAsyncError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetAsyncError() throws Exception {
+    public void futureGetAsyncError() {
         blockingGetAsyncError(source.toFuture());
     }
 
-    private void blockingGetAsyncError(Future<String> stage) throws ExecutionException, InterruptedException {
-        jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        stage.get();
+    private void blockingGetAsyncError(Future<String> stage) {
+        Exception e = assertThrows(ExecutionException.class, () -> {
+            jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
+            stage.get();
+        });
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void blockingGetSyncError() throws Exception {
+    public void blockingGetSyncError() {
         blockingGetSyncError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetSyncError() throws Exception {
+    public void futureGetSyncError() {
         blockingGetSyncError(source.toFuture());
     }
 
-    private void blockingGetSyncError(Future<String> stage) throws ExecutionException, InterruptedException {
-        source.onError(DELIBERATE_EXCEPTION);
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        stage.get();
+    private void blockingGetSyncError(Future<String> stage) {
+        Exception e = assertThrows(ExecutionException.class, () -> {
+            source.onError(DELIBERATE_EXCEPTION);
+            stage.get();
+        });
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
-    public void blockingGetTimeoutExpire() throws Exception {
+    public void blockingGetTimeoutExpire() {
         blockingGetTimeoutExpire(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetTimeoutExpire() throws Exception {
+    public void futureGetTimeoutExpire() {
         blockingGetTimeoutExpire(source.toFuture());
     }
 
-    private void blockingGetTimeoutExpire(Future<String> stage)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        thrown.expect(TimeoutException.class);
-        stage.get(10, MILLISECONDS);
+    private void blockingGetTimeoutExpire(Future<String> stage) {
+        assertThrows(TimeoutException.class, () -> {
+            stage.get(10, MILLISECONDS);
+        });
     }
 
     @Test
@@ -981,21 +983,21 @@ public class SingleToCompletionStageTest {
     }
 
     @Test
-    public void blockingGetTimeoutError() throws Exception {
+    public void blockingGetTimeoutError() {
         blockingGetTimeoutError(source.toCompletionStage().toCompletableFuture());
     }
 
     @Test
-    public void futureGetTimeoutError() throws Exception {
+    public void futureGetTimeoutError() {
         blockingGetTimeoutError(source.toFuture());
     }
 
-    private void blockingGetTimeoutError(Future<String> stage)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(DELIBERATE_EXCEPTION));
-        stage.get(1, MINUTES);
+    private void blockingGetTimeoutError(Future<String> stage) {
+        Exception e = assertThrows(ExecutionException.class, () -> {
+            jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
+            stage.get(1, MINUTES);
+        });
+        assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
     }
 
     private static <X> void verifyListenerInvokedInJdkThread(CompletionStage<X> stage)
@@ -1003,7 +1005,7 @@ public class SingleToCompletionStageTest {
         // Derived stages from thenApplyAsync with a jdkExecutor should invoke listeners on the same jdkExecutor too!
         stage.thenCompose(v -> {
             CompletableFuture<Void> result = new CompletableFuture<>();
-            if (currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
+            if (currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
                 result.complete(null);
             } else {
                 result.completeExceptionally(
@@ -1035,7 +1037,7 @@ public class SingleToCompletionStageTest {
     }
 
     private static void verifyInJUnitThread() {
-        if (!currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
+        if (!currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
             throw new IllegalStateException("unexpected thread: " + currentThread());
         }
     }
@@ -1049,7 +1051,7 @@ public class SingleToCompletionStageTest {
 
     private static void verifyInStOrJUnitThread() {
         if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME) &&
-                !currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
+                !currentThread().getName().startsWith(JUNIT_THREAD_PREFIX)) {
             throw new IllegalStateException("unexpected thread: " + currentThread());
         }
     }

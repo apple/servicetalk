@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package io.servicetalk.concurrent.api.single;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -31,15 +30,13 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 abstract class AbstractWhenFinallyTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
 
     @SuppressWarnings("unchecked")
@@ -94,9 +91,8 @@ abstract class AbstractWhenFinallyTest {
         LegacyTestSingle<String> single = new LegacyTestSingle<>();
         try {
             toSource(doFinally(single, mock)).subscribe(listener);
-            thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
-            listener.awaitSubscription().cancel();
-            fail();
+            Exception e = assertThrows(DeliberateException.class, () -> listener.awaitSubscription().cancel());
+            assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
         } finally {
             single.verifyCancelled();
             verify(mock).cancel();
@@ -105,10 +101,10 @@ abstract class AbstractWhenFinallyTest {
     }
 
     @Test
-    public abstract void testCallbackThrowsErrorOnSuccess() throws InterruptedException;
+    public abstract void testCallbackThrowsErrorOnSuccess();
 
     @Test
-    public abstract void testCallbackThrowsErrorOnError() throws InterruptedException;
+    public abstract void testCallbackThrowsErrorOnError();
 
     protected abstract <T> Single<T> doFinally(Single<T> single, SingleTerminalSignalConsumer<T> signalConsumer);
 

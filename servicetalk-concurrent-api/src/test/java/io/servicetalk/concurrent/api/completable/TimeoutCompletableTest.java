@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,15 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestSingle;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,23 +42,21 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class TimeoutCompletableTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
+    @RegisterExtension
+    public final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
     private final TestCompletableSubscriber listener = new TestCompletableSubscriber();
     private final TestSingle<Integer> source = new TestSingle<>();
     private TestExecutor testExecutor;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        testExecutor = executorRule.executor();
+        testExecutor = executorExtension.executor();
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Deprecated.
@@ -115,12 +115,12 @@ public class LegacyTestCompletable extends Completable implements CompletableSou
     }
 
     public LegacyTestCompletable verifyCancelled() {
-        assertTrue("Subscriber did not cancel.", isCancelled());
+        assertTrue(isCancelled(), "Subscriber did not cancel.");
         return this;
     }
 
     public LegacyTestCompletable verifyNotCancelled() {
-        assertFalse("Subscriber cancelled.", isCancelled());
+        assertFalse(isCancelled(), "Subscriber cancelled.");
         return this;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -67,19 +64,17 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Nullable
     private static ExecutorService executorService;
     @Nullable
@@ -88,13 +83,13 @@ public class PublisherFlatMapMergeTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> publisher = new TestPublisher<>();
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         executorService = java.util.concurrent.Executors.newFixedThreadPool(10);
         executor = io.servicetalk.concurrent.api.Executors.from(executorService);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         if (executor != null) {
             executor.closeAsync().toFuture().get();
@@ -1137,7 +1132,7 @@ public class PublisherFlatMapMergeTest {
         if (cause != null) {
             throw cause;
         }
-        assertFalse("The countDownLatch didn't timeout, and there was also no exception?!", timedOut);
+        assertFalse(timedOut, "The countDownLatch didn't timeout, and there was also no exception?!");
     }
 
     private static final class TestSubscriptionPublisherPair<T> {

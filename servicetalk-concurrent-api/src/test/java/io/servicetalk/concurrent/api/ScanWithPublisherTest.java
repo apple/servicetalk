@@ -18,12 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 
@@ -40,9 +37,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ScanWithPublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     @Test
     public void scanWithComplete() {
         scanWithNoTerminalMapper(true);

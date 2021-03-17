@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
@@ -38,7 +38,7 @@ public final class SingleFlatMapCompletableTest {
     private LegacyTestSingle<String> single;
     private LegacyTestCompletable completable;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         single = new LegacyTestSingle<>();
         completable = new LegacyTestCompletable();

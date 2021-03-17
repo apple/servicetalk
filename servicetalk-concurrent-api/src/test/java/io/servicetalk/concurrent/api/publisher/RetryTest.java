@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -32,9 +32,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -51,8 +51,8 @@ public class RetryTest {
     private boolean shouldRetryValue;
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() {
         source = new TestPublisher<>();
         shouldRetry = (BiIntPredicate<Throwable>) mock(BiIntPredicate.class);
         when(shouldRetry.test(anyInt(), any())).thenAnswer(invocation -> shouldRetryValue);

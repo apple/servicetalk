@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
@@ -29,9 +27,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class AfterSuccessTest extends AbstractWhenOnSuccessTest {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
         return single.afterOnSuccess(consumer);

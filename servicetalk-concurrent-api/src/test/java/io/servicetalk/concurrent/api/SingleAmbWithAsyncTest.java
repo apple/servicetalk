@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 
-import static io.servicetalk.concurrent.api.ExecutorRule.withNamePrefix;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -32,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SingleAmbWithAsyncTest {
     private static final String FIRST_EXECUTOR_THREAD_NAME_PREFIX = "first";
@@ -45,24 +43,24 @@ public class SingleAmbWithAsyncTest {
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL = 2;
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL_2 = 3;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException expectedException = none();
-    @Rule
-    public final ExecutorRule<Executor> firstExec = withNamePrefix(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
-    @Rule
-    public final ExecutorRule<Executor> secondExec = withNamePrefix(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
+    @RegisterExtension
+    final ExecutorExtension<Executor> firstExec = withCachedExecutor(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
+    @RegisterExtension
+    final ExecutorExtension<Executor> secondExec = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
 
     @Test
     public void offloadSuccessFromFirst() throws Exception {
         assertThat("Unexpected result.", testOffloadSecond(succeeded(1), never()), is(1));
     }
 
+    private static void assertThrowsWithDeliberateExceptionAsCause(Executable executable) {
+        Exception exception = assertThrows(Exception.class, executable);
+        assertThat(exception.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
     @Test
-    public void offloadErrorFromFirst() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION));
+    public void offloadErrorFromFirst() {
+        assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -71,9 +69,8 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void offloadErrorFromSecond() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION));
+    public void offloadErrorFromSecond() {
+        assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -82,9 +79,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSubscribeFirstError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    public void contextFromSubscribeFirstError() {
+        assertThrowsWithDeliberateExceptionAsCause(
+                () -> testContextFromSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
@@ -93,9 +90,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSubscribeSecondError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    public void contextFromSubscribeSecondError() {
+        assertThrowsWithDeliberateExceptionAsCause(
+                () -> testContextFromSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -104,9 +101,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSecondSubscribeFirstError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSecondSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    public void contextFromSecondSubscribeFirstError() {
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testContextFromSecondSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
@@ -115,9 +112,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSecondSubscribeSecondError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSecondSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    public void contextFromSecondSubscribeSecondError() {
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testContextFromSecondSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -126,9 +123,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromOnSubscribeFirstError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromOnSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    public void contextFromOnSubscribeFirstError() {
+        assertThrowsWithDeliberateExceptionAsCause(
+                () -> testContextFromOnSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
@@ -137,9 +134,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromOnSubscribeSecondError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromOnSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    public void contextFromOnSubscribeSecondError() {
+        assertThrowsWithDeliberateExceptionAsCause(
+                () -> testContextFromOnSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -148,9 +145,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSecondOnSubscribeFirstError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSecondOnSubscribe(failed(DELIBERATE_EXCEPTION), never());
+    public void contextFromSecondOnSubscribeFirstError() {
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testContextFromSecondOnSubscribe(failed(DELIBERATE_EXCEPTION), never()));
     }
 
     @Test
@@ -159,9 +156,9 @@ public class SingleAmbWithAsyncTest {
     }
 
     @Test
-    public void contextFromSecondOnSubscribeSecondError() throws Exception {
-        expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        testContextFromSecondOnSubscribe(never(), failed(DELIBERATE_EXCEPTION));
+    public void contextFromSecondOnSubscribeSecondError() {
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testContextFromSecondOnSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     private int testOffloadSecond(final Single<Integer> first, final Single<Integer> second) throws Exception {
@@ -178,7 +175,7 @@ public class SingleAmbWithAsyncTest {
                 .ambWith(second.publishOn(secondExec.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.", AsyncContext.current().get(BEFORE_SUBSCRIBE_KEY),
-                        is(BEFORE_SUBSCRIBE_KEY_VAL)))
+                                is(BEFORE_SUBSCRIBE_KEY_VAL)))
                 .<Integer>liftSync(subscriber -> {
                     AsyncContext.put(BEFORE_SUBSCRIBE_KEY, BEFORE_SUBSCRIBE_KEY_VAL);
                     return subscriber;
@@ -193,7 +190,7 @@ public class SingleAmbWithAsyncTest {
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.",
                                 AsyncContext.current().get(BEFORE_ON_SUBSCRIBE_KEY),
-                        is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
+                                is(BEFORE_ON_SUBSCRIBE_KEY_VAL)))
                 .toFuture().get();
     }
 

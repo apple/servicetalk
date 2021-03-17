@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.slf4j.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -40,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -54,39 +48,37 @@ import static java.lang.Math.min;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.slf4j.LoggerFactory.getLogger;
 
-@RunWith(Parameterized.class)
 public class SignalOffloaderConcurrentPublisherTest {
-    private static final Logger LOGGER = getLogger(SignalOffloaderConcurrentPublisherTest.class);
+    private enum OffloaderTestParam {
+        THREAD_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(ThreadBasedSignalOffloader::new);
+            }
+        },
+        TASK_BASED {
+            @Override
+            OffloaderHolder get() {
+                return new OffloaderHolder(TaskBasedSignalOffloader::new);
+            }
+        };
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    public final OffloaderHolder state;
-
-    public SignalOffloaderConcurrentPublisherTest(Supplier<OffloaderHolder> state,
-                                                  @SuppressWarnings("unused") boolean supportsTermination) {
-        this.state = state.get();
+        abstract OffloaderHolder get();
     }
 
-    @Parameterized.Parameters(name = "{index} - thread based: {1}")
-    public static Collection<Object[]> offloaders() {
-        Collection<Object[]> offloaders = new ArrayList<>();
-        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(ThreadBasedSignalOffloader::new), true});
-        offloaders.add(new Object[]{(Supplier<OffloaderHolder>) () ->
-                new OffloaderHolder(TaskBasedSignalOffloader::new), false});
-        return offloaders;
-    }
+    private OffloaderHolder state;
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         state.shutdown();
     }
 
-    @Test
-    public void concurrentSignalsMultipleEntities() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void concurrentSignalsMultipleEntities(OffloaderTestParam offloader)
+            throws Exception {
+        state = offloader.get();
         final int entityCount = 100;
         final OffloaderHolder.SubscriberSubscriptionPair[] pairs =
                 new OffloaderHolder.SubscriberSubscriptionPair[entityCount];
@@ -109,8 +101,11 @@ public class SignalOffloaderConcurrentPublisherTest {
         }
     }
 
-    @Test
-    public void concurrentSignalsFromSubscriberAndSubscription() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(OffloaderTestParam.class)
+    public void concurrentSignalsFromSubscriberAndSubscription(OffloaderTestParam offloader)
+            throws Exception {
+        state = offloader.get();
         OffloaderHolder.SubscriberSubscriptionPair pair = state.newPair(10_000);
         pair.sendItems(10_000).toFuture().get();
         state.awaitTermination();
@@ -130,13 +125,9 @@ public class SignalOffloaderConcurrentPublisherTest {
             offloader = offloaderFactory.apply(executor);
         }
 
-        void shutdown() {
-            try {
-                executor.closeAsync().toFuture().get();
-                emitters.shutdownNow();
-            } catch (Exception e) {
-                LOGGER.warn("Failed to close the executor {}.", executor, e);
-            }
+        void shutdown() throws Exception {
+            executor.closeAsync().toFuture().get();
+            emitters.shutdownNow();
         }
 
         void awaitTermination() throws Exception {
@@ -157,14 +148,14 @@ public class SignalOffloaderConcurrentPublisherTest {
             final SubscriberImpl subscriber;
             final SubscriptionImpl subscription;
             private final AtomicInteger demand;
-            private PublisherSource.Subscriber<? super Integer> offloadSubscription;
             private PublisherSource.Subscriber<? super Integer> offloadSubscriber;
 
             SubscriberSubscriptionPair(SubscriberImpl subscriber, SubscriptionImpl subscription, AtomicInteger demand) {
                 this.subscriber = subscriber;
                 this.subscription = subscription;
                 this.demand = demand;
-                offloadSubscription = offloader.offloadSubscription(this.subscriber);
+                PublisherSource.Subscriber<? super Integer> offloadSubscription =
+                        offloader.offloadSubscription(this.subscriber);
                 offloadSubscriber = offloader.offloadSubscriber(offloadSubscription);
             }
 
