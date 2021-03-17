@@ -16,12 +16,10 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -30,13 +28,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class SingleZip4Test {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final TestSingle<Integer> first = new TestSingle<>();
-    private final TestSingle<Double> second = new TestSingle<>();
-    private final TestSingle<Short> third = new TestSingle<>();
-    private final TestSingle<Byte> fourth = new TestSingle<>();
-    private final TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
+    private TestSingle<Integer> first;
+    private TestSingle<Double> second;
+    private TestSingle<Short> third;
+    private TestSingle<Byte> fourth;
+    private TestSingleSubscriber<String> subscriber;
+
+    @BeforeEach
+    public void setUp() {
+        first = new TestSingle<>();
+        second = new TestSingle<>();
+        third = new TestSingle<>();
+        fourth = new TestSingle<>();
+        subscriber = new TestSingleSubscriber<>();
+    }
 
     @Test
     public void completeInOrder() {
