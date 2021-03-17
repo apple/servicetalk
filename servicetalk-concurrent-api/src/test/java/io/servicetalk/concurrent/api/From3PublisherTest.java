@@ -17,12 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,8 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class From3PublisherTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
     @Test
