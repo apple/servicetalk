@@ -161,6 +161,12 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   private static void configureTests(Project project) {
     project.configure(project) {
       test {
+        useJUnitPlatform()
+        def junit5TimeoutParamName = "junit.jupiter.execution.timeout.default"
+        def junit5Timeout = System.getProperty(junit5TimeoutParamName, "$junit5DefaultTimeout")
+        systemProperty junit5TimeoutParamName, "$junit5Timeout"
+        systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
+
         testLogging {
           events "passed", "skipped", "failed"
           showStandardStreams = true
@@ -169,6 +175,13 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
       }
+
+      dependencies {
+        testRuntimeOnly("org.junit.vintage:junit-vintage-engine:$junit5Version") {
+          because 'allows JUnit 3 and JUnit 4 tests to run'
+        }
+      }
+
     }
   }
 
