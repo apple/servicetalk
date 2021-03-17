@@ -288,8 +288,28 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Completable timeout(long duration, TimeUnit unit) {
+        return timeout(duration, unit, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Completable idleTimeout(long duration, TimeUnit unit) {
-        return idleTimeout(duration, unit, executor);
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -307,6 +327,28 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Completable timeout(long duration, TimeUnit unit,
+                                     io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Completable idleTimeout(long duration, TimeUnit unit,
                                          io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
@@ -325,8 +367,27 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Completable timeout(Duration duration) {
+        return timeout(duration, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Completable idleTimeout(Duration duration) {
-        return idleTimeout(duration, executor);
+        return timeout(duration, executor);
     }
 
     /**
@@ -343,6 +404,26 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Completable timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutCompletable(this, duration, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Completable} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Completable idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
@@ -1510,10 +1591,10 @@ public abstract class Completable {
      * offloading if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may
      * block.
      * <p>
-     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @return A {@link Completable} that derives results from {@link Future}.
-     * @see #idleTimeout(long, TimeUnit)
+     * @see #timeout(long, TimeUnit)
      */
     public static Completable fromFuture(Future<?> future) {
         return Single.fromFuture(future).toCompletable();

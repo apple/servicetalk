@@ -70,7 +70,7 @@ public abstract class AbstractFutureToSingleTest {
     @Test
     public void timeout() {
         CompletableFuture<String> future = new CompletableFuture<>();
-        Single<String> single = from(future).idleTimeout(1, MILLISECONDS);
+        Single<String> single = from(future).timeout(1, MILLISECONDS);
         Exception e = assertThrows(ExecutionException.class, () -> single.toFuture().get());
         assertThat(e.getCause(), is(instanceOf(TimeoutException.class)));
         assertTrue(future.isCancelled());

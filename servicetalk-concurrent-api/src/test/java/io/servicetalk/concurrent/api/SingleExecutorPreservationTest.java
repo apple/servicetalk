@@ -36,8 +36,8 @@ public class SingleExecutorPreservationTest {
 
     @Test
     public void testTimeoutSingle() {
-        assertSame(EXEC.executor(), single.idleTimeout(1, MILLISECONDS).executor());
-        assertSame(EXEC.executor(), single.idleTimeout(ofMillis(1)).executor());
+        assertSame(EXEC.executor(), single.timeout(1, MILLISECONDS).executor());
+        assertSame(EXEC.executor(), single.timeout(ofMillis(1)).executor());
     }
 
     @Test

@@ -411,8 +411,28 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Single<T> timeout(long duration, TimeUnit unit) {
+        return timeout(duration, unit, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Single<T> idleTimeout(long duration, TimeUnit unit) {
-        return idleTimeout(duration, unit, executor);
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -430,6 +450,28 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Single<T> timeout(long duration, TimeUnit unit,
+                                   io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Single<T> idleTimeout(long duration, TimeUnit unit,
                                        io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
@@ -449,8 +491,28 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Single<T> timeout(Duration duration) {
+        return timeout(duration, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * {@link Subscriber} will via {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Single<T> idleTimeout(Duration duration) {
-        return idleTimeout(duration, executor);
+        return timeout(duration, executor);
     }
 
     /**
@@ -467,6 +529,26 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    public final Single<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
     public final Single<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
@@ -1453,11 +1535,11 @@ public abstract class Single<T> {
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
      * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
-     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @param <T> The data type the {@link Future} provides when complete.
      * @return A {@link Single} that derives results from {@link Future}.
-     * @see #idleTimeout(long, TimeUnit)
+     * @see #timeout(long, TimeUnit)
      */
     public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
