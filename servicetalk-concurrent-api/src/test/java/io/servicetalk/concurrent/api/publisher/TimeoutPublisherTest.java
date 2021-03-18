@@ -63,7 +63,6 @@ public class TimeoutPublisherTest {
 
     private enum TimerBehaviorParam {
         IDLE_TIMER { // timeout : idle
-
             @Override
             boolean restartAtOnNext() {
                 return true;
@@ -214,6 +213,7 @@ public class TimeoutPublisherTest {
         init(params, 2L);
 
         assertThat(testExecutor.scheduledTasksPending(), is(1));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
         subscriber.awaitSubscription().request(10);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -229,8 +229,11 @@ public class TimeoutPublisherTest {
         // at this point the timer is either reset or expired.
         if (params.restartAtOnNext()) {
             // The timer was reset so we should be able to get the last item
-            assertThat(testExecutor.scheduledTasksExecuted(), is(0));
-            assertThat(subscriber.pollTerminal(0, MILLISECONDS), is(nullValue()));
+            assertThat(testExecutor.scheduledTasksPending(), is(1));
+            assertThat(subscriber.takeOnNext(), is(3));
+        } else {
+            // timer should have now fired.
+            assertThat(testExecutor.scheduledTasksExecuted(), is(1));
         }
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
 
