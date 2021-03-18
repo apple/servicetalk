@@ -162,8 +162,11 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     project.configure(project) {
       test {
         useJUnitPlatform()
+        // expected format for timeout: <number>[ns|μs|ms|s|m|h|d])
+        def junit5DefaultTimeout = System.getProperty("CI") ? "30s" : "10s"
         def junit5TimeoutParamName = "junit.jupiter.execution.timeout.default"
         def junit5Timeout = System.getProperty(junit5TimeoutParamName, "$junit5DefaultTimeout")
+        System.out.println("my timeout = $junit5DefaultTimeout")
         systemProperty junit5TimeoutParamName, "$junit5Timeout"
         systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
