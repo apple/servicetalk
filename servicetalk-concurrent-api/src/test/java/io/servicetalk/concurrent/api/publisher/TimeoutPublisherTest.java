@@ -73,7 +73,7 @@ public class TimeoutPublisherTest {
 
     @Test
     public void executorScheduleThrows() {
-        toSource(publisher.idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+        toSource(publisher.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -217,7 +217,7 @@ public class TimeoutPublisherTest {
         // the run() method.
         // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
         // test won't fail.
-        toSource(publisher.idleTimeout(10, MILLISECONDS, new Executor() {
+        toSource(publisher.timeout(10, MILLISECONDS, new Executor() {
             private final AtomicInteger timerCount = new AtomicInteger();
 
             @Override
@@ -286,7 +286,7 @@ public class TimeoutPublisherTest {
     }
 
     private void init(Publisher<Integer> publisher, boolean expectOnSubscribe) {
-        toSource(publisher.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        toSource(publisher.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
             subscriber.awaitSubscription();

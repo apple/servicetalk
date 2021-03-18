@@ -38,8 +38,8 @@ public class CompletableExecutorPreservationTest {
 
     @Test
     public void testTimeoutCompletable() {
-        assertSame(EXEC.executor(), completable.idleTimeout(1, MILLISECONDS).executor());
-        assertSame(EXEC.executor(), completable.idleTimeout(Duration.ofMillis(1)).executor());
+        assertSame(EXEC.executor(), completable.timeout(1, MILLISECONDS).executor());
+        assertSame(EXEC.executor(), completable.timeout(Duration.ofMillis(1)).executor());
     }
 
     @Test

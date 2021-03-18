@@ -22,6 +22,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class PublisherTimeoutTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.idleTimeout(1, HOURS);
+        return publisher.timeout(1, HOURS);
     }
 }

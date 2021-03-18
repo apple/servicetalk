@@ -189,7 +189,7 @@ public class NettyHttpServerConnectionDrainTest {
                 // Without draining the request is expected to hang, don't wait too long unless on CI
                 int timeoutSeconds = CI ? 15 : 1;
                 awaitTermination(serverContext.closeAsyncGracefully()
-                        .idleTimeout(timeoutSeconds, SECONDS)
+                        .timeout(timeoutSeconds, SECONDS)
                         .onErrorResume(t -> serverContext.closeAsync().concat(Completable.failed(t))).toFuture());
             }
         };
