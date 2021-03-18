@@ -231,6 +231,7 @@ public class TimeoutPublisherTest {
             // The timer was reset so we should be able to get the last item
             assertThat(testExecutor.scheduledTasksPending(), is(1));
             assertThat(subscriber.takeOnNext(), is(3));
+            testExecutor.advanceTimeBy(2, NANOSECONDS);
         } else {
             // timer should have now fired.
             assertThat(testExecutor.scheduledTasksExecuted(), is(1));
@@ -238,7 +239,7 @@ public class TimeoutPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
 
         assertThat(testExecutor.scheduledTasksPending(), is(0));
-        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(params.restartAtOnNext() ? 3 : 1) );
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
