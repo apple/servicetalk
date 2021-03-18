@@ -1513,7 +1513,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
-        return new TimeoutPublisher<>(this, executor, duration, unit);
+        return idleTimeout(duration, unit, executor);
     }
 
     /**
@@ -1533,7 +1533,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(Duration duration) {
-        return new TimeoutPublisher<>(this, executor, duration);
+        return idleTimeout(duration.toNanos(), TimeUnit.NANOSECONDS);
     }
 
     /**
@@ -1555,7 +1555,7 @@ public abstract class Publisher<T> {
     @Deprecated
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
                                           io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
+        return new TimeoutPublisher<>(this, executor, duration, unit, true, timeoutExecutor);
     }
 
     /**
@@ -1575,7 +1575,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
+        return idleTimeout(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
     }
 
     /**
@@ -1594,7 +1594,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
-        return new TimeoutPublisher<>(this, executor, duration, unit);
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -1612,7 +1612,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
-        return new TimeoutPublisher<>(this, executor, duration);
+        return timeout(duration, executor);
     }
 
     /**
@@ -1632,7 +1632,7 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit,
                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
+        return new TimeoutPublisher<>(this, executor, duration, unit, true, timeoutExecutor);
     }
 
     /**
@@ -1650,7 +1650,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
+        return timeout(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
     }
 
     /**
@@ -1661,13 +1661,13 @@ public abstract class Publisher<T> {
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param duration The time duration during which the Publisher must complete.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> withTimeout(Duration duration) {
-        return withTimeout(duration, executor);
+    public final Publisher<T> timeoutTerminal(Duration duration) {
+        return timeoutTerminal(duration, executor);
     }
 
     /**
@@ -1678,14 +1678,52 @@ public abstract class Publisher<T> {
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
-     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param duration The time duration during which the Publisher must complete.
      * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
-     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> withTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, false, timeoutExecutor);
+    public final Publisher<T> timeoutTerminal(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return timeoutTerminal(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
+        return timeoutTerminal(duration, unit, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit,
+                                              io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutPublisher<>(this, executor, duration, unit, false, timeoutExecutor);
     }
 
     /**
