@@ -81,14 +81,9 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onError(Throwable t) {
-            if (resubscribed) {
-                subscriber.onError(t);
-                return;
-            }
-
             final Publisher<? extends T> next;
             try {
-                next = predicate.test(t) ? requireNonNull(nextFactory.apply(t)) : null;
+                next = !resubscribed && predicate.test(t) ? requireNonNull(nextFactory.apply(t)) : null;
             } catch (Throwable throwable) {
                 throwable.addSuppressed(t);
                 subscriber.onError(throwable);

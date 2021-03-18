@@ -80,14 +80,9 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onError(Throwable throwable) {
-            if (resubscribed) {
-                subscriber.onError(throwable);
-                return;
-            }
-
             final Single<? extends T> next;
             try {
-                next = predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
+                next = !resubscribed && predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
             } catch (Throwable t) {
                 t.addSuppressed(throwable);
                 subscriber.onError(t);
