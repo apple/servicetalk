@@ -72,7 +72,6 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -149,7 +148,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                    UnaryOperator<Throwable> enrichProtocolError) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
-        this.readPublisher = registerReadObserver(nettyChannelPublisher.recoverWith(this::enrichErrorPublisher));
+        this.readPublisher = registerReadObserver(nettyChannelPublisher.onErrorMap(this::enrichError));
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
@@ -336,14 +335,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         });
     }
 
-    private Publisher<Read> enrichErrorPublisher(final Throwable t) {
-        return failed(enrichError(t));
-    }
-
-    private Completable enrichErrorCompletable(final Throwable t) {
-        return Completable.failed(enrichError(t));
-    }
-
     private Throwable enrichError(final Throwable t) {
         Throwable throwable;
         if (t instanceof AbortedFirstWrite) {
@@ -403,7 +394,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                             .subscribe(subscriber);
                 }
             }
-        }).onErrorResume(this::enrichErrorCompletable);
+        }).onErrorMap(this::enrichError);
     }
 
     /**

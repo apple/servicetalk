@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
@@ -104,6 +105,147 @@ public abstract class Completable {
     //
 
     /**
+     * Transform errors emitted on this {@link Completable} into a {@link Subscriber#onComplete()} signal
+     * (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         // ignored
+     *     }
+     * }</pre>
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Completable onErrorComplete() {
+        return onErrorComplete(t -> true);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Completable} which match {@code type} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (!type.isInstance(cause)) {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param <E> The {@link Throwable} type.
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} which match {@code type}
+     * into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Completable onErrorComplete(Class<E> type) {
+        return onErrorComplete(type::isInstance);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Completable} which match {@code predicate} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (!predicate.test(cause)) {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to and
+     * {@link Subscriber#onComplete()} signal. Returns {@code false} to propagate the error.
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} which match
+     * {@code predicate} into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Completable onErrorComplete(Predicate<? super Throwable> predicate) {
+        return new OnErrorCompleteCompletable(this, predicate, executor);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Completable} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         throw mapper.apply(cause);
+     *     }
+     * }</pre>
+     * @param mapper returns the error used to terminate the returned {@link Completable}.
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Completable onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+        return onErrorMap(t -> true, mapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Completable} which match {@code type} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param mapper returns the error used to terminate the returned {@link Completable}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Completable onErrorMap(
+            Class<E> type, Function<? super E, ? extends Throwable> mapper) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, Throwable> rawMapper = (Function<Throwable, Throwable>) mapper;
+        return onErrorMap(type::isInstance, rawMapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Completable} which match {@code predicate} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code mapper}. Returns
+     * {@code false} to propagate the original error.
+     * @param mapper returns the error used to terminate the returned {@link Completable}.
+     * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Completable onErrorMap(Predicate<? super Throwable> predicate,
+                                        Function<? super Throwable, ? extends Throwable> mapper) {
+        return new OnErrorMapCompletable(this, predicate, mapper, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Completable} by using another {@link Completable} provided by the
      * passed {@code nextFactory}.
      * <p>
@@ -118,11 +260,74 @@ public abstract class Completable {
      * }</pre>
      *
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
-     * @return A {@link Completable} that recovers from an error from this {@code Completable} by using another
+     * @return A {@link Completable} that recovers from an error from this {@link Completable} by using another
      * {@link Completable} provided by the passed {@code nextFactory}.
      */
-    public final Completable onErrorResume(Function<Throwable, ? extends Completable> nextFactory) {
-        return new ResumeCompletable(this, nextFactory, executor);
+    public final Completable onErrorResume(Function<? super Throwable, ? extends Completable> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Completable} which match {@code type} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           // Note nextFactory returning a error Completable is like re-throwing (nextFactory shouldn't throw).
+     *           results = nextFactory.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param nextFactory Returns the next {@link Completable}, when this {@link Completable} emits an error.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Completable} that recovers from an error from this {@code Publisher} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Completable onErrorResume(
+            Class<E> type, Function<? super E, ? extends Completable> nextFactory) {
+        @SuppressWarnings("unchecked")
+        Function<Throwable, ? extends Completable> rawNextFactory =
+                (Function<Throwable, ? extends Completable>) nextFactory;
+        return onErrorResume(type::isInstance, rawNextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Completable} which match {@code predicate} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *           results = nextFactory.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code nextFactory}.
+     * Returns {@code false} to propagate the original error.
+     * @param nextFactory Returns the next {@link Completable}, when this {@link Completable} emits an error.
+     * @return A {@link Completable} that recovers from an error from this {@link Completable} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Completable onErrorResume(Predicate<? super Throwable> predicate,
+                                           Function<? super Throwable, ? extends Completable> nextFactory) {
+        return new OnErrorResumeCompletable(this, predicate, nextFactory, executor);
     }
 
     /**

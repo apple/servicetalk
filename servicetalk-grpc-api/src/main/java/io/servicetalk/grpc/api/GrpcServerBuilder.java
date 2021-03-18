@@ -368,16 +368,15 @@ public abstract class GrpcServerBuilder {
             try {
                 handle = delegate().handle(ctx, request, responseFactory);
             } catch (Throwable cause) {
-                return convertToGrpcErrorResponse(ctx, responseFactory, cause);
+                return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
             }
-            return handle.recoverWith(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+            return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
         }
 
-        private static Single<StreamingHttpResponse> convertToGrpcErrorResponse(
+        private static StreamingHttpResponse convertToGrpcErrorResponse(
                 final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
                 final Throwable cause) {
-            return succeeded(newErrorResponse(responseFactory, null, cause,
-                    ctx.executionContext().bufferAllocator()));
+            return newErrorResponse(responseFactory, null, cause, ctx.executionContext().bufferAllocator());
         }
     }
 }

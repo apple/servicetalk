@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -124,6 +125,169 @@ public abstract class Single<T> {
     }
 
     /**
+     * Transform errors emitted on this {@link Single} into {@link Subscriber#onSuccess(Object)} signal
+     * (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorReturn(Function<? super Throwable, ? extends T> itemSupplier) {
+        return onErrorReturn(t -> true, itemSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code type} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (!type.isInstance(cause)) {
+     *           throw cause;
+     *         }
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorReturn(
+            Class<E> type, Function<? super E, ? extends T> itemSupplier) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, ? extends T> rawSupplier = (Function<Throwable, ? extends T>) itemSupplier;
+        return onErrorReturn(type::isInstance, rawSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code predicate} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (!predicate.test(cause)) {
+     *           throw cause;
+     *         }
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to
+     * {@link Subscriber#onSuccess(Object)} signal. Returns {@code false} to propagate the error.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
+                                         Function<? super Throwable, ? extends T> itemSupplier) {
+        requireNonNull(itemSupplier);
+        return onErrorResume(predicate, t -> Single.succeeded(itemSupplier.apply(t)));
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         throw mapper.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+        return onErrorMap(t -> true, mapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code type} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return result;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorMap(
+            Class<E> type, Function<? super E, ? extends Throwable> mapper) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, Throwable> rawMapper = (Function<Throwable, Throwable>) mapper;
+        return onErrorMap(type::isInstance, rawMapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code predicate} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T results = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return result;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code mapper}. Returns
+     * {@code false} to propagate the original error.
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorMap(Predicate<? super Throwable> predicate,
+                                      Function<? super Throwable, ? extends Throwable> mapper) {
+        return new OnErrorMapSingle<>(this, predicate, mapper, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
      * passed {@code nextFactory}.
      * <p>
@@ -139,11 +303,103 @@ public abstract class Single<T> {
      *     return result;
      * }</pre>
      * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that recovers from an error from this {@code Single} by using another
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
      * {@link Single} provided by the passed {@code nextFactory}.
      */
-    public final Single<T> recoverWith(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
-        return new ResumeSingle<>(this, nextFactory, executor);
+    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Single} which match {@code type} by using another {@link Single}
+     * provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *       if (type.isInstance(cause)) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *       } else {
+     *           throw cause;
+     *       }
+     *     }
+     *     return result;
+     * }</pre>
+     *
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorResume(
+            Class<E> type, Function<? super E, ? extends Single<? extends T>> nextFactory) {
+        @SuppressWarnings("unchecked")
+        Function<Throwable, ? extends Single<? extends T>> rawNextFactory =
+                (Function<Throwable, ? extends Single<? extends T>>) nextFactory;
+        return onErrorResume(type::isInstance, rawNextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Single} which match {@code predicate} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *       if (predicate.test(cause)) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *       } else {
+     *           throw cause;
+     *       }
+     *     }
+     *     return result;
+     * }</pre>
+     *
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code nextFactory}.
+     * Returns {@code false} to propagate the original error.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
+                                         Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return new OnErrorResumeSingle<>(this, predicate, nextFactory, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @deprecated Use {@link #onErrorResume(Function)}.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     */
+    @Deprecated
+    public final Single<T> recoverWith(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return onErrorResume(nextFactory);
     }
 
     /**

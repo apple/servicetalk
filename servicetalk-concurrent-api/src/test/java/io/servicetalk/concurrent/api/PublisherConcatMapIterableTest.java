@@ -97,7 +97,7 @@ public class PublisherConcatMapIterableTest {
         }).when(mockSubscriber).onNext(any());
 
         Processor<List<String>, List<String>> processor = newPublisherProcessor();
-        toSource(fromSource(processor).recoverWith(cause -> {
+        toSource(fromSource(processor).onErrorResume(cause -> {
             if (cause != DELIBERATE_EXCEPTION) { // recover!
                 return from(singletonList("two"));
             }

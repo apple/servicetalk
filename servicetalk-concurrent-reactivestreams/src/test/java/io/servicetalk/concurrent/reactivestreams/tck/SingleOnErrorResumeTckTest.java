@@ -17,16 +17,17 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+
 @Test
 public class SingleOnErrorResumeTckTest extends AbstractSingleTckTest<Integer> {
-
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
-        return Single.<Integer>failed(DeliberateException.DELIBERATE_EXCEPTION)
-                .recoverWith(cause -> Single.succeeded(1)).toPublisher();
+        return Single.<Integer>failed(DELIBERATE_EXCEPTION)
+                .onErrorResume(cause -> succeeded(1)).toPublisher();
     }
 }

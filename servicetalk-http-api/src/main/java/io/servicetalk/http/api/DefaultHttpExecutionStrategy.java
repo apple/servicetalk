@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
@@ -106,7 +105,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             final StreamingHttpRequest r = request;
             resp = e.submit(() -> service.apply(r).subscribeShareContext())
-                    .recoverWith(cause -> succeeded(errorHandler.apply(cause, e)))
+                    .onErrorReturn(cause -> errorHandler.apply(cause, e))
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());
         } else {

@@ -18,51 +18,44 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * As returned by {@link Publisher#recoverWith(Function)}.
- *
- * @param <T> Type of items emitted by this {@link Publisher}.
- */
-final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-
+final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
-    private final Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
+    private final Predicate<? super Throwable> predicate;
+    private final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-    ResumePublisher(Publisher<T> original, Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
-                    Executor executor) {
+    OnErrorResumePublisher(Publisher<T> original, Predicate<? super Throwable> predicate,
+                           Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory,
+                           Executor executor) {
         super(executor);
         this.original = original;
+        this.predicate = requireNonNull(predicate);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(
-                new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader, contextMap, contextProvider),
+        original.delegateSubscribe(new ResumeSubscriber(subscriber, signalOffloader, contextMap, contextProvider),
                 signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ResumeSubscriber<T> implements Subscriber<T> {
+    private final class ResumeSubscriber implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialSubscription sequentialSubscription;
-        @Nullable
-        private Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
+        private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber,
-                         Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
-                         SignalOffloader signalOffloader, AsyncContextMap contextMap,
+        ResumeSubscriber(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.nextFactory = nextFactory;
             this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
@@ -74,8 +67,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 sequentialSubscription = new SequentialSubscription(s);
                 subscriber.onSubscribe(sequentialSubscription);
             } else {
-                // Only a single re-subscribe is allowed.
-                nextFactory = null;
+                resubscribed = true;
                 sequentialSubscription.switchTo(s);
             }
         }
@@ -89,27 +81,26 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onError(Throwable t) {
-            if (nextFactory == null) {
-                subscriber.onError(t);
-                return;
-            }
-
             final Publisher<? extends T> next;
             try {
-                next = requireNonNull(nextFactory.apply(t));
+                next = !resubscribed && predicate.test(t) ? requireNonNull(nextFactory.apply(t)) : null;
             } catch (Throwable throwable) {
                 throwable.addSuppressed(t);
                 subscriber.onError(throwable);
                 return;
             }
 
-            // We are subscribing to a new Publisher which will send signals to the original Subscriber. This means
-            // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
-            // the new Publisher. This is the reason we use the original offloader now to offload signals which
-            // originate from this new Publisher.
-            final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrapPublisherSubscriber(this, contextMap));
-            next.subscribeInternal(offloadedSubscriber);
+            if (next == null) {
+                subscriber.onError(t);
+            } else {
+                // We are subscribing to a new Publisher which will send signals to the original Subscriber. This means
+                // that the threading semantics may differ with respect to the original Subscriber when we emit signals
+                // from the new Publisher. This is the reason we use the original offloader now to offload signals which
+                // originate from this new Publisher.
+                final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
+                        contextProvider.wrapPublisherSubscriber(this, contextMap));
+                next.subscribeInternal(offloadedSubscriber);
+            }
         }
 
         @Override

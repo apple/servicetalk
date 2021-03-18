@@ -279,7 +279,7 @@ public abstract class GrpcClientBuilder<U, R>
                     } catch (Throwable t) {
                         return failed(toGrpcException(t));
                     }
-                    return resp.recoverWith(t -> failed(toGrpcException(t)));
+                    return resp.onErrorMap(GrpcClientBuilder::toGrpcException);
                 }
             });
             appendedCatchAllFilter = true;

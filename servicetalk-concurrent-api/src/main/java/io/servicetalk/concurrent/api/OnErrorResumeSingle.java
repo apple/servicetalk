@@ -20,46 +20,43 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * {@link Completable} as returned by {@link Completable#onErrorResume(Function)}.
- */
-final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
-    private final Completable original;
-    private final Function<Throwable, ? extends Completable> nextFactory;
+final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+    private final Single<T> original;
+    private final Predicate<? super Throwable> predicate;
+    private final Function<? super Throwable, ? extends Single<? extends T>> nextFactory;
 
-    ResumeCompletable(Completable original, Function<Throwable, ? extends Completable> nextFactory,
-                      Executor executor) {
+    OnErrorResumeSingle(Single<T> original, Predicate<? super Throwable> predicate,
+                        Function<? super Throwable, ? extends Single<? extends T>> nextFactory, Executor executor) {
         super(executor);
         this.original = original;
+        this.predicate = requireNonNull(predicate);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ResumeSubscriber(subscriber, nextFactory, signalOffloader,
-                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new ResumeSubscriber(subscriber, signalOffloader, contextMap, contextProvider),
+                signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ResumeSubscriber implements Subscriber {
-        private final Subscriber subscriber;
+    private final class ResumeSubscriber implements Subscriber<T> {
+        private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private SequentialCancellable sequentialCancellable;
-        @Nullable
-        private Function<Throwable, ? extends Completable> nextFactory;
+        private boolean resubscribed;
 
-        ResumeSubscriber(Subscriber subscriber, Function<Throwable, ? extends Completable> nextFactory,
-                         SignalOffloader signalOffloader, AsyncContextMap contextMap,
+        ResumeSubscriber(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
-            this.nextFactory = nextFactory;
             this.signalOffloader = signalOffloader;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
@@ -71,39 +68,38 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
                 sequentialCancellable = new SequentialCancellable(cancellable);
                 subscriber.onSubscribe(sequentialCancellable);
             } else {
-                // Only a single re-subscribe is allowed.
-                nextFactory = null;
+                resubscribed = true;
                 sequentialCancellable.nextCancellable(cancellable);
             }
         }
 
         @Override
-        public void onComplete() {
-            subscriber.onComplete();
+        public void onSuccess(@Nullable T result) {
+            subscriber.onSuccess(result);
         }
 
         @Override
         public void onError(Throwable throwable) {
-            if (nextFactory == null) {
-                subscriber.onError(throwable);
-                return;
-            }
-
-            final Completable next;
+            final Single<? extends T> next;
             try {
-                next = requireNonNull(nextFactory.apply(throwable));
+                next = !resubscribed && predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
             } catch (Throwable t) {
                 t.addSuppressed(throwable);
                 subscriber.onError(t);
                 return;
             }
-            // We are subscribing to a new Completable which will send signals to the original Subscriber. This means
-            // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
-            // the new Completable. This is the reason we use the original offloader now to offload signals which
-            // originate from this new Completable.
-            final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrapCompletableSubscriber(this, contextMap));
-            next.subscribeInternal(offloadedSubscriber);
+
+            if (next == null) {
+                subscriber.onError(throwable);
+            } else {
+                // We are subscribing to a new Single which will send signals to the original Subscriber. This means
+                // that the threading semantics may differ with respect to the original Subscriber when we emit signals
+                // from the new Single. This is the reason we use the original offloader now to offload signals which
+                // originate from this new Single.
+                final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
+                        contextProvider.wrapSingleSubscriber(this, contextMap));
+                next.subscribeInternal(offloadedSubscriber);
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.testng.annotations.Test;
 
@@ -24,9 +25,10 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @Test
-public class CompletableOnErrorResumeTckTest extends AbstractCompletableTckTest {
+public class CompletableOnErrorResumePredicateTckTest extends AbstractCompletableTckTest {
     @Override
     public Publisher<Object> createServiceTalkPublisher(long elements) {
-        return failed(DELIBERATE_EXCEPTION).onErrorResume(cause -> completed()).toPublisher();
+        return failed(DELIBERATE_EXCEPTION)
+                .onErrorResume(t -> t instanceof DeliberateException, cause -> completed()).toPublisher();
     }
 }

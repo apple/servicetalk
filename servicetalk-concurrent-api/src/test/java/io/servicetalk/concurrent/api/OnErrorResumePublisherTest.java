@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ResumePublisherTest {
+public final class OnErrorResumePublisherTest {
 
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> first = new TestPublisher<>();
@@ -40,7 +40,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstComplete() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onNext(1);
         first.onComplete();
@@ -50,7 +50,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstErrorSecondComplete() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -63,7 +63,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstErrorSecondError() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(new DeliberateException());
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -74,7 +74,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testCancelFirstActive() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         first.onSubscribe(subscription);
         subscriber.awaitSubscription().request(1);
@@ -86,7 +86,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testCancelSecondActive() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -100,7 +100,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testDemandAcrossPublishers() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         first.onNext(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -114,7 +114,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testDuplicateOnError() {
-        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
@@ -128,7 +128,7 @@ public final class ResumePublisherTest {
     @Test
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
-        toSource(first.recoverWith(throwable -> {
+        toSource(first.onErrorResume(throwable -> {
             throw ex;
         })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
@@ -140,7 +140,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        toSource(first.recoverWith(throwable -> null)).subscribe(subscriber);
+        toSource(first.onErrorResume(throwable -> null)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), instanceOf(NullPointerException.class));

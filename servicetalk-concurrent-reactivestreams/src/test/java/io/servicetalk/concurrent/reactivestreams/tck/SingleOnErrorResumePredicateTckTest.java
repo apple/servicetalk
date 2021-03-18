@@ -16,17 +16,19 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.testng.annotations.Test;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @Test
-public class CompletableOnErrorResumeTckTest extends AbstractCompletableTckTest {
+public class SingleOnErrorResumePredicateTckTest extends AbstractSingleTckTest<Integer> {
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
-        return failed(DELIBERATE_EXCEPTION).onErrorResume(cause -> completed()).toPublisher();
+    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+        return Single.<Integer>failed(DELIBERATE_EXCEPTION)
+                .onErrorResume(t -> t instanceof DeliberateException, cause -> succeeded(1)).toPublisher();
     }
 }
