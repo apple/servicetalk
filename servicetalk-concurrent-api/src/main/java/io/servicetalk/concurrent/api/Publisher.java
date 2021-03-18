@@ -1513,7 +1513,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
-        return idleTimeout(duration, unit, executor);
+        return timeout(duration, unit);
     }
 
     /**
@@ -1533,7 +1533,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(Duration duration) {
-        return idleTimeout(duration.toNanos(), TimeUnit.NANOSECONDS);
+        return timeout(duration);
     }
 
     /**
@@ -1555,7 +1555,7 @@ public abstract class Publisher<T> {
     @Deprecated
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
                                           io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, true, timeoutExecutor);
+        return timeout(duration, unit, timeoutExecutor);
     }
 
     /**
@@ -1575,7 +1575,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return idleTimeout(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
+        return timeout(duration, timeoutExecutor);
     }
 
     /**

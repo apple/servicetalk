@@ -69,13 +69,4 @@ public interface Executor {
     default Cancellable schedule(Runnable task, Duration delay) throws RejectedExecutionException {
         return schedule(task, delay.toNanos(), NANOSECONDS);
     }
-
-    /**
-     * Returns the current time in nanoseconds of the monotonic clock associated with this executor.
-     *
-     * @return the current time as monotonic nanoseconds
-     */
-    default long currentNanos() {
-        return System.nanoTime();
-    }
 }

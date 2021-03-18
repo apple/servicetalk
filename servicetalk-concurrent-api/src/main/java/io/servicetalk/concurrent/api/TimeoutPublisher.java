@@ -20,14 +20,9 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
@@ -49,8 +44,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * @param <T> Type of items
  */
 final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
     private final Publisher<T> original;
     private final io.servicetalk.concurrent.Executor timeoutExecutor;
     /**
@@ -63,8 +56,6 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
      */
     private final boolean restartAtOnNext;
 
-    private final LongSupplier currentNanos;
-
     TimeoutPublisher(final Publisher<T> original,
                      final Executor publisherExecutor,
                      final long duration,
@@ -75,19 +66,10 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     TimeoutPublisher(final Publisher<T> original,
-                     final Executor publisherExecutor,
-                     final long durationNs,
-                     final boolean restartAtOnNext,
-                     final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        this(original, publisherExecutor, durationNs, restartAtOnNext, timeoutExecutor, timeoutExecutor::currentNanos);
-    }
-
-    TimeoutPublisher(final Publisher<T> original,
                              final Executor publisherExecutor,
                              final long durationNs,
                              final boolean restartAtOnNext,
-                             final io.servicetalk.concurrent.Executor timeoutExecutor,
-                             final LongSupplier currentNanos) {
+                             final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(publisherExecutor);
         this.original = requireNonNull(original);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
@@ -95,7 +77,6 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         // lets cap this at 0 to simplify overflow at that time.
         this.durationNs = max(0, durationNs);
         this.restartAtOnNext = restartAtOnNext;
-        this.currentNanos = currentNanos;
     }
 
     @Override
@@ -164,7 +145,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                                     AsyncContextProvider contextProvider) {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader, contextProvider);
             try {
-                s.lastStartNS = parent.currentNanos.getAsLong();
+                s.lastStartNS = System.nanoTime();
                 // CAS is just in case the timer fired, the run method schedule a new timer before this thread is able
                 // to set the initial timer value. in this case we don't want to overwrite the active timer.
                 //
@@ -194,7 +175,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Override
         public void onNext(final X x) {
             if (parent.restartAtOnNext) {
-                lastStartNS = parent.currentNanos.getAsLong();
+                lastStartNS = System.nanoTime();
             }
             target.onNext(x);
         }
@@ -252,10 +233,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             // Instead of recursion we use a 2 level for loop structure.
             for (;;) {
-                final long now = parent.currentNanos.getAsLong();
+                final long now = System.nanoTime();
                 final long nextTimeoutNs = parent.durationNs - (now - lastStartNS);
-                LOGGER.warn("Timer fire @ {}, start={} elapsed={} duration={} remaining={}",
-                        now, lastStartNS, now - lastStartNS, parent.durationNs, nextTimeoutNs);
                 if (nextTimeoutNs <= 0) { // Timeout!
                     offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
                             "ms"));
