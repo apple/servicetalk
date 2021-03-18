@@ -169,6 +169,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         systemProperty junit5TimeoutParamName, "$junit5Timeout"
         systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
+        ignoreFailures = true
         testLogging {
           events "passed", "skipped", "failed"
           showStandardStreams = true

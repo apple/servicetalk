@@ -20,6 +20,7 @@ apply from: "../../gradle/idea.gradle"
 dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-netty")
+  implementation project(":servicetalk-http-utils")
 
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
