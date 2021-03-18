@@ -223,7 +223,7 @@ public final class RepeatStrategies {
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> {
-            final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, repeatCount - 1);
+            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1));
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
@@ -261,7 +261,7 @@ public final class RepeatStrategies {
             if (repeatCount > maxRepeats) {
                 return terminateRepeat();
             }
-            final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, repeatCount - 1);
+            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1));
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),

@@ -237,7 +237,7 @@ public final class RetryStrategies {
             if (!causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, retryCount - 1);
+            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
@@ -278,7 +278,7 @@ public final class RetryStrategies {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = initialDelayNanos << min(maxInitialShift, retryCount - 1);
+            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
