@@ -170,7 +170,7 @@ public final class RetryStrategies {
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
-                        min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1))), NANOSECONDS) :
+                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
                 failed(cause);
     }
 
@@ -204,7 +204,7 @@ public final class RetryStrategies {
         final long maxInitialShift = maxShift(initialDelayNanos);
         return (retryCount, cause) -> retryCount <= maxRetries && causeFilter.test(cause) ?
                 timerExecutor.timer(current().nextLong(0,
-                        min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1))), NANOSECONDS) :
+                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount)), NANOSECONDS) :
                 failed(cause);
     }
 
@@ -237,7 +237,7 @@ public final class RetryStrategies {
             if (!causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
+            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
@@ -278,12 +278,17 @@ public final class RetryStrategies {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return failed(cause);
             }
-            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
+            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, retryCount);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
                     NANOSECONDS);
         };
+    }
+
+    static long baseDelayNanos(final long initialDelayNanos, final long maxDelayNanos, final long maxInitialShift,
+                               final int retryCount) {
+        return min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
     }
 
     static void checkMaxRetries(final int maxRetries) {

@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.RetryStrategies.baseDelayNanos;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkJitterDelta;
 import static io.servicetalk.concurrent.api.RetryStrategies.checkMaxRetries;
 import static io.servicetalk.concurrent.api.RetryStrategies.maxShift;
@@ -223,7 +224,8 @@ public final class RepeatStrategies {
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> {
-            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1));
+            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift,
+                    repeatCount - 1);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
@@ -261,7 +263,8 @@ public final class RepeatStrategies {
             if (repeatCount > maxRepeats) {
                 return terminateRepeat();
             }
-            final long baseDelayNanos = min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1));
+            final long baseDelayNanos = baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift,
+                    repeatCount - 1);
             return timerExecutor.timer(
                     current().nextLong(max(0, baseDelayNanos - jitterNanos),
                             min(maxDelayNanos, addWithOverflowProtection(baseDelayNanos, jitterNanos))),
