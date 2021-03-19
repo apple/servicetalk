@@ -287,8 +287,8 @@ public final class RetryStrategies {
     }
 
     static long baseDelayNanos(final long initialDelayNanos, final long maxDelayNanos, final long maxInitialShift,
-                               final int retryCount) {
-        return min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, retryCount - 1));
+                               final int count) {
+        return min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, count - 1));
     }
 
     static void checkMaxRetries(final int maxRetries) {
