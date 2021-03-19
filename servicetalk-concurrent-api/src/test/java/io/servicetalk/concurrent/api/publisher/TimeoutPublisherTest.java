@@ -227,8 +227,8 @@ public class TimeoutPublisherTest {
                 break;
             }
             publisher.onNext(x); // may reset timer
-            MILLISECONDS.sleep(1 * millisMultiplier);
-            testExecutor.advanceTimeBy(1 * millisMultiplier, MILLISECONDS);
+            MILLISECONDS.sleep(millisMultiplier);
+            testExecutor.advanceTimeBy(millisMultiplier, MILLISECONDS);
             assertThat(subscriber.takeOnNext(), is(x));
         }
 

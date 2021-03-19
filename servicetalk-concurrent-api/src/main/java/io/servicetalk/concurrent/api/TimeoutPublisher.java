@@ -62,20 +62,14 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                      final TimeUnit unit,
                      final boolean restartAtOnNext,
                      final io.servicetalk.concurrent.Executor timeoutExecutor) {
-        this(original, publisherExecutor, unit.toNanos(duration), restartAtOnNext, timeoutExecutor);
-    }
-
-    TimeoutPublisher(final Publisher<T> original,
-                             final Executor publisherExecutor,
-                             final long durationNs,
-                             final boolean restartAtOnNext,
-                             final io.servicetalk.concurrent.Executor timeoutExecutor) {
         super(publisherExecutor);
         this.original = requireNonNull(original);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
         // We use the duration in arithmetic below to determine the expiration time for the "next timer" below. So
-        // lets cap this at 0 to simplify overflow at that time.
-        this.durationNs = max(0, durationNs);
+        // lets cap this at 0 to simplify overflow at that time. Negative duration is allowed as input as this
+        // simplifies cases where the duration is calculated and an "already timed out" result is found. The caller
+        // would otherwise have to generate the timeout exception themselves.
+        this.durationNs = max(0, unit.toNanos(duration));
         this.restartAtOnNext = restartAtOnNext;
     }
 
