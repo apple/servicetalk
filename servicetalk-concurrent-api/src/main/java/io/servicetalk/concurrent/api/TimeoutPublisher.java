@@ -34,9 +34,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Publisher which cancels the subscription after the specified duration if not completed. Two timer modes are offered:
  * <ul>
- *     <li>An absolute timeout which requires that the publisher receive all items and complete (or error)
- *     <li>A mode which restarts the timer for each items received by {@link Subscriber#onNext(Object) onNext} providing
- *     an "idle" timeout.
+ *     <li>An absolute timeout which requires that the publisher receive all items and complete (or error)</li>
+ *     <li>A mode which restarts the timer for each {@link Subscriber#onNext(Object) onNext} signal providing an "idle"
+ *     timeout.</li>
  * </ul>
  *
  * <p/>For either timer mode the timer begins with the subscription.
@@ -95,7 +95,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         /**
          * {@code null} is only used during initialization to account for the following condition:
          * Thread A: new TimeoutSubscriber(), schedule new timer (1)
-         * Thread B: call run(), schedule new timer (2)
+         * Thread B: call timerFires(), schedule new timer (2)
          * Thread A: set timerCancellable to (1)
          * Thread B: fails to set the timer to (2) ... at this point we don't have a reference to the active timer!
          */
@@ -116,8 +116,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         /**
          * <ul>
          * <li>{@code null} - initialization only seen in the constructor and potentially on the first timer fire</li>
-         * <li>{@link #TIMER_PROCESSING} - the {@link #timerFired()} is processing a timeout fire</li>
-         * <li>{@link #TIMER_FIRED} - the next timeout fired before the current {@link #timerFired()} method exited</li>
+         * <li>{@link #TIMER_PROCESSING} - the {@link #timerFires()} is processing a timeout fire</li>
+         * <li>{@link #TIMER_FIRED} - the next timeout fired before the current {@link #timerFires()} method exited</li>
          * <li>{@link #LOCAL_IGNORE_CANCEL} - a timeout occurred or normal termination. we don't need a timer.</li>
          * </ul>
          */
@@ -156,7 +156,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
                 // so they can wrap the Executor in this case.
                 timerCancellableUpdater.compareAndSet(s, null, requireNonNull(
-                        parent.timeoutExecutor.schedule(s::timerFired, parent.durationNs, NANOSECONDS)));
+                        parent.timeoutExecutor.schedule(s::timerFires, parent.durationNs, NANOSECONDS)));
             } catch (Throwable cause) {
                 handleConstructorException(s, signalOffloader, contextMap, contextProvider, cause);
             }
@@ -212,11 +212,11 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
         }
 
-        public void timerFired() {
+        private void timerFires() {
             // Reserve the timer processing for a single thread. There is only expected to be a single timer outstanding
             // at any give time, but because we reschedule the timer from within this method it is possible that another
-            // timer will fire, and invoke this run() method "concurrently" before the first invocation of run() has
-            // updated state as a result of the rescheduled timer.
+            // timer will fire, and invoke this timerFires() method "concurrently" before the first invocation of
+            // timerFires() has updated state as a result of the rescheduled timer.
             Cancellable previousTimerCancellable;
             for (;;) {
                 previousTimerCancellable = timerCancellable;
@@ -233,8 +233,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             // Instead of recursion we use a 2 level for loop structure.
             for (;;) {
-                final long now = System.nanoTime();
-                final long nextTimeoutNs = parent.durationNs - (now - lastStartNS);
+                final long nextTimeoutNs = parent.durationNs - (System.nanoTime() - lastStartNS);
                 if (nextTimeoutNs <= 0) { // Timeout!
                     offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
                             "ms"));
@@ -243,7 +242,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     final Cancellable nextTimerCancellable;
                     try {
                         nextTimerCancellable = requireNonNull(
-                                parent.timeoutExecutor.schedule(this::timerFired, nextTimeoutNs, NANOSECONDS));
+                                parent.timeoutExecutor.schedule(this::timerFires, nextTimeoutNs, NANOSECONDS));
                     } catch (Throwable cause) {
                         offloadTimeout(cause);
                         return;

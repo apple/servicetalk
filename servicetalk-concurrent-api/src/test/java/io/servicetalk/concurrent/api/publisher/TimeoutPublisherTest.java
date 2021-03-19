@@ -49,11 +49,11 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -213,7 +213,8 @@ public class TimeoutPublisherTest {
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
     public void dataAndTimeout(TimerBehaviorParam params) throws Exception {
-        init(params, Duration.ofSeconds(2));
+        final long millisMultiplier = 100;
+        init(params, Duration.ofMillis(2 * millisMultiplier));
 
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
@@ -226,8 +227,8 @@ public class TimeoutPublisherTest {
                 break;
             }
             publisher.onNext(x); // may reset timer
-            SECONDS.sleep(1);
-            testExecutor.advanceTimeBy(1, SECONDS);
+            MILLISECONDS.sleep(1 * millisMultiplier);
+            testExecutor.advanceTimeBy(1 * millisMultiplier, MILLISECONDS);
             assertThat(subscriber.takeOnNext(), is(x));
         }
 
@@ -237,12 +238,13 @@ public class TimeoutPublisherTest {
             // The timer was reset so we should be able to get the last item
             assertThat(timedOut, is(nullValue()));
             assertThat(testExecutor.scheduledTasksPending(), is(1));
-            SECONDS.sleep(2);
-            testExecutor.advanceTimeBy(2, SECONDS);
+            MILLISECONDS.sleep(2 * millisMultiplier);
+            testExecutor.advanceTimeBy(2 * millisMultiplier, MILLISECONDS);
             assertThat(testExecutor.scheduledTasksPending(), is(0));
             timeout = subscriber.awaitOnError();
         } else {
             // timer has already fired
+            assertThat(timedOut, not(nullValue()));
             timeout = timedOut.get();
         }
 
