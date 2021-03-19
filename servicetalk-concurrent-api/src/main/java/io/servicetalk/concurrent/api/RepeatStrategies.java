@@ -167,7 +167,7 @@ public final class RepeatStrategies {
         final long maxDelayNanos = maxDelay.toNanos();
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> timerExecutor.timer(current().nextLong(0,
-                        min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1))), NANOSECONDS);
+                baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount)), NANOSECONDS);
     }
 
     /**
@@ -197,7 +197,7 @@ public final class RepeatStrategies {
         final long maxInitialShift = maxShift(initialDelayNanos);
         return repeatCount -> repeatCount <= maxRepeats ?
                 timerExecutor.timer(current().nextLong(0,
-                        min(maxDelayNanos, initialDelayNanos << min(maxInitialShift, repeatCount - 1))), NANOSECONDS) :
+                        baseDelayNanos(initialDelayNanos, maxDelayNanos, maxInitialShift, repeatCount)), NANOSECONDS) :
                 terminateRepeat();
     }
 
