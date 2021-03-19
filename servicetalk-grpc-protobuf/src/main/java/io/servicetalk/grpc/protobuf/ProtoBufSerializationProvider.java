@@ -172,7 +172,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                             // into it. Later, proto parser will copy data from this temporary ByteBuffer again.
                             // To avoid unnecessary copying, we use newCodedInputStream(buffers, lengthOfData).
                             final ByteBuffer[] buffers = buffer.toNioBuffers(buffer.readerIndex(),
-                                    buffer.readableBytes());
+                                    decodedLengthOfData);
 
                             in = buffers.length == 1 ?
                                     CodedInputStream.newInstance(buffers[0]) :
