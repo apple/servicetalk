@@ -20,12 +20,14 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
@@ -109,25 +111,23 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffWithJitter() throws Exception {
-        Duration initialDelay = ofSeconds(1);
-        Duration jitter = ofMillis(10);
-        RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffDeltaJitter(2, cause -> true,
-                initialDelay, jitter, ofDays(10), timerExecutor));
-        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
-                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
+    public void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
+        testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofDays(10)));
+    }
 
-        timers.take().verifyListenCalled().onComplete();
-        subscriber.awaitOnComplete();
-        verifyNoMoreInteractions(timerExecutor);
+    @Test
+    public void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
+        testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofDays(10)));
+    }
 
-        subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        long nextDelay = initialDelay.toNanos() << 1;
-        verifyDelayWithDeltaJitter(nextDelay, jitter.toNanos(), 2);
-        timers.take().verifyListenCalled().onComplete();
-        subscriber.awaitOnComplete();
-        verifyNoMoreInteractions(timerExecutor);
+    @Test
+    public void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
+        testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
+    }
+
+    @Test
+    public void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
+        testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
@@ -171,6 +171,32 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
         subscriber = strategy.invokeAndListen(de);
         verifyNoMoreInteractions(timerExecutor);
         assertThat(subscriber.awaitOnError(), is(de));
+    }
+
+    private void testExpBackoffWithJitter(final int maxRetries, final Duration initialDelay,
+                                          final UnaryOperator<Duration> maxDelayFunc)
+            throws Exception {
+        Duration jitter = ofMillis(10);
+        final BiIntFunction<Throwable, Completable> strategyFunction = maxRetries < MAX_VALUE ?
+                retryWithExponentialBackoffDeltaJitter(maxRetries, cause -> true,
+                        initialDelay, jitter, maxDelayFunc.apply(initialDelay), timerExecutor) :
+                retryWithExponentialBackoffDeltaJitter(cause -> true,
+                        initialDelay, jitter, maxDelayFunc.apply(initialDelay), timerExecutor);
+        RetryStrategy strategy = new RetryStrategy(strategyFunction);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber =
+                strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
+
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+        verifyNoMoreInteractions(timerExecutor);
+
+        subscriber = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
+        long nextDelay = initialDelay.toNanos() << 1;
+        verifyDelayWithDeltaJitter(nextDelay, jitter.toNanos(), 2);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     private static final class RetryStrategy {
