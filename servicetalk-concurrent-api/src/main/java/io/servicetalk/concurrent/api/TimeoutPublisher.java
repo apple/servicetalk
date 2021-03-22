@@ -140,8 +140,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader, contextProvider);
             try {
                 s.lastStartNS = System.nanoTime();
-                // CAS is just in case the timer fired, the run method schedule a new timer before this thread is able
-                // to set the initial timer value. in this case we don't want to overwrite the active timer.
+                // CAS is just in case the timer fired, the timerFires method schedule a new timer before this thread is
+                // able to set the initial timer value. In this case we don't want to overwrite the active timer.
                 //
                 // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
                 // fires. An alternative would be to also wrap the Subscriber to preserve the AsyncContext but that
@@ -259,7 +259,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                             } else if (timerCancellableUpdater.compareAndSet(this, previousTimerCancellable,
                                     nextTimerCancellable)) {
                                 // This means that initialization sequence was such that the timer fired, and
-                                // the run method executed before the constructor set the initial value.
+                                // the timerFires method executed before the constructor set the initial value.
                                 return;
                             }
                         }

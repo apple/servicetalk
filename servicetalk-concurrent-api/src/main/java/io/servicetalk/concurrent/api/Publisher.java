@@ -79,6 +79,15 @@ import static java.util.Objects.requireNonNull;
 public abstract class Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
+    /**
+     * Maximum positive duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MAX_NANOS = Duration.ofNanos(Long.MAX_VALUE);
+    /**
+     * Maximum negative duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MIN_NANOS = Duration.ofNanos(Long.MIN_VALUE);
+
     private final Executor executor;
     private final boolean shareContextOnSubscribe;
 
@@ -1636,6 +1645,19 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Converts a {@code Duration} to nanoseconds or if the resulting value would overflow a 64-bit signed integer then
+     * either {@code Long.MIN_VALUE} or {@code Long.MAX_VALUE} as appropriate.
+     *
+     * @param duration The duration to convert
+     * @return The converted nanoseconds value.
+     */
+    private long toNanos(Duration duration) {
+        return duration.compareTo(LONG_MAX_NANOS) < 0 ?
+                duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE
+                : Long.MAX_VALUE;
+    }
+
+    /**
      * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
      * calls. The timer starts when the returned {@link Publisher} is subscribed.
@@ -1650,7 +1672,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return timeout(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
+        return timeout(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
     }
 
     /**
@@ -1685,7 +1707,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return timeoutTerminal(duration.toNanos(), TimeUnit.NANOSECONDS, timeoutExecutor);
+        return timeoutTerminal(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
     }
 
     /**
