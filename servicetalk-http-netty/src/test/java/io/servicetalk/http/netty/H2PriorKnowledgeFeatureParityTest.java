@@ -1688,7 +1688,7 @@ class H2PriorKnowledgeFeatureParityTest {
                              Queue<FilterableStreamingHttpConnection> connectionQueue,
                              Queue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue) {
             super(delegate);
-            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicastToExactly(2);
+            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicast(2);
             connectionQueue.add(delegate);
             maxConcurrentPubQueue.add(maxConcurrent);
         }

@@ -42,14 +42,12 @@ import static org.hamcrest.core.Is.is;
  * Test for {@link MulticastPublisher} when the source terminates from within
  * {@link Subscriber#onSubscribe(Subscription)}.
  */
-
 class MulticastRealizedSourcePublisherTest {
-
     @Test
     void testOnSubscribeErrors() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
         Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION))
-                .multicastToExactly(2);
+                .multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -62,7 +60,7 @@ class MulticastRealizedSourcePublisherTest {
     @Test
     void testOnSubscribeCompletesNoItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicastToExactly(2);
+        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -75,7 +73,7 @@ class MulticastRealizedSourcePublisherTest {
     @Test
     void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = from(1, 2).multicastToExactly(2);
+        Publisher<Integer> multicast = from(1, 2).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -88,7 +86,7 @@ class MulticastRealizedSourcePublisherTest {
     @Test
     void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = from(1).multicastToExactly(2);
+        Publisher<Integer> multicast = from(1).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -100,7 +98,8 @@ class MulticastRealizedSourcePublisherTest {
 
     private static final class MulticastSubscriber implements Subscriber<Integer> {
         private boolean onSubscribeReceived;
-        private List<Integer> values = new ArrayList<>(3);
+        private final List<Integer> values = new ArrayList<>(3);
+        @Nullable
         private TerminalNotification terminalNotification;
         private final CountDownLatch terminationLatch;
         @Nullable

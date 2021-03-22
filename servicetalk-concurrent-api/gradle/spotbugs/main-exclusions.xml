@@ -38,4 +38,10 @@
     </Or>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
+
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.MulticastPublisher$State"/>
+    <Field name="subscribers"/>
+    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
+  </Match>
 </FindBugsFilter>

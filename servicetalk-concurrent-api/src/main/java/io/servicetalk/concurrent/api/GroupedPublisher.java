@@ -22,9 +22,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A group as emitted by {@link #groupBy(Function, int)} or its variants.
  *
- * @param <Key> Key for the group. If this is of type {@link QueueSizeProvider} new keys will use the
- * value provided by {@link QueueSizeProvider#calculateMaxQueueSize(int)} to determine the maximum queue size for this
- * group.
+ * @param <Key> Key for the group.
  * @param <T> Items emitted by this {@link Publisher}.
  */
 public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
@@ -45,7 +43,9 @@ public abstract class GroupedPublisher<Key, T> extends Publisher<T> {
 
     /**
      * Provide the maximum queue size to use for a particular {@link GroupedPublisher} key.
+     * @deprecated Use {@link Publisher#groupBy(Function, int)} instead.
      */
+    @Deprecated
     public interface QueueSizeProvider {
         /**
          * Calculate the maximum queue size for a particular {@link GroupedPublisher} key.
