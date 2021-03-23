@@ -163,7 +163,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       test {
         useJUnitPlatform()
         // expected format for timeout: <number>[ns|μs|ms|s|m|h|d])
-        def junit5DefaultTimeout = "true".equalsIgnoreCase(System.getenv("CI")) ? "30s" : "10s"
+        def junit5DefaultTimeout = Boolean.valueOf(System.getenv("CI") ?: "false") ? "30s" : "10s"
         def junit5TimeoutParamName = "junit.jupiter.execution.timeout.default"
         def junit5Timeout = System.getProperty(junit5TimeoutParamName, "$junit5DefaultTimeout")
         systemProperty junit5TimeoutParamName, "$junit5Timeout"
