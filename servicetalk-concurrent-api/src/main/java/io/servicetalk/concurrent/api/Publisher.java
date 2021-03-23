@@ -1651,7 +1651,7 @@ public abstract class Publisher<T> {
      * @param duration The duration to convert
      * @return The converted nanoseconds value.
      */
-    private long toNanos(Duration duration) {
+    private static long toNanos(Duration duration) {
         return duration.compareTo(LONG_MAX_NANOS) < 0 ?
                 duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE
                 : Long.MAX_VALUE;
