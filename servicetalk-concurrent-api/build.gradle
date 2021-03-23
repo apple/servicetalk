@@ -16,14 +16,6 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-test {
-  useJUnitPlatform()
-  def junit5TimeoutParamName = "junit.jupiter.execution.timeout.default"
-  def junit5Timeout = System.getProperty(junit5TimeoutParamName, "$junit5DefaultTimeout")
-  systemProperty junit5TimeoutParamName, "$junit5Timeout"
-  systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
-}
-
 dependencies {
   api project(":servicetalk-concurrent")
 
