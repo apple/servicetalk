@@ -181,13 +181,16 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                                 contextProvider.contextMap()));
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
-                    oldCancellable.cancel();
-
                     // We already know that this.onSubscribe was called because we have a valid Cancellable. We need to
                     // know that the call to target.onSubscribe completed so we don't interact with the Subscriber
                     // concurrently.
-                    if (subscriberStateUpdater.getAndSet(this, STATE_TIMED_OUT_ERROR) == STATE_ON_SUBSCRIBE_DONE) {
-                        offloadedTarget.onError(newTimeoutException());
+                    int stateWas = subscriberStateUpdater.getAndSet(this, STATE_TIMED_OUT_ERROR);
+                    try {
+                        oldCancellable.cancel();
+                    } finally {
+                        if (stateWas == STATE_ON_SUBSCRIBE_DONE) {
+                            offloadedTarget.onError(newTimeoutException());
+                        }
                     }
                 } else {
                     // If there is no Cancellable, that means this.onSubscribe wasn't called before the timeout. In this

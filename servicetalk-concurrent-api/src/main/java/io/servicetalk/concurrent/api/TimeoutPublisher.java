@@ -232,7 +232,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
                             "ms"));
                     return;
-                } else {
+                } else { // reschedule
                     final Cancellable nextTimerCancellable;
                     try {
                         nextTimerCancellable = requireNonNull(
@@ -282,13 +282,16 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private void processTimeout(Throwable cause) {
             final Subscription subscription = subscriptionUpdater.getAndSet(this, EMPTY_SUBSCRIPTION);
             // The timer is started before onSubscribe so the subscription may actually be null at this time.
-            if (subscription != null) {
-                subscription.cancel();
-                // onErrorFromTimeout will protect against concurrent access on the Subscriber.
-            } else {
-                target.onSubscribe(EMPTY_SUBSCRIPTION);
+            try {
+                if (subscription != null) {
+                    subscription.cancel();
+                    // onErrorFromTimeout will protect against concurrent access on the Subscriber.
+                } else {
+                    target.onSubscribe(EMPTY_SUBSCRIPTION);
+                }
+            } finally {
+                target.processOnError(cause);
             }
-            target.processOnError(cause);
         }
 
         private void stopTimer() {
