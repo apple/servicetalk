@@ -74,7 +74,10 @@ public final class CharSequences {
      *
      * @param sequence The {@link CharSequence} to check.
      * @return {@code true} if the check passes.
+     * @deprecated Internal implementation detail that will be removed in follow-up releases. Please rely on API inside
+     * {@link CharSequences} to manipulated ascii strings.
      */
+    @Deprecated
     public static boolean isAsciiString(final CharSequence sequence) {
         return sequence.getClass() == AsciiBuffer.class;
     }
@@ -169,10 +172,10 @@ public final class CharSequences {
      * @return The index of {@code c} or {@code -1} otherwise.
      */
     public static int indexOf(final CharSequence sequence, char c, int fromIndex) {
-        if (sequence instanceof String) {
-            return ((String) sequence).indexOf(c, fromIndex);
-        } else if (isAsciiString(sequence)) {
+        if (isAsciiString(sequence)) {
             return asciiStringIndexOf(sequence, c, fromIndex);
+        } else if (sequence instanceof String) {
+            return ((String) sequence).indexOf(c, fromIndex);
         }
         for (int i = fromIndex; i < sequence.length(); ++i) {
             if (sequence.charAt(i) == c) {

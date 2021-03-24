@@ -30,9 +30,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.CharSequences;
-
-import static io.servicetalk.buffer.api.CharSequences.isAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.indexOf;
 
 final class NetUtils {
 
@@ -43,35 +41,20 @@ final class NetUtils {
     /**
      * Takes a string and parses it to see if it is a valid IPV4 address.
      *
-     * @return true, if the string represents an IPV4 address in dotted
-     * notation, false otherwise
+     * @return true, if the string represents an IPV4 address in dotted notation, false otherwise.
      */
     static boolean isValidIpV4Address(final CharSequence ip) {
         return isValidIpV4Address(ip, 0, ip.length());
     }
 
     private static boolean isValidIpV4Address(final CharSequence ip, int from, int toExclusive) {
-        return ip instanceof String ? isValidIpV4Address((String) ip, from, toExclusive, String::indexOf) :
-               isAsciiString(ip) ?
-                        isValidIpV4Address(ip, from, toExclusive, CharSequences::indexOf) :
-                        isValidIpV4Address(ip, from, toExclusive, NetUtils::indexOf0);
-    }
-
-    @FunctionalInterface
-    private interface IndexOfExtractor<T extends CharSequence> {
-        int indexOf(T src, char toSearch, int fromIndex);
-    }
-
-    @SuppressWarnings("DuplicateBooleanBranch")
-    private static <T extends CharSequence> boolean isValidIpV4Address(T ip, int from, int toExcluded,
-                                                                       IndexOfExtractor<T> extractor) {
-        int len = toExcluded - from;
+        int len = toExclusive - from;
         int i;
-        return len <= 15 && len >= 7 &&
-                (i = extractor.indexOf(ip, '.', from + 1)) > 0 && isValidIpV4Word(ip, from, i) &&
-                (i = extractor.indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
-                (i = extractor.indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
-                isValidIpV4Word(ip, i + 1, toExcluded);
+        return len <= 15 && len > 7 &&
+                (i = indexOf(ip, '.', from + 1)) > 0 && isValidIpV4Word(ip, from, i) &&
+                (i = indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
+                (i = indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
+                isValidIpV4Word(ip, i + 1, toExclusive);
     }
 
     /**
@@ -226,27 +209,5 @@ final class NetUtils {
 
     private static boolean isValidIPv4MappedChar(final char c) {
         return c == 'f' || c == 'F';
-    }
-
-    private static int indexOf(final CharSequence cs, final char searchChar, int start) {
-        if (cs instanceof String) {
-            return ((String) cs).indexOf(searchChar, start);
-        } else if (isAsciiString(cs)) {
-            return CharSequences.indexOf(cs, searchChar, start);
-        }
-        return indexOf0(cs, searchChar, start);
-    }
-
-    private static int indexOf0(final CharSequence cs, final char searchChar, int start) {
-        if (cs == null) {
-            return -1;
-        }
-        final int sz = cs.length();
-        for (int i = start < 0 ? 0 : start; i < sz; i++) {
-            if (cs.charAt(i) == searchChar) {
-                return i;
-            }
-        }
-        return -1;
     }
 }
