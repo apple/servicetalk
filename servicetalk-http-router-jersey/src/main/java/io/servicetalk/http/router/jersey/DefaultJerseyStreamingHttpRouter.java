@@ -33,7 +33,9 @@ import io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.glassfish.jersey.internal.LocalizationMessages;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
+import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -42,11 +44,16 @@ import org.glassfish.jersey.server.spi.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.SecurityContext;
@@ -66,6 +73,7 @@ import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtil
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
@@ -221,7 +229,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
             return;
         }
 
-        final ContainerRequest containerRequest = new ContainerRequest(
+        final ContainerRequest containerRequest = new CloseSignalHandoffAbleContainerRequest(
                 baseURI,
                 requestURI,
                 req.method().name(),
@@ -249,6 +257,108 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         delayedCancellable.delayedCancellable(responseWriter::dispose);
 
         applicationHandler.handle(containerRequest);
+    }
+
+    static final class CloseSignalHandoffAbleContainerRequest extends ContainerRequest {
+        private static final AtomicReferenceFieldUpdater<CloseSignalHandoffAbleContainerRequest, State> stateUpdater =
+                newUpdater(CloseSignalHandoffAbleContainerRequest.class, State.class, "state");
+
+        private enum State {
+            INIT,
+            READING,
+            PENDING_CLOSE,
+            CLOSED
+        }
+
+        private volatile State state = State.INIT;
+
+        private CloseSignalHandoffAbleContainerRequest(final URI baseUri, final URI requestUri, final String httpMethod,
+                                                      final SecurityContext securityContext,
+                                                      final PropertiesDelegate propertiesDelegate,
+                                                      @Nullable final Configuration configuration) {
+            super(baseUri, requestUri, httpMethod, securityContext, propertiesDelegate, configuration);
+        }
+
+        public <T> T readEntity(final Class<T> rawType) {
+            return readEntity(rawType, getPropertiesDelegate());
+        }
+
+        public <T> T readEntity(final Class<T> rawType, final Annotation[] annotations) {
+            return readEntity(rawType, annotations, getPropertiesDelegate());
+        }
+
+        public <T> T readEntity(final Class<T> rawType, final Type type) {
+            return readEntity(rawType, type, getPropertiesDelegate());
+        }
+
+        public <T> T readEntity(final Class<T> rawType, final Type type, final Annotation[] annotations) {
+            return readEntity(rawType, type, annotations, getPropertiesDelegate());
+        }
+
+        @Override
+        public <T> T readEntity(final Class<T> rawType, final Type type, final Annotation[] annotations,
+                                final PropertiesDelegate propertiesDelegate) {
+            if (stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
+                try {
+                    return super.readEntity(rawType, type, annotations, propertiesDelegate);
+                } finally {
+                    if (!stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
+                        // Closed while we were in progress.
+                        state = State.CLOSED;
+                        close0();
+                    }
+                }
+            }
+
+            throw new IllegalStateException(LocalizationMessages.ERROR_ENTITY_STREAM_CLOSED());
+        }
+
+        @Override
+        public boolean bufferEntity() throws ProcessingException {
+            if (stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
+                try {
+                    return super.bufferEntity();
+                } finally {
+                    if (!stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
+                        // Closed while we were in progress.
+                        state = State.CLOSED;
+                        close0();
+                    }
+                }
+            }
+
+            throw new IllegalStateException(LocalizationMessages.ERROR_ENTITY_STREAM_CLOSED());
+        }
+
+        @Override
+        public boolean hasEntity() {
+            if (state == State.CLOSED) {
+                throw new IllegalStateException(LocalizationMessages.ERROR_ENTITY_STREAM_CLOSED());
+            }
+
+            return super.hasEntity();
+        }
+
+        @Override
+        public InputStream getEntityStream() {
+            if (state == State.CLOSED) {
+                throw new IllegalStateException(LocalizationMessages.ERROR_ENTITY_STREAM_CLOSED());
+            }
+            return super.getEntityStream();
+        }
+
+        @Override
+        public void close() {
+            final State prevState = stateUpdater.getAndSet(this, State.PENDING_CLOSE);
+            if (prevState == State.INIT) {
+                state = State.CLOSED;
+                close0();
+            }
+        }
+
+        private void close0() {
+            super.close();
+        }
     }
 
     private static final class DuplicateTerminateDetectorSingle<T> implements Subscriber<T> {

@@ -206,7 +206,7 @@ public class CancellationTest {
         cancelledLatch.await();
 
         if (errorRef.get() != null) {
-            throw new RuntimeException(errorRef.get());
+            throw new AssertionError(errorRef.get());
         }
     }
 
@@ -260,7 +260,7 @@ public class CancellationTest {
         cancelledLatch.await();
 
         if (errorRef.get() != null) {
-            throw new RuntimeException(errorRef.get());
+            throw new AssertionError(errorRef.get());
         }
     }
 
