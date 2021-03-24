@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -56,15 +55,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     public HttpServerBuilder backlog(final int backlog) {
         config.tcpConfig().backlog(backlog);
         return this;
-    }
-
-    @Deprecated
-    @Override
-    public HttpServerSecurityConfigurator secure() {
-        return new DefaultHttpServerSecurityConfigurator(config -> {
-            this.config.tcpConfig().sslConfig(config);
-            return DefaultHttpServerBuilder.this;
-        });
     }
 
     @Override

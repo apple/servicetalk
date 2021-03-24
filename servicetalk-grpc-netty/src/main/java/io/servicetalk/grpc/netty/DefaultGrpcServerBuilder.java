@@ -19,14 +19,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
-import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -69,13 +67,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     public GrpcServerBuilder backlog(final int backlog) {
         httpServerBuilder.backlog(backlog);
         return this;
-    }
-
-    @Deprecated
-    @Override
-    public GrpcServerSecurityConfigurator secure() {
-        HttpServerSecurityConfigurator secure = httpServerBuilder.secure();
-        return new DefaultGrpcServerSecurityConfigurator(secure, this);
     }
 
     @Override
