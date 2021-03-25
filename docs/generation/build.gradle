@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019,2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ buildscript {
 }
 
 plugins {
-  id "com.github.node-gradle.node" version "2.2.4"
+  id "com.github.node-gradle.node" version "3.0.1"
 }
 
 apply plugin: "base"
@@ -44,7 +44,7 @@ ext.Jsoup = org.jsoup.Jsoup
 buildDir = ".out"
 
 node {
-  version = "12.18.3" // LTS
+  version = "14.16.0" // LTS
   download = true
 }
 
