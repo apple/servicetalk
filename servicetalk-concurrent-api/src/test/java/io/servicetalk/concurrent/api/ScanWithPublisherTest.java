@@ -21,7 +21,11 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -320,6 +324,70 @@ public class ScanWithPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         publisher.onError(newExceptionForInvalidRequestN(-1));
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("cancelStillAllowsMapsParams")
+    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore) {
+        TestPublisher<Integer> publisher = new TestPublisher<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        toSource(publisher.scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+            private int sum;
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                if (next != null) {
+                    sum += next;
+                }
+                return next;
+            }
+
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return sum;
+            }
+
+            @Override
+            public Integer mapOnComplete() {
+                return sum;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return true;
+            }
+        })).subscribe(subscriber);
+        Subscription s = subscriber.awaitSubscription();
+
+        if (cancelBefore) {
+            s.request(4);
+            s.cancel();
+        } else {
+            s.request(3);
+        }
+
+        publisher.onNext(1, 2, 3);
+
+        if (!cancelBefore) {
+            s.cancel();
+            s.request(1);
+        }
+        if (onError) {
+            publisher.onError(DELIBERATE_EXCEPTION);
+        } else {
+            publisher.onComplete();
+        }
+
+        assertThat(subscriber.takeOnNext(4), contains(1, 2, 3, 6));
+        subscriber.awaitOnComplete();
+    }
+
+    private static Stream<Arguments> cancelStillAllowsMapsParams() {
+        return Stream.of(
+                Arguments.of(true, true),
+                Arguments.of(true, false),
+                Arguments.of(false, true),
+                Arguments.of(false, false));
     }
 
     private static ScanWithMapper<Integer, Integer> noopMapper() {
