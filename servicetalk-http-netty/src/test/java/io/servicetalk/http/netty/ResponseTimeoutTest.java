@@ -84,8 +84,8 @@ public class ResponseTimeoutTest {
     private static final long MILLIS_MULTIPLIER = 100L;
 
     // static {
-    //     System.setProperty("servicetalk.logger.wireLogLevel", "TRACE");
-    //     AsyncContext.disable();
+    //      System.setProperty("servicetalk.logger.wireLogLevel", "TRACE");
+    //      AsyncContext.disable();
     // }
 
     @Rule
@@ -103,7 +103,7 @@ public class ResponseTimeoutTest {
                                Class<? extends Throwable> expectThrowableClazz) throws Exception {
         ctx = forAddress(localAddress(0))
                 // .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, ()-> true)
+                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .appendServiceFilter(new TimeoutHttpServiceFilter(useDefaultTimeout(serverTimeout)))
                 .listenAndAwait((__, ___, factory) -> {
                     Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
@@ -112,7 +112,7 @@ public class ResponseTimeoutTest {
                 });
         client = forSingleAddress(serverHostAndPort(ctx))
                 // .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, ()-> true)
+                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .appendClientFilter(client -> new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -145,7 +145,9 @@ public class ResponseTimeoutTest {
                                                 delayedClientTermination.add(new ClientTerminationSignal(target, t));
                                                 target.onError(t);
                                             }
-                                        })).filter(Objects::nonNull).firstOrError().map(thing -> (StreamingHttpResponse) thing);
+                                        }))
+                                .filter(Objects::nonNull).firstOrError()
+                                .map(thing -> (StreamingHttpResponse) thing);
                     }
                 })
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))

@@ -49,7 +49,8 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * HTTP timeout is stored in context as a deadline so that when propagated to a new client request the remaining
      * time available for that request can be calculated.
      */
-    static final AsyncContextMap.Key<Instant> HTTP_DEADLINE_KEY = AsyncContextMap.Key.newKey("http-timeout-deadline");
+    private static final AsyncContextMap.Key<Instant> HTTP_DEADLINE_KEY =
+            AsyncContextMap.Key.newKey("http-timeout-deadline");
 
     /**
      * Establishes the timeout for a given request
@@ -195,7 +196,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * Returns timeout duration calculated based on the remaining time until the deadline in the context or, if absent,
      * the provided default.
      *
-     * <p>The timeout, if any, will be added to the context for additional requests initiated within this context
+     * <p>The timeout, if any, will be added to the context for additional client requests initiated within this context
      *
      * @param defaultDuration default timeout duration or null for no timeout
      * @return a timeout based on the context deadline or specified default (which may be null)
@@ -211,7 +212,9 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
                 // actual remaining time.
                 try {
                     AsyncContext.put(HTTP_DEADLINE_KEY, Instant.now().plus(defaultDuration));
-                } catch (UnsupportedOperationException ignored) { }
+                } catch (UnsupportedOperationException ignored) {
+                    // ignored
+                }
             }
             return defaultDuration;
         }
