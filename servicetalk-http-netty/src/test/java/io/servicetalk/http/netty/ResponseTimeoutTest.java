@@ -83,11 +83,6 @@ public class ResponseTimeoutTest {
      */
     private static final long MILLIS_MULTIPLIER = 100L;
 
-    // static {
-    //      System.setProperty("servicetalk.logger.wireLogLevel", "TRACE");
-    //      AsyncContext.disable();
-    // }
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private final BlockingQueue<Processor<HttpResponse, HttpResponse>> serverResponses = new LinkedBlockingQueue<>();
@@ -102,8 +97,6 @@ public class ResponseTimeoutTest {
                                Duration serverTimeout,
                                Class<? extends Throwable> expectThrowableClazz) throws Exception {
         ctx = forAddress(localAddress(0))
-                // .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .appendServiceFilter(new TimeoutHttpServiceFilter(useDefaultTimeout(serverTimeout)))
                 .listenAndAwait((__, ___, factory) -> {
                     Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
@@ -111,8 +104,6 @@ public class ResponseTimeoutTest {
                     return Single.never();
                 });
         client = forSingleAddress(serverHostAndPort(ctx))
-                // .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .appendClientFilter(client -> new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
