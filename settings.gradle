@@ -52,6 +52,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:service-composition",
         "servicetalk-examples:http:uds",
         "servicetalk-examples:http:compression",
+        "servicetalk-examples:http:debugging",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
         "servicetalk-grpc-netty",
@@ -95,6 +96,7 @@ project(":servicetalk-examples:grpc:compression").name = "servicetalk-examples-g
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
+project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
 project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
