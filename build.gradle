@@ -30,6 +30,8 @@ if (!repositories) {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
 task validateLocalDocSite(type: Exec) {
+  group 'Documentation'
+  description 'Generate and validate servicetalk.io site documentation'
   workingDir 'docs/generation'
   commandLine './gradlew', 'clean', 'validateLocalSite'
 }
