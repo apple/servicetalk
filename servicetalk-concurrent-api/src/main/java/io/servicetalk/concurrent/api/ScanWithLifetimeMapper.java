@@ -30,6 +30,8 @@ public interface ScanWithLifetimeMapper<T, R> extends ScanWithMapper<T, R> {
     /**
      * Invoked after a terminal signal {@link PublisherSource.Subscriber#onError(Throwable)} or
      * {@link PublisherSource.Subscriber#onComplete()} or {@link PublisherSource.Subscription#cancel()}.
+     * No further interaction will occur with the {@link ScanWithLifetimeMapper} to prevent use-after-free
+     * on internal state.
      */
-    void onFinalize();
+    void afterFinally();
 }

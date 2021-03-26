@@ -24,11 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.EnumSource;
-
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -44,23 +44,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ScanWithPublisherTest {
-
-    private boolean withLifetime;
-
-    private enum Flag {
-        TRUE(true),
-        FALSE(false);
-
-        private final boolean bool;
-
-        Flag(boolean flag) {
-            this.bool = flag;
-        }
-    }
-
-    public void init(final Flag flag) {
-        this.withLifetime = flag.bool;
-    }
 
     @Test
     public void scanWithComplete() {
@@ -93,31 +76,105 @@ public class ScanWithPublisherTest {
         }
     }
 
+    @Test
+    public void scanWithLifetimeSignalReentry() throws InterruptedException {
+        AtomicInteger finalizations = new AtomicInteger();
+        CountDownLatch completed = new CountDownLatch(1);
+        PublisherSource<Integer> syncNoReentryProtectionSource =
+                subscriber -> subscriber.onSubscribe(new Subscription() {
+            int count;
+
+            @Override
+            public void request(final long n) {
+                if (count == 2) {
+                    subscriber.onComplete();
+                } else {
+                    subscriber.onNext(count++);
+                }
+            }
+
+            @Override
+            public void cancel() {
+            }
+        });
+        toSource(fromSource(syncNoReentryProtectionSource).scanWithLifetime(()
+                -> new ScanWithLifetimeMapper<Integer, Integer>() {
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+                completed.countDown();
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return false;
+            }
+        })).subscribe(new PublisherSource.Subscriber<Integer>() {
+            Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+
+        completed.await();
+        assertThat(finalizations.get(), is(1));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void scanOnNextOnCompleteNoConcat(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void scanOnNextOnCompleteNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(true, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void scanOnNextOnErrorNoConcat(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void scanOnNextOnErrorNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(true, false, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void scanOnCompleteNoConcat(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void scanOnCompleteNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(false, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void scanOnErrorNoConcat(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void scanOnErrorNoConcat(boolean withLifetime) {
         scanOnNextTerminalNoConcat(false, false, withLifetime);
     }
 
@@ -150,7 +207,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
@@ -174,30 +231,26 @@ public class ScanWithPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onCompleteConcatUpfrontDemand(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onCompleteConcatUpfrontDemand(boolean withLifetime) {
         terminalConcatWithDemand(true, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onErrorConcatWithUpfrontDemand(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onErrorConcatWithUpfrontDemand(boolean withLifetime) {
         terminalConcatWithDemand(true, false, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onCompleteConcatDelayedDemand(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onCompleteConcatDelayedDemand(boolean withLifetime) {
         terminalConcatWithDemand(false, true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onErrorConcatDelayedDemand(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onErrorConcatDelayedDemand(boolean withLifetime) {
         terminalConcatWithDemand(false, false, withLifetime);
     }
 
@@ -231,7 +284,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
@@ -278,7 +331,7 @@ public class ScanWithPublisherTest {
 
             @Override
             public Integer mapOnComplete() {
-                return null;
+                return 5;
             }
 
             @Override
@@ -287,7 +340,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
@@ -295,22 +348,21 @@ public class ScanWithPublisherTest {
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
         processor.onNext(1);
+        processor.onComplete();
         s.cancel();
 
         assertThat(finalizations.get(), is(1));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onCompleteThrowsHandled(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onCompleteThrowsHandled(boolean withLifetime) {
         terminalThrowsHandled(true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void onErrorThrowsHandled(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void onErrorThrowsHandled(boolean withLifetime) {
         terminalThrowsHandled(false, withLifetime);
     }
 
@@ -343,7 +395,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
@@ -361,16 +413,14 @@ public class ScanWithPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void mapOnCompleteThrows(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void mapOnCompleteThrows(boolean withLifetime) {
         mapTerminalSignalThrows(true, withLifetime);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void mapOnErrorThrows(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void mapOnErrorThrows(boolean withLifetime) {
         mapTerminalSignalThrows(false, withLifetime);
     }
 
@@ -403,7 +453,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
@@ -421,9 +471,8 @@ public class ScanWithPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void invalidDemandAllowsError(Flag flag) {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void invalidDemandAllowsError(boolean withLifetime) {
         final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -438,9 +487,8 @@ public class ScanWithPublisherTest {
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
-    @EnumSource(Flag.class)
-    public void invalidDemandWithOnNextAllowsError(Flag flag) throws InterruptedException {
-        init(flag);
+    @ValueSource(booleans = {true, false})
+    public void invalidDemandWithOnNextAllowsError(boolean withLifetime) throws InterruptedException {
         final AtomicInteger finalizations = new AtomicInteger(0);
         TestSubscription upstreamSubscription = new TestSubscription();
         TestPublisher<Integer> publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe()
@@ -466,12 +514,13 @@ public class ScanWithPublisherTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("cancelStillAllowsMapsParams")
-    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore) {
+    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(publisher.scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+        toSource(scanWithOperator(publisher, withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
             private int sum;
             @Nullable
             @Override
@@ -496,6 +545,11 @@ public class ScanWithPublisherTest {
             public boolean mapTerminal() {
                 return true;
             }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
         })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
 
@@ -518,16 +572,26 @@ public class ScanWithPublisherTest {
             publisher.onComplete();
         }
 
-        assertThat(subscriber.takeOnNext(4), contains(1, 2, 3, 6));
-        subscriber.awaitOnComplete();
+        if (!withLifetime) {
+            assertThat(subscriber.takeOnNext(4), contains(1, 2, 3, 6));
+            subscriber.awaitOnComplete();
+        }
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
     private static Stream<Arguments> cancelStillAllowsMapsParams() {
         return Stream.of(
-                Arguments.of(true, true),
-                Arguments.of(true, false),
-                Arguments.of(false, true),
-                Arguments.of(false, false));
+                Arguments.of(false, false, false),
+                Arguments.of(false, false, true),
+                Arguments.of(false, true, false),
+                Arguments.of(false, true, true),
+                Arguments.of(true, false, false),
+                Arguments.of(true, false, true),
+                Arguments.of(true, true, false),
+                Arguments.of(true, true, true));
     }
 
     private static ScanWithLifetimeMapper<Integer, Integer> noopMapper(final AtomicInteger finalizations) {
@@ -556,7 +620,7 @@ public class ScanWithPublisherTest {
             }
 
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
                 finalizations.incrementAndGet();
             }
         };

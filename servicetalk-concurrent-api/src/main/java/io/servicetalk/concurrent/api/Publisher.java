@@ -235,8 +235,9 @@ public abstract class Publisher<T> {
     /**
      * Apply a function to each {@link Subscriber#onNext(Object)} emitted by this {@link Publisher} as well as
      * optionally concat one {@link Subscriber#onNext(Object)} signal before the terminal signal is emitted downstream.
-     * Additionally it guarantees a {@link ScanWithLifetimeMapper#onFinalize()} callback after the terminal signal is
-     * emitted downstream.
+     * Additionally the {@link ScanWithLifetimeMapper#afterFinally()} method will be invoked on terminal or cancel
+     * signals which enables cleanup of state (if required). This provides a similar lifetime management as
+     * {@link TerminalSignalConsumer}.
      *
      * <p>
      * This method provides a data transformation in sequential programming similar to:
@@ -259,7 +260,7 @@ public abstract class Publisher<T> {
      *           results.add(mapper.mapOnComplete());
      *         }
      *     } finally {
-     *       mapper.onFinalize();
+     *       mapper.afterFinally();
      *     }
      *     return results;
      * }</pre>

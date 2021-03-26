@@ -27,7 +27,7 @@ public class PublisherScanWithLifetimeTckTest extends AbstractPublisherOperatorT
     protected Publisher<String> composePublisher(Publisher<Integer> publisher, int elements) {
         return publisher.scanWithLifetime(() -> new ScanWithLifetimeMapper<Integer, String>() {
             @Override
-            public void onFinalize() {
+            public void afterFinally() {
             }
 
             @Nullable

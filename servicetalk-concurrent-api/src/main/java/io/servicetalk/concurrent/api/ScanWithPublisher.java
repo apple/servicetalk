@@ -52,7 +52,11 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ScanWithSubscriber<T, R> implements Subscriber<T> {
+    static class ScanWithSubscriber<T, R> implements Subscriber<T> {
+        @SuppressWarnings("rawtypes")
+        private static final AtomicLongFieldUpdater<ScanWithSubscriber> demandUpdater =
+                newUpdater(ScanWithSubscriber.class, "demand");
+
         private static final long TERMINATED = Long.MIN_VALUE;
         private static final long TERMINAL_PENDING = TERMINATED + 1;
         /**
@@ -61,9 +65,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
          * {@link #demand} underflow in onNext (in case the source doesn't deliver a timely error).
          */
         private static final long INVALID_DEMAND = -1;
-        @SuppressWarnings("rawtypes")
-        private static final AtomicLongFieldUpdater<ScanWithSubscriber> demandUpdater =
-                newUpdater(ScanWithSubscriber.class, "demand");
+
         private final Subscriber<? super R> subscriber;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
@@ -89,7 +91,11 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            subscriber.onSubscribe(new Subscription() {
+            subscriber.onSubscribe(newSubscription(subscription));
+        }
+
+        private Subscription newSubscription(final Subscription subscription) {
+            return new Subscription() {
                 @Override
                 public void request(final long n) {
                     if (!isRequestNValid(n)) {
@@ -98,9 +104,9 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                             FlowControlUtils::addWithOverflowProtectionIfNotNegative) == TERMINAL_PENDING) {
                         demand = TERMINATED;
                         if (errorCause != null) {
-                            deliverOnError(errorCause, newOffloadedSubscriber());
+                            deliverOnErrorFromSubscription(errorCause, newOffloadedSubscriber());
                         } else {
-                            deliverOnComplete(newOffloadedSubscriber());
+                            deliverOnCompleteFromSubscription(newOffloadedSubscriber());
                         }
                     } else {
                         subscription.request(n);
@@ -110,6 +116,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 @Override
                 public void cancel() {
                     subscription.cancel();
+                    onCancel();
                 }
 
                 private void handleInvalidDemand(final long n) {
@@ -126,7 +133,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 private Subscriber<? super R> newOffloadedSubscriber() {
                     return offloadWithDummyOnSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
                 }
-            });
+            };
         }
 
         @Override
@@ -140,13 +147,25 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
         @Override
         public void onError(final Throwable t) {
+            onError0(t);
+        }
+
+        @Override
+        public void onComplete() {
+            onComplete0();
+        }
+
+        /**
+         * Return true if onError0 had sufficient demand to deliver.
+         */
+        protected boolean onError0(final Throwable t) {
             errorCause = t;
             final boolean doMap;
             try {
                 doMap = mapper.mapTerminal();
             } catch (Throwable cause) {
                 subscriber.onError(cause);
-                return;
+                return true;
             }
             if (doMap) {
                 for (;;) {
@@ -155,7 +174,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                         deliverOnError(t, subscriber);
                         break;
                     } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
-                        break;
+                        return false;
                     } else if (currDemand < 0) {
                         // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
                         // In either circumstance we propagate the error downstream and bail.
@@ -167,16 +186,20 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 demand = TERMINATED;
                 subscriber.onError(t);
             }
+
+            return true;
         }
 
-        @Override
-        public void onComplete() {
+        /**
+         * Return true if onComplete0 had sufficient demand to deliver.
+         */
+        protected boolean onComplete0() {
             final boolean doMap;
             try {
                 doMap = mapper.mapTerminal();
             } catch (Throwable cause) {
                 subscriber.onError(cause);
-                return;
+                return true;
             }
             if (doMap) {
                 for (;;) {
@@ -185,7 +208,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                         deliverOnComplete(subscriber);
                         break;
                     } else if (currDemand == 0 && demandUpdater.compareAndSet(this, currDemand, TERMINAL_PENDING)) {
-                        break;
+                        return false;
                     } else if (currDemand < 0) {
                         // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
                         // In either circumstance we propagate the error downstream and bail.
@@ -197,6 +220,20 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
                 demand = TERMINATED;
                 subscriber.onComplete();
             }
+
+            return true;
+        }
+
+        protected void onCancel() {
+            //NOOP
+        }
+
+        protected void deliverOnErrorFromSubscription(Throwable t, Subscriber<? super R> subscriber) {
+            deliverOnError(t, subscriber);
+        }
+
+        protected void deliverOnCompleteFromSubscription(Subscriber<? super R> subscriber) {
+            deliverOnComplete(subscriber);
         }
 
         private void deliverOnError(Throwable t, Subscriber<? super R> subscriber) {

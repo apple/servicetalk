@@ -15,22 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
 
@@ -50,315 +44,197 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(new ScanWithSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
+        original.delegateSubscribe(new ScanWithLifetimeSubscriber<>(subscriber, mapperSupplier.get(), signalOffloader,
                 contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class ScanWithSubscriber<T, R> implements Subscriber<T> {
-        private static final int NOT_ALLOWED = -1;
-        private static final int STATE_INIT = 0;
-        private static final int STATE_IN_SIGNAL = 1;
-        private static final int STATE_INVALID_DEMAND = 2;
-        private static final int STATE_TERMINAL_PENDING = 3;
-        private static final int STATE_TERMINATED = 4;
-        private static final int STATE_TERMINATED_WITH_REQ_HANDOFF = 5;
-
-        @SuppressWarnings("rawtypes")
-        private static final AtomicIntegerFieldUpdater<ScanWithSubscriber> stateUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(ScanWithSubscriber.class, "state");
-
-        @SuppressWarnings("rawtypes")
-        private static final AtomicLongFieldUpdater<ScanWithSubscriber> demandUpdater =
-                newUpdater(ScanWithSubscriber.class, "demand");
-
-        private final Subscriber<? super R> subscriber;
-        private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
-        private final AsyncContextProvider contextProvider;
-        private final ScanWithLifetimeMapper<? super T, ? extends R> mapper;
-        private volatile long demand;
-        private volatile int state = STATE_INIT;
-
+    /**
+     * Wraps the {@link io.servicetalk.concurrent.api.ScanWithPublisher.ScanWithSubscriber} to provide mutual exclusion
+     * to the {@link ScanWithLifetimeMapper#afterFinally()} call and guarantee a 'no-use-after-free' contract.
+     */
+    private static final class ScanWithLifetimeSubscriber<T, R> extends ScanWithPublisher.ScanWithSubscriber<T, R> {
+        private static final int STATE_UNLOCKED = 0;
+        private static final int STATE_BUSY = 1;
+        private static final int STATE_FINALIZE_PENDING = 2;
+        private static final int STATE_FINALIZED = 3;
         /**
-         * Retains the {@link #onError(Throwable)} cause for use in the {@link Subscription}.
-         * Happens-before relationship with {@link #demand} means no volatile or other synchronization required.
+         * Special state to handle the case where a reentry to a terminal (eg. onComplete) signal finalizes
+         * before the root onNext unlocks.
+         * onNext sees the state change while it was busy and assumes that a cancel occurred.
+         * This state helps differentiate between cancel and reentrant completion.
          */
-        @Nullable
-        private Throwable errorCause;
+        private static final int STATE_FINALIZED_REENTRY = 4;
 
-        ScanWithSubscriber(final Subscriber<? super R> subscriber,
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<ScanWithLifetimeSubscriber> stateUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(ScanWithLifetimeSubscriber.class, "state");
+
+        private volatile int state = STATE_UNLOCKED;
+
+        private final ScanWithLifetimeMapper<? super T, ? extends R> mapper;
+
+        ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
                            final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
                            final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
                            final AsyncContextProvider contextProvider) {
-            this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
-            this.contextMap = contextMap;
-            this.contextProvider = contextProvider;
-            this.mapper = requireNonNull(mapper);
+            super(subscriber, mapper, signalOffloader, contextMap, contextProvider);
+            this.mapper = mapper;
         }
 
         @Override
-        public void onSubscribe(final Subscription subscription) {
-            subscriber.onSubscribe(new Subscription() {
-                @Override
-                public void request(final long n) {
-                    if (!isRequestNValid(n)) {
-                        handleInvalidDemand(n);
-                    } else if (demandUpdater.getAndAccumulate(ScanWithSubscriber.this, n,
-                            FlowControlUtils::addWithOverflowProtectionIfNotNegative) < 0) {
-
-                        for (;;) {
-                            int theState = stateUpdater.get(ScanWithSubscriber.this);
-                            if (theState >= STATE_TERMINATED) {
-                                return;
-                            }
-
-                            if (stateUpdater.compareAndSet(ScanWithSubscriber.this, theState,
-                                    STATE_TERMINATED_WITH_REQ_HANDOFF)) {
-                                try {
-                                    // Deliver and finalize only if the state was STATE_TERMINAL_PENDING and we won the
-                                    // CAS otherwise the SIGNAL will process both
-                                    if (theState == STATE_TERMINAL_PENDING && errorCause != null) {
-                                        deliverOnError(errorCause, newOffloadedSubscriber());
-                                    } else if (theState == STATE_TERMINAL_PENDING) {
-                                        deliverOnComplete(newOffloadedSubscriber());
-                                    }
-                                } finally {
-                                    mapper.onFinalize();
-                                }
-                            }
-                        }
-                    } else {
-                        subscription.request(n);
-                    }
-                }
-
-                @Override
-                public void cancel() {
-                    try {
-                        subscription.cancel();
-                    } finally {
-                        for (;;) {
-                            int theState = stateUpdater.get(ScanWithSubscriber.this);
-                            if (theState >= STATE_TERMINATED) {
-                                break;
-                            }
-
-                            if (stateUpdater.compareAndSet(ScanWithSubscriber.this, theState, STATE_TERMINATED)) {
-                                // Finalize only if the state was not IN_SIGNAL, otherwise handover finalization
-                                // to the signal in-progress
-                                if (theState != STATE_IN_SIGNAL) {
-                                    mapper.onFinalize();
-                                }
-
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                private void handleInvalidDemand(final long n) {
-                    demandUpdater.getAndSet(ScanWithSubscriber.this, -1);
-
-                    // If there is a terminal pending then the upstream source cannot deliver an error because
-                    // duplicate terminal signals are not allowed. otherwise we let upstream deliver the error.
-                    final int theState = stateUpdater.getAndSet(ScanWithSubscriber.this, STATE_INVALID_DEMAND);
-                    if (theState == STATE_TERMINAL_PENDING) {
-                        newOffloadedSubscriber().onError(newExceptionForInvalidRequestN(n));
-                    } else {
-                        // STATE_INVALID_DEMAND will be allowed to process signals from upstream
-                        subscription.request(n);
-                    }
-                }
-
-                private Subscriber<? super R> newOffloadedSubscriber() {
-                    return offloadWithDummyOnSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
-                }
-            });
+        protected void onCancel() {
+            // This is not a serial invocation.
+            // Finalize only when CAS succeeds and previous state was UNLOCKED or FINALIZE_PENDING, otherwise:
+            // - If BUSY the signal will do the finalization
+            // - If FINALIZED or FINALIZED_REENTRY nothing needs to be done
+            final int prevState = stateUpdater.getAndSet(this, STATE_FINALIZED);
+            if (prevState == STATE_UNLOCKED || prevState == STATE_FINALIZE_PENDING) {
+                finalize0();
+            }
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            int theState = tryAcquireSignal();
-            if (theState == NOT_ALLOWED) {
+            int prevState = state;
+            if (prevState == STATE_FINALIZED) {
+                return;
+            }
+
+            // No need to loop since the signals are guaranteed to be signalled serially,
+            // thus a CAS fail means cancellation won, so we can safely ignore it.
+            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
                 return;
             }
 
             try {
-                // If anything throws in onNext the source is responsible for catching the error,
-                // cancelling the associated subscription, and propagate an onError.
-                final R mapped = mapper.mapOnNext(t);
-                demandUpdater.decrementAndGet(this);
-                subscriber.onNext(mapped);
+                super.onNext(t);
             } finally {
-                releaseAndFinalizeIfNeeded(theState);
+                // Re-entry -> don't unlock
+                final boolean reentry = prevState == STATE_BUSY;
+                if (!reentry && !stateUpdater.compareAndSet(this, STATE_BUSY, prevState)) {
+                    // state changed while BUSY eg. cancellation -> take over finalization
+
+                    if (state == STATE_FINALIZED_REENTRY) {
+                        //don't unlock if state change happened due to reentrant terminal (eg. onComplete)
+                        state = STATE_FINALIZED;
+                    } else {
+                        finalize0();
+                    }
+                }
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            boolean doMap = false;
-            boolean onErrorPropagated = false;
-
-            int theState = tryAcquireSignal();
-            if (theState == NOT_ALLOWED) {
+            int prevState = state;
+            if (prevState == STATE_FINALIZED) {
                 return;
             }
 
-            // Done after this signal
-            theState = STATE_TERMINATED;
+            // No need to loop since the signals are guaranteed to be signalled serially,
+            // thus a CAS fail means cancellation won, so we can safely ignore it.
+            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
+                return;
+            }
 
+            boolean completed = true;
             try {
-                errorCause = t;
-                try {
-                    doMap = mapper.mapTerminal();
-                } catch (Throwable cause) {
-                    subscriber.onError(cause);
-                    onErrorPropagated = true;
-                    return;
-                }
-
-                final long currDemand = demandUpdater.getAndDecrement(this);
-                if (doMap) {
-                    if (currDemand > 0) {
-                        onErrorPropagated = deliverOnError(t, subscriber);
-                    } else if (currDemand == 0) {
-                        theState = STATE_TERMINAL_PENDING;
-                    } else {
-                        // Either we previously saw invalid request n, or upstream has sent a duplicate
-                        // terminal event. In either circumstance we propagate the error downstream and bail.
-                        subscriber.onError(t);
-                        onErrorPropagated = true;
+                completed = super.onError0(t);
+            } finally {
+                if (!completed) {
+                    // Demand wasn't sufficient to deliver -> transit to FINALIZE_PENDING till more demand comes.
+                    if (!stateUpdater.compareAndSet(this, STATE_BUSY, STATE_FINALIZE_PENDING)) {
+                        // state changed while we were in progress -> take over finalization
+                        finalize0();
                     }
                 } else {
-                    subscriber.onError(t);
-                    onErrorPropagated = true;
+                    final boolean reentry = prevState == STATE_BUSY;
+                    // Done, transit to FINALIZED if not reentry else to FINALIZED_REENTRY.
+                    // No need to CAS here, we already have exclusion, and any cancellations will hand-over
+                    // finalization to us.
+                    state = reentry ? STATE_FINALIZED_REENTRY : STATE_FINALIZED;
+                    finalize0();
                 }
-            } finally {
-                releaseWithTerminalAndFinalizeIfNeeded(theState, doMap, onErrorPropagated, t);
             }
         }
 
         @Override
         public void onComplete() {
-            int theState = tryAcquireSignal();
-            if (theState == NOT_ALLOWED) {
+            int prevState = state;
+            if (prevState == STATE_FINALIZED) {
                 return;
-            }
-
-            // Done after this signal
-            theState = STATE_TERMINATED;
-
-            boolean doMap = false;
-            boolean onErrorPropagated = false;
-            try {
-                try {
-                    doMap = mapper.mapTerminal();
-                } catch (Throwable cause) {
-                    onErrorPropagated = true;
-                    subscriber.onError(cause);
-                    return;
-                }
-
-                final long currDemand = demandUpdater.getAndDecrement(this);
-                if (doMap) {
-                    if (currDemand > 0) {
-                        onErrorPropagated = deliverOnComplete(subscriber);
-                    } else if (currDemand == 0) {
-                        theState = STATE_TERMINAL_PENDING;
-                    } else {
-                        // Either we previously saw invalid request n, or upstream has sent a duplicate terminal event.
-                        // In either circumstance we propagate the error downstream and bail.
-                        subscriber.onError(new IllegalStateException("onComplete with invalid demand: " + currDemand));
-                        onErrorPropagated = true;
-                    }
-                } else {
-                    subscriber.onComplete();
-                }
-            } finally {
-                releaseWithTerminalAndFinalizeIfNeeded(theState, doMap, onErrorPropagated, null);
-            }
-        }
-
-        private boolean deliverOnError(Throwable t, Subscriber<? super R> subscriber) {
-            try {
-                subscriber.onNext(mapper.mapOnError(t));
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
-                return true;
-            }
-            subscriber.onComplete();
-            return false;
-        }
-
-        private boolean deliverOnComplete(Subscriber<? super R> subscriber) {
-            try {
-                subscriber.onNext(mapper.mapOnComplete());
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
-                return true;
-            }
-            subscriber.onComplete();
-            return false;
-        }
-
-        private int tryAcquireSignal() {
-            int theState = stateUpdater.get(ScanWithSubscriber.this);
-            if (theState >= STATE_TERMINATED) {
-                return NOT_ALLOWED;
             }
 
             // No need to loop since the signals are guaranteed to be signalled serially,
             // thus a CAS fail means cancellation won, so we can safely ignore it.
-            if (stateUpdater.compareAndSet(ScanWithSubscriber.this, theState, STATE_IN_SIGNAL)) {
-                return theState;
+            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
+                return;
             }
 
-            return NOT_ALLOWED;
-        }
-
-        private void releaseAndFinalizeIfNeeded(final int newState) {
-            final boolean finalizationHandedOver = !stateUpdater.compareAndSet(this, STATE_IN_SIGNAL, newState);
-            if (finalizationHandedOver || newState == STATE_TERMINATED) {
-                // state changed while we were in progress, or new state is TERMINATE
-                // finalization is our responsibility
-                try {
-                    mapper.onFinalize();
-                } catch (Throwable cause) {
-                    subscriber.onError(cause);
+            boolean completed = true;
+            try {
+                completed = super.onComplete0();
+            } finally {
+                if (!completed) {
+                    // Demand wasn't sufficient to deliver -> transit to FINALIZE_PENDING till more demand comes.
+                    if (!stateUpdater.compareAndSet(this, STATE_BUSY, STATE_FINALIZE_PENDING)) {
+                        // state changed while we were in progress -> take over finalization
+                        finalize0();
+                    }
+                } else {
+                    final boolean reentry = prevState == STATE_BUSY;
+                    // Done, transit to FINALIZED if not reentry else to FINALIZED_REENTRY.
+                    // No need to CAS here, we already have exclusion, and any cancellations will hand-over
+                    // finalization to us.
+                    state = reentry ? STATE_FINALIZED_REENTRY : STATE_FINALIZED;
+                    finalize0();
                 }
             }
         }
 
-        private void releaseWithTerminalAndFinalizeIfNeeded(final int newState, final boolean doMap,
-                                                            boolean onErrorPropagated, @Nullable final Throwable t) {
-            final boolean finalizationHandedOver = !stateUpdater.compareAndSet(this, STATE_IN_SIGNAL, newState);
-            if (finalizationHandedOver || newState == STATE_TERMINATED) {
-                // state changed while we were in progress, or new state is TERMINATE
-                // finalization is our responsibility
+        @Override
+        protected void deliverOnCompleteFromSubscription(final Subscriber<? super R> subscriber) {
+            int currState = state;
+            if (currState == STATE_FINALIZED) {
+                return;
+            }
 
-                try {
-                    if (doMap && state == STATE_TERMINATED_WITH_REQ_HANDOFF) {
-                        // If a request came while we are in progress, setting the state to
-                        // STATE_TERMINATED_REQ_HANDOFF then we can handle the last delivery too.
+            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, currState, STATE_BUSY)) {
+                return;
+            }
 
-                        if (t == null) {
-                            onErrorPropagated = deliverOnComplete(subscriber);
-                        } else {
-                            onErrorPropagated = deliverOnError(t, subscriber);
-                        }
-                    }
-                } finally {
-                    try {
-                        mapper.onFinalize();
-                    } catch (Throwable cause) {
-                        if (onErrorPropagated) {
-                            LOGGER.error("Unexpected error occurred during finalization.", cause);
-                        } else {
-                            subscriber.onError(cause);
-                        }
-                    }
-                }
+            super.deliverOnCompleteFromSubscription(subscriber);
+
+            // Done, transit to FINALIZED.
+            // No need to CAS here, we already have exclusion, and any cancellations will hand-over finalization to us.
+            state = STATE_FINALIZED;
+            finalize0();
+        }
+
+        @Override
+        protected void deliverOnErrorFromSubscription(final Throwable t, final Subscriber<? super R> subscriber) {
+            int currState = state;
+            if (currState == STATE_FINALIZED) {
+                return;
+            }
+
+            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, currState, STATE_BUSY)) {
+                return;
+            }
+
+            super.deliverOnErrorFromSubscription(t, subscriber);
+
+            // Done, transit to FINALIZED.
+            // No need to CAS here, we already have exclusion, and any cancellations will hand-over finalization to us.
+            state = STATE_FINALIZED;
+            finalize0();
+        }
+
+        private void finalize0() {
+            try {
+                mapper.afterFinally();
+            } catch (Throwable cause) {
+                LOGGER.error("Unexpected error occurred during finalization.", cause);
             }
         }
     }
