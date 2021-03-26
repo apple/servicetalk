@@ -34,6 +34,10 @@ import javax.annotation.Nullable;
 
 /**
  * A {@link StreamingHttpServiceFilter} that adds support for request/response timeouts.
+ *
+ * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
+ * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
+ * timeout per retry.
  */
 public final class TimeoutHttpServiceFilter
         implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
