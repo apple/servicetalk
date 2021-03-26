@@ -17,6 +17,8 @@
 def servicetalkRoot = "../../"
 
 task buildLocalSite(type: NodeTask) { task ->
+  group = "Build"
+  description = "Builds the local site with local sources"
   dependsOn installAntora
 
   def outputDir = file("$buildDir/local")
@@ -46,6 +48,8 @@ task buildLocalSite(type: NodeTask) { task ->
 }
 
 task buildRemoteSite(type: NodeTask) { task ->
+  group = "Build"
+  description = "Builds the remote site for all versions"
   dependsOn installAntora
 
   def outputDir = file("$buildDir/remote")

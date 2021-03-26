@@ -1,5 +1,5 @@
 #
-# Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+# Copyright © 2019,2021 Apple Inc. and the ServiceTalk project authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ site:
     google_analytics: 'UA-151504011-1'
   start_page: servicetalk::index.adoc
 content:
+  edit_url: false
   # ordered alphabetically by component name (as specified in components' antora.yml)
   # to reflect ordering of `site.components` used in .hbs
   # TODO: Need to configure authentication to be able to use remote URLs:
