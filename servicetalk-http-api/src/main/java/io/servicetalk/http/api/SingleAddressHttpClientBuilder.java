@@ -127,6 +127,18 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     }
 
     /**
+     * Initiates security configuration for this client. Calling
+     * {@link SingleAddressHttpClientSecurityConfigurator#commit()} on the returned
+     * {@link SingleAddressHttpClientSecurityConfigurator} will commit the configuration.
+     * @deprecated Use {@link #sslConfig(ClientSslConfig)}.
+     * @return {@link SingleAddressHttpClientSecurityConfigurator} to configure security for this client. It is
+     * mandatory to call {@link SingleAddressHttpClientSecurityConfigurator#commit() commit} after all configuration is
+     * done.
+     */
+    @Deprecated
+    public abstract SingleAddressHttpClientSecurityConfigurator<U, R> secure();
+
+    /**
      * Set the SSL/TLS configuration.
      * @param sslConfig The configuration to use.
      * @return {@code this}.

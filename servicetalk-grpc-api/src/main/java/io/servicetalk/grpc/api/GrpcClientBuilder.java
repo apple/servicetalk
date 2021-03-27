@@ -87,6 +87,10 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
 
+    @Deprecated
+    @Override
+    public abstract GrpcClientSecurityConfigurator<U, R> secure();
+
     @Override
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
