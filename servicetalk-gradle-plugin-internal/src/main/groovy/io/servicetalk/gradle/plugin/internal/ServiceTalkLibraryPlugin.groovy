@@ -16,6 +16,7 @@
 package io.servicetalk.gradle.plugin.internal
 
 import com.github.spotbugs.snom.SpotBugsTask
+import info.solidsoft.gradle.pitest.PitestTask
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
@@ -35,7 +36,6 @@ import static org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED
 import static org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import static org.gradle.api.tasks.testing.logging.TestLogEvent.STARTED
 
-
 final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
     super.apply project
@@ -44,6 +44,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     configureTestFixtures project
     configureTests project
     enforceCheckstyleRoot project
+    applyPitestPlugin project
     applyPmdPlugin project
     applySpotBugsPlugin project
     addQualityTask project
@@ -186,10 +187,10 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             showStandardStreams = true
           }
         }
-      
+
         // if property is defined and true allow tests to continue running after first fail
         ignoreFailures = Boolean.getBoolean("servicetalk.test.ignoreFailures")
-        
+
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
       }
@@ -206,6 +207,30 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   private static void enforceCheckstyleRoot(Project project) {
     project.configure(project) {
       check.dependsOn checkstyleRoot
+    }
+  }
+
+  private static void applyPitestPlugin(Project project) {
+    project.configure(project) {
+      pluginManager.apply("info.solidsoft.pitest")
+
+      pitest {
+        pitestVersion = project.properties["pitestVersion"]
+        junit5PluginVersion = project.properties["pitestPluginJunit5Version"]
+
+        timestampedReports = false
+
+        if (project.ext.isCiBuild) {
+          outputFormats = ['XML']
+        } else {
+          outputFormats = ['HTML']
+        }
+        failWhenNoMutations = false
+      }
+
+      tasks.withType(PitestTask).all {
+        group = "verification"
+      }
     }
   }
 
