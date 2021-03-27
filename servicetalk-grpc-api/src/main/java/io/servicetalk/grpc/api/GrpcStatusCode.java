@@ -41,7 +41,7 @@ public enum GrpcStatusCode {
     NOT_FOUND(5),
     /** Some entity that we attempted to create already exists. */
     ALREADY_EXISTS(6),
-    /** Permission denied for a particular clinet. Different from UNAUTHENTICATED. */
+    /** Permission denied for a particular client. Different from {@link #UNAUTHENTICATED}. */
     PERMISSION_DENIED(7),
     /** Resource exhausted. */
     RESOURCE_EXHAUSTED(8),

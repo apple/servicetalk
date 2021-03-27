@@ -26,8 +26,10 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 interface BaseGrpcClientBuilder<U, R> {
 
@@ -98,6 +100,14 @@ interface BaseGrpcClientBuilder<U, R> {
      * @return {@code this}.
      */
     BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Set default timeout during which gRCPC calls are expected to complete.
+     *
+     * @param defaultTimeout Duration or null for no timeout
+     * @return {@code this}.
+     */
+    BaseGrpcClientBuilder<U, R> defaultTimeout(@Nullable Duration defaultTimeout);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

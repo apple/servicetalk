@@ -36,9 +36,11 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 interface SingleAddressGrpcClientBuilder<U, R,
         SDE extends ServiceDiscovererEvent<R>> extends BaseGrpcClientBuilder<U, R> {
@@ -65,6 +67,9 @@ interface SingleAddressGrpcClientBuilder<U, R,
 
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
+
+    @Override
+    SingleAddressGrpcClientBuilder<U, R, SDE> defaultTimeout(@Nullable Duration defaultTimeout);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this

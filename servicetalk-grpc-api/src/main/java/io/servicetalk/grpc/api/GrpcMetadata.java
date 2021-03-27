@@ -15,10 +15,32 @@
  */
 package io.servicetalk.grpc.api;
 
+import java.time.Duration;
+
+import static java.time.temporal.ChronoUnit.HOURS;
+
 /**
  * Metadata for a <a href="https://www.grpc.io">gRPC</a> call.
  */
 public interface GrpcMetadata {
+
+    /**
+     * No timeout or infinite timeout
+     */
+    Duration INFINITE_TIMEOUT = java.time.Duration.ofSeconds(Long.MAX_VALUE, 999_999_999);
+
+    /**
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
+     * value to be 8 or fewer integer digits.
+     */
+    long EIGHT_NINES = 99_999_999L;
+
+    /**
+     * Maximum timeout which can be specified for a <a href="https://www.grpc.io">gRPC</a>
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">request</a>. Note that this
+     * maximum is effectively infinite as the duration is more than 11,000 years.
+     */
+    Duration GRPC_MAX_TIMEOUT = java.time.Duration.of(EIGHT_NINES, HOURS);
 
     /**
      * Returns the path for the associated <a href="https://www.grpc.io">gRPC</a> method.
@@ -26,4 +48,15 @@ public interface GrpcMetadata {
      * @return The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
     String path();
+
+    /**
+     * Timeout after which the client no longer wants response.
+     *
+     * @return {@link Duration} of associated timeout. All durations greater than {@link #GRPC_MAX_TIMEOUT} will be
+     * treated as infinite (no deadline).
+     * @see <a href="https://grpc.io/blog/deadlines/">gRPC Deadlines</a>
+     */
+    default Duration timeout() {
+        return INFINITE_TIMEOUT;
+    }
 }

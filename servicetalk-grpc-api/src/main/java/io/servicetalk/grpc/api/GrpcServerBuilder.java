@@ -38,10 +38,12 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
@@ -63,6 +65,14 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Set default timeout during which gRCPC calls are expected to complete.
+     *
+     * @param defaultTimeout Duration or null for no timeout
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder defaultTimeout(@Nullable Duration defaultTimeout);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog

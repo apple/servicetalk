@@ -17,6 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
@@ -32,20 +33,45 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     private final ContentCodec requestEncoding;
 
     /**
-     * Creates a new instance.
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
      *
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
     protected DefaultGrpcClientMetadata(final String path) {
-        this(path, (GrpcExecutionStrategy) null);
-    }
-
-    protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
-        this(path, null, requestEncoding);
+        this(path, (GrpcExecutionStrategy) null, identity(), INFINITE_TIMEOUT);
     }
 
     /**
-     * Creates a new instance.
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     */
+    protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
+        this(path, null, requestEncoding, INFINITE_TIMEOUT);
+    }
+
+    /**
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param timeout A timeout after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        final ContentCodec requestEncoding,
+                                        final Duration timeout) {
+        this(path, null, requestEncoding, timeout);
+    }
+
+    /**
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
      *
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
@@ -53,13 +79,67 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy) {
-        this(path, strategy, identity());
+        this(path, strategy, identity(), INFINITE_TIMEOUT);
     }
 
+    /**
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
                                         final ContentCodec requestEncoding) {
-        super(path);
+        this(path, strategy, requestEncoding, INFINITE_TIMEOUT);
+    }
+
+    /**
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param timeout A timeout after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        final Duration timeout) {
+        this(path, null, identity(), timeout);
+    }
+
+    /**
+     * Creates a new instance using provided parameters and defaults for
+     * {@link #DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)}.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param timeout A timeout after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        @Nullable final GrpcExecutionStrategy strategy,
+                                        final Duration timeout) {
+        this(path, strategy, identity(), timeout);
+    }
+
+    /**
+     * Creates a new instance which uses the provided path, execution strategy, content codec, and timeout.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param requestEncoding {@link ContentCodec} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     * @param timeout A timeout after which the response is no longer wanted.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        @Nullable final GrpcExecutionStrategy strategy,
+                                        final ContentCodec requestEncoding,
+                                        final Duration timeout) {
+        super(path, timeout);
         this.strategy = strategy;
         this.requestEncoding = requestEncoding;
     }

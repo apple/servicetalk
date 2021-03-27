@@ -15,18 +15,32 @@
  */
 package io.servicetalk.grpc.api;
 
+import java.time.Duration;
+
 import static java.util.Objects.requireNonNull;
 
 class DefaultGrpcMetadata implements GrpcMetadata {
 
     private final String path;
 
-    DefaultGrpcMetadata(final String path) {
+    /**
+     * Timeout for an individual request. All values greater than {@link GrpcMetadata#GRPC_MAX_TIMEOUT} should be
+     * regarded as infinite or no timeout.
+     */
+    private final Duration timeout;
+
+    DefaultGrpcMetadata(final String path, final Duration timeout) {
         this.path = requireNonNull(path);
+        this.timeout = requireNonNull(timeout);
     }
 
     @Override
     public String path() {
         return path;
+    }
+
+    @Override
+    public Duration timeout() {
+        return timeout;
     }
 }

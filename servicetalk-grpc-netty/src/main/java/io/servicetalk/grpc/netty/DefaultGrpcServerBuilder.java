@@ -25,12 +25,14 @@ import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpProtocolConfig;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
@@ -40,9 +42,11 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -55,8 +59,20 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
             // not compatible with gRPC.
             .executionStrategy(defaultStrategy());
 
+    @Nullable
+    private Duration defaultTimeout;
+    private boolean invokedBuild;
+
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
+    }
+
+    public GrpcServerBuilder defaultTimeout(@Nullable Duration defaultTimeout) {
+        if (invokedBuild) {
+            throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
+        }
+        this.defaultTimeout = defaultTimeout;
+        return this;
     }
 
     @Override
@@ -165,23 +181,44 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         httpServerBuilder.appendServiceFilter(predicate, factory);
     }
 
+    private HttpServerBuilder preBuild() {
+        if (!invokedBuild && null != defaultTimeout) {
+            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(this::getRequestTimeout));
+        }
+        invokedBuild = true;
+        return httpServerBuilder;
+    }
+
+    /**
+     * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
+     *
+     * @param request The HTTP request to be used as source of the GRPC timeout header
+     * @return The non-negative timeout duration which may be null
+     */
+    @Nullable
+    private Duration getRequestTimeout(HttpRequestMetaData request) {
+        Duration duration = DefaultGrpcClientBuilder.readTimeoutHeader(request);
+
+        return null != duration ? duration : defaultTimeout;
+    }
+
     @Override
     public Single<ServerContext> bind(final HttpService service) {
-        return httpServerBuilder.listen(service);
+        return preBuild().listen(service);
     }
 
     @Override
     public Single<ServerContext> bindStreaming(final StreamingHttpService service) {
-        return httpServerBuilder.listenStreaming(service);
+        return preBuild().listenStreaming(service);
     }
 
     @Override
     public Single<ServerContext> bindBlocking(final BlockingHttpService service) {
-        return httpServerBuilder.listenBlocking(service);
+        return preBuild().listenBlocking(service);
     }
 
     @Override
     public Single<ServerContext> bindBlockingStreaming(final BlockingStreamingHttpService service) {
-        return httpServerBuilder.listenBlockingStreaming(service);
+        return preBuild().listenBlockingStreaming(service);
     }
 }

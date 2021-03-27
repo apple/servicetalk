@@ -38,10 +38,15 @@ import io.servicetalk.http.api.TrailersTransformer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -63,6 +68,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
+    // TODO could/should add "+proto"
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
     private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
     private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
@@ -71,6 +77,7 @@ final class GrpcUtils {
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
+    private static final CharSequence GRPC_TIMEOUT_KEY = newAsciiString("grpc-timeout");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
@@ -83,21 +90,89 @@ final class GrpcUtils {
                     ensureGrpcStatusReceived(trailers);
                     return trailers;
                 }
+
+                @Override
+                protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
+                        throws Throwable {
+
+                    // local cancel
+                    if (cause instanceof CancellationException) {
+                        Exception grpc = GrpcStatusException.of(Status.newBuilder()
+                                .setCode(GrpcStatusCode.CANCELLED.value()).build());
+                        grpc.initCause(cause);
+                        throw grpc;
+                    }
+
+                    // local timeout
+                    if (cause instanceof TimeoutException) {
+                        Exception grpc = GrpcStatusException.of(Status.newBuilder()
+                                .setCode(GrpcStatusCode.DEADLINE_EXCEEDED.value()).build());
+                        grpc.initCause(cause);
+                        throw grpc;
+                    }
+
+                    throw cause;
+                }
             };
+
+
+    /**
+     * Conversions between time units for gRPC timeout
+     */
+    private static final LongUnaryOperator[] CONVERTERS = new LongUnaryOperator[] {
+            TimeUnit.NANOSECONDS::toMicros,
+            TimeUnit.MICROSECONDS::toMillis,
+            TimeUnit.MILLISECONDS::toSeconds,
+            TimeUnit.SECONDS::toMinutes,
+            TimeUnit.MINUTES::toHours,
+    };
+
+    /**
+     * Allowed time units for gRPC timeout
+     */
+    private static final char[] TIMEOUT_UNIT_CHARS = "numSMH".toCharArray();
 
     private GrpcUtils() {
         // No instances.
     }
 
-    static void initRequest(final HttpRequestMetaData request, final List<ContentCodec> supportedEncodings) {
+    static void initRequest(final HttpRequestMetaData request,
+                            final List<ContentCodec> supportedEncodings,
+                            Duration timeout) {
         assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
+        final CharSequence timeoutValue = makeTimeoutHeader(timeout);
+        if (null != timeoutValue) {
+            headers.set(GRPC_TIMEOUT_KEY, timeoutValue);
+        }
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
         final CharSequence acceptedEncoding = acceptedEncodingsHeaderValueOrCached(supportedEncodings);
         if (acceptedEncoding != null) {
             headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
+        }
+    }
+
+    /**
+     * Make a timeout header value from the specified duration.
+     *
+     * @param timeout the timeout duration
+     * @return The timeout header text value or null for infinite timeouts
+     */
+    static @Nullable CharSequence makeTimeoutHeader(Duration timeout) {
+        if (GrpcMetadata.GRPC_MAX_TIMEOUT.compareTo(timeout) >= 0) {
+            // convert assuming that negative timeout is the result of an already missed deadline.
+            // cannot overflow as we have already checked against safe maximum
+            long timeoutValue = timeout.isNegative() ? 0 : timeout.toNanos();
+            int units = 0;
+            while (timeoutValue > GrpcMetadata.EIGHT_NINES) {
+                timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
+                units++; // cannot go past end of units array as we have already range checked
+            }
+            return Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units];
+        } else {
+            return null;
         }
     }
 
@@ -171,6 +246,12 @@ final class GrpcUtils {
             MessageEncodingException msgEncException = (MessageEncodingException) cause;
             GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
                     msgEncException.encoding() + "' not supported ");
+            setStatus(trailers, status, null, allocator);
+        } else if (cause instanceof CancellationException) {
+            GrpcStatus status = new GrpcStatus(GrpcStatusCode.CANCELLED, cause, "Cancelled");
+            setStatus(trailers, status, null, allocator);
+        } else if (cause instanceof TimeoutException) {
+            GrpcStatus status = new GrpcStatus(GrpcStatusCode.DEADLINE_EXCEEDED, cause, "Deadline exceeded");
             setStatus(trailers, status, null, allocator);
         } else {
             setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
