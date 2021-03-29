@@ -31,6 +31,9 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  *     <li>Enabling HTTP wire logging</li>
  *     <li>Enabling HTTP/2 frame logging</li>
  * </ol>
+ * <p>The wire and frame logging features require that you configure {@link io.servicetalk.logging.api.LogLevel#TRACE}
+ * logging for the logger. For this example {@code log4j.xml} is used by both the client and server and configures the
+ * ({@code servicetalk-examples-wire-logger} logger.
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>

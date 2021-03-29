@@ -21,17 +21,11 @@
     </Console>
   </Appenders>
   <Loggers>
-    <!-- Prints server start and shutdown -->
-    <Logger name="io.servicetalk.http.netty.NettyHttpServer" level="DEBUG"/>
-
     <!-- Enables all wire logging messages -->
     <Logger name="servicetalk-examples-wire-logger" level="TRACE"/>
 
-    <!-- Prints default subscriber errors-->
-    <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
-
-    <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
-    <Root level="${sys:servicetalk.logger.level:-INFO}">
+    <!-- Use `-Dservicetalk.logger.level=INFO` to change the root logger level via command line  -->
+    <Root level="${sys:servicetalk.logger.level:-DEBUG}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
