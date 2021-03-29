@@ -15,8 +15,6 @@
  */
 package io.servicetalk.examples.http.debugging;
 
-import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
 import io.servicetalk.http.netty.HttpServers;
 
@@ -26,7 +24,13 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
- * Extends the async "Hello World" sample with debugging features enabled.
+ * Extends the async "Hello World" sample with debugging features. Four debugging features are demonstrated:
+ * <p></p><ol>
+ *     <li>Disabling Async Context</li>
+ *     <li>Disabling offloading</li>
+ *     <li>Enabling HTTP wire logging</li>
+ *     <li>Enabling HTTP/2 frame logging</li>
+ * </ol>
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>
@@ -111,20 +115,21 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 public final class DebuggingExampleServer {
 
     static {
-        // Enables visibility for all wire log messages
-        System.setProperty("servicetalk.logger.wireLogLevel", "TRACE");
-        // Disables the context associated with individual request/responses to simplify execution tracing
-        AsyncContext.disable();
+        // 1. (optional) Disables the AsyncContext associated with individual request/responses to reduce stack-trace
+        // depth and simplify execution tracing. This will disable/break some features such as request tracing,
+        // authentication, propagated timeouts, etc. that rely upon the Async context so should only be disabled when
+        // necessary for debugging
+        /* AsyncContext.disable(); */
     }
 
     public static void main(String... args) throws Exception {
         HttpServers.forPort(8080)
-                // Disables asynchronous offloading to simplify execution tracing
-                .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // Enables detailed logging of I/O and I/O states.
+                // 2. (optional) Disables most asynchronous offloading to simplify execution tracing
+                /* .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()) */
+                // 3. Enables detailed logging of I/O and I/O states.
                 // Be sure to also enable the logger in your logging config file (log4j2.xml for this example)
                 .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)
-                // Enables detailed logging of HTTP2 frames.
+                // 4. Enables detailed logging of HTTP2 frames.
                 // Be sure to also enable the logger in your logging config file (log4j2.xml for this example)
                 .protocols(HttpProtocolConfigs.h2()
                         .enableFrameLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)

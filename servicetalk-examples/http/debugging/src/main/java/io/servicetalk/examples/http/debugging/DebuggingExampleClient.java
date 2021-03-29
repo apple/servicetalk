@@ -15,9 +15,7 @@
  */
 package io.servicetalk.examples.http.debugging;
 
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpProtocolConfigs;
@@ -29,7 +27,14 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
- * The async "Hello World" example with debugging features enabled.
+ * The async "Hello World" example with debugging features enabled. Four debugging features are demonstrated:
+ * <p></p><ol>
+ *     <li>Disabling Async Context</li>
+ *     <li>Disabling offloading</li>
+ *     <li>Enabling HTTP wire logging</li>
+ *     <li>Enabling HTTP/2 frame logging</li>
+ * </ol>
+ *
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>
@@ -118,20 +123,23 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 public final class DebuggingExampleClient {
 
     static {
-        // Enables visibility for all wire log messages
-        System.setProperty("servicetalk.logger.wireLogLevel", "TRACE");
-        // Disables the context associated with individual request/responses to simplify execution tracing
-        AsyncContext.disable();
+        // 1. (optional) Disables the AsyncContext associated with individual request/responses to reduce stack-trace
+        // depth and simplify execution tracing. This will disable/break some features such as request tracing,
+        // authentication, propagated timeouts, etc. that rely upon the Async context so should only be disabled when
+        // necessary for debugging
+        /* AsyncContext.disable(); */
     }
 
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                // Disables asynchronous offloading to simplify execution tracing
-                .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                // Enables detailed logging of I/O and I/O states.
+                // 2. Disables most asynchronous offloading to simplify execution tracing. Changing this may
+                // significantly change application behavior and introduce unexpected blocking. It is most useful for
+                // being able to directly trace through situations that would normally involve a thread handoff.
+                /* .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()) */
+                // 3. Enables detailed logging of I/O and I/O states.
                 // Be sure to also enable the logger in your logging config file (log4j2.xml for this example)
                 .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)
-                // Enables detailed logging of HTTP2 frames.
+                // 4. Enables detailed logging of HTTP2 frames.
                 // Be sure to also enable the logger in your logging config file (log4j2.xml for this example)
                 .protocols(HttpProtocolConfigs.h2()
                         .enableFrameLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)
@@ -140,7 +148,7 @@ public final class DebuggingExampleClient {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
+            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
             // Make a request with a payload.
             HttpRequest request = client.post("/sayHello")
@@ -152,6 +160,7 @@ public final class DebuggingExampleClient {
                         System.out.println(resp.payloadBody(textDeserializer()));
                     });
 
+            // block until request is complete and afterFinally() is called
             responseProcessedLatch.await();
         }
     }
