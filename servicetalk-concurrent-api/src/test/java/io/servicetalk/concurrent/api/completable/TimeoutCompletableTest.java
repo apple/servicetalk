@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -133,6 +134,25 @@ public class TimeoutCompletableTest {
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
         assertThat(listener.awaitOnError(), instanceOf(TimeoutException.class));
+    }
+
+    @Test
+    public void cancelDoesOnError() throws Exception {
+        DelayedOnSubscribeCompletable delayedCompletable = new DelayedOnSubscribeCompletable();
+        init(delayedCompletable, false);
+        CountDownLatch cancelLatch = new CountDownLatch(1);
+        CompletableSource.Subscriber subscriber = delayedCompletable.subscriber;
+        assertNotNull(subscriber);
+        subscriber.onSubscribe(() -> {
+            subscriber.onError(DELIBERATE_EXCEPTION);
+            cancelLatch.countDown();
+        });
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+        cancelLatch.await();
+        Throwable error = listener.awaitOnError();
+        assertThat(error, instanceOf(TimeoutException.class));
     }
 
     private void init() {
