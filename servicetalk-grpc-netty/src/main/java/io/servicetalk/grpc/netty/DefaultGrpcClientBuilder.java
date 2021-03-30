@@ -27,6 +27,7 @@ import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -58,7 +59,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
      * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
      * included in the request can be calculated.
      */
-    private static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
+    static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
 
     /**
      * Allowed time units
@@ -210,7 +211,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         if (!invokedBuild && null != defaultTimeout) {
-            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(this::getRequestTimeout, true));
+            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(grpcTimeout(), true));
         }
         invokedBuild = true;
         return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming());
@@ -227,30 +228,40 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         httpClientBuilder.appendClientFilter(predicate, factory);
     }
 
-    /**
-     * Return the timeout duration extracted from the GRPC timeout HTTP header if present, from the async context if
-     * present or the default timeout.
-     *
-     * @param request The HTTP request to be used as source of the GRPC timeout header
-     * @return The non-negative timeout duration which may be null
-     */
-    @Nullable
-    Duration getRequestTimeout(HttpRequestMetaData request) {
-        Duration duration = readTimeoutHeader(request);
+    private TimeoutHttpRequesterFilter.TimeoutFromRequest grpcTimeout() {
 
-        if (null != duration) {
-            // use timeout from request
-            return duration;
-        }
+        return new TimeoutHttpRequesterFilter.TimeoutFromRequest() {
+            /**
+             * Return the timeout duration extracted from the GRPC timeout HTTP header if present, from the async
+             * context if present or the default timeout.
+             *
+             * @param request The HTTP request to be used as source of the GRPC timeout header
+             * @return The non-negative timeout duration which may be null
+             */
+            @Nullable
+            public Duration apply(HttpRequestMetaData request) {
+                Duration duration = readTimeoutHeader(request);
 
-        Instant deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
+                if (null != duration) {
+                    // use timeout from request
+                    return duration;
+                }
 
-        if (null != deadline) {
-            // Use remaining time until deadline from async context
-            return Duration.between(Instant.now(), deadline);
-        }
+                Instant deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
 
-        return defaultTimeout;
+                if (null != deadline) {
+                    // Use remaining time until deadline from async context
+                    return Duration.between(Instant.now(), deadline);
+                }
+
+                return defaultTimeout;
+            }
+
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return strategy;
+            }
+        };
     }
 
     /**

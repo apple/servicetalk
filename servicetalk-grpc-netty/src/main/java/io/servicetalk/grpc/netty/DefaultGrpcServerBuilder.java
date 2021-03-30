@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -24,6 +25,7 @@ import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -32,6 +34,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -43,12 +46,14 @@ import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.netty.DefaultGrpcClientBuilder.GRPC_DEADLINE_KEY;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
@@ -183,23 +188,49 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     private HttpServerBuilder preBuild() {
         if (!invokedBuild && null != defaultTimeout) {
-            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(this::getRequestTimeout));
+            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcTimeout()));
         }
         invokedBuild = true;
         return httpServerBuilder;
     }
 
-    /**
-     * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
-     *
-     * @param request The HTTP request to be used as source of the GRPC timeout header
-     * @return The non-negative timeout duration which may be null
-     */
-    @Nullable
-    private Duration getRequestTimeout(HttpRequestMetaData request) {
-        Duration duration = DefaultGrpcClientBuilder.readTimeoutHeader(request);
+    private TimeoutHttpRequesterFilter.TimeoutFromRequest grpcTimeout() {
+        return new TimeoutHttpRequesterFilter.TimeoutFromRequest() {
+            /**
+             * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
+             *
+             * @param request The HTTP request to be used as source of the GRPC timeout header
+             * @return The non-negative timeout duration which may be null
+             */
+            @Override
+            @Nullable
+            public Duration apply(HttpRequestMetaData request) {
+                Duration duration = DefaultGrpcClientBuilder.readTimeoutHeader(request);
 
-        return null != duration ? duration : defaultTimeout;
+                duration = (null != duration) ?
+                        // As specified in the request
+                        duration
+                        // use server default (if any)
+                        : defaultTimeout;
+
+                if (null != duration) {
+                    try {
+                        AsyncContext.put(GRPC_DEADLINE_KEY, Instant.now().plus(duration));
+                    } catch (UnsupportedOperationException ignored) {
+                        // ignored -- async context has probably been disabled.
+                        // Timeout propagation will be partially disabled.
+                        // cancel()s will still happen which will accomplish the same effect though less efficiently
+                    }
+                }
+
+                return duration;
+            }
+
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                return strategy;
+            }
+        };
     }
 
     @Override

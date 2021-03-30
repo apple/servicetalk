@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.async;
+package io.servicetalk.examples.grpc.deadline;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -23,6 +23,9 @@ import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
 /**
@@ -30,12 +33,14 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
  * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
  * using async ServiceTalk APIS.
  * <p/>
- * Start this server first and then run the {@link HelloWorldClient}.
+ * Start this server first and then run the {@link DeadlineClient}.
  */
-public class HelloWorldServer {
+public class DeadlineServer {
 
     public static void main(String... args) throws Exception {
         GrpcServers.forPort(8080)
+                // Set default timeout for completion of RPC calls made to this server
+                .defaultTimeout(Duration.ofMinutes(2))
                 .listenAndAwait(new MyGreeterService())
                 .awaitShutdown();
     }
@@ -44,7 +49,17 @@ public class HelloWorldServer {
 
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
-            return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+
+             // Force a delay in the response.
+            return Single.defer(() -> {
+                try {
+                    TimeUnit.SECONDS.sleep(10);
+                } catch (InterruptedException woken) {
+                    Thread.interrupted();
+                }
+
+                return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+            }).subscribeShareContext();
         }
     }
 }
