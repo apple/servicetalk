@@ -16,18 +16,13 @@
 package io.servicetalk.examples.http.helloworld.async;
 
 import io.servicetalk.http.netty.HttpServers;
-import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
-
-import java.time.Duration;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.useDefaultTimeout;
 
 public final class HelloWorldServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
-                .appendServiceFilter(new TimeoutHttpServiceFilter(useDefaultTimeout(Duration.ofMinutes(2))))
                 .listenAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok()
                                 .payloadBody("Hello World!", textSerializer())))

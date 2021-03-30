@@ -92,6 +92,16 @@ Extends the async "Hello World" example to demonstrate some useful features avai
  server enhanced with debugging capabilities.
 * link:{source-root}/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java[DebuggingExampleClient.java] - the async `Hello World!` client enhanced with debugging capabilities.
 
+[#Timeout]
+== Timeout
+
+Extends the async "Hello World" example to demonstrate the use of timeout filters and operators. You should read and
+ understand the async "Hello World" example first to understand the additions this example adds. No separate example is
+ needed for the other API variants as the usage of the debugging features are the same for all API styles.
+
+* link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java[TimeoutServer] - the async `Hello World!` server client enhanced to use timeout capabilities.
+* link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/DebuggingExampleClient.java[TimeoutClient.java] - the async `Hello World!` client enhanced to use timeout capabilities.
+
 [#Serialization]
 == Serialization
 

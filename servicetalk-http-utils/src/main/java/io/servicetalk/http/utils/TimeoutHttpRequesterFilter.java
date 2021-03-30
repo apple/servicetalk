@@ -39,8 +39,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
- * A filter to enable timeouts for HTTP requests. The timeout applies either the header metadata completion or the
- * complete reception of the payload or trailers.
+ * A filter to enable timeouts for HTTP requests. The timeout applies either the response metadata (headers) completion
+ * or the complete reception of the response payload body and optional trailers.
  *
  * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
  * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
@@ -85,7 +85,8 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     /**
      * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
      * @param fullRequestResponse if true then timeout is for full request/response transaction otherwise only the
      * response metadata must arrive before the timeout.
      */
@@ -98,9 +99,10 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     /**
      * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request
-     * @param fullRequestResponse if true then timeout is for full request/response transaction otherwise only the
-     * response metadata must arrive before the timeout.
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must arrive before the timeout.
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
@@ -114,29 +116,30 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
+        return Single.defer(() -> {
+            Single<StreamingHttpResponse> response = delegate.request(strategy, request);
 
-        Single<StreamingHttpResponse> response = delegate.request(strategy, request);
+            Duration timeout = timeoutForRequest.apply(request);
+            if (null == timeout) {
+                // no timeout
+                return response;
+            }
 
-        Duration timeout = timeoutForRequest.apply(request);
-        if (null == timeout) {
-            // no timeout
-            return response;
-        }
+            Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor != null ?
+                    response.timeout(timeout, timeoutExecutor) : response.timeout(timeout);
 
-        Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor != null ?
-                response.timeout(timeout, timeoutExecutor) : response.timeout(timeout);
-
-        return fullRequestResponse ?
-                Single.defer(() -> {
-                    Instant beganAt = Instant.now();
-                    return timeoutResponse.map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                        Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
-                        return (null != timeoutExecutor ?
-                                body.timeoutTerminal(remaining, timeoutExecutor) : body.timeoutTerminal(remaining))
-                                .subscribeShareContext();
-                    }))).subscribeShareContext();
-                })
-                : timeoutResponse;
+            return fullRequestResponse ?
+                    Single.defer(() -> {
+                        Instant beganAt = Instant.now();
+                        return timeoutResponse.map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
+                            Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
+                            return (null != timeoutExecutor ?
+                                    body.timeoutTerminal(remaining, timeoutExecutor) : body.timeoutTerminal(remaining))
+                                    .subscribeShareContext();
+                        }))).subscribeShareContext();
+                    })
+                    : timeoutResponse;
+        });
     }
 
     @Override

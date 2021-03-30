@@ -47,11 +47,24 @@ public final class TimeoutHttpServiceFilter
     @Nullable
     private final Executor timeoutExecutor;
 
+    /**
+     * Construct a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
+     */
     public TimeoutHttpServiceFilter(TimeoutHttpRequesterFilter.TimeoutFromRequest timeoutForRequest) {
         this.timeoutForRequest = timeoutForRequest;
         this.timeoutExecutor = null;
     }
 
+    /**
+     * Construct a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
     public TimeoutHttpServiceFilter(TimeoutHttpRequesterFilter.TimeoutFromRequest timeoutForRequest,
                                     Executor timeoutExecutor) {
         this.timeoutForRequest = timeoutForRequest;
