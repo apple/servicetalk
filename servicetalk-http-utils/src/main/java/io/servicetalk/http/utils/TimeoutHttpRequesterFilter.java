@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.utils;
 
-import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -49,12 +47,6 @@ import javax.annotation.Nullable;
 public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                          StreamingHttpConnectionFilterFactory,
                                                          HttpExecutionStrategyInfluencer {
-    /**
-     * HTTP timeout is stored in context as a deadline so that when propagated to a new client request the remaining
-     * time available for that request can be calculated.
-     */
-    private static final AsyncContextMap.Key<Instant> HTTP_DEADLINE_KEY =
-            AsyncContextMap.Key.newKey("http-timeout-deadline");
 
     /**
      * Establishes the timeout for a given request
@@ -69,7 +61,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * @param duration the timeout {@link Duration}
      */
     public TimeoutHttpRequesterFilter(final Duration duration) {
-        this(useDefaultTimeout(duration), false);
+        this(simpleDurationTimeout(duration), false);
     }
 
     /**
@@ -79,7 +71,32 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
     public TimeoutHttpRequesterFilter(final Duration duration, final Executor timeoutExecutor) {
-        this(useDefaultTimeout(duration), false, timeoutExecutor);
+        this(simpleDurationTimeout(duration), false, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if true then timeout is for full request/response transaction otherwise only the
+     * response metadata must arrive before the timeout.
+     */
+    public TimeoutHttpRequesterFilter(final Duration duration, final boolean fullRequestResponse) {
+        this(simpleDurationTimeout(duration), fullRequestResponse);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if true then timeout is for full request/response transaction otherwise only the
+     * response metadata must arrive before the timeout.
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
+    public TimeoutHttpRequesterFilter(final Duration duration,
+                                      final boolean fullRequestResponse,
+                                      final Executor timeoutExecutor) {
+        this(simpleDurationTimeout(duration), fullRequestResponse, timeoutExecutor);
     }
 
     /**
@@ -167,12 +184,40 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence since we do not block.
-        return strategy;
+        return timeoutForRequest.influenceStrategy(strategy);
     }
 
-    @FunctionalInterface
-    public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Duration> {
+    /**
+     * Returns a function which returns the provided default duration as the timeout duration to be used for any
+     * request.
+     *
+     * @param duration timeout duration or null for no timeout
+     * @return a function to produce a timeout using specified duration
+     */
+    static TimeoutFromRequest simpleDurationTimeout(@Nullable Duration duration) {
+        return new TimeoutFromRequest() {
+            @Nullable
+            @Override
+            public Duration apply(final HttpRequestMetaData request) {
+                // the request is not considered
+                return duration;
+            }
+
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                // No influence since we do not block.
+                return strategy;
+            }
+        };
+    }
+
+    /**
+     * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
+     * The result is a {@link Duration} which may be null if no timeout is to be applied. If the function blocks then
+     * {@link #influenceStrategy(HttpExecutionStrategy)} should alter the execution strategy as required.
+     */
+    public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Duration>,
+                                                HttpExecutionStrategyInfluencer {
 
         /**
          * Determine timeout duration, if present, from a request and/or apply default timeout durations.
@@ -183,46 +228,8 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
         @Override
         @Nullable
         Duration apply(HttpRequestMetaData request);
-    }
 
-    /**
-     * Returns a function which uses {@link #useContextDeadlineOrDefault(Duration) useContextDeadlineOrDefault()} with
-     * the provided default duration to determine the timeout duration to be used for a provided request.
-     *
-     * @param duration default timeout duration or null for no timeout
-     * @return a function to produce a timeout based on the context deadline or specified default
-     */
-    public static TimeoutFromRequest useDefaultTimeout(@Nullable Duration duration) {
-        // the request is not considered
-        return (req) -> useContextDeadlineOrDefault(duration);
-    }
-
-    /**
-     * Returns timeout duration calculated based on the remaining time until the deadline in the context or, if absent,
-     * the provided default. The timeout, if any, will be added to the context as a deadline for additional client
-     * requests initiated within this context. The contents of the request are not used by this implementation.
-     *
-     * <p><strong>Note:</strong>This implementation assumes that the {@link AsyncContext} has not been
-     * {@link AsyncContext#disable() disabled}, but will always use the default duration if it has been disabled.
-     *
-     * @param defaultDuration default timeout duration or null for no timeout
-     * @return a timeout based on the context deadline or specified default (which may be null)
-     */
-    public static @Nullable Duration useContextDeadlineOrDefault(@Nullable Duration defaultDuration) {
-        Instant deadline = AsyncContext.get(HTTP_DEADLINE_KEY);
-
-        if (null != deadline) {
-            return Duration.between(Instant.now(), deadline);
-        } else if (null != defaultDuration) {
-            // Convert it to a deadline so that if reused for a new client request the timeout will reflect actual
-            // remaining time.
-            try {
-                AsyncContext.put(HTTP_DEADLINE_KEY, Instant.now().plus(defaultDuration));
-            } catch (UnsupportedOperationException ignored) {
-                // ignored
-            }
-        }
-
-        return defaultDuration;
+        @Override
+        HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy);
     }
 }

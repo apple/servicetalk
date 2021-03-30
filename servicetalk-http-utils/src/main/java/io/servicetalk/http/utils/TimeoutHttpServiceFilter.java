@@ -32,6 +32,8 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDurationTimeout;
+
 /**
  * A {@link StreamingHttpServiceFilter} that adds support for request/response timeouts.
  *
@@ -46,6 +48,26 @@ public final class TimeoutHttpServiceFilter
 
     @Nullable
     private final Executor timeoutExecutor;
+
+    /**
+     * Construct a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     */
+    public TimeoutHttpServiceFilter(Duration duration) {
+        this(simpleDurationTimeout(duration));
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param duration the timeout {@link Duration}
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
+    public TimeoutHttpServiceFilter(Duration duration,
+                                    Executor timeoutExecutor) {
+        this(simpleDurationTimeout(duration), timeoutExecutor);
+    }
 
     /**
      * Construct a new instance.
@@ -80,15 +102,16 @@ public final class TimeoutHttpServiceFilter
                                                         final StreamingHttpResponseFactory responseFactory) {
 
                 return Single.defer(() -> {
-                    Duration timeout = timeoutForRequest.apply(request);
-
                     Single<StreamingHttpResponse> response = delegate().handle(ctx, request, responseFactory);
-                    if (null != timeout) {
+
+                    Duration duration = timeoutForRequest.apply(request);
+
+                    if (null != duration) {
                         Instant beganAt = Instant.now();
                         response = (null != timeoutExecutor ?
-                                response.timeout(timeout, timeoutExecutor) : response.timeout(timeout))
+                                response.timeout(duration, timeoutExecutor) : response.timeout(duration))
                                 .map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                                    Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
+                                    Duration remaining = duration.minus(Duration.between(beganAt, Instant.now()));
                                     return (null != timeoutExecutor ?
                                             body.timeoutTerminal(remaining, timeoutExecutor)
                                             : body.timeoutTerminal(remaining))
@@ -103,7 +126,6 @@ public final class TimeoutHttpServiceFilter
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        // No influence - no blocking
-        return strategy;
+        return timeoutForRequest.influenceStrategy(strategy);
     }
 }

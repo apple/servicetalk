@@ -66,7 +66,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.useDefaultTimeout;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -97,7 +96,7 @@ public class ResponseTimeoutTest {
                                Duration serverTimeout,
                                Class<? extends Throwable> expectThrowableClazz) throws Exception {
         ctx = forAddress(localAddress(0))
-                .appendServiceFilter(new TimeoutHttpServiceFilter(useDefaultTimeout(serverTimeout)))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(serverTimeout))
                 .listenAndAwait((__, ___, factory) -> {
                     Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
                     serverResponses.add(resp);
@@ -142,7 +141,7 @@ public class ResponseTimeoutTest {
                     }
                 })
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
-                .appendClientFilter(new TimeoutHttpRequesterFilter(useDefaultTimeout(clientTimeout), true))
+                .appendClientFilter(new TimeoutHttpRequesterFilter(clientTimeout, true))
                 .build();
         this.expectThrowableClazz = expectThrowableClazz;
     }
