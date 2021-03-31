@@ -95,7 +95,7 @@ Extends the async "Hello World" example to demonstrate some useful features avai
 [#Serialization]
 == Serialization
 
-A example similar to "Hello World" examples, which demonstrate
+An example similar to "Hello World" examples, which demonstrates
 link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
 link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming],
 link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
