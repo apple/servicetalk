@@ -24,12 +24,12 @@ import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
-import static java.lang.Long.parseLong;
 
 /**
  * Default implementation of {@link HttpSetCookie}.
@@ -230,7 +230,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                             expires = setCookieString.subSequence(begin, i);
                             break;
                         case ParsingMaxAge:
-                            maxAge = parseLong(setCookieString.subSequence(begin, i).toString());
+                            maxAge = parseLong(setCookieString.subSequence(begin, i));
                             break;
                         case ParsingSameSite:
                             sameSite = fromSequence(setCookieString, begin, i);
@@ -280,7 +280,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                     sameSite = fromSequence(setCookieString, begin, i);
                     break;
                 case ParsingMaxAge:
-                    maxAge = parseLong(setCookieString.subSequence(begin, i).toString());
+                    maxAge = parseLong(setCookieString.subSequence(begin, i));
                     break;
                 default:
                     if (name == null) {

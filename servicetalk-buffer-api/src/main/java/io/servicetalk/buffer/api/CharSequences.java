@@ -13,6 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Copyright 2014 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 package io.servicetalk.buffer.api;
 
 import java.util.ArrayList;
@@ -23,6 +38,7 @@ import static io.servicetalk.buffer.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.buffer.api.AsciiBuffer.hashCodeAscii;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.lang.Character.toUpperCase;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -419,5 +435,75 @@ public final class CharSequences {
             }
         }
         return true;
+    }
+
+    /**
+     * Parses the {@link CharSequence} argument as a signed decimal {@code long}.
+     *
+     * <p> This is the equivalent of {@link Long#parseLong(String)} that does not require to {@link String} conversion.
+     *
+     * @param cs a {@code CharSequence} containing the {@code long} value to be parsed
+     * @return {code long} representation of the passed {@link CharSequence}
+     * @throws NumberFormatException if the passed {@link CharSequence} cannot be parsed into {@code long}
+     */
+    public static long parseLong(final CharSequence cs) throws NumberFormatException {
+        if (isAsciiString(cs)) {
+            return parseLong(((AsciiBuffer) cs).unwrap());
+        } else if (cs.getClass() == String.class) {
+            return Long.parseLong(cs.toString());
+        } else {
+            return Long.parseLong(cs.toString());
+        }
+    }
+
+    private static long parseLong(final Buffer buffer) {
+        final int length = buffer.readableBytes();
+        if (length <= 0) {
+            throw new NumberFormatException("Illegal length of the CharSequence: " + length + " (expected > 0)");
+        }
+
+        final int start = buffer.readerIndex();
+        final int end = buffer.writerIndex();
+
+        int i = start;
+        final byte firstCh = buffer.getByte(i);
+        final boolean negative = firstCh == '-';
+        if ((negative || firstCh == '+') && ++i == end) {
+            throw illegalInput(buffer);
+        }
+
+        return parseLong(buffer, i, end, 10, negative);
+    }
+
+    private static long parseLong(final Buffer buffer, final int start, final int end, final int radix,
+                                  final boolean negative) {
+        final long min = Long.MIN_VALUE / radix;
+        long result = 0;
+        int currOffset = start;
+        while (currOffset < end) {
+            final int digit = Character.digit((char) (buffer.getByte(currOffset++) & 0xFF), radix);
+            if (digit < 0) {
+                throw illegalInput(buffer);
+            }
+            if (min > result) {
+                throw illegalInput(buffer);
+            }
+            long next = result * radix - digit;
+            if (next > result) {
+                throw illegalInput(buffer);
+            }
+            result = next;
+        }
+        if (!negative) {
+            result = -result;
+            if (result < 0) {
+                throw illegalInput(buffer);
+            }
+        }
+        return result;
+    }
+
+    private static NumberFormatException illegalInput(final Buffer buffer) {
+        return new NumberFormatException("Illegal input: " + buffer.toString(US_ASCII));
     }
 }

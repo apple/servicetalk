@@ -15,14 +15,19 @@
  */
 package io.servicetalk.buffer.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Function;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.split;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 
 public class CharSequencesTest {
 
@@ -151,5 +156,32 @@ public class CharSequencesTest {
     @Test
     public void splitAsciiWithTrim() {
         splitWithTrim(CharSequences::newAsciiString);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = { Long.MIN_VALUE, Long.MIN_VALUE + 1,
+            -101, -100, -99, -11, -10, -9, -1, 0, 1, 9, 10, 11, 99, 100, 101,
+            Long.MAX_VALUE - 1, Long.MAX_VALUE })
+    public void parseLong(final long value) {
+        final String strValue = String.valueOf(value);
+        assertThat("Unexpected value for String representation", CharSequences.parseLong(strValue), is(value));
+        assertThat("Unexpected value for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(strValue)), is(value));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "-0", "+0", "+1", "+10" })
+    public void parseLongSigned(final String value) {
+        assertThat("Unexpected value for String representation",
+                CharSequences.parseLong(value), is(Long.parseLong(value)));
+        assertThat("Unexpected value for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(value)), is(Long.parseLong(value)));
+    }
+
+    @Test
+    public void parseLongFromSlice() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
+        assertThat("Unexpected value for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
     }
 }
