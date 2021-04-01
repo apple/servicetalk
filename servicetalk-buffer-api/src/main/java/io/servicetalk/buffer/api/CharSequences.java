@@ -449,8 +449,6 @@ public final class CharSequences {
     public static long parseLong(final CharSequence cs) throws NumberFormatException {
         if (isAsciiString(cs)) {
             return parseLong(((AsciiBuffer) cs).unwrap());
-        } else if (cs.getClass() == String.class) {
-            return Long.parseLong(cs.toString());
         } else {
             return Long.parseLong(cs.toString());
         }
@@ -462,9 +460,10 @@ public final class CharSequences {
             throw new NumberFormatException("Illegal length of the CharSequence: " + length + " (expected > 0)");
         }
 
-        final int start = buffer.readerIndex();
-        final int end = buffer.writerIndex();
+        return parseLong(buffer, buffer.readerIndex(), buffer.writerIndex(), 10);
+    }
 
+    private static long parseLong(final Buffer buffer, final int start, final int end, final int radix) {
         int i = start;
         final byte firstCh = buffer.getByte(i);
         final boolean negative = firstCh == '-';
@@ -472,16 +471,10 @@ public final class CharSequences {
             throw illegalInput(buffer);
         }
 
-        return parseLong(buffer, i, end, 10, negative);
-    }
-
-    private static long parseLong(final Buffer buffer, final int start, final int end, final int radix,
-                                  final boolean negative) {
         final long min = Long.MIN_VALUE / radix;
         long result = 0;
-        int currOffset = start;
-        while (currOffset < end) {
-            final int digit = Character.digit((char) (buffer.getByte(currOffset++) & 0xFF), radix);
+        while (i < end) {
+            final int digit = Character.digit((char) (buffer.getByte(i++) & 0xFF), radix);
             if (digit < 0) {
                 throw illegalInput(buffer);
             }
