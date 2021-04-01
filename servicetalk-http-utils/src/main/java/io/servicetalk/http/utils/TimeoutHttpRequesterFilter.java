@@ -68,8 +68,8 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        return timeoutExecutor != null ? delegate.request(strategy, request).idleTimeout(duration, timeoutExecutor) :
-                delegate.request(strategy, request).idleTimeout(duration);
+        return timeoutExecutor != null ? delegate.request(strategy, request).timeout(duration, timeoutExecutor) :
+                delegate.request(strategy, request).timeout(duration);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,21 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractWhenCancelTest {
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
@@ -67,17 +64,19 @@ public abstract class AbstractWhenCancelTest {
 
     @Test
     public void testCallbackThrowsError() {
-        thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
+        Exception e = assertThrows(DeliberateException.class, () -> {
 
-        try {
-            doCancel(publisher, () -> {
-                throw DELIBERATE_EXCEPTION;
-            }).subscribe(subscriber);
-            publisher.onSubscribe(subscription);
-            subscriber.awaitSubscription().cancel();
-        } finally {
-            assertTrue(subscription.isCancelled());
-        }
+            try {
+                doCancel(publisher, () -> {
+                    throw DELIBERATE_EXCEPTION;
+                }).subscribe(subscriber);
+                publisher.onSubscribe(subscription);
+                subscriber.awaitSubscription().cancel();
+            } finally {
+                assertTrue(subscription.isCancelled());
+            }
+        });
+        assertThat(e, is(sameInstance(DELIBERATE_EXCEPTION)));
     }
 
     protected abstract <T> PublisherSource<T> doCancel(Publisher<T> publisher, Runnable runnable);

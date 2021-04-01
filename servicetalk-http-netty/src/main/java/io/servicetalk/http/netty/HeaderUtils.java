@@ -23,6 +23,7 @@ import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -32,7 +33,6 @@ import io.netty.util.AsciiString;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -53,6 +53,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static java.lang.Long.parseLong;
 
 final class HeaderUtils {
     static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
@@ -81,14 +82,7 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod)
-                // HEAD requests should either have the content-length already set (= what GET will return) or
-                // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
-                && !isHeadResponse(requestMethod);
-    }
-
-    static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
-        return !hasContentHeaders(request.headers()) && clientMaySendPayloadBodyFor(request.method());
+        return canAddContentLength(response) && serverMaySendPayloadBodyFor(response.status().code(), requestMethod);
     }
 
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
@@ -97,14 +91,7 @@ final class HeaderUtils {
         return !TRACE.equals(requestMethod);
     }
 
-    static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
-                                                  final HttpRequestMethod requestMethod) {
-        return !hasContentHeaders(response.headers()) &&
-                canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod);
-    }
-
-    static boolean canAddResponseTransferEncodingProtocol(final int statusCode,
-                                                          final HttpRequestMethod requestMethod) {
+    static boolean serverMaySendPayloadBodyFor(final int statusCode, final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
         return !HEAD.equals(requestMethod) && !isEmptyResponseStatus(statusCode)
@@ -112,8 +99,8 @@ final class HeaderUtils {
     }
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
-        return !hasContentHeaders(metadata.headers()) &&
-                isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
+        return isSafeToAggregate(metadata) && (metadata.version().major() > 1 || !mayHaveTrailers(metadata)) &&
+                !hasContentHeaders(metadata.headers());
     }
 
     static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
@@ -144,8 +131,8 @@ final class HeaderUtils {
         return POST.equals(requestMethod) || PUT.equals(requestMethod) || PATCH.equals(requestMethod);
     }
 
-    static boolean shouldAddZeroContentLength(final int statusCode,
-                                              final HttpRequestMethod requestMethod) {
+    static boolean responseMayHaveContent(final int statusCode,
+                                          final HttpRequestMethod requestMethod) {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -179,10 +166,6 @@ final class HeaderUtils {
                 return !sawHeaders;
             }
         };
-    }
-
-    private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
-        return HEAD.equals(requestMethod);
     }
 
     private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
@@ -240,21 +223,31 @@ final class HeaderUtils {
         });
     }
 
-    static StreamingHttpResponse addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
-                                                                        final HttpRequestMethod requestMethod) {
-        if (canAddResponseTransferEncoding(response, requestMethod)) {
+    static void addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
+                                                       final HttpRequestMethod requestMethod) {
+        if (serverMaySendPayloadBodyFor(response.status().code(), requestMethod) &&
+                canAddTransferEncodingChunked(response)) {
             response.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
-        return response;
     }
 
     static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
-        if (canAddRequestTransferEncoding(request)) {
+        if (clientMaySendPayloadBodyFor(request.method()) && canAddTransferEncodingChunked(request)) {
             request.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
     }
 
-    private static boolean hasContentHeaders(final HttpHeaders headers) {
+    private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
+        final HttpHeaders headers = metaData.headers();
+        return ((chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)) ||
+                !headers.contains(CONTENT_LENGTH)) && !isTransferEncodingChunked(headers);
+    }
+
+    private static boolean chunkedSupported(final HttpProtocolVersion version) {
+        return version.major() == 1 && version.minor() > 0;
+    }
+
+    static boolean hasContentHeaders(final HttpHeaders headers) {
         return headers.contains(CONTENT_LENGTH) || isTransferEncodingChunked(headers);
     }
 
@@ -274,14 +267,15 @@ final class HeaderUtils {
 
     /**
      * Extracts the {@link HttpHeaderNames#CONTENT_LENGTH content-length} value from the passed values iterator.
+     * <p>
+     * This utility validates that there is no more than one {@link HttpHeaderNames#CONTENT_LENGTH content-length}
+     * header present and it has a valid number format.
      *
      * @param iterator the {@link Iterator} over content-length header values
-     * @param valuesExtractor a {@link Function} that extracts header values for exception message
      * @return the normalized content-length from the headers or {@code -1} if no content-length header is found
      * @throws IllegalArgumentException if multiple content-length header values are present
      */
-    static long contentLength(final Iterator<? extends CharSequence> iterator,
-                              final Function<CharSequence, Iterable<? extends CharSequence>> valuesExtractor) {
+    static long contentLength(final Iterator<? extends CharSequence> iterator) {
         if (!iterator.hasNext()) {
             return -1;
         }
@@ -300,11 +294,44 @@ final class HeaderUtils {
         //   containing that decimal value prior to determining the message body
         //   length or forwarding the message.
         CharSequence firstValue = iterator.next();
-        if (iterator.hasNext() || CharSequences.indexOf(firstValue, ',', 0) >= 0) {
-            throw new IllegalArgumentException("Multiple content-length values found: " +
-                    valuesExtractor.apply(CONTENT_LENGTH));
+        if (iterator.hasNext()) {
+            throw multipleCL(firstValue, iterator);
         }
-        return Long.parseLong(firstValue.toString());
+
+        char firstChar = firstValue.charAt(0);
+        if (firstChar < '0' || firstChar > '9') {   // allow numbers only in ASCII or ISO-8859-1 encoding
+            // prevent signed content-length values: -digit or +digit
+            throw malformedCL(firstValue);
+        }
+        final long value;
+        try {   // optimistically assume the value can be parsed to skip indexOf check
+             value = parseLong(firstValue.toString());
+        } catch (NumberFormatException e) {
+            if (CharSequences.indexOf(firstValue, ',', 0) >= 0) {
+                throw multipleCL(firstValue, null);
+            }
+            throw malformedCL(firstValue);
+        }
+        return value;
+    }
+
+    private static IllegalArgumentException malformedCL(final CharSequence value) {
+        return new IllegalArgumentException("Malformed 'content-length' value: " + value);
+    }
+
+    private static IllegalArgumentException multipleCL(final CharSequence firstValue,
+                                                       @Nullable final Iterator<? extends CharSequence> iterator) {
+        final CharSequence allClValues;
+        if (iterator == null) {
+            allClValues = firstValue;
+        } else {
+            final StringBuilder sb = new StringBuilder(firstValue.length() + 8).append(firstValue);
+            while (iterator.hasNext()) {
+                sb.append(", ").append(iterator.next());
+            }
+            allClValues = sb;
+        }
+        return new IllegalArgumentException("Multiple content-length values found: " + allClValues);
     }
 
     @FunctionalInterface

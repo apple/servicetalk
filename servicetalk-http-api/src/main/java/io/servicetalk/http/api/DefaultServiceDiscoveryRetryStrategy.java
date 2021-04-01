@@ -74,7 +74,7 @@ public final class DefaultServiceDiscoveryRetryStrategy<ResolvedAddress,
             }
 
             return sdEvents.map(eventsCache::consume)
-                    .recoverWith(cause -> {
+                    .onErrorResume(cause -> {
                         final Collection<E> events = eventsCache.errorSeen();
                         return events == null ? failed(cause) : Publisher.from(events.stream()
                                 .map(flipAvailability).collect(toList()))

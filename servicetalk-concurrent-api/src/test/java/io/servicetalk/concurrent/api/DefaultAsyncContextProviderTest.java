@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,11 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,21 +50,18 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension.DEFAULT_TIMEOUT_SECONDS;
 import static java.lang.Integer.bitCount;
 import static java.lang.Integer.numberOfTrailingZeros;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DefaultAsyncContextProviderTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private static final Key<String> K1 = Key.newKey("k1");
     private static final Key<String> K2 = Key.newKey("k2");
     private static final Key<String> K3 = Key.newKey("k3");
@@ -80,19 +73,19 @@ public class DefaultAsyncContextProviderTest {
 
     private static ScheduledExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         AsyncContext.autoEnable();
         executor = Executors.newScheduledThreadPool(4);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         executor.shutdown();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         AsyncContext.clear();
     }
@@ -124,7 +117,7 @@ public class DefaultAsyncContextProviderTest {
         new ContextCaptureCompletableSubscriber()
                 .subscribeAndWait(completable)
                 .verifyContext(map -> {
-                    Assert.assertEquals("v1", map.get(K1));
+                    assertEquals("v1", map.get(K1));
                     assertNull(map.get(K2));
                 });
 
@@ -133,8 +126,8 @@ public class DefaultAsyncContextProviderTest {
         new ContextCaptureCompletableSubscriber()
                 .subscribeAndWait(completable)
                 .verifyContext(map -> {
-                    Assert.assertEquals("v1", map.get(K1));
-                    Assert.assertEquals("v2", map.get(K2));
+                    assertEquals("v1", map.get(K1));
+                    assertEquals("v2", map.get(K2));
                 });
     }
 

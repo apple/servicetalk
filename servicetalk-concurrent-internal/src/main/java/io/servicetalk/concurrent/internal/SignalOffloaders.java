@@ -22,6 +22,9 @@ import io.servicetalk.concurrent.Executor;
  */
 public final class SignalOffloaders {
 
+    /**
+     * Uses {@link TaskBasedSignalOffloader} for offloading
+     */
     private static final SignalOffloaderFactory TASK_BASED_OFFLOADER_FACTORY = new SignalOffloaderFactory() {
         @Override
         public SignalOffloader newSignalOffloader(final Executor executor) {
@@ -34,6 +37,9 @@ public final class SignalOffloaders {
         }
     };
 
+    /**
+     * Uses {@link ThreadBasedSignalOffloader} for offloading
+     */
     private static final SignalOffloaderFactory THREAD_BASED_OFFLOADER_FACTORY = new SignalOffloaderFactory() {
         @Override
         public SignalOffloader newSignalOffloader(final Executor executor) {

@@ -6,9 +6,11 @@ xref:CONTRIBUTING.adoc[Contributor Guidelines] for general contribution guidelin
 
 == Maintainers (in alphabetical order)
 * link:https://github.com/idelpivnitskiy[Idel Pivnitskiy]
+* link:https://github.com/bondolo[Mike Duigou]
 * link:https://github.com/NiteshKant[Nitesh Kant]
 * link:https://github.com/normanmaurer[Norman Maurer]
 * link:https://github.com/ScottMitch[Scott Mitchell]
+* link:https://github.com/tkountis[Thomas Kountis]
 
 == Emeritus Maintainers (in alphabetical order)
 * link:https://github.com/ddossot[David Dossot]

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -38,40 +36,36 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.fromStage;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CompletionStageAsyncContextTest {
     private static final Key<Integer> K1 = newKey("k1");
-    @Rule
-    public final ExecutorRule executorRule = ExecutorRule.withNamePrefix(ST_THREAD_PREFIX_NAME);
+    @RegisterExtension
+    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final AtomicInteger threadCount = new AtomicInteger();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
     private static ExecutorService jdkExecutor;
     private LegacyTestSingle<String> source;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool(
                 r -> new Thread(r, JDK_THREAD_NAME_PREFIX + '-' + threadCount.incrementAndGet()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         if (jdkExecutor != null) {
             jdkExecutor.shutdown();
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeTest() {
         AsyncContext.clear();
-        source = new LegacyTestSingle<>(executorRule.executor(), true, true);
+        source = new LegacyTestSingle<>(executorExtension.executor(), true, true);
     }
 
     @Test

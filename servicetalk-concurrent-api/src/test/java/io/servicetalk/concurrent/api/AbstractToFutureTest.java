@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import java.util.concurrent.CancellationException;
@@ -38,17 +36,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractToFutureTest<T> {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExecutorRule<Executor> exec = ExecutorRule.newRule();
+    @RegisterExtension
+    public final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
 
     protected final Cancellable mockCancellable = Mockito.mock(Cancellable.class);
 
@@ -151,11 +147,11 @@ public abstract class AbstractToFutureTest<T> {
         verify(mockCancellable, never()).cancel();
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testFailedWithNull() {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
-        failSource(null);
+        assertThrows(NullPointerException.class, () -> failSource(null));
     }
 
     @Test
@@ -188,11 +184,11 @@ public abstract class AbstractToFutureTest<T> {
         verify(mockCancellable, never()).cancel();
     }
 
-    @Test(expected = TimeoutException.class)
-    public void testGetTimeoutException() throws Exception {
+    @Test
+    public void testGetTimeoutException() {
         Future<T> future = toFuture();
         assertThat(future.isDone(), is(false));
-        assertThat(future.get(10, MILLISECONDS), is(expectedResult()));
+        assertThrows(TimeoutException.class, () -> future.get(10, MILLISECONDS));
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,10 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,20 +51,17 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 public class PublisherConcatMapIterableTest {
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     private final TestPublisher<List<String>> publisher = new TestPublisher<>();
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();
@@ -104,7 +97,7 @@ public class PublisherConcatMapIterableTest {
         }).when(mockSubscriber).onNext(any());
 
         Processor<List<String>, List<String>> processor = newPublisherProcessor();
-        toSource(fromSource(processor).recoverWith(cause -> {
+        toSource(fromSource(processor).onErrorResume(cause -> {
             if (cause != DELIBERATE_EXCEPTION) { // recover!
                 return from(singletonList("two"));
             }
@@ -304,8 +297,9 @@ public class PublisherConcatMapIterableTest {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         subscriber.awaitSubscription();
-        expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.onError(DELIBERATE_EXCEPTION);
+        DeliberateException exception = assertThrows(DeliberateException.class,
+                                                  () -> publisher.onError(DELIBERATE_EXCEPTION));
+        assertThat(exception, is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -331,8 +325,9 @@ public class PublisherConcatMapIterableTest {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
         subscriber.awaitSubscription();
-        expectedException.expect(is(DELIBERATE_EXCEPTION));
-        publisher.onComplete();
+        DeliberateException exception = assertThrows(DeliberateException.class,
+                                                     () -> publisher.onComplete());
+        assertThat(exception, is(DELIBERATE_EXCEPTION));
     }
 
     @Test

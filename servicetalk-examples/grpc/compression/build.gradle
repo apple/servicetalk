@@ -26,6 +26,7 @@ apply from: "../../gradle/idea.gradle"
 
 dependencies {
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-encoding-netty")
   implementation project(":servicetalk-grpc-netty")
   implementation project(":servicetalk-grpc-protoc")
   implementation project(":servicetalk-grpc-protobuf")

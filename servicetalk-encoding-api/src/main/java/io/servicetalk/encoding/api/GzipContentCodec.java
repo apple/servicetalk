@@ -24,6 +24,7 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+@Deprecated
 final class GzipContentCodec extends AbstractZipContentCodec {
 
     private static final CharSequence NAME = "gzip";

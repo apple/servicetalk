@@ -79,6 +79,15 @@ import static java.util.Objects.requireNonNull;
 public abstract class Publisher<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Publisher.class);
 
+    /**
+     * Maximum positive duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MAX_NANOS = Duration.ofNanos(Long.MAX_VALUE);
+    /**
+     * Maximum negative duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MIN_NANOS = Duration.ofNanos(Long.MIN_VALUE);
+
     private final Executor executor;
     private final boolean shareContextOnSubscribe;
 
@@ -224,6 +233,244 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Transform errors emitted on this {@link Publisher} into a {@link Subscriber#onComplete()} signal
+     * (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         // ignored
+     *     }
+     *     return results;
+     * }</pre>
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorComplete() {
+        return onErrorComplete(t -> true);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code type} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (!type.isInstance(cause)) {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param <E> The {@link Throwable} type.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} which match {@code type}
+     * into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Publisher<T> onErrorComplete(Class<E> type) {
+        return onErrorComplete(type::isInstance);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code predicate} into a
+     * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (!predicate.test(cause)) {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to and
+     * {@link Subscriber#onComplete()} signal. Returns {@code false} to propagate the error.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} which match
+     * {@code predicate} into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorComplete(Predicate<? super Throwable> predicate) {
+        return new OnErrorCompletePublisher<>(this, predicate, executor);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} into {@link Subscriber#onNext(Object)} then
+     * {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         results.add(itemSupplier.apply(cause));
+     *     }
+     *     return results;
+     * }</pre>
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onNext(Object)}.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorReturn(Function<? super Throwable, ? extends T> itemSupplier) {
+        return onErrorReturn(t -> true, itemSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code type} into
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (!type.isInstance(cause)) {
+     *           throw cause;
+     *         }
+     *         results.add(itemSupplier.apply(cause));
+     *     }
+     *     return results;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onNext(Object)}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Publisher<T> onErrorReturn(
+            Class<E> type, Function<? super E, ? extends T> itemSupplier) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, ? extends T> rawSupplier = (Function<Throwable, ? extends T>) itemSupplier;
+        return onErrorReturn(type::isInstance, rawSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code predicate} into
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (!predicate.test(cause)) {
+     *           throw cause;
+     *         }
+     *         results.add(itemSupplier.apply(cause));
+     *     }
+     *     return result;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals. Returns {@code false} to
+     * propagate the error.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onNext(Object)}.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
+     * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorReturn(Predicate<? super Throwable> predicate,
+                                            Function<? super Throwable, ? extends T> itemSupplier) {
+        requireNonNull(itemSupplier);
+        return onErrorResume(predicate, t -> Publisher.from(itemSupplier.apply(t)));
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         throw mapper.apply(cause);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param mapper returns the error used to terminate the returned {@link Publisher}.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+        return onErrorMap(t -> true, mapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code type} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param mapper returns the error used to terminate the returned {@link Publisher}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Publisher<T> onErrorMap(
+            Class<E> type, Function<? super E, ? extends Throwable> mapper) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, Throwable> rawMapper = (Function<Throwable, Throwable>) mapper;
+        return onErrorMap(type::isInstance, rawMapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Publisher} which match {@code predicate} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     try {
+     *         terminalOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code mapper}. Returns
+     * {@code false} to propagate the original error.
+     * @param mapper returns the error used to terminate the returned {@link Publisher}.
+     * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorMap(Predicate<? super Throwable> predicate,
+                                         Function<? super Throwable, ? extends Throwable> mapper) {
+        return new OnErrorMapPublisher<>(this, predicate, mapper, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
      * passed {@code nextFactory}.
      * <p>
@@ -240,12 +487,105 @@ public abstract class Publisher<T> {
      * }</pre>
      *
      * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
+     * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Publisher} which match {@code type} by using another {@link Publisher}
+     * provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     List<T> results;
+     *     try {
+     *         results = resultOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *           results = nextFactory.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Publisher<T> onErrorResume(
+            Class<E> type, Function<? super E, ? extends Publisher<? extends T>> nextFactory) {
+        @SuppressWarnings("unchecked")
+        Function<Throwable, ? extends Publisher<? extends T>> rawNextFactory =
+                (Function<Throwable, ? extends Publisher<? extends T>>) nextFactory;
+        return onErrorResume(type::isInstance, rawNextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Publisher} which match {@code predicate} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     List<T> results;
+     *     try {
+     *         results = resultOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *           results = nextFactory.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code nextFactory}.
+     * Returns {@code false} to propagate the original error.
+     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
+     * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorResume(Predicate<? super Throwable> predicate,
+                                            Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+        return new OnErrorResumePublisher<>(this, predicate, nextFactory, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     List<T> results;
+     *     try {
+     *         results = resultOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *         results = nextFactory.apply(cause);
+     *     }
+     *     return results;
+     * }</pre>
+     * @deprecated Use {@link #onErrorResume(Function)}.
+     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
      * @return A {@link Publisher} that recovers from an error from this {@code Publisher} by using another
      * {@link Publisher} provided by the passed {@code nextFactory}.
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
+    @Deprecated
     public final Publisher<T> recoverWith(Function<Throwable, ? extends Publisher<? extends T>> nextFactory) {
-        return new ResumePublisher<>(this, nextFactory, executor);
+        return onErrorResume(nextFactory);
     }
 
     /**
@@ -1172,15 +1512,98 @@ public abstract class Publisher<T> {
      * In the event of timeout any {@link Subscription} from
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
      * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit)}.
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @param unit The units for {@code duration}.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #idleTimeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
+     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
+    @Deprecated
     public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
-        return new TimeoutPublisher<>(this, executor, duration, unit);
+        return timeout(duration, unit);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled}
+     * and the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration)}
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
+     */
+    @Deprecated
+    public final Publisher<T> idleTimeout(Duration duration) {
+        return timeout(duration);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
+                                          io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return timeout(duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
+    public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return timeout(duration, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between adjacent {@link Subscriber#onNext(Object)}
+     * calls. The timer starts when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
+     */
+    public final Publisher<T> timeout(long duration, TimeUnit unit) {
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -1195,10 +1618,10 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #idleTimeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
+     * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
-    public final Publisher<T> idleTimeout(Duration duration) {
-        return new TimeoutPublisher<>(this, executor, duration);
+    public final Publisher<T> timeout(Duration duration) {
+        return timeout(duration, executor);
     }
 
     /**
@@ -1216,9 +1639,22 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> idleTimeout(long duration, TimeUnit unit,
-                                          io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
+    public final Publisher<T> timeout(long duration, TimeUnit unit,
+                                      io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutPublisher<>(this, executor, duration, unit, true, timeoutExecutor);
+    }
+
+    /**
+     * Converts a {@code Duration} to nanoseconds or if the resulting value would overflow a 64-bit signed integer then
+     * either {@code Long.MIN_VALUE} or {@code Long.MAX_VALUE} as appropriate.
+     *
+     * @param duration The duration to convert
+     * @return The converted nanoseconds value.
+     */
+    private static long toNanos(Duration duration) {
+        return duration.compareTo(LONG_MAX_NANOS) < 0 ?
+                duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE
+                : Long.MAX_VALUE;
     }
 
     /**
@@ -1235,8 +1671,81 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
-        return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
+    public final Publisher<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return timeout(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(Duration duration) {
+        return timeoutTerminal(duration, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return timeoutTerminal(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
+        return timeoutTerminal(duration, unit, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination. The timer starts
+     * when the returned {@link Publisher} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Subscription} from
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} will be {@link Subscription#cancel() cancelled} and
+     * the associated {@link Subscriber} will be {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration during which the Publisher must complete.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit,
+                                              io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutPublisher<>(this, executor, duration, unit, false, timeoutExecutor);
     }
 
     /**
@@ -2834,6 +3343,41 @@ public abstract class Publisher<T> {
      */
     public static <T> Publisher<T> from(@Nullable T value) {
         return new FromSingleItemPublisher<>(value);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that emits {@code v1} and {@code v2} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     *
+     * @param v1 The first value that the returned {@link Publisher} will emit.
+     * @param v2 The second value that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits {@code v1} and {@code v2} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     */
+    public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2) {
+        return new From2Publisher<>(v1, v2);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
+     * then {@link Subscriber#onComplete()}.
+     *
+     * @param v1 The first value that the returned {@link Publisher} will emit.
+     * @param v2 The second value that the returned {@link Publisher} will emit.
+     * @param v3 The third value that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
+     * then {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     */
+    public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
+        return new From3Publisher<>(v1, v2, v3);
     }
 
     /**

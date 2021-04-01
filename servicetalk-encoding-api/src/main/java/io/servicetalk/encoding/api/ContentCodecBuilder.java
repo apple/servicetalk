@@ -17,7 +17,10 @@ package io.servicetalk.encoding.api;
 
 /**
  * Builder for {@link ContentCodec}.
+ * @deprecated encoding-api based solution is being replaced with a netty implementation available under
+ * servicetalk-encoding-netty dependency.
  */
+@Deprecated
 public interface ContentCodecBuilder {
 
     /**

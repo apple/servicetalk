@@ -15,18 +15,6 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 ServiceTalk releases are available on link:https://repo1.maven.org/maven2/io/servicetalk/[Maven Central].
 
-For Gradle as well as other build tools that don't use Maven Central as a default repository, additional configuration
-is required.
-
-.Gradle, build.gradle
-[source,groovy]
-----
-repositories {
-  jcenter() // combines Maven Central and other popular repositories
-}
-----
-
-
 Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
 different features of ServiceTalk.
 
@@ -57,35 +45,6 @@ ServiceTalk's source code is UTF-8 encoded: make sure your filesystem supports i
 the project. Setting the `JAVA_TOOL_OPTIONS` env var to `-Dfile.encoding=UTF-8` should help building the project in
 non-UTF-8 environments. Editors and IDEs must also support UTF-8 in order to successfully edit ServiceTalk's source
 code.
-
-==== Gradle Repositories
-
-ServiceTalk's build produces custom Gradle plugins and thus has regular (i.e. non-`buildscript`) dependencies
-on other plugins. This is the reason why the repositories that are provided if none are configured globally are the
-following:
-
-[source,groovy]
-----
-allprojects {
-  buildscript {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-  repositories {
-    jcenter()
-    maven { url "https://plugins.gradle.org/m2/" }
-  }
-}
-----
-
-If you have defined repositories or repository mirrors in your global Gradle config (`~/.gradle/init.gradle`),
-the build will detect them and attempt to inherit `buildscript` repositories into the main `repositories`
-of the sub-projects that produce custom Gradle plugins.
-
-NOTE: This inheritance mechanism can be disabled by setting a Gradle property: +
-      `-PdisableInheritBuildscriptRepositories`.
 
 ==== Build Commands
 

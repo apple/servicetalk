@@ -322,7 +322,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
 
             return config.credentialsVerifier.apply(userId, password)
                     .flatMap(userInfo -> onAuthenticated(ctx, request, factory, userInfo))
-                    .recoverWith(t -> {
+                    .onErrorResume(t -> {
                         if (t instanceof AuthenticationException) {
                             return onAccessDenied(request, factory);
                         }

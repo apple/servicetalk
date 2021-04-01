@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.function.IntFunction;
+import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.RepeatStrategies.TerminateRepeatException;
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
@@ -78,24 +80,23 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     }
 
     @Test
-    public void testExpBackoffWithJitter() throws Exception {
-        Duration initialDelay = ofSeconds(1);
-        Duration jitter = ofMillis(500);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffDeltaJitter(2, initialDelay, jitter,
-                ofDays(10), timerExecutor));
-        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
-        verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
+    public void testExpBackoffWithJitterLargeMaxDelayAndMaxRetries() throws Exception {
+        testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofDays(10)));
+    }
 
-        timers.take().verifyListenCalled().onComplete();
-        subscriber.awaitOnComplete();
-        verifyNoMoreInteractions(timerExecutor);
+    @Test
+    public void testExpBackoffWithJitterLargeMaxDelayAndNoMaxRetries() throws Exception {
+        testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofDays(10)));
+    }
 
-        subscriber = strategy.invokeAndListen();
-        long nextDelay = initialDelay.toNanos() << 1;
-        verifyDelayWithDeltaJitter(nextDelay, jitter.toNanos(), 2);
-        timers.take().verifyListenCalled().onComplete();
-        subscriber.awaitOnComplete();
-        verifyNoMoreInteractions(timerExecutor);
+    @Test
+    public void testExpBackoffWithJitterSmallMaxDelayAndMaxRetries() throws Exception {
+        testExpBackoffWithJitter(2, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
+    }
+
+    @Test
+    public void testExpBackoffWithJitterSmallMaxDelayAndNoMaxRetries() throws Exception {
+        testExpBackoffWithJitter(MAX_VALUE, ofSeconds(1), duration -> duration.plus(ofMillis(10)));
     }
 
     @Test
@@ -122,6 +123,30 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         subscriber = strategy.invokeAndListen();
         verifyNoMoreInteractions(timerExecutor);
         assertThat(subscriber.awaitOnError(), instanceOf(TerminateRepeatException.class));
+    }
+
+    private void testExpBackoffWithJitter(final int maxRepeats, final Duration initialDelay,
+                                          final UnaryOperator<Duration> maxDelayFunc) throws Exception {
+        Duration jitter = ofMillis(500);
+        final IntFunction<Completable> strategyFunction = maxRepeats < MAX_VALUE ?
+                repeatWithExponentialBackoffDeltaJitter(maxRepeats, initialDelay, jitter,
+                        maxDelayFunc.apply(initialDelay), timerExecutor) :
+                repeatWithExponentialBackoffDeltaJitter(initialDelay, jitter,
+                        maxDelayFunc.apply(initialDelay), timerExecutor);
+        RepeatStrategy strategy = new RepeatStrategy(strategyFunction);
+        io.servicetalk.concurrent.test.internal.TestCompletableSubscriber subscriber = strategy.invokeAndListen();
+        verifyDelayWithDeltaJitter(initialDelay.toNanos(), jitter.toNanos(), 1);
+
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+        verifyNoMoreInteractions(timerExecutor);
+
+        subscriber = strategy.invokeAndListen();
+        long nextDelay = initialDelay.toNanos() << 1;
+        verifyDelayWithDeltaJitter(nextDelay, jitter.toNanos(), 2);
+        timers.take().verifyListenCalled().onComplete();
+        subscriber.awaitOnComplete();
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     private static final class RepeatStrategy {

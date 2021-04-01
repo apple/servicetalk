@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 if (!repositories) {
   repositories {
-    jcenter()
+    mavenCentral()
   }
 }
 
@@ -38,7 +38,6 @@ configurations {
 
 dependencies {
   nuValidator("nu.validator:validator:$nuValidatorVersion") {
-    exclude group: "org.eclipse.jetty"
     exclude group: "javax.servlet"
     exclude group: "commons-fileupload"
   }
@@ -74,7 +73,8 @@ for (location in ["local", "remote"]) {
 
     classpath = configurations.nuValidator
     main = "nu.validator.client.SimpleCommandLineValidator"
-    args "--skip-non-html" // --also-check-css doesn't work (still checks css as html), so limit to html files
+    args "--also-check-css"
+    args "--also-check-svg"
     args "--filterpattern", '(.*)Consider adding “lang=(.*)'
     args "--filterpattern", '(.*)Consider adding a “lang” attribute(.*)'
 

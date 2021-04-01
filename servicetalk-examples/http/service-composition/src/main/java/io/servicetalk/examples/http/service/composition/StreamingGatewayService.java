@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
+import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
@@ -109,10 +109,10 @@ final class StreamingGatewayService implements StreamingHttpService {
                             // We consider ratings to be a non-critical data and hence we substitute the response
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".
-                            .recoverWith(cause -> {
+                            .onErrorReturn(cause -> {
                                 LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.",
                                         cause);
-                                return succeeded(new Rating(recommendation.getEntityId(), -1));
+                                return new Rating(recommendation.getEntityId(), -1);
                             });
 
             // The below asynchronously queries metadata, user and rating backends and zips them into a single

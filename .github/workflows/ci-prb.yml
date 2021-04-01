@@ -41,7 +41,7 @@ jobs:
         env:
           CI: true
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ./gradlew --parallel --max-workers=4 clean test
+        run: ./gradlew --parallel clean test
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v2

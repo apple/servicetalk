@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,15 +35,15 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isIn;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ClosableConcurrentStackTest {
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = ExecutorRule.newRule();
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
 
     @Test
     public void singleThreadPushClose() {
@@ -119,8 +119,8 @@ public class ClosableConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                assertTrue("failed for index: " + finalI, stack.push(finalI));
-                assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI));
+                assertTrue(stack.push(finalI), () -> "failed for index: " + finalI);
+                assertTrue(stack.relaxedRemove(finalI), () -> "failed for index: " + finalI);
             }));
         }
 
@@ -146,7 +146,7 @@ public class ClosableConcurrentStackTest {
                 }
                 stack.push(finalI);
             }).concat(EXECUTOR_RULE.executor().submit(() ->
-                    assertTrue("failed for index: " + finalI, stack.relaxedRemove(finalI)))));
+                    assertTrue(stack.relaxedRemove(finalI), () -> "failed for index: " + finalI))));
         }
 
         Future<Void> future = mergeAll(completableList, itemCount).toFuture();
@@ -170,7 +170,7 @@ public class ClosableConcurrentStackTest {
                 } catch (Exception e) {
                     throw new AssertionError(e);
                 }
-                assertTrue("failed for index: " + finalI, stack.push(c));
+                assertTrue(stack.push(c), () -> "failed for index: " + finalI);
                 return c;
             }));
         }

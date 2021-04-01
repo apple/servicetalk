@@ -32,10 +32,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -123,6 +125,169 @@ public abstract class Single<T> {
     }
 
     /**
+     * Transform errors emitted on this {@link Single} into {@link Subscriber#onSuccess(Object)} signal
+     * (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorReturn(Function<? super Throwable, ? extends T> itemSupplier) {
+        return onErrorReturn(t -> true, itemSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code type} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (!type.isInstance(cause)) {
+     *           throw cause;
+     *         }
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorReturn(
+            Class<E> type, Function<? super E, ? extends T> itemSupplier) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, ? extends T> rawSupplier = (Function<Throwable, ? extends T>) itemSupplier;
+        return onErrorReturn(type::isInstance, rawSupplier);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code predicate} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (!predicate.test(cause)) {
+     *           throw cause;
+     *         }
+     *         return itemSupplier.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to
+     * {@link Subscriber#onSuccess(Object)} signal. Returns {@code false} to propagate the error.
+     * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into
+     * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
+                                         Function<? super Throwable, ? extends T> itemSupplier) {
+        requireNonNull(itemSupplier);
+        return onErrorResume(predicate, t -> Single.succeeded(itemSupplier.apply(t)));
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         throw mapper.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+        return onErrorMap(t -> true, mapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code type} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (type.isInstance(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return result;
+     * }</pre>
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorMap(
+            Class<E> type, Function<? super E, ? extends Throwable> mapper) {
+        @SuppressWarnings("unchecked")
+        final Function<Throwable, Throwable> rawMapper = (Function<Throwable, Throwable>) mapper;
+        return onErrorMap(type::isInstance, rawMapper);
+    }
+
+    /**
+     * Transform errors emitted on this {@link Single} which match {@code predicate} into a different error.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T results = resultOfThisSingle();
+     *     try {
+     *         terminalOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         if (predicate.test(cause)) {
+     *           throw mapper.apply(cause);
+     *         } else {
+     *           throw cause;
+     *         }
+     *     }
+     *     return result;
+     * }</pre>
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code mapper}. Returns
+     * {@code false} to propagate the original error.
+     * @param mapper returns the error used to terminate the returned {@link Single}.
+     * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorMap(Predicate<? super Throwable> predicate,
+                                      Function<? super Throwable, ? extends Throwable> mapper) {
+        return new OnErrorMapSingle<>(this, predicate, mapper, executor);
+    }
+
+    /**
      * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
      * passed {@code nextFactory}.
      * <p>
@@ -138,11 +303,103 @@ public abstract class Single<T> {
      *     return result;
      * }</pre>
      * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that recovers from an error from this {@code Single} by using another
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
      * {@link Single} provided by the passed {@code nextFactory}.
      */
-    public final Single<T> recoverWith(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
-        return new ResumeSingle<>(this, nextFactory, executor);
+    public final Single<T> onErrorResume(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return onErrorResume(t -> true, nextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Single} which match {@code type} by using another {@link Single}
+     * provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *       if (type.isInstance(cause)) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *       } else {
+     *           throw cause;
+     *       }
+     *     }
+     *     return result;
+     * }</pre>
+     *
+     * @param type The {@link Throwable} type to filter, operator will not apply for errors which don't match this type.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @param <E> The type of {@link Throwable} to transform.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final <E extends Throwable> Single<T> onErrorResume(
+            Class<E> type, Function<? super E, ? extends Single<? extends T>> nextFactory) {
+        @SuppressWarnings("unchecked")
+        Function<Throwable, ? extends Single<? extends T>> rawNextFactory =
+                (Function<Throwable, ? extends Single<? extends T>>) nextFactory;
+        return onErrorResume(type::isInstance, rawNextFactory);
+    }
+
+    /**
+     * Recover from errors emitted by this {@link Single} which match {@code predicate} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *       if (predicate.test(cause)) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *       } else {
+     *           throw cause;
+     *       }
+     *     }
+     *     return result;
+     * }</pre>
+     *
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed via {@code nextFactory}.
+     * Returns {@code false} to propagate the original error.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
+                                         Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return new OnErrorResumeSingle<>(this, predicate, nextFactory, executor);
+    }
+
+    /**
+     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
+     * passed {@code nextFactory}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @deprecated Use {@link #onErrorResume(Function)}.
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that recovers from an error from this {@link Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
+     */
+    @Deprecated
+    public final Single<T> recoverWith(Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
+        return onErrorResume(nextFactory);
     }
 
     /**
@@ -405,14 +662,96 @@ public abstract class Single<T> {
      * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(long, TimeUnit)}.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param unit The units for {@code duration}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
+    @Deprecated
     public final Single<T> idleTimeout(long duration, TimeUnit unit) {
-        return idleTimeout(duration, unit, executor);
+        return timeout(duration, unit, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
+    public final Single<T> idleTimeout(long duration, TimeUnit unit,
+                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * {@link Subscriber} will via {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
+    public final Single<T> idleTimeout(Duration duration) {
+        return timeout(duration, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
+     * The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @deprecated Use {@link #timeout(Duration, io.servicetalk.concurrent.Executor)}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    @Deprecated
+    public final Single<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
+     * termination. The timer starts when the returned {@link Single} is subscribed.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(long duration, TimeUnit unit) {
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -430,8 +769,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> idleTimeout(long duration, TimeUnit unit,
-                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
+    public final Single<T> timeout(long duration, TimeUnit unit,
+                                   io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
     }
 
@@ -449,8 +788,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> idleTimeout(Duration duration) {
-        return idleTimeout(duration, executor);
+    public final Single<T> timeout(Duration duration) {
+        return timeout(duration, executor);
     }
 
     /**
@@ -467,7 +806,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> idleTimeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
+    public final Single<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
 
@@ -533,6 +872,30 @@ public abstract class Single<T> {
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
         return new SingleConcatWithPublisher<>(this, next, executor);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T> f1 = ...; // this
+     *      CompletableFuture<T2> other = ...;
+     *      CompletableFuture.allOf(f1, other).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), other.get());
+     * }</pre>
+     * @param other The other {@link Single} to zip with.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T2> The type of {@code other}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
+                                           BiFunction<? super T, ? super T2, ? extends R> zipper) {
+        return zip(this, other, zipper);
     }
 
     /**
@@ -1453,11 +1816,11 @@ public abstract class Single<T> {
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
      * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
-     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @param <T> The data type the {@link Future} provides when complete.
      * @return A {@link Single} that derives results from {@link Future}.
-     * @see #idleTimeout(long, TimeUnit)
+     * @see #timeout(long, TimeUnit)
      */
     public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
@@ -1861,6 +2224,118 @@ public abstract class Single<T> {
      */
     public static <T> Single<T> anyOf(final Iterable<Single<? extends T>> singles) {
         return amb(singles);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
+     * by {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture.allOf(f1, f2).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
+                                            BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, R> Single<R> zip(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, s3, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      CompletableFuture<T1> f1 = ...; // s1
+     *      CompletableFuture<T2> f2 = ...; // s2
+     *      CompletableFuture<T3> f3 = ...; // s3
+     *      CompletableFuture<T4> f4 = ...; // s3
+     *      CompletableFuture.allOf(f1, f2, f3, f4).get(); // wait for all futures to complete
+     *      return zipper.apply(f1.get(), f2.get(), f3.get(), f4.get());
+     * }</pre>
+     * @param s1 The first {@link Single} to zip.
+     * @param s2 The second {@link Single} to zip.
+     * @param s3 The third {@link Single} to zip.
+     * @param s4 The fourth {@link Single} to zip.
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param <T1> The type for the first {@link Single}.
+     * @param <T2> The type for the second {@link Single}.
+     * @param <T3> The type for the third {@link Single}.
+     * @param <T4> The type for the fourth {@link Single}.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <T1, T2, T3, T4, R> Single<R> zip(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
+            Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return SingleZipper.zip(s1, s2, s3, s4, zipper);
+    }
+
+    /**
+     * Create a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *      Function<? super CompletableFuture<?>[], ? extends R> zipper = ...;
+     *      CompletableFuture<?>[] futures = ...; // Provided Futures (analogous to the Singles here)
+     *      CompletableFuture.allOf(futures).get(); // wait for all futures to complete
+     *      return zipper.apply(futures);
+     * }</pre>
+     * @param zipper Used to combine the completed results for each item from {@code singles}.
+     * @param singles The collection of {@link Single}s that when complete provides the results to "zip" (aka combine)
+     * together.
+     * @param <R> The result type of the zipper.
+     * @return a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
+     * {@code singles}.
+     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     */
+    public static <R> Single<R> zip(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
+        return SingleZipper.zip(zipper, singles);
     }
 
     //

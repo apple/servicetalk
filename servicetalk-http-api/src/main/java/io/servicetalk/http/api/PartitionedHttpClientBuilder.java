@@ -25,7 +25,6 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -46,16 +45,74 @@ import java.util.function.Predicate;
  */
 public abstract class PartitionedHttpClientBuilder<U, R>
         extends BaseSingleAddressHttpClientBuilder<U, R, PartitionedServiceDiscovererEvent<R>> {
+    /**
+     * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     */
+    @FunctionalInterface
+    public interface SingleAddressInitializer<U, R> {
+        /**
+         * Configures the passed {@link SingleAddressHttpClientBuilder} for a given set of {@link PartitionAttributes}.
+         *
+         * @param attr the {@link PartitionAttributes} for the partition
+         * @param builder {@link SingleAddressHttpClientBuilder} to configure for the given {@link PartitionAttributes}
+         */
+        void initialize(PartitionAttributes attr, SingleAddressHttpClientBuilder<U, R> builder);
 
+        /**
+         * Appends the passed {@link SingleAddressInitializer} to this
+         * {@link SingleAddressInitializer} such that this {@link SingleAddressInitializer} is
+         * applied first and then the passed {@link SingleAddressInitializer}.
+         *
+         * @param toAppend {@link SingleAddressInitializer} to append
+         * @return A composite {@link SingleAddressInitializer} after the append operation.
+         */
+        default SingleAddressInitializer<U, R> append(SingleAddressInitializer<U, R> toAppend) {
+            return (attr, builder) -> {
+                initialize(attr, builder);
+                toAppend.initialize(attr, builder);
+            };
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#ioExecutor(IoExecutor)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#bufferAllocator(BufferAllocator)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#socketOption(SocketOption, Object)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract <T> PartitionedHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 
@@ -63,18 +120,47 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#enableWireLogging(String, LogLevel, BooleanSupplier)} on the last argument
+     * of {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName,
                                                                          LogLevel logLevel,
                                                                          BooleanSupplier logUserData);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#protocols(HttpProtocolConfig...)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(Predicate, StreamingHttpConnectionFilterFactory)} on
+     * the last argument of {@link SingleAddressInitializer#initialize(PartitionAttributes,
+     * SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                      StreamingHttpConnectionFilterFactory factory) {
@@ -82,16 +168,44 @@ public abstract class PartitionedHttpClientBuilder<U, R>
                 super.appendConnectionFilter(predicate, factory);
     }
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendConnectionFactoryFilter(ConnectionFactoryFilter)} on the last
+     * argument of {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback();
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#allowDropResponseTrailers(boolean)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> allowDropResponseTrailers(boolean allowDrop);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
@@ -104,38 +218,52 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> retryStrategy);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#loadBalancerFactory(HttpLoadBalancerFactory)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
             HttpLoadBalancerFactory<R> loadBalancerFactory);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} on the last argument of
+     * {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
     @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)} on the last argument
+     * of {@link SingleAddressInitializer#initialize(PartitionAttributes, SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
+    /**
+     * {@inheritDoc}
+     * @deprecated {@link #initializer(SingleAddressInitializer)} and
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(Predicate, StreamingHttpClientFilterFactory)} on the
+     * last argument of {@link SingleAddressInitializer#initialize(PartitionAttributes,
+     * SingleAddressHttpClientBuilder)}.
+     */
+    @Deprecated
     @Override
     public PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                  StreamingHttpClientFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }
-
-    /**
-     * Initiates security configuration for this client. Calling
-     * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
-     * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #appendClientBuilderFilter(PartitionHttpClientBuilderConfigurator)} and create a
-     * {@link PartitionHttpClientBuilderConfigurator} that invokes
-     * {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
-     * @return {@link PartitionHttpClientBuilderConfigurator} to configure security for this client. It is
-     * mandatory to call {@link PartitionedHttpClientSecurityConfigurator#commit() commit} after all configuration is
-     * done.
-     */
-    @Deprecated
-    public abstract PartitionedHttpClientSecurityConfigurator<U, R> secure();
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.
@@ -160,11 +288,20 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     /**
      * Sets a function that allows customizing the {@link SingleAddressHttpClientBuilder} used to create the client for
      * a given partition based on its {@link PartitionAttributes}.
-     *
+     * @deprecated Use {@link #initializer(SingleAddressInitializer)}.
      * @param clientFilterFunction {@link BiFunction} used to customize the {@link SingleAddressHttpClientBuilder}
      * before creating the client for the partition
      * @return {@code this}
      */
+    @Deprecated
     public abstract PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
             PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction);
+
+    /**
+     * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
+     * @param initializer Initializes the {@link SingleAddressHttpClientBuilder} used to build new
+     * {@link StreamingHttpClient}s.
+     * @return {@code this}
+     */
+    public abstract PartitionedHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 }

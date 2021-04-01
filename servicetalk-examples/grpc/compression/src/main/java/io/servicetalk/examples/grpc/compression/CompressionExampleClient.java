@@ -16,7 +16,8 @@
 package io.servicetalk.examples.grpc.compression;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.Identity;
+import io.servicetalk.encoding.netty.ContentCodings;
 import io.servicetalk.grpc.netty.GrpcClients;
 
 import io.grpc.examples.compression.Greeter;
@@ -44,7 +45,7 @@ public final class CompressionExampleClient {
                     // handled correctly.
                     // ContentCodings.gzipDefault(),
                     ContentCodings.deflateDefault(),
-                    ContentCodings.identity()
+                    Identity.identity()
             ));
 
     /**

@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.ContentCodings;
+import io.servicetalk.encoding.api.Identity;
 
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -57,7 +57,7 @@ public interface HttpMetaData {
      * by calling this method.
      *
      * Any encoding passed here, takes precedence. In other words, a compressed response, can
-     * be disabled by passing {@link ContentCodings#identity()}.
+     * be disabled by passing {@link Identity#identity()}.
      *
      * @param encoding The {@link ContentCodec} used for the encoding of the payload.
      * @return {@code this}.

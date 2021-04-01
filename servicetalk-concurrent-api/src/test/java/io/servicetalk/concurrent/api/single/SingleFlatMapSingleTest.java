@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.SourceAdapters;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -37,7 +37,7 @@ public final class SingleFlatMapSingleTest {
     private LegacyTestSingle<String> first;
     private LegacyTestSingle<String> second;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         first = new LegacyTestSingle<>();
         second = new LegacyTestSingle<>();

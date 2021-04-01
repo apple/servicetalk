@@ -38,8 +38,10 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
+import static java.lang.String.valueOf;
 
 final class TestServiceStreaming implements StreamingHttpService {
 
@@ -119,14 +121,18 @@ final class TestServiceStreaming implements StreamingHttpService {
     private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
                                                          final StreamingHttpResponseFactory factory) {
         final StreamingHttpResponse response = factory.ok().version(req.version())
-                .payloadBody(req.payloadBody());
+                .transformMessageBody(pub -> pub.ignoreElements().merge(req.messageBody()));
         final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
         if (contentLength != null) {
-            response.headers().set(CONTENT_LENGTH, contentLength);
+            response.addHeader(CONTENT_LENGTH, contentLength);
         }
         final CharSequence contentType = req.headers().get(CONTENT_TYPE);
         if (contentType != null) {
-            response.headers().set(CONTENT_TYPE, contentType);
+            response.addHeader(CONTENT_TYPE, contentType);
+        }
+        final CharSequence transferEncoding = req.headers().get(TRANSFER_ENCODING);
+        if (transferEncoding != null) {
+            response.addHeader(TRANSFER_ENCODING, transferEncoding);
         }
         return response;
     }
@@ -136,7 +142,9 @@ final class TestServiceStreaming implements StreamingHttpService {
                                                          final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(from(responseContent));
+        return factory.ok().version(req.version())
+                .setHeader(CONTENT_LENGTH, valueOf(responseContent.readableBytes()))
+                .payloadBody(from(responseContent));
     }
 
     private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
@@ -144,7 +152,9 @@ final class TestServiceStreaming implements StreamingHttpService {
             final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(from(responseContent));
+        return factory.ok().version(req.version())
+                .setHeader(CONTENT_LENGTH, valueOf(responseContent.readableBytes()))
+                .payloadBody(from(responseContent));
     }
 
     private static StreamingHttpResponse newLargeLastChunkResponse(

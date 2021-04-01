@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Collection;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Single.amb;
@@ -33,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-@RunWith(Parameterized.class)
 public class SingleAmbSubscribeThrowsTest {
 
     private volatile boolean throwFromFirst;
@@ -42,11 +39,33 @@ public class SingleAmbSubscribeThrowsTest {
     private final TestSingle<Integer> second = new TestSingle<>();
     private final TestCancellable cancellable = new TestCancellable();
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
-    private final Single<Integer> amb;
+    private Single<Integer> amb;
 
-    public SingleAmbSubscribeThrowsTest(
-            final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
-        amb = ambSupplier.apply(defer(() -> {
+    private enum AmbParam {
+        AMB_WITH {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return Single::ambWith;
+            }
+        },
+        AMB_VARARGS {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(first, second);
+            }
+        },
+        AMB_ITERABLE {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(asList(first, second));
+            }
+        };
+
+        abstract BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get();
+    }
+
+    private void init(final AmbParam ambParam) {
+        amb = ambParam.get().apply(defer(() -> {
             if (throwFromFirst) {
                 throw DELIBERATE_EXCEPTION;
             }
@@ -59,15 +78,10 @@ public class SingleAmbSubscribeThrowsTest {
         }));
     }
 
-    @Parameterized.Parameters
-    public static Collection<BiFunction<Single<Integer>, Single<Integer>, Single<Integer>>> data() {
-        return asList(Single::ambWith,
-                (first, second) -> amb(first, second),
-                (first, second) -> amb(asList(first, second)));
-    }
-
-    @Test
-    public void firstSubscribeThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void firstSubscribeThrows(final AmbParam ambParam) {
+        init(ambParam);
         throwFromFirst = true;
         subscribeToAmbAndVerifyFail();
         second.onSubscribe(cancellable);
@@ -76,8 +90,10 @@ public class SingleAmbSubscribeThrowsTest {
         second.onSuccess(2);
     }
 
-    @Test
-    public void secondSubscribeThrows() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void secondSubscribeThrows(final AmbParam ambParam) {
+        init(ambParam);
         throwFromSecond = true;
         subscribeToAmbAndVerifyFail();
         first.onSubscribe(cancellable);

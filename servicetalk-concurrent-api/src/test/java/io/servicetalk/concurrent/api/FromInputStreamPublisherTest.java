@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,9 +54,6 @@ import static org.mockito.Mockito.when;
 
 public class FromInputStreamPublisherTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     private final TestPublisherSubscriber<byte[]> sub1 = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<byte[]> sub2 = new TestPublisherSubscriber<>();
 
@@ -69,7 +63,7 @@ public class FromInputStreamPublisherTest {
     private InputStream inputStream;
     private Publisher<byte[]> pub;
 
-    @Before
+    @BeforeEach
     public void setup() {
         inputStream = mock(InputStream.class);
         pub = new FromInputStreamPublisher(inputStream);
@@ -287,7 +281,7 @@ public class FromInputStreamPublisherTest {
     }
 
     @Test
-    public void consumeSimpleStream() throws Exception {
+    public void consumeSimpleStream() {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(1); // smallBuff

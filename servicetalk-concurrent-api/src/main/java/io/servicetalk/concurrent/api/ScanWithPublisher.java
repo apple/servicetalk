@@ -35,31 +35,7 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
     ScanWithPublisher(Publisher<T> original, Supplier<R> initial, BiFunction<R, ? super T, R> accumulator,
                       Executor executor) {
-        this(original, () -> new ScanWithMapper<T, R>() {
-            @Nullable
-            private R state = initial.get();
-
-            @Override
-            public R mapOnNext(@Nullable final T next) {
-                state = accumulator.apply(state, next);
-                return state;
-            }
-
-            @Override
-            public R mapOnError(final Throwable cause) {
-                throw newMapTerminalUnsupported();
-            }
-
-            @Override
-            public R mapOnComplete() {
-                throw newMapTerminalUnsupported();
-            }
-
-            @Override
-            public boolean mapTerminal() {
-                return false;
-            }
-        }, executor);
+        this(original, new SupplierScanWithMapper<>(initial, accumulator), executor);
     }
 
     ScanWithPublisher(Publisher<T> original, Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier,
@@ -133,7 +109,6 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
 
                 @Override
                 public void cancel() {
-                    demand = TERMINATED;
                     subscription.cancel();
                 }
 
@@ -245,7 +220,46 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         }
     }
 
-    private static IllegalStateException newMapTerminalUnsupported() {
-        throw new IllegalStateException("mapTerminal returns false, this method should never be invoked!");
+    private static final class SupplierScanWithMapper<T, R> implements Supplier<ScanWithMapper<T, R>> {
+        private final BiFunction<R, ? super T, R> accumulator;
+        private final Supplier<R> initial;
+
+        SupplierScanWithMapper(Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
+            this.initial = requireNonNull(initial);
+            this.accumulator = requireNonNull(accumulator);
+        }
+
+        @Override
+        public ScanWithMapper<T, R> get() {
+            return new ScanWithMapper<T, R>() {
+                @Nullable
+                private R state = initial.get();
+
+                @Override
+                public R mapOnNext(@Nullable final T next) {
+                    state = accumulator.apply(state, next);
+                    return state;
+                }
+
+                @Override
+                public R mapOnError(final Throwable cause) {
+                    throw newMapTerminalUnsupported();
+                }
+
+                @Override
+                public R mapOnComplete() {
+                    throw newMapTerminalUnsupported();
+                }
+
+                @Override
+                public boolean mapTerminal() {
+                    return false;
+                }
+            };
+        }
+
+        private static IllegalStateException newMapTerminalUnsupported() {
+            throw new IllegalStateException("mapTerminal returns false, this method should never be invoked!");
+        }
     }
 }

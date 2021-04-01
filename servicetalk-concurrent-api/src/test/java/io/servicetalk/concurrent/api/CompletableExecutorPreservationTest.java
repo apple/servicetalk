@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,31 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class CompletableExecutorPreservationTest {
-    @ClassRule
-    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test");
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor("test");
 
     private Completable completable;
 
-    @Before
+    @BeforeEach
     public void setupCompletable() {
         completable = completed().publishAndSubscribeOnOverride(EXEC.executor());
     }
 
     @Test
     public void testTimeoutCompletable() {
-        assertSame(EXEC.executor(), completable.idleTimeout(1, MILLISECONDS).executor());
-        assertSame(EXEC.executor(), completable.idleTimeout(Duration.ofMillis(1)).executor());
+        assertSame(EXEC.executor(), completable.timeout(1, MILLISECONDS).executor());
+        assertSame(EXEC.executor(), completable.timeout(Duration.ofMillis(1)).executor());
     }
 
     @Test

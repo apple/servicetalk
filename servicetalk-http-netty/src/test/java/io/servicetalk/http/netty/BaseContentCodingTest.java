@@ -27,9 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.servicetalk.encoding.api.ContentCodings.deflateDefault;
-import static io.servicetalk.encoding.api.ContentCodings.gzipDefault;
-import static io.servicetalk.encoding.api.ContentCodings.identity;
+import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.netty.ContentCodings.deflateDefault;
+import static io.servicetalk.encoding.netty.ContentCodings.gzipDefault;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.util.Arrays.asList;

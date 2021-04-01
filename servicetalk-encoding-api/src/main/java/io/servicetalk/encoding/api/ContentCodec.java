@@ -35,52 +35,56 @@ public interface ContentCodec {
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes available to read
-     * {@code src.readableBytes()}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes available to read {@link Buffer#readableBytes()}.
      *
      * @param src the {@link Buffer} to encode
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
      */
-    default Buffer encode(Buffer src, BufferAllocator allocator) {
-        return encode(src, 0, src.readableBytes(), allocator);
-    }
+    Buffer encode(Buffer src, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and encode its contents resulting in a {@link Buffer} with the encoded contents.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to encode
-     * @param offset the offset after the current {@link Buffer}'s {@code readerInde  }to start reading from
+     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content encoded
+     * @deprecated Use the plain {@link #encode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
+     * where needed.
      */
+    @Deprecated
     Buffer encode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes available to read
-     * {@code src.readableBytes()}.
+     * This call increases the {{@link Buffer#readerIndex()} of the {@code src} with the number of
+     * bytes available to read {@link Buffer#readableBytes()}.
      *
      * @param src the {@link Buffer} to decode
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
      */
-    default Buffer decode(Buffer src, BufferAllocator allocator) {
-        return decode(src, 0, src.readableBytes(), allocator);
-    }
+    Buffer decode(Buffer src, BufferAllocator allocator);
 
     /**
      * Take a {@link Buffer} and decode its contents resulting in a {@link Buffer} with the decoded content.
-     * This call increases the {@code readerIndex} of the {@code src} with the number of bytes read {@code length}.
+     * This call increases the {@link Buffer#readerIndex()} of the {@code src} with the number
+     * of bytes read {@code length}.
      *
      * @param src the {@link Buffer} to decode
-     * @param offset the offset after the current {@link Buffer}'s {@code readerIndex} to start reading from
+     * @param offset the offset after the current {@link Buffer#readerIndex()} to start reading from
      * @param length the total count of bytes to read
      * @param allocator the {@link BufferAllocator} to use for allocating auxiliary buffers or the returned buffer
      * @return {@link Buffer} the result buffer with the content decoded
+     * @deprecated Use the plain {@link #decode(Buffer, BufferAllocator)} version and {@link Buffer#slice(int, int)}
+     * where needed.
      */
+    @Deprecated
     Buffer decode(Buffer src, int offset, int length, BufferAllocator allocator);
 
     /**

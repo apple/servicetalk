@@ -86,7 +86,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -338,9 +337,8 @@ final class NettyHttpServer {
                 Publisher<Object> responsePublisher = strategy
                         .invokeService(executionContext().executor(), request,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
-                                        .recoverWith(cause ->
-                                                succeeded(newErrorResponse(cause, executionContext.executor(),
-                                                        req.version(), keepAlive)))
+                                        .onErrorReturn(cause -> newErrorResponse(cause, executionContext.executor(),
+                                                        req.version(), keepAlive))
                                         .flatMapPublisher(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
 
@@ -360,7 +358,7 @@ final class NettyHttpServer {
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            .onErrorResume(t -> completed())));
+                            .onErrorComplete()));
                 }
 
                 return responsePublisher.concat(requestCompletion);

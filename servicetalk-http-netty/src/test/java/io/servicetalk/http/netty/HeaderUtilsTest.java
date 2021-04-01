@@ -28,6 +28,7 @@ import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.GZIP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
@@ -35,7 +36,6 @@ import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIf
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HeaderUtilsTest {
@@ -59,10 +59,10 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void removeTransferEncodingChunkedWithSomeHeader() {
+    public void removeTransferEncodingChunkedOnlyWhenOtherHeadersPresent() {
         assertTrue(httpRequest.headers().isEmpty());
-        httpRequest.headers().add("Some-Header", "Some-Value")
-                .add(TRANSFER_ENCODING, "Some-Value")
+        httpRequest.headers().add(CONTENT_LENGTH, "10")
+                .add(TRANSFER_ENCODING, GZIP)
                 .add(TRANSFER_ENCODING, CHUNKED)
                 .add("Transfer-Encoding", "Chunked")
                 .add(TRANSFER_ENCODING, "cHuNkEd");
@@ -71,7 +71,8 @@ public class HeaderUtilsTest {
         removeTransferEncodingChunked(httpRequest.headers());
         assertFalse(isTransferEncodingChunked(httpRequest.headers()));
         assertEquals(2, httpRequest.headers().size());
-        assertNull(httpRequest.headers().get(CONTENT_LENGTH));
+        assertEquals(GZIP, httpRequest.headers().get(TRANSFER_ENCODING));
+        assertEquals("10", httpRequest.headers().get(CONTENT_LENGTH));
     }
 
     @Test

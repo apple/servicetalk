@@ -39,8 +39,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.function.Consumer;
-
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
@@ -58,6 +56,7 @@ import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThrows;
@@ -142,41 +141,6 @@ public class AbstractH2DuplexHandlerTest {
     }
 
     @Test
-    public void multipleContentLengthHeaders() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1", "2");
-        multipleContentLength(initHeaders, false);
-    }
-
-    @Test
-    public void multipleContentLengthHeadersEndStream() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1", "2");
-        multipleContentLength(initHeaders, true);
-    }
-
-    @Test
-    public void multipleContentLengthHeaderValues() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1, 2");
-        multipleContentLength(initHeaders, false);
-    }
-
-    @Test
-    public void multipleContentLengthHeaderValuesEndStream() {
-        final Consumer<Http2Headers> initHeaders = headers -> headers.add(CONTENT_LENGTH, "1, 2");
-        multipleContentLength(initHeaders, true);
-    }
-
-    private void multipleContentLength(Consumer<Http2Headers> initHeaders, boolean endStream) {
-        variant.writeOutbound(channel);
-
-        Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        initHeaders.accept(headers);
-
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream)));
-        assertThat(e.getMessage(), startsWith("Multiple content-length values found"));
-    }
-
-    @Test
     public void unexpectedContentLength() {
         unexpectedContentLength(false);
     }
@@ -205,6 +169,35 @@ public class AbstractH2DuplexHandlerTest {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream)));
         assertThat(e.getMessage(), startsWith("content-length (1) header is not expected"));
+    }
+
+    @Test
+    public void nullContentLengthWhenContentIsNotExpected() {
+        nullContentLengthWhenContentIsNotExpected(false);
+    }
+
+    @Test
+    public void nullContentLengthWhenContentIsNotExpectedEndStream() {
+        nullContentLengthWhenContentIsNotExpected(true);
+    }
+
+    private void nullContentLengthWhenContentIsNotExpected(boolean endStream) {
+        variant.writeOutbound(channel);
+
+        Http2Headers headers = new DefaultHttp2Headers();
+        switch (variant) {
+            case CLIENT_HANDLER:
+                headers.status(NO_CONTENT.codeAsText());
+                break;
+            case SERVER_HANDLER:
+                headers.method(HttpMethod.TRACE.asciiName()).path("/");
+                break;
+            default:
+                throw new Error();
+        }
+
+        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream));
+        assertThat(channel.readInbound(), instanceOf(HttpMetaData.class));
     }
 
     @Test

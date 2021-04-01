@@ -27,7 +27,7 @@ public class PublisherOnErrorResumeTckTest extends AbstractPublisherTckTest<Inte
         int numElements = TckUtils.requestNToInt(elements);
 
         return TckUtils.<Integer>newFailedPublisher()
-                .recoverWith(cause -> TckUtils.newPublisher(numElements));
+                .onErrorResume(cause -> TckUtils.newPublisher(numElements));
     }
 
     @Override

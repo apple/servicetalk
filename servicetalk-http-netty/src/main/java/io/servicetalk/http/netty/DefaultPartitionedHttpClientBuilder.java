@@ -45,7 +45,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
-import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -80,6 +79,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     private ServiceDiscoveryRetryStrategy<R, PartitionedServiceDiscovererEvent<R>> serviceDiscovererRetryStrategy;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
+    @Nullable
+    private SingleAddressInitializer<U, R> clientInitializer;
     private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
@@ -109,6 +110,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
             builder.serviceDiscoverer(sd);
             clientFilterFunction.configureForPartition(pa, builder);
+            if (clientInitializer != null) {
+                clientInitializer.initialize(pa, builder);
+            }
             return builder.buildStreaming();
         };
 
@@ -358,12 +362,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
-    @Deprecated
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> secure() {
-        return new DefaultPartitionedHttpClientSecurityConfigurator<>(builderTemplate.secure(), this);
-    }
-
     @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(final int serviceDiscoveryMaxQueueSize) {
         this.serviceDiscoveryMaxQueueSize = serviceDiscoveryMaxQueueSize;
@@ -376,10 +374,17 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         return this;
     }
 
+    @Deprecated
     @Override
     public PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
             final PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction) {
         this.clientFilterFunction = this.clientFilterFunction.append(clientFilterFunction);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> initializer(final SingleAddressInitializer<U, R> initializer) {
+        this.clientInitializer = requireNonNull(initializer);
         return this;
     }
 

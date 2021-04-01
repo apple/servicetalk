@@ -62,10 +62,10 @@ jobs:
           fi
 
           # Execute the gradlew command to publish the build
-          ./gradlew --parallel --max-workers=4 -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew -PreleaseBuild=true$SECOND_GRADLE_TARGETS
+          ./gradlew --parallel -PreleaseBuild=true$FIRST_GRADLE_TARGETS && ./gradlew -PreleaseBuild=true$SECOND_GRADLE_TARGETS
       - name: Publish Test Results
         if: always()
-        uses: scacap/action-surefire-report@fd75ee04fbef040d0198e50ad153fcf997a0cf78
+        uses: scacap/action-surefire-report@a915ba6359417544044fb06093a6c75097fe2a2b
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'

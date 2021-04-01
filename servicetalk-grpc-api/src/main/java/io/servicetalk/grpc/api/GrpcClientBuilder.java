@@ -87,10 +87,6 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    StreamingHttpConnectionFilterFactory factory);
 
-    @Deprecated
-    @Override
-    public abstract GrpcClientSecurityConfigurator<U, R> secure();
-
     @Override
     public abstract GrpcClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig);
 
@@ -279,7 +275,7 @@ public abstract class GrpcClientBuilder<U, R>
                     } catch (Throwable t) {
                         return failed(toGrpcException(t));
                     }
-                    return resp.recoverWith(t -> failed(toGrpcException(t)));
+                    return resp.onErrorMap(GrpcClientBuilder::toGrpcException);
                 }
             });
             appendedCatchAllFilter = true;

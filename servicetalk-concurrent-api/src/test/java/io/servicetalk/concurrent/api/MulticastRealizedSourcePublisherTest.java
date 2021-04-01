@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,10 +43,8 @@ import static org.hamcrest.core.Is.is;
  * Test for {@link MulticastPublisher} when the source terminates from within
  * {@link Subscriber#onSubscribe(Subscription)}.
  */
-public class MulticastRealizedSourcePublisherTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+public class MulticastRealizedSourcePublisherTest {
 
     @Test
     public void testOnSubscribeErrors() throws InterruptedException {

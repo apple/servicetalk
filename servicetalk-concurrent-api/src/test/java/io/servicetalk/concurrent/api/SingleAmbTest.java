@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Collection;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Single.amb;
@@ -32,7 +30,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-@RunWith(Parameterized.class)
 public class SingleAmbTest {
 
     private final TestSingle<Integer> first = new TestSingle<>();
@@ -40,95 +37,135 @@ public class SingleAmbTest {
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
     private final TestCancellable cancellable = new TestCancellable();
 
-    public SingleAmbTest(final BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> ambSupplier) {
-        toSource(ambSupplier.apply(first, second)).subscribe(subscriber);
+    private enum AmbParam {
+        AMB_WITH {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return Single::ambWith;
+            }
+        },
+        AMB_VARARGS {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(first, second);
+            }
+        },
+        AMB_ITERABLE {
+            @Override
+            BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get() {
+                return (first, second) -> amb(asList(first, second));
+            }
+        };
+
+        abstract BiFunction<Single<Integer>, Single<Integer>, Single<Integer>> get();
+    }
+
+    private void init(final AmbParam ambParam) {
+        toSource(ambParam.get().apply(first, second)).subscribe(subscriber);
         subscriber.awaitSubscription();
         assertThat("First source not subscribed.", first.isSubscribed(), is(true));
         assertThat("Second source not subscribed.", second.isSubscribed(), is(true));
     }
 
-    @Parameterized.Parameters
-    public static Collection<BiFunction<Single<Integer>, Single<Integer>, Single<Integer>>> data() {
-        return asList(Single::ambWith,
-                (first, second) -> amb(first, second),
-                (first, second) -> amb(asList(first, second)));
-    }
-
-    @Test
-    public void successFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirst(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @Test
-    public void successSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecond(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @Test
-    public void failFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirst(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
     }
 
-    @Test
-    public void failSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecond(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
     }
 
-    @Test
-    public void successFirstThenSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirstThenSecond(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onSuccess(2);
     }
 
-    @Test
-    public void successSecondThenFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecondThenFirst(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onSuccess(2);
     }
 
-    @Test
-    public void failFirstThenSecond() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirstThenSecond(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void failSecondThenFirst() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecondThenFirst(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void successFirstThenSecondFail() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successFirstThenSecondFail(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(first);
         verifyCancelled(second);
         second.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void successSecondThenFirstFail() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void successSecondThenFirstFail(final AmbParam ambParam) {
+        init(ambParam);
         sendSuccessToAndVerify(second);
         verifyCancelled(first);
         first.onError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    public void failFirstThenSecondSuccess() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failFirstThenSecondSuccess(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(first);
         verifyCancelled(second);
         second.onSuccess(2);
     }
 
-    @Test
-    public void failSecondThenFirstSuccess() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(AmbParam.class)
+    public void failSecondThenFirstSuccess(final AmbParam ambParam) {
+        init(ambParam);
         sendErrorToAndVerify(second);
         verifyCancelled(first);
         first.onSuccess(2);
