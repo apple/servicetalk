@@ -30,6 +30,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_PATCH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersSplitCookieCrumbs;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
@@ -48,8 +49,9 @@ public class H2ToStH1UtilsTest {
 
     public void testH1HeadersSplitCookieCrumbs(HttpHeadersFactory headersFactory) {
         HttpHeaders headers = headersFactory.newHeaders();
-        headers.add(COOKIE, "a=b; c=d; e=f");
-        headers.add(ACCEPT_PATCH, TEXT_PLAIN);  // Add another header which will be saved in the same entries[index]
+        // Add two headers which will be saved in the same entries[index]:
+        headers.add(new ConstantHashCharSequence(COOKIE), "a=b; c=d; e=f");
+        headers.add(new ConstantHashCharSequence(ACCEPT_PATCH), TEXT_PLAIN);
         h1HeadersSplitCookieCrumbs(headers);
 
         List<HttpCookiePair> cookies = new ArrayList<>();
@@ -60,5 +62,46 @@ public class H2ToStH1UtilsTest {
         assertThat(cookies, containsInAnyOrder(new DefaultHttpCookiePair("a", "b"),
                 new DefaultHttpCookiePair("c", "d"),
                 new DefaultHttpCookiePair("e", "f")));
+    }
+
+    private static final class ConstantHashCharSequence implements CharSequence {
+        private final CharSequence sequence;
+
+        ConstantHashCharSequence(final CharSequence sequence) {
+            this.sequence = requireNonNull(sequence);
+        }
+
+        @Override
+        public int length() {
+            return sequence.length();
+        }
+
+        @Override
+        public char charAt(final int index) {
+            return sequence.charAt(index);
+        }
+
+        @Override
+        public CharSequence subSequence(final int start, final int end) {
+            return new ConstantHashCharSequence(sequence.subSequence(start, end));
+        }
+
+        @Override
+        public int hashCode() {
+            return 0;   // always the same
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ConstantHashCharSequence)) {
+                return false;
+            }
+            return sequence.equals(((ConstantHashCharSequence) o).sequence);
+        }
+
+        @Override
+        public String toString() {
+            return sequence.toString();
+        }
     }
 }
