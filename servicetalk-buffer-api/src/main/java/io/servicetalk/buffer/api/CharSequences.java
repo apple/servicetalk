@@ -38,7 +38,6 @@ import static io.servicetalk.buffer.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.buffer.api.AsciiBuffer.hashCodeAscii;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.lang.Character.toUpperCase;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -447,56 +446,48 @@ public final class CharSequences {
      * @throws NumberFormatException if the passed {@link CharSequence} cannot be parsed into {@code long}
      */
     public static long parseLong(final CharSequence cs) throws NumberFormatException {
-        if (isAsciiString(cs)) {
-            return parseLong(((AsciiBuffer) cs).unwrap());
-        } else {
-            return Long.parseLong(cs.toString());
-        }
-    }
-
-    private static long parseLong(final Buffer buffer) {
-        final int length = buffer.readableBytes();
+        final int length = cs.length();
         if (length <= 0) {
             throw new NumberFormatException("Illegal length of the CharSequence: " + length + " (expected > 0)");
         }
-
-        return parseLong(buffer, buffer.readerIndex(), buffer.writerIndex(), 10);
+        return parseLong(cs, 0, length, 10);
     }
 
-    private static long parseLong(final Buffer buffer, final int start, final int end, final int radix) {
+    @SuppressWarnings("SameParameterValue")
+    private static long parseLong(final CharSequence cs, final int start, final int end, final int radix) {
         int i = start;
-        final byte firstCh = buffer.getByte(i);
+        final char firstCh = cs.charAt(i);
         final boolean negative = firstCh == '-';
         if ((negative || firstCh == '+') && ++i == end) {
-            throw illegalInput(buffer);
+            throw illegalInput(cs);
         }
 
         final long min = Long.MIN_VALUE / radix;
         long result = 0;
         while (i < end) {
-            final int digit = Character.digit((char) (buffer.getByte(i++) & 0xFF), radix);
+            final int digit = Character.digit(cs.charAt(i++), radix);
             if (digit < 0) {
-                throw illegalInput(buffer);
+                throw illegalInput(cs);
             }
             if (min > result) {
-                throw illegalInput(buffer);
+                throw illegalInput(cs);
             }
             long next = result * radix - digit;
             if (next > result) {
-                throw illegalInput(buffer);
+                throw illegalInput(cs);
             }
             result = next;
         }
         if (!negative) {
             result = -result;
             if (result < 0) {
-                throw illegalInput(buffer);
+                throw illegalInput(cs);
             }
         }
         return result;
     }
 
-    private static NumberFormatException illegalInput(final Buffer buffer) {
-        return new NumberFormatException("Illegal input: " + buffer.toString(US_ASCII));
+    private static NumberFormatException illegalInput(final CharSequence cs) {
+        return new NumberFormatException("Illegal input: \"" + cs + "\"");
     }
 }
