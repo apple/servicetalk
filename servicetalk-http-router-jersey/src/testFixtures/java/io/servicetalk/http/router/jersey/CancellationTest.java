@@ -205,8 +205,9 @@ public class CancellationTest {
 
         cancelledLatch.await();
 
-        if (errorRef.get() != null) {
-            throw new AssertionError(errorRef.get());
+        final Throwable error = errorRef.get();
+        if (error != null) {
+            throw new AssertionError(error);
         }
     }
 
@@ -246,6 +247,13 @@ public class CancellationTest {
 
                 @Override
                 public void onError(final Throwable t) {
+                    if (t instanceof IllegalStateException &&
+                            t.getMessage().contains("input stream has already been closed")) {
+                        // Ignore racy cancellation, it's ordered safely.
+                        cancelledLatch.countDown();
+                        return;
+                    }
+
                     errorRef.compareAndSet(null, t);
                     cancelledLatch.countDown();
                 }
@@ -259,8 +267,9 @@ public class CancellationTest {
 
         cancelledLatch.await();
 
-        if (errorRef.get() != null) {
-            throw new AssertionError(errorRef.get());
+        final Throwable error = errorRef.get();
+        if (error != null) {
+            throw new AssertionError(error);
         }
     }
 

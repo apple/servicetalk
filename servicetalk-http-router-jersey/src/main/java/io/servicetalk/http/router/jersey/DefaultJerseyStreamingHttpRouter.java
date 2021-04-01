@@ -259,7 +259,15 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         applicationHandler.handle(containerRequest);
     }
 
-    static final class CloseSignalHandoffAbleContainerRequest extends ContainerRequest {
+    /**
+     * {@link ContainerRequest#close()} may get called outside the thread that executes the
+     * {@link ApplicationHandler#handle(ContainerRequest)}. As a result, the close can be racy when the
+     * {@link org.glassfish.jersey.message.internal.InboundMessageContext} is accessed at the same time.
+     * This wrapper allows the {@link #close()} to be deferred after the reading is done by handing the {@link #close()}
+     * over to the {@link ApplicationHandler#handle(ContainerRequest)} owner thread. This also offers better thread
+     * visibility between the threads and the unsafely accessed variables.
+     */
+    private static final class CloseSignalHandoffAbleContainerRequest extends ContainerRequest {
         private static final AtomicReferenceFieldUpdater<CloseSignalHandoffAbleContainerRequest, State> stateUpdater =
                 newUpdater(CloseSignalHandoffAbleContainerRequest.class, State.class, "state");
 
@@ -298,11 +306,13 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         @Override
         public <T> T readEntity(final Class<T> rawType, final Type type, final Annotation[] annotations,
                                 final PropertiesDelegate propertiesDelegate) {
-            if (stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
+            final State prevState = state;
+            final boolean reentry = prevState == State.READING;
+            if (reentry || stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
                 try {
                     return super.readEntity(rawType, type, annotations, propertiesDelegate);
                 } finally {
-                    if (!stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
+                    if (!reentry && !stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
                         // Closed while we were in progress.
                         state = State.CLOSED;
                         close0();
@@ -315,11 +325,13 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
 
         @Override
         public boolean bufferEntity() throws ProcessingException {
-            if (stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
+            final State prevState = state;
+            final boolean reentry = prevState == State.READING;
+            if (reentry || stateUpdater.compareAndSet(this, State.INIT, State.READING)) {
                 try {
                     return super.bufferEntity();
                 } finally {
-                    if (!stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
+                    if (!reentry && !stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
                         // Closed while we were in progress.
                         state = State.CLOSED;
                         close0();
