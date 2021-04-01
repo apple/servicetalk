@@ -16,6 +16,8 @@
 package io.servicetalk.concurrent.api;
 
 import org.hamcrest.Matcher;
+import org.junit.Assert;
+import org.junit.function.ThrowingRunnable;
 
 import javax.annotation.Nullable;
 
@@ -53,5 +55,32 @@ public final class VerificationTestUtils {
             return;
         }
         fail("Expected AssertionError");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T1 extends Throwable, T2 extends Throwable> T1 assertThrows(
+            Class<T1> expectedClass, @Nullable Class<T2> optionalWrapperClass, ThrowingRunnable runnable) {
+        if (optionalWrapperClass == null) {
+            return Assert.assertThrows(expectedClass, runnable);
+        }
+        try {
+            runnable.run();
+        } catch (Throwable cause) {
+            if (expectedClass.isInstance(cause)) {
+                return (T1) cause;
+            } else if (optionalWrapperClass.isInstance(cause) && expectedClass.isInstance(cause.getCause())) {
+                return (T1) cause.getCause();
+            } else {
+                throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
+                        className(optionalWrapperClass) + " but got " + className(cause) + " caused by " +
+                        className(cause.getCause()));
+            }
+        }
+        throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
+                className(optionalWrapperClass) + " but nothing was thrown");
+    }
+
+    private static String className(Object o) {
+        return o.getClass().getCanonicalName();
     }
 }

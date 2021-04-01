@@ -44,6 +44,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.VerificationTestUtils.assertThrows;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -61,7 +62,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
 public class AlpnClientAndServerTest {
@@ -77,6 +77,8 @@ public class AlpnClientAndServerTest {
     private final HttpProtocolVersion expectedProtocol;
     @Nullable
     private final Class<? extends Throwable> expectedExceptionType;
+    @Nullable
+    private final Class<? extends Throwable> optionalExceptionWrapperType;
 
     private final BlockingQueue<HttpServiceContext> serviceContext = new LinkedBlockingDeque<>();
     private final BlockingQueue<HttpProtocolVersion> requestVersion = new LinkedBlockingDeque<>();
@@ -84,36 +86,40 @@ public class AlpnClientAndServerTest {
     public AlpnClientAndServerTest(List<String> serverSideProtocols,
                                    List<String> clientSideProtocols,
                                    @Nullable HttpProtocolVersion expectedProtocol,
-                                   @Nullable Class<? extends Throwable> expectedExceptionType) throws Exception {
+                                   @Nullable Class<? extends Throwable> expectedExceptionType,
+                                   @Nullable Class<? extends Throwable> optionalExceptionWrapperType) throws Exception {
         serverContext = startServer(serverSideProtocols);
         client = startClient(serverHostAndPort(serverContext), clientSideProtocols);
         this.expectedProtocol = expectedProtocol;
         this.expectedExceptionType = expectedExceptionType;
+        this.optionalExceptionWrapperType = optionalExceptionWrapperType;
     }
 
     @Parameters(name =
-            "serverAlpnProtocols={0}, clientAlpnProtocols={1}, expectedProtocol={2}, expectedExceptionType={3}")
+            "serverAlpnProtocols={0}, clientAlpnProtocols={1}, expectedProtocol={2}, expectedExceptionType={3}" +
+            "optionalExceptionWrapperType={4}")
     public static Collection<Object[]> clientExecutors() {
         return asList(new Object[][] {
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null},
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
-                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
-                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null, null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null, null},
+                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null, null},
+                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null, null},
 
-                {asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null, null},
+                {asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null, null},
+                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null, null},
+                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null, null},
 
-                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null},
-                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
-                {singletonList(HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
-                {singletonList(HTTP_2), singletonList(HTTP_1_1), null, DecoderException.class},
+                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null, null},
+                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null, null},
+                {singletonList(HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null, null},
+                {singletonList(HTTP_2), singletonList(HTTP_1_1), null, DecoderException.class,
+                        ClosedChannelException.class},
 
-                {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_1_1), singletonList(HTTP_2), null, ClosedChannelException.class},
-                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null, null},
+                {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null, null},
+                {singletonList(HTTP_1_1), singletonList(HTTP_2), null, ClosedChannelException.class, null},
+                {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null, null},
         });
     }
 
@@ -164,7 +170,7 @@ public class AlpnClientAndServerTest {
     @Test
     public void testAlpnConnection() throws Exception {
         if (expectedExceptionType != null) {
-            assertThrows(expectedExceptionType, () -> client.request(client.get("/")));
+            assertThrows(expectedExceptionType, optionalExceptionWrapperType, () -> client.request(client.get("/")));
             return;
         }
 
@@ -179,7 +185,7 @@ public class AlpnClientAndServerTest {
     @Test
     public void testAlpnClient() throws Exception {
         if (expectedExceptionType != null) {
-            assertThrows(expectedExceptionType, () -> client.request(client.get("/")));
+            assertThrows(expectedExceptionType, optionalExceptionWrapperType, () -> client.request(client.get("/")));
         } else {
             assertResponseAndServiceContext(client.request(client.get("/")));
         }
