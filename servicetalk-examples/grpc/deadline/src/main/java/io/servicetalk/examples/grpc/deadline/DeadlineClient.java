@@ -19,19 +19,15 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.transport.api.HostAndPort;
 
-import io.grpc.examples.helloworld.Greeter;
-import io.grpc.examples.helloworld.Greeter.ClientFactory;
-import io.grpc.examples.helloworld.Greeter.GreeterClient;
-import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.examples.deadline.Greeter;
+import io.grpc.examples.deadline.HelloRequest;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Extends the async "Hello World!" example to add demonstration of
- * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
- * using async ServiceTalk APIS.
+ * Extends the async "Hello World!" example to demonstrate use of gRPC deadline aka timeout features.
  * <p/>
  * Start the {@link DeadlineServer} first.
  */
@@ -41,18 +37,26 @@ public final class DeadlineClient {
         GrpcClientBuilder<HostAndPort, InetSocketAddress> builder = GrpcClients.forAddress("localhost", 8080)
                 // set the default timeout for completion of gRPC calls made using this client to 1 minute
                 .defaultTimeout(Duration.ofMinutes(1));
-        try (GreeterClient client = builder.build(new ClientFactory())) {
+        try (Greeter.GreeterClient client = builder.build(new Greeter.ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            // Set the timeout for completion of this gRPC call to 5 seconds
-            Greeter.SayHelloMetadata metadata = new Greeter.SayHelloMetadata(Duration.ofSeconds(15));
-            client.sayHello(metadata, HelloRequest.newBuilder().setName("Foo").build())
+            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
+
+            // Make a request using default timeout (this will succeed)
+            client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
                     .afterFinally(responseProcessedLatch::countDown)
+                    .afterOnError(System.err::println)
                     .subscribe(System.out::println);
 
-            // block until response is complete and afterFinally() is called
+            // Set the timeout for completion of this gRPC call to 3 seconds (this will timeout)
+            Greeter.SayHelloMetadata metadata = new Greeter.SayHelloMetadata(Duration.ofSeconds(3));
+            client.sayHello(metadata, HelloRequest.newBuilder().setName("Bar").build())
+                    .afterFinally(responseProcessedLatch::countDown)
+                    .afterOnError(System.err::println)
+                    .subscribe(System.out::println);
+
+            // block until responses are complete and both afterFinally() have been called
             responseProcessedLatch.await();
         }
     }

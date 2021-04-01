@@ -15,15 +15,12 @@
  */
 package io.servicetalk.examples.grpc.helloworld.async;
 
-import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.netty.GrpcClients;
-import io.servicetalk.transport.api.HostAndPort;
 
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
 import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -36,14 +33,11 @@ import java.util.concurrent.CountDownLatch;
 public final class HelloWorldClient {
 
     public static void main(String... args) throws Exception {
-        GrpcClientBuilder<HostAndPort, InetSocketAddress> builder =
-                GrpcClients.forAddress("localhost", 8080);
-        try (GreeterClient client = builder.build(new ClientFactory())) {
+        try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            // (optional) set the timeout for completion of this RPC
             client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
                     .afterFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);

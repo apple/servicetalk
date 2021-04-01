@@ -1,6 +1,3 @@
-== ServiceTalk gRPC Hello World
+== ServiceTalk gRPC Deadlines
 
-"Hello World" examples of ServiceTalk gRPC.
-
-=== Maven
-Note that a `pom.xml` is included to demonstrate how to use ServiceTalk's gRPC protoc plugin with Maven.
+Extends "Hello World" example of ServiceTalk gRPC to demonstrate use of deadlines aka timeouts.

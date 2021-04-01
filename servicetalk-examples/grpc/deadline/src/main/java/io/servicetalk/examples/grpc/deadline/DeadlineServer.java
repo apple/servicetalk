@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.helloworld.Greeter.GreeterService;
-import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.examples.deadline.Greeter;
+import io.grpc.examples.deadline.HelloReply;
+import io.grpc.examples.deadline.HelloRequest;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
 /**
- * Implementation of the
- * <a herf="https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto">gRPC hello world example</a>
- * using async ServiceTalk APIS.
+ * Extends the async "Hello World!" example to demonstrate use of gRPC deadline aka timeout features.
  * <p/>
  * Start this server first and then run the {@link DeadlineClient}.
  */
@@ -45,21 +43,22 @@ public class DeadlineServer {
                 .awaitShutdown();
     }
 
-    private static final class MyGreeterService implements GreeterService {
+    private static final class MyGreeterService implements Greeter.GreeterService {
 
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
 
-             // Force a delay in the response.
+             // Force a 5 second delay in the response.
             return Single.defer(() -> {
                 try {
-                    TimeUnit.SECONDS.sleep(10);
+                    TimeUnit.SECONDS.sleep(5);
                 } catch (InterruptedException woken) {
                     Thread.interrupted();
                 }
 
-                return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-            }).subscribeShareContext();
+                return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build())
+                        .subscribeShareContext();
+            });
         }
     }
 }

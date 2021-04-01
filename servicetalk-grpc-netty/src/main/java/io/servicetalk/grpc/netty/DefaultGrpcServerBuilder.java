@@ -34,7 +34,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
+import io.servicetalk.http.utils.TimeoutFromRequest;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -194,8 +194,8 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         return httpServerBuilder;
     }
 
-    private TimeoutHttpRequesterFilter.TimeoutFromRequest grpcTimeout() {
-        return new TimeoutHttpRequesterFilter.TimeoutFromRequest() {
+    private TimeoutFromRequest grpcTimeout() {
+        return new TimeoutFromRequest() {
             /**
              * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
              *

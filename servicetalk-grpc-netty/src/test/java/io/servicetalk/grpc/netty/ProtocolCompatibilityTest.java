@@ -698,7 +698,7 @@ public class ProtocolCompatibilityTest {
     private static void testGrpcError(final CompatClient client, final TestServerContext server,
                                       final boolean withStatus, final boolean streaming, final String compression)
             throws Exception {
-        testGrpcError(client,server, withStatus, streaming, compression, GrpcStatusCode.UNKNOWN, CUSTOM_ERROR_MESSAGE);
+        testGrpcError(client, server, withStatus, streaming, compression, GrpcStatusCode.UNKNOWN, CUSTOM_ERROR_MESSAGE);
     }
 
     private static void testGrpcError(final CompatClient client, final TestServerContext server,
@@ -898,7 +898,7 @@ public class ProtocolCompatibilityTest {
 
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode,
                                                               final boolean ssl,
-                                                              final Duration timeout) {
+                                                              @Nullable final Duration timeout) {
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
                 .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
@@ -1138,7 +1138,7 @@ public class ProtocolCompatibilityTest {
         final ManagedChannel channel = builder.build();
 
         // stub is immutable and each builder step returns a new instance.
-        CompatGrpc.CompatStub stub =  CompatGrpc.newStub(channel);
+        CompatGrpc.CompatStub stub = CompatGrpc.newStub(channel);
 
         if (compression != null) {
             stub = stub.withCompression(compression);
