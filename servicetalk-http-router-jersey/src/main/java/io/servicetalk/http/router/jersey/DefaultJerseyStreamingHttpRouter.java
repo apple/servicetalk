@@ -314,7 +314,6 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 } finally {
                     if (!reentry && !stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
                         // Closed while we were in progress.
-                        state = State.CLOSED;
                         close0();
                     }
                 }
@@ -333,7 +332,6 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 } finally {
                     if (!reentry && !stateUpdater.compareAndSet(this, State.READING, State.INIT)) {
                         // Closed while we were in progress.
-                        state = State.CLOSED;
                         close0();
                     }
                 }
@@ -363,12 +361,12 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         public void close() {
             final State prevState = stateUpdater.getAndSet(this, State.PENDING_CLOSE);
             if (prevState == State.INIT) {
-                state = State.CLOSED;
                 close0();
             }
         }
 
         private void close0() {
+            state = State.CLOSED;
             super.close();
         }
     }
