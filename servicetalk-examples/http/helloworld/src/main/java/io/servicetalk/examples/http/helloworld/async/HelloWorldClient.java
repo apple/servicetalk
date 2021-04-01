@@ -16,11 +16,8 @@
 package io.servicetalk.examples.http.helloworld.async;
 
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpClients;
-import io.servicetalk.transport.api.HostAndPort;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
@@ -28,9 +25,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 public final class HelloWorldClient {
 
     public static void main(String[] args) throws Exception {
-        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress("localhost", 8080);
-        try (HttpClient client = builder.build()) {
+        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.

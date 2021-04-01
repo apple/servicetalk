@@ -30,6 +30,8 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDurationTimeout;
@@ -44,7 +46,7 @@ import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDuratio
 public final class TimeoutHttpServiceFilter
         implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
-    private final TimeoutHttpRequesterFilter.TimeoutFromRequest timeoutForRequest;
+    private final TimeoutFromRequest timeoutForRequest;
 
     @Nullable
     private final Executor timeoutExecutor;
@@ -75,8 +77,8 @@ public final class TimeoutHttpServiceFilter
      * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
      * other sources. If no timeout is to be applied then the function should return null.
      */
-    public TimeoutHttpServiceFilter(TimeoutHttpRequesterFilter.TimeoutFromRequest timeoutForRequest) {
-        this.timeoutForRequest = timeoutForRequest;
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest) {
+        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.timeoutExecutor = null;
     }
 
@@ -87,10 +89,10 @@ public final class TimeoutHttpServiceFilter
      * other sources. If no timeout is to be applied then the function should return null.
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutHttpServiceFilter(TimeoutHttpRequesterFilter.TimeoutFromRequest timeoutForRequest,
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
                                     Executor timeoutExecutor) {
-        this.timeoutForRequest = timeoutForRequest;
-        this.timeoutExecutor = timeoutExecutor;
+        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
+        this.timeoutExecutor = Objects.requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
     @Override
@@ -104,15 +106,18 @@ public final class TimeoutHttpServiceFilter
                 return Single.defer(() -> {
                     Single<StreamingHttpResponse> response = delegate().handle(ctx, request, responseFactory);
 
-                    Duration duration = timeoutForRequest.apply(request);
+                    Duration timeout = timeoutForRequest.apply(request);
 
-                    if (null != duration) {
+                    if (null != timeout) {
                         Instant beganAt = Instant.now();
                         response = (null != timeoutExecutor ?
-                                response.timeout(duration, timeoutExecutor) : response.timeout(duration))
+                                response.timeout(timeout, timeoutExecutor) : response.timeout(timeout))
                                 .map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                                    Duration remaining = duration.minus(Duration.between(beganAt, Instant.now()));
-                                    return (null != timeoutExecutor ?
+                                    Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
+                                    return (Duration.ZERO.compareTo(remaining) >= 0 ?
+                                            Publisher.failed(
+                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
+                                            : null != timeoutExecutor ?
                                             body.timeoutTerminal(remaining, timeoutExecutor)
                                             : body.timeoutTerminal(remaining))
                                             .subscribeShareContext();

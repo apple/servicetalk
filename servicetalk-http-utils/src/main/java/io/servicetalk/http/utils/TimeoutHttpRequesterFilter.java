@@ -33,7 +33,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.function.Function;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 /**
@@ -55,6 +56,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     private final boolean fullRequestResponse;
     @Nullable
     private final Executor timeoutExecutor;
+
     /**
      * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
@@ -108,7 +110,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * response metadata must arrive before the timeout.
      */
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest, final boolean fullRequestResponse) {
-        this.timeoutForRequest = timeoutForRequest;
+        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.fullRequestResponse = fullRequestResponse;
         this.timeoutExecutor = null;
     }
@@ -125,66 +127,9 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     public TimeoutHttpRequesterFilter(final TimeoutFromRequest timeoutForRequest,
                                       final boolean fullRequestResponse,
                                       final Executor timeoutExecutor) {
-        this.timeoutForRequest = timeoutForRequest;
+        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.fullRequestResponse = fullRequestResponse;
-        this.timeoutExecutor = timeoutExecutor;
-    }
-
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
-                                                  final StreamingHttpRequest request) {
-        return Single.defer(() -> {
-            Single<StreamingHttpResponse> response = delegate.request(strategy, request);
-
-            Duration timeout = timeoutForRequest.apply(request);
-            if (null == timeout) {
-                // no timeout
-                return response;
-            }
-
-            Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor != null ?
-                    response.timeout(timeout, timeoutExecutor) : response.timeout(timeout);
-
-            return fullRequestResponse ?
-                    Single.defer(() -> {
-                        Instant beganAt = Instant.now();
-                        return timeoutResponse.map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                            Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
-                            return (null != timeoutExecutor ?
-                                    body.timeoutTerminal(remaining, timeoutExecutor) : body.timeoutTerminal(remaining))
-                                    .subscribeShareContext();
-                        }))).subscribeShareContext();
-                    })
-                    : timeoutResponse;
-        });
-    }
-
-    @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        return new StreamingHttpClientFilter(client) {
-            @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
-            }
-       };
-    }
-
-    @Override
-    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
-        return new StreamingHttpConnectionFilter(connection) {
-            @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return TimeoutHttpRequesterFilter.this.request(delegate(), strategy, request);
-            }
-        };
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return timeoutForRequest.influenceStrategy(strategy);
+        this.timeoutExecutor = Objects.requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
     /**
@@ -211,25 +156,64 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
         };
     }
 
-    /**
-     * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
-     * The result is a {@link Duration} which may be null if no timeout is to be applied. If the function blocks then
-     * {@link #influenceStrategy(HttpExecutionStrategy)} should alter the execution strategy as required.
-     */
-    public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Duration>,
-                                                HttpExecutionStrategyInfluencer {
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                  final HttpExecutionStrategy strategy,
+                                                  final StreamingHttpRequest request) {
+        return Single.defer(() -> {
+            Single<StreamingHttpResponse> response = delegate.request(strategy, request);
 
-        /**
-         * Determine timeout duration, if present, from a request and/or apply default timeout durations.
-         *
-         * @param request the current request
-         * @return The timeout or null for no timeout
-         */
-        @Override
-        @Nullable
-        Duration apply(HttpRequestMetaData request);
+            Duration timeout = timeoutForRequest.apply(request);
 
-        @Override
-        HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy);
+            if (null != timeout) {
+                Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor != null ?
+                        response.timeout(timeout, timeoutExecutor) : response.timeout(timeout);
+
+                response = fullRequestResponse ?
+                        Single.defer(() -> {
+                            Instant beganAt = Instant.now();
+                            return timeoutResponse.map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
+                                Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
+                                return (Duration.ZERO.compareTo(remaining) >= 0 ?
+                                        Publisher.failed(
+                                                new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
+                                        : (null != timeoutExecutor ?
+                                        body.timeoutTerminal(remaining, timeoutExecutor)
+                                        : body.timeoutTerminal(remaining))
+                                ).subscribeShareContext();
+                            }))).subscribeShareContext();
+                        })
+                        : timeoutResponse;
+            }
+
+            return response.subscribeShareContext();
+        });
+    }
+
+    @Override
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+        return new StreamingHttpClientFilter(client) {
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
+            }
+        };
+    }
+
+    @Override
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
+        return new StreamingHttpConnectionFilter(connection) {
+            @Override
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return TimeoutHttpRequesterFilter.this.request(delegate(), strategy, request);
+            }
+        };
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return timeoutForRequest.influenceStrategy(strategy);
     }
 }

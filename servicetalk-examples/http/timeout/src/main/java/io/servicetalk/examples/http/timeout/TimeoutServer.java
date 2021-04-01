@@ -15,10 +15,12 @@
  */
 package io.servicetalk.examples.http.timeout;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -29,11 +31,22 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 public final class TimeoutServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
-                // Filter enforces that responses must complete within 2 minutes or will be cancelled.
-                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofMinutes(2)))
+                // Filter enforces that responses must complete within 30 seconds or will be cancelled.
+                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofSeconds(30)))
                 .listenAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok()
-                                .payloadBody("Hello World!", textSerializer())))
+                        Single.defer(() -> {
+                            // Force a 5 second delay in the response.
+                            try {
+                                TimeUnit.SECONDS.sleep(5);
+                            } catch (InterruptedException woken) {
+                                Thread.interrupted();
+                                // just continue
+                            }
+
+                            return succeeded(responseFactory.ok()
+                                    .payloadBody("Hello World!", textSerializer()))
+                                    .subscribeShareContext();
+                        }))
                 .awaitShutdown();
     }
 }

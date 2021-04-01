@@ -41,19 +41,31 @@ public final class TimeoutClient {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress("localhost", 8080)
                         // Filter enforces that requests made with this client must fully complete
-                        // within 2 minutes or will be cancelled.
+                        // within 10 seconds or will be cancelled.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(
-                                Duration.ofMinutes(2), true));
+                                Duration.ofSeconds(10), true));
 
         try (HttpClient client = builder.build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+            CountDownLatch responseProcessedLatch = new CountDownLatch(2);
+
+            // first request, with default timeout from HttpClient
             client.request(client.get("/sayHello"))
-                    // This request and response must complete within 1 minute or the request will be cancelled.
-                    .timeout(Duration.ofMinutes(1))
                     .afterFinally(responseProcessedLatch::countDown)
+                    .afterOnError(System.out::println)
+                    .subscribe(resp -> {
+                        System.out.println(resp.toString((name, value) -> value));
+                        System.out.println(resp.payloadBody(textDeserializer()));
+                    });
+
+            // second request, with custom timeout that is lower than the client default
+            client.request(client.get("/sayHello"))
+                    // This request and response must complete within 3 seconds or the request will be cancelled.
+                    .timeout(Duration.ofSeconds(3))
+                    .afterFinally(responseProcessedLatch::countDown)
+                    .afterOnError(System.out::println)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textDeserializer()));
