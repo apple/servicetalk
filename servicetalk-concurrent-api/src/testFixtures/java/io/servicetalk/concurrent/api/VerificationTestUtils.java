@@ -73,11 +73,15 @@ public final class VerificationTestUtils {
             } else {
                 throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
                         className(optionalWrapperClass) + " but got " + className(cause) + " caused by " +
-                        className(cause.getCause()));
+                        classNameNullable(cause.getCause()));
             }
         }
         throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
                 className(optionalWrapperClass) + " but nothing was thrown");
+    }
+
+    private static String classNameNullable(@Nullable Object o) {
+        return o == null ? "null" : className(o);
     }
 
     private static String className(Object o) {
