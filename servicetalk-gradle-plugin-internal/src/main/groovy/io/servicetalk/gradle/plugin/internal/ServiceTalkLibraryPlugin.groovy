@@ -174,8 +174,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           showStandardStreams = true
         }
 
-		ignoreFailures = true
-
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
       }
