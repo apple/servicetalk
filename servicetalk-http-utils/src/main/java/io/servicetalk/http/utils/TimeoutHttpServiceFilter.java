@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDurationTimeout;
+import static io.servicetalk.http.utils.TimeoutFromRequest.simpleDurationTimeout;
 
 /**
  * A {@link StreamingHttpServiceFilter} that adds support for request/response timeouts.
@@ -46,8 +46,15 @@ import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDuratio
 public final class TimeoutHttpServiceFilter
         implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
+    /**
+     * Establishes the timeout for a given request
+     */
     private final TimeoutFromRequest timeoutForRequest;
-
+    /**
+     * If true then timeout is for full request/response transaction otherwise only the response metadata must complete
+     * before the timeout.
+     */
+    private final boolean fullRequestResponse;
     @Nullable
     private final Executor timeoutExecutor;
 
@@ -78,8 +85,7 @@ public final class TimeoutHttpServiceFilter
      * other sources. If no timeout is to be applied then the function should return null.
      */
     public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest) {
-        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
-        this.timeoutExecutor = null;
+        this(timeoutForRequest, true);
     }
 
     /**
@@ -91,7 +97,38 @@ public final class TimeoutHttpServiceFilter
      */
     public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
                                     Executor timeoutExecutor) {
+        this(timeoutForRequest, true, timeoutExecutor);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must complete before the timeout.
+     */
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
+                                    boolean fullRequestResponse) {
         this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
+        this.fullRequestResponse = fullRequestResponse;
+        this.timeoutExecutor = null;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
+     * other sources. If no timeout is to be applied then the function should return null.
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must complete before the timeout.
+     * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
+     */
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
+                                    boolean fullRequestResponse,
+                                    Executor timeoutExecutor) {
+        this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
+        this.fullRequestResponse = fullRequestResponse;
         this.timeoutExecutor = Objects.requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
@@ -102,29 +139,7 @@ public final class TimeoutHttpServiceFilter
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-
-                return Single.defer(() -> {
-                    Single<StreamingHttpResponse> response = delegate().handle(ctx, request, responseFactory);
-
-                    Duration timeout = timeoutForRequest.apply(request);
-
-                    if (null != timeout) {
-                        Instant beganAt = Instant.now();
-                        response = (null != timeoutExecutor ?
-                                response.timeout(timeout, timeoutExecutor) : response.timeout(timeout))
-                                .map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                                    Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
-                                    return (Duration.ZERO.compareTo(remaining) >= 0 ?
-                                            Publisher.failed(
-                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
-                                            : null != timeoutExecutor ?
-                                            body.timeoutTerminal(remaining, timeoutExecutor)
-                                            : body.timeoutTerminal(remaining))
-                                            .subscribeShareContext();
-                                })));
-                    }
-                    return response.subscribeShareContext();
-                });
+                return TimeoutHttpServiceFilter.this.handle(delegate(), ctx, request, responseFactory);
             }
         };
     }
@@ -132,5 +147,44 @@ public final class TimeoutHttpServiceFilter
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         return timeoutForRequest.influenceStrategy(strategy);
+    }
+
+    private Single<StreamingHttpResponse> handle(final StreamingHttpService delegate,
+                                                 final HttpServiceContext ctx,
+                                                 final StreamingHttpRequest request,
+                                                 final StreamingHttpResponseFactory responseFactory) {
+        return Single.defer(() -> {
+            Duration timeout = timeoutForRequest.apply(request);
+            Single<StreamingHttpResponse> response;
+            if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
+                response = Single.failed(new TimeoutException("negative timeout of " + timeout.toMillis() + "ms"));
+            } else {
+                response = delegate.handle(ctx, request, responseFactory);
+
+                if (null != timeout) {
+                    Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
+                            response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
+
+                    if (fullRequestResponse) {
+                        Instant deadline = Instant.now().plus(timeout);
+                        response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
+                                Publisher.defer(() -> {
+                                    Duration remaining = Duration.between(Instant.now(), deadline);
+                                    return (Duration.ZERO.compareTo(remaining) < 0 ?
+                                            Publisher.failed(
+                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
+                                            : (null == timeoutExecutor ?
+                                            body.timeoutTerminal(remaining)
+                                            : body.timeoutTerminal(remaining, timeoutExecutor))
+                                    ).subscribeShareContext();
+                                })));
+                    } else {
+                        response = timeoutResponse;
+                    }
+                }
+            }
+
+            return response.subscribeShareContext();
+        });
     }
 }

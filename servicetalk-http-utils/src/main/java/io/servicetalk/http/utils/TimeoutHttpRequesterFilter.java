@@ -22,7 +22,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -36,6 +35,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.http.utils.TimeoutFromRequest.simpleDurationTimeout;
 
 /**
  * A filter to enable timeouts for HTTP requests. The timeout applies either the response metadata (headers) completion
@@ -53,6 +54,10 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
      * Establishes the timeout for a given request
      */
     private final TimeoutFromRequest timeoutForRequest;
+    /**
+     * If true then timeout is for full request/response transaction otherwise only the response metadata must complete
+     * before the timeout.
+     */
     private final boolean fullRequestResponse;
     @Nullable
     private final Executor timeoutExecutor;
@@ -132,57 +137,38 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
         this.timeoutExecutor = Objects.requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
-    /**
-     * Returns a function which returns the provided default duration as the timeout duration to be used for any
-     * request.
-     *
-     * @param duration timeout duration or null for no timeout
-     * @return a function to produce a timeout using specified duration
-     */
-    static TimeoutFromRequest simpleDurationTimeout(@Nullable Duration duration) {
-        return new TimeoutFromRequest() {
-            @Nullable
-            @Override
-            public Duration apply(final HttpRequestMetaData request) {
-                // the request is not considered
-                return duration;
-            }
-
-            @Override
-            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                // No influence since we do not block.
-                return strategy;
-            }
-        };
-    }
-
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            Single<StreamingHttpResponse> response = delegate.request(strategy, request);
-
             Duration timeout = timeoutForRequest.apply(request);
+            Single<StreamingHttpResponse> response;
+            if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
+                response = Single.failed(new TimeoutException("negative timeout of " + timeout.toMillis() + "ms"));
+            } else {
+                response = delegate.request(strategy, request);
 
-            if (null != timeout) {
-                Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor != null ?
-                        response.timeout(timeout, timeoutExecutor) : response.timeout(timeout);
+                if (null != timeout) {
+                    Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
+                            response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
 
-                response = fullRequestResponse ?
-                        Single.defer(() -> {
-                            Instant beganAt = Instant.now();
-                            return timeoutResponse.map(resp -> resp.transformMessageBody(body -> Publisher.defer(() -> {
-                                Duration remaining = timeout.minus(Duration.between(beganAt, Instant.now()));
-                                return (Duration.ZERO.compareTo(remaining) >= 0 ?
-                                        Publisher.failed(
-                                                new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
-                                        : (null != timeoutExecutor ?
-                                        body.timeoutTerminal(remaining, timeoutExecutor)
-                                        : body.timeoutTerminal(remaining))
-                                ).subscribeShareContext();
-                            }))).subscribeShareContext();
-                        })
-                        : timeoutResponse;
+                    if (fullRequestResponse) {
+                        Instant deadline = Instant.now().plus(timeout);
+                        response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
+                                Publisher.defer(() -> {
+                                    Duration remaining = Duration.between(Instant.now(), deadline);
+                                    return (Duration.ZERO.compareTo(remaining) < 0 ?
+                                            Publisher.failed(
+                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
+                                            : (null != timeoutExecutor ?
+                                            body.timeoutTerminal(remaining, timeoutExecutor)
+                                            : body.timeoutTerminal(remaining))
+                                    ).subscribeShareContext();
+                                })));
+                    } else {
+                        response = timeoutResponse;
+                    }
+                }
             }
 
             return response.subscribeShareContext();

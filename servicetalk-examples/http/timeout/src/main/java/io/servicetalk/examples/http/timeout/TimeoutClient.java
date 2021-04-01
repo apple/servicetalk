@@ -54,7 +54,7 @@ public final class TimeoutClient {
             // first request, with default timeout from HttpClient
             client.request(client.get("/sayHello"))
                     .afterFinally(responseProcessedLatch::countDown)
-                    .afterOnError(System.out::println)
+                    .afterOnError(System.err::println)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textDeserializer()));
@@ -65,7 +65,7 @@ public final class TimeoutClient {
                     // This request and response must complete within 3 seconds or the request will be cancelled.
                     .timeout(Duration.ofSeconds(3))
                     .afterFinally(responseProcessedLatch::countDown)
-                    .afterOnError(System.out::println)
+                    .afterOnError(System.err::println)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.payloadBody(textDeserializer()));
