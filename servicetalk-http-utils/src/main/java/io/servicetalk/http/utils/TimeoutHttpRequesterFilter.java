@@ -22,6 +22,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -35,8 +36,6 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.http.utils.TimeoutFromRequest.simpleDurationTimeout;
 
 /**
  * A filter to enable timeouts for HTTP requests. The timeout applies either the response metadata (headers) completion
@@ -137,44 +136,6 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
         this.timeoutExecutor = Objects.requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final HttpExecutionStrategy strategy,
-                                                  final StreamingHttpRequest request) {
-        return Single.defer(() -> {
-            Duration timeout = timeoutForRequest.apply(request);
-            Single<StreamingHttpResponse> response;
-            if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
-                response = Single.failed(new TimeoutException("negative timeout of " + timeout.toMillis() + "ms"));
-            } else {
-                response = delegate.request(strategy, request);
-
-                if (null != timeout) {
-                    Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
-                            response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
-
-                    if (fullRequestResponse) {
-                        Instant deadline = Instant.now().plus(timeout);
-                        response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
-                                Publisher.defer(() -> {
-                                    Duration remaining = Duration.between(Instant.now(), deadline);
-                                    return (Duration.ZERO.compareTo(remaining) < 0 ?
-                                            Publisher.failed(
-                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
-                                            : (null != timeoutExecutor ?
-                                            body.timeoutTerminal(remaining, timeoutExecutor)
-                                            : body.timeoutTerminal(remaining))
-                                    ).subscribeShareContext();
-                                })));
-                    } else {
-                        response = timeoutResponse;
-                    }
-                }
-            }
-
-            return response.subscribeShareContext();
-        });
-    }
-
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
@@ -201,5 +162,67 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         return timeoutForRequest.influenceStrategy(strategy);
+    }
+
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                  final HttpExecutionStrategy strategy,
+                                                  final StreamingHttpRequest request) {
+        return Single.defer(() -> {
+            Duration timeout = timeoutForRequest.apply(request);
+            Single<StreamingHttpResponse> response;
+            if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
+                response = Single.failed(new TimeoutException("negative timeout of " + timeout.toMillis() + "ms"));
+            } else {
+                response = delegate.request(strategy, request);
+
+                if (null != timeout) {
+                    Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
+                            response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
+
+                    if (fullRequestResponse) {
+                        Instant deadline = Instant.now().plus(timeout);
+                        response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
+                                Publisher.defer(() -> {
+                                    Duration remaining = Duration.between(Instant.now(), deadline);
+                                    return (Duration.ZERO.compareTo(remaining) <= 0 ?
+                                            Publisher.failed(
+                                                    new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
+                                            : (null != timeoutExecutor ?
+                                            body.timeoutTerminal(remaining, timeoutExecutor)
+                                            : body.timeoutTerminal(remaining))
+                                    ).subscribeShareContext();
+                                })));
+                    } else {
+                        response = timeoutResponse;
+                    }
+                }
+            }
+
+            return response.subscribeShareContext();
+        });
+    }
+
+    /**
+     * Returns a function which returns the provided default duration as the timeout duration to be used for any
+     * request.
+     *
+     * @param duration timeout duration or null for no timeout
+     * @return a function to produce a timeout using specified duration
+     */
+    static TimeoutFromRequest simpleDurationTimeout(@Nullable Duration duration) {
+        return new TimeoutFromRequest() {
+            @Nullable
+            @Override
+            public Duration apply(final HttpRequestMetaData request) {
+                // the request is not considered
+                return duration;
+            }
+
+            @Override
+            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                // No influence since we do not block.
+                return strategy;
+            }
+        };
     }
 }

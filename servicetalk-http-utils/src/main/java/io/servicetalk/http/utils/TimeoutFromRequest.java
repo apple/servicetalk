@@ -51,28 +51,4 @@ public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Durati
         // The effects of apply() are unknown so the default strategy should be used.
         return HttpExecutionStrategyInfluencer.defaultStreamingInfluencer().influenceStrategy(strategy);
     }
-
-    /**
-     * Returns a function which returns the provided default duration as the timeout duration to be used for any
-     * request.
-     *
-     * @param duration timeout duration or null for no timeout
-     * @return a function to produce a timeout using specified duration
-     */
-    static TimeoutFromRequest simpleDurationTimeout(@Nullable Duration duration) {
-        return new TimeoutFromRequest() {
-            @Nullable
-            @Override
-            public Duration apply(final HttpRequestMetaData request) {
-                // the request is not considered
-                return duration;
-            }
-
-            @Override
-            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                // No influence since we do not block.
-                return strategy;
-            }
-        };
-    }
 }

@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.utils.TimeoutFromRequest.simpleDurationTimeout;
+import static io.servicetalk.http.utils.TimeoutHttpRequesterFilter.simpleDurationTimeout;
 
 /**
  * A {@link StreamingHttpServiceFilter} that adds support for request/response timeouts.
@@ -170,7 +170,7 @@ public final class TimeoutHttpServiceFilter
                         response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
                                 Publisher.defer(() -> {
                                     Duration remaining = Duration.between(Instant.now(), deadline);
-                                    return (Duration.ZERO.compareTo(remaining) < 0 ?
+                                    return (Duration.ZERO.compareTo(remaining) <= 0 ?
                                             Publisher.failed(
                                                     new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
                                             : (null == timeoutExecutor ?

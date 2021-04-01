@@ -42,8 +42,7 @@ public final class TimeoutClient {
                 HttpClients.forSingleAddress("localhost", 8080)
                         // Filter enforces that requests made with this client must fully complete
                         // within 10 seconds or will be cancelled.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter(
-                                Duration.ofSeconds(10), true));
+                        .appendClientFilter(new TimeoutHttpRequesterFilter(Duration.ofSeconds(10), true));
 
         try (HttpClient client = builder.build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
@@ -51,7 +50,7 @@ public final class TimeoutClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(2);
 
-            // first request, with default timeout from HttpClient
+            // first request, with default timeout from HttpClient (this will succeed)
             client.request(client.get("/sayHello"))
                     .afterFinally(responseProcessedLatch::countDown)
                     .afterOnError(System.err::println)
@@ -60,7 +59,7 @@ public final class TimeoutClient {
                         System.out.println(resp.payloadBody(textDeserializer()));
                     });
 
-            // second request, with custom timeout that is lower than the client default
+            // second request, with custom timeout that is lower than the client default (this will timeout)
             client.request(client.get("/sayHello"))
                     // This request and response must complete within 3 seconds or the request will be cancelled.
                     .timeout(Duration.ofSeconds(3))
@@ -71,7 +70,7 @@ public final class TimeoutClient {
                         System.out.println(resp.payloadBody(textDeserializer()));
                     });
 
-            // block until request is complete and afterFinally() is called
+            // block until requests are complete and afterFinally() has been called
             responseProcessedLatch.await();
         }
     }
