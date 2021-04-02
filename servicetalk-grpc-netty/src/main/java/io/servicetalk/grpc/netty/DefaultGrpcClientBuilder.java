@@ -46,12 +46,14 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
@@ -90,10 +92,15 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> defaultTimeout(@Nullable Duration defaultTimeout) {
+    public GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout) {
         if (invokedBuild) {
             throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
         }
+
+        if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
+            throw new IllegalArgumentException("default timeout must be greater than zero: " + defaultTimeout);
+        }
+
         this.defaultTimeout = defaultTimeout;
         return this;
     }
@@ -211,11 +218,12 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
-        if (!invokedBuild && null != defaultTimeout) {
-            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(grpcTimeout(), true));
+        if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
+            httpClientBuilder.protocols().appendClientFilter(new TimeoutHttpRequesterFilter(grpcTimeout(), true));
         }
         invokedBuild = true;
-        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming());
+        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(),
+                null == defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ? null : defaultTimeout);
     }
 
     @Override

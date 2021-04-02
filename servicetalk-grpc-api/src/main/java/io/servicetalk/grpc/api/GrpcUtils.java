@@ -157,7 +157,7 @@ final class GrpcUtils {
     /**
      * Make a timeout header value from the specified duration.
      *
-     * @param timeout the timeout duration
+     * @param timeout the timeout {@link Duration}
      * @return The timeout header text value or null for infinite timeouts
      */
     static @Nullable CharSequence makeTimeoutHeader(Duration timeout) {

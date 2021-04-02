@@ -48,11 +48,13 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.netty.DefaultGrpcClientBuilder.GRPC_DEADLINE_KEY;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
@@ -64,6 +66,9 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
             // not compatible with gRPC.
             .executionStrategy(defaultStrategy());
 
+    /**
+     * A duration greater than zero or null for no timeout.
+     */
     @Nullable
     private Duration defaultTimeout;
     private boolean invokedBuild;
@@ -72,10 +77,15 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
     }
 
-    public GrpcServerBuilder defaultTimeout(@Nullable Duration defaultTimeout) {
+    public GrpcServerBuilder defaultTimeout(Duration defaultTimeout) {
         if (invokedBuild) {
             throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
         }
+
+        if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
+            throw new IllegalArgumentException("default timeout must be greater than zero: " + defaultTimeout);
+        }
+
         this.defaultTimeout = defaultTimeout;
         return this;
     }
@@ -187,14 +197,14 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     private HttpServerBuilder preBuild() {
-        if (!invokedBuild && null != defaultTimeout) {
-            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcTimeout()));
+        if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
+            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout()));
         }
         invokedBuild = true;
         return httpServerBuilder;
     }
 
-    private TimeoutFromRequest grpcTimeout() {
+    private TimeoutFromRequest grpcDetermineTimeout() {
         return new TimeoutFromRequest() {
             /**
              * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
@@ -228,6 +238,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
             @Override
             public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                // We don't block so have no influence on strategy.
                 return strategy;
             }
         };

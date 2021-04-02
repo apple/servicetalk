@@ -21,6 +21,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpClient;
 
+import java.time.Duration;
+import javax.annotation.Nullable;
+
 /**
  * A factory to create <a href="https://www.grpc.io">gRPC</a> client call objects for different
  * programming models.
@@ -154,10 +157,11 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      *
      * @param httpClient {@link StreamingHttpClient} to use. The returned {@link GrpcClientCallFactory} will own the
      * lifecycle of this {@link StreamingHttpClient}.
+     * @param defaultTimeout {@link Duration} of default timeout or null for no timeout
      * @return A new {@link GrpcClientCallFactory}.
      */
-    static GrpcClientCallFactory from(StreamingHttpClient httpClient) {
-        return new DefaultGrpcClientCallFactory(httpClient);
+    static GrpcClientCallFactory from(StreamingHttpClient httpClient, @Nullable Duration defaultTimeout) {
+        return new DefaultGrpcClientCallFactory(httpClient, defaultTimeout);
     }
 
     /**

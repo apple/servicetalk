@@ -891,7 +891,9 @@ public class ProtocolCompatibilityTest {
             builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                     .peerHost(serverPemHostname()).build());
         }
-        builder.defaultTimeout(timeout);
+        if (null != timeout) {
+            builder.defaultTimeout(timeout);
+        }
         List<ContentCodec> codings = serviceTalkCodingsFor(compression);
         return builder.build(new Compat.ClientFactory().supportedMessageCodings(codings));
     }
@@ -914,7 +916,9 @@ public class ProtocolCompatibilityTest {
                         return delegate().handle(ctx, req, resFactory);
                     }
                 });
-        serverBuilder.defaultTimeout(timeout);
+        if (null != timeout) {
+            serverBuilder.defaultTimeout(timeout);
+        }
         return ssl ?
                 serverBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).provider(OPENSSL).build()) :

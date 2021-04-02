@@ -40,7 +40,6 @@ import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
@@ -79,7 +78,7 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     @Override
-    public abstract GrpcClientBuilder<U, R> defaultTimeout(@Nullable Duration defaultTimeout);
+    public abstract GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
