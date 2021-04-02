@@ -28,6 +28,7 @@ import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CharSequencesTest {
 
@@ -176,6 +177,13 @@ public class CharSequencesTest {
                 CharSequences.parseLong(value), is(Long.parseLong(value)));
         assertThat("Unexpected value for AsciiBuffer representation",
                 CharSequences.parseLong(newAsciiString(value)), is(Long.parseLong(value)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "-", "+" })
+    public void parseLongSignOnly(final String value) {
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(value));
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(newAsciiString(value)));
     }
 
     @Test
