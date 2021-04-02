@@ -15,6 +15,7 @@
  */
 package io.servicetalk.buffer.api;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -165,34 +166,43 @@ public class CharSequencesTest {
             Long.MAX_VALUE - 1, Long.MAX_VALUE })
     public void parseLong(final long value) {
         final String strValue = String.valueOf(value);
-        assertThat("Unexpected value for String representation", CharSequences.parseLong(strValue), is(value));
-        assertThat("Unexpected value for AsciiBuffer representation",
+        assertThat("Unexpected result for String representation", CharSequences.parseLong(strValue), is(value));
+        assertThat("Unexpected result for AsciiBuffer representation",
                 CharSequences.parseLong(newAsciiString(strValue)), is(value));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "-0", "+0", "+1", "+10" })
+    @ValueSource(strings = { "-0", "+0", "+1", "+10", "000" })
     public void parseLongSigned(final String value) {
-        assertThat("Unexpected value for String representation",
+        assertThat("Unexpected result for String representation",
                 CharSequences.parseLong(value), is(Long.parseLong(value)));
-        assertThat("Unexpected value for AsciiBuffer representation",
+        assertThat("Unexpected result for AsciiBuffer representation",
                 CharSequences.parseLong(newAsciiString(value)), is(Long.parseLong(value)));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "-", "+" })
-    public void parseLongSignOnly(final String value) {
-        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(value));
-        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(newAsciiString(value)));
+    @ValueSource(strings = { "", "-", "+", "a", "0+", "0-", "--0", "++0", "0a0" })
+    public void parseLongFailure(final String value) {
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(value),
+                "Unexpected result for String representation");
+        assertThrows(NumberFormatException.class, () -> CharSequences.parseLong(newAsciiString(value)),
+                "Unexpected result for AsciiBuffer representation");
     }
 
     @Test
+    public void parseLongFromSubSequence() {
+        String value = "text42text";
+        assertThat("Unexpected result for String representation",
+                CharSequences.parseLong(value.subSequence(4, 6)), is(42L));
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(value).subSequence(4, 6)), is(42L));
+    }
+
+    @Test
+    @Disabled("ReadOnlyByteBuffer#slice() does not account for the slice offset")
     public void parseLongFromSlice() {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
-        // FIXME: ReadOnlyByteBuffer#slice() does not account for the slice offset
-        // assertThat("Unexpected value for AsciiBuffer representation",
-        //         CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
-        assertThat("Unexpected value for AsciiBuffer representation",
-                CharSequences.parseLong(newAsciiString(buffer).subSequence(4, 6)), is(42L));
+        assertThat("Unexpected result for AsciiBuffer representation",
+                CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
     }
 }
