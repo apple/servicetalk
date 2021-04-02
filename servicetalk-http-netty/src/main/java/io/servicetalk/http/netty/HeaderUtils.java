@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -53,7 +54,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static java.lang.Long.parseLong;
 
 final class HeaderUtils {
     static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
@@ -305,7 +305,7 @@ final class HeaderUtils {
         }
         final long value;
         try {   // optimistically assume the value can be parsed to skip indexOf check
-             value = parseLong(firstValue.toString());
+             value = parseLong(firstValue);
         } catch (NumberFormatException e) {
             if (CharSequences.indexOf(firstValue, ',', 0) >= 0) {
                 throw multipleCL(firstValue, null);
