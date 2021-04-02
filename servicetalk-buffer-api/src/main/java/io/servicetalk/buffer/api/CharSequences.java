@@ -443,7 +443,8 @@ public final class CharSequences {
     /**
      * Parses the {@link CharSequence} argument as a signed decimal {@code long}.
      *
-     * <p> This is the equivalent of {@link Long#parseLong(String)} that does not require to {@link String} conversion.
+     * <p> This is the equivalent of {@link Long#parseLong(String)} that does not require to
+     * {@link CharSequence#toString()} conversion.
      *
      * @param cs a {@code CharSequence} containing the {@code long} value to be parsed
      * @return {code long} representation of the passed {@link CharSequence}
