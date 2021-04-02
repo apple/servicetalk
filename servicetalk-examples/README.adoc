@@ -10,6 +10,7 @@ as shown here:
 ----
 implementation project(":servicetalk-annotations")
 implementation project(":servicetalk-http-netty")
+implementation project(":servicetalk-http-utils")
 ----
 
 In actual user projects, ServiceTalk modules would be referenced via standard artifacts coordinates,
@@ -23,4 +24,5 @@ implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
 // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
 implementation "io.servicetalk:servicetalk-annotations"
 implementation "io.servicetalk:servicetalk-http-netty"
+implementation "io.servicetalk:servicetalk-http-utils"
 ----

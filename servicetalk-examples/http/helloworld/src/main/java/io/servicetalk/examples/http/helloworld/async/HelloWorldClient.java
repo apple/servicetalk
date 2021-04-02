@@ -37,6 +37,7 @@ public final class HelloWorldClient {
                         System.out.println(resp.payloadBody(textDeserializer()));
                     });
 
+            // block until request is complete and afterFinally() is called
             responseProcessedLatch.await();
         }
     }
