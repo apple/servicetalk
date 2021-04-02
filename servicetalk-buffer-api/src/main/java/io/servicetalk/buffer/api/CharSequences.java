@@ -38,6 +38,7 @@ import static io.servicetalk.buffer.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.buffer.api.AsciiBuffer.hashCodeAscii;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.lang.Character.toUpperCase;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -46,6 +47,9 @@ import static java.util.Objects.requireNonNull;
  * This class can work with 8-bit {@link CharSequence} instances only, any other input will have undefined behavior.
  */
 public final class CharSequences {
+
+    private static final int RADIX_10 = 10;
+    private static final long PARSE_LONG_MIN = Long.MIN_VALUE / RADIX_10;
 
     private CharSequences() {
         // No instances
@@ -450,29 +454,33 @@ public final class CharSequences {
         if (length <= 0) {
             throw new NumberFormatException("Illegal length of the CharSequence: " + length + " (expected > 0)");
         }
-        return parseLong(cs, 0, length, 10);
+
+        if (isAsciiString(cs)) {
+            return parseLong(((AsciiBuffer) cs).unwrap());
+        }
+
+        return parseLong(cs, length);
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static long parseLong(final CharSequence cs, final int start, final int end, final int radix) {
-        int i = start;
+    private static long parseLong(final CharSequence cs, final int length) {
+        int i = 0;
         final char firstCh = cs.charAt(i);
         final boolean negative = firstCh == '-';
-        if ((negative || firstCh == '+') && ++i == end) {
+        if ((negative || firstCh == '+') && ++i == length) {
             throw illegalInput(cs);
         }
 
-        final long min = Long.MIN_VALUE / radix;
         long result = 0;
-        while (i < end) {
-            final int digit = Character.digit(cs.charAt(i++), radix);
+        while (i < length) {
+            final int digit = Character.digit(cs.charAt(i++), RADIX_10);
             if (digit < 0) {
                 throw illegalInput(cs);
             }
-            if (min > result) {
+            if (PARSE_LONG_MIN > result) {
                 throw illegalInput(cs);
             }
-            long next = result * radix - digit;
+            long next = result * RADIX_10 - digit;
             if (next > result) {
                 throw illegalInput(cs);
             }
@@ -487,7 +495,68 @@ public final class CharSequences {
         return result;
     }
 
+    private static long parseLong(final Buffer buffer) {
+        final ParseLongByteProcessor bp = new ParseLongByteProcessor(buffer);
+        buffer.forEachByte(bp);
+        return bp.result();
+    }
+
+    private static final class ParseLongByteProcessor implements ByteProcessor {
+
+        private final Buffer buffer;
+        private long result;
+        private boolean negative;
+        private boolean sign;
+
+        ParseLongByteProcessor(final Buffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean process(final byte value) {
+            if (!sign) {
+                sign = true;
+                negative = value == '-';
+                if ((negative || value == '+')) {
+                    if (buffer.readableBytes() == 1) {
+                        throw illegalInput(buffer);
+                    } else {
+                        return true;
+                    }
+                }
+            }
+
+            final int digit = value - '0';
+            if (digit < 0 || digit > 9) {
+                throw illegalInput(buffer);
+            }
+            if (PARSE_LONG_MIN > result) {
+                throw illegalInput(buffer);
+            }
+            long next = result * RADIX_10 - digit;
+            if (next > result) {
+                throw illegalInput(buffer);
+            }
+            result = next;
+            return true;
+        }
+
+        long result() {
+            if (!negative) {
+                result = -result;
+                if (result < 0) {
+                    throw illegalInput(buffer);
+                }
+            }
+            return result;
+        }
+    }
+
     private static NumberFormatException illegalInput(final CharSequence cs) {
         return new NumberFormatException("Illegal input: \"" + cs + "\"");
+    }
+
+    private static NumberFormatException illegalInput(final Buffer buffer) {
+        return new NumberFormatException("Illegal input: \"" + buffer.toString(US_ASCII) + "\"");
     }
 }
