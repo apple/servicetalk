@@ -287,18 +287,29 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
             super(baseUri, requestUri, httpMethod, securityContext, propertiesDelegate, configuration);
         }
 
+        /**
+         * The following overloads are overriden because the inherited ones call directly {@code super}
+         * {@link ContainerRequest#readEntity(Class, Type, Annotation[], PropertiesDelegate)} thus our
+         * implementation of {@link ContainerRequest#readEntity(Class, Type, Annotation[], PropertiesDelegate)} doesn't
+         * get invoked when not called directly.
+         */
+
+        @Override
         public <T> T readEntity(final Class<T> rawType) {
             return readEntity(rawType, getPropertiesDelegate());
         }
 
+        @Override
         public <T> T readEntity(final Class<T> rawType, final Annotation[] annotations) {
             return readEntity(rawType, annotations, getPropertiesDelegate());
         }
 
+        @Override
         public <T> T readEntity(final Class<T> rawType, final Type type) {
             return readEntity(rawType, type, getPropertiesDelegate());
         }
 
+        @Override
         public <T> T readEntity(final Class<T> rawType, final Type type, final Annotation[] annotations) {
             return readEntity(rawType, type, annotations, getPropertiesDelegate());
         }

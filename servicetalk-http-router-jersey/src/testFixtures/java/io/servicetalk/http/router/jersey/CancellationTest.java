@@ -247,13 +247,10 @@ public class CancellationTest {
 
                 @Override
                 public void onError(final Throwable t) {
-                    if (t instanceof IllegalStateException) {
-                        // Ignore racy cancellation, it's ordered safely.
-                        cancelledLatch.countDown();
-                        return;
+                    // Ignore racy cancellation, it's ordered safely.
+                    if (!(t instanceof IllegalStateException)) {
+                        errorRef.compareAndSet(null, t);
                     }
-
-                    errorRef.compareAndSet(null, t);
                     cancelledLatch.countDown();
                 }
             });
