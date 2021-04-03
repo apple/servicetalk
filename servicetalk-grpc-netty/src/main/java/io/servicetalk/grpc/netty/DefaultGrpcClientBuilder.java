@@ -57,7 +57,7 @@ import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
-    static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
+    private static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
     /**
      * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
      * included in the request can be calculated.
@@ -72,7 +72,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     /**
      * Chronounits of timeout units
      */
-    private static final ChronoUnit[] TIMEOUT_CHRONOUNITS = new ChronoUnit[] {
+    private static final ChronoUnit[] TIMEOUT_CHRONOUNITS = {
             ChronoUnit.NANOS,
             ChronoUnit.MICROS,
             ChronoUnit.MILLIS,
@@ -98,7 +98,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         }
 
         if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
-            throw new IllegalArgumentException("default timeout must be greater than zero: " + defaultTimeout);
+            throw new IllegalArgumentException("defaultTimeout: " + defaultTimeout + " (expected > 0)");
         }
 
         this.defaultTimeout = defaultTimeout;

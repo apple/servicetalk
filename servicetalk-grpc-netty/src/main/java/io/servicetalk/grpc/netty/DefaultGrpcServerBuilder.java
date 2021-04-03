@@ -44,6 +44,9 @@ import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.SocketOption;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,6 +62,8 @@ import static io.servicetalk.grpc.netty.DefaultGrpcClientBuilder.GRPC_DEADLINE_K
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
 
     private final HttpServerBuilder httpServerBuilder;
     private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
@@ -83,7 +88,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         }
 
         if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
-            throw new IllegalArgumentException("default timeout must be greater than zero: " + defaultTimeout);
+            throw new IllegalArgumentException("defaultTimeout: " + defaultTimeout + " (expected > 0)");
         }
 
         this.defaultTimeout = defaultTimeout;
@@ -227,6 +232,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
                     try {
                         AsyncContext.put(GRPC_DEADLINE_KEY, Instant.now().plus(duration));
                     } catch (UnsupportedOperationException ignored) {
+                        LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");
                         // ignored -- async context has probably been disabled.
                         // Timeout propagation will be partially disabled.
                         // cancel()s will still happen which will accomplish the same effect though less efficiently

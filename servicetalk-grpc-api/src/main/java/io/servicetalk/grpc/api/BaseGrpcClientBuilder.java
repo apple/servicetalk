@@ -101,7 +101,7 @@ interface BaseGrpcClientBuilder<U, R> {
     BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Set default timeout during which gRCPC calls are expected to complete.
+     * Set default timeout during which gRPC calls are expected to complete.
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.

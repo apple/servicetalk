@@ -27,9 +27,12 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Extends the async "Hello World!" example to demonstrate use of gRPC deadline aka timeout features.
+ * Extends the async "Hello World!" example to demonstrate use of
+ * <a href="https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines">gRPC deadlines</a> aka timeout feature.
  * <p/>
  * Start the {@link DeadlineServer} first.
+ *
+ * @see <a href="https://grpc.io/blog/deadlines/">gRPC and Deadlines</a>
  */
 public final class DeadlineClient {
 

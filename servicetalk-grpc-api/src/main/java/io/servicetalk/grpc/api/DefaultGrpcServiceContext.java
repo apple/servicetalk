@@ -29,6 +29,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.grpc.api.DefaultGrpcClientMetadata.INFINITE_TIMEOUT;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 

@@ -171,11 +171,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                         serializationProvider.deserializerFor(
                                 readGrpcMessageEncoding(response, supportedCodings), responseClass));
             } catch (Exception all) {
-                if (all instanceof RuntimeException) {
-                    throw all;
-                } else {
-                    throw toGrpcException(all);
-                }
+                throw toGrpcException(all);
             }
         };
     }
@@ -196,12 +192,16 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     .serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
             final GrpcExecutionStrategy strategy = metadata.strategy();
-            final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
-                    client.request(strategy, httpRequest);
-            return validateResponseAndGetPayload(response.toStreamingResponse(),
-                    serializationProvider.deserializerFor(
-                            readGrpcMessageEncoding(response, supportedCodings), responseClass))
-                    .onErrorResume(t -> Publisher.failed(toGrpcException(t))).toIterable();
+            try {
+                final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
+                        client.request(strategy, httpRequest);
+                return validateResponseAndGetPayload(response.toStreamingResponse(),
+                        serializationProvider.deserializerFor(
+                                readGrpcMessageEncoding(response, supportedCodings), responseClass))
+                        .onErrorResume(t -> Publisher.failed(toGrpcException(t))).toIterable();
+            } catch (Exception all) {
+                throw toGrpcException(all);
+            }
         };
     }
 

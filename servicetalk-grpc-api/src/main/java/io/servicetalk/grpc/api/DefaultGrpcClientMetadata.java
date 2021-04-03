@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.time.Duration;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
@@ -26,6 +27,11 @@ import static io.servicetalk.encoding.api.Identity.identity;
  * Default implementation for {@link DefaultGrpcClientMetadata}.
  */
 public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements GrpcClientMetadata {
+
+    /**
+     * No timeout or infinite timeout
+     */
+    static final Duration INFINITE_TIMEOUT = java.time.Duration.ofSeconds(Long.MAX_VALUE, 999_999_999);
 
     @Nullable
     private final GrpcExecutionStrategy strategy;
@@ -141,7 +147,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
                                         final Duration timeout) {
         super(path, timeout);
         this.strategy = strategy;
-        this.requestEncoding = requestEncoding;
+        this.requestEncoding = Objects.requireNonNull(requestEncoding, "requestEncoding");
     }
 
     @Override

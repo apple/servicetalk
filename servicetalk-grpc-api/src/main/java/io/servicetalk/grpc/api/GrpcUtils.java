@@ -83,6 +83,13 @@ final class GrpcUtils {
             new ConcurrentHashMap<>();
     private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
 
+    /**
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
+     * value to be 8 or fewer integer digits.
+     */
+    static final long EIGHT_NINES = 99_999_999L;
+
+
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
                 @Override
@@ -119,7 +126,7 @@ final class GrpcUtils {
     /**
      * Conversions between time units for gRPC timeout
      */
-    private static final LongUnaryOperator[] CONVERTERS = new LongUnaryOperator[] {
+    private static final LongUnaryOperator[] CONVERTERS = {
             TimeUnit.NANOSECONDS::toMicros,
             TimeUnit.MICROSECONDS::toMillis,
             TimeUnit.MILLISECONDS::toSeconds,
@@ -166,11 +173,11 @@ final class GrpcUtils {
             // cannot overflow as we have already checked against safe maximum
             long timeoutValue = timeout.isNegative() ? 0 : timeout.toNanos();
             int units = 0;
-            while (timeoutValue > GrpcMetadata.EIGHT_NINES) {
+            while (timeoutValue > EIGHT_NINES) {
                 timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
                 units++; // cannot go past end of units array as we have already range checked
             }
-            return Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units];
+            return newAsciiString(Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units]);
         } else {
             return null;
         }
@@ -248,10 +255,10 @@ final class GrpcUtils {
                     msgEncException.encoding() + "' not supported ");
             setStatus(trailers, status, null, allocator);
         } else if (cause instanceof CancellationException) {
-            GrpcStatus status = new GrpcStatus(GrpcStatusCode.CANCELLED, cause, "Cancelled");
+            GrpcStatus status = new GrpcStatus(GrpcStatusCode.CANCELLED, cause, null);
             setStatus(trailers, status, null, allocator);
         } else if (cause instanceof TimeoutException) {
-            GrpcStatus status = new GrpcStatus(GrpcStatusCode.DEADLINE_EXCEEDED, cause, "Deadline exceeded");
+            GrpcStatus status = new GrpcStatus(GrpcStatusCode.DEADLINE_EXCEEDED, cause, null);
             setStatus(trailers, status, null, allocator);
         } else {
             setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);

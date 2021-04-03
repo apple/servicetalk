@@ -87,7 +87,8 @@ Extends the async "Hello World" example to demonstrate compression of the respon
 [#Deadlines]
 == Deadlines
 
-Extends the async "Hello World" example to demonstrate gRPC deadlines (aka timeout).
+Extends the async "Hello World" example to demonstrate
+https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines[gRPC deadlines] (aka timeout).
 
 * link:{source-root}/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineServer.java[DeadlineServer]
  – Waits for hello request from the client and, after 5 seconds of delay, responds with a greeting response.

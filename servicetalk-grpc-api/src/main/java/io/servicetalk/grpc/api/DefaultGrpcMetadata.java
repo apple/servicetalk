@@ -30,8 +30,11 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     private final Duration timeout;
 
     DefaultGrpcMetadata(final String path, final Duration timeout) {
-        this.path = requireNonNull(path);
-        this.timeout = requireNonNull(timeout);
+        this.path = requireNonNull(path, "path");
+        if (Duration.ZERO.compareTo(requireNonNull(timeout, "timeout")) >= 0) {
+            throw new IllegalArgumentException("timeout: " + timeout + " (expected > 0)");
+        }
+        this.timeout = timeout;
     }
 
     @Override
