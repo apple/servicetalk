@@ -71,12 +71,12 @@ public final class VerificationTestUtils {
             } else if (optionalWrapperClass.isInstance(cause) && expectedClass.isInstance(cause.getCause())) {
                 return (T1) cause.getCause();
             } else {
-                throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
+                throw new AssertionError("expected " + className(expectedClass) + " optionally wrapped by " +
                         className(optionalWrapperClass) + " but got " + className(cause) + " caused by " +
                         classNameNullable(cause.getCause()));
             }
         }
-        throw new AssertionError("expected " + className(expectedClass) + " optionally caused by " +
+        throw new AssertionError("expected " + className(expectedClass) + " optionally wrapped by " +
                 className(optionalWrapperClass) + " but nothing was thrown");
     }
 
