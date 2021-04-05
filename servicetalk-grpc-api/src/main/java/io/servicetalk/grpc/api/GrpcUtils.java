@@ -37,6 +37,8 @@ import io.servicetalk.http.api.TrailersTransformer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Base64;
@@ -68,6 +70,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
+
     // TODO could/should add "+proto"
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
     private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
@@ -85,10 +89,9 @@ final class GrpcUtils {
 
     /**
      * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
-     * value to be 8 or fewer integer digits.
+     * value to be 8 or fewer ASCII integer digits.
      */
     static final long EIGHT_NINES = 99_999_999L;
-
 
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
@@ -106,6 +109,7 @@ final class GrpcUtils {
                     if (cause instanceof CancellationException) {
                         Exception grpc = GrpcStatusException.of(Status.newBuilder()
                                 .setCode(GrpcStatusCode.CANCELLED.value()).build());
+                        // include the cause so that caller can determine who cancelled request
                         grpc.initCause(cause);
                         throw grpc;
                     }
@@ -114,7 +118,10 @@ final class GrpcUtils {
                     if (cause instanceof TimeoutException) {
                         Exception grpc = GrpcStatusException.of(Status.newBuilder()
                                 .setCode(GrpcStatusCode.DEADLINE_EXCEEDED.value()).build());
-                        grpc.initCause(cause);
+                        // omit the cause unless logging has been configured at TRACE
+                        if (LOGGER.isTraceEnabled()) {
+                            grpc.initCause(cause);
+                        }
                         throw grpc;
                     }
 

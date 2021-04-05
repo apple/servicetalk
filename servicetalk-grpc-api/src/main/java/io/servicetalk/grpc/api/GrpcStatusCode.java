@@ -25,6 +25,7 @@ import static java.util.Collections.unmodifiableMap;
  * Standard gRPC status codes.
  *
  * @see <a href="https://github.com/grpc/grpc/blob/master/doc/statuscodes.md">Official gRPC status codes</a>
+ * @see <a href="https://grpc.github.io/grpc/core/md_doc_statuscodes.html">Status codes and their use in gRPC</a>
  */
 public enum GrpcStatusCode {
     /** Successful. */

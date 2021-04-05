@@ -57,6 +57,10 @@ import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
+    /**
+     * gRPC protocol HTTP header used for timeout per
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     */
     private static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
     /**
      * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
@@ -82,6 +86,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     };
 
     @Nullable
+
     private Duration defaultTimeout;
     private boolean invokedBuild;
 
@@ -219,11 +224,12 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
-            httpClientBuilder.protocols().appendClientFilter(new TimeoutHttpRequesterFilter(grpcTimeout(), true));
+            httpClientBuilder.protocols().appendClientFilter(
+                    new TimeoutHttpRequesterFilter(grpcTimeout(defaultTimeout), true));
         }
         invokedBuild = true;
         return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(),
-                null == defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ? null : defaultTimeout);
+                null == defaultTimeout || GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ? null : defaultTimeout);
     }
 
     @Override
@@ -237,7 +243,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         httpClientBuilder.appendClientFilter(predicate, factory);
     }
 
-    private TimeoutFromRequest grpcTimeout() {
+    private static TimeoutFromRequest grpcTimeout(Duration defaultTimeout) {
 
         return new TimeoutFromRequest() {
             /**
@@ -246,9 +252,9 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
              *
              * @param request The HTTP request to be used as source of the GRPC timeout header
              * @return The non-negative timeout duration which may be null
+             * @throws IllegalArgumentException if the timeout value is malformed
              */
-            @Nullable
-            public Duration apply(HttpRequestMetaData request) {
+            public @Nullable Duration apply(HttpRequestMetaData request) {
                 Duration duration = readTimeoutHeader(request);
 
                 if (null != duration) {
@@ -268,6 +274,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
             @Override
             public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+                // we do not block and have no influence on strategy
                 return strategy;
             }
         };
@@ -277,50 +284,52 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
      * Extract the timeout duration from the HTTP headers if present.
      *
      * @param request The HTTP request to be used as source of the GRPC timeout header
-     * @return The non-negative timeout duration which may null if not present or malformed
+     * @return The non-negative timeout duration which may null if not present
+     * @throws IllegalArgumentException if the timeout value is malformed
      */
-    @Nullable
-    static Duration readTimeoutHeader(HttpRequestMetaData request) {
-        return parseTimeoutHeader(request.headers().get(GRPC_TIMEOUT_HEADER_KEY));
+    static @Nullable Duration readTimeoutHeader(HttpRequestMetaData request) {
+        CharSequence grpcTimeoutValue = request.headers().get(GRPC_TIMEOUT_HEADER_KEY);
+        return null == grpcTimeoutValue ? null : parseTimeoutHeader(grpcTimeoutValue);
     }
 
     /**
-     * Parse a gRPC HTTP timeout header value as a duration if present.
+     * Parse a gRPC HTTP timeout header grpcTimeoutValue as a duration.
      *
-     * @param value the text value of {@link #GRPC_TIMEOUT_HEADER_KEY} header to be parsed to a timeout duration or
-     * null if header was present
-     * @return The non-negative timeout duration which may null if not present or malformed
+     * @param grpcTimeoutValue the text value of {@link #GRPC_TIMEOUT_HEADER_KEY} header to be parsed to a timeout
+     * duration
+     * @return The non-negative timeout duration
+     * @throws IllegalArgumentException if the timeout value is malformed
      */
-    static @Nullable Duration parseTimeoutHeader(@Nullable CharSequence value) {
-        if (null != value && value.length() >= 2 && value.length() <= 9) {
-            char unitChar = value.charAt(value.length() - 1);
-            int unitsIdx = 0;
-            while (unitsIdx < TIMEOUT_UNIT_CHARS.length && unitChar != TIMEOUT_UNIT_CHARS[unitsIdx]) {
-                unitsIdx++;
-            }
-            if (unitsIdx == TIMEOUT_UNIT_CHARS.length) {
-                // Unrecognized units or malformed header
-                assert false : "Bad unit " + unitChar;
-                return null;
-            }
-
-            // parse number
-            long runningTotal = 0;
-            for (int digitIdx = 0; digitIdx < value.length() - 1; digitIdx++) {
-                char digitChar = value.charAt(digitIdx);
-                if (digitChar < '0' || digitChar > '9') {
-                    // Bad digit
-                    assert false : "Bad digit: " + digitChar;
-                    return null;
-                } else {
-                    runningTotal = runningTotal * 10L + (long) (digitChar - '0');
-                }
-            }
-
-            return Duration.of(runningTotal, TIMEOUT_CHRONOUNITS[unitsIdx]);
-        } else {
-            assert null == value : "bad timeout value: " + value;
-            return null;
+    static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) {
+        if (grpcTimeoutValue.length() >= 2 && grpcTimeoutValue.length() <= 9) {
+            throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                    " (expected at least 2 and less than 10 characters)");
         }
+
+        char unitChar = grpcTimeoutValue.charAt(grpcTimeoutValue.length() - 1);
+        int unitsIdx = 0;
+        while (unitsIdx < TIMEOUT_UNIT_CHARS.length && unitChar != TIMEOUT_UNIT_CHARS[unitsIdx]) {
+            unitsIdx++;
+        }
+        if (TIMEOUT_UNIT_CHARS.length == unitsIdx) {
+            // Unrecognized units or malformed header
+            throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                    " (Bad unit '" + unitChar + "')");
+        }
+
+        // parse number
+        long runningTotal = 0;
+        for (int digitIdx = 0; digitIdx < grpcTimeoutValue.length() - 1; digitIdx++) {
+            char digitChar = grpcTimeoutValue.charAt(digitIdx);
+            if (digitChar < '0' || digitChar > '9') {
+                // Bad digit
+                throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                        " (Bad unit '" + digitChar + "')");
+            } else {
+                runningTotal = runningTotal * 10L + (long) (digitChar - '0');
+            }
+        }
+
+        return Duration.of(runningTotal, TIMEOUT_CHRONOUNITS[unitsIdx]);
     }
 }
