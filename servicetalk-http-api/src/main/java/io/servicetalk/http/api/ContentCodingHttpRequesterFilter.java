@@ -126,7 +126,7 @@ public final class ContentCodingHttpRequesterFilter
             builder.append(enc.name());
         }
 
-        return builder.length() > 0 ? newAsciiString(builder.toString()) : null;
+        return builder.length() > 0 ? newAsciiString(builder) : null;
     }
 
     private static void encodePayloadContentIfAvailable(final StreamingHttpRequest request,
