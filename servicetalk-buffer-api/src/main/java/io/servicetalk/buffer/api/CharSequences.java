@@ -59,10 +59,10 @@ public final class CharSequences {
      * Create a new {@link CharSequence} from the specified {@code input}, supporting only 8-bit ASCII characters, and
      * with a case-insensitive {@code hashCode}.
      *
-     * @param input a string containing only 8-bit ASCII characters.
+     * @param input a character sequence containing only 8-bit ASCII characters.
      * @return a {@link CharSequence}
      */
-    public static CharSequence newAsciiString(final String input) {
+    public static CharSequence newAsciiString(final CharSequence input) {
         return newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(input));
     }
 
@@ -89,7 +89,7 @@ public final class CharSequences {
 
     /**
      * Check if the provided {@link CharSequence} is an AsciiString,
-     * result of a call to {@link #newAsciiString(String)}.
+     * result of a call to {@link #newAsciiString(CharSequence)}.
      *
      * @param sequence The {@link CharSequence} to check.
      * @return {@code true} if the check passes.

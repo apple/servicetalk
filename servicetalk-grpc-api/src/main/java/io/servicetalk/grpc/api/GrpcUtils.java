@@ -352,7 +352,7 @@ final class GrpcUtils {
 
         if (builder.length() > CONTENT_ENCODING_SEPARATOR.length()) {
             builder.setLength(builder.length() - CONTENT_ENCODING_SEPARATOR.length());
-            return newAsciiString(builder.toString());
+            return newAsciiString(builder);
         }
 
         return null;
