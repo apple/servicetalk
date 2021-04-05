@@ -44,14 +44,19 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
     private final UserDataLoggerConfig wireLoggerConfig;
 
     protected AbstractReadOnlyTcpConfig(final AbstractTcpConfig<SecurityConfig> from) {
-        options = from.options() == null ? emptyMap() : unmodifiableMap(new HashMap<>(from.options()));
+        options = nonNullOptions(from.options());
         idleTimeoutMs = from.idleTimeoutMs();
         flushStrategy = from.flushStrategy();
         wireLoggerConfig = from.wireLoggerConfig();
     }
 
+    @SuppressWarnings("rawtypes")
+    static Map<ChannelOption, Object> nonNullOptions(@Nullable Map<ChannelOption, Object> options) {
+        return options == null ? emptyMap() : unmodifiableMap(new HashMap<>(options));
+    }
+
     /**
-     * Returns the {@link ChannelOption}s for all channels.
+     * Returns the {@link ChannelOption}s for accepted channels.
      *
      * @return Unmodifiable map of options
      */

@@ -70,11 +70,16 @@ public abstract class HttpServerBuilder {
     /**
      * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
+     * @deprecated Use {@link #listenSocketOption(SocketOption, Object)} with key
+     * {@link ServiceTalkSocketOptions#SO_BACKLOG}.
      * @param backlog the backlog to use when accepting connections.
      * @return {@code this}.
      */
-    public abstract HttpServerBuilder backlog(int backlog);
+    @Deprecated
+    public HttpServerBuilder backlog(int backlog) {
+        listenSocketOption(ServiceTalkSocketOptions.SO_BACKLOG, backlog);
+        return this;
+    }
 
     /**
      * Set the SSL/TLS configuration.
@@ -94,7 +99,7 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder sslConfig(ServerSslConfig defaultConfig, Map<String, ServerSslConfig> sniMap);
 
     /**
-     * Adds a {@link SocketOption} that is applied.
+     * Adds a {@link SocketOption} that is applied to connected/accepted socket channels.
      *
      * @param <T> the type of the value.
      * @param option the option to apply.
@@ -104,6 +109,17 @@ public abstract class HttpServerBuilder {
      * @see ServiceTalkSocketOptions
      */
     public abstract <T> HttpServerBuilder socketOption(SocketOption<T> option, T value);
+
+    /**
+     * Adds a {@link SocketOption} that is applied to the server socket channel which listens/accepts socket channels.
+     * @param <T> the type of the value.
+     * @param option the option to apply.
+     * @param value the value.
+     * @return this.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
+     */
+    public abstract <T> HttpServerBuilder listenSocketOption(SocketOption<T> option, T value);
 
     /**
      * Enables wire-logging for this server.

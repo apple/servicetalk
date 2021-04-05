@@ -171,10 +171,13 @@ public final class TcpServerBinder {
             ChannelOption<Object> option = opt.getKey();
             bs.childOption(option, opt.getValue());
         }
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.listenOptions().entrySet()) {
+            @SuppressWarnings("unchecked")
+            ChannelOption<Object> option = opt.getKey();
+            bs.option(option, opt.getValue());
+        }
 
         bs.childOption(ChannelOption.AUTO_READ, autoRead);
-
-        bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         ByteBufAllocator byteBufAllocator = POOLED_ALLOCATOR;
