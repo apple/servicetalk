@@ -20,6 +20,7 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -37,6 +38,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -52,6 +54,17 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
  */
 public abstract class GrpcClientBuilder<U, R>
         implements SingleAddressGrpcClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    /**
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
+     * included in the request can be calculated.
+     */
+    static final AsyncContextMap.Key<Instant> PKG_GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
+
+    /**
+     * for sub-classes in other packages.
+     */
+    protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = PKG_GRPC_DEADLINE_KEY;
+
     private boolean appendedCatchAllFilter;
 
     @Override

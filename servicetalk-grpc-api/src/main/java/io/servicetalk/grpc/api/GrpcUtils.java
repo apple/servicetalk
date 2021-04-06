@@ -57,6 +57,8 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
+import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
@@ -107,22 +109,15 @@ final class GrpcUtils {
 
                     // local cancel
                     if (cause instanceof CancellationException) {
-                        Exception grpc = GrpcStatusException.of(Status.newBuilder()
-                                .setCode(GrpcStatusCode.CANCELLED.value()).build());
                         // include the cause so that caller can determine who cancelled request
-                        grpc.initCause(cause);
-                        throw grpc;
+                        throw new GrpcStatusException(new GrpcStatus(CANCELLED, cause), () -> null);
                     }
 
                     // local timeout
                     if (cause instanceof TimeoutException) {
-                        Exception grpc = GrpcStatusException.of(Status.newBuilder()
-                                .setCode(GrpcStatusCode.DEADLINE_EXCEEDED.value()).build());
                         // omit the cause unless logging has been configured at TRACE
-                        if (LOGGER.isTraceEnabled()) {
-                            grpc.initCause(cause);
-                        }
-                        throw grpc;
+                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED,
+                                LOGGER.isTraceEnabled() ? cause : null), () -> null);
                     }
 
                     throw cause;
@@ -256,20 +251,36 @@ final class GrpcUtils {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
             setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
-        } else if (cause instanceof MessageEncodingException) {
-            MessageEncodingException msgEncException = (MessageEncodingException) cause;
-            GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
-                    msgEncException.encoding() + "' not supported ");
-            setStatus(trailers, status, null, allocator);
-        } else if (cause instanceof CancellationException) {
-            GrpcStatus status = new GrpcStatus(GrpcStatusCode.CANCELLED, cause, null);
-            setStatus(trailers, status, null, allocator);
-        } else if (cause instanceof TimeoutException) {
-            GrpcStatus status = new GrpcStatus(GrpcStatusCode.DEADLINE_EXCEEDED, cause, null);
-            setStatus(trailers, status, null, allocator);
         } else {
-            setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
+            setStatus(trailers, toGrpcStatus(cause), null, allocator);
         }
+    }
+
+    static GrpcStatus toGrpcStatus(Throwable cause) {
+        GrpcStatus status;
+        if (cause instanceof MessageEncodingException) {
+            MessageEncodingException msgEncException = (MessageEncodingException) cause;
+            status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
+                    + "' not supported ");
+        } else if (cause instanceof CancellationException) {
+            status = new GrpcStatus(CANCELLED, cause);
+        } else if (cause instanceof TimeoutException) {
+            // omit cause unless logging configured for trace
+            status = LOGGER.isTraceEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
+        } else {
+            status = new GrpcStatus(UNKNOWN, cause);
+        }
+
+        return status;
+    }
+
+    static GrpcStatusException toGrpcException(Throwable cause) {
+
+        if (cause instanceof GrpcStatusException) {
+            return (GrpcStatusException) cause;
+        }
+
+        return new GrpcStatusException(toGrpcStatus(cause), () -> null);
     }
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,

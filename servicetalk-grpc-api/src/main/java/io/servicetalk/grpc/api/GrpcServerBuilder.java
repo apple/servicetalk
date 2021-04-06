@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -39,6 +40,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -52,6 +54,11 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
+    /**
+     * Async context key for sub-classes in other packages.
+     */
+    protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
+
     private boolean appendedCatchAllFilter;
 
     /**

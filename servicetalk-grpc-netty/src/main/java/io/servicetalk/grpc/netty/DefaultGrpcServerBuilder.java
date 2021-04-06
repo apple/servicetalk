@@ -58,7 +58,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
-import static io.servicetalk.grpc.netty.DefaultGrpcClientBuilder.GRPC_DEADLINE_KEY;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {

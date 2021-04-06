@@ -17,7 +17,6 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -36,23 +35,18 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
+import static io.servicetalk.grpc.api.GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
+import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
-    /**
-     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
-     * included in the request can be calculated.
-     */
-    static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
 
     private final StreamingHttpClient streamingHttpClient;
     private final GrpcExecutionContext executionContext;
@@ -85,27 +79,6 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                     readGrpcMessageEncoding(response, supportedCodings), responseClass)))
                     .onErrorResume(t -> Single.failed(toGrpcException(t)));
         };
-    }
-
-    private static GrpcStatusException toGrpcException(Throwable cause) {
-
-        if (cause instanceof GrpcStatusException) {
-            return (GrpcStatusException) cause;
-        }
-
-        GrpcStatusCode statusCode;
-        if (cause instanceof CancellationException) {
-            // local cancel
-            statusCode = GrpcStatusCode.CANCELLED;
-        } else if (cause instanceof TimeoutException) {
-            // local timeout
-            statusCode = GrpcStatusCode.DEADLINE_EXCEEDED;
-        } else {
-            // something else
-            statusCode = GrpcStatusCode.UNKNOWN;
-        }
-
-        return new GrpcStatusException(new GrpcStatus(statusCode, cause), () -> null);
     }
 
     @Override
@@ -275,7 +248,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         Duration timeout = null != defaultTimeout && defaultTimeout.compareTo(metaDataTimeout) < 0 ?
                 defaultTimeout : metaDataTimeout;
 
-        Instant deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
+        Instant deadline = AsyncContext.get(PKG_GRPC_DEADLINE_KEY);
         Duration contextTimeout = null != deadline ? Duration.between(Instant.now(), deadline) : timeout;
 
         return contextTimeout != timeout && contextTimeout.compareTo(timeout) < 0 ? contextTimeout : timeout;

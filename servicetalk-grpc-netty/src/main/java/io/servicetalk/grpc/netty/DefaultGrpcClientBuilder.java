@@ -21,7 +21,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
@@ -62,11 +61,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
      * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
     private static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
-    /**
-     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
-     * included in the request can be calculated.
-     */
-    static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
 
     /**
      * Allowed time units
@@ -224,7 +218,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
-            httpClientBuilder.protocols().appendClientFilter(
+            httpClientBuilder.appendClientFilter(
                     new TimeoutHttpRequesterFilter(grpcTimeout(defaultTimeout), true));
         }
         invokedBuild = true;
@@ -301,7 +295,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
      * @throws IllegalArgumentException if the timeout value is malformed
      */
     static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) {
-        if (grpcTimeoutValue.length() >= 2 && grpcTimeoutValue.length() <= 9) {
+        if (grpcTimeoutValue.length() < 2 || grpcTimeoutValue.length() > 9) {
             throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
                     " (expected at least 2 and less than 10 characters)");
         }
