@@ -156,7 +156,12 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         }
 
         /**
-         * Return true if onError0 had sufficient demand to deliver.
+         * Executes the on-error signal and returns {@code true} if demand was sufficient to deliver the result of the
+         * mapped {@code Throwable} with {@link ScanWithMapper#mapOnError(Throwable)}.
+         *
+         * @param t The throwable to propagate
+         * @return {@code true} if the demand was sufficient to deliver the result of the mapped {@code Throwable} with
+         * {@link ScanWithMapper#mapOnError(Throwable)}.
          */
         protected boolean onError0(final Throwable t) {
             errorCause = t;
@@ -191,7 +196,11 @@ final class ScanWithPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R
         }
 
         /**
-         * Return true if onComplete0 had sufficient demand to deliver.
+         * Executes the on-completed signal and returns {@code true} if demand was sufficient to deliver the concat item
+         * from {@link ScanWithMapper#mapOnComplete()} downstream.
+         *
+         * @return {@code true} if demand was sufficient to deliver the concat item from
+         * {@link ScanWithMapper#mapOnComplete()} downstream.
          */
         protected boolean onComplete0() {
             final boolean doMap;
