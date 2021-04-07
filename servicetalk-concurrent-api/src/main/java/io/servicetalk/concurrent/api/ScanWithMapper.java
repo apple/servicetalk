@@ -35,7 +35,7 @@ public interface ScanWithMapper<T, R> {
     R mapOnNext(@Nullable T next);
 
     /**
-     * Invoked when a {@link Subscriber#onError(Throwable)} is signal received, and maps the current state into an
+     * Invoked when a {@link Subscriber#onError(Throwable)} signal is received, and maps the current state into an
      * object of type {@link R} which will be emitted downstream as {@link Subscriber#onNext(Object)}, followed by
      * {@link Subscriber#onComplete()}.
      * <p>
@@ -51,7 +51,7 @@ public interface ScanWithMapper<T, R> {
     R mapOnError(Throwable cause) throws Throwable;
 
     /**
-     * Invoked when a {@link Subscriber#onComplete()} is signal received, and maps the current state into an object of
+     * Invoked when a {@link Subscriber#onComplete()} signal is received, and maps the current state into an object of
      * type {@link R} which will be emitted downstream as {@link Subscriber#onNext(Object)}, followed by
      * {@link Subscriber#onComplete()}.
      * <p>

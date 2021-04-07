@@ -24,7 +24,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -41,6 +47,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ScanWithPublisherTest {
+
     @Test
     public void scanWithComplete() {
         scanWithNoTerminalMapper(true);
@@ -73,29 +80,112 @@ public class ScanWithPublisherTest {
     }
 
     @Test
-    public void scanOnNextOnCompleteNoConcat() {
-        scanOnNextTerminalNoConcat(true, true);
+    public void scanWithLifetimeSignalReentry() throws InterruptedException {
+        AtomicInteger finalizations = new AtomicInteger();
+        CountDownLatch completed = new CountDownLatch(1);
+        PublisherSource<Integer> syncNoReentryProtectionSource =
+                subscriber -> subscriber.onSubscribe(new Subscription() {
+            int count;
+
+            @Override
+            public void request(final long n) {
+                if (count == 2) {
+                    subscriber.onComplete();
+                } else {
+                    subscriber.onNext(count++);
+                }
+            }
+
+            @Override
+            public void cancel() {
+            }
+        });
+        toSource(fromSource(syncNoReentryProtectionSource).scanWithLifetime(()
+                -> new ScanWithLifetimeMapper<Integer, Integer>() {
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+                completed.countDown();
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnError(final Throwable cause) {
+                return null;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnComplete() {
+                return null;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return false;
+            }
+        })).subscribe(new PublisherSource.Subscriber<Integer>() {
+            Subscription subscription;
+
+            @Override
+            public void onSubscribe(final Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(@Nullable final Integer integer) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+
+        completed.await();
+        assertThat(finalizations.get(), is(1));
     }
 
-    @Test
-    public void scanOnNextOnErrorNoConcat() {
-        scanOnNextTerminalNoConcat(true, false);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void scanOnNextOnCompleteNoConcat(boolean withLifetime) {
+        scanOnNextTerminalNoConcat(true, true, withLifetime);
     }
 
-    @Test
-    public void scanOnCompleteNoConcat() {
-        scanOnNextTerminalNoConcat(false, true);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void scanOnNextOnErrorNoConcat(boolean withLifetime) {
+        scanOnNextTerminalNoConcat(true, false, withLifetime);
     }
 
-    @Test
-    public void scanOnErrorNoConcat() {
-        scanOnNextTerminalNoConcat(false, false);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void scanOnCompleteNoConcat(boolean withLifetime) {
+        scanOnNextTerminalNoConcat(false, true, withLifetime);
     }
 
-    private static void scanOnNextTerminalNoConcat(boolean onNext, boolean onComplete) {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void scanOnErrorNoConcat(boolean withLifetime) {
+        scanOnNextTerminalNoConcat(false, false, withLifetime);
+    }
+
+    private static void scanOnNextTerminalNoConcat(boolean onNext, boolean onComplete, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+        toSource(scanWithOperator(fromSource(processor), withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
             @Nullable
             @Override
             public Integer mapOnNext(@Nullable final Integer next) {
@@ -118,6 +208,11 @@ public class ScanWithPublisherTest {
             public boolean mapTerminal() {
                 return false;
             }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
         })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         if (onNext) {
@@ -132,32 +227,41 @@ public class ScanWithPublisherTest {
             processor.onError(DELIBERATE_EXCEPTION);
             assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
         }
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
-    @Test
-    public void onCompleteConcatUpfrontDemand() {
-        terminalConcatWithDemand(true, true);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onCompleteConcatUpfrontDemand(boolean withLifetime) {
+        terminalConcatWithDemand(true, true, withLifetime);
     }
 
-    @Test
-    public void onErrorConcatWithUpfrontDemand() {
-        terminalConcatWithDemand(true, false);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onErrorConcatWithUpfrontDemand(boolean withLifetime) {
+        terminalConcatWithDemand(true, false, withLifetime);
     }
 
-    @Test
-    public void onCompleteConcatDelayedDemand() {
-        terminalConcatWithDemand(false, true);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onCompleteConcatDelayedDemand(boolean withLifetime) {
+        terminalConcatWithDemand(false, true, withLifetime);
     }
 
-    @Test
-    public void onErrorConcatDelayedDemand() {
-        terminalConcatWithDemand(false, false);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onErrorConcatDelayedDemand(boolean withLifetime) {
+        terminalConcatWithDemand(false, false, withLifetime);
     }
 
-    private static void terminalConcatWithDemand(boolean demandUpFront, boolean onComplete) {
+    private static void terminalConcatWithDemand(boolean demandUpFront, boolean onComplete, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+        toSource(scanWithOperator(fromSource(processor), withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
             private int sum;
             @Override
             public Integer mapOnNext(@Nullable final Integer next) {
@@ -181,6 +285,11 @@ public class ScanWithPublisherTest {
             public boolean mapTerminal() {
                 return true;
             }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
         })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(demandUpFront ? 4 : 3);
@@ -201,45 +310,192 @@ public class ScanWithPublisherTest {
         }
         assertThat(subscriber.takeOnNext(), is(7));
         subscriber.awaitOnComplete();
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
     @Test
-    public void onCompleteThrowsHandled() {
-        terminalThrowsHandled(true);
-    }
-
-    @Test
-    public void onErrorThrowsHandled() {
-        terminalThrowsHandled(false);
-    }
-
-    private static void terminalThrowsHandled(boolean onComplete) {
+    public void scanWithFinalizationOnCancel() {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
-                    @Nullable
-                    @Override
-                    public Integer mapOnNext(@Nullable final Integer next) {
-                        return next;
+        toSource(scanWithOperator(fromSource(processor), true, new ScanWithLifetimeMapper<Integer, Integer>() {
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Override
+            public Integer mapOnError(final Throwable cause) throws Throwable {
+                throw cause;
+            }
+
+            @Override
+            public Integer mapOnComplete() {
+                return 5;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return true;
+            }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
+        })).subscribe(subscriber);
+
+        Subscription s = subscriber.awaitSubscription();
+        s.request(1);
+        processor.onNext(1);
+        processor.onComplete();
+        s.cancel();
+
+        assertThat(finalizations.get(), is(1));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void scanWithFinalizationOnCancelDifferentThreads(final boolean interleaveCancellation) {
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        try {
+            final AtomicInteger finalizations = new AtomicInteger(0);
+            PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
+
+            final CountDownLatch checkpoint = new CountDownLatch(1);
+            final CountDownLatch requested = new CountDownLatch(1);
+            final CountDownLatch resume = new CountDownLatch(1);
+
+            final CountDownLatch nextDelivered = new CountDownLatch(1);
+            final CountDownLatch nextDeliveredResume = new CountDownLatch(1);
+
+            final PublisherSource<Integer> source = toSource(scanWithOperator(fromSource(processor), true,
+                    new ScanWithLifetimeMapper<Integer, Integer>() {
+                        @Override
+                        public Integer mapOnNext(@Nullable final Integer next) {
+                            return next;
+                        }
+
+                        @Override
+                        public Integer mapOnError(final Throwable cause) throws Throwable {
+                            throw cause;
+                        }
+
+                        @Override
+                        public Integer mapOnComplete() {
+                            return 5;
+                        }
+
+                        @Override
+                        public boolean mapTerminal() {
+                            if (interleaveCancellation) {
+                                checkpoint.countDown();
+                                try {
+                                    resume.await();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            return true;
+                        }
+
+                        @Override
+                        public void afterFinally() {
+                            finalizations.incrementAndGet();
+                        }
+                    }));
+
+            Future<Void> f = executorService.submit(() -> {
+                try {
+                    TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+                    source.subscribe(subscriber);
+                    Subscription s = subscriber.awaitSubscription();
+
+                    s.request(2);
+                    requested.countDown();
+
+                    if (interleaveCancellation) {
+                        checkpoint.await();
+                    } else {
+                        nextDelivered.await();
                     }
 
-                    @Nullable
-                    @Override
-                    public Integer mapOnError(final Throwable cause) throws Throwable {
-                        throw cause;
+                    s.cancel();
+                    if (!interleaveCancellation) {
+                        nextDeliveredResume.countDown();
                     }
+                    resume.countDown();
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+                return null;
+            });
 
-                    @Nullable
-                    @Override
-                    public Integer mapOnComplete() {
-                        throw DELIBERATE_EXCEPTION;
-                    }
+            requested.await();
+            processor.onNext(1);
+            if (!interleaveCancellation) {
+                nextDelivered.countDown();
+                nextDeliveredResume.await();
+            }
+            processor.onComplete();
 
-                    @Override
-                    public boolean mapTerminal() {
-                        return true;
-                    }
-                })).subscribe(subscriber);
+            f.get();
+            assertThat(finalizations.get(), is(1));
+        } catch (Throwable e) {
+            throw new AssertionError(e);
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onCompleteThrowsHandled(boolean withLifetime) {
+        terminalThrowsHandled(true, withLifetime);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void onErrorThrowsHandled(boolean withLifetime) {
+        terminalThrowsHandled(false, withLifetime);
+    }
+
+    private static void terminalThrowsHandled(boolean onComplete, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
+        PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+        toSource(scanWithOperator(fromSource(processor), withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
+            @Nullable
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnError(final Throwable cause) throws Throwable {
+                throw cause;
+            }
+
+            @Nullable
+            @Override
+            public Integer mapOnComplete() {
+                throw DELIBERATE_EXCEPTION;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                return true;
+            }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
+        })).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);
         if (onComplete) {
             processor.onComplete();
@@ -247,22 +503,29 @@ public class ScanWithPublisherTest {
             processor.onError(DELIBERATE_EXCEPTION);
         }
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
-    @Test
-    public void mapOnCompleteThrows() {
-        mapTerminalSignalThrows(true);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void mapOnCompleteThrows(boolean withLifetime) {
+        mapTerminalSignalThrows(true, withLifetime);
     }
 
-    @Test
-    public void mapOnErrorThrows() {
-        mapTerminalSignalThrows(false);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void mapOnErrorThrows(boolean withLifetime) {
+        mapTerminalSignalThrows(false, withLifetime);
     }
 
-    private static void mapTerminalSignalThrows(boolean onComplete) {
+    private static void mapTerminalSignalThrows(boolean onComplete, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+        toSource(scanWithOperator(fromSource(processor), withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
             @Nullable
             @Override
             public Integer mapOnNext(@Nullable final Integer next) {
@@ -285,6 +548,11 @@ public class ScanWithPublisherTest {
             public boolean mapTerminal() {
                 throw DELIBERATE_EXCEPTION;
             }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
         })).subscribe(subscriber);
         subscriber.awaitSubscription();
         if (onComplete) {
@@ -293,19 +561,32 @@ public class ScanWithPublisherTest {
             processor.onError(new DeliberateException());
         }
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
-    @Test
-    public void invalidDemandAllowsError() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void invalidDemandAllowsError(boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(fromSource(processor).scanWith(ScanWithPublisherTest::noopMapper)).subscribe(subscriber);
+        toSource(scanWithOperator(fromSource(processor), withLifetime, noopMapper(finalizations)))
+                .subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
-    @Test
-    public void invalidDemandWithOnNextAllowsError() throws InterruptedException {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    public void invalidDemandWithOnNextAllowsError(boolean withLifetime) throws InterruptedException {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         TestSubscription upstreamSubscription = new TestSubscription();
         TestPublisher<Integer> publisher = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe()
                 .build(subscriber1 -> {
@@ -313,7 +594,7 @@ public class ScanWithPublisherTest {
                     return subscriber1;
                 });
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(publisher.scanWith(ScanWithPublisherTest::noopMapper)).subscribe(subscriber);
+        toSource(scanWithOperator(publisher, withLifetime, noopMapper(finalizations))).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(100);
         upstreamSubscription.awaitRequestN(100);
@@ -324,14 +605,19 @@ public class ScanWithPublisherTest {
         assertThat(subscriber.takeOnNext(2), contains(1, 2));
         publisher.onError(newExceptionForInvalidRequestN(-1));
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("cancelStillAllowsMapsParams")
-    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore) {
+    public void cancelStillAllowsMaps(boolean onError, boolean cancelBefore, boolean withLifetime) {
+        final AtomicInteger finalizations = new AtomicInteger(0);
         TestPublisher<Integer> publisher = new TestPublisher<>();
         TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-        toSource(publisher.scanWith(() -> new ScanWithMapper<Integer, Integer>() {
+        toSource(scanWithOperator(publisher, withLifetime, new ScanWithLifetimeMapper<Integer, Integer>() {
             private int sum;
             @Nullable
             @Override
@@ -355,6 +641,11 @@ public class ScanWithPublisherTest {
             @Override
             public boolean mapTerminal() {
                 return true;
+            }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
             }
         })).subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
@@ -378,20 +669,30 @@ public class ScanWithPublisherTest {
             publisher.onComplete();
         }
 
-        assertThat(subscriber.takeOnNext(4), contains(1, 2, 3, 6));
-        subscriber.awaitOnComplete();
+        if (!withLifetime) {
+            assertThat(subscriber.takeOnNext(4), contains(1, 2, 3, 6));
+            subscriber.awaitOnComplete();
+        }
+
+        if (withLifetime) {
+            assertThat(finalizations.get(), is(1));
+        }
     }
 
     private static Stream<Arguments> cancelStillAllowsMapsParams() {
         return Stream.of(
-                Arguments.of(true, true),
-                Arguments.of(true, false),
-                Arguments.of(false, true),
-                Arguments.of(false, false));
+                Arguments.of(false, false, false),
+                Arguments.of(false, false, true),
+                Arguments.of(false, true, false),
+                Arguments.of(false, true, true),
+                Arguments.of(true, false, false),
+                Arguments.of(true, false, true),
+                Arguments.of(true, true, false),
+                Arguments.of(true, true, true));
     }
 
-    private static ScanWithMapper<Integer, Integer> noopMapper() {
-        return new ScanWithMapper<Integer, Integer>() {
+    private static ScanWithLifetimeMapper<Integer, Integer> noopMapper(final AtomicInteger finalizations) {
+        return new ScanWithLifetimeMapper<Integer, Integer>() {
             @Nullable
             @Override
             public Integer mapOnNext(@Nullable final Integer next) {
@@ -414,6 +715,16 @@ public class ScanWithPublisherTest {
             public boolean mapTerminal() {
                 return true;
             }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
         };
+    }
+
+    private static Publisher<Integer> scanWithOperator(final Publisher<Integer> source, final boolean withLifetime,
+                                                       final ScanWithLifetimeMapper<Integer, Integer> mapper) {
+        return withLifetime ? source.scanWithLifetime(() -> mapper) : source.scanWith(() -> mapper);
     }
 }
