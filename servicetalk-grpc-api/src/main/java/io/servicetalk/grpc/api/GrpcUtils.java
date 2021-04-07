@@ -42,7 +42,10 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -88,6 +91,20 @@ final class GrpcUtils {
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
     private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
+    /**
+     * Unlike {@link #CONTENT_ENCODING_SEPARATOR} it is possible or (depending on usage) likely that we will encounter a
+     * very large number of different duration values so we need to implement an LRU cache to limit the number of
+     * cached header values.
+     */
+    private static Map<Duration, CharSequence> TIMEOUT_HEADER_VALUES_CACHE =
+            Collections.synchronizedMap(new LinkedHashMap<Duration, CharSequence>() {
+                private static final int CACHE_ENTRIES = 100;
+
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Duration, CharSequence> eldest) {
+                    return size() > CACHE_ENTRIES;
+                }
+    });
 
     /**
      * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
@@ -116,8 +133,11 @@ final class GrpcUtils {
                     // local timeout
                     if (cause instanceof TimeoutException) {
                         // omit the cause unless logging has been configured at TRACE
-                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED,
-                                LOGGER.isTraceEnabled() ? cause : null), () -> null);
+                        throw new GrpcStatusException(
+                                LOGGER.isTraceEnabled() ?
+                                    new GrpcStatus(DEADLINE_EXCEEDED, cause) :
+                                    DEADLINE_EXCEEDED.status(),
+                                () -> null);
                     }
 
                     throw cause;
@@ -170,19 +190,19 @@ final class GrpcUtils {
      * @return The timeout header text value or null for infinite timeouts
      */
     static @Nullable CharSequence makeTimeoutHeader(Duration timeout) {
-        if (GrpcMetadata.GRPC_MAX_TIMEOUT.compareTo(timeout) >= 0) {
-            // convert assuming that negative timeout is the result of an already missed deadline.
-            // cannot overflow as we have already checked against safe maximum
-            long timeoutValue = timeout.isNegative() ? 0 : timeout.toNanos();
-            int units = 0;
-            while (timeoutValue > EIGHT_NINES) {
-                timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
-                units++; // cannot go past end of units array as we have already range checked
-            }
-            return newAsciiString(Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units]);
-        } else {
-            return null;
-        }
+        return (GrpcMetadata.GRPC_MAX_TIMEOUT.compareTo(timeout) >= 0) ?
+                TIMEOUT_HEADER_VALUES_CACHE.computeIfAbsent(timeout, duration -> {
+                    // convert assuming that negative timeout is the result of an already missed deadline.
+                    // cannot overflow as we have already checked against safe maximum
+                    long timeoutValue = duration.isNegative() ? 0 : duration.toNanos();
+                    int units = 0;
+                    while (timeoutValue > EIGHT_NINES) {
+                        timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
+                        units++; // cannot go past end of units array as we have already range checked
+                    }
+                    return newAsciiString(Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units]);
+                })
+                : null;
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
@@ -268,19 +288,16 @@ final class GrpcUtils {
             // omit cause unless logging configured for trace
             status = LOGGER.isTraceEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
         } else {
-            status = new GrpcStatus(UNKNOWN, cause);
+            // Initialize detail because cause is often lost
+            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
         }
 
         return status;
     }
 
     static GrpcStatusException toGrpcException(Throwable cause) {
-
-        if (cause instanceof GrpcStatusException) {
-            return (GrpcStatusException) cause;
-        }
-
-        return new GrpcStatusException(toGrpcStatus(cause), () -> null);
+        return cause instanceof GrpcStatusException ? (GrpcStatusException) cause
+                : new GrpcStatusException(toGrpcStatus(cause), () -> null);
     }
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,

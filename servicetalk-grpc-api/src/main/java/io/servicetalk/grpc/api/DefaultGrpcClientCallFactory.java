@@ -35,6 +35,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
@@ -91,7 +92,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
-            initRequest(httpRequest, supportedCodings, timeoutForRequest(metadata.timeout()));
+            Duration timeout = timeoutForRequest(metadata.timeout());
+            initRequest(httpRequest, supportedCodings, timeout);
             httpRequest.payloadBody(request.map(GrpcUtils::uncheckedCast),
                     serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
@@ -160,7 +162,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final List<ContentCodec> supportedCodings = serializationProvider.supportedMessageCodings();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
-            initRequest(httpRequest, supportedCodings, timeoutForRequest(metadata.timeout()));
+            Duration timeout = timeoutForRequest(metadata.timeout());
+            initRequest(httpRequest, supportedCodings, timeout);
             httpRequest.payloadBody(request, serializationProvider
                     .serializerFor(metadata.requestEncoding(), requestClass));
             @Nullable
@@ -232,7 +235,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                                           final List<ContentCodec> supportedCodings,
                                                           final Class<Req> requestClass) {
         final HttpRequest httpRequest = requestFactory.post(metadata.path());
-        initRequest(httpRequest, supportedCodings, timeoutForRequest(metadata.timeout()));
+        Duration timeout = timeoutForRequest(metadata.timeout());
+        initRequest(httpRequest, supportedCodings, timeout);
         return httpRequest.payloadBody(uncheckedCast(rawReq),
                 serializationProvider.serializerFor(metadata.requestEncoding(), requestClass));
     }
@@ -242,13 +246,15 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
      * or the async context. The lowest timeout will be used.
      *
      * @param metaDataTimeout the timeout specified in client metadata
-     * @return The timeout {@link Duration} or null for no timeout
+     * @return The timeout {@link Duration}, potentially negative.
      */
     private Duration timeoutForRequest(Duration metaDataTimeout) {
+        @Nonnull
         Duration timeout = null != defaultTimeout && defaultTimeout.compareTo(metaDataTimeout) < 0 ?
                 defaultTimeout : metaDataTimeout;
 
         Instant deadline = AsyncContext.get(PKG_GRPC_DEADLINE_KEY);
+        @Nonnull
         Duration contextTimeout = null != deadline ? Duration.between(Instant.now(), deadline) : timeout;
 
         return contextTimeout != timeout && contextTimeout.compareTo(timeout) < 0 ? contextTimeout : timeout;

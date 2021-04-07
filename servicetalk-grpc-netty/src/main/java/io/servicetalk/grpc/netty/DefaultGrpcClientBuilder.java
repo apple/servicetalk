@@ -80,7 +80,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     };
 
     @Nullable
-
     private Duration defaultTimeout;
     private boolean invokedBuild;
 
@@ -297,7 +296,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) {
         if (grpcTimeoutValue.length() < 2 || grpcTimeoutValue.length() > 9) {
             throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
-                    " (expected at least 2 and less than 10 characters)");
+                    " (expected 2-9 characters)");
         }
 
         char unitChar = grpcTimeoutValue.charAt(grpcTimeoutValue.length() - 1);
@@ -318,7 +317,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
             if (digitChar < '0' || digitChar > '9') {
                 // Bad digit
                 throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
-                        " (Bad unit '" + digitChar + "')");
+                        " (Bad time unit '" + digitChar + "')");
             } else {
                 runningTotal = runningTotal * 10L + (long) (digitChar - '0');
             }
