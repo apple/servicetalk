@@ -55,19 +55,8 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
     private static final class ScanWithLifetimeSubscriber<T, R> extends ScanWithPublisher.ScanWithSubscriber<T, R> {
         private static final int STATE_UNLOCKED = 0;
         private static final int STATE_BUSY = 1;
-        private static final int STATE_FINALIZE_PENDING = 2;
-        private static final int STATE_FINALIZED = 3;
-        /**
-         * Special state to handle the case where a reentry to a terminal (eg. onComplete) signal needs to defer
-         * finalization to the root frame onNext.
-         * This state helps differentiate between cancel and reentrant completion.
-         */
-        private static final int STATE_FINALIZE_AFTER_REENTRY = 4;
-        /**
-         * Special state to handle the case where a reentry to a terminal (eg. onComplete) signal needs to defer
-         * a pending finalization to the root frame onNext.
-         */
-        private static final int STATE_FINALIZE_PENDING_AFTER_REENTRY = 5;
+        private static final int STATE_FINALIZED = 2;
+        private static final int STATE_FINALIZE_PENDING_FOR_SUBSCRIBER = 3;
 
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<ScanWithLifetimeSubscriber> stateUpdater =
@@ -78,37 +67,46 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
         private final ScanWithLifetimeMapper<? super T, ? extends R> mapper;
 
         ScanWithLifetimeSubscriber(final Subscriber<? super R> subscriber,
-                           final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
-                           final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
-                           final AsyncContextProvider contextProvider) {
+                                   final ScanWithLifetimeMapper<? super T, ? extends R> mapper,
+                                   final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
+                                   final AsyncContextProvider contextProvider) {
             super(subscriber, mapper, signalOffloader, contextMap, contextProvider);
             this.mapper = mapper;
         }
 
         @Override
         protected void onCancel() {
-            // This is not a serial invocation.
-            // Finalize only when CAS succeeds and previous state was UNLOCKED or FINALIZE_PENDING, otherwise:
-            // - If BUSY the signal will do the finalization
-            // - If FINALIZED or FINALIZED_REENTRY nothing needs to be done
-            final int prevState = stateUpdater.getAndSet(this, STATE_FINALIZED);
-            if (prevState == STATE_UNLOCKED || prevState == STATE_FINALIZE_PENDING) {
-                finalize0();
+            for (;;) {
+                final int prevState = state;
+                if (prevState == STATE_BUSY) {
+                    if (stateUpdater.compareAndSet(this, STATE_BUSY, STATE_FINALIZE_PENDING_FOR_SUBSCRIBER)) {
+                        break;
+                    }
+                } else if (prevState == STATE_UNLOCKED) {
+                    if (stateUpdater.compareAndSet(this, STATE_UNLOCKED, STATE_FINALIZED)) {
+                        finalize0();
+                        break;
+                    }
+                } else {
+                    assert prevState == STATE_FINALIZED || prevState == STATE_FINALIZE_PENDING_FOR_SUBSCRIBER;
+                    break;
+                }
             }
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            final int prevState = state;
-            if (prevState == STATE_FINALIZED) {
-                return;
-            }
-            final boolean reentry = prevState == STATE_BUSY;
-
-            // No need to loop since the signals are guaranteed to be signalled serially,
-            // thus a CAS fail means cancellation won, so we can safely ignore it.
-            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
-                return;
+            boolean reentry = false;
+            for (;;) {
+                final int prevState = state;
+                if (prevState == STATE_BUSY || prevState == STATE_FINALIZE_PENDING_FOR_SUBSCRIBER) {
+                    reentry = true;
+                    break;
+                } else if (prevState == STATE_FINALIZED) {
+                    return;
+                } else if (stateUpdater.compareAndSet(this, STATE_UNLOCKED, STATE_BUSY)) {
+                    break;
+                }
             }
 
             try {
@@ -116,20 +114,17 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
             } finally {
                 // Re-entry -> don't unlock
                 if (!reentry) {
-                    if (state == STATE_FINALIZE_PENDING_AFTER_REENTRY) {
-                        // If a re-entrant terminal didn't complete due to missing demand, we take over and set
-                        // state to STATE_FINALIZE_PENDING.
-                        if (!stateUpdater.compareAndSet(this, STATE_FINALIZE_PENDING_AFTER_REENTRY,
-                                STATE_FINALIZE_PENDING)) {
-                            // state changed while BUSY eg. cancellation or reentrant terminal -> take over finalization
-                            state = STATE_FINALIZED;
+                    for (;;) {
+                        final int prevState = state;
+                        assert prevState != STATE_UNLOCKED && prevState != STATE_FINALIZED;
+                        if (prevState == STATE_BUSY) {
+                            if (stateUpdater.compareAndSet(this, STATE_BUSY, STATE_UNLOCKED)) {
+                                break;
+                            }
+                        } else if (stateUpdater.compareAndSet(this, STATE_FINALIZE_PENDING_FOR_SUBSCRIBER,
+                                STATE_FINALIZED)) {
                             finalize0();
-                        }
-                    } else {
-                        if (!stateUpdater.compareAndSet(this, STATE_BUSY, prevState)) {
-                            // state changed while BUSY eg. cancellation or reentrant terminal -> take over finalization
-                            state = STATE_FINALIZED;
-                            finalize0();
+                            break;
                         }
                     }
                 }
@@ -138,16 +133,17 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         @Override
         public void onError(final Throwable t) {
-            final int prevState = state;
-            if (prevState == STATE_FINALIZED) {
-                return;
-            }
-            final boolean reentry = prevState == STATE_BUSY;
-
-            // No need to loop since the signals are guaranteed to be signalled serially,
-            // thus a CAS fail means cancellation won, so we can safely ignore it.
-            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
-                return;
+            boolean reentry = false;
+            for (;;) {
+                final int prevState = state;
+                if (prevState == STATE_BUSY || prevState == STATE_FINALIZE_PENDING_FOR_SUBSCRIBER) {
+                    reentry = true;
+                    break;
+                } else if (prevState == STATE_FINALIZED) {
+                    return;
+                } else if (stateUpdater.compareAndSet(this, STATE_UNLOCKED, STATE_BUSY)) {
+                    break;
+                }
             }
 
             boolean completed = true;
@@ -160,16 +156,17 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         @Override
         public void onComplete() {
-            final int prevState = state;
-            if (prevState == STATE_FINALIZED) {
-                return;
-            }
-            final boolean reentry = prevState == STATE_BUSY;
-
-            // No need to loop since the signals are guaranteed to be signalled serially,
-            // thus a CAS fail means cancellation won, so we can safely ignore it.
-            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, prevState, STATE_BUSY)) {
-                return;
+            boolean reentry = false;
+            for (;;) {
+                final int prevState = state;
+                if (prevState == STATE_BUSY || prevState == STATE_FINALIZE_PENDING_FOR_SUBSCRIBER) {
+                    reentry = true;
+                    break;
+                } else if (prevState == STATE_FINALIZED) {
+                    return;
+                } else if (stateUpdater.compareAndSet(this, STATE_UNLOCKED, STATE_BUSY)) {
+                    break;
+                }
             }
 
             boolean completed = true;
@@ -182,64 +179,66 @@ final class ScanWithLifetimePublisher<T, R> extends AbstractNoHandleSubscribePub
 
         @Override
         protected void deliverOnCompleteFromSubscription(final Subscriber<? super R> subscriber) {
-            int currState = state;
-            if (currState == STATE_FINALIZED) {
-                return;
+            if (shouldDeliverFromSubscription()) {
+                try {
+                    super.deliverOnCompleteFromSubscription(subscriber);
+                } finally {
+                    // Done, transit to FINALIZED.
+                    // No need to CAS, we have exclusion, and any cancellations will hand-over finalization to us.
+                    state = STATE_FINALIZED;
+                    finalize0();
+                }
             }
-
-            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, currState, STATE_BUSY)) {
-                return;
-            }
-
-            super.deliverOnCompleteFromSubscription(subscriber);
-
-            // Done, transit to FINALIZED.
-            // No need to CAS here, we already have exclusion, and any cancellations will hand-over finalization to us.
-            state = STATE_FINALIZED;
-            finalize0();
         }
 
         @Override
         protected void deliverOnErrorFromSubscription(final Throwable t, final Subscriber<? super R> subscriber) {
-            int currState = state;
-            if (currState == STATE_FINALIZED) {
-                return;
+            if (shouldDeliverFromSubscription()) {
+                try {
+                    super.deliverOnErrorFromSubscription(t, subscriber);
+                } finally {
+                    // Done, transit to FINALIZED.
+                    // No need to CAS, we have exclusion, and any cancellations will hand-over finalization to us.
+                    state = STATE_FINALIZED;
+                    finalize0();
+                }
             }
+        }
 
-            if (!stateUpdater.compareAndSet(ScanWithLifetimeSubscriber.this, currState, STATE_BUSY)) {
-                return;
-            }
-
-            super.deliverOnErrorFromSubscription(t, subscriber);
-
-            // Done, transit to FINALIZED.
-            // No need to CAS here, we already have exclusion, and any cancellations will hand-over finalization to us.
-            state = STATE_FINALIZED;
-            finalize0();
+        private boolean shouldDeliverFromSubscription() {
+            // At this point the Subscriber has already delivered a terminal event, and there is no concurrency allowed
+            // on the Subscription thread, so we don't need to account for concurrency here. We also don't need to
+            // change the state value because we always transition to STATE_FINALIZED after this point.
+            return state != STATE_FINALIZED;
         }
 
         private void releaseFromTerminal(final boolean reentry, final boolean completed) {
             if (!completed) {
-                // Demand wasn't sufficient to deliver -> transit to FINALIZE_PENDING till more demand comes.
-                if (reentry) {
-                    // If re-entry the defer transit to FINALIZE_PENDING to the root frame.
-                    // No need to CAS, reentry root (ie. onNext) will do that.
-                    state = STATE_FINALIZE_PENDING_AFTER_REENTRY;
-                } else if (!stateUpdater.compareAndSet(this, STATE_BUSY, STATE_FINALIZE_PENDING)) {
-                    // state changed while we were in progress -> take over finalization
-                    finalize0();
+                // Demand wasn't sufficient to deliver. If reentry re-evaluate when stack unwinds. If not reentry we
+                // either unlock here or finalize if subscription was cancelled concurrently.
+                if (!reentry) {
+                    for (;;) {
+                        final int prevState = state;
+                        assert prevState != STATE_UNLOCKED && prevState != STATE_FINALIZED;
+                        if (prevState == STATE_BUSY) {
+                            if (stateUpdater.compareAndSet(this, STATE_BUSY, STATE_UNLOCKED)) {
+                                break;
+                            }
+                        } else if (stateUpdater.compareAndSet(this, STATE_FINALIZE_PENDING_FOR_SUBSCRIBER,
+                                STATE_FINALIZED)) {
+                            finalize0();
+                            break;
+                        }
+                    }
                 }
+            } else if (reentry) {
+                // No need to CAS, reentry root (ie. onNext) will do that.
+                state = STATE_FINALIZE_PENDING_FOR_SUBSCRIBER;
             } else {
-                // Done, transit to FINALIZED if not reentry else to STATE_FINALIZE_AFTER_REENTRY.
-                if (reentry) {
-                    // No need to CAS, reentry root (ie. onNext) will do that.
-                    state = STATE_FINALIZE_AFTER_REENTRY;
-                } else {
-                    // No need to CAS here, we already have exclusion, and any cancellations will hand-over
-                    // finalization to us anyhow.
-                    state = STATE_FINALIZED;
-                    finalize0();
-                }
+                // No need to CAS here, we already have exclusion, and any cancellations will hand-over
+                // finalization to us anyhow.
+                state = STATE_FINALIZED;
+                finalize0();
             }
         }
 

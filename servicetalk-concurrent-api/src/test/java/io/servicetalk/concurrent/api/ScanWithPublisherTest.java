@@ -356,6 +356,99 @@ public class ScanWithPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
+    public void scanWithFinalizationOnCancelDifferentThreads(final boolean interleaveCancellation)
+            throws InterruptedException {
+        final AtomicInteger finalizations = new AtomicInteger(0);
+        PublisherSource.Processor<Integer, Integer> processor = newPublisherProcessor();
+
+        final CountDownLatch checkpoint = new CountDownLatch(1);
+        final CountDownLatch requested = new CountDownLatch(1);
+        final CountDownLatch resume = new CountDownLatch(1);
+
+        final CountDownLatch nextDelivered = new CountDownLatch(1);
+        final CountDownLatch nextDeliveredResume = new CountDownLatch(1);
+
+        final PublisherSource<Integer> source = toSource(scanWithOperator(fromSource(processor), true,
+                new ScanWithLifetimeMapper<Integer, Integer>() {
+            @Override
+            public Integer mapOnNext(@Nullable final Integer next) {
+                return next;
+            }
+
+            @Override
+            public Integer mapOnError(final Throwable cause) throws Throwable {
+                throw cause;
+            }
+
+            @Override
+            public Integer mapOnComplete() {
+                return 5;
+            }
+
+            @Override
+            public boolean mapTerminal() {
+                if (interleaveCancellation) {
+                    checkpoint.countDown();
+                    try {
+                        resume.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public void afterFinally() {
+                finalizations.incrementAndGet();
+            }
+        }));
+
+
+        Thread sub = new Thread(() -> {
+            TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
+            source.subscribe(subscriber);
+            Subscription s = subscriber.awaitSubscription();
+
+            s.request(2);
+            requested.countDown();
+
+            if (interleaveCancellation) {
+                try {
+                    checkpoint.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                try {
+                    nextDelivered.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            s.cancel();
+            if (!interleaveCancellation) {
+                nextDeliveredResume.countDown();
+            }
+            resume.countDown();
+        });
+
+        sub.start();
+        requested.await();
+        processor.onNext(1);
+        if (!interleaveCancellation) {
+            nextDelivered.countDown();
+            nextDeliveredResume.await();
+        }
+        processor.onComplete();
+
+        sub.join();
+        assertThat(finalizations.get(), is(1));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
     public void onCompleteThrowsHandled(boolean withLifetime) {
         terminalThrowsHandled(true, withLifetime);
     }

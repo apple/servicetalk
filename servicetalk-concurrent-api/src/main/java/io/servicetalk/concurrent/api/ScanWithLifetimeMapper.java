@@ -21,7 +21,8 @@ import java.util.function.Supplier;
 
 /**
  * Provides the ability to transform (aka map) signals emitted via
- * the {@link Publisher#scanWithLifetime(Supplier)} operator, and hooks cancellations signals.
+ * the {@link Publisher#scanWithLifetime(Supplier)} operator, as well as the ability to cleanup state
+ * via {@link #afterFinally}.
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.
  */

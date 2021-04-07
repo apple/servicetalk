@@ -45,7 +45,7 @@ public class PublisherScanWithLifetimeTckTest extends AbstractPublisherOperatorT
             @Nullable
             @Override
             public String mapOnComplete() {
-                return valueOf(-1);
+                return null;
             }
 
             @Override
