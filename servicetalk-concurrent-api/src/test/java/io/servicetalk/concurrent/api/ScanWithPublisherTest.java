@@ -404,7 +404,6 @@ public class ScanWithPublisherTest {
             }
         }));
 
-
         Thread sub = new Thread(() -> {
             TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
             source.subscribe(subscriber);
