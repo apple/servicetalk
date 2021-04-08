@@ -79,16 +79,6 @@ public abstract class GrpcServerBuilder {
     }
 
     /**
-     * Initiate security configuration for this server. Calling any {@code commit} method on the returned
-     * {@link GrpcServerSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #sslConfig(ServerSslConfig)}.
-     * @return {@link GrpcServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} methods after all configuration is done.
-     */
-    @Deprecated
-    public abstract GrpcServerSecurityConfigurator secure();
-
-    /**
      * Set the SSL/TLS configuration.
      * @param config The configuration to use.
      * @return {@code this}.

@@ -25,7 +25,6 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -265,19 +264,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }
-
-    /**
-     * Initiates security configuration for this client. Calling
-     * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
-     * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
-     * @deprecated Use {@link #initializer(SingleAddressInitializer)} and create a {@link SingleAddressInitializer} that
-     * invokes {@link SingleAddressHttpClientBuilder#sslConfig(ClientSslConfig)}.
-     * @return {@link PartitionHttpClientBuilderConfigurator} to configure security for this client. It is
-     * mandatory to call {@link PartitionedHttpClientSecurityConfigurator#commit() commit} after all configuration is
-     * done.
-     */
-    @Deprecated
-    public abstract PartitionedHttpClientSecurityConfigurator<U, R> secure();
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.
