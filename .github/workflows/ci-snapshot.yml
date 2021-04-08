@@ -17,9 +17,10 @@ jobs:
       - name: Check SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 0; else exit 1; fi
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
           java-version: ${{ matrix.java }}
+          distribution: 'adopt'
       - name: Print JDK Version
         run: java -version
       - name: Make gradlew Executable
