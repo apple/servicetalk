@@ -426,8 +426,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (longLFIndex < 0) {
                     return;
                 }
-                final int lfIndex = crlfIndex(longLFIndex);
-                consumeCRLF(buffer, lfIndex);
+                consumeCRLF(buffer, crlfIndex(longLFIndex));
                 currentState = State.READ_CHUNK_SIZE;
                 break;
             }
