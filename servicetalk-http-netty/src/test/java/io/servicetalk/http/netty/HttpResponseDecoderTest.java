@@ -61,6 +61,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,10 +78,18 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
             getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+    private final EmbeddedChannel channelSpecException = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
+            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
+            false, true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
 
     @Override
     protected EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channelSpecException() {
+        return channelSpecException;
     }
 
     @Override
@@ -89,8 +98,8 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLine() {
-        return assertResponseLine(HTTP_1_1, NO_CONTENT);
+    HttpMetaData assertStartLine(EmbeddedChannel channel) {
+        return assertResponseLine(HTTP_1_1, NO_CONTENT, channel);
     }
 
     @Override
@@ -99,8 +108,8 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLineForContent() {
-        return assertResponseLine(HTTP_1_1, OK);
+    HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
+        return assertResponseLine(HTTP_1_1, OK, channel);
     }
 
     @Test
@@ -360,6 +369,11 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private HttpResponseMetaData assertResponseLine(HttpProtocolVersion expectedVersion,
                                                     HttpResponseStatus expectedStatus) {
+        return assertResponseLine(expectedVersion, expectedStatus, channel());
+    }
+
+    private static HttpResponseMetaData assertResponseLine(HttpProtocolVersion expectedVersion,
+                                                           HttpResponseStatus expectedStatus, EmbeddedChannel channel) {
         HttpResponseMetaData response = channel.readInbound();
         assertThat(response.version(), equalTo(expectedVersion));
         assertThat(response.status().code(), is(expectedStatus.code()));
