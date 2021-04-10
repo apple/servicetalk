@@ -45,8 +45,8 @@ public final class H1SpecExceptions {
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.5">HTTP/1.x Message Parsing Robustness</a>:
      * <pre>
      *   Although the line terminator for the start-line and header fields is
-     *    the sequence CRLF, a recipient MAY recognize a single LF as a line
-     *    terminator and ignore any preceding CR.
+     *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+     *   terminator and ignore any preceding CR.
      * </pre>
      * @return {@code true} to allow {@code LF} without a proceeding {@code CR}.
      */
@@ -65,12 +65,12 @@ public final class H1SpecExceptions {
         /**
          * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
          * part of the payload body before the connection closure.
-         * @deprecated Use {@link #prematureClosureBeforePayloadBody(boolean)}.
+         * @deprecated Use {@link #allowPrematureClosureBeforePayloadBody(boolean)}.
          * @return {@code this}
          */
         @Deprecated
         public Builder allowPrematureClosureBeforePayloadBody() {
-            return prematureClosureBeforePayloadBody(true);
+            return allowPrematureClosureBeforePayloadBody(true);
         }
 
         /**
@@ -80,7 +80,7 @@ public final class H1SpecExceptions {
          * messages if it did not receive any part of the payload body before the connection closure.
          * @return {@code this}
          */
-        public Builder prematureClosureBeforePayloadBody(boolean allow) {
+        public Builder allowPrematureClosureBeforePayloadBody(boolean allow) {
             this.allowPrematureClosureBeforePayloadBody = allow;
             return this;
         }
@@ -90,13 +90,13 @@ public final class H1SpecExceptions {
          * <a href="https://tools.ietf.org/html/rfc7230#section-3.5">HTTP/1.x Message Parsing Robustness</a>:
          * <pre>
          *   Although the line terminator for the start-line and header fields is
-         *    the sequence CRLF, a recipient MAY recognize a single LF as a line
-         *    terminator and ignore any preceding CR.
+         *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+         *   terminator and ignore any preceding CR.
          * </pre>
          * @param allow {@code true} to allow {@code LF} without a proceeding {@code CR}.
          * @return {@code this}
          */
-        public Builder lfWithoutCR(boolean allow) {
+        public Builder allowLFWithoutCR(boolean allow) {
             this.allowLFWithoutCR = allow;
             return this;
         }

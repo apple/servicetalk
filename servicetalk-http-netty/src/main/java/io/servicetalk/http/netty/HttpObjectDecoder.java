@@ -31,6 +31,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -66,6 +67,7 @@ import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.servicetalk.buffer.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
@@ -136,8 +138,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.5>HTTP/1.x Message Parsing Robustness</a>
      * <pre>
      *   Although the line terminator for the start-line and header fields is
-     *    the sequence CRLF, a recipient MAY recognize a single LF as a line
-     *    terminator and ignore any preceding CR.
+     *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+     *   terminator and ignore any preceding CR.
      * </pre>
      */
     private final boolean allowLFWithoutCR;
@@ -835,7 +837,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      */
     private static long findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize, final int parsingLine,
                                 final boolean allowLFWithoutCR) {
-        final int maxToIndex = startIndex + maxLineSize;
+        final int maxToIndex = addWithOverflowProtection(startIndex, maxLineSize);
         for (;;) {
             final int toIndex = min(buffer.writerIndex(), maxToIndex);
             final int lfIndex = findLF(buffer, startIndex, toIndex);

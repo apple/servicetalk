@@ -49,11 +49,14 @@ import static org.junit.Assert.assertThrows;
 
 public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
-    private final EmbeddedChannel channelSpecException = new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, true,
-            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    private final EmbeddedChannel channel = newChannel(false);
+    private final EmbeddedChannel channelSpecException = newChannel(true);
+
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
 
     @Override
     EmbeddedChannel channel() {

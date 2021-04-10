@@ -76,11 +76,14 @@ public class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
-    private final EmbeddedChannel channelSpecException = new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
-            false, true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    private final EmbeddedChannel channel = newChannel(false);
+    private final EmbeddedChannel channelSpecException = newChannel(true);
+
+    private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
+                false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
 
     @Override
     protected EmbeddedChannel channel() {
