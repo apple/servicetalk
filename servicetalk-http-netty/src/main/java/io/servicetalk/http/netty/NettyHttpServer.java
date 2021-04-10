@@ -173,7 +173,8 @@ final class NettyHttpServer {
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(),
-                    config.specExceptions().allowPrematureClosureBeforePayloadBody(), closeHandler));
+                    config.specExceptions().allowPrematureClosureBeforePayloadBody(),
+                    config.specExceptions().allowLFWithoutCR(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
         });

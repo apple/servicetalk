@@ -36,6 +36,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -48,12 +49,23 @@ import static org.junit.Assert.assertThrows;
 
 public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
-    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
-            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+    private final EmbeddedChannel channel = newChannel(false);
+    private final EmbeddedChannel channelSpecException = newChannel(true);
+
+    private static EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, false, allowLFWithoutCR,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+    }
 
     @Override
-    protected EmbeddedChannel channel() {
+    EmbeddedChannel channel() {
         return channel;
+    }
+
+    @Override
+    EmbeddedChannel channelSpecException() {
+        return channelSpecException;
     }
 
     @Override
@@ -62,8 +74,8 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLine() {
-        return assertRequestLine(GET, "/", HTTP_1_1);
+    HttpMetaData assertStartLine(EmbeddedChannel channel) {
+        return assertRequestLine(GET, "/", HTTP_1_1, channel);
     }
 
     @Override
@@ -72,8 +84,8 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
-    HttpMetaData assertStartLineForContent() {
-        return assertRequestLine(POST, "/some/path", HTTP_1_1);
+    HttpMetaData assertStartLineForContent(final EmbeddedChannel channel) {
+        return assertRequestLine(POST, "/some/path", HTTP_1_1, channel);
     }
 
     @Test
@@ -279,6 +291,11 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     private HttpRequestMetaData assertRequestLine(HttpRequestMethod expectedMethod, String expectedRequestTarget,
                                                   HttpProtocolVersion expectedVersion) {
+        return assertRequestLine(expectedMethod, expectedRequestTarget, expectedVersion, channel());
+    }
+
+    private static HttpRequestMetaData assertRequestLine(HttpRequestMethod expectedMethod, String expectedRequestTarget,
+                                                         HttpProtocolVersion expectedVersion, EmbeddedChannel channel) {
         HttpRequestMetaData request = channel.readInbound();
         assertThat(request.method(), equalTo(expectedMethod));
         assertThat(request.requestTarget(), equalTo(expectedRequestTarget));
@@ -307,6 +324,7 @@ public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     public void smuggleBeforeTransferEncodingHeader() {
-        smuggleTransferEncoding(true);
+        smuggleTransferEncoding(true, false);
+        smuggleTransferEncoding(true, true);
     }
 }

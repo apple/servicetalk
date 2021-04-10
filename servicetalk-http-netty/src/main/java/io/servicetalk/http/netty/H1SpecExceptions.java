@@ -21,9 +21,12 @@ package io.servicetalk.http.netty;
 public final class H1SpecExceptions {
 
     private final boolean allowPrematureClosureBeforePayloadBody;
+    private final boolean allowLFWithoutCR;
 
-    private H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody) {
+    private H1SpecExceptions(final boolean allowPrematureClosureBeforePayloadBody,
+                             final boolean allowLFWithoutCR) {
         this.allowPrematureClosureBeforePayloadBody = allowPrematureClosureBeforePayloadBody;
+        this.allowLFWithoutCR = allowLFWithoutCR;
     }
 
     /**
@@ -38,20 +41,63 @@ public final class H1SpecExceptions {
     }
 
     /**
+     * Allow {@code LF} without a proceeding {@code CR} as described in
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.5">HTTP/1.x Message Parsing Robustness</a>:
+     * <pre>
+     *   Although the line terminator for the start-line and header fields is
+     *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+     *   terminator and ignore any preceding CR.
+     * </pre>
+     * @return {@code true} to allow {@code LF} without a proceeding {@code CR}.
+     */
+    public boolean allowLFWithoutCR() {
+        return allowLFWithoutCR;
+    }
+
+    /**
      * Builder for {@link H1SpecExceptions}.
      */
     public static final class Builder {
 
         private boolean allowPrematureClosureBeforePayloadBody;
+        private boolean allowLFWithoutCR;
 
         /**
          * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
          * part of the payload body before the connection closure.
-         *
+         * @deprecated Use {@link #allowPrematureClosureBeforePayloadBody(boolean)}.
          * @return {@code this}
          */
+        @Deprecated
         public Builder allowPrematureClosureBeforePayloadBody() {
-            this.allowPrematureClosureBeforePayloadBody = true;
+            return allowPrematureClosureBeforePayloadBody(true);
+        }
+
+        /**
+         * Allows interpreting connection closures as the end of HTTP/1.1 messages if the receiver did not receive any
+         * part of the payload body before the connection closure.
+         * @param allow {@code true} if the receiver should interpret connection closures as the end of HTTP/1.1
+         * messages if it did not receive any part of the payload body before the connection closure.
+         * @return {@code this}
+         */
+        public Builder allowPrematureClosureBeforePayloadBody(boolean allow) {
+            this.allowPrematureClosureBeforePayloadBody = allow;
+            return this;
+        }
+
+        /**
+         * Allow {@code LF} without a proceeding {@code CR} as described in
+         * <a href="https://tools.ietf.org/html/rfc7230#section-3.5">HTTP/1.x Message Parsing Robustness</a>:
+         * <pre>
+         *   Although the line terminator for the start-line and header fields is
+         *   the sequence CRLF, a recipient MAY recognize a single LF as a line
+         *   terminator and ignore any preceding CR.
+         * </pre>
+         * @param allow {@code true} to allow {@code LF} without a proceeding {@code CR}.
+         * @return {@code this}
+         */
+        public Builder allowLFWithoutCR(boolean allow) {
+            this.allowLFWithoutCR = allow;
             return this;
         }
 
@@ -61,7 +107,7 @@ public final class H1SpecExceptions {
          * @return a new {@link H1SpecExceptions}
          */
         public H1SpecExceptions build() {
-            return new H1SpecExceptions(allowPrematureClosureBeforePayloadBody);
+            return new H1SpecExceptions(allowPrematureClosureBeforePayloadBody, allowLFWithoutCR);
         }
     }
 }
