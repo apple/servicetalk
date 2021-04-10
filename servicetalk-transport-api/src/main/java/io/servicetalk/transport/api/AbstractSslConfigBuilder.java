@@ -60,7 +60,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param tmf the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
      * @return {@code this}.
      */
-    T trustManager(TrustManagerFactory tmf) {
+    public final T trustManager(TrustManagerFactory tmf) {
         this.trustManagerFactory = requireNonNull(tmf);
         trustCertChainSupplier = null;
         return thisT();
@@ -81,7 +81,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
-    T trustManager(Supplier<InputStream> trustCertChainSupplier) {
+    public final T trustManager(Supplier<InputStream> trustCertChainSupplier) {
         this.trustCertChainSupplier = requireNonNull(trustCertChainSupplier);
         trustManagerFactory = null;
         return thisT();
@@ -98,7 +98,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshake.
      * @return {@code this}.
      */
-    T keyManager(KeyManagerFactory kmf) {
+    public final T keyManager(KeyManagerFactory kmf) {
         this.keyManagerFactory = requireNonNull(kmf);
         keyCertChainSupplier = null;
         keySupplier = null;
@@ -125,7 +125,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
-    T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
+    public final T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
         keyPassword = null;
@@ -148,7 +148,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      * @return {@code this}.
      */
-    T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+    public final T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
                  @Nullable String keyPassword) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
@@ -179,7 +179,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      * @see SSLEngine#setEnabledProtocols(String[])
      */
-    public T sslProtocols(List<String> protocols) {
+    public final T sslProtocols(List<String> protocols) {
         if (protocols.isEmpty()) {
             throw new IllegalArgumentException("protocols cannot be empty");
         }
@@ -194,7 +194,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      * @see SSLEngine#setEnabledProtocols(String[])
      */
-    public T sslProtocols(final String... protocols) {
+    public final T sslProtocols(final String... protocols) {
         return sslProtocols(asList(protocols));
     }
 
@@ -211,7 +211,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param protocols the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      * @return {@code this}.
      */
-    public T alpnProtocols(final List<String> protocols) {
+    public final T alpnProtocols(final List<String> protocols) {
         if (protocols.isEmpty()) {
             throw new IllegalArgumentException("protocols cannot be empty");
         }
@@ -227,7 +227,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param protocols the TLS <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> protocols.
      * @return {@code this}.
      */
-    public T alpnProtocols(final String... protocols) {
+    public final T alpnProtocols(final String... protocols) {
         return alpnProtocols(asList(protocols));
     }
 
@@ -242,7 +242,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param ciphers the ciphers to use.
      * @return {@code this}.
      */
-    public T ciphers(final List<String> ciphers) {
+    public final T ciphers(final List<String> ciphers) {
         if (ciphers.isEmpty()) {
             throw new IllegalArgumentException("ciphers cannot be empty");
         }
@@ -256,7 +256,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param ciphers the ciphers to use.
      * @return {@code this}.
      */
-    public T ciphers(final String... ciphers) {
+    public final T ciphers(final String... ciphers) {
         return ciphers(asList(ciphers));
     }
 
@@ -272,7 +272,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      * @see SSLSessionContext#setSessionCacheSize(int)
      */
-    public T sessionCacheSize(long sessionCacheSize) {
+    public final T sessionCacheSize(long sessionCacheSize) {
         if (sessionCacheSize < 0) {
             throw new IllegalArgumentException("sessionCacheSize: " + sessionCacheSize + " (expected >=0)");
         }
@@ -291,7 +291,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @return {@code this}.
      * @see SSLSessionContext#setSessionTimeout(int)
      */
-    public T sessionTimeout(long sessionTimeout) {
+    public final T sessionTimeout(long sessionTimeout) {
         if (sessionTimeout < 0) {
             throw new IllegalArgumentException("sessionTimeout: " + sessionTimeout + " (expected >=0)");
         }
@@ -309,7 +309,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param provider the {@link SslProvider} to use.
      * @return {@code this}.
      */
-    public T provider(SslProvider provider) {
+    public final T provider(SslProvider provider) {
         this.provider = requireNonNull(provider);
         return thisT();
     }
