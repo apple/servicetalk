@@ -95,7 +95,6 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -152,7 +151,6 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -686,7 +684,7 @@ public class H2PriorKnowledgeFeatureParityTest {
             }
             if (h2PriorKnowledge) {
                 assertThat(assertThrows(Throwable.class, () -> client.request(request)),
-                        either(instanceOf(Http2Exception.class)).or(instanceOf(ClosedChannelException.class)));
+                        instanceOf(Http2Exception.class));
             } else {
                 try (ReservedBlockingHttpConnection reservedConn = client.reserveConnection(request)) {
                     assertThrows(DecoderException.class, () -> {
