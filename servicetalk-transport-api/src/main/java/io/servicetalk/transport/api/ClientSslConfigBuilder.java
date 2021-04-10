@@ -69,24 +69,6 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         trustManager(trustCertChainSupplier);
     }
 
-    @Override
-    public ClientSslConfigBuilder keyManager(KeyManagerFactory kmf) {
-        return super.keyManager(kmf);
-    }
-
-    @Override
-    public ClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
-                                             Supplier<InputStream> keySupplier) {
-        return super.keyManager(keyCertChainSupplier, keySupplier);
-    }
-
-    @Override
-    public ClientSslConfigBuilder keyManager(Supplier<InputStream> keyCertChainSupplier,
-                                             Supplier<InputStream> keySupplier,
-                                             @Nullable String keyPassword) {
-        return super.keyManager(keyCertChainSupplier, keySupplier, keyPassword);
-    }
-
     /**
      * Set the algorithm to use for hostname verification to verify the
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.

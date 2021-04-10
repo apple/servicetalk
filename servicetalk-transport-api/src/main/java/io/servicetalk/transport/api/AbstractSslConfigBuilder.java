@@ -60,7 +60,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param tmf the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
      * @return {@code this}.
      */
-    T trustManager(TrustManagerFactory tmf) {
+    public T trustManager(TrustManagerFactory tmf) {
         this.trustManagerFactory = requireNonNull(tmf);
         trustCertChainSupplier = null;
         return thisT();
@@ -81,7 +81,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
-    T trustManager(Supplier<InputStream> trustCertChainSupplier) {
+    public T trustManager(Supplier<InputStream> trustCertChainSupplier) {
         this.trustCertChainSupplier = requireNonNull(trustCertChainSupplier);
         trustManagerFactory = null;
         return thisT();
@@ -98,7 +98,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param kmf the {@link KeyManagerFactory} to use for the SSL/TLS handshake.
      * @return {@code this}.
      */
-    T keyManager(KeyManagerFactory kmf) {
+    public T keyManager(KeyManagerFactory kmf) {
         this.keyManagerFactory = requireNonNull(kmf);
         keyCertChainSupplier = null;
         keySupplier = null;
@@ -125,7 +125,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * caller is responsible for invoking {@link InputStream#close()}.
      * @return {@code this}.
      */
-    T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
+    public T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
         keyPassword = null;
@@ -148,7 +148,7 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
      * @param keyPassword the password required to access the key material from {@code keySupplier}.
      * @return {@code this}.
      */
-    T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+    public T keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
                  @Nullable String keyPassword) {
         this.keyCertChainSupplier = requireNonNull(keyCertChainSupplier);
         this.keySupplier = requireNonNull(keySupplier);
