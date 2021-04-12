@@ -128,9 +128,11 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * payload body concatenated with the <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2">trailer</a> (if
      * present).
      * <p>
-     * The transformation is not expected to change the presence of trailers in the message body. For example behavior
-     * is undefined if a {@link HttpHeaders} object is inserted to or removed from to the returned {@link Publisher}.
-     * To add or clear trailers use {@link #transform(TrailersTransformer)}.
+     * The transformation is not expected to change the content of the message body {@link Publisher} or presence of
+     * trailers in it. For example, behavior is undefined if a content is altered (added/removed/resized) or
+     * {@link HttpHeaders trailers} are inserted to or removed from to the returned {@link Publisher}. To alter the
+     * payload body content use {@link #transformPayloadBody(UnaryOperator)} method, its overloads, or
+     * {@link #transform(TrailersTransformer)} method which can also be used to modify trailers.
      * @param transformer Responsible for transforming the message-body.
      * @return {@code this}.
      */

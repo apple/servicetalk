@@ -35,6 +35,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Integer.MAX_VALUE;
@@ -287,8 +289,15 @@ final class HttpDataSourceTransformations {
         HttpHeaders trailers;
     }
 
-    static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(Publisher<?> payloadAndTrailers,
-                                                                  BufferAllocator allocator) {
+    static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(final DefaultPayloadInfo payloadInfo,
+                                                                  final Publisher<?> payloadAndTrailers,
+                                                                  final BufferAllocator allocator) {
+        if (payloadAndTrailers == empty()) {
+            payloadInfo.setEmpty(true).setMayHaveTrailersAndGenericTypeBuffer(false);
+            PayloadAndTrailers pair = new PayloadAndTrailers();
+            pair.payload = allocator.newBuffer(0, false);
+            return succeeded(pair);
+        }
         return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
             if (nextItem instanceof Buffer) {
                 try {
@@ -314,7 +323,11 @@ final class HttpDataSourceTransformations {
             return pair;
         }).map(pair -> {
             if (pair.payload == null) {
+                payloadInfo.setEmpty(true);
                 pair.payload = allocator.newBuffer(0, false);
+            }
+            if (pair.trailers == null) {
+                payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(false);
             }
             return pair;
         });

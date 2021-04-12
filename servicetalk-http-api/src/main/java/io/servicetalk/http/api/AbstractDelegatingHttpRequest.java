@@ -174,6 +174,11 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
+    public boolean isEmpty() {
+        return original.isEmpty();
+    }
+
+    @Override
     public boolean isSafeToAggregate() {
         return original.isSafeToAggregate();
     }

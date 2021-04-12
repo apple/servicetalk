@@ -203,6 +203,11 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
+    public boolean isEmpty() {
+        return payloadHolder.isEmpty();
+    }
+
+    @Override
     public boolean isSafeToAggregate() {
         return payloadHolder.isSafeToAggregate();
     }
