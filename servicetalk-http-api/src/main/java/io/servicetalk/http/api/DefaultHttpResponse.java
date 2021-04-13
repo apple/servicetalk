@@ -77,18 +77,15 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        final DefaultPayloadInfo payloadInfo;
-        final Publisher<Object> payload;
         final boolean emptyPayloadBody = payloadBody.readableBytes() == 0;
+        final Publisher<Object> payload;
         if (trailers != null) {
             payload = emptyPayloadBody ? from(trailers) : from(payloadBody, trailers);
-            payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
-                    .setMayHaveTrailersAndGenericTypeBuffer(true);
         } else {
             payload = emptyPayloadBody ? empty() : from(payloadBody);
-            payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
-                    .setMayHaveTrailersAndGenericTypeBuffer(false);
         }
+        final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
+                .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
         return new DefaultStreamingHttpResponse(status(), version(), headers(), original.payloadHolder().allocator(),
                 payload, payloadInfo, original.payloadHolder().headersFactory());
     }
