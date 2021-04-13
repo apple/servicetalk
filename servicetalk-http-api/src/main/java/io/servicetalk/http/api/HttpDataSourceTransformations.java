@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -46,6 +47,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class HttpDataSourceTransformations {
+
+    private static final PayloadAndTrailers EMPTY_PAYLOAD_AND_TRAILERS = new PayloadAndTrailers();
+
     private HttpDataSourceTransformations() {
         // no instances
     }
@@ -283,8 +287,7 @@ final class HttpDataSourceTransformations {
     }
 
     static final class PayloadAndTrailers {
-        @Nullable
-        Buffer payload;
+        Buffer payload = EMPTY_BUFFER;
         @Nullable
         HttpHeaders trailers;
     }
@@ -294,15 +297,13 @@ final class HttpDataSourceTransformations {
                                                                   final BufferAllocator allocator) {
         if (payloadAndTrailers == empty()) {
             payloadInfo.setEmpty(true).setMayHaveTrailersAndGenericTypeBuffer(false);
-            PayloadAndTrailers pair = new PayloadAndTrailers();
-            pair.payload = allocator.newBuffer(0, false);
-            return succeeded(pair);
+            return succeeded(EMPTY_PAYLOAD_AND_TRAILERS);
         }
         return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
             if (nextItem instanceof Buffer) {
                 try {
                     Buffer buffer = (Buffer) nextItem;
-                    if (pair.payload == null) {
+                    if (pair.payload == EMPTY_BUFFER) {
                         pair.payload = buffer;
                     } else if (pair.payload instanceof CompositeBuffer) {
                         ((CompositeBuffer) pair.payload).addBuffer(buffer);
@@ -322,9 +323,8 @@ final class HttpDataSourceTransformations {
             }
             return pair;
         }).map(pair -> {
-            if (pair.payload == null) {
+            if (pair.payload == EMPTY_BUFFER) {
                 payloadInfo.setEmpty(true);
-                pair.payload = allocator.newBuffer(0, false);
             }
             if (pair.trailers == null) {
                 payloadInfo.setMayHaveTrailersAndGenericTypeBuffer(false);

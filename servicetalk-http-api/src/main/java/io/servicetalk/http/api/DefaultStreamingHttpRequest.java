@@ -190,11 +190,7 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
 
     @Override
     public Single<HttpRequest> toRequest() {
-        return payloadHolder.aggregate()
-                .map(pair -> {
-                    assert pair.payload != null;
-                    return new DefaultHttpRequest(this, pair.payload, pair.trailers);
-                });
+        return payloadHolder.aggregate().map(pair -> new DefaultHttpRequest(this, pair.payload, pair.trailers));
     }
 
     @Override

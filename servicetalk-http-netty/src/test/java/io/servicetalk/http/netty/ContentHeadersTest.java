@@ -132,13 +132,13 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequestAsStreaming(GET), transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_NEITHER),
 
                 new BlockingRequestTest(aggregatedRequest(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(aggregatedRequestAsStreaming(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new BlockingRequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new BlockingRequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new BlockingRequestTest(streamingRequest(GET), withoutPayload(), HAVE_NEITHER),
 
                 // ----- Response -----
                 new ResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
@@ -181,7 +181,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponse(INTERNAL_SERVER_ERROR), CONNECT, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponseAsStreaming(OK), GET, transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(streamingResponse(OK), GET, defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
 
                 new BlockingResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingResponseTest(aggregatedResponseAsStreaming(OK), GET, defaults(), HAVE_CONTENT_LENGTH),

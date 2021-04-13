@@ -22,6 +22,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.util.Objects.requireNonNull;
 
@@ -237,11 +238,11 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         final Publisher<Object> payload;
         final boolean emptyPayloadBody = payloadBody.readableBytes() == 0;
         if (trailers != null) {
-            payload = from(payloadBody, trailers);
+            payload = emptyPayloadBody ? from(trailers) : from(payloadBody, trailers);
             payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                     .setMayHaveTrailersAndGenericTypeBuffer(true);
         } else {
-            payload = from(payloadBody);
+            payload = emptyPayloadBody ? empty() : from(payloadBody);
             payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                     .setMayHaveTrailersAndGenericTypeBuffer(false);
         }
