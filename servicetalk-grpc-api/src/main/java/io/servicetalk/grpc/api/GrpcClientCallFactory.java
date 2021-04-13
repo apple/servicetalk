@@ -170,6 +170,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface ClientCall<Req, Resp> {
 
         /**
@@ -188,6 +189,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface StreamingClientCall<Req, Resp> {
 
         /**
@@ -206,6 +208,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface RequestStreamingClientCall<Req, Resp> {
 
         /**
@@ -224,6 +227,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface ResponseStreamingClientCall<Req, Resp> {
 
         /**
@@ -242,6 +246,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface BlockingClientCall<Req, Resp> {
 
         /**
@@ -261,6 +266,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface BlockingStreamingClientCall<Req, Resp> {
 
         /**
@@ -280,6 +286,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface BlockingRequestStreamingClientCall<Req, Resp> {
 
         /**
@@ -299,6 +306,7 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     interface BlockingResponseStreamingClientCall<Req, Resp> {
 
         /**

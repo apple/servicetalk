@@ -96,7 +96,7 @@ final class GrpcUtils {
      * very large number of different duration values so we need to implement an LRU cache to limit the number of
      * cached header values.
      */
-    private static Map<Duration, CharSequence> TIMEOUT_HEADER_VALUES_CACHE =
+    private static final Map<Duration, CharSequence> TIMEOUT_HEADER_VALUES_CACHE =
             Collections.synchronizedMap(new LinkedHashMap<Duration, CharSequence>() {
                 private static final int CACHE_ENTRIES = 100;
 
@@ -350,7 +350,7 @@ final class GrpcUtils {
             throw new GrpcStatus(INTERNAL, null,
                     "HTTP status code: " + status + "\n" +
                             "\tinvalid " + CONTENT_TYPE + ": " + contentTypeHeader + "\n" +
-                            "\theaders: " + headers.toString()).asException();
+                            "\theaders: " + headers).asException();
         }
     }
 

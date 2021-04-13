@@ -55,7 +55,8 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  */
 public abstract class GrpcServerBuilder {
     /**
-     * Async context key for sub-classes in other packages.
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new client request the remaining
+     * time to be included in the request can be calculated.
      */
     protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
 

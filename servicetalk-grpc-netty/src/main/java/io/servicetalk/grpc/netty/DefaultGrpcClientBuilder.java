@@ -20,7 +20,6 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
@@ -43,7 +42,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -77,6 +75,28 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
             ChronoUnit.SECONDS,
             ChronoUnit.MINUTES,
             ChronoUnit.HOURS,
+    };
+
+    /**
+     * A function which determines the timeout for a given request.
+     */
+    private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR = new TimeoutFromRequest() {
+        /**
+         * Return the timeout duration extracted from the GRPC timeout HTTP header if present
+         *
+         * @param request The HTTP request to be used as source of the timeout filter duration.
+         * @return The non-negative timeout duration which may be null
+         * @throws IllegalArgumentException if the timeout value is malformed
+         */
+        public @Nullable Duration apply(HttpRequestMetaData request) {
+            return readTimeoutHeader(request);
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            // we do not block and have no influence on strategy
+            return strategy;
+        }
     };
 
     @Nullable
@@ -216,13 +236,13 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
-        if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
-            httpClientBuilder.appendClientFilter(
-                    new TimeoutHttpRequesterFilter(grpcTimeout(defaultTimeout), true));
+        Duration timeout = null == defaultTimeout || GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ?
+                null : defaultTimeout;
+        if (!invokedBuild && null != timeout) {
+            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
         }
         invokedBuild = true;
-        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(),
-                null == defaultTimeout || GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ? null : defaultTimeout);
+        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(), timeout);
     }
 
     @Override
@@ -234,43 +254,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                          final StreamingHttpClientFilterFactory factory) {
         httpClientBuilder.appendClientFilter(predicate, factory);
-    }
-
-    private static TimeoutFromRequest grpcTimeout(Duration defaultTimeout) {
-
-        return new TimeoutFromRequest() {
-            /**
-             * Return the timeout duration extracted from the GRPC timeout HTTP header if present, from the async
-             * context if present or the default timeout.
-             *
-             * @param request The HTTP request to be used as source of the GRPC timeout header
-             * @return The non-negative timeout duration which may be null
-             * @throws IllegalArgumentException if the timeout value is malformed
-             */
-            public @Nullable Duration apply(HttpRequestMetaData request) {
-                Duration duration = readTimeoutHeader(request);
-
-                if (null != duration) {
-                    // use timeout from request
-                    return duration;
-                }
-
-                Instant deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
-
-                if (null != deadline) {
-                    // Use remaining time until deadline from async context
-                    return Duration.between(Instant.now(), deadline);
-                }
-
-                return defaultTimeout;
-            }
-
-            @Override
-            public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-                // we do not block and have no influence on strategy
-                return strategy;
-            }
-        };
     }
 
     /**

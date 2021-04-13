@@ -61,7 +61,8 @@ public abstract class GrpcClientBuilder<U, R>
     static final AsyncContextMap.Key<Instant> PKG_GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
 
     /**
-     * for sub-classes in other packages.
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
+     * included in the request can be calculated.
      */
     protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = PKG_GRPC_DEADLINE_KEY;
 
