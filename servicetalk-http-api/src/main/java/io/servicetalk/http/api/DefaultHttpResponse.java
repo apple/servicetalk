@@ -21,7 +21,6 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.util.Objects.requireNonNull;
 
@@ -78,11 +77,12 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     @Override
     public StreamingHttpResponse toStreamingResponse() {
         final boolean emptyPayloadBody = payloadBody.readableBytes() == 0;
+        @Nullable
         final Publisher<Object> payload;
         if (trailers != null) {
             payload = emptyPayloadBody ? from(trailers) : from(payloadBody, trailers);
         } else {
-            payload = emptyPayloadBody ? empty() : from(payloadBody);
+            payload = emptyPayloadBody ? null : from(payloadBody);
         }
         final DefaultPayloadInfo payloadInfo = new DefaultPayloadInfo(this).setEmpty(emptyPayloadBody)
                 .setMayHaveTrailersAndGenericTypeBuffer(trailers != null);
