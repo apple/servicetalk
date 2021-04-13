@@ -74,7 +74,9 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Set default timeout during which gRCPC calls are expected to complete.
+     * Set default timeout during which gRCPC calls are expected to complete. This value is also the maximum timeout
+     * for all calls made using this client; longer timeout values requested by client calls will be limited to this
+     * value.
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.
