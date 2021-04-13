@@ -24,7 +24,6 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.hamcrest.Matcher;
@@ -50,8 +49,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,13 +60,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ContentLengthTest extends AbstractNettyHttpServerTest {
+public class ContentLengthTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
-
-    public ContentLengthTest() {
-        super(CACHED, CACHED);
-    }
 
     @Test
     public void shouldNotCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
@@ -174,18 +169,18 @@ public class ContentLengthTest extends AbstractNettyHttpServerTest {
         setResponseContentLengthAndVerify(response, contentEqualTo("12"));
     }
 
-    private static HttpRequest newAggregatedRequest() {
+    private static HttpRequest newAggregatedRequest() throws Exception {
         return newAggregatedRequest(GET);
     }
 
-    private static HttpRequest newAggregatedRequest(HttpRequestMethod method) {
-        return awaitSingleIndefinitelyNonNull(StreamingHttpRequests.newRequest(method, "/", HTTP_1_1,
-                headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest());
+    private static HttpRequest newAggregatedRequest(HttpRequestMethod method) throws Exception {
+        return newRequest(method, "/", HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory)
+                .toRequest().toFuture().get();
     }
 
-    private static HttpResponse newAggregatedResponse() {
-        return awaitSingleIndefinitelyNonNull(newResponse(OK, HTTP_1_1, headersFactory.newHeaders(),
-                DEFAULT_ALLOCATOR, headersFactory).toResponse());
+    private static HttpResponse newAggregatedResponse() throws Exception {
+        return newResponse(OK, HTTP_1_1, headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory)
+                .toResponse().toFuture().get();
     }
 
     private static void setRequestContentLengthAndVerify(final StreamingHttpRequest request,
