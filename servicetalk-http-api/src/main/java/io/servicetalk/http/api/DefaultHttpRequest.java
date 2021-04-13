@@ -22,6 +22,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.util.Objects.requireNonNull;
 
@@ -184,6 +185,10 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public Buffer payloadBody() {
+        if (payloadBody == EMPTY_BUFFER) {
+            payloadBody = original.payloadHolder().allocator().newBuffer(0, false);
+            // The correct DefaultPayloadInfo#setEmpty(...) flag will be set in toStreamingRequest()
+        }
         return payloadBody;
     }
 
@@ -233,7 +238,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        final boolean emptyPayloadBody = payloadBody.readableBytes() == 0;
+        final boolean emptyPayloadBody = payloadBody == EMPTY_BUFFER;
         @Nullable
         final Publisher<Object> payload;
         if (trailers != null) {
