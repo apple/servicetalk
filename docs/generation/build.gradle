@@ -30,7 +30,7 @@ buildscript {
 }
 
 plugins {
-  id "com.github.node-gradle.node" version "3.0.1"
+  id "com.github.node-gradle.node" version "$nodePluginVersion"
 }
 
 apply plugin: "base"
@@ -44,7 +44,7 @@ ext.Jsoup = org.jsoup.Jsoup
 buildDir = ".out"
 
 node {
-  version = "14.16.0" // LTS
+  version = "$nodeVersion"
   download = true
 }
 
