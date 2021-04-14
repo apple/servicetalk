@@ -303,7 +303,7 @@ final class HttpDataSourceTransformations {
             if (nextItem instanceof Buffer) {
                 try {
                     Buffer buffer = (Buffer) nextItem;
-                    if (pair.payload == EMPTY_BUFFER) {
+                    if (isAlwaysEmpty(pair.payload)) {
                         pair.payload = buffer;
                     } else if (pair.payload instanceof CompositeBuffer) {
                         ((CompositeBuffer) pair.payload).addBuffer(buffer);
@@ -323,7 +323,7 @@ final class HttpDataSourceTransformations {
             }
             return pair;
         }).map(pair -> {
-            if (pair.payload == EMPTY_BUFFER) {
+            if (isAlwaysEmpty(pair.payload)) {
                 payloadInfo.setEmpty(true);
             }
             if (pair.trailers == null) {
@@ -331,5 +331,9 @@ final class HttpDataSourceTransformations {
             }
             return pair;
         });
+    }
+
+    static boolean isAlwaysEmpty(final Buffer buffer) {
+        return buffer == EMPTY_BUFFER || (buffer.isReadOnly() && buffer.readableBytes() == 0);
     }
 }

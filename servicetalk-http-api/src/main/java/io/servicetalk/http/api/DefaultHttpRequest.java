@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.isAlwaysEmpty;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
@@ -238,7 +239,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        final boolean emptyPayloadBody = payloadBody == EMPTY_BUFFER;
+        final boolean emptyPayloadBody = isAlwaysEmpty(payloadBody);
         @Nullable
         final Publisher<Object> payload;
         if (trailers != null) {
