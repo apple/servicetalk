@@ -32,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -180,10 +179,10 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
                             response.timeout(timeout) : response.timeout(timeout, timeoutExecutor);
 
                     if (fullRequestResponse) {
-                        Instant deadline = Instant.now().plus(timeout);
+                        long deadline = System.nanoTime() + timeout.toNanos();
                         response = timeoutResponse.map(resp -> resp.transformMessageBody(body ->
                                 Publisher.defer(() -> {
-                                    Duration remaining = Duration.between(Instant.now(), deadline);
+                                    Duration remaining = Duration.ofNanos(deadline - System.nanoTime());
                                     return (Duration.ZERO.compareTo(remaining) <= 0 ?
                                             Publisher.failed(
                                                     new TimeoutException("timeout after " + timeout.toMillis() + "ms"))
