@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -65,6 +66,9 @@ interface SingleAddressGrpcClientBuilder<U, R,
 
     @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> protocols(HttpProtocolConfig... protocols);
+
+    @Override
+    SingleAddressGrpcClientBuilder<U, R, SDE> defaultTimeout(Duration defaultTimeout);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this

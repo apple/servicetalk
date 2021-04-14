@@ -25,6 +25,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -132,6 +133,7 @@ import static io.servicetalk.grpc.protoc.Words.service;
 import static io.servicetalk.grpc.protoc.Words.strategy;
 import static io.servicetalk.grpc.protoc.Words.strategyFactory;
 import static io.servicetalk.grpc.protoc.Words.supportedMessageCodings;
+import static io.servicetalk.grpc.protoc.Words.timeout;
 import static java.lang.System.lineSeparator;
 import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
@@ -239,7 +241,7 @@ final class Generator {
 
         final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto);
         if (printJavaDocs) {
-            serviceClassBuilder.addJavadoc("Class for $L", serviceProto.getName());
+            serviceClassBuilder.addJavadoc("Class for $L Service", serviceProto.getName());
         }
 
         addSerializationProviderInit(state, serviceClassBuilder);
@@ -645,10 +647,24 @@ final class Generator {
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
+                            .addParameter(Duration.class, timeout, FINAL)
+                            .addStatement("super($T.$L, $L)",
+                                    rpcInterface.className, RPC_PATH, timeout)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addModifiers(PUBLIC)
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(ContentCodec, requestEncoding, FINAL)
                             .addStatement("super($T.$L, $L, $L)", rpcInterface.className, RPC_PATH,
                                     strategy, requestEncoding)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addModifiers(PUBLIC)
+                            .addParameter(GrpcExecutionStrategy, strategy, FINAL)
+                            .addParameter(ContentCodec, requestEncoding, FINAL)
+                            .addParameter(Duration.class, timeout, FINAL)
+                            .addStatement("super($T.$L, $L, $L, $L)", rpcInterface.className, RPC_PATH,
+                                    strategy, requestEncoding, timeout)
                             .build())
                     .build();
 

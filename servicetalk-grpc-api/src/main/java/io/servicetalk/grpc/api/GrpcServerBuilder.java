@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -38,6 +39,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -51,6 +53,12 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
+    /**
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new client request the remaining
+     * time to be included in the request can be calculated.
+     */
+    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
+
     private boolean appendedCatchAllFilter;
 
     /**
@@ -63,6 +71,15 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
+
+    /**
+     * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog

@@ -37,11 +37,18 @@ import io.servicetalk.http.api.TrailersTransformer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -50,6 +57,8 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
+import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
@@ -63,6 +72,9 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
+
+    // TODO could/should add "+proto"
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
     private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
     private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
@@ -71,10 +83,17 @@ final class GrpcUtils {
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
+    private static final CharSequence GRPC_TIMEOUT_KEY = newAsciiString("grpc-timeout");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
     private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
+
+    /**
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
+     * value to be 8 or fewer ASCII integer digits.
+     */
+    static final long EIGHT_NINES = 99_999_999L;
 
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
@@ -83,15 +102,61 @@ final class GrpcUtils {
                     ensureGrpcStatusReceived(trailers);
                     return trailers;
                 }
+
+                @Override
+                protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers)
+                        throws Throwable {
+
+                    // local cancel
+                    if (cause instanceof CancellationException) {
+                        // include the cause so that caller can determine who cancelled request
+                        throw new GrpcStatusException(new GrpcStatus(CANCELLED, cause), () -> null);
+                    }
+
+                    // local timeout
+                    if (cause instanceof TimeoutException) {
+                        // omit the cause unless DEBUG logging has been configured
+                        throw new GrpcStatusException(
+                                LOGGER.isDebugEnabled() ?
+                                    new GrpcStatus(DEADLINE_EXCEEDED, cause) :
+                                    DEADLINE_EXCEEDED.status(),
+                                () -> null);
+                    }
+
+                    throw cause;
+                }
             };
+
+
+    /**
+     * Conversions between time units for gRPC timeout
+     */
+    private static final LongUnaryOperator[] CONVERTERS = {
+            TimeUnit.NANOSECONDS::toMicros,
+            TimeUnit.MICROSECONDS::toMillis,
+            TimeUnit.MILLISECONDS::toSeconds,
+            TimeUnit.SECONDS::toMinutes,
+            TimeUnit.MINUTES::toHours,
+    };
+
+    /**
+     * Allowed time units for gRPC timeout
+     */
+    private static final char[] TIMEOUT_UNIT_CHARS = "numSMH".toCharArray();
 
     private GrpcUtils() {
         // No instances.
     }
 
-    static void initRequest(final HttpRequestMetaData request, final List<ContentCodec> supportedEncodings) {
+    static void initRequest(final HttpRequestMetaData request,
+                            final List<ContentCodec> supportedEncodings,
+                            @Nullable final Duration timeout) {
         assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
+        final CharSequence timeoutValue = makeTimeoutHeader(timeout);
+        if (null != timeoutValue) {
+            headers.set(GRPC_TIMEOUT_KEY, timeoutValue);
+        }
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
@@ -99,6 +164,29 @@ final class GrpcUtils {
         if (acceptedEncoding != null) {
             headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
         }
+    }
+
+    /**
+     * Make a timeout header value from the specified duration.
+     *
+     * @param timeout the timeout {@link Duration}
+     * @return The timeout header text value or null for infinite timeouts
+     */
+    static @Nullable CharSequence makeTimeoutHeader(@Nullable Duration timeout) {
+        if (null == timeout || timeout.compareTo(GrpcClientMetadata.GRPC_MAX_TIMEOUT) > 0) {
+            // no timeout specified or "infinite" timeout
+            return null;
+        }
+
+        // convert assuming that negative timeout is the result of an already missed deadline.
+        // cannot overflow as we have already checked against safe maximum
+        long timeoutValue = timeout.isNegative() ? 0 : timeout.toNanos();
+        int units = 0;
+        while (timeoutValue > EIGHT_NINES) {
+            timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
+            units++; // cannot go past end of units array as we have already range checked
+        }
+        return newAsciiString(Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units]);
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
@@ -167,14 +255,33 @@ final class GrpcUtils {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
             setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
-        } else if (cause instanceof MessageEncodingException) {
-            MessageEncodingException msgEncException = (MessageEncodingException) cause;
-            GrpcStatus status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" +
-                    msgEncException.encoding() + "' not supported ");
-            setStatus(trailers, status, null, allocator);
         } else {
-            setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
+            setStatus(trailers, toGrpcStatus(cause), null, allocator);
         }
+    }
+
+    static GrpcStatus toGrpcStatus(Throwable cause) {
+        GrpcStatus status;
+        if (cause instanceof MessageEncodingException) {
+            MessageEncodingException msgEncException = (MessageEncodingException) cause;
+            status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
+                    + "' not supported ");
+        } else if (cause instanceof CancellationException) {
+            status = new GrpcStatus(CANCELLED, cause);
+        } else if (cause instanceof TimeoutException) {
+            // omit cause unless logging configured for debug
+            status = LOGGER.isDebugEnabled() ? new GrpcStatus(DEADLINE_EXCEEDED, cause) : DEADLINE_EXCEEDED.status();
+        } else {
+            // Initialize detail because cause is often lost
+            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
+        }
+
+        return status;
+    }
+
+    static GrpcStatusException toGrpcException(Throwable cause) {
+        return cause instanceof GrpcStatusException ? (GrpcStatusException) cause
+                : new GrpcStatusException(toGrpcStatus(cause), () -> null);
     }
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
@@ -227,7 +334,7 @@ final class GrpcUtils {
             throw new GrpcStatus(INTERNAL, null,
                     "HTTP status code: " + status + "\n" +
                             "\tinvalid " + CONTENT_TYPE + ": " + contentTypeHeader + "\n" +
-                            "\theaders: " + headers.toString()).asException();
+                            "\theaders: " + headers).asException();
         }
     }
 

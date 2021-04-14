@@ -1,0 +1,3 @@
+== ServiceTalk gRPC Deadlines
+
+Extends "Hello World" example of ServiceTalk gRPC to demonstrate use of deadlines aka timeouts.

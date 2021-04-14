@@ -17,12 +17,22 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.time.Duration;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.grpc.api.GrpcUtils.EIGHT_NINES;
 
 /**
  * Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.
  */
 public interface GrpcClientMetadata extends GrpcMetadata {
+
+    /**
+     * Maximum timeout which can be specified for a <a href="https://www.grpc.io">gRPC</a>
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">request</a>. Note that this
+     * maximum is effectively infinite as the duration is more than 11,000 years.
+     */
+    Duration GRPC_MAX_TIMEOUT = Duration.ofHours(EIGHT_NINES);
 
     /**
      * {@link GrpcExecutionStrategy} to use for the associated
@@ -42,4 +52,13 @@ public interface GrpcClientMetadata extends GrpcMetadata {
      * <a href="https://www.grpc.io">gRPC</a> method.
      */
     ContentCodec requestEncoding();
+
+    /**
+     * Returns timeout duration after which the response is no longer wanted.
+     *
+     * @return {@link Duration} of associated timeout or null for no timeout
+     * @see <a href="https://grpc.io/blog/deadlines/">gRPC Deadlines</a>
+     */
+    @Nullable
+    Duration timeout();
 }

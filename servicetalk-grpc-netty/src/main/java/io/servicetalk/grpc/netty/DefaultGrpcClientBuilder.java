@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,30 +25,86 @@ import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpProtocolConfig;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.utils.TimeoutFromRequest;
+import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
+    /**
+     * gRPC protocol HTTP header used for timeout per
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
+     */
+    private static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
+
+    /**
+     * A function which determines the timeout for a given request.
+     */
+    private static final TimeoutFromRequest GRPC_TIMEOUT_REQHDR = new TimeoutFromRequest() {
+        /**
+         * Return the timeout duration extracted from the GRPC timeout HTTP header if present
+         *
+         * @param request The HTTP request to be used as source of the timeout filter duration.
+         * @return The non-negative timeout duration which may be null
+         * @throws IllegalArgumentException if the timeout value is malformed
+         */
+        public @Nullable Duration apply(HttpRequestMetaData request) {
+            return readTimeoutHeader(request);
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            // we do not block and have no influence on strategy
+            return strategy;
+        }
+    };
+
+    @Nullable
+    private Duration defaultTimeout;
+    private boolean invokedBuild;
 
     private final SingleAddressHttpClientBuilder<U, R> httpClientBuilder;
 
     DefaultGrpcClientBuilder(final SingleAddressHttpClientBuilder<U, R> httpClientBuilder) {
         this.httpClientBuilder = httpClientBuilder.protocols(h2Default());
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout) {
+        if (invokedBuild) {
+            throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
+        }
+
+        if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
+            throw new IllegalArgumentException("defaultTimeout: " + defaultTimeout + " (expected > 0)");
+        }
+
+        this.defaultTimeout = defaultTimeout;
+        return this;
     }
 
     @Override
@@ -132,6 +188,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
+
         httpClientBuilder.autoRetryStrategy(autoRetryStrategyProvider);
         return this;
     }
@@ -164,7 +221,13 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
-        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming());
+        Duration timeout = null == defaultTimeout || GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) < 0 ?
+                null : defaultTimeout;
+        if (!invokedBuild && null != timeout) {
+            httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
+        }
+        invokedBuild = true;
+        return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming(), timeout);
     }
 
     @Override
@@ -176,5 +239,75 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                          final StreamingHttpClientFilterFactory factory) {
         httpClientBuilder.appendClientFilter(predicate, factory);
+    }
+
+    /**
+     * Extract the timeout duration from the HTTP headers if present.
+     *
+     * @param request The HTTP request to be used as source of the GRPC timeout header
+     * @return The non-negative timeout duration which may null if not present
+     * @throws IllegalArgumentException if the timeout value is malformed
+     */
+    static @Nullable Duration readTimeoutHeader(HttpRequestMetaData request) {
+        CharSequence grpcTimeoutValue = request.headers().get(GRPC_TIMEOUT_HEADER_KEY);
+        return null == grpcTimeoutValue ? null : parseTimeoutHeader(grpcTimeoutValue);
+    }
+
+    /**
+     * Parse a gRPC timeout header value as a duration.
+     *
+     * @param grpcTimeoutValue the text value of {@link #GRPC_TIMEOUT_HEADER_KEY} header to be parsed to a timeout
+     * duration
+     * @return The non-negative timeout duration
+     * @throws IllegalArgumentException if the timeout value is malformed
+     */
+    private static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) throws IllegalArgumentException {
+        if (grpcTimeoutValue.length() < 2 || grpcTimeoutValue.length() > 9) {
+            throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                    " (expected 2-9 characters)");
+        }
+
+        // parse ASCII decimal number
+        long runningTotal = 0;
+        for (int digitIdx = 0; digitIdx < grpcTimeoutValue.length() - 1; digitIdx++) {
+            char digitChar = grpcTimeoutValue.charAt(digitIdx);
+            if (digitChar < '0' || digitChar > '9') {
+                // Bad digit
+                throw new NumberFormatException("grpcTimeoutValue: " + grpcTimeoutValue +
+                        " (Bad digit '" + digitChar + "')");
+            } else {
+                runningTotal = runningTotal * 10L + (long) (digitChar - '0');
+            }
+        }
+
+        // Determine timeout units for conversion to duration
+        LongFunction<Duration> toDuration;
+        char unitChar = grpcTimeoutValue.charAt(grpcTimeoutValue.length() - 1);
+        switch (unitChar) {
+            case 'n' :
+                toDuration = Duration::ofNanos;
+                break;
+            case 'u' :
+                toDuration = (long micros) -> Duration.of(micros, ChronoUnit.MICROS);
+                break;
+            case 'm' :
+                toDuration = Duration::ofMillis;
+                break;
+            case 'S' :
+                toDuration = Duration::ofSeconds;
+                break;
+            case 'M' :
+                toDuration = Duration::ofMinutes;
+                break;
+            case 'H' :
+                toDuration = Duration::ofHours;
+                break;
+            default:
+                // Unrecognized units or malformed header
+                throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                        " (Bad time unit '" + unitChar + "')");
+        }
+
+        return toDuration.apply(runningTotal);
     }
 }

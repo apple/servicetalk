@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -36,6 +37,7 @@ import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,6 +53,18 @@ import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
  */
 public abstract class GrpcClientBuilder<U, R>
         implements SingleAddressGrpcClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    /**
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
+     * included in the request can be calculated.
+     */
+    static final AsyncContextMap.Key<Long> PKG_GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
+
+    /**
+     * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
+     * included in the request can be calculated.
+     */
+    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = PKG_GRPC_DEADLINE_KEY;
+
     private boolean appendedCatchAllFilter;
 
     @Override
@@ -75,6 +89,9 @@ public abstract class GrpcClientBuilder<U, R>
 
     @Override
     public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(
