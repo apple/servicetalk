@@ -31,6 +31,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -57,13 +61,14 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     private static final CharSequence CLIENT_TRANSFER_ENCODING = newAsciiString("client-transfer-encoding");
     private static final CharSequence TRAILER_NAME = newAsciiString("trailer-name");
     private static final CharSequence TRAILER_VALUE = newAsciiString("trailer-value");
-    private static final String CONTENT = "content";
 
     private final HttpProtocol protocol;
+    private final String content;
 
-    public ContentLengthAndTrailersTest(HttpProtocol protocol) {
+    public ContentLengthAndTrailersTest(HttpProtocol protocol, String content) {
         super(CACHED, CACHED_SERVER);
         this.protocol = protocol;
+        this.content = content;
         protocol(protocol.config);
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
             @Override
@@ -87,9 +92,14 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
         });
     }
 
-    @Parameterized.Parameters(name = "protocol={0}")
-    public static HttpProtocol[] data() {
-        return HttpProtocol.values();
+    @Parameterized.Parameters(name = "protocol={0}, content={1}")
+    public static Collection<Object[]> data() {
+        List<Object[]> list = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            list.add(new Object[]{protocol, ""});
+            list.add(new Object[]{protocol, "content"});
+        }
+        return list;
     }
 
     @Test
@@ -99,12 +109,12 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void contentLengthAddedManually() throws Exception {
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(CONTENT.length())), r -> r, true, false, false);
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length())), r -> r, true, false, false);
     }
 
     @Test
     public void transferEncodingAddedAutomatically() throws Exception {
-        test(r -> r, r -> r, false, true, false);
+        test(r -> r, r -> r, content.isEmpty(), !content.isEmpty(), false);
     }
 
     @Test
@@ -129,13 +139,16 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                     protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
                         return trailers.add(TRAILER_NAME, TRAILER_VALUE);
                     }
-                }), r -> r, false, true, true);
+                }), r -> r,
+                // HTTP/2 may have content-length and trailers at the same time, but it can set CL only if the content
+                // is empty. Otherwise, it cannot compute CL when the streaming API is used
+                content.isEmpty() && protocol == HTTP_2, !content.isEmpty() || protocol == HTTP_1, true);
     }
 
     @Test
     public void trailersAndContentLengthAddedForAggregatedRequest() throws Exception {
         test(r -> r.toRequest().toFuture().get()
-                        .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                        .setHeader(CONTENT_LENGTH, valueOf(content.length()))
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
                 // HTTP/2 may have content-length and trailers at the same time
@@ -144,7 +157,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void trailersAndContentLengthAddedForStreamingRequest() throws Exception {
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length()))
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
                             @Override
@@ -181,7 +194,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     @Test
     public void trailersContentLengthAndTransferEncodingAddedForAggregatedRequest() throws Exception {
         test(r -> r.toRequest().toFuture().get()
-                        .setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+                        .setHeader(CONTENT_LENGTH, valueOf(content.length()))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                         .toStreamingRequest(),
@@ -191,7 +204,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void trailersContentLengthAndTransferEncodingAddedForStreamingRequest() throws Exception {
-        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(CONTENT.length()))
+        test(r -> r.setHeader(CONTENT_LENGTH, valueOf(content.length()))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
@@ -207,7 +220,8 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     @Test
     public void responseTrailersObservedWhenNoTrailers() throws Exception {
         // Use transform to simulate access to trailers
-        test(r -> r, r -> r.transform(new StatelessTrailersTransformer<>()), false, true, false);
+        test(r -> r, r -> r.transform(new StatelessTrailersTransformer<>()),
+                content.isEmpty(), !content.isEmpty(), false);
     }
 
     @Test
@@ -220,27 +234,33 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
             }
         }),
         // Use transform to simulate access to trailers
-        r -> r.transform(new StatelessTrailersTransformer<>()), false, true, true);
+        r -> r.transform(new StatelessTrailersTransformer<>()),
+                // HTTP/2 may have content-length and trailers at the same time, but it can set CL only if the content
+                // is empty. Otherwise, it cannot compute CL when the streaming API is used
+                content.isEmpty() && protocol == HTTP_2, !content.isEmpty() || protocol == HTTP_1, true);
     }
 
     private void test(Transformer<StreamingHttpRequest> requestTransformer,
                       Transformer<StreamingHttpResponse> responseTransformer,
                       boolean hasContentLength, boolean chunked, boolean hasTrailers) throws Exception {
 
-        StreamingHttpRequest request = requestTransformer.transform(streamingHttpConnection().post(SVC_ECHO)
-                .payloadBody(from(CONTENT), textSerializer()));
+        StreamingHttpRequest preRequest = streamingHttpConnection().post(SVC_ECHO);
+        if (!content.isEmpty()) {
+            preRequest.payloadBody(from(content), textSerializer());
+        }
+        StreamingHttpRequest request = requestTransformer.transform(preRequest);
         HttpResponse response = responseTransformer.transform(makeRequest(request)).toResponse().toFuture().get();
         assertResponse(response, protocol.version, OK);
-        assertThat(response.payloadBody().toString(US_ASCII), equalTo(CONTENT));
+        assertThat(response.payloadBody().toString(US_ASCII), equalTo(content));
 
         HttpHeaders headers = response.headers();
         assertThat("Unexpected content-length on the response", mergeValues(headers.values(CONTENT_LENGTH)),
-                hasContentLength ? contentEqualTo(valueOf(CONTENT.length())) : contentEqualTo(""));
+                contentEqualTo(hasContentLength ? valueOf(content.length()) : ""));
         assertThat("Unexpected transfer-encoding on the response", mergeValues(headers.values(TRANSFER_ENCODING)),
-                chunked ? contentEqualTo(CHUNKED) : contentEqualTo(""));
+                contentEqualTo(chunked ? CHUNKED : ""));
 
         assertThat("Unexpected content-length on the request", headers.get(CLIENT_CONTENT_LENGTH),
-                hasContentLength ? contentEqualTo(valueOf(CONTENT.length())) : nullValue());
+                hasContentLength ? contentEqualTo(valueOf(content.length())) : nullValue());
         assertThat("Unexpected transfer-encoding on the request", headers.get(CLIENT_TRANSFER_ENCODING),
                 chunked ? contentEqualTo(CHUNKED) : nullValue());
         assertThat("Unexpected trailers on the request", response.trailers().get(TRAILER_NAME),

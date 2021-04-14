@@ -71,6 +71,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 @RunWith(Parameterized.class)
@@ -79,6 +80,7 @@ public class FlushStrategyOnServerTest {
     @ClassRule
     public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
     public static final String USE_AGGREGATED_RESP = "aggregated-resp";
+    public static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -114,7 +116,10 @@ public class FlushStrategyOnServerTest {
     @Before
     public void setup() throws Exception {
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
-            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello", "World"), textSerializer());
+            StreamingHttpResponse resp = responseFactory.ok();
+            if (request.headers().get(USE_EMPTY_RESP_BODY) == null) {
+                resp.payloadBody(from("Hello", "World"), textSerializer());
+            }
             if (request.headers().get(USE_AGGREGATED_RESP) != null) {
                 return resp.toResponse().map(HttpResponse::toStreamingResponse);
             }
@@ -154,58 +159,100 @@ public class FlushStrategyOnServerTest {
     @Test
     public void aggregatedResponsesFlushOnEnd() throws Exception {
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
     }
 
     @Test
     public void twoAggregatedResponsesFlushOnEnd() throws Exception {
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
 
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
     }
 
     @Test
-    public void twoStreamingResponsesFlushOnEach() throws Exception {
-        sendARequest(false);
-        verifyStreamingResponseWrite();
+    public void aggregatedEmptyResponsesFlushOnEnd() throws Exception {
+        sendARequest(true, true);
+        assertFlushOnEnd();
+    }
 
-        sendARequest(false);
-        verifyStreamingResponseWrite();
+    @Test
+    public void twoAggregatedEmptyResponsesFlushOnEnd() throws Exception {
+        sendARequest(true, true);
+        assertFlushOnEnd();
+
+        sendARequest(true, true);
+        assertFlushOnEnd();
     }
 
     @Test
     public void streamingResponsesFlushOnEach() throws Exception {
         sendARequest(false);
-        verifyStreamingResponseWrite();
+        assertFlushOnEach();
+    }
+
+    @Test
+    public void twoStreamingResponsesFlushOnEach() throws Exception {
+        sendARequest(false);
+        assertFlushOnEach();
+
+        sendARequest(false);
+        assertFlushOnEach();
+    }
+
+    @Test
+    public void streamingEmptyResponsesFlushOnEnd() throws Exception {
+        sendARequest(false, true);
+        assertFlushOnEnd();
+    }
+
+    @Test
+    public void twoStreamingEmptyResponsesFlushOnEnd() throws Exception {
+        sendARequest(false, true);
+        assertFlushOnEnd();
+
+        sendARequest(false, true);
+        assertFlushOnEnd();
     }
 
     @Test
     public void aggregatedAndThenStreamingResponse() throws Exception {
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
 
         sendARequest(false);
-        verifyStreamingResponseWrite();
+        assertFlushOnEach();
     }
 
     @Test
     public void streamingAndThenAggregatedResponse() throws Exception {
         sendARequest(false);
-        verifyStreamingResponseWrite();
+        assertFlushOnEach();
 
         sendARequest(true);
-        assertAggregatedResponseWrite();
+        assertFlushOnEnd();
     }
 
-    private void assertAggregatedResponseWrite() throws Exception {
-        // aggregated response; headers, single payload and CRLF
-        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(3));
+    @Test
+    public void aggregatedStreamingEmptyResponse() throws Exception {
+        sendARequest(true);
+        assertFlushOnEnd();
+
+        sendARequest(false);
+        assertFlushOnEach();
+
+        sendARequest(false, true);
+        assertFlushOnEnd();
+    }
+
+    private void assertFlushOnEnd() throws Exception {
+        // aggregated response: headers, single (or empty) payload, and empty buffer instead of trailers
+        assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), greaterThan(0));
         assertThat("Unexpected writes", interceptor.pendingEvents(), is(0));
     }
 
-    private void verifyStreamingResponseWrite() throws Exception {
+    private void assertFlushOnEach() throws Exception {
         // headers
         assertThat("Unexpected writes", interceptor.takeWritesTillFlush(), is(1));
         // one chunk; chunk header payload and CRLF
@@ -218,10 +265,17 @@ public class FlushStrategyOnServerTest {
     }
 
     private void sendARequest(final boolean useAggregatedResp) throws Exception {
+        sendARequest(useAggregatedResp, false);
+    }
+
+    private void sendARequest(boolean useAggregatedResp, boolean useEmptyRespBody) throws Exception {
         HttpHeaders headers = headersFactory.newHeaders();
         headers.set(TRANSFER_ENCODING, CHUNKED);
         if (useAggregatedResp) {
             headers.set(USE_AGGREGATED_RESP, "true");
+        }
+        if (useEmptyRespBody) {
+            headers.set(USE_EMPTY_RESP_BODY, "true");
         }
 
         StreamingHttpRequest req = newTransportRequest(GET, "/", HTTP_1_1, headers, DEFAULT_ALLOCATOR,

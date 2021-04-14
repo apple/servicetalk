@@ -23,6 +23,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
     private static final byte SAFE_TO_AGGREGATE = 1;
     private static final byte MAY_HAVE_TRAILERS = 2;
     private static final byte GENERIC_TYPE_BUFFER = 4;
+    private static final byte EMPTY = 8;
 
     private byte flags;
 
@@ -33,10 +34,16 @@ final class DefaultPayloadInfo implements PayloadInfo {
         if (from instanceof DefaultPayloadInfo) {
             this.flags = ((DefaultPayloadInfo) from).flags;
         } else {
+            setEmpty(from.isEmpty());
             setSafeToAggregate(from.isSafeToAggregate());
             setMayHaveTrailers(from.mayHaveTrailers());
             setGenericTypeBuffer(from.isGenericTypeBuffer());
         }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return isSet(EMPTY);
     }
 
     @Override
@@ -52,6 +59,10 @@ final class DefaultPayloadInfo implements PayloadInfo {
     @Override
     public boolean isGenericTypeBuffer() {
         return isSet(GENERIC_TYPE_BUFFER);
+    }
+
+    DefaultPayloadInfo setEmpty(boolean empty) {
+        return set(EMPTY, empty);
     }
 
     DefaultPayloadInfo setSafeToAggregate(boolean safeToAggregate) {

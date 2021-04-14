@@ -151,6 +151,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -426,7 +427,7 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     private static void assertHeaderValue(HttpHeaders headers, String key, String value) {
         CharSequence v = headers.get(key);
-        assertNotNull(v);
+        assertThat(v, notNullValue());
         assertThat(v.toString(), is(value));
     }
 
@@ -1025,8 +1026,8 @@ public class H2PriorKnowledgeFeatureParityTest {
 
             final String responseBody = "foo";
             HttpResponse response = client.request(client.post("/0").payloadBody(responseBody, textSerializer()));
-            assertEquals(responseBody, response.payloadBody(textDeserializer()));
-            assertEmpty(errorQueue);
+            assertThat(response.payloadBody(textDeserializer()), equalTo(responseBody));
+            assertThat(errorQueue, empty());
         }
     }
 
@@ -1393,12 +1394,23 @@ public class H2PriorKnowledgeFeatureParityTest {
                     } else {
                         resp = responseFactory.ok();
                     }
-                    resp = resp.transformMessageBody(pub -> pub.ignoreElements().merge(request.messageBody()));
+                    resp = resp.transformMessageBody(pub -> pub.ignoreElements().merge(request.messageBody()))
+                            // Apply empty transform operation only to inform internal PayloadHolder that the payload
+                            // body may contain content and trailers
+                            .transform(new StatelessTrailersTransformer<>());
                     CharSequence contentType = request.headers().get(CONTENT_TYPE);
                     if (contentType != null) {
-                        resp.headers().add(CONTENT_TYPE, contentType);
+                        resp.setHeader(CONTENT_TYPE, contentType);
                     }
-                    resp.headers().add(COOKIE, request.headers().valuesIterator(HttpHeaderNames.COOKIE));
+                    CharSequence contentLength = request.headers().get(CONTENT_LENGTH);
+                    if (contentLength != null) {
+                        resp.setHeader(CONTENT_LENGTH, contentLength);
+                    }
+                    CharSequence transferEncoding = request.headers().get(TRANSFER_ENCODING);
+                    if (transferEncoding != null) {
+                        resp.setHeader(TRANSFER_ENCODING, transferEncoding);
+                    }
+                    resp.headers().set(COOKIE, request.headers().valuesIterator(COOKIE));
                     return succeeded(resp);
                 }).toFuture().get();
         return (InetSocketAddress) h1ServerContext.listenAddress();

@@ -43,6 +43,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
@@ -119,7 +120,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Nullable
     static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
         // For non-aggregated, don't change the flush strategy, keep the default.
-        return isSafeToAggregate(request) ? flushOnEnd() : null;
+        return isPayloadEmpty(request) || isSafeToAggregate(request) ? flushOnEnd() : null;
     }
 
     @Override

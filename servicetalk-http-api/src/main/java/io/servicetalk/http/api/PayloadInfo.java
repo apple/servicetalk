@@ -24,6 +24,15 @@ import io.servicetalk.concurrent.api.Publisher;
  */
 interface PayloadInfo {
     /**
+     * Returns {@code true} if and only if, the payload body {@link Publisher} was never assigned, changed, or modified,
+     * and therefore remains empty.
+     *
+     * @return {@code true} if and only if, the payload body {@link Publisher} was never assigned, changed, or modified
+     * and therefore remains empty.
+     */
+    boolean isEmpty();
+
+    /**
      * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be safely
      * aggregated to bring all data in memory. Inputs to this decision is left to the user of the API.
      *
@@ -43,9 +52,10 @@ interface PayloadInfo {
 
     /**
      * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be
-     * safely cast to {@link Publisher}&lt;{@link Buffer}&gt;
+     * safely cast to {@link Publisher}&lt;{@link Buffer}&gt;.
+     *
      * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be
-     * safely cast to {@link Publisher}&lt;{@link Buffer}&gt;
+     * safely cast to {@link Publisher}&lt;{@link Buffer}&gt;.
      */
     boolean isGenericTypeBuffer();
 }
