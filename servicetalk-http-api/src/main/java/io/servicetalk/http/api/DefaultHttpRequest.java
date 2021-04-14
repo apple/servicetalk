@@ -186,7 +186,8 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public Buffer payloadBody() {
-        if (payloadBody == EMPTY_BUFFER) {
+        if (payloadBody == EMPTY_BUFFER) {  // default value after aggregation,
+            // override with a new empty buffer to allow users expand it with more data:
             payloadBody = original.payloadHolder().allocator().newBuffer(0, false);
             // The correct DefaultPayloadInfo#setEmpty(...) flag will be set in toStreamingRequest()
         }
