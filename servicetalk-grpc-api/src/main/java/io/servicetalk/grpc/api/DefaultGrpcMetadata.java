@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.time.Duration;
-
 import static java.util.Objects.requireNonNull;
 
 class DefaultGrpcMetadata implements GrpcMetadata {
@@ -24,26 +22,16 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     private final String path;
 
     /**
-     * Timeout for an individual request. All values greater than {@link GrpcMetadata#GRPC_MAX_TIMEOUT} should be
-     * regarded as infinite or no timeout.
+     * Construct a new instance.
+     *
+     * @param path The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
-    private final Duration timeout;
-
-    DefaultGrpcMetadata(final String path, final Duration timeout) {
+    DefaultGrpcMetadata(final String path) {
         this.path = requireNonNull(path, "path");
-        if (Duration.ZERO.compareTo(requireNonNull(timeout, "timeout")) >= 0) {
-            throw new IllegalArgumentException("timeout: " + timeout + " (expected > 0)");
-        }
-        this.timeout = timeout;
     }
 
     @Override
     public String path() {
         return path;
-    }
-
-    @Override
-    public Duration timeout() {
-        return timeout;
     }
 }

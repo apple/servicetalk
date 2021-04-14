@@ -101,9 +101,8 @@ interface BaseGrpcClientBuilder<U, R> {
     BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Set default timeout during which gRPC calls are expected to complete. This value is also the maximum timeout
-     * for all calls made using this client; longer timeout values made using client metadata will be limited to this
-     * value.
+     * Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request metadata includes no timeout; any value specified in client request will supersede this default.
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.

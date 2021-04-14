@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
@@ -33,9 +32,7 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
@@ -79,7 +76,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             return (strategy == null ? client.request(httpRequest) : client.request(strategy, httpRequest))
                     .map(response -> validateResponseAndGetPayload(response, serializationProvider.deserializerFor(
                                     readGrpcMessageEncoding(response, supportedCodings), responseClass)))
-                    .onErrorResume(t -> Single.failed(toGrpcException(t)));
+                    .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
@@ -104,7 +101,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     .flatMapPublisher(response -> validateResponseAndGetPayload(response,
                             serializationProvider.deserializerFor(
                                     readGrpcMessageEncoding(response, supportedCodings), responseClass)))
-                    .onErrorResume(t -> Publisher.failed(toGrpcException(t)));
+                    .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
 
@@ -176,7 +173,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 return validateResponseAndGetPayload(response.toStreamingResponse(),
                         serializationProvider.deserializerFor(
                                 readGrpcMessageEncoding(response, supportedCodings), responseClass))
-                        .onErrorResume(t -> Publisher.failed(toGrpcException(t))).toIterable();
+                        .onErrorMap(GrpcUtils::toGrpcException).toIterable();
             } catch (Exception all) {
                 throw toGrpcException(all);
             }
@@ -243,21 +240,24 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     }
 
     /**
-     * Determines the timeout for a new request using three potential sources; the client default, the client metadata
-     * or the async context. The lowest timeout will be used.
+     * Determines the timeout for a new request using three potential sources; the deadline in the async context, the
+     * request timeout, and the client default. The timeout will be the lesser of the context and request timeouts or if
+     * neither are present, the default timeout.
      *
-     * @param metaDataTimeout the timeout specified in client metadata
-     * @return The timeout {@link Duration}, potentially negative.
+     * @param metaDataTimeout the timeout specified in client metadata or null for no timeout
+     * @return The timeout {@link Duration}, potentially negative or null if no timeout.
      */
-    private Duration timeoutForRequest(Duration metaDataTimeout) {
-        @Nonnull
-        Duration timeout = null != defaultTimeout && defaultTimeout.compareTo(metaDataTimeout) < 0 ?
-                defaultTimeout : metaDataTimeout;
+    private @Nullable Duration timeoutForRequest(@Nullable Duration metaDataTimeout) {
+        Long deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
+        @Nullable
+        Duration contextTimeout = null != deadline ? Duration.ofNanos(deadline - System.nanoTime()) : null;
 
-        Instant deadline = AsyncContext.get(GRPC_DEADLINE_KEY);
-        @Nonnull
-        Duration contextTimeout = null != deadline ? Duration.between(Instant.now(), deadline) : timeout;
+        @Nullable
+        Duration timeout = null != contextTimeout ?
+            null == metaDataTimeout || contextTimeout.compareTo(metaDataTimeout) <= 0 ?
+                contextTimeout : metaDataTimeout
+                : metaDataTimeout;
 
-        return contextTimeout != timeout && contextTimeout.compareTo(timeout) < 0 ? contextTimeout : timeout;
+        return null != timeout ? timeout : defaultTimeout;
     }
 }

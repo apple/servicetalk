@@ -49,15 +49,14 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
@@ -81,6 +80,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default()).allowDropRequestTrailers(true);
     }
 
+    @Override
     public GrpcServerBuilder defaultTimeout(Duration defaultTimeout) {
         if (invokedBuild) {
             throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
@@ -202,13 +202,13 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     private HttpServerBuilder preBuild() {
         if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
-            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout()));
+            doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
         }
         invokedBuild = true;
         return httpServerBuilder;
     }
 
-    private TimeoutFromRequest grpcDetermineTimeout() {
+    private static TimeoutFromRequest grpcDetermineTimeout(@Nullable Duration defaultTimeout) {
         return new TimeoutFromRequest() {
             /**
              * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
@@ -217,19 +217,18 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
              * @return The non-negative timeout duration which may be null
              */
             @Override
-            @Nullable
-            public Duration apply(HttpRequestMetaData request) {
-                Duration duration = DefaultGrpcClientBuilder.readTimeoutHeader(request);
+            public @Nullable Duration apply(HttpRequestMetaData request) {
+                @Nullable
+                Duration requestTimeout = DefaultGrpcClientBuilder.readTimeoutHeader(request);
+                @Nullable
+                Duration timeout = null != requestTimeout ? requestTimeout : defaultTimeout;
 
-                duration = (null != duration) ?
-                        // As specified in the request
-                        duration
-                        // use server default (if any)
-                        : defaultTimeout;
-
-                if (null != duration) {
+                if (null != timeout) {
+                    // Store the timeout in the context as a deadline to be used for any client requests created
+                    // during the context of handling this request.
                     try {
-                        AsyncContext.put(GRPC_DEADLINE_KEY, Instant.now().plus(duration));
+                        Long deadline = System.nanoTime() + timeout.toNanos();
+                        AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
                     } catch (UnsupportedOperationException ignored) {
                         LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");
                         // ignored -- async context has probably been disabled.
@@ -238,7 +237,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
                     }
                 }
 
-                return duration;
+                return timeout;
             }
 
             @Override

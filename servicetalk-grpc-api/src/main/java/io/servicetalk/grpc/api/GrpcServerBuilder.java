@@ -40,7 +40,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -58,7 +57,7 @@ public abstract class GrpcServerBuilder {
      * gRPC timeout is stored in context as a deadline so that when propagated to a new client request the remaining
      * time to be included in the request can be calculated.
      */
-    protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
+    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = GrpcClientBuilder.PKG_GRPC_DEADLINE_KEY;
 
     private boolean appendedCatchAllFilter;
 
@@ -74,9 +73,8 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Set default timeout during which gRCPC calls are expected to complete. This value is also the maximum timeout
-     * for all calls made using this client; longer timeout values requested by client calls will be limited to this
-     * value.
+     * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request includes no timeout; any value specified in client request will supersede this default.
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.

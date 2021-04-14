@@ -38,7 +38,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -58,13 +57,13 @@ public abstract class GrpcClientBuilder<U, R>
      * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
      * included in the request can be calculated.
      */
-    static final AsyncContextMap.Key<Instant> PKG_GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
+    static final AsyncContextMap.Key<Long> PKG_GRPC_DEADLINE_KEY = AsyncContextMap.Key.newKey("grpc-deadline");
 
     /**
      * gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
      * included in the request can be calculated.
      */
-    protected static final AsyncContextMap.Key<Instant> GRPC_DEADLINE_KEY = PKG_GRPC_DEADLINE_KEY;
+    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = PKG_GRPC_DEADLINE_KEY;
 
     private boolean appendedCatchAllFilter;
 

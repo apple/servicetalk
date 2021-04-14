@@ -28,15 +28,16 @@ import static io.servicetalk.encoding.api.Identity.identity;
  */
 public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements GrpcClientMetadata {
 
-    /**
-     * No timeout or infinite timeout
-     */
-    static final Duration INFINITE_TIMEOUT = java.time.Duration.ofSeconds(Long.MAX_VALUE, 999_999_999);
-
     @Nullable
     private final GrpcExecutionStrategy strategy;
 
     private final ContentCodec requestEncoding;
+
+    /**
+     * Timeout for an individual request or null for no timeout.
+     */
+    @Nullable
+    private final Duration timeout;
 
     /**
      * Creates a new instance using provided parameters and defaults for
@@ -45,7 +46,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
     protected DefaultGrpcClientMetadata(final String path) {
-        this(path, (GrpcExecutionStrategy) null, identity(), INFINITE_TIMEOUT);
+        this(path, (GrpcExecutionStrategy) null, identity(), null);
     }
 
     /**
@@ -57,7 +58,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      * method.
      */
     protected DefaultGrpcClientMetadata(final String path, final ContentCodec requestEncoding) {
-        this(path, null, requestEncoding, INFINITE_TIMEOUT);
+        this(path, null, requestEncoding, null);
     }
 
     /**
@@ -85,7 +86,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy) {
-        this(path, strategy, identity(), INFINITE_TIMEOUT);
+        this(path, strategy, identity(), null);
     }
 
     /**
@@ -101,7 +102,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
                                         final ContentCodec requestEncoding) {
-        this(path, strategy, requestEncoding, INFINITE_TIMEOUT);
+        this(path, strategy, requestEncoding, null);
     }
 
     /**
@@ -112,7 +113,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      * @param timeout A timeout after which the response is no longer wanted.
      */
     protected DefaultGrpcClientMetadata(final String path,
-                                        final Duration timeout) {
+                                        @Nullable final Duration timeout) {
         this(path, null, identity(), timeout);
     }
 
@@ -127,7 +128,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
-                                        final Duration timeout) {
+                                        @Nullable final Duration timeout) {
         this(path, strategy, identity(), timeout);
     }
 
@@ -144,10 +145,14 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     protected DefaultGrpcClientMetadata(final String path,
                                         @Nullable final GrpcExecutionStrategy strategy,
                                         final ContentCodec requestEncoding,
-                                        final Duration timeout) {
-        super(path, timeout);
+                                        @Nullable final Duration timeout) {
+        super(path);
         this.strategy = strategy;
         this.requestEncoding = Objects.requireNonNull(requestEncoding, "requestEncoding");
+        if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
+            throw new IllegalArgumentException("timeout: " + timeout + " (expected > 0)");
+        }
+        this.timeout = null != timeout && timeout.compareTo(GRPC_MAX_TIMEOUT) <= 0 ? timeout : null;
     }
 
     @Override
@@ -158,5 +163,11 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Override
     public ContentCodec requestEncoding() {
         return requestEncoding;
+    }
+
+    @Override
+    @Nullable
+    public Duration timeout() {
+        return timeout;
     }
 }

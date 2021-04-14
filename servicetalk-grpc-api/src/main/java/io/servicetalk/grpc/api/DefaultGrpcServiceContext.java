@@ -23,13 +23,11 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.grpc.api.DefaultGrpcClientMetadata.INFINITE_TIMEOUT;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -42,13 +40,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
 
     DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
                               final List<ContentCodec> supportedMessageCodings) {
-        this(path, httpServiceContext, supportedMessageCodings, INFINITE_TIMEOUT);
-    }
-
-    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext,
-                              final List<ContentCodec> supportedMessageCodings,
-                              Duration timeout) {
-        super(path, timeout);
+        super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());

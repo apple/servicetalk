@@ -46,11 +46,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.grpc.api.GrpcMetadata.GRPC_MAX_TIMEOUT;
+import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
@@ -59,23 +60,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
      * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC over HTTP2</a>
      */
     private static final CharSequence GRPC_TIMEOUT_HEADER_KEY = newAsciiString("grpc-timeout");
-
-    /**
-     * Allowed time units
-     */
-    private static final char[] TIMEOUT_UNIT_CHARS = "numSMH".toCharArray();
-
-    /**
-     * Chronounits of timeout units
-     */
-    private static final ChronoUnit[] TIMEOUT_CHRONOUNITS = {
-            ChronoUnit.NANOS,
-            ChronoUnit.MICROS,
-            ChronoUnit.MILLIS,
-            ChronoUnit.SECONDS,
-            ChronoUnit.MINUTES,
-            ChronoUnit.HOURS,
-    };
 
     /**
      * A function which determines the timeout for a given request.
@@ -204,6 +188,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     public GrpcClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
+
         httpClientBuilder.autoRetryStrategy(autoRetryStrategyProvider);
         return this;
     }
@@ -269,43 +254,60 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     /**
-     * Parse a gRPC HTTP timeout header grpcTimeoutValue as a duration.
+     * Parse a gRPC timeout header value as a duration.
      *
      * @param grpcTimeoutValue the text value of {@link #GRPC_TIMEOUT_HEADER_KEY} header to be parsed to a timeout
      * duration
      * @return The non-negative timeout duration
      * @throws IllegalArgumentException if the timeout value is malformed
      */
-    static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) {
+    private static Duration parseTimeoutHeader(CharSequence grpcTimeoutValue) throws IllegalArgumentException {
         if (grpcTimeoutValue.length() < 2 || grpcTimeoutValue.length() > 9) {
             throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
                     " (expected 2-9 characters)");
         }
 
-        char unitChar = grpcTimeoutValue.charAt(grpcTimeoutValue.length() - 1);
-        int unitsIdx = 0;
-        while (unitsIdx < TIMEOUT_UNIT_CHARS.length && unitChar != TIMEOUT_UNIT_CHARS[unitsIdx]) {
-            unitsIdx++;
-        }
-        if (TIMEOUT_UNIT_CHARS.length == unitsIdx) {
-            // Unrecognized units or malformed header
-            throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
-                    " (Bad unit '" + unitChar + "')");
-        }
-
-        // parse number
+        // parse ASCII decimal number
         long runningTotal = 0;
         for (int digitIdx = 0; digitIdx < grpcTimeoutValue.length() - 1; digitIdx++) {
             char digitChar = grpcTimeoutValue.charAt(digitIdx);
             if (digitChar < '0' || digitChar > '9') {
                 // Bad digit
-                throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
-                        " (Bad time unit '" + digitChar + "')");
+                throw new NumberFormatException("grpcTimeoutValue: " + grpcTimeoutValue +
+                        " (Bad digit '" + digitChar + "')");
             } else {
                 runningTotal = runningTotal * 10L + (long) (digitChar - '0');
             }
         }
 
-        return Duration.of(runningTotal, TIMEOUT_CHRONOUNITS[unitsIdx]);
+        // Determine timeout units for conversion to duration
+        LongFunction<Duration> toDuration;
+        char unitChar = grpcTimeoutValue.charAt(grpcTimeoutValue.length() - 1);
+        switch (unitChar) {
+            case 'n' :
+                toDuration = Duration::ofNanos;
+                break;
+            case 'u' :
+                toDuration = (long micros) -> Duration.of(micros, ChronoUnit.MICROS);
+                break;
+            case 'm' :
+                toDuration = Duration::ofMillis;
+                break;
+            case 'S' :
+                toDuration = Duration::ofSeconds;
+                break;
+            case 'M' :
+                toDuration = Duration::ofMinutes;
+                break;
+            case 'H' :
+                toDuration = Duration::ofHours;
+                break;
+            default:
+                // Unrecognized units or malformed header
+                throw new IllegalArgumentException("grpcTimeoutValue: " + grpcTimeoutValue +
+                        " (Bad time unit '" + unitChar + "')");
+        }
+
+        return toDuration.apply(runningTotal);
     }
 }
