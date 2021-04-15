@@ -96,7 +96,7 @@ public class ResponseTimeoutTest {
                                Duration serverTimeout,
                                Class<? extends Throwable> expectThrowableClazz) throws Exception {
         ctx = forAddress(localAddress(0))
-                .appendServiceFilter(new TimeoutHttpServiceFilter(serverTimeout))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(serverTimeout, true))
                 .listenAndAwait((__, ___, factory) -> {
                     Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
                     serverResponses.add(resp);
