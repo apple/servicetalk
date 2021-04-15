@@ -71,6 +71,7 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.FromDataPoints;
@@ -515,6 +516,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void grpcJavaToGrpcJavaTimeout(@FromDataPoints("ssl") final boolean ssl,
                                    @FromDataPoints("streaming") final boolean streaming,
                                    @FromDataPoints("compression") final String compression) throws Exception {
@@ -525,6 +527,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void serviceTalkToGrpcJavaTimeout(@FromDataPoints("ssl") final boolean ssl,
                                       @FromDataPoints("streaming") final boolean streaming,
                                       @FromDataPoints("compression") final String compression) throws Exception {
@@ -535,6 +538,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void grpcJavaToServiceTalkTimeout(@FromDataPoints("ssl") final boolean ssl,
                                       @FromDataPoints("streaming") final boolean streaming,
                                       @FromDataPoints("compression") final String compression) throws Exception {
@@ -545,6 +549,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void serviceTalkToServiceTalkTimeout(@FromDataPoints("ssl") final boolean ssl,
                                          @FromDataPoints("streaming") final boolean streaming,
                                          @FromDataPoints("compression") final String compression) throws Exception {
