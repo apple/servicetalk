@@ -177,7 +177,7 @@ final class HeaderUtils {
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         if (messageBody == empty() || (isPayloadEmpty(metadata) && !mayHaveTrailers(metadata))) {
             contentLengthUpdater.apply(0, metadata.headers());
-            return from(metadata, EmptyHttpHeaders.INSTANCE);
+            return from(metadata, EmptyHttpHeaders.INSTANCE).concat(messageBody.ignoreElements());
         }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {

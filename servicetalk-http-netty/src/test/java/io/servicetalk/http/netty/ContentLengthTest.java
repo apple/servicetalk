@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
@@ -58,6 +59,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ContentLengthTest {
@@ -196,6 +198,9 @@ public class ContentLengthTest {
 
     private static void setResponseContentLengthAndVerify(final StreamingHttpResponse response,
                                                           final Matcher<CharSequence> matcher) throws Exception {
+
+        final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
+        response.transformMessageBody(publisher -> publisher.afterOnSubscribe((__) -> messageBodySubscribed.set(true)));
         Collection<Object> flattened = setResponseContentLength(response).toFuture().get();
         assertThat("Unexpected items in the flattened response.", flattened, hasSize(greaterThanOrEqualTo(2)));
         Iterator<Object> iterator = flattened.iterator();
@@ -203,6 +208,7 @@ public class ContentLengthTest {
         assertThat("Unexpected items in the flattened response.", firstItem, instanceOf(HttpMetaData.class));
         assertThat(((HttpMetaData) firstItem).headers().get(CONTENT_LENGTH), matcher);
         assertLastItems(iterator);
+        assertThat(true, is(messageBodySubscribed.get()));
     }
 
     private static void assertLastItems(Iterator<Object> iterator) {
