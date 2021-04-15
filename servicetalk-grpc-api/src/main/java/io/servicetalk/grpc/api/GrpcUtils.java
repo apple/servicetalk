@@ -57,6 +57,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
+import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
@@ -69,6 +70,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
@@ -173,8 +175,7 @@ final class GrpcUtils {
      * @return The timeout header text value or null for infinite timeouts
      */
     static @Nullable CharSequence makeTimeoutHeader(@Nullable Duration timeout) {
-        if (null == timeout || timeout.compareTo(GrpcClientMetadata.GRPC_MAX_TIMEOUT) > 0) {
-            // no timeout specified or "infinite" timeout
+        if (isInfinite(timeout, GRPC_MAX_TIMEOUT)) {
             return null;
         }
 

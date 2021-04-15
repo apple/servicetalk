@@ -20,6 +20,7 @@ import org.junit.Test;
 import java.time.Duration;
 
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
@@ -28,6 +29,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
 
 public class DurationUtilsTest {
+
+    private static final Duration MAX_DURATION = ofSeconds(2);
 
     @Test
     public void testIsPositiveSeconds() {
@@ -49,5 +52,13 @@ public class DurationUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(Duration.ZERO, "duration"));
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofNanos(1L).negated(), "duration"));
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofSeconds(1L).negated(), "duration"));
+    }
+
+    @Test
+    public void testIsInfinite() {
+        assertThat(isInfinite(null, MAX_DURATION), is(true));
+        assertThat(isInfinite(ofSeconds(3), MAX_DURATION), is(true));
+        assertThat(isInfinite(ofSeconds(1), MAX_DURATION), is(false));
+        assertThat(isInfinite(MAX_DURATION, MAX_DURATION), is(false));
     }
 }
