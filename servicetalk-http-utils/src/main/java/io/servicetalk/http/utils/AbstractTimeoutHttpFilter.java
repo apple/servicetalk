@@ -83,7 +83,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                         return (timeoutExecutor == null ?
                                 body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, timeoutExecutor))
                                 .onErrorMap(TimeoutException.class, t ->
-                                        new MappedTimeoutException("timeout after " + timeout.toMillis() + "ms", t))
+                                        new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
+                                                "ms", t))
                                 .subscribeShareContext();
                     })));
                 } else {
@@ -96,6 +97,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
     }
 
     private static final class MappedTimeoutException extends TimeoutException {
+        private static final long serialVersionUID = -8230476062001221272L;
+
         MappedTimeoutException(String message, Throwable cause) {
             super(message);
             initCause(cause);
