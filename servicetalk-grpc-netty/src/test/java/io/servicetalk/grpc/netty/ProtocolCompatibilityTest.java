@@ -788,6 +788,10 @@ public class ProtocolCompatibilityTest {
             throws InvalidProtocolBufferException {
         final GrpcStatus grpcStatus = statusException.status();
         assertNotNull(grpcStatus);
+        if (expectStatusCode != grpcStatus.code()) {
+            System.err.println("Unexpected status: " + grpcStatus + ", expected: " + expectStatusCode);
+            statusException.printStackTrace();
+        }
         assertEquals(expectStatusCode, grpcStatus.code());
         if (null != expectMessage) {
             assertEquals(expectMessage, grpcStatus.description());
