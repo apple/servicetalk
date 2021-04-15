@@ -29,9 +29,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
-import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
 
@@ -73,10 +71,6 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
 
         return Single.defer(() -> {
             final Duration timeout = timeoutForRequest.apply(request);
-            if (null != timeout && !isPositive(timeout)) {
-                return Single.failed(new TimeoutException("non-positive timeout of " + timeout.toMillis() + "ms"));
-            }
-
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
                 final Single<StreamingHttpResponse> timeoutResponse = timeoutExecutor == null ?
@@ -86,12 +80,12 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                     final long deadline = System.nanoTime() + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
                         final Duration remaining = ofNanos(deadline - System.nanoTime());
-                        if (isPositive(remaining)) {
-                            return (timeoutExecutor == null ?
-                                    body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, timeoutExecutor))
-                                    .subscribeShareContext();
-                        }
-                        return failed(new TimeoutException("timeout after " + timeout.toMillis() + "ms"));
+                        return (timeoutExecutor == null ?
+                                body.timeoutTerminal(remaining) : body.timeoutTerminal(remaining, timeoutExecutor))
+                                .onErrorMap(TimeoutException.class, t ->
+                                        new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
+                                                "ms", t))
+                                .subscribeShareContext();
                     })));
                 } else {
                     response = timeoutResponse;
@@ -100,6 +94,21 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
 
             return response.subscribeShareContext();
         });
+    }
+
+    private static final class MappedTimeoutException extends TimeoutException {
+        private static final long serialVersionUID = -8230476062001221272L;
+
+        MappedTimeoutException(String message, Throwable cause) {
+            super(message);
+            initCause(cause);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            // This is a wrapping exception class that always has an original cause and does not require stack trace.
+            return this;
+        }
     }
 
     /**
