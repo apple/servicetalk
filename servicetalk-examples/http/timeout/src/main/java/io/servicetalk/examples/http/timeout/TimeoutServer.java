@@ -32,7 +32,7 @@ public final class TimeoutServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 // Filter enforces that responses must complete within 30 seconds or will be cancelled.
-                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofSeconds(30)))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(Duration.ofSeconds(30), true))
                 .listenAndAwait((ctx, request, responseFactory) ->
                         Single.defer(() -> {
                             // Force a 5 second delay in the response.

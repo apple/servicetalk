@@ -122,7 +122,7 @@ public final class GatewayServer {
                                 .maxRetries(3)
                                 .buildWithExponentialBackoffDeltaJitter(ofMillis(100), ofMillis(50), ofSeconds(30)))
                         // Apply a timeout filter for the client to guard against latent clients.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
+                        .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500), false))
                         // Apply a filter that returns an error if any response status code is not 200 OK
                         .appendClientFilter(new ResponseCheckingClientFilter(backendName))
                         .ioExecutor(ioExecutor)

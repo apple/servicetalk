@@ -58,45 +58,45 @@ public final class TimeoutHttpServiceFilter
     private final Executor timeoutExecutor;
 
     /**
-     * Construct a new instance.
+     * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
      * @param duration the timeout {@link Duration}
      */
     public TimeoutHttpServiceFilter(Duration duration) {
-        this(simpleDurationTimeout(duration));
+        this(simpleDurationTimeout(duration), false);
     }
 
     /**
-     * Construct a new instance.
+     * Creates a new instance which requires only that the response metadata be received before the timeout.
      *
      * @param duration the timeout {@link Duration}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutHttpServiceFilter(Duration duration,
-                                    Executor timeoutExecutor) {
-        this(simpleDurationTimeout(duration), timeoutExecutor);
+    public TimeoutHttpServiceFilter(Duration duration, Executor timeoutExecutor) {
+        this(simpleDurationTimeout(duration), false, timeoutExecutor);
     }
 
     /**
-     * Construct a new instance.
+     * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
-     * other sources. If no timeout is to be applied then the function should return null.
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must complete before the timeout.
      */
-    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest) {
-        this(timeoutForRequest, true);
+    public TimeoutHttpServiceFilter(Duration duration, boolean fullRequestResponse) {
+        this(simpleDurationTimeout(duration), fullRequestResponse);
     }
 
     /**
-     * Construct a new instance.
+     * Creates a new instance.
      *
-     * @param timeoutForRequest function for extracting timeout from request which may also determine the timeout using
-     * other sources. If no timeout is to be applied then the function should return null.
+     * @param duration the timeout {@link Duration}
+     * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
+     * the response metadata must complete before the timeout.
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
-                                    Executor timeoutExecutor) {
-        this(timeoutForRequest, true, timeoutExecutor);
+    public TimeoutHttpServiceFilter(Duration duration, boolean fullRequestResponse, Executor timeoutExecutor) {
+        this(simpleDurationTimeout(duration), fullRequestResponse, timeoutExecutor);
     }
 
     /**
@@ -107,8 +107,7 @@ public final class TimeoutHttpServiceFilter
      * @param fullRequestResponse if {@code true} then timeout is for full request/response transaction otherwise only
      * the response metadata must complete before the timeout.
      */
-    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest,
-                                    boolean fullRequestResponse) {
+    public TimeoutHttpServiceFilter(TimeoutFromRequest timeoutForRequest, boolean fullRequestResponse) {
         this.timeoutForRequest = Objects.requireNonNull(timeoutForRequest, "timeoutForRequest");
         this.fullRequestResponse = fullRequestResponse;
         this.timeoutExecutor = null;
