@@ -22,6 +22,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
@@ -149,8 +150,8 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
         super(path);
         this.strategy = strategy;
         this.requestEncoding = Objects.requireNonNull(requestEncoding, "requestEncoding");
-        if (null != timeout && Duration.ZERO.compareTo(timeout) >= 0) {
-            throw new IllegalArgumentException("timeout: " + timeout + " (expected > 0)");
+        if (null != timeout) {
+            ensurePositive(timeout, "timeout");
         }
         this.timeout = null != timeout && timeout.compareTo(GRPC_MAX_TIMEOUT) <= 0 ? timeout : null;
     }

@@ -168,8 +168,8 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                         // ignore
                     }
                 })
-                .expectError()
-                // .thenCancel()
+                // FIXME: use thenCancel() after await() instead of cancelling from inside then(...) + expectError()
+                .expectError(IllegalStateException.class)   // should never happen
                 .verify();
 
         assertThat("Unexpected responses", responses, is(empty()));
