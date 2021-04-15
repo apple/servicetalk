@@ -18,12 +18,23 @@ package io.servicetalk.utils.internal;
 import java.time.Duration;
 
 import static java.time.Duration.ZERO;
+import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Helper utilities for {@link Duration}.
  */
 public final class DurationUtils {
+
+    /**
+     * Maximum positive duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MAX_NANOS = ofNanos(Long.MAX_VALUE);
+
+    /**
+     * Maximum negative duration which can be expressed as a signed 64-bit number of nanoseconds.
+     */
+    private static final Duration LONG_MIN_NANOS = ofNanos(Long.MIN_VALUE);
 
     private DurationUtils() {
         // No instances
@@ -53,5 +64,18 @@ public final class DurationUtils {
             throw new IllegalArgumentException(name + ": " + duration + " (expected > 0)");
         }
         return duration;
+    }
+
+    /**
+     * Converts a {@code Duration} to nanoseconds or if the resulting value would overflow a 64-bit signed integer then
+     * either {@code Long.MIN_VALUE} or {@code Long.MAX_VALUE} as appropriate.
+     *
+     * @param duration the duration to convert
+     * @return the converted nanoseconds value
+     */
+    public static long toNanos(final Duration duration) {
+        return duration.compareTo(LONG_MAX_NANOS) < 0 ?
+                (duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE)
+                : Long.MAX_VALUE;
     }
 }
