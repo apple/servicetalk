@@ -177,7 +177,11 @@ final class HeaderUtils {
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         if (messageBody == empty() || (isPayloadEmpty(metadata) && !mayHaveTrailers(metadata))) {
             contentLengthUpdater.apply(0, metadata.headers());
-            return from(metadata, EmptyHttpHeaders.INSTANCE).concat(messageBody.ignoreElements());
+            return messageBody == empty() ?
+                    from(metadata, EmptyHttpHeaders.INSTANCE) :
+                    // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
+                    // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
+                    from(metadata, EmptyHttpHeaders.INSTANCE).concat(messageBody.ignoreElements());
         }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {

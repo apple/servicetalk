@@ -84,16 +84,26 @@ public class ContentLengthTest {
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
-        shouldCalculateRequestContentLengthFromEmptyPublisher(POST);
-        shouldCalculateRequestContentLengthFromEmptyPublisher(PUT);
-        shouldCalculateRequestContentLengthFromEmptyPublisher(PATCH);
+    public void shouldCalculateRequestContentLengthWhenNoPayloadBodySet() throws Exception {
+        shouldCalculateRequestContentLengthFromEmptyPublisher(POST, false);
+        shouldCalculateRequestContentLengthFromEmptyPublisher(PUT, false);
+        shouldCalculateRequestContentLengthFromEmptyPublisher(PATCH, false);
     }
 
-    private static void shouldCalculateRequestContentLengthFromEmptyPublisher(HttpRequestMethod method)
+    @Test
+    public void shouldCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
+        shouldCalculateRequestContentLengthFromEmptyPublisher(POST, true);
+        shouldCalculateRequestContentLengthFromEmptyPublisher(PUT, true);
+        shouldCalculateRequestContentLengthFromEmptyPublisher(PATCH, true);
+    }
+
+    private static void shouldCalculateRequestContentLengthFromEmptyPublisher(HttpRequestMethod method,
+                                                                              boolean emptyPublisher)
             throws Exception {
-        StreamingHttpRequest request = newAggregatedRequest(method).toStreamingRequest()
-                .payloadBody(Publisher.empty());
+        StreamingHttpRequest request = newAggregatedRequest(method).toStreamingRequest();
+        if (emptyPublisher) {
+            request = request.payloadBody(Publisher.empty());
+        }
         setRequestContentLengthAndVerify(request, contentEqualTo("0"));
     }
 
@@ -132,6 +142,12 @@ public class ContentLengthTest {
                 .toStreamingRequest().transformMessageBody(payload -> payload.map(obj -> (Buffer) obj)
                         .concat(Publisher.from(" ", "World", "!").map(DEFAULT_RO_ALLOCATOR::fromAscii)));
         setRequestContentLengthAndVerify(request, contentEqualTo("12"));
+    }
+
+    @Test
+    public void shouldCalculateResponseContentLengthWhenNoPayloadBodySet() throws Exception {
+        StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse();
+        setResponseContentLengthAndVerify(response, contentEqualTo("0"));
     }
 
     @Test
@@ -187,28 +203,31 @@ public class ContentLengthTest {
 
     private static void setRequestContentLengthAndVerify(final StreamingHttpRequest request,
                                                          final Matcher<CharSequence> matcher) throws Exception {
+        final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
+        request.transformMessageBody(publisher -> publisher.afterOnSubscribe(__ -> messageBodySubscribed.set(true)));
         Collection<Object> flattened = setRequestContentLength(request).toFuture().get();
-        assertThat("Unexpected items in the flattened request.", flattened, hasSize(greaterThanOrEqualTo(2)));
-        Iterator<Object> iterator = flattened.iterator();
-        Object firstItem = iterator.next();
-        assertThat("Unexpected items in the flattened request.", firstItem, instanceOf(HttpMetaData.class));
-        assertThat(((HttpMetaData) firstItem).headers().get(CONTENT_LENGTH), matcher);
-        assertLastItems(iterator);
+        assertFlattened(flattened, matcher, messageBodySubscribed);
     }
 
     private static void setResponseContentLengthAndVerify(final StreamingHttpResponse response,
                                                           final Matcher<CharSequence> matcher) throws Exception {
 
         final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
-        response.transformMessageBody(publisher -> publisher.afterOnSubscribe((__) -> messageBodySubscribed.set(true)));
+        response.transformMessageBody(publisher -> publisher.afterOnSubscribe(__ -> messageBodySubscribed.set(true)));
         Collection<Object> flattened = setResponseContentLength(response).toFuture().get();
-        assertThat("Unexpected items in the flattened response.", flattened, hasSize(greaterThanOrEqualTo(2)));
+        assertFlattened(flattened, matcher, messageBodySubscribed);
+    }
+
+    private static void assertFlattened(final Collection<Object> flattened,
+                                        final Matcher<CharSequence> matcher,
+                                        final AtomicBoolean messageBodySubscribed) {
+        assertThat("Unexpected number of items in the flattened stream.", flattened, hasSize(greaterThanOrEqualTo(2)));
         Iterator<Object> iterator = flattened.iterator();
         Object firstItem = iterator.next();
-        assertThat("Unexpected items in the flattened response.", firstItem, instanceOf(HttpMetaData.class));
+        assertThat("Unexpected first item in the flattened stream.", firstItem, instanceOf(HttpMetaData.class));
         assertThat(((HttpMetaData) firstItem).headers().get(CONTENT_LENGTH), matcher);
         assertLastItems(iterator);
-        assertThat(true, is(messageBodySubscribed.get()));
+        assertThat("No subscribe for message body", messageBodySubscribed.get(), is(true));
     }
 
     private static void assertLastItems(Iterator<Object> iterator) {
