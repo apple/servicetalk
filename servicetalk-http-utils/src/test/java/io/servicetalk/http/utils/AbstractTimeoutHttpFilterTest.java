@@ -139,6 +139,7 @@ abstract class AbstractTimeoutHttpFilterTest {
                 .thenRequest(MAX_VALUE)
                 .expectNoSignals(timeout.plusMillis(5L))
                 // FIXME: use thenCancel() instead of expectSubscriptionConsumed(...) + expectError()
+                // https://github.com/apple/servicetalk/issues/1492
                 .expectError(IllegalStateException.class)   // should never happen
                 .verify();
         assertThat("Response did not succeeded", responseSucceeded.get(), is(true));

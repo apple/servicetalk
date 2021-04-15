@@ -169,6 +169,7 @@ public class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                     }
                 })
                 // FIXME: use thenCancel() after await() instead of cancelling from inside then(...) + expectError()
+                // https://github.com/apple/servicetalk/issues/1492
                 .expectError(IllegalStateException.class)   // should never happen
                 .verify();
 
