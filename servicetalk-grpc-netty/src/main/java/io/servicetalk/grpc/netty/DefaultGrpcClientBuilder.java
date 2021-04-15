@@ -43,7 +43,6 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -53,6 +52,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     /**
@@ -98,12 +98,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
         if (invokedBuild) {
             throw new IllegalStateException("default timeout cannot be modified after build, create a new builder");
         }
-
-        if (Duration.ZERO.compareTo(Objects.requireNonNull(defaultTimeout, "defaultTimeout")) >= 0) {
-            throw new IllegalArgumentException("defaultTimeout: " + defaultTimeout + " (expected > 0)");
-        }
-
-        this.defaultTimeout = defaultTimeout;
+        this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
         return this;
     }
 

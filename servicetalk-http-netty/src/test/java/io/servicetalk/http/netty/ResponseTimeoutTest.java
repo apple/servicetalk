@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -59,7 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -84,7 +82,7 @@ public class ResponseTimeoutTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final BlockingQueue<Processor<HttpResponse, HttpResponse>> serverResponses = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Single<HttpResponse>> serverResponses = new LinkedBlockingQueue<>();
     private final BlockingQueue<Cancellable> delayedClientCancels = new LinkedBlockingQueue<>();
     private final BlockingQueue<ClientTerminationSignal> delayedClientTermination = new LinkedBlockingQueue<>();
     private final ServerContext ctx;
@@ -96,11 +94,11 @@ public class ResponseTimeoutTest {
                                Duration serverTimeout,
                                Class<? extends Throwable> expectThrowableClazz) throws Exception {
         ctx = forAddress(localAddress(0))
-                .appendServiceFilter(new TimeoutHttpServiceFilter(serverTimeout, true))
+                .appendServiceFilter(new TimeoutHttpServiceFilter(__ -> serverTimeout, true))
                 .listenAndAwait((__, ___, factory) -> {
-                    Processor<HttpResponse, HttpResponse> resp = newSingleProcessor();
+                    Single<HttpResponse> resp = Single.never();
                     serverResponses.add(resp);
-                    return Single.never();
+                    return resp;
                 });
         client = forSingleAddress(serverHostAndPort(ctx))
                 .appendClientFilter(client -> new StreamingHttpClientFilter(client) {
@@ -109,7 +107,7 @@ public class ResponseTimeoutTest {
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return Single.succeeded(null)
-                                .afterOnSubscribe(cancellable -> delayedClientCancels.add(cancellable))
+                                .afterOnSubscribe(delayedClientCancels::add)
                                 .concat(delegate().request(strategy, request)
                                         .liftSync(target -> new Subscriber<StreamingHttpResponse>() {
                                             @Override
@@ -141,7 +139,7 @@ public class ResponseTimeoutTest {
                     }
                 })
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
-                .appendClientFilter(new TimeoutHttpRequesterFilter(clientTimeout, true))
+                .appendClientFilter(new TimeoutHttpRequesterFilter(__ -> clientTimeout, true))
                 .build();
         this.expectThrowableClazz = expectThrowableClazz;
     }
