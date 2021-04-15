@@ -58,6 +58,7 @@ import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
@@ -196,7 +197,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     private HttpServerBuilder preBuild() {
-        if (!invokedBuild && null != defaultTimeout && GRPC_MAX_TIMEOUT.compareTo(defaultTimeout) >= 0) {
+        if (!invokedBuild && !isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT)) {
             doAppendHttpServiceFilter(new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
         }
         invokedBuild = true;

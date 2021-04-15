@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
@@ -153,7 +154,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
         if (null != timeout) {
             ensurePositive(timeout, "timeout");
         }
-        this.timeout = null != timeout && timeout.compareTo(GRPC_MAX_TIMEOUT) <= 0 ? timeout : null;
+        this.timeout = isInfinite(timeout, GRPC_MAX_TIMEOUT) ? null : timeout;
     }
 
     @Override

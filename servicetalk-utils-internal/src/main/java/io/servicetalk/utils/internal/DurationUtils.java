@@ -16,6 +16,7 @@
 package io.servicetalk.utils.internal;
 
 import java.time.Duration;
+import javax.annotation.Nullable;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofNanos;
@@ -64,6 +65,18 @@ public final class DurationUtils {
             throw new IllegalArgumentException(name + ": " + duration + " (expected > 0)");
         }
         return duration;
+    }
+
+    /**
+     * Checks if the duration is considered "infinite".
+     *
+     * @param duration the {@link Duration} to validate
+     * @param maxDuration the max {@link Duration} limit
+     * @return {@code true} if the passed duration is {@code null} or exceeds the {@code maxDuration}, {@code false}
+     * otherwise
+     */
+    public static boolean isInfinite(@Nullable final Duration duration, final Duration maxDuration) {
+        return duration == null || maxDuration.compareTo(duration) < 0;
     }
 
     /**
