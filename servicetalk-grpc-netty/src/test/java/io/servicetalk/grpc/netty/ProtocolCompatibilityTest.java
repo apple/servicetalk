@@ -516,6 +516,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void grpcJavaToGrpcJavaTimeout(@FromDataPoints("ssl") final boolean ssl,
                                    @FromDataPoints("streaming") final boolean streaming,
                                    @FromDataPoints("compression") final String compression) throws Exception {
@@ -537,6 +538,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void grpcJavaToServiceTalkTimeout(@FromDataPoints("ssl") final boolean ssl,
                                       @FromDataPoints("streaming") final boolean streaming,
                                       @FromDataPoints("compression") final String compression) throws Exception {
@@ -547,6 +549,7 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    @Ignore("https://github.com/apple/servicetalk/issues/1489")
     public void serviceTalkToServiceTalkTimeout(@FromDataPoints("ssl") final boolean ssl,
                                          @FromDataPoints("streaming") final boolean streaming,
                                          @FromDataPoints("compression") final String compression) throws Exception {
