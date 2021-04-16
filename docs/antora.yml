@@ -16,6 +16,6 @@
 
 name: servicetalk
 title: ServiceTalk
-version: '0.39'
+version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc
