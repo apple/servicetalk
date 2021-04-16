@@ -55,7 +55,7 @@ else
     git="echo git"
 fi
 
-remote=$(git remote -v | grep "/apple/servicetalk.git" | head -n1)
+remote=$(git remote -v | grep "apple/servicetalk.git" | head -n1)
 remote_name=$(echo $remote | cut -d' ' -f1)
 remote_url=$(echo $remote | cut -d' ' -f2)
 
