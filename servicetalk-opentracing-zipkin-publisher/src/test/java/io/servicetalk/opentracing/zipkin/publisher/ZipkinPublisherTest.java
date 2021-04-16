@@ -31,10 +31,16 @@ import zipkin2.reporter.Reporter;
 import java.io.Closeable;
 import java.io.Flushable;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
+import static io.opentracing.tag.Tags.SPAN_KIND;
+import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
+import static io.opentracing.tag.Tags.SPAN_KIND_CONSUMER;
+import static io.opentracing.tag.Tags.SPAN_KIND_PRODUCER;
+import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +66,7 @@ public class ZipkinPublisherTest {
     public void testReportSpan() throws ExecutionException, InterruptedException {
         SpanHolder reporter = new SpanHolder();
         try (ZipkinPublisher publisher = buildPublisher(reporter)) {
-            InMemorySpan span = buildSpan();
+            InMemorySpan span = buildSpan(SPAN_KIND_SERVER);
             publisher.onSpanFinished(span, SECONDS.toMicros(1));
             publisher.closeAsyncGracefully().toFuture().get();
         }
@@ -80,14 +86,38 @@ public class ZipkinPublisherTest {
         assertTrue(reporter.closed);
     }
 
+    @Test
+    public void testReportSpanSupportsAllKinds() throws ExecutionException, InterruptedException {
+        final HashMap<String, Span.Kind> kinds = new HashMap<>();
+        kinds.put(SPAN_KIND_CLIENT, Span.Kind.CLIENT);
+        kinds.put(SPAN_KIND_SERVER, Span.Kind.SERVER);
+        kinds.put(SPAN_KIND_CONSUMER, Span.Kind.CONSUMER);
+        kinds.put(SPAN_KIND_PRODUCER, Span.Kind.PRODUCER);
+
+        SpanHolder reporter = new SpanHolder();
+        try (ZipkinPublisher publisher = buildPublisher(reporter)) {
+            for (final Map.Entry<String, Span.Kind> kind : kinds.entrySet()) {
+                InMemorySpan span = buildSpan(kind.getKey());
+                publisher.onSpanFinished(span, SECONDS.toMicros(1));
+                publisher.closeAsyncGracefully().toFuture().get();
+
+                assertNotNull(reporter.span);
+                assertEquals(kind.getValue(), reporter.span.kind());
+                assertTrue(reporter.flushed);
+                assertTrue(reporter.closed);
+            }
+        }
+    }
+
     private ZipkinPublisher buildPublisher(Reporter<Span> reporter) {
         return new ZipkinPublisher.Builder("test", reporter)
                 .localAddress(new InetSocketAddress("localhost", 1))
                 .build();
     }
 
-    private InMemorySpan buildSpan() {
+    private InMemorySpan buildSpan(final String spanKind) {
         InMemorySpan span = tracer.buildSpan("test operation")
+                .withTag(SPAN_KIND.getKey(), spanKind)
                 .withTag("stringKey", "string")
                 .withTag("boolKey", true)
                 .withTag("shortKey", Short.MAX_VALUE)
