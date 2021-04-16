@@ -49,17 +49,17 @@ fi
 echo "Releasing version $version"
 version_majorminor="${version%.*}"
 
+remote=$(git remote -v | grep "apple/servicetalk.git" | head -n1)
+remote_name=$(echo $remote | cut -d' ' -f1)
+remote_url=$(echo $remote | cut -d' ' -f2)
+echo "Working with remote $remote_name -> $remote_url"
+
 if [ -z "${DRYRUN:-}" ]; then
     git="git"
 else
     git="echo git"
+    echo "DRYRUN mode is enabled, any further changes won't be committed."
 fi
-
-remote=$(git remote -v | grep "apple/servicetalk.git" | head -n1)
-remote_name=$(echo $remote | cut -d' ' -f1)
-remote_url=$(echo $remote | cut -d' ' -f2)
-
-echo "Working with remote $remote_name -> $remote_url"
 
 $git fetch -p
 if $git rev-parse --quiet --verify main > /dev/null; then
