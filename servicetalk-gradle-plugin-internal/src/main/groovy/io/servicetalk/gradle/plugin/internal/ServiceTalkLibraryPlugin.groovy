@@ -170,8 +170,14 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
         testLogging {
-          events "passed", "skipped", "failed"
-          showStandardStreams = true
+          events "failed"
+          showStandardStreams = false
+
+          warn {
+            // Show more complete info when gradle run in --warn mode
+            events "started", "passed", "skipped", "failed"
+            showStandardStreams = true
+          }
         }
 
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
