@@ -46,9 +46,7 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -57,12 +55,13 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
-import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
+import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -70,7 +69,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.lang.String.valueOf;
 
 final class GrpcUtils {
@@ -85,17 +83,10 @@ final class GrpcUtils {
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     private static final CharSequence GRPC_ACCEPT_ENCODING_KEY = newAsciiString("grpc-accept-encoding");
-    private static final CharSequence GRPC_TIMEOUT_KEY = newAsciiString("grpc-timeout");
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final ConcurrentMap<List<ContentCodec>, CharSequence> ENCODINGS_HEADER_CACHE =
             new ConcurrentHashMap<>();
     private static final CharSequence CONTENT_ENCODING_SEPARATOR = ", ";
-
-    /**
-     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">gRPC spec</a> requires timeout
-     * value to be 8 or fewer ASCII integer digits.
-     */
-    static final long EIGHT_NINES = 99_999_999L;
 
     private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
@@ -129,23 +120,6 @@ final class GrpcUtils {
                 }
             };
 
-
-    /**
-     * Conversions between time units for gRPC timeout
-     */
-    private static final LongUnaryOperator[] CONVERTERS = {
-            TimeUnit.NANOSECONDS::toMicros,
-            TimeUnit.MICROSECONDS::toMillis,
-            TimeUnit.MILLISECONDS::toSeconds,
-            TimeUnit.SECONDS::toMinutes,
-            TimeUnit.MINUTES::toHours,
-    };
-
-    /**
-     * Allowed time units for gRPC timeout
-     */
-    private static final char[] TIMEOUT_UNIT_CHARS = "numSMH".toCharArray();
-
     private GrpcUtils() {
         // No instances.
     }
@@ -157,7 +131,7 @@ final class GrpcUtils {
         final HttpHeaders headers = request.headers();
         final CharSequence timeoutValue = makeTimeoutHeader(timeout);
         if (null != timeoutValue) {
-            headers.set(GRPC_TIMEOUT_KEY, timeoutValue);
+            headers.set(GRPC_TIMEOUT_HEADER_KEY, timeoutValue);
         }
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
@@ -166,28 +140,6 @@ final class GrpcUtils {
         if (acceptedEncoding != null) {
             headers.set(GRPC_ACCEPT_ENCODING_KEY, acceptedEncoding);
         }
-    }
-
-    /**
-     * Make a timeout header value from the specified duration.
-     *
-     * @param timeout the timeout {@link Duration}
-     * @return The timeout header text value or null for infinite timeouts
-     */
-    static @Nullable CharSequence makeTimeoutHeader(@Nullable Duration timeout) {
-        if (isInfinite(timeout, GRPC_MAX_TIMEOUT)) {
-            return null;
-        }
-
-        // convert assuming that negative timeout is the result of an already missed deadline.
-        // cannot overflow as we have already checked against safe maximum
-        long timeoutValue = timeout.isNegative() ? 0 : timeout.toNanos();
-        int units = 0;
-        while (timeoutValue > EIGHT_NINES) {
-            timeoutValue = CONVERTERS[units].applyAsLong(timeoutValue);
-            units++; // cannot go past end of units array as we have already range checked
-        }
-        return newAsciiString(Long.toString(timeoutValue) + TIMEOUT_UNIT_CHARS[units]);
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,

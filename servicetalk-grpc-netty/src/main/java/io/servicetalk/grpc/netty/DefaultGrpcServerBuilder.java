@@ -54,8 +54,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
+import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
@@ -215,7 +217,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
             @Override
             public @Nullable Duration apply(HttpRequestMetaData request) {
                 @Nullable
-                Duration requestTimeout = DefaultGrpcClientBuilder.readTimeoutHeader(request);
+                Duration requestTimeout = readTimeoutHeader(request);
                 @Nullable
                 Duration timeout = null != requestTimeout ? requestTimeout : defaultTimeout;
 
