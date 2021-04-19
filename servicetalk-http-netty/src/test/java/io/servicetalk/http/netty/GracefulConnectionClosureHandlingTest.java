@@ -118,6 +118,7 @@ public class GracefulConnectionClosureHandlingTest {
     private final boolean initiateClosureFromClient;
     private final AsyncCloseable toClose;
     private final CountDownLatch onClosing = new CountDownLatch(1);
+    private final CountDownLatch connectionAccepted = new CountDownLatch(1);
 
     @Nullable
     private final ProxyTunnel proxyTunnel;
@@ -163,6 +164,7 @@ public class GracefulConnectionClosureHandlingTest {
                                     .whenFinally(onClosing::countDown).subscribe();
                         }
                         context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
+                        connectionAccepted.countDown();
                         return completed();
                     }
                 });
@@ -215,6 +217,7 @@ public class GracefulConnectionClosureHandlingTest {
                 .buildStreaming();
         connection = client.reserveConnection(client.get("/")).toFuture().get();
         connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
+        connectionAccepted.await(); // wait until server accepts connection
 
         toClose = initiateClosureFromClient ? connection : serverContext;
     }
