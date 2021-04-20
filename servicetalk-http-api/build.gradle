@@ -39,6 +39,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation testFixtures(project(":servicetalk-http-netty"))
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-test-resources")
@@ -50,6 +51,7 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-buffer-netty")
+  testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "junit:junit:$junitVersion"
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

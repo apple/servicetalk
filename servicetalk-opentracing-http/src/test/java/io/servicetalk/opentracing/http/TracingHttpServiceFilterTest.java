@@ -59,6 +59,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
@@ -130,6 +131,14 @@ public class TracingHttpServiceFilterTest {
                                     span.tags().containsKey(ERROR.getKey()))),
                             httpSerializer.serializerFor(TestSpanState.class)));
                 });
+    }
+
+    @Test
+    public void verifyAsyncContext() throws Exception {
+        final CountingInMemorySpanEventListener spanListener = new CountingInMemorySpanEventListener();
+        final DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
+                .addListener(spanListener).build();
+        verifyServerFilterAsyncContextVisibility(new TracingHttpServiceFilter(tracer, "testServer"));
     }
 
     @Test

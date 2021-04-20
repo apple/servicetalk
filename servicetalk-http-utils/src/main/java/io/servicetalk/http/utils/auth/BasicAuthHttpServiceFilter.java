@@ -359,7 +359,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo>
             if (config.userInfoKey != null) {
                 AsyncContext.put(config.userInfoKey, userInfo);
             }
-            return delegate().handle(ctx, request, factory);
+            return delegate().handle(ctx, request, factory).subscribeShareContext();
         }
     }
 }

@@ -30,6 +30,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-api"))
+  testImplementation testFixtures(project(":servicetalk-http-netty"))
   testImplementation project(":servicetalk-buffer-netty")
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-test-resources")

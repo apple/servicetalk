@@ -43,11 +43,13 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-http-api"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-concurrent-api")
   testImplementation project(":servicetalk-concurrent-api-test")
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
+  testImplementation project(":servicetalk-http-api")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
@@ -55,4 +57,12 @@ dependencies {
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testFixturesImplementation project(":servicetalk-buffer-netty")
+  testFixturesImplementation project(":servicetalk-http-utils")
+  testFixturesImplementation project(":servicetalk-http-api")
+  testFixturesImplementation "junit:junit:$junitVersion"
+  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

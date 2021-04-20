@@ -31,6 +31,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
 
 import org.junit.After;
@@ -61,6 +62,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Base64.getEncoder;
@@ -139,6 +141,35 @@ public class BasicAuthHttpServiceFilterTest {
     @After
     public void cleanUp() {
         AsyncContext.clear();
+    }
+
+    @Test
+    public void verifyAsyncContext() throws Exception {
+        verifyServerFilterAsyncContextVisibility(
+                new StreamingHttpServiceFilterFactory() {
+                    @Override
+                    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+                        return new StreamingHttpServiceFilter(service) {
+                            @Override
+                            public Single<StreamingHttpResponse> handle(
+                                    final HttpServiceContext ctx, final StreamingHttpRequest request,
+                                    final StreamingHttpResponseFactory responseFactory) {
+                                request.headers().set(AUTHORIZATION, "Basic " + base64("user:pass"));
+                                return super.handle(ctx, request, responseFactory);
+                            }
+                        };
+                    }
+                }.append(new BasicAuthHttpServiceFilter.Builder<>(new CredentialsVerifier<Object>() {
+                            @Override
+                            public Completable closeAsync() {
+                                return Completable.completed();
+                            }
+
+                            @Override
+                            public Single<Object> apply(final String userId, final String password) {
+                                return succeeded(new BasicUserInfo(userId));
+                            }
+                        }, REALM_VALUE).buildServer()));
     }
 
     @Test
