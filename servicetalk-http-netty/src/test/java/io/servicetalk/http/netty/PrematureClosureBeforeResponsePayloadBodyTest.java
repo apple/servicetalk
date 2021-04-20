@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -61,12 +62,14 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
 
@@ -137,7 +140,12 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n");   // no final CRLF after headers
 
-        assertThrows(PrematureChannelClosureException.class, () -> connection.request(connection.get("/")));
+        Throwable t = assertThrows(Throwable.class, () -> connection.request(connection.get("/")));
+        if (t instanceof CloseEventObservedException) {
+            assertThat(((CloseEventObservedException) t).event(), is(CHANNEL_CLOSED_INBOUND));
+            t = t.getCause();
+        }
+        assertThat(t, instanceOf(PrematureChannelClosureException.class));
         connectionClosedLatch.await();
     }
 
