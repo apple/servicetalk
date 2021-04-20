@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.VerificationTestUtils;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
@@ -62,14 +63,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThrows;
 
@@ -140,12 +139,8 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n");   // no final CRLF after headers
 
-        Throwable t = assertThrows(Throwable.class, () -> connection.request(connection.get("/")));
-        if (t instanceof CloseEventObservedException) {
-            assertThat(((CloseEventObservedException) t).event(), is(CHANNEL_CLOSED_INBOUND));
-            t = t.getCause();
-        }
-        assertThat(t, instanceOf(PrematureChannelClosureException.class));
+        VerificationTestUtils.assertThrows(PrematureChannelClosureException.class, CloseEventObservedException.class,
+                () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
