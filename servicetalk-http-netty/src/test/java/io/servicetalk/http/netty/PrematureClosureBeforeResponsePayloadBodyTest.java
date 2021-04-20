@@ -15,12 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.VerificationTestUtils;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -137,7 +139,8 @@ public class PrematureClosureBeforeResponsePayloadBodyTest {
                 "Transfer-Encoding: chunked\r\n" +
                 "Connection: close\r\n");   // no final CRLF after headers
 
-        assertThrows(PrematureChannelClosureException.class, () -> connection.request(connection.get("/")));
+        VerificationTestUtils.assertThrows(PrematureChannelClosureException.class, CloseEventObservedException.class,
+                () -> connection.request(connection.get("/")));
         connectionClosedLatch.await();
     }
 
