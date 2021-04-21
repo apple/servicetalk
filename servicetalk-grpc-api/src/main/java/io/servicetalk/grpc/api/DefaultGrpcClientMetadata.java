@@ -22,6 +22,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 
