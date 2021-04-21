@@ -17,11 +17,11 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  api project(":servicetalk-annotations")
   api project(":servicetalk-http-api")
-  api "com.google.code.findbugs:jsr305:$jsr305Version"
 
+  implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-utils-internal")
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
