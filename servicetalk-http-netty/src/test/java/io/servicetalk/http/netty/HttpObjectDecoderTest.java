@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import org.junit.After;
@@ -35,6 +34,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -231,7 +232,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     static ByteBuf fromAscii(final String msg) {
-        return writeAscii(UnpooledByteBufAllocator.DEFAULT, msg);
+        return writeAscii(getByteBufAllocator(DEFAULT_ALLOCATOR), msg);
     }
 
     private static ByteBuf content(int contentLength) {
