@@ -31,7 +31,6 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.PARENT_SPAN_
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
-import static java.lang.Boolean.TRUE;
 
 /**
  * Zipkin-styled header serialization format.

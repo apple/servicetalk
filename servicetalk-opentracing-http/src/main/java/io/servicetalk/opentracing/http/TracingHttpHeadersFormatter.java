@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
-import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
 final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {
