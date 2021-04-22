@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
 
 final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {
@@ -65,7 +66,9 @@ final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<Http
         if (parentSpanIdHex != null) {
             carrier.set(PARENT_SPAN_ID, parentSpanIdHex);
         }
-        carrier.set(SAMPLED, state.isSampled() ? "1" : "0");
+        if (state.isSampled() != null) {
+            carrier.set(SAMPLED, TRUE.equals(state.isSampled()) ? "1" : "0");
+        }
     }
 
     @Nullable
@@ -96,6 +99,6 @@ final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<Http
 
         CharSequence sampleId = carrier.get(SAMPLED);
         return new DefaultInMemoryTraceState(traceId.toString(), spanId.toString(),
-                valueOf(parentSpanId), sampleId != null && sampleId.length() == 1 && sampleId.charAt(0) != '0');
+                valueOf(parentSpanId), sampleId != null ? (sampleId.length() == 1 && sampleId.charAt(0) != '0') : null);
     }
 }

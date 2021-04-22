@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.opentracing.inmemory.api;
 import javax.annotation.Nullable;
 
 /**
- * Utility for representing a Ziplin-like trace state.
+ * Utility for representing a Zipkin-like trace state.
  */
 public interface InMemoryTraceState {
     /**
@@ -42,7 +42,9 @@ public interface InMemoryTraceState {
 
     /**
      * Determine if this state is sampled.
-     * @return {@code true} if this state is sampled.
+     * @return {@code true} if this state is sampled, {@code false} if this state isn't sampled and
+     * {@code null} if sampling is not specified.
      */
-    boolean isSampled();
+    @Nullable
+    Boolean isSampled();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,10 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.PARENT_SPAN_
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
+import static java.lang.Boolean.TRUE;
 
 /**
- * Ziplin-styled header serialization format.
+ * Zipkin-styled header serialization format.
  */
 final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
     public static final TextMapFormatter INSTANCE = new TextMapFormatter();
@@ -49,7 +50,9 @@ final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
         if (state.parentSpanIdHex() != null) {
             carrier.put(PARENT_SPAN_ID, state.parentSpanIdHex());
         }
-        carrier.put(SAMPLED, state.isSampled() ? "1" : "0");
+        if (state.isSampled() != null) {
+            carrier.put(SAMPLED, TRUE.equals(state.isSampled()) ? "1" : "0");
+        }
     }
 
     @Nullable

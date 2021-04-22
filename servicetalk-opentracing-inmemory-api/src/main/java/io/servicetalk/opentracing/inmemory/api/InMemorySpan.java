@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,34 @@ import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 /**
  * A span that allows reading values at runtime.
  */
-public interface InMemorySpan extends Span, InMemoryTraceState {
+public interface InMemorySpan extends Span {
     @Override
     InMemorySpanContext context();
+
+    /**
+     * The hex representation of the traceId.
+     * @return hex representation of the traceId.
+     */
+    String traceIdHex();
+
+    /**
+     * The hex representation of the traceId.
+     * @return hex representation of the traceId.
+     */
+    String spanIdHex();
+
+    /**
+     * The hex representation of the parent's spanId.
+     * @return hex representation of the parent's spanId, or {@code null} if there is no parent.
+     */
+    @Nullable
+    String parentSpanIdHex();
+
+    /**
+     * Determine if this span is sampled.
+     * @return {@code true} if this span is sampled.
+     */
+    boolean isSampled();
 
     /**
      * Returns the operation name.
