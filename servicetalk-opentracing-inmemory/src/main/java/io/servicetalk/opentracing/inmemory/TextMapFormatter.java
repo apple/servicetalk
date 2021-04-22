@@ -15,6 +15,7 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
@@ -44,15 +45,14 @@ final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
     }
 
     @Override
-    public void inject(InMemoryTraceState state, TextMap carrier) {
+    public void inject(final InMemorySpanContext context, final TextMap carrier) {
+        final InMemoryTraceState state = context.traceState();
         carrier.put(TRACE_ID, state.traceIdHex());
         carrier.put(SPAN_ID, state.spanIdHex());
         if (state.parentSpanIdHex() != null) {
             carrier.put(PARENT_SPAN_ID, state.parentSpanIdHex());
         }
-        if (state.isSampled() != null) {
-            carrier.put(SAMPLED, TRUE.equals(state.isSampled()) ? "1" : "0");
-        }
+        carrier.put(SAMPLED, context.isSampled() ? "1" : "0");
     }
 
     @Nullable

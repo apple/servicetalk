@@ -44,9 +44,9 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
 
         try {
             if (format instanceof InMemoryTraceStateFormat) {
-                ((InMemoryTraceStateFormat<C>) format).inject(spanContext.traceState(), carrier);
+                ((InMemoryTraceStateFormat<C>) format).inject(spanContext, carrier);
             } else if (format == Format.Builtin.TEXT_MAP) {
-                TextMapFormatter.INSTANCE.inject(spanContext.traceState(), (TextMap) carrier);
+                TextMapFormatter.INSTANCE.inject(spanContext, (TextMap) carrier);
             } else {
                 throw new UnsupportedOperationException("Format " + format + " is not supported");
             }
