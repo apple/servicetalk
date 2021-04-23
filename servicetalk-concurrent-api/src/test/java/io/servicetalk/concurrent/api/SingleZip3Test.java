@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-
 import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.concurrent.api.Single.zipDelayError;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;

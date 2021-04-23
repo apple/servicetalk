@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.Single.zip;
 import static io.servicetalk.concurrent.api.Single.zipDelayError;
 
 @Test

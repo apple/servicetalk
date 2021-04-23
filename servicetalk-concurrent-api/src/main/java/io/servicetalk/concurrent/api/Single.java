@@ -876,7 +876,7 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code this} and {@code other}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -900,8 +900,9 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}. All operations will terminate (even if there are failures) before the returned {@link Single}
-     * terminates.
+     * {@code this} and {@code other}. If any of the {@link Single}s terminate with an error, the returned
+     * {@link Single} will wait for termination till all the other {@link Single}s have been subscribed and terminated,
+     * and then terminate with the first error.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2253,7 +2254,7 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
-     * by {@code singles}.
+     * by {@code s1} and {@code s2}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2279,8 +2280,9 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted
-     * by {@code singles}. All operations will terminate (even if there are failures) before the returned {@link Single}
-     * terminates.
+     * by {@code s1} and {@code s2}. If any of the {@link Single}s terminate with an error, the returned {@link Single}
+     * will wait for termination till all the other {@link Single}s have been subscribed and terminated, and then
+     * terminate with the first error.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2306,7 +2308,7 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, and {@code s3}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2336,8 +2338,9 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}. All operations will terminate (even if there are failures) before the returned {@link Single}
-     * terminates.
+     * {@code s1}, {@code s2}, and {@code s3}. If any of the {@link Single}s terminate with an error, the returned
+     * {@link Single} will wait for termination till all the other {@link Single}s have been subscribed and terminated,
+     * and then terminate with the first error.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2367,7 +2370,7 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2400,8 +2403,9 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}. All operations will terminate (even if there are failures) before the returned {@link Single}
-     * terminates.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}. If any of the {@link Single}s terminate with an error, the
+     * returned {@link Single}  will wait for termination till all the other {@link Single}s have been subscribed and
+     * terminated, and then terminate with the first error.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -2457,8 +2461,9 @@ public abstract class Single<T> {
 
     /**
      * Create a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
-     * {@code singles}. All operations will terminate (even if there are failures) before the returned {@link Single}
-     * terminates.
+     * {@code singles}. If any of the {@link Single}s terminate with an error, the returned {@link Single} will wait for
+     * termination till all the other {@link Single}s have been subscribed and terminated, and then terminate with the
+     * first error.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
