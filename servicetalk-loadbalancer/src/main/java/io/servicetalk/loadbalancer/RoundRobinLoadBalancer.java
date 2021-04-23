@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,9 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
-import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -336,7 +337,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         return activeHosts.stream().map(Host::asEntry).collect(toList());
     }
 
-    private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
+    private static final class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<Host, Object[]> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, Object[].class, "connections");
@@ -421,9 +422,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @SuppressWarnings("unchecked")
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
-            return defer(() -> succeeded(connectionsUpdater.getAndSet(this, CLOSED_ARRAY)))
-                    .flatMapCompletable(array -> mergeAllDelayError(
-                            Stream.of(array).map(conn -> closeFunction.apply((C) conn))::iterator));
+            return Completable.defer(() -> {
+                final Object[] connections = connectionsUpdater.getAndSet(this, CLOSED_ARRAY);
+                return connections == CLOSED_ARRAY ? completed() :
+                        from(connections).flatMapCompletableDelayError(conn -> closeFunction.apply((C) conn));
+            });
         }
 
         @Override
@@ -436,6 +439,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private static final class StacklessNoAvailableHostException extends NoAvailableHostException {
+        private static final long serialVersionUID = 5942960040738091793L;
+
         private StacklessNoAvailableHostException(final String message) {
             super(message);
         }
