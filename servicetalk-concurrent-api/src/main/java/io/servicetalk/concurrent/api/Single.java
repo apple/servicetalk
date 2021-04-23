@@ -890,7 +890,7 @@ public abstract class Single<T> {
      * @param <T2> The type of {@code other}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code this} and {@code other}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
@@ -916,7 +916,7 @@ public abstract class Single<T> {
      * @param <T2> The type of {@code other}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code this} and {@code other}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWithDelayError(Single<? extends T2> other,
@@ -2270,7 +2270,7 @@ public abstract class Single<T> {
      * @param <T2> The type for the second {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code s1} and {@code s2}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
@@ -2298,7 +2298,7 @@ public abstract class Single<T> {
      * @param <T2> The type for the second {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
-     * {@code singles}.
+     * {@code s1} and {@code s2}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zipDelayError(Single<? extends T1> s1, Single<? extends T2> s2,
@@ -2327,7 +2327,7 @@ public abstract class Single<T> {
      * @param <T3> The type for the third {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, and {@code s3}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zip(
@@ -2359,7 +2359,7 @@ public abstract class Single<T> {
      * @param <T3> The type for the third {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, and {@code s3}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zipDelayError(
@@ -2392,7 +2392,7 @@ public abstract class Single<T> {
      * @param <T4> The type for the fourth {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zip(
@@ -2427,7 +2427,7 @@ public abstract class Single<T> {
      * @param <T4> The type for the fourth {@link Single}.
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
-     * {@code singles}.
+     * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
      * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zipDelayError(
