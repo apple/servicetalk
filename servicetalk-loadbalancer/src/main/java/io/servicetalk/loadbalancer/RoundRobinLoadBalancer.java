@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
@@ -86,6 +88,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
     private static final List<?> CLOSED_LIST = new ArrayList<>(0);
+    private static final Object[] CLOSED_ARRAY = new Object[0];
+    private static final Object[] EMPTY_ARRAY = new Object[0];
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
@@ -260,13 +264,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         // Try first to see if an existing connection can be used
-        final List<C> connections = host.connections;
-        final int size = connections.size();
+        final Object[] connections = host.connections;
         // With small enough search space, attempt all connections.
         // Back off after exploring most of the search space, it gives diminishing returns.
-        final int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
+        final int attempts = connections.length < MIN_SEARCH_SPACE ?
+                connections.length : (int) (connections.length * SEARCH_FACTOR);
         for (int i = 0; i < attempts; i++) {
-            final C connection = connections.get(rnd.nextInt(size));
+            @SuppressWarnings("unchecked")
+            final C connection = (C) connections[rnd.nextInt(connections.length)];
             if (selector.test(connection)) {
                 return succeeded(connection);
             }
@@ -333,38 +338,39 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
+        private static final AtomicReferenceFieldUpdater<Host, Object[]> connectionsUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, Object[].class, "connections");
 
         final Addr address;
-        private volatile List<C> connections = emptyList();
+        private volatile Object[] connections = EMPTY_ARRAY;
 
         Host(Addr address) {
             this.address = requireNonNull(address);
         }
 
         void markInactive() {
-            @SuppressWarnings("unchecked")
-            final List<C> toRemove = connectionsUpdater.getAndSet(this, CLOSED_LIST);
-            LOGGER.debug("Closing {} connection(s) gracefully to inactive address: {}", toRemove.size(), address);
-            for (C conn : toRemove) {
-                conn.closeAsyncGracefully().subscribe();
+            final Object[] toRemove = connectionsUpdater.getAndSet(this, CLOSED_ARRAY);
+            LOGGER.debug("Closing {} connection(s) gracefully to inactive address: {}", toRemove.length, address);
+            for (Object conn : toRemove) {
+                @SuppressWarnings("unchecked")
+                final C cConn = (C) conn;
+                cConn.closeAsyncGracefully().subscribe();
             }
         }
 
         boolean isInactive() {
-            return connections == CLOSED_LIST;
+            return connections == CLOSED_ARRAY;
         }
 
         boolean addConnection(C connection) {
             for (;;) {
-                List<C> existing = this.connections;
-                if (existing == CLOSED_LIST) {
+                final Object[] existing = this.connections;
+                if (existing == CLOSED_ARRAY) {
                     return false;
                 }
-                ArrayList<C> connectionAdded = new ArrayList<>(existing);
-                connectionAdded.add(connection);
-                if (connectionsUpdater.compareAndSet(this, existing, connectionAdded)) {
+                Object[] newList = Arrays.copyOf(existing, existing.length + 1);
+                newList[existing.length] = connection;
+                if (connectionsUpdater.compareAndSet(this, existing, newList)) {
                     break;
                 }
             }
@@ -372,14 +378,25 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
             // Instrument the new connection so we prune it on close
             connection.onClose().beforeFinally(() -> {
                 for (;;) {
-                    final List<C> existing = connections;
-                    if (existing == CLOSED_LIST) {
+                    final Object[] existing = this.connections;
+                    if (existing == CLOSED_ARRAY) {
                         break;
                     }
-                    ArrayList<C> connectionRemoved = new ArrayList<>(existing);
-                    if (!connectionRemoved.remove(connection) ||
-                            connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
+                    int i = 0;
+                    for (; i < existing.length; ++i) {
+                        if (existing[i].equals(connection)) {
+                            break;
+                        }
+                    }
+                    if (i == existing.length) {
                         break;
+                    } else {
+                        Object[] newList = new Object[existing.length - 1];
+                        System.arraycopy(existing, 0, newList, 0, i);
+                        System.arraycopy(existing, i + 1, newList, i, newList.length - i);
+                        if (connectionsUpdater.compareAndSet(this, existing, newList)) {
+                            break;
+                        }
                     }
                 }
             }).subscribe();
@@ -387,8 +404,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         }
 
         // Used for testing only
+        @SuppressWarnings("unchecked")
         Entry<Addr, List<C>> asEntry() {
-            return new SimpleImmutableEntry<>(address, new ArrayList<>(connections));
+            return new SimpleImmutableEntry<>(address, Stream.of(connections).map(conn -> (C) conn).collect(toList()));
         }
 
         @Override
@@ -403,15 +421,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
         @SuppressWarnings("unchecked")
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
-            return defer(() -> succeeded((List<C>) connectionsUpdater.getAndSet(this, CLOSED_LIST)))
-                    .flatMapCompletable(list -> mergeAllDelayError(list.stream().map(closeFunction)::iterator));
+            return defer(() -> succeeded(connectionsUpdater.getAndSet(this, CLOSED_ARRAY)))
+                    .flatMapCompletable(array -> mergeAllDelayError(
+                            Stream.of(array).map(conn -> closeFunction.apply((C) conn))::iterator));
         }
 
         @Override
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + (connections == CLOSED_LIST) +
+                    ", removed=" + (connections == CLOSED_ARRAY) +
                     '}';
         }
     }
