@@ -16,16 +16,22 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.zip;
+import static io.servicetalk.concurrent.api.Single.zipDelayError;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class SingleZip3Test {
     private TestSingle<Integer> first;
@@ -164,6 +170,33 @@ public class SingleZip3Test {
         c.cancel();
         cancellable1.awaitCancelled();
         cancellable3.awaitCancelled();
+    }
+
+    @Test
+    public void delayErrorOneFail() {
+        toSource(zipDelayError(first, second, third, SingleZip3Test::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        first.onSuccess(1);
+        third.onSuccess((short) 22);
+        assertThat(subscriber.awaitOnError(), is(e1));
+    }
+
+    @Test
+    public void delayErrorAllFail() {
+        toSource(zipDelayError(first, second, third, SingleZip3Test::combine)).subscribe(subscriber);
+        subscriber.awaitSubscription();
+        DeliberateException e1 = new DeliberateException();
+        second.onError(e1);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), nullValue());
+        DeliberateException e2 = new DeliberateException();
+        first.onError(e2);
+        DeliberateException e3 = new DeliberateException();
+        third.onError(e3);
+        assertThat(subscriber.awaitOnError(), is(e1));
+        assertThat(asList(e1.getSuppressed()), contains(e2, e3));
     }
 
     private static String combine(int i, double d, short s) {

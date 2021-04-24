@@ -38,10 +38,33 @@ final class SingleZipper {
     }
 
     @SuppressWarnings("unchecked")
+    static <T1, T2, R> Single<R> zipDelayError(Single<? extends T1> s1, Single<? extends T2> s2,
+                                               BiFunction<? super T1, ? super T2, ? extends R> zipper) {
+        return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)))
+                .flatMapMergeSingleDelayError(identity(), 2, 2)
+                .collect(() -> new Object[2], (array, zipArg) -> {
+                    array[zipArg.index] = zipArg.value;
+                    return array;
+                }).map(array -> zipper.apply((T1) array[0], (T2) array[1]));
+    }
+
+    @SuppressWarnings("unchecked")
     static <T1, T2, T3, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
                                          Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
         return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)), s3.map(v -> new ZipArg(2, v)))
                 .flatMapMergeSingle(identity(), 3)
+                .collect(() -> new Object[3], (array, zipArg) -> {
+                    array[zipArg.index] = zipArg.value;
+                    return array;
+                }).map(array -> zipper.apply((T1) array[0], (T2) array[1], (T3) array[2]));
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T1, T2, T3, R> Single<R> zipDelayError(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
+            Function3<? super T1, ? super T2, ? super T3, ? extends R> zipper) {
+        return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)), s3.map(v -> new ZipArg(2, v)))
+                .flatMapMergeSingleDelayError(identity(), 3, 3)
                 .collect(() -> new Object[3], (array, zipArg) -> {
                     array[zipArg.index] = zipArg.value;
                     return array;
@@ -61,6 +84,19 @@ final class SingleZipper {
                 }).map(array -> zipper.apply((T1) array[0], (T2) array[1], (T3) array[2], (T4) array[3]));
     }
 
+    @SuppressWarnings("unchecked")
+    static <T1, T2, T3, T4, R> Single<R> zipDelayError(
+            Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
+            Function4<? super T1, ? super T2, ? super T3, ? super T4, ? extends R> zipper) {
+        return from(s1.map(v -> new ZipArg(0, v)), s2.map(v -> new ZipArg(1, v)),
+                s3.map(v -> new ZipArg(2, v)), s4.map(v -> new ZipArg(3, v)))
+                .flatMapMergeSingleDelayError(identity(), 4, 4)
+                .collect(() -> new Object[4], (array, zipArg) -> {
+                    array[zipArg.index] = zipArg.value;
+                    return array;
+                }).map(array -> zipper.apply((T1) array[0], (T2) array[1], (T3) array[2], (T4) array[3]));
+    }
+
     static <R> Single<R> zip(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
         @SuppressWarnings("unchecked")
         Single<ZipArg>[] mappedSingles = new Single[singles.length];
@@ -70,6 +106,21 @@ final class SingleZipper {
         }
         return from(mappedSingles)
                 .flatMapMergeSingle(identity(), mappedSingles.length)
+                .collect(() -> new Object[mappedSingles.length], (array, zipArg) -> {
+                    array[zipArg.index] = zipArg.value;
+                    return array;
+                }).map(zipper);
+    }
+
+    static <R> Single<R> zipDelayError(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
+        @SuppressWarnings("unchecked")
+        Single<ZipArg>[] mappedSingles = new Single[singles.length];
+        for (int i = 0; i < singles.length; ++i) {
+            final int finalI = i;
+            mappedSingles[i] = singles[i].map(v -> new ZipArg(finalI, v));
+        }
+        return from(mappedSingles)
+                .flatMapMergeSingleDelayError(identity(), mappedSingles.length, mappedSingles.length)
                 .collect(() -> new Object[mappedSingles.length], (array, zipArg) -> {
                     array[zipArg.index] = zipArg.value;
                     return array;
