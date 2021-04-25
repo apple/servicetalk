@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.internal.DeliberateException;
@@ -50,6 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.range;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
@@ -72,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class PublisherFlatMapMergeTest {
     private static final long TERMINAL_POLL_MS = 10;
@@ -242,6 +245,23 @@ public class PublisherFlatMapMergeTest {
 
         mappedPublisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void testDuplicateTerminal() {
+        PublisherSource<Integer> mappedPublisher = subscriber -> {
+            subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+            subscriber.onComplete();
+            // intentionally violate the RS spec to verify the operator's behavior.
+            // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7
+            subscriber.onComplete();
+        };
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
+        toSource(publisher.flatMapMerge(i -> fromSource(mappedPublisher), 1)).subscribe(mockSubscriber);
+        publisher.onNext(1);
+        publisher.onComplete();
+        verify(mockSubscriber).onComplete();
     }
 
     @Test

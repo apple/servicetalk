@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
@@ -37,10 +38,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -61,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class PublisherFlatMapSingleTest {
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
@@ -184,6 +189,23 @@ public class PublisherFlatMapSingleTest {
         source.onComplete();
         single.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void testDuplicateTerminal() {
+        SingleSource<Integer> single = subscriber -> {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onSuccess(2);
+            // intentionally violate the RS spec to verify the operator's behavior.
+            // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7
+            subscriber.onSuccess(3);
+        };
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
+        toSource(source.flatMapMergeSingle(integer1 -> fromSource(single), 2)).subscribe(mockSubscriber);
+        source.onNext(1);
+        source.onComplete();
+        verify(mockSubscriber).onComplete();
     }
 
     @Test
