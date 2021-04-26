@@ -606,11 +606,20 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onComplete() {
-                if (parent.removeSubscriber(this, pendingDemandUpdater.getAndSet(this, -1))) {
+                final int unusedDemand = pendingDemandUpdater.getAndSet(this, -1);
+                if (unusedDemand < 0) {
+                    logDuplicateTerminal();
+                } else if (parent.removeSubscriber(this, unusedDemand)) {
                     parent.enqueueAndDrain(complete());
                 } else {
                     parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                 }
+            }
+
+            private void logDuplicateTerminal() {
+                LOGGER.warn("Duplicate terminal on Subscriber {}", this,
+                        new IllegalStateException("Duplicate terminal on Subscriber " + this + " forbidden see: " +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }

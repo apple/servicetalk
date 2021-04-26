@@ -405,9 +405,22 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
 
             private boolean onSingleTerminated() {
-                assert singleCancellable != null;
+                if (singleCancellable == null) {
+                    logDuplicateTerminal();
+                    return false;
+                }
                 cancellableSet.remove(singleCancellable);
+                singleCancellable = null;
                 return decrementActiveMappedSources();
+            }
+
+            private void logDuplicateTerminal() {
+                LOGGER.warn("onSubscribe not called before terminal or duplicate terminal on Subscriber {}", this,
+                        new IllegalStateException(
+                                "onSubscribe not called before terminal or duplicate terminal on Subscriber " + this +
+                                " forbidden see: " +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
+                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }
