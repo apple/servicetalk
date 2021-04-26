@@ -25,6 +25,7 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import org.junit.Test;
@@ -39,6 +40,7 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -47,7 +49,6 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
-import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -102,6 +103,40 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
         return list;
     }
 
+    @Override
+    protected void service(final StreamingHttpService __) {
+        // Replace the original service with custom impl.
+        // We use a custom "echo" service instead of TestServiceStreaming#SVC_ECHO because we want to modify PayloadInfo
+        // flags only when payload body or trailers are present in the request:
+        super.service((ctx, request, factory) -> request.toRequest().map(req -> {
+            final StreamingHttpResponse response = factory.ok().version(req.version());
+            if (req.payloadBody().readableBytes() > 0) {
+                response.payloadBody(from(req.payloadBody()));
+            }
+            if (!req.trailers().isEmpty()) {
+                response.transform(new StatelessTrailersTransformer<Buffer>() {
+                    @Override
+                    protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+                        return trailers.add(req.trailers());
+                    }
+                });
+            }
+            final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
+            if (contentLength != null) {
+                response.addHeader(CONTENT_LENGTH, contentLength);
+            }
+            final CharSequence contentType = req.headers().get(CONTENT_TYPE);
+            if (contentType != null) {
+                response.addHeader(CONTENT_TYPE, contentType);
+            }
+            final CharSequence transferEncoding = req.headers().get(TRANSFER_ENCODING);
+            if (transferEncoding != null) {
+                response.addHeader(TRANSFER_ENCODING, transferEncoding);
+            }
+            return response;
+        }));
+    }
+
     @Test
     public void contentLengthAddedAutomaticallyByAggregatedApiConversion() throws Exception {
         test(r -> r.toRequest().toFuture().get().toStreamingRequest(), r -> r, true, false, false);
@@ -119,7 +154,10 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void transferEncodingAddedManually() throws Exception {
-        test(r -> r.setHeader(TRANSFER_ENCODING, CHUNKED), r -> r, false, true, false);
+        // HTTP/2 can write a request without payload body as a single frame,
+        // server adds "content-length: 0" when it reads those requests
+        boolean hasContentLength = protocol == HTTP_2 && content.isEmpty();
+        test(r -> r.setHeader(TRANSFER_ENCODING, CHUNKED), r -> r, hasContentLength, !hasContentLength, false);
     }
 
     @Test
@@ -244,7 +282,7 @@ public class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                       Transformer<StreamingHttpResponse> responseTransformer,
                       boolean hasContentLength, boolean chunked, boolean hasTrailers) throws Exception {
 
-        StreamingHttpRequest preRequest = streamingHttpConnection().post(SVC_ECHO);
+        StreamingHttpRequest preRequest = streamingHttpConnection().post("/");
         if (!content.isEmpty()) {
             preRequest.payloadBody(from(content), textSerializer());
         }
