@@ -30,8 +30,8 @@ public interface InMemorySpanContext extends SpanContext {
     /**
      * Returns whether the span should be sampled.
      * <p>
-     * Note this may differ from {@link InMemorySpan#isSampled()} from {@link #traceState()} if the value is overridden
-     * based upon some sampling policy.
+     * Note this may differ from {@link InMemoryTraceState#isSampled()} if the value is overridden based upon
+     * some sampling policy.
      *
      * @return whether the span should be sampled
      */

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map.Entry;
 
 import static io.servicetalk.opentracing.inmemory.SingleLineValue.format;
+import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,7 +38,7 @@ class DefaultInMemorySpanContext implements InMemorySpanContext {
     final boolean isSampledOverride;
 
     DefaultInMemorySpanContext(InMemoryTraceState state) {
-        this(state, state.isSampled() != null && requireNonNull(state.isSampled()));
+        this(state, TRUE.equals(state.isSampled()));
     }
 
     DefaultInMemorySpanContext(InMemoryTraceState state,

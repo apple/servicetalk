@@ -31,31 +31,6 @@ public interface InMemorySpan extends Span {
     InMemorySpanContext context();
 
     /**
-     * The hex representation of the traceId.
-     * @return hex representation of the traceId.
-     */
-    String traceIdHex();
-
-    /**
-     * The hex representation of the traceId.
-     * @return hex representation of the traceId.
-     */
-    String spanIdHex();
-
-    /**
-     * The hex representation of the parent's spanId.
-     * @return hex representation of the parent's spanId, or {@code null} if there is no parent.
-     */
-    @Nullable
-    String parentSpanIdHex();
-
-    /**
-     * Determine if this span is sampled.
-     * @return {@code true} if this span is sampled.
-     */
-    boolean isSampled();
-
-    /**
      * Returns the operation name.
      *
      * @return operation name
@@ -75,7 +50,7 @@ public interface InMemorySpan extends Span {
      * @return low 64 bits of the trace ID
      */
     default long traceId() {
-        String traceIdHex = traceIdHex();
+        String traceIdHex = context().traceState().traceIdHex();
         return longOfHexBytes(traceIdHex, traceIdHex.length() >= 32 ? 16 : 0);
     }
 
@@ -85,7 +60,7 @@ public interface InMemorySpan extends Span {
      * @return high 64 bits of the trace ID
      */
     default long traceIdHigh() {
-        String traceIdHex = traceIdHex();
+        String traceIdHex = context().traceState().traceIdHex();
         return traceIdHex.length() >= 32 ? longOfHexBytes(traceIdHex, 0) : 0;
     }
 
@@ -95,7 +70,7 @@ public interface InMemorySpan extends Span {
      * @return span ID
      */
     default long spanId() {
-        return longOfHexBytes(spanIdHex(), 0);
+        return longOfHexBytes(context().traceState().spanIdHex(), 0);
     }
 
     /**
@@ -105,7 +80,7 @@ public interface InMemorySpan extends Span {
      */
     @Nullable
     default Long parentSpanId() {
-        String parentSpanIdHex = parentSpanIdHex();
+        String parentSpanIdHex = context().traceState().parentSpanIdHex();
         return parentSpanIdHex == null ? null : longOfHexBytes(parentSpanIdHex, 0);
     }
 
@@ -115,7 +90,7 @@ public interface InMemorySpan extends Span {
      * @return parent span ID in hex
      */
     default String nonnullParentSpanIdHex() {
-        String parentSpanIdHex = parentSpanIdHex();
+        String parentSpanIdHex = context().traceState().parentSpanIdHex();
         return parentSpanIdHex == null ? NO_PARENT_ID : parentSpanIdHex;
     }
 

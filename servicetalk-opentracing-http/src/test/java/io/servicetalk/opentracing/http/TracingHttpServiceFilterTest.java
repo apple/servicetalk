@@ -123,10 +123,10 @@ public class TracingHttpServiceFilterTest {
                                 textSerializer()));
                     }
                     return succeeded(responseFactory.ok().payloadBody(from(new TestSpanState(
-                                    span.traceIdHex(),
-                                    span.spanIdHex(),
-                                    span.parentSpanIdHex(),
-                                    span.isSampled(),
+                                    span.context().traceState().traceIdHex(),
+                                    span.context().traceState().spanIdHex(),
+                                    span.context().traceState().parentSpanIdHex(),
+                                    span.context().isSampled(),
                                     span.tags().containsKey(ERROR.getKey()))),
                             httpSerializer.serializerFor(TestSpanState.class)));
                 });
@@ -142,7 +142,8 @@ public class TracingHttpServiceFilterTest {
                 String parentSpanId = randomHexId();
                 String requestUrl = "/";
                 HttpRequest request = client.get(requestUrl);
-                request.headers().set(TRACE_ID, traceId)
+                request.headers()
+                        .set(TRACE_ID, traceId)
                         .set(SPAN_ID, spanId)
                         .set(PARENT_SPAN_ID, parentSpanId)
                         .set(SAMPLED, "0");
