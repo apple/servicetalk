@@ -33,6 +33,8 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -45,6 +47,9 @@ import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.channelError;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractH2DuplexHandler.class);
+
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
@@ -86,6 +91,15 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         closeHandler.protocolPayloadEndOutbound(ctx, promise);
         HttpHeaders trailers = (HttpHeaders) msg;
+        if (endStream) {
+            promise.setSuccess();
+            if (!trailers.isEmpty()) {
+                LOGGER.warn("{} Received unexpected non-empty trailers while endStream was already sent: {}",
+                        ctx.channel(), trailers);
+            }
+            return;
+        }
+
         if (trailers.isEmpty()) {
             writeEmptyEndStream(ctx, promise);
         } else {
@@ -99,12 +113,8 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         endStream = true;
     }
 
-    private void writeEmptyEndStream(ChannelHandlerContext ctx, ChannelPromise promise) {
-        if (endStream) {
-            promise.setSuccess();
-        } else {
-            ctx.write(new DefaultHttp2DataFrame(true), promise);
-        }
+    private static void writeEmptyEndStream(ChannelHandlerContext ctx, ChannelPromise promise) {
+        ctx.write(new DefaultHttp2DataFrame(true), promise);
     }
 
     final void readDataFrame(ChannelHandlerContext ctx, Object msg) {
