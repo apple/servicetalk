@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -39,7 +39,7 @@ abstract class AbstractTracingHttpFilter {
 
     protected final Tracer tracer;
     protected final String componentName;
-    protected final InMemoryTraceStateFormat<HttpHeaders> formatter;
+    protected final InMemorySpanContextFormat<HttpHeaders> formatter;
 
     /**
      * Create a new instance.

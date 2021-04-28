@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.opentracing.inmemory;
 
 import io.servicetalk.opentracing.inmemory.api.InMemoryReference;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanLog;
 
@@ -50,11 +51,10 @@ final class SampledInMemorySpan extends AbstractInMemorySpan {
     private final List<InMemorySpanLog> logs;
     private byte state;
 
-    SampledInMemorySpan(String operationName, List<InMemoryReference> references,
-                        String traceIdHex, String spanIdHex, @Nullable String parentSpanIdHex,
+    SampledInMemorySpan(String operationName, List<InMemoryReference> references, InMemorySpanContext context,
                         @Nullable Map<String, Object> tags, int maxTagSize, long startEpochMicros,
                         InMemorySpanEventListener listeners, boolean persistLogs) {
-        super(operationName, references, new DefaultInMemoryTraceState(traceIdHex, spanIdHex, parentSpanIdHex, true));
+        super(operationName, references, context);
         this.tags = tags == null ? new HashMap<>(4) : new HashMap<>(tags); // size is guesstimate
         this.maxTagSize = maxTagSize;
         this.startEpochMicros = startEpochMicros;

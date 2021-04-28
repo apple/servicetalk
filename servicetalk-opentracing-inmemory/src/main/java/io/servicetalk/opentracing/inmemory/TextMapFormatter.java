@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import io.opentracing.propagation.TextMap;
 import org.slf4j.Logger;
@@ -32,9 +32,9 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 
 /**
- * Ziplin-styled header serialization format.
+ * Zipkin-styled header serialization format.
  */
-final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
+final class TextMapFormatter implements InMemorySpanContextFormat<TextMap> {
     public static final TextMapFormatter INSTANCE = new TextMapFormatter();
     private static final Logger logger = LoggerFactory.getLogger(TextMapFormatter.class);
 
@@ -43,18 +43,21 @@ final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
     }
 
     @Override
-    public void inject(InMemoryTraceState state, TextMap carrier) {
-        carrier.put(TRACE_ID, state.traceIdHex());
-        carrier.put(SPAN_ID, state.spanIdHex());
-        if (state.parentSpanIdHex() != null) {
-            carrier.put(PARENT_SPAN_ID, state.parentSpanIdHex());
+    public void inject(final InMemorySpanContext context, final TextMap carrier) {
+        carrier.put(TRACE_ID, context.toTraceId());
+        carrier.put(SPAN_ID, context.toSpanId());
+        if (context.parentSpanId() != null) {
+            carrier.put(PARENT_SPAN_ID, context.parentSpanId());
         }
-        carrier.put(SAMPLED, state.isSampled() ? "1" : "0");
+        final Boolean isSampled = context.isSampled();
+        if (isSampled != null) {
+            carrier.put(SAMPLED, isSampled ? "1" : "0");
+        }
     }
 
     @Nullable
     @Override
-    public InMemoryTraceState extract(TextMap carrier) {
+    public InMemorySpanContext extract(TextMap carrier) {
         String traceId = null;
         String spanId = null;
         String parentSpanId = null;
@@ -95,6 +98,6 @@ final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
             return null;
         }
 
-        return new DefaultInMemoryTraceState(traceId, spanId, parentSpanId, sampled);
+        return new DefaultInMemorySpanContext(traceId, spanId, parentSpanId, sampled);
     }
 }

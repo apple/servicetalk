@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
+import io.servicetalk.opentracing.inmemory.api.InMemorySpanContextFormat;
 
 import javax.annotation.Nullable;
 
@@ -31,7 +31,7 @@ import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
  * <li>00000000000B75A2.00000000000B75A2&lt;:000000000015C003:1 (sampling=true)</li>
  * </ul>
  */
-public final class SingleLineFormatter implements InMemoryTraceStateFormat<SingleLineValue> {
+public final class SingleLineFormatter implements InMemorySpanContextFormat<SingleLineValue> {
     public static final SingleLineFormatter INSTANCE = new SingleLineFormatter();
 
     private SingleLineFormatter() {
@@ -39,13 +39,18 @@ public final class SingleLineFormatter implements InMemoryTraceStateFormat<Singl
     }
 
     @Override
-    public void inject(InMemoryTraceState state, SingleLineValue carrier) {
-        carrier.set(format(state.traceIdHex(), state.spanIdHex(), state.parentSpanIdHex(), state.isSampled()));
+    public void inject(final InMemorySpanContext context, final SingleLineValue carrier) {
+        final Boolean isSampled = context.isSampled();
+        if (isSampled != null) {
+            carrier.set(format(context.toTraceId(), context.toSpanId(), context.parentSpanId(), isSampled));
+        } else {
+            carrier.set(format(context.toTraceId(), context.toSpanId(), context.parentSpanId()));
+        }
     }
 
     @Nullable
     @Override
-    public InMemoryTraceState extract(SingleLineValue carrier) {
+    public InMemorySpanContext extract(SingleLineValue carrier) {
         String value = carrier.get();
         if (value == null) {
             return null;
@@ -72,11 +77,11 @@ public final class SingleLineFormatter implements InMemoryTraceStateFormat<Singl
 
         // If the sampling flag is present, i3 should be pointing to the next-to-last
         // character of the string (......:0)
-        boolean sampled = false;
+        Boolean sampled = null;
         if (i3 == value.length() - 2) {
             sampled = '1' == value.charAt(i3 + 1);
         }
 
-        return new DefaultInMemoryTraceState(traceIdHex, spanIdHex, parentSpanIdResolved, sampled);
+        return new DefaultInMemorySpanContext(traceIdHex, spanIdHex, parentSpanIdResolved, sampled);
     }
 }
