@@ -14,7 +14,7 @@ that libraries that rely upon ThreadLocal storage such as http://www.slf4j.org/m
 expected. To overcome this limitation, we provide an abstraction called `AsyncContext` which hooks into the internal
 async machinery to make sure thread local context data is propagated along with the request.
 
-Although `AsyncContext` may be convenient to use it shouldn't be over used when traditional argument passing is an
+Although `AsyncContext` may be convenient to use it shouldn't be overused when traditional argument passing is an
 option. The intended use case of `AsyncContext` is to propagate context across method boundaries which do not
 accommodate for additional parameters. This is typically applicable for infrastructure tasks like tracing,
 logging, etc.
@@ -42,18 +42,18 @@ and not be required.
 NOTE: This maybe seen as a negative in some respects. On the contrary, this does not restrict users from explicitly
 passing state through their APIs.
 
-However these benefits don't come for free. Some of the costs of the static API are as follows:
+However, these benefits don't come for free. Some costs of the static API are as follows:
 
 **Complexity of implementation**
 
 ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
-that ReactiveStreams operators, Executors, and the offloading strategy must accounted for when relying upon
+that ReactiveStreams operators, Executors, and the offloading strategy must account for when relying upon
 `AsyncContext`. In order to accomplish this ServiceTalk's asynchronous control flow needs to account for `AsyncContext`
-and provide tools for users if they have existing code outside of ServiceTalk control flow.
+and provide tools for users if they have existing code outside ServiceTalk control flow.
 
 **Understandability**
 
-Although asynchronous function composition is not required to use ServiceTalk but the internals of ServiceTalk uses
+Although asynchronous function composition is not required to use ServiceTalk, the internals of ServiceTalk uses
 asynchronous function composition as a core abstraction which can be difficult to reason about relative to
 traditional imperative programming. On top of this, ServiceTalk provides isolation from the EventLoop
 threads by offloading to application level threads, which introduces asynchronous boundaries. For request/response
