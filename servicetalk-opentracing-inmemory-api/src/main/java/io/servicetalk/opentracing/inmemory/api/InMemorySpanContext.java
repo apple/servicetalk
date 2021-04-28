@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,14 +30,12 @@ public interface InMemorySpanContext extends SpanContext {
     /**
      * Returns whether the span should be sampled.
      * <p>
-     * Note this may differ from {@link InMemorySpan#isSampled()} from {@link #traceState()} if the value is overridden
-     * based upon some sampling policy.
+     * Note this may differ from {@link InMemoryTraceState#isSampled()} if the value is overridden based upon
+     * some sampling policy.
      *
      * @return whether the span should be sampled
      */
-    default boolean isSampled() {
-        return traceState().isSampled();
-    }
+    boolean isSampled();
 
     default String toTraceId() {
         return traceState().traceIdHex();

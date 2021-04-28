@@ -58,14 +58,14 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             case TRACE_ID_KEY: {
                 InMemorySpan span = SCOPE_MANAGER.activeSpan();
                 if (span != null) {
-                    return span.traceIdHex();
+                    return span.context().traceState().traceIdHex();
                 }
                 break;
             }
             case SPAN_ID_KEY: {
                 InMemorySpan span = SCOPE_MANAGER.activeSpan();
                 if (span != null) {
-                    return span.spanIdHex();
+                    return span.context().traceState().spanIdHex();
                 }
                 break;
             }
@@ -92,8 +92,8 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
         Map<String, String> copy = super.getCopy();
         InMemorySpan span = SCOPE_MANAGER.activeSpan();
         if (span != null) {
-            copy.put(TRACE_ID_KEY, span.traceIdHex());
-            copy.put(SPAN_ID_KEY, span.spanIdHex());
+            copy.put(TRACE_ID_KEY, span.context().traceState().traceIdHex());
+            copy.put(SPAN_ID_KEY, span.context().traceState().spanIdHex());
             copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
         }
         return copy;
@@ -130,8 +130,8 @@ public final class ServiceTalkTracingThreadContextMap extends ServiceTalkThreadC
             copy = new HashMap<>(4);
         }
         if (span != null) {
-            copy.put(TRACE_ID_KEY, span.traceIdHex());
-            copy.put(SPAN_ID_KEY, span.spanIdHex());
+            copy.put(TRACE_ID_KEY, span.context().traceState().traceIdHex());
+            copy.put(SPAN_ID_KEY, span.context().traceState().spanIdHex());
             copy.put(PARENT_SPAN_ID_KEY, span.nonnullParentSpanIdHex());
         }
         return copy;

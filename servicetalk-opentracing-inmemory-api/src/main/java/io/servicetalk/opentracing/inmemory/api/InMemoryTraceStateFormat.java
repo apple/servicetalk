@@ -27,10 +27,10 @@ public interface InMemoryTraceStateFormat<C> extends Format<C> {
     /**
      * Inject a trace state into a carrier.
      *
-     * @param state   trace state
+     * @param context span context
      * @param carrier carrier to inject into
      */
-    void inject(InMemoryTraceState state, C carrier);
+    void inject(InMemorySpanContext context, C carrier);
 
     /**
      * Extract the trace state from a carrier.
