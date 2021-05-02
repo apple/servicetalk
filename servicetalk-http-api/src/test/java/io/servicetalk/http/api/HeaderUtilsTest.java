@@ -17,9 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.serialization.api.SerializationException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
@@ -27,6 +25,8 @@ import java.nio.charset.CharsetEncoder;
 import java.util.function.Predicate;
 
 import static io.netty.util.AsciiString.of;
+import static io.servicetalk.http.api.EmptyHttpHeaders.INSTANCE;
+import static io.servicetalk.http.api.HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.isTchar;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -44,35 +44,32 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.rules.ExpectedException.none;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HeaderUtilsTest {
-
-    @Rule
-    public final ExpectedException expectedException = none();
+class HeaderUtilsTest {
 
     @Test
-    public void defaultDebugHeaderFilter() {
-        assertEquals(APPLICATION_JSON, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_TYPE, APPLICATION_JSON));
+    void defaultDebugHeaderFilter() {
+        assertEquals(APPLICATION_JSON, DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_TYPE, APPLICATION_JSON));
 
-        assertEquals("3495", HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_LENGTH, "3495"));
+        assertEquals("3495", DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_LENGTH, "3495"));
 
-        assertEquals(CHUNKED, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(TRANSFER_ENCODING, CHUNKED));
+        assertEquals(CHUNKED, DEFAULT_DEBUG_HEADER_FILTER.apply(TRANSFER_ENCODING, CHUNKED));
 
-        assertEquals(CHUNKED, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply("TrAnsFeR-eNcOdiNg", CHUNKED));
+        assertEquals(CHUNKED, DEFAULT_DEBUG_HEADER_FILTER.apply("TrAnsFeR-eNcOdiNg", CHUNKED));
 
-        assertEquals("<filtered>", HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(ORIGIN, "some/origin"));
+        assertEquals("<filtered>", DEFAULT_DEBUG_HEADER_FILTER.apply(ORIGIN, "some/origin"));
     }
 
     @Test
-    public void hasContentType() {
+    void hasContentType() {
         assertFalse(HeaderUtils.hasContentType(
-                EmptyHttpHeaders.INSTANCE, TEXT_PLAIN, null));
+                INSTANCE, TEXT_PLAIN, null));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN), TEXT_PLAIN, null));
@@ -196,21 +193,21 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void checkContentTypeCases() {
+    void checkContentTypeCases() {
         final String invalidContentType = "invalid";
         final Predicate<HttpHeaders> jsonContentTypeValidator =
                 headers -> headers.contains(CONTENT_TYPE, APPLICATION_JSON);
 
         checkContentType(headersWithContentType(APPLICATION_JSON), jsonContentTypeValidator);
 
-        expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(containsString(invalidContentType));
-
-        checkContentType(headersWithContentType(of(invalidContentType)), jsonContentTypeValidator);
+        SerializationException e = assertThrows(SerializationException.class,
+                                                () -> checkContentType(headersWithContentType(
+                                                    of(invalidContentType)), jsonContentTypeValidator));
+        assertThat(e.getMessage(), containsString(invalidContentType));
     }
 
     @Test
-    public void isTransferEncodingChunkedFalseCases() {
+    void isTransferEncodingChunkedFalseCases() {
         HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         assertTrue(headers.isEmpty());
         assertFalse(isTransferEncodingChunked(headers));
@@ -226,7 +223,7 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void isTransferEncodingChunkedTrueCases() {
+    void isTransferEncodingChunkedTrueCases() {
         HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         assertTrue(headers.isEmpty());
         // lower case
@@ -265,17 +262,17 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void validateToken() {
+    void validateToken() {
         // Make sure the old and new validation logic is equivalent:
         for (int b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; ++b) {
             final byte value = (byte) (b & 0xff);
-            assertEquals("Unexpected result for byte: " + value,
-                    originalValidateTokenLogic(value), isTchar(value));
+            assertEquals(originalValidateTokenLogic(value), isTchar(value),
+                    () -> "Unexpected result for byte: " + value);
         }
     }
 
     @Test
-    public void pathMatchesTest() {
+    void pathMatchesTest() {
         assertTrue(pathMatches("/a/b/c", "/a/b/c"));
         assertTrue(pathMatches("/a/b/cxxxx", "/a/b/c"));
         assertTrue(pathMatches(new StringBuilder("/a/b/c"), new StringBuilder("/a/b/c")));

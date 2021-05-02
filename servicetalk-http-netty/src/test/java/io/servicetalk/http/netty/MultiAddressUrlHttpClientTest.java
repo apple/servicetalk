@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -30,11 +29,9 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -77,16 +74,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class MultiAddressUrlHttpClientTest {
+class MultiAddressUrlHttpClientTest {
 
     private static final String INVALID_HOSTNAME = "invalid.";
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
     private static final String X_RECEIVED_REQUEST_TARGET = "X-Received-Request-Target";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private static CompositeCloseable afterClassCloseables;
     private static StreamingHttpService httpService;
@@ -97,8 +93,8 @@ public class MultiAddressUrlHttpClientTest {
 
     private final TestSingleSubscriber<StreamingHttpResponse> subscriber = new TestSingleSubscriber<>();
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @BeforeAll
+    static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
@@ -136,8 +132,8 @@ public class MultiAddressUrlHttpClientTest {
         hostHeader = hostHeader(serverHostAndPort);
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception {
+    @AfterAll
+    static void afterClass() throws Exception {
         afterClassCloseables.close();
     }
 
@@ -167,7 +163,7 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithRelativeFormRequestTarget() {
+    void requestWithRelativeFormRequestTarget() {
         StreamingHttpRequest request = client.get("/200?param=value");
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
@@ -175,7 +171,7 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithRelativeFormRequestTargetAndHostHeader() {
+    void requestWithRelativeFormRequestTargetAndHostHeader() {
         StreamingHttpRequest request = client.get("/200?param=value");
         request.headers().set(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
@@ -183,7 +179,7 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithRequestTargetWithoutScheme() {
+    void requestWithRequestTargetWithoutScheme() {
         StreamingHttpRequest request = client.get(format("%s/200?param=value#tag", hostHeader));
         // no host header
         toSource(client.request(request)).subscribe(subscriber);
@@ -191,7 +187,7 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithAbsoluteFormRequestTargetWithHostHeader() throws Exception {
+    void requestWithAbsoluteFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
         // value in the HOST header should be ignored:
         request.headers().set(HOST, format("%s:%d", INVALID_HOSTNAME, 8080));
@@ -199,19 +195,19 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithAbsoluteFormRequestTargetWithoutHostHeader() throws Exception {
+    void requestWithAbsoluteFormRequestTargetWithoutHostHeader() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
         requestAndValidate(request, OK, "/200?param=value#tag");
     }
 
     @Test
-    public void requestWithAbsoluteFormRequestTargetWithoutPath() throws Exception {
+    void requestWithAbsoluteFormRequestTargetWithoutPath() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s", hostHeader));
         requestAndValidate(request, BAD_REQUEST, "/");
     }
 
     @Test
-    public void requestWithAbsoluteFormRequestTargetWithInvalidHost() {
+    void requestWithAbsoluteFormRequestTargetWithInvalidHost() {
         // Verify it fails multiple times:
         requestWithInvalidHost();
         requestWithInvalidHost();
@@ -225,22 +221,22 @@ public class MultiAddressUrlHttpClientTest {
         assertThat(ee.getCause(), is(instanceOf(UnknownHostException.class)));
     }
 
-    @Test(expected = ExecutionException.class)
-    public void requestWithAbsoluteFormRequestTargetWithWrongPort() throws Exception {
+    @Test
+    void requestWithAbsoluteFormRequestTargetWithWrongPort() {
         StreamingHttpRequest request = client.get(
                 format("http://%s:%d/200?param=value#tag", serverHost, serverPort + 1));
-        client.request(request).toFuture().get();
+        assertThrows(ExecutionException.class, () -> client.request(request).toFuture().get());
     }
 
     @Test
-    public void requestWithIncorrectPortInAbsoluteFormRequestTarget() {
+    void requestWithIncorrectPortInAbsoluteFormRequestTarget() {
         StreamingHttpRequest request = client.get(format("http://%s:-1/200?param=value#tag", serverHost));
         toSource(client.request(request)).subscribe(subscriber);
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test
-    public void requestWithAsteriskFormRequestTargetWithHostHeader() throws Exception {
+    void requestWithAsteriskFormRequestTargetWithHostHeader() {
         StreamingHttpRequest request = client.newRequest(OPTIONS, "*")
                 .setHeader(HOST, hostHeader);
         toSource(client.request(request)).subscribe(subscriber);
@@ -248,21 +244,21 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     @Test
-    public void requestWithRedirect() throws Exception {
+    void requestWithRedirect() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, format("http://%s/200", hostHeader));  // Location for redirect
         requestAndValidate(request, OK, "/200");
     }
 
     @Test
-    public void requestWithRelativeRedirect() throws Exception {
+    void requestWithRelativeRedirect() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, "/200");  // Location for redirect
         requestAndValidate(request, OK, "/200");
     }
 
     @Test
-    public void multipleRequestsToMultipleServers() throws Exception {
+    void multipleRequestsToMultipleServers() throws Exception {
         try (CompositeCloseable closeables = newCompositeCloseable()) {
             ServerContext serverCtx2 = startNewLocalServer(httpService, closeables);
             String hostHeader2 = hostHeader(serverHostAndPort(serverCtx2));

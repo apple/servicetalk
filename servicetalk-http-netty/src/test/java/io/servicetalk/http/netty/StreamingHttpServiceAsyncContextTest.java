@@ -26,7 +26,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -38,48 +38,48 @@ import static java.lang.Thread.currentThread;
 public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsyncContextTest {
 
     @Test
-    public void newRequestsGetFreshContextImmediate() throws Exception {
+    void newRequestsGetFreshContextImmediate() throws Exception {
         newRequestsGetFreshContext(true);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesOffloadedAsyncService() throws Exception {
+    void contextPreservedOverFilterBoundariesOffloadedAsyncService() throws Exception {
         contextPreservedOverFilterBoundaries(false, false, true);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesOffloadedAsyncFilterAsyncService() throws Exception {
+    void contextPreservedOverFilterBoundariesOffloadedAsyncFilterAsyncService() throws Exception {
         contextPreservedOverFilterBoundaries(false, true, true);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
+    void contextPreservedOverFilterBoundariesNoOffload() throws Exception {
         contextPreservedOverFilterBoundaries(true, false, false);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesNoOffloadAsyncService() throws Exception {
+    void contextPreservedOverFilterBoundariesNoOffloadAsyncService() throws Exception {
         contextPreservedOverFilterBoundaries(true, false, true);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesNoOffloadAsyncFilter() throws Exception {
+    void contextPreservedOverFilterBoundariesNoOffloadAsyncFilter() throws Exception {
         contextPreservedOverFilterBoundaries(true, true, false);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesNoOffloadAsyncFilterAsyncService() throws Exception {
+    void contextPreservedOverFilterBoundariesNoOffloadAsyncFilterAsyncService() throws Exception {
         contextPreservedOverFilterBoundaries(true, true, true);
     }
 
     @Test
-    public void connectionAcceptorContextDoesNotLeakImmediate() throws Exception {
+    void connectionAcceptorContextDoesNotLeakImmediate() throws Exception {
         connectionAcceptorContextDoesNotLeak(true);
     }
 
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
-                                                               boolean useImmediate) throws Exception {
+                                                     boolean useImmediate) throws Exception {
         if (useImmediate) {
             serverBuilder.executionStrategy(noOffloadsStrategy());
         }
@@ -107,7 +107,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
 
     @Override
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
-                                              boolean useImmediate, boolean asyncService) throws Exception {
+                                    boolean useImmediate, boolean asyncService) throws Exception {
         if (useImmediate) {
             serverBuilder.executionStrategy(noOffloadsStrategy());
         }

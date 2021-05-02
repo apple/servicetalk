@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
@@ -26,15 +25,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.Collection;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -45,7 +38,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(Parameterized.class)
 public class GracefulCloseTest {
 
     private enum TrailerAddType {
@@ -54,14 +46,11 @@ public class GracefulCloseTest {
         None
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final ServerContext context;
-    private final StreamingHttpClient client;
+    private ServerContext context;
+    private StreamingHttpClient client;
 
     @SuppressWarnings("unchecked")
-    public GracefulCloseTest(final TrailerAddType trailerAddType) throws Exception {
+    private void setUp(final TrailerAddType trailerAddType) throws Exception {
         context = HttpServers.forAddress(localAddress(0)).listenStreamingAndAwait((ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), textSerializer());
             switch (trailerAddType) {
@@ -80,19 +69,16 @@ public class GracefulCloseTest {
         client = HttpClients.forSingleAddress(serverHostAndPort(context)).buildStreaming();
     }
 
-    @Parameterized.Parameters(name = "{index} - trailer type: {0}")
-    public static Collection<TrailerAddType> executors() {
-        return Arrays.asList(TrailerAddType.values());
-    }
-
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         client.close();
         context.close();
     }
 
-    @Test
-    public void useConnection() throws Exception {
+    @ParameterizedTest
+    @EnumSource(TrailerAddType.class)
+    void useConnection(TrailerAddType trailerAddType) throws Exception {
+        setUp(trailerAddType);
         ReservedStreamingHttpConnection conn = client.reserveConnection(client.get("/")).toFuture().get();
         StreamingHttpResponse resp = conn.request(client.get("/")
                 .payloadBody(from("Hello"), textSerializer())).toFuture().get();
@@ -102,8 +88,10 @@ public class GracefulCloseTest {
         conn.close();
     }
 
-    @Test
-    public void useClient() throws Exception {
+    @ParameterizedTest
+    @EnumSource(TrailerAddType.class)
+    void useClient(TrailerAddType trailerAddType) throws Exception {
+        setUp(trailerAddType);
         StreamingHttpResponse resp = client.request(client.get("/")
                 .payloadBody(from("Hello"), textSerializer())).toFuture().get();
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));

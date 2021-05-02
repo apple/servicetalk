@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
@@ -33,9 +32,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 import io.servicetalk.utils.internal.PlatformDependent;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,44 +51,41 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class ConsumeRequestPayloadOnResponsePathTest {
+class ConsumeRequestPayloadOnResponsePathTest {
 
     private static final String EXPECTED_REQUEST_PAYLOAD = "ExpectedRequestPayload";
     private static final String X_TOTAL_LENGTH = "X-Total-Length";
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final CountDownLatch serverLatch = new CountDownLatch(1);
     private final AtomicReference<Throwable> errorRef = new AtomicReference<>();
     private final StringBuffer receivedPayload = new StringBuffer();
 
     @Test
-    public void testConsumeRequestPayloadBeforeResponseMetaDataSent() throws Exception {
+    void testConsumeRequestPayloadBeforeResponseMetaDataSent() throws Exception {
         test((responseSingle, request) -> consumePayloadBody(request).concat(responseSingle));
     }
 
     @Test
-    public void testConsumeRequestPayloadAfterResponseMetaDataSent() throws Exception {
+    void testConsumeRequestPayloadAfterResponseMetaDataSent() throws Exception {
         test((responseSingle, request) -> responseSingle.concat(consumePayloadBody(request)));
     }
 
     @Test
-    public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
+    void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
                 response.transformMessageBody(payloadBody -> consumePayloadBody(request).concat(payloadBody))));
     }
 
     @Test
-    public void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
+    void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
                 response.transformMessageBody(payloadBody -> payloadBody.concat(consumePayloadBody(request)))));
     }
 
     @Test
-    public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
+    void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
                 response.transform(new SuccessOnlyTrailersTransformer<>(trailers -> {
                     try {
@@ -104,7 +98,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     }
 
     @Test
-    public void testConsumeRequestPayloadAfterTrailersSent() throws Exception {
+    void testConsumeRequestPayloadAfterTrailersSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
                 // It doesn't use the BufferAllocator from HttpServiceContext to simplify the test and avoid using
                 // TriFunction. It doesn't change the behavior of this test.
@@ -114,21 +108,21 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     }
 
     @Test
-    public void testSendResponseMetaDataAndConsumeRequestPayload() throws Exception {
+    void testSendResponseMetaDataAndConsumeRequestPayload() throws Exception {
         // TODO: replace flatMap when Single.merge(Completable) is available
         test((responseSingle, request) -> responseSingle.flatMap(response ->
                 consumePayloadBody(request).concat(succeeded(response))));
     }
 
     @Test
-    public void testConsumeRequestPayloadAndSendResponseMetaData() throws Exception {
+    void testConsumeRequestPayloadAndSendResponseMetaData() throws Exception {
         test((responseSingle, request) -> consumePayloadBody(request)
                 // TODO: remove toPublisher() when Completable.merge(Single) is available
                 .merge(responseSingle.toPublisher()).firstOrError());
     }
 
     @Test
-    public void testConsumeRequestPayloadAndResponsePayloadSent() throws Exception {
+    void testConsumeRequestPayloadAndResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
                 response.transformMessageBody(payloadBody -> consumePayloadBody(request).merge(payloadBody))));
     }

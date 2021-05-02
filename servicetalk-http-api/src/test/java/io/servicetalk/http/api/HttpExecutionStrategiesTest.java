@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -31,10 +31,10 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HttpExecutionStrategiesTest {
+class HttpExecutionStrategiesTest {
 
     @Test
-    public void defaultShouldOffloadAll() {
+    void defaultShouldOffloadAll() {
         HttpExecutionStrategy strategy = defaultStrategy();
         assertThat("send not offloaded by default.", strategy.isSendOffloaded(), is(true));
         assertThat("receive meta not offloaded by default.", strategy.isMetadataReceiveOffloaded(), is(true));
@@ -42,14 +42,14 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void noOffloadsWithExecutor() {
+    void noOffloadsWithExecutor() {
         Executor executor = mock(Executor.class);
         HttpExecutionStrategy strategy = customStrategyBuilder().executor(executor).build();
         assertThat("Unexpected executor.", strategy.executor(), sameInstance(executor));
     }
 
     @Test
-    public void diffLeftAndRightEqual() {
+    void diffLeftAndRightEqual() {
         HttpExecutionStrategy strat = customStrategyBuilder().offloadSend().build();
         Executor executor = mock(Executor.class);
         HttpExecutionStrategy result = difference(executor, strat, strat);
@@ -57,7 +57,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffRightNoOffload() {
+    void diffRightNoOffload() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy strat2 = noOffloadsStrategy();
@@ -66,7 +66,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffLeftNoOffload() {
+    void diffLeftNoOffload() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = noOffloadsStrategy();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
@@ -75,7 +75,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffLeftAndRightSameOffloadDiffExecutor() {
+    void diffLeftAndRightSameOffloadDiffExecutor() {
         Executor executor1 = mock(Executor.class);
         Executor executor2 = mock(Executor.class);
         Executor fallback = mock(Executor.class);
@@ -86,7 +86,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffLeftAndRightDiffOffloadWithExecutor() {
+    void diffLeftAndRightDiffOffloadWithExecutor() {
         Executor executor1 = mock(Executor.class);
         Executor executor2 = mock(Executor.class);
         Executor fallback = mock(Executor.class);
@@ -101,7 +101,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffLeftAndRightDiffOffloadNoExecutor() {
+    void diffLeftAndRightDiffOffloadNoExecutor() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadSend().build();
@@ -114,7 +114,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffLeftNoOffloadAndRightAllOffloads() {
+    void diffLeftNoOffloadAndRightAllOffloads() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadNone().build();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadAll().build();
@@ -127,7 +127,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffRightExecutorMatchesFallback() {
+    void diffRightExecutorMatchesFallback() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadNone().build();
         HttpExecutionStrategy strat2 = customStrategyBuilder().offloadAll().executor(fallback).build();
@@ -140,7 +140,7 @@ public class HttpExecutionStrategiesTest {
     }
 
     @Test
-    public void diffEqualButDifferentInstances() {
+    void diffEqualButDifferentInstances() {
         Executor fallback = mock(Executor.class);
         HttpExecutionStrategy strat1 = customStrategyBuilder().offloadAll().build();
         HttpExecutionStrategy strat2 = newMockStrategyOffloadAll();

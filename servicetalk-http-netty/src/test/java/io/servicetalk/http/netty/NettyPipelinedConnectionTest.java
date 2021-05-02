@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -36,10 +35,8 @@ import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnect
 import io.servicetalk.transport.netty.internal.WriteDemandEstimator;
 import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
@@ -69,10 +66,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -82,9 +79,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NettyPipelinedConnectionTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class NettyPipelinedConnectionTest {
+
 
     private final TestPublisherSubscriber<Integer> readSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Integer> readSubscriber2 = new TestPublisherSubscriber<>();
@@ -93,8 +89,8 @@ public class NettyPipelinedConnectionTest {
     private NettyPipelinedConnection<Integer, Integer> requester;
     private EmbeddedDuplexChannel channel;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         writePublisher1 = new TestPublisher<>();
@@ -109,7 +105,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void pipelinedWriteAndReadCompleteSequential() {
+    void pipelinedWriteAndReadCompleteSequential() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
@@ -120,7 +116,7 @@ public class NettyPipelinedConnectionTest {
         channel.writeInbound(1);
         Integer next = readSubscriber.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 1);
+        assertEquals(1, next.intValue());
         readSubscriber.awaitOnComplete();
 
         readSubscriber2.awaitSubscription().request(1);
@@ -129,12 +125,12 @@ public class NettyPipelinedConnectionTest {
         channel.writeInbound(2);
         next = readSubscriber2.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 2);
+        assertEquals(2, next.intValue());
         readSubscriber2.awaitOnComplete();
     }
 
     @Test
-    public void pipelinedWritesCompleteBeforeReads() {
+    void pipelinedWritesCompleteBeforeReads() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
@@ -144,32 +140,32 @@ public class NettyPipelinedConnectionTest {
         writePublisher1.onComplete();
         Integer channelWrite = channel.readOutbound();
         assertNotNull(channelWrite);
-        assertEquals(channelWrite.intValue(), 1);
+        assertEquals(1, channelWrite.intValue());
 
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(2);
         writePublisher2.onComplete();
         channelWrite = channel.readOutbound();
         assertNotNull(channelWrite);
-        assertEquals(channelWrite.intValue(), 2);
+        assertEquals(2, channelWrite.intValue());
 
         channel.writeInbound(1);
         channel.writeInbound(2); // write before the second subscribe to test queuing works properly
         Integer next = readSubscriber.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 1);
+        assertEquals(1, next.intValue());
         readSubscriber.awaitOnComplete();
 
         Subscription subscription2 = readSubscriber2.awaitSubscription();
         subscription2.request(1);
         next = readSubscriber2.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 2);
+        assertEquals(2, next.intValue());
         readSubscriber2.awaitOnComplete();
     }
 
     @Test
-    public void pipelinedReadsCompleteBeforeWrites() {
+    void pipelinedReadsCompleteBeforeWrites() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         readSubscriber.awaitSubscription().request(1);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
@@ -178,7 +174,7 @@ public class NettyPipelinedConnectionTest {
         channel.writeInbound(2); // write before the second subscribe to test queuing works properly
         Integer next = readSubscriber.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 1);
+        assertEquals(1, next.intValue());
         // technically the read has completed here, but see the comment below about the merge operator.
 
         assertTrue(writePublisher1.isSubscribed());
@@ -195,12 +191,12 @@ public class NettyPipelinedConnectionTest {
         readSubscriber2.awaitSubscription().request(1);
         next = readSubscriber2.takeOnNext();
         assertNotNull(next);
-        assertEquals(next.intValue(), 2);
+        assertEquals(2, next.intValue());
         // technically the read has completed here, but see the comment below about the merge operator.
 
         Integer channelWrite = channel.readOutbound();
         assertNotNull(channelWrite);
-        assertEquals(channelWrite.intValue(), 1);
+        assertEquals(1, channelWrite.intValue());
 
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(2);
@@ -212,11 +208,11 @@ public class NettyPipelinedConnectionTest {
 
         channelWrite = channel.readOutbound();
         assertNotNull(channelWrite);
-        assertEquals(channelWrite.intValue(), 2);
+        assertEquals(2, channelWrite.intValue());
     }
 
     @Test
-    public void flushStrategy() {
+    void flushStrategy() {
         FlushStrategy flushStrategy1 = mock(FlushStrategy.class);
         FlushStrategy.WriteEventsListener writeEventsListener1 = mock(FlushStrategy.WriteEventsListener.class);
         AtomicReference<FlushStrategy.FlushSender> sender1Ref = new AtomicReference<>();
@@ -262,7 +258,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void readCancelErrorsPendingReadCancelsPendingWrite() {
+    void readCancelErrorsPendingReadCancelsPendingWrite() {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -283,7 +279,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void channelCloseErrorsPendingReadCancelsPendingWrite() {
+    void channelCloseErrorsPendingReadCancelsPendingWrite() {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -303,7 +299,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void readCancelClosesConnectionThenWriteDoesNotSubscribe() {
+    void readCancelClosesConnectionThenWriteDoesNotSubscribe() {
         TestSubscription writePublisher1Subscription = new TestSubscription();
         toSource(requester.write(writePublisher1
                 .afterSubscription(() -> writePublisher1Subscription))).subscribe(readSubscriber);
@@ -325,7 +321,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void writeErrorFailsPendingReadsDoesNotSubscribeToPendingWrites() {
+    void writeErrorFailsPendingReadsDoesNotSubscribeToPendingWrites() {
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
@@ -339,7 +335,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void writeSubscribeThrowsLetsSubsequentRequestsThrough() {
+    void writeSubscribeThrowsLetsSubsequentRequestsThrough() {
         AtomicBoolean firstReadOperation = new AtomicBoolean();
         TestPublisher<Integer> mockReadPublisher1 = new TestPublisher<>();
         TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
@@ -373,7 +369,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void readSubscribeThrowsWritesStillProcessed() {
+    void readSubscribeThrowsWritesStillProcessed() {
         AtomicBoolean thrownError = new AtomicBoolean();
         Publisher<Integer> mockReadPublisher = new Publisher<Integer>() {
             @Override
@@ -414,7 +410,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void writeThrowsClosesConnection() {
+    void writeThrowsClosesConnection() {
         TestPublisher<Integer> mockReadPublisher2 = new TestPublisher<>();
         @SuppressWarnings("unchecked")
         NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
@@ -439,7 +435,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void readThrowsClosesConnection() {
+    void readThrowsClosesConnection() {
         @SuppressWarnings("unchecked")
         NettyConnection<Integer, Integer> mockConnection = mock(NettyConnection.class);
         doAnswer((Answer<Publisher<Integer>>) invocation -> {
@@ -475,7 +471,7 @@ public class NettyPipelinedConnectionTest {
     }
 
     @Test
-    public void multiThreadedWritesAllComplete() throws Exception {
+    void multiThreadedWritesAllComplete() throws Exception {
         // Avoid using EmbeddedChannel because it is not thread safe. This test writes/reads from multiple threads.
         @SuppressWarnings("unchecked")
         NettyConnection<Integer, Integer> connection = mock(NettyConnection.class);

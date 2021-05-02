@@ -19,27 +19,24 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.MockFlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -50,51 +47,42 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@RunWith(Parameterized.class)
-public class NettyHttpServerConnectionTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutionContextRule contextRule = immediate();
+class NettyHttpServerConnectionTest {
+
+    @RegisterExtension
+    final ExecutionContextExtension contextRule = immediate();
 
     private final TestPublisher<Buffer> responsePublisher = new TestPublisher.Builder<Buffer>()
             .disableAutoOnSubscribe().build();
     private final TestPublisher<Buffer> responsePublisher2 = new TestPublisher.Builder<Buffer>()
             .disableAutoOnSubscribe().build();
-    private HttpExecutionStrategy serverExecutionStrategy;
-    private HttpExecutionStrategy clientExecutionStrategy;
     private ServerContext serverContext;
     private StreamingHttpClient client;
     private MockFlushStrategy customStrategy;
 
-    public NettyHttpServerConnectionTest(HttpExecutionStrategy serverExecutionStrategy,
-                                         HttpExecutionStrategy clientExecutionStrategy) {
-        this.serverExecutionStrategy = serverExecutionStrategy;
-        this.clientExecutionStrategy = clientExecutionStrategy;
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> executionStrategies() {
+        return Stream.of(
+                Arguments.of(defaultStrategy(), defaultStrategy()),
+                Arguments.of(noOffloadsStrategy(), defaultStrategy()),
+                Arguments.of(defaultStrategy(), noOffloadsStrategy()),
+                Arguments.of(noOffloadsStrategy(), noOffloadsStrategy()));
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1}")
-    public static Collection<HttpExecutionStrategy[]> executionStrategies() {
-        return Arrays.asList(
-                new HttpExecutionStrategy[]{defaultStrategy(), defaultStrategy()},
-                new HttpExecutionStrategy[]{noOffloadsStrategy(), defaultStrategy()},
-                new HttpExecutionStrategy[]{defaultStrategy(), noOffloadsStrategy()},
-                new HttpExecutionStrategy[]{noOffloadsStrategy(), noOffloadsStrategy()}
-        );
-    }
-
-    @After
-    public void cleanup() throws Exception {
+    @AfterEach
+    void cleanup() throws Exception {
         newCompositeCloseable().appendAll(client, serverContext).close();
     }
 
-    @Test
-    public void updateFlushStrategy() throws Exception {
+    @ParameterizedTest(name = "server={0} client={1}")
+    @MethodSource("executionStrategies")
+    void updateFlushStrategy(HttpExecutionStrategy serverExecutionStrategy,
+                             HttpExecutionStrategy clientExecutionStrategy) throws Exception {
         customStrategy = new MockFlushStrategy();
         AtomicReference<Cancellable> customCancellableRef = new AtomicReference<>();
         AtomicBoolean handledFirstRequest = new AtomicBoolean();

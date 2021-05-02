@@ -33,11 +33,9 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopSecurityHandshakeObserver;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Map;
 import java.util.Set;
@@ -62,43 +60,41 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(Parameterized.class)
-public class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest {
+class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest {
 
     private static final AsyncContextMap.Key<String> CLIENT_KEY = newKey("client");
     private static final String CLIENT_VALUE = "client_value";
 
     private final AsyncContextCaptureTransportObserver clientObserver =
             new AsyncContextCaptureTransportObserver(CLIENT_KEY);
-    private final HttpProtocol protocol;
+    private HttpProtocol protocol;
 
-    public HttpTransportObserverAsyncContextTest(HttpProtocol protocol) {
-        super(CACHED, CACHED_SERVER);
+    private void setUp(HttpProtocol protocol) {
         this.protocol = protocol;
         protocol(protocol.config);
         transportObserver(clientObserver, NoopTransportObserver.INSTANCE);
+        setUp(CACHED, CACHED_SERVER);
     }
 
-    @Parameters(name = "protocol={0}")
-    public static HttpProtocol[] data() {
-        return HttpProtocol.values();
-    }
-
-    @Before
-    public void setupContext() {
+    @BeforeEach
+    void setupContext() {
         AsyncContext.put(CLIENT_KEY, CLIENT_VALUE);
     }
 
-    @Test
-    public void echoRequestResponse() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void echoRequestResponse(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         String requestContent = "request_content";
         testRequestResponse(newRequest(SVC_ECHO), OK, requestContent.length());
     }
 
-    @Test
-    public void clientErrorWrite() {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void clientErrorWrite(HttpProtocol httpProtocol) {
+        setUp(httpProtocol);
         StreamingHttpClient client = streamingHttpClient();
         assertThrows(ExecutionException.class, () -> client.request(client.post(SVC_NO_CONTENT_AFTER_READ)
                 .payloadBody(Publisher.failed(DELIBERATE_EXCEPTION)))
@@ -106,18 +102,24 @@ public class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServ
         assertMap(clientObserver.storageMap(), CLIENT_VALUE);
     }
 
-    @Test
-    public void serverHandlerError() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverHandlerError(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         testRequestResponse(newRequest(SVC_THROW_ERROR), INTERNAL_SERVER_ERROR, 0);
     }
 
-    @Test
-    public void serverErrorBeforeRead() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverErrorBeforeRead(HttpProtocol protocol) throws Exception {
+        setUp(protocol);
         testServerReadError(SVC_ERROR_BEFORE_READ);
     }
 
-    @Test
-    public void serverErrorDuringRead() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverErrorDuringRead(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         testServerReadError(SVC_ERROR_DURING_READ);
     }
 

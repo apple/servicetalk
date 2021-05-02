@@ -16,8 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ExecutorRule;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -38,22 +37,15 @@ import io.servicetalk.transport.api.ServerContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -73,21 +65,17 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
 public class FlushStrategyOnServerTest {
 
-    @ClassRule
-    public static final ExecutorRule<Executor> EXECUTOR_RULE = newRule();
-    public static final String USE_AGGREGATED_RESP = "aggregated-resp";
-    public static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    private static final String USE_AGGREGATED_RESP = "aggregated-resp";
+    private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final Param param;
-    private final OutboundWriteEventsInterceptor interceptor;
-    private final HttpHeadersFactory headersFactory;
+    private OutboundWriteEventsInterceptor interceptor;
+    private HttpHeadersFactory headersFactory;
 
     private ServerContext serverContext;
     private BlockingHttpClient client;
@@ -102,19 +90,10 @@ public class FlushStrategyOnServerTest {
         }
     }
 
-    public FlushStrategyOnServerTest(final Param param) {
-        this.param = param;
+    private void setUp(final Param param) {
         this.interceptor = new OutboundWriteEventsInterceptor();
         this.headersFactory = DefaultHttpHeadersFactory.INSTANCE;
-    }
 
-    @Parameters(name = "{index}: strategy = {0}")
-    public static Param[][] data() {
-        return Arrays.stream(Param.values()).map(s -> new Param[]{s}).toArray(Param[][]::new);
-    }
-
-    @Before
-    public void setup() throws Exception {
         final StreamingHttpService service = (ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok();
             if (request.headers().get(USE_EMPTY_RESP_BODY) == null) {
@@ -133,22 +112,26 @@ public class FlushStrategyOnServerTest {
         final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
         final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
 
-        serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
-                httpExecutionContext, null,
-                (channel, observer) -> initChannel(channel, httpExecutionContext, config,
-                        new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
-                                .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
-                        true, connectionObserver),
-                connection -> connection.process(true))
-                .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+        try {
+            serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
+                    httpExecutionContext, null,
+                    (channel, observer) -> initChannel(channel, httpExecutionContext, config,
+                            new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
+                                    .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
+                            true, connectionObserver),
+                    connection -> connection.process(true))
+                    .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+        } catch (Exception e) {
+            fail(e);
+        }
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .protocols(h1Default())
                 .buildBlocking();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -156,14 +139,18 @@ public class FlushStrategyOnServerTest {
         }
     }
 
-    @Test
-    public void aggregatedResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
         assertFlushOnEnd();
     }
 
-    @Test
-    public void twoAggregatedResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoAggregatedResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
         assertFlushOnEnd();
 
@@ -171,14 +158,18 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEnd();
     }
 
-    @Test
-    public void aggregatedEmptyResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true, true);
         assertFlushOnEnd();
     }
 
-    @Test
-    public void twoAggregatedEmptyResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoAggregatedEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true, true);
         assertFlushOnEnd();
 
@@ -186,14 +177,18 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEnd();
     }
 
-    @Test
-    public void streamingResponsesFlushOnEach() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingResponsesFlushOnEach(final Param param) throws Exception {
+        setUp(param);
         sendARequest(false);
         assertFlushOnEach();
     }
 
-    @Test
-    public void twoStreamingResponsesFlushOnEach() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoStreamingResponsesFlushOnEach(final Param param) throws Exception {
+        setUp(param);
         sendARequest(false);
         assertFlushOnEach();
 
@@ -201,14 +196,18 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEach();
     }
 
-    @Test
-    public void streamingEmptyResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(false, true);
         assertFlushOnEnd();
     }
 
-    @Test
-    public void twoStreamingEmptyResponsesFlushOnEnd() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void twoStreamingEmptyResponsesFlushOnEnd(final Param param) throws Exception {
+        setUp(param);
         sendARequest(false, true);
         assertFlushOnEnd();
 
@@ -216,8 +215,10 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEnd();
     }
 
-    @Test
-    public void aggregatedAndThenStreamingResponse() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedAndThenStreamingResponse(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
         assertFlushOnEnd();
 
@@ -225,8 +226,10 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEach();
     }
 
-    @Test
-    public void streamingAndThenAggregatedResponse() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void streamingAndThenAggregatedResponse(final Param param) throws Exception {
+        setUp(param);
         sendARequest(false);
         assertFlushOnEach();
 
@@ -234,8 +237,10 @@ public class FlushStrategyOnServerTest {
         assertFlushOnEnd();
     }
 
-    @Test
-    public void aggregatedStreamingEmptyResponse() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] strategy = {0}")
+    @EnumSource(Param.class)
+    void aggregatedStreamingEmptyResponse(final Param param) throws Exception {
+        setUp(param);
         sendARequest(true);
         assertFlushOnEnd();
 

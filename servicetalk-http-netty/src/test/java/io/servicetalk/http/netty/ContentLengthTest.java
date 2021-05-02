@@ -27,7 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -62,12 +62,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class ContentLengthTest {
+class ContentLengthTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
 
     @Test
-    public void shouldNotCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
+    void shouldNotCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
         shouldNotCalculateRequestContentLengthFromEmptyPublisher(GET);
         shouldNotCalculateRequestContentLengthFromEmptyPublisher(HEAD);
         shouldNotCalculateRequestContentLengthFromEmptyPublisher(DELETE);
@@ -84,14 +84,14 @@ public class ContentLengthTest {
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthWhenNoPayloadBodySet() throws Exception {
+    void shouldCalculateRequestContentLengthWhenNoPayloadBodySet() throws Exception {
         shouldCalculateRequestContentLengthFromEmptyPublisher(POST, false);
         shouldCalculateRequestContentLengthFromEmptyPublisher(PUT, false);
         shouldCalculateRequestContentLengthFromEmptyPublisher(PATCH, false);
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromEmptyPublisher() throws Exception {
         shouldCalculateRequestContentLengthFromEmptyPublisher(POST, true);
         shouldCalculateRequestContentLengthFromEmptyPublisher(PUT, true);
         shouldCalculateRequestContentLengthFromEmptyPublisher(PATCH, true);
@@ -108,28 +108,28 @@ public class ContentLengthTest {
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromSingleItemPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
                 .payloadBody(Publisher.from("Hello"), textSerializer());
         setRequestContentLengthAndVerify(request, contentEqualTo("5"));
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromTwoItemPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
                 .payloadBody(Publisher.from("Hello", "World"), textSerializer());
         setRequestContentLengthAndVerify(request, contentEqualTo("10"));
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromMultipleItemPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().toStreamingRequest()
                 .payloadBody(Publisher.from("Hello", " ", "World", "!"), textSerializer());
         setRequestContentLengthAndVerify(request, contentEqualTo("12"));
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromTransformedMultipleItemPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromTransformedMultipleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().payloadBody("Hello", textSerializer())
                 .toStreamingRequest().transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),
                         textDeserializer(), textSerializer());
@@ -137,7 +137,7 @@ public class ContentLengthTest {
     }
 
     @Test
-    public void shouldCalculateRequestContentLengthFromTransformedRawMultipleItemPublisher() throws Exception {
+    void shouldCalculateRequestContentLengthFromTransformedRawMultipleItemPublisher() throws Exception {
         StreamingHttpRequest request = newAggregatedRequest().payloadBody("Hello", textSerializer())
                 .toStreamingRequest().transformMessageBody(payload -> payload.map(obj -> (Buffer) obj)
                         .concat(Publisher.from(" ", "World", "!").map(DEFAULT_RO_ALLOCATOR::fromAscii)));
@@ -145,41 +145,41 @@ public class ContentLengthTest {
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthWhenNoPayloadBodySet() throws Exception {
+    void shouldCalculateResponseContentLengthWhenNoPayloadBodySet() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse();
         setResponseContentLengthAndVerify(response, contentEqualTo("0"));
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthFromEmptyPublisher() throws Exception {
+    void shouldCalculateResponseContentLengthFromEmptyPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
                 .payloadBody(Publisher.empty());
         setResponseContentLengthAndVerify(response, contentEqualTo("0"));
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthFromSingleItemPublisher() throws Exception {
+    void shouldCalculateResponseContentLengthFromSingleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
                 .payloadBody(Publisher.from("Hello"), textSerializer());
         setResponseContentLengthAndVerify(response, contentEqualTo("5"));
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthFromTwoItemPublisher() throws Exception {
+    void shouldCalculateResponseContentLengthFromTwoItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
                 .payloadBody(Publisher.from("Hello", "World"), textSerializer());
         setResponseContentLengthAndVerify(response, contentEqualTo("10"));
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthFromMultipleItemPublisher() throws Exception {
+    void shouldCalculateResponseContentLengthFromMultipleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().toStreamingResponse()
                 .payloadBody(Publisher.from("Hello", " ", "World", "!"), textSerializer());
         setResponseContentLengthAndVerify(response, contentEqualTo("12"));
     }
 
     @Test
-    public void shouldCalculateResponseContentLengthFromTransformedMultipleItemPublisher() throws Exception {
+    void shouldCalculateResponseContentLengthFromTransformedMultipleItemPublisher() throws Exception {
         StreamingHttpResponse response = newAggregatedResponse().payloadBody("Hello", textSerializer())
                 .toStreamingResponse()
                 .transformPayloadBody(payload -> payload.concat(Publisher.from(" ", "World", "!")),

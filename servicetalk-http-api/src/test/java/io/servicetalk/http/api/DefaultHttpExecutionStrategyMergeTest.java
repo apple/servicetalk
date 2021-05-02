@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -29,13 +29,13 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultHttpExecutionStrategyMergeTest {
+class DefaultHttpExecutionStrategyMergeTest {
 
     private final Executor executor = mock(Executor.class);
     private final Executor otherExecutor = mock(Executor.class);
 
     @Test
-    public void equalStrategy() {
+    void equalStrategy() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy merged = strategy.merge(other);
@@ -43,7 +43,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void mergeThreadAffinity() {
+    void mergeThreadAffinity() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().offloadWithThreadAffinity().build();
         HttpExecutionStrategy other = customStrategyBuilder().offloadSend().build();
         DefaultHttpExecutionStrategy merged = (DefaultHttpExecutionStrategy) strategy.merge(other);
@@ -57,7 +57,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void differentStrategy() {
+    void differentStrategy() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = customStrategyBuilder().offloadReceiveData().build();
         HttpExecutionStrategy merged = strategy.merge(other);
@@ -70,7 +70,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void differentStrategyOverrideExecutor() {
+    void differentStrategyOverrideExecutor() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = customStrategyBuilder().offloadReceiveData().executor(otherExecutor).build();
         HttpExecutionStrategy merged = strategy.merge(other);
@@ -83,21 +83,21 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void sameStrategy() {
+    void sameStrategy() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy merged = strategy.merge(strategy);
         assertThat("Unexpected merge result.", merged, is(sameInstance(strategy)));
     }
 
     @Test
-    public void mergeWithNoOffloads() {
+    void mergeWithNoOffloads() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy merged = strategy.merge(noOffloadsStrategy());
         assertThat("Unexpected merge result.", merged, is(sameInstance(noOffloadsStrategy())));
     }
 
     @Test
-    public void nonDefaultStrategyButEqual() {
+    void nonDefaultStrategyButEqual() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
         when(other.isSendOffloaded()).thenReturn(true);
@@ -107,7 +107,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void nonDefaultStrategyAndDifferent() {
+    void nonDefaultStrategyAndDifferent() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
         when(other.isDataReceiveOffloaded()).thenReturn(true);
@@ -121,7 +121,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
-    public void nonDefaultStrategyOverrideExecutorAndDifferent() {
+    void nonDefaultStrategyOverrideExecutorAndDifferent() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy other = mock(HttpExecutionStrategy.class);
         when(other.isDataReceiveOffloaded()).thenReturn(true);

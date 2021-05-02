@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.HttpProtocolConfig;
@@ -25,12 +24,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.annotation.Nullable;
 
@@ -47,7 +42,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith(Parameterized.class)
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public class HostHeaderHttpRequesterFilterTest {
 
@@ -91,27 +85,19 @@ public class HostHeaderHttpRequesterFilterTest {
         abstract HttpProtocolConfig config();
     }
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private HttpVersionConfig httpVersionConfig;
 
-    private final HttpVersionConfig httpVersionConfig;
-
-    public HostHeaderHttpRequesterFilterTest(HttpVersionConfig httpVersionConfig) {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void ipv4NotEscaped(HttpVersionConfig httpVersionConfig) throws Exception {
         this.httpVersionConfig = httpVersionConfig;
-    }
-
-    @Parameters(name = "httpVersion={0}")
-    public static HttpVersionConfig[] data() {
-        return HttpVersionConfig.values();
-    }
-
-    @Test
-    public void ipv4NotEscaped() throws Exception {
         doHostHeaderTest("1.2.3.4", "1.2.3.4");
     }
 
-    @Test
-    public void ipv6IsEscaped() throws Exception {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void ipv6IsEscaped(HttpVersionConfig httpVersionConfig) throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
         doHostHeaderTest("::1", "[::1]");
     }
 
@@ -137,8 +123,10 @@ public class HostHeaderHttpRequesterFilterTest {
                 });
     }
 
-    @Test
-    public void clientBuilderAppendClientFilter() throws Exception {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendClientFilter(HttpVersionConfig httpVersionConfig) throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
@@ -149,8 +137,10 @@ public class HostHeaderHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    public void clientBuilderAppendConnectionFilter() throws Exception {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendConnectionFilter(HttpVersionConfig httpVersionConfig) throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
@@ -161,8 +151,10 @@ public class HostHeaderHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    public void reserveConnection() throws Exception {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void reserveConnection(HttpVersionConfig httpVersionConfig) throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
         try (ServerContext context = buildServer();
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
@@ -174,8 +166,11 @@ public class HostHeaderHttpRequesterFilterTest {
         }
     }
 
-    @Test
-    public void clientBuilderAppendClientFilterExplicitHostHeader() throws Exception {
+    @ParameterizedTest
+    @EnumSource(HttpVersionConfig.class)
+    void clientBuilderAppendClientFilterExplicitHostHeader(HttpVersionConfig httpVersionConfig)
+            throws Exception {
+        this.httpVersionConfig = httpVersionConfig;
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())

@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
@@ -28,11 +27,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -58,25 +54,20 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class BlockingStreamingHttpServiceTest {
+class BlockingStreamingHttpServiceTest {
 
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";
     private static final String HELLO_WORLD_LENGTH = String.valueOf(HELLO_WORLD.length());
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
-
     private ServerContext serverContext;
     private BlockingStreamingHttpClient client;
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             if (client != null) {
                 client.close();
@@ -96,7 +87,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void defaultResponseStatusNoPayload() throws Exception {
+    void defaultResponseStatusNoPayload() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> response.sendMetaData().close());
         BlockingStreamingHttpResponse response = client.request(client.get("/"));
 
@@ -105,7 +96,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void respondWithCustomMetaData() throws Exception {
+    void respondWithCustomMetaData() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             response.status(ACCEPTED);
 
@@ -128,7 +119,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void receivePayloadBody() throws Exception {
+    void receivePayloadBody() throws Exception {
         StringBuilder receivedPayloadBody = new StringBuilder();
 
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -144,7 +135,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void clientRequestInputStreamPayloadBody() throws Exception {
+    void clientRequestInputStreamPayloadBody() throws Exception {
         StringBuilder receivedPayloadBody = new StringBuilder();
 
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -160,7 +151,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void clientResponseInputStreamPayloadBody() throws Exception {
+    void clientResponseInputStreamPayloadBody() throws Exception {
         StringBuilder receivedPayloadBody = new StringBuilder();
 
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -173,12 +164,13 @@ public class BlockingStreamingHttpServiceTest {
                 .payloadBody(new ByteArrayInputStream(HELLO_WORLD.getBytes(US_ASCII))));
         assertResponse(response);
         response.payloadBody(new ByteArrayInputStream(expectedBody.getBytes(US_ASCII)));
-        assertThat(response.toResponse().toFuture().get().payloadBody().toString(US_ASCII), is(expectedBody));
+        assertThat(response.toResponse().toFuture().get().
+                payloadBody().toString(US_ASCII), is(expectedBody));
         assertThat(receivedPayloadBody.toString(), is(HELLO_WORLD));
     }
 
     @Test
-    public void respondWithPayloadBodyAndTrailersUsingPayloadWriter() throws Exception {
+    void respondWithPayloadBodyAndTrailersUsingPayloadWriter() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
@@ -190,7 +182,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void respondWithPayloadBodyAndTrailersUsingPayloadWriterWithSerializer() throws Exception {
+    void respondWithPayloadBodyAndTrailersUsingPayloadWriterWithSerializer() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
@@ -202,7 +194,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void respondWithPayloadBodyAndTrailersUsingOutputStream() throws Exception {
+    void respondWithPayloadBodyAndTrailersUsingOutputStream() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
             response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpOutputStream out = response.sendMetaDataOutputStream()) {
@@ -231,7 +223,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void echoServerUsingPayloadWriter() throws Exception {
+    void echoServerUsingPayloadWriter() throws Exception {
         echoServer((ctx, request, response) -> {
             try (PayloadWriter<Buffer> pw = response.sendMetaData()) {
                 request.payloadBody().forEach(chunk -> {
@@ -246,7 +238,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void echoServerUsingPayloadWriterWithSerializer() throws Exception {
+    void echoServerUsingPayloadWriterWithSerializer() throws Exception {
         echoServer((ctx, request, response) -> {
             try (PayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
                 request.payloadBody(textDeserializer()).forEach(chunk -> {
@@ -261,7 +253,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void echoServerUsingInputOutputStream() throws Exception {
+    void echoServerUsingInputOutputStream() throws Exception {
         echoServer((ctx, request, response) -> {
             try (OutputStream out = response.sendMetaDataOutputStream();
                  InputStream in = request.payloadBodyInputStream()) {
@@ -282,7 +274,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void sendMetaDataTwice() throws Exception {
+    void sendMetaDataTwice() throws Exception {
         AtomicReference<Throwable> serverException = new AtomicReference<>();
 
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -306,7 +298,7 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Test
-    public void doNotSendMetaData() throws Exception {
+    void doNotSendMetaData() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             // Noop
         });
@@ -314,12 +306,11 @@ public class BlockingStreamingHttpServiceTest {
         HttpClient asyncClient = client.asClient();
         final Future<HttpResponse> responseFuture = asyncClient.request(asyncClient.get("/")).toFuture();
 
-        expected.expect(TimeoutException.class);
-        responseFuture.get(1, SECONDS);
+        assertThrows(TimeoutException.class, () -> responseFuture.get(1, SECONDS));
     }
 
     @Test
-    public void doNotWriteTheLastChunk() throws Exception {
+    void doNotWriteTheLastChunk() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             response.sendMetaData();
             // Do not close()
@@ -329,11 +320,10 @@ public class BlockingStreamingHttpServiceTest {
         assertResponse(response);
         final BlockingIterator<Buffer> iterator = response.payloadBody().iterator();
 
-        expected.expect(TimeoutException.class);
-        iterator.hasNext(1, SECONDS);
+        assertThrows(TimeoutException.class, () -> iterator.hasNext(1, SECONDS));
     }
 
-    private static void assertResponse(BlockingStreamingHttpResponse response) throws Exception {
+    private static void assertResponse(BlockingStreamingHttpResponse response) {
         assertThat(response.status(), is(OK));
         assertThat(response.version(), is(HTTP_1_1));
     }

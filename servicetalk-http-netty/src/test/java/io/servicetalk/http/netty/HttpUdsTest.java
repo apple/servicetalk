@@ -21,33 +21,33 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HttpUdsTest {
+class HttpUdsTest {
     private static IoExecutor ioExecutor;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         ioExecutor = createIoExecutor(new IoThreadFactory("io-executor"));
     }
 
-    @AfterClass
-    public static void afterClass() throws ExecutionException, InterruptedException {
+    @AfterAll
+    static void afterClass() throws ExecutionException, InterruptedException {
         ioExecutor.closeAsync().toFuture().get();
     }
 
     @Test
-    public void udsRoundTrip() throws Exception {
-        assumeTrue(ioExecutor.isUnixDomainSocketSupported());
+    void udsRoundTrip() throws Exception {
+        Assumptions.assumeTrue(ioExecutor.isUnixDomainSocketSupported());
         try (ServerContext serverContext = HttpServers.forAddress(newSocketAddress()).ioExecutor(ioExecutor)
                              .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok())) {
             try (BlockingHttpClient client = HttpClients.forResolvedAddress(serverContext.listenAddress())

@@ -17,38 +17,32 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static org.junit.Assert.assertNotNull;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class DefaultMultiAddressUrlHttpClientBuilderTest {
+class DefaultMultiAddressUrlHttpClientBuilderTest {
 
-    @ClassRule
-    public static final ExecutionContextRule CTX = immediate();
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    @RegisterExtension
+    static final ExecutionContextExtension CTX = immediate();
 
     @Test
-    public void buildWithDefaults() throws Exception {
+    void buildWithDefaults() throws Exception {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
@@ -58,7 +52,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     }
 
     @Test
-    public void buildAggregatedWithDefaults() throws Exception {
+    void buildAggregatedWithDefaults() throws Exception {
         HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
@@ -68,7 +62,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     }
 
     @Test
-    public void buildBlockingWithDefaults() throws Exception {
+    void buildBlockingWithDefaults() throws Exception {
         BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
@@ -78,7 +72,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     }
 
     @Test
-    public void buildBlockingAggregatedWithDefaults() throws Exception {
+    void buildBlockingAggregatedWithDefaults() throws Exception {
         BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
@@ -89,7 +83,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void buildWithProvidedServiceDiscoverer() throws Exception {
+    void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress,
                 ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(mockedServiceDiscoverer)

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -34,9 +33,7 @@ import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -63,9 +60,9 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractHttpServiceAsyncContextTest {
 
@@ -73,18 +70,15 @@ public abstract class AbstractHttpServiceAsyncContextTest {
     protected static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     protected static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
     @Test
-    public void newRequestsGetFreshContext() throws Exception {
+    void newRequestsGetFreshContext() throws Exception {
         newRequestsGetFreshContext(false);
     }
 
     protected abstract ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                                         boolean useImmediate) throws Exception;
 
-    protected final void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
+    final void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
         final ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
         final int numRequests = 10;
@@ -131,20 +125,20 @@ public abstract class AbstractHttpServiceAsyncContextTest {
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
+    void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
         contextPreservedOverFilterBoundaries(false, false, false);
     }
 
     @Test
-    public void contextPreservedOverFilterBoundariesOffloadedAsyncFilter() throws Exception {
+    void contextPreservedOverFilterBoundariesOffloadedAsyncFilter() throws Exception {
         contextPreservedOverFilterBoundaries(false, true, false);
     }
 
     protected abstract ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                                        boolean useImmediate, boolean asyncService) throws Exception;
 
-    protected final void contextPreservedOverFilterBoundaries(boolean useImmediate, boolean asyncFilter,
-                                                              boolean asyncService) throws Exception {
+    final void contextPreservedOverFilterBoundaries(boolean useImmediate, boolean asyncFilter,
+                                                    boolean asyncService) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext ctx = serverWithService(HttpServers.forAddress(localAddress(0))
@@ -230,11 +224,11 @@ public abstract class AbstractHttpServiceAsyncContextTest {
     }
 
     @Test
-    public void connectionAcceptorContextDoesNotLeakOffload() throws Exception {
+    void connectionAcceptorContextDoesNotLeakOffload() throws Exception {
         connectionAcceptorContextDoesNotLeak(false);
     }
 
-    protected final void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
+    final void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
         try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(context -> {
                     AsyncContext.put(K1, "v1");

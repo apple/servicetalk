@@ -21,11 +21,11 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
@@ -39,46 +39,44 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Arrays.asList;
 
-@RunWith(Parameterized.class)
-public class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
+class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
 
-    private final HttpProtocol protocol;
-    private final BufferAllocator allocator;
+    private BufferAllocator allocator;
 
-    public SupportedBufferAllocatorsTest(HttpProtocol protocol, BufferAllocator allocator) {
-        super(CACHED, CACHED_SERVER);
-        this.protocol = protocol;
+    private void setUp(HttpProtocol protocol, BufferAllocator allocator) {
         this.allocator = allocator;
         protocol(protocol.config);
+        super.setUp(CACHED, CACHED_SERVER);
     }
 
-    @Parameterized.Parameters(name = "{index}: protocol={0}, allocator={1}")
-    public static Collection<Object[]> data() {
-        return asList(
-                new Object[]{HTTP_1, PREFER_HEAP_ALLOCATOR},
-                new Object[]{HTTP_1, PREFER_DIRECT_ALLOCATOR},
-                new Object[]{HTTP_1, PREFER_HEAP_RO_ALLOCATOR},
-                new Object[]{HTTP_1, PREFER_DIRECT_RO_ALLOCATOR},
-                new Object[]{HTTP_2, PREFER_HEAP_ALLOCATOR},
-                new Object[]{HTTP_2, PREFER_DIRECT_ALLOCATOR},
-                new Object[]{HTTP_2, PREFER_HEAP_RO_ALLOCATOR},
-                new Object[]{HTTP_2, PREFER_DIRECT_RO_ALLOCATOR});
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> data() {
+        return Stream.of(
+            Arguments.of(HTTP_1, PREFER_HEAP_ALLOCATOR),
+            Arguments.of(HTTP_1, PREFER_DIRECT_ALLOCATOR),
+            Arguments.of(HTTP_1, PREFER_HEAP_RO_ALLOCATOR),
+            Arguments.of(HTTP_1, PREFER_DIRECT_RO_ALLOCATOR),
+            Arguments.of(HTTP_2, PREFER_HEAP_ALLOCATOR),
+            Arguments.of(HTTP_2, PREFER_DIRECT_ALLOCATOR),
+            Arguments.of(HTTP_2, PREFER_HEAP_RO_ALLOCATOR),
+            Arguments.of(HTTP_2, PREFER_DIRECT_RO_ALLOCATOR));
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(allocator.fromAscii(request.payloadBody().toString(US_ASCII))),
                 strategy -> strategy)).adaptor());
     }
 
-    @Test
-    public void test() throws Exception {
+    @ParameterizedTest(name = "{index}: protocol={0}, allocator={1}")
+    @MethodSource("data")
+    void test(HttpProtocol protocol, BufferAllocator allocator) throws Exception {
+        setUp(protocol, allocator);
         String payload = "Hello ServiceTalk";
         StreamingHttpRequest request = streamingHttpConnection().post("/")
-                .payloadBody(from(allocator.fromAscii(payload)));
+            .payloadBody(from(allocator.fromAscii(payload)));
         StreamingHttpResponse response = makeRequest(request);
         assertResponse(response, protocol.version, OK, payload);
     }

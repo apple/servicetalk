@@ -20,7 +20,6 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -37,10 +36,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.TestStreamingHttpClient;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
@@ -67,13 +64,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class LoadBalancerReadyHttpClientTest {
+class LoadBalancerReadyHttpClientTest {
     private static final UnknownHostException UNKNOWN_HOST_EXCEPTION =
             new UnknownHostException("deliberate exception");
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
     private final TestCompletable sdStatusCompletable = new TestCompletable();
@@ -100,8 +96,8 @@ public class LoadBalancerReadyHttpClientTest {
         }
     };
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         initMocks(this);
         doAnswer((Answer<StreamingHttpRequest>) invocation ->
                 reqRespFactory.newRequest(invocation.getArgument(0), invocation.getArgument(1)))
@@ -111,32 +107,32 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     @Test
-    public void requestsAreDelayed() throws InterruptedException {
+    void requestsAreDelayed() throws InterruptedException {
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void reserveIsDelayed() throws InterruptedException {
+    void reserveIsDelayed() throws InterruptedException {
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
-    public void initializedFailedAlsoFailsRequest() throws InterruptedException {
+    void initializedFailedAlsoFailsRequest() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void initializedFailedAlsoFailsReserve() throws InterruptedException {
+    void initializedFailedAlsoFailsReserve() throws InterruptedException {
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
-    public void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
+    void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
-    public void serviceDiscovererAlsoFailsReserve() throws InterruptedException {
+    void serviceDiscovererAlsoFailsReserve() throws InterruptedException {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 

@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -33,10 +32,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -58,7 +55,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public class ResponseCancelTest {
+class ResponseCancelTest {
 
     private final BlockingQueue<Processor<HttpResponse, HttpResponse>> serverResponses;
     private final BlockingQueue<Cancellable> delayedClientCancels;
@@ -67,10 +64,7 @@ public class ResponseCancelTest {
     private final HttpClient client;
     private final AtomicInteger connectionCount = new AtomicInteger();
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    public ResponseCancelTest() throws Exception {
+    ResponseCancelTest() throws Exception {
         serverResponses = new LinkedBlockingQueue<>();
         delayedClientCancels = new LinkedBlockingQueue<>();
         delayedClientTermination = new LinkedBlockingQueue<>();
@@ -108,14 +102,14 @@ public class ResponseCancelTest {
                 .build();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         // Do not use graceful close as we are not finishing responses.
         newCompositeCloseable().appendAll(ctx, client).closeAsync().toFuture().get();
     }
 
     @Test
-    public void cancel() throws Throwable {
+    void cancel() throws Throwable {
         CountDownLatch latch1 = new CountDownLatch(1);
         Cancellable cancellable = sendRequest(latch1);
         // wait for server to receive request.
@@ -138,7 +132,7 @@ public class ResponseCancelTest {
     }
 
     @Test
-    public void cancelAfterSuccessOnTransport() throws Throwable {
+    void cancelAfterSuccessOnTransport() throws Throwable {
         CountDownLatch latch1 = new CountDownLatch(1);
         Cancellable cancellable = sendRequest(latch1);
         // wait for server to receive request.

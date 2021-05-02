@@ -19,9 +19,8 @@ import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -32,31 +31,27 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-@RunWith(Parameterized.class)
-public class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
+class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
 
-    private final HttpProtocol protocol;
+    private HttpProtocol protocol;
 
-    public ConnectionContextToStringTest(HttpProtocol protocol) {
-        super(CACHED, CACHED_SERVER);
+    private void setUp(HttpProtocol protocol) {
         this.protocol = protocol;
         protocol(protocol.config);
-    }
-
-    @Parameterized.Parameters(name = "protocol={0}")
-    public static HttpProtocol[] data() {
-        return HttpProtocol.values();
+        setUp(CACHED, CACHED_SERVER);
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(ctx.toString(), textSerializer()),
                 strategy -> strategy)).adaptor());
     }
 
-    @Test
-    public void test() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void test(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         StreamingHttpResponse response = makeRequest(streamingHttpConnection().get("/"));
         assertResponse(response, protocol.version, OK);
         String serverContext = response.toResponse().toFuture().get().payloadBody(textDeserializer());

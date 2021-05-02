@@ -18,16 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,17 +53,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
 public class StreamingHttpPayloadHolderTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private enum UpdateMode {
         None,
@@ -84,25 +77,24 @@ public class StreamingHttpPayloadHolderTest {
         Trailers
     }
 
-    private final HttpHeaders headers;
-    private final HttpHeadersFactory headersFactory;
+    private HttpHeaders headers;
+    private HttpHeadersFactory headersFactory;
 
     @Nullable
-    private final TestPublisher<Object> payloadSource;
+    private TestPublisher<Object> payloadSource;
     private final TestPublisher<Object> updatedPayloadSource = new TestPublisher<>();
     private final TestPublisherSubscriber<Buffer> bufferPayloadSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<String> stringPayloadSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Object> payloadAndTrailersSubscriber = new TestPublisherSubscriber<>();
     private final TransformFunctions transformFunctions = new TransformFunctions();
     private final TransformFunctions secondTransformFunctions = new TransformFunctions();
-    private final StreamingHttpPayloadHolder payloadHolder;
-    private final UpdateMode updateMode;
-    private final boolean doubleTransform;
-    private final SourceType sourceType;
+    private StreamingHttpPayloadHolder payloadHolder;
+    private UpdateMode updateMode;
+    private boolean doubleTransform;
+    private SourceType sourceType;
     private boolean skipAfterVerification;
 
-    public StreamingHttpPayloadHolderTest(SourceType sourceType, UpdateMode updateMode,
-                                          boolean doubleTransform) {
+    private void setUp(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
         this.sourceType = sourceType;
         this.updateMode = updateMode;
         this.doubleTransform = doubleTransform;
@@ -120,25 +112,7 @@ public class StreamingHttpPayloadHolderTest {
         }
         payloadHolder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR, payloadSource, payloadInfo,
                 headersFactory, HTTP_1_1);
-    }
 
-    @Parameterized.Parameters(name = "{index}: source type: {0}, update mode = {1}, double transform? {2}")
-    public static Collection<Object[]> data() {
-        List<Object[]> params = new ArrayList<>();
-        for (SourceType sourceType : SourceType.values()) {
-            for (UpdateMode updateMode : UpdateMode.values()) {
-                params.add(new Object[]{sourceType, updateMode, false});
-                if (updateMode == UpdateMode.Transform || updateMode == UpdateMode.TransformWithTrailer ||
-                        updateMode == UpdateMode.TransformWithSerializer) {
-                    params.add(new Object[]{sourceType, updateMode, true});
-                }
-            }
-        }
-        return params;
-    }
-
-    @Before
-    public void setUp() {
         if (sourceType == SourceType.Trailers) {
             assertThat("Unexpected payload info trailer indication.", payloadHolder.mayHaveTrailers(), is(true));
         }
@@ -152,7 +126,7 @@ public class StreamingHttpPayloadHolderTest {
                 break;
             case SetWithSerializer:
                 payloadHolder.payloadBody(updatedPayloadSource.map(b -> ((Buffer) b).toString(defaultCharset())),
-                        textSerializer());
+                                          textSerializer());
                 assertThat(payloadHolder.isGenericTypeBuffer(), is(not(sourceTypeTrailers)));
                 assertThat(payloadHolder.mayHaveTrailers(), is(sourceTypeTrailers));
                 break;
@@ -169,8 +143,23 @@ public class StreamingHttpPayloadHolderTest {
         }
     }
 
-    @After
-    public void tearDown() {
+    @SuppressWarnings("unused")
+    private static Collection<Arguments> data() {
+        List<Arguments> params = new ArrayList<>();
+        for (SourceType sourceType : SourceType.values()) {
+            for (UpdateMode updateMode : UpdateMode.values()) {
+                params.add(Arguments.of(sourceType, updateMode, false));
+                if (updateMode == UpdateMode.Transform || updateMode == UpdateMode.TransformWithTrailer ||
+                        updateMode == UpdateMode.TransformWithSerializer) {
+                    params.add(Arguments.of(sourceType, updateMode, true));
+                }
+            }
+        }
+        return params;
+    }
+
+    @AfterEach
+    void tearDown() {
         if (!skipAfterVerification && updateMode == UpdateMode.Transform) {
             transformFunctions.verifyMocks(updateMode, sourceType, headersFactory, canControlPayload());
             if (doubleTransform) {
@@ -179,16 +168,20 @@ public class StreamingHttpPayloadHolderTest {
         }
     }
 
-    @Test
-    public void getPayload() {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void getPayload(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
+        setUp(sourceType, updateMode, doubleTransform);
         Publisher<Buffer> payload = payloadHolder.payloadBody();
         toSource(payload).subscribe(bufferPayloadSubscriber);
         simulateAndVerifyPayloadRead(bufferPayloadSubscriber);
         simulateAndVerifyPayloadComplete(bufferPayloadSubscriber);
     }
 
-    @Test
-    public void getPayloadWithSerializer() {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void getPayloadWithSerializer(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
+        setUp(sourceType, updateMode, doubleTransform);
         when(headers.get(CONTENT_TYPE)).thenReturn(TEXT_PLAIN_UTF_8);
         Publisher<String> payload = textDeserializer().deserialize(headers, payloadHolder.payloadBody());
         toSource(payload).subscribe(stringPayloadSubscriber);
@@ -196,19 +189,25 @@ public class StreamingHttpPayloadHolderTest {
         simulateAndVerifyPayloadComplete(stringPayloadSubscriber);
     }
 
-    @Test
-    public void getMessageBody() {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void getMessageBody(SourceType sourceType, UpdateMode updateMode, boolean doubleTransform) {
+        setUp(sourceType, updateMode, doubleTransform);
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
         toSource(bodyAndTrailers).subscribe(payloadAndTrailersSubscriber);
         simulateAndVerifyPayloadRead(payloadAndTrailersSubscriber);
         simulateAndVerifyTrailerReadIfApplicable();
     }
 
-    @Test
-    public void sourceEmitsTrailersUnconditionally() {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void sourceEmitsTrailersUnconditionally(SourceType sourceType,
+                                            UpdateMode updateMode,
+                                            boolean doubleTransform) {
+        setUp(sourceType, updateMode, doubleTransform);
         checkSkipTest(() -> {
-            assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.None))));
-            assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.BufferOnly))));
+            assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
+            assumeTrue(sourceType != SourceType.BufferOnly, () -> "Ignored source type: " + sourceType);
         });
         assert payloadSource != null;
         Publisher<Object> bodyAndTrailers = payloadHolder.messageBody();
@@ -224,11 +223,15 @@ public class StreamingHttpPayloadHolderTest {
         verifyTrailersReceived();
     }
 
-    @Test
-    public void transformedWithTrailersPayloadEmitsError() throws Throwable {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void transformedWithTrailersPayloadEmitsError(SourceType sourceType,
+                                                  UpdateMode updateMode,
+                                                  boolean doubleTransform) throws Throwable {
+        setUp(sourceType, updateMode, doubleTransform);
         checkSkipTest(() -> {
-            assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.None))));
-            assumeThat("Ignored update mode: " + updateMode, updateMode, equalTo(UpdateMode.TransformWithTrailer));
+            assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
+            assumeTrue(updateMode == UpdateMode.TransformWithTrailer, () -> "Ignored update mode: " + updateMode);
         });
         assert payloadSource != null;
 
@@ -251,11 +254,15 @@ public class StreamingHttpPayloadHolderTest {
         }
     }
 
-    @Test
-    public void transformedWithTrailersPayloadEmitsErrorAndSwallowed() throws Throwable {
+    @ParameterizedTest(name = "{displayName} {index}: source type: {0}, update mode = {1}, double transform? {2}")
+    @MethodSource("data")
+    void transformedWithTrailersPayloadEmitsErrorAndSwallowed(SourceType sourceType,
+                                                              UpdateMode updateMode,
+                                                              boolean doubleTransform) throws Throwable {
+        setUp(sourceType, updateMode, doubleTransform);
         checkSkipTest(() -> {
-            assumeThat("Ignored source type: " + sourceType, sourceType, is(not(equalTo(SourceType.None))));
-            assumeThat("Ignored update mode: " + updateMode, updateMode, equalTo(UpdateMode.TransformWithTrailer));
+            assumeTrue(sourceType != SourceType.None, () -> "Ignored source type: " + sourceType);
+            assumeTrue(updateMode == UpdateMode.TransformWithTrailer, () -> "Ignored update mode: " + updateMode);
         });
         assert payloadSource != null;
 

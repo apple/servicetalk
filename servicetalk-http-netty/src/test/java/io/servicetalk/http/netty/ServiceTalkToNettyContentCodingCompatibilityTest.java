@@ -33,10 +33,10 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpServerCodec;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 
@@ -51,33 +51,23 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
-@RunWith(Parameterized.class)
-public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkContentCodingTest {
+class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkContentCodingTest {
 
     private EventLoopGroup serverEventLoopGroup;
     private Channel serverAcceptorChannel;
     private BlockingHttpClient client;
 
-    public ServiceTalkToNettyContentCodingCompatibilityTest(final HttpProtocol protocol,
-                                                            final Codings serverCodings, final Codings clientCodings,
-                                                            final Compression compression,
-                                                            final boolean valid) {
-        super(protocol, serverCodings, clientCodings, compression, valid);
-    }
-
-    @Before
-    public void start() {
+    @Override
+    void start() {
         serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
         serverAcceptorChannel = newNettyServer();
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         client = newServiceTalkClient(HostAndPort.of(serverAddress), scenario, errors);
     }
 
-    @After
-    public void finish() throws Exception {
+    @AfterEach
+    void finish() throws Exception {
         serverAcceptorChannel.close().syncUninterruptibly();
         serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).syncUninterruptibly();
         client.close();
@@ -104,16 +94,28 @@ public class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTal
     }
 
     @Override
-    public void testCompatibility() throws Throwable {
-        assumeFalse("Only testing H1 scenarios yet.", scenario.protocol.version.equals(HTTP_2_0));
-        assumeTrue("Only testing successful configurations; Netty doesn't have knowledge " +
-                "about unsupported compression types.", scenario.valid);
+    @ParameterizedTest(name = "{index}, protocol={0}, server=[{1}], client=[{2}], request={3}, pass={4}")
+    @MethodSource("params")
+    void testCompatibility(final HttpProtocol protocol, final Codings serverCodings,
+                           final Codings clientCodings, final Compression compression,
+                           final boolean valid) throws Throwable {
+        setUp(protocol, serverCodings, clientCodings, compression, valid);
+        start();
+        Assumptions.assumeFalse(scenario.protocol.version.equals(HTTP_2_0), "Only testing H1 scenarios yet.");
+        Assumptions.assumeTrue(scenario.valid, "Only testing successful configurations; Netty doesn't have knowledge " +
+                "about unsupported compression types.");
 
-        super.testCompatibility();
+        if (scenario.valid) {
+            assertSuccessful(scenario.requestEncoding);
+        } else {
+            assertNotSupported(scenario.requestEncoding);
+        }
+
+        verifyNoErrors();
     }
 
     @Override
-    protected BlockingHttpClient client() {
+    BlockingHttpClient client() {
         return client;
     }
 

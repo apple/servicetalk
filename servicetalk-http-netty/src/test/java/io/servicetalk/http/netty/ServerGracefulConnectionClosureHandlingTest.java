@@ -16,16 +16,15 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,64 +40,68 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class ServerGracefulConnectionClosureHandlingTest {
+class ServerGracefulConnectionClosureHandlingTest {
 
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached("server-io", "server-executor");
 
     private static final String REQUEST_CONTENT = "request_content";
     private static final String RESPONSE_CONTENT = "response_content";
-
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     private final CountDownLatch serverConnectionClosing = new CountDownLatch(1);
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
     private final CountDownLatch serverContextClosed = new CountDownLatch(1);
 
-    private final ServerContext serverContext;
-    private final InetSocketAddress serverAddress;
+    private ServerContext serverContext;
+    private InetSocketAddress serverAddress;
 
-    public ServerGracefulConnectionClosureHandlingTest() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         AtomicReference<Runnable> serverClose = new AtomicReference<>();
-        serverContext = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .executionStrategy(noOffloadsStrategy())
-                .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
-                    @Override
-                    public Completable accept(final ConnectionContext context) {
-                        ((NettyHttpServer.NettyHttpServerConnection) context).onClosing()
-                                .whenFinally(serverConnectionClosing::countDown).subscribe();
-                        context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
-                        return completed();
-                    }
-                }).listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
-                        .addHeader(CONTENT_LENGTH, valueOf(RESPONSE_CONTENT.length()))
-                        .payloadBody(request.payloadBody().ignoreElements().concat(from(RESPONSE_CONTENT)),
+        serverContext = forAddress(localAddress(0))
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .executionStrategy(noOffloadsStrategy())
+            .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
+                @Override
+                public Completable accept(final ConnectionContext context) {
+                    ((NettyHttpServerConnection) context).onClosing()
+                        .whenFinally(serverConnectionClosing::countDown).subscribe();
+                    context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
+                    return completed();
+                }
+            }).listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
+                        .addHeader(CONTENT_LENGTH, valueOf(
+                                RESPONSE_CONTENT.length()))
+                        .payloadBody(
+                                request.payloadBody().ignoreElements()
+                                        .concat(from(RESPONSE_CONTENT)),
                                 textSerializer())
                         // Close ServerContext after response is complete
-                        .transformMessageBody(payload -> payload.whenFinally(serverClose.get()))));
+                        .transformMessageBody(payload -> payload
+                                .whenFinally(serverClose.get()))));
         serverContext.onClose().whenFinally(serverContextClosed::countDown).subscribe();
         serverClose.set(() -> serverContext.closeAsyncGracefully().subscribe());
 
         serverAddress = (InetSocketAddress) serverContext.listenAddress();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         serverContext.close();
     }
 
     @Test
-    public void test() throws Exception {
+    void test() throws Exception {
         try (Socket clientSocket = new Socket(serverAddress.getAddress(), serverAddress.getPort());
              OutputStream out = clientSocket.getOutputStream();
              InputStream in = clientSocket.getInputStream()) {

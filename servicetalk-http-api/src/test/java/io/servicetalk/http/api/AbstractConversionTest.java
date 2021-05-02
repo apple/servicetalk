@@ -31,14 +31,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class AbstractConversionTest {
-    public static final String TRAILER_NAME = "foo";
-    public static final String TRAILER_VALUE = "bar";
-    private final PayloadInfo payloadInfo;
-    private final boolean expectTrailers;
+    private static final String TRAILER_NAME = "foo";
+    private static final String TRAILER_VALUE = "bar";
+    private PayloadInfo payloadInfo;
+    private boolean expectTrailers;
 
-    AbstractConversionTest(final PayloadInfo payloadInfo) {
+    void setUp(final PayloadInfo payloadInfo) {
         this.payloadInfo = payloadInfo;
         this.expectTrailers = payloadInfo.mayHaveTrailers();
     }
@@ -59,17 +61,27 @@ abstract class AbstractConversionTest {
         assertThat("Unexpected payload.", buffer, equalTo(DEFAULT_ALLOCATOR.fromAscii("Hello")));
     }
 
-    static HttpHeaders addTrailers(HttpHeaders trailers) {
+    private static HttpHeaders addTrailers(HttpHeaders trailers) {
         trailers.add(TRAILER_NAME, TRAILER_VALUE);
         return trailers;
     }
 
     void verifyConvertedStreamingPayload(final Publisher<Object> payloadAndTrailersPublisher) throws Exception {
         Collection<Object> payloadAndTrailers = payloadAndTrailersPublisher.toFuture().get();
-        assertThat("Unexpected payload and trailers.", payloadAndTrailers, hasSize(2));
+
+        if (payloadInfo.mayHaveTrailers()) {
+            assertThat("Unexpected payload and trailers.", payloadAndTrailers, hasSize(2));
+        } else {
+            assertFalse(payloadAndTrailers.isEmpty());
+            assertTrue(payloadAndTrailers.size() < 3);
+        }
+
         Iterator<Object> iter = payloadAndTrailers.iterator();
         verifyPayload((Buffer) iter.next());
-        verifyTrailers(() -> (HttpHeaders) iter.next());
+
+        if (iter.hasNext()) {
+            verifyTrailers(() -> (HttpHeaders) iter.next());
+        }
     }
 
     void verifyAggregatedPayloadInfo(final PayloadInfo aggregatedInfo) {

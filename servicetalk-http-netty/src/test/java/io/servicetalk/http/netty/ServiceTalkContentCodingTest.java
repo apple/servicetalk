@@ -38,10 +38,9 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,11 +67,10 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
 public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     private static final BiFunction<Scenario, List<Throwable>, StreamingHttpServiceFilterFactory> REQ_FILTER =
@@ -107,9 +105,10 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                                 .collect(toList());
 
                         if (reqEncoding != identity()) {
-                            assertTrue("Request encoding should be present in the request headers",
-                                    contentEquals(reqEncoding.name(),
-                                            request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")));
+                            assertTrue(
+                                contentEquals(reqEncoding.name(),
+                                            request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")),
+                                "Request encoding should be present in the request headers");
                         }
 
                         if (!expectedReqAcceptedEncodings.isEmpty() && !actualReqAcceptedEncodings.isEmpty()) {
@@ -126,7 +125,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
         }
     };
 
-    static final BiFunction<Scenario, List<Throwable>, StreamingHttpClientFilterFactory> RESP_FILTER =
+    private static final BiFunction<Scenario, List<Throwable>, StreamingHttpClientFilterFactory> RESP_FILTER =
             (scenario, errors) -> new StreamingHttpClientFilterFactory() {
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -168,37 +167,41 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
 
     private ServerContext serverContext;
     private BlockingHttpClient client;
-    protected List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+    final List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
 
-    public ServiceTalkContentCodingTest(final HttpProtocol protocol, final Codings serverCodings,
-                                        final Codings clientCodings, final Compression compression,
-                                        final boolean valid) {
-        super(protocol, serverCodings, clientCodings, compression, valid);
-    }
-
-    @Before
-    public void start() throws Exception {
+    void start() throws Exception {
         serverContext = newServiceTalkServer(scenario, errors);
         client = newServiceTalkClient(serverHostAndPort(serverContext), scenario, errors);
     }
 
-    @After
-    public void finish() throws Exception {
+    @AfterEach
+    void finish() throws Exception {
         client.close();
         serverContext.close();
     }
 
-    protected BlockingHttpClient client() {
+    BlockingHttpClient client() {
         return client;
     }
 
     @Override
-    public void testCompatibility() throws Throwable {
-        super.testCompatibility();
+    @ParameterizedTest(name = "{index}, protocol={0}, server=[{1}], client=[{2}], request={3}, pass={4}")
+    @MethodSource("params")
+    void testCompatibility(final HttpProtocol protocol, final Codings serverCodings,
+                           final Codings clientCodings, final Compression compression,
+                           final boolean valid) throws Throwable {
+        setUp(protocol, serverCodings, clientCodings, compression, valid);
+        start();
+        if (scenario.valid) {
+            assertSuccessful(scenario.requestEncoding);
+        } else {
+            assertNotSupported(scenario.requestEncoding);
+        }
+
         verifyNoErrors();
     }
 
-    protected void verifyNoErrors() throws Throwable {
+    void verifyNoErrors() throws Throwable {
         if (!errors.isEmpty()) {
             throw errors.get(0);
         }
@@ -223,7 +226,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                 .payloadBody(from(payloadAsString((byte) 'a')), textSerializer())).toFuture().get());
     }
 
-    protected void assertResponse(final StreamingHttpResponse response) throws Throwable {
+    void assertResponse(final StreamingHttpResponse response) throws Throwable {
         verifyNoErrors();
 
         assertResponseHeaders(response.headers().get(CONTENT_ENCODING, identity().name()).toString());
@@ -254,18 +257,20 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                 .payloadBody(from(payloadAsString((byte) 'a')), textSerializer())).toFuture().get().status());
     }
 
-    protected void assertResponseHeaders(final String contentEncodingValue) {
+    void assertResponseHeaders(final String contentEncodingValue) {
         final List<ContentCodec> clientSupportedEncodings = scenario.clientSupported;
         final List<ContentCodec> serverSupportedEncodings = scenario.serverSupported;
 
         if (disjoint(serverSupportedEncodings, clientSupportedEncodings)) {
             assertEquals(identity().name().toString(), contentEncodingValue);
         } else {
-            assertNotNull("Response encoding not in the client supported list " +
-                    "[" + clientSupportedEncodings + "]", encodingFor(clientSupportedEncodings, contentEncodingValue));
+            assertNotNull(encodingFor(clientSupportedEncodings, contentEncodingValue),
+                                     "Response encoding not in the client supported list " +
+                                                              "[" + clientSupportedEncodings + "]");
 
-            assertNotNull("Response encoding not in the server supported list " +
-                    "[" + serverSupportedEncodings + "]", encodingFor(serverSupportedEncodings, contentEncodingValue));
+            assertNotNull(encodingFor(serverSupportedEncodings, contentEncodingValue),
+                                     "Response encoding not in the server supported list " +
+                                                              "[" + serverSupportedEncodings + "]");
         }
     }
 
@@ -285,7 +290,7 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                 .listenStreamingAndAwait(service);
     }
 
-    protected StreamingHttpResponse buildResponse(final StreamingHttpResponseFactory responseFactory) {
+    StreamingHttpResponse buildResponse(final StreamingHttpResponseFactory responseFactory) {
         return responseFactory.ok().payloadBody(from(payloadAsString((byte) 'b')), textSerializer());
     }
 

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -27,16 +26,14 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
 
-import org.junit.Rule;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.FromDataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,31 +48,39 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Theories.class)
-public class MutualSslTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @DataPoints("serverSslProvider")
-    public static final SslProvider[] SERVER_PROVIDERS = {JDK, OPENSSL};
-    @DataPoints("clientSslProvider")
-    public static final SslProvider[] CLIENT_PROVIDERS = {JDK, OPENSSL};
-    @DataPoints("serverListenOptions")
+class MutualSslTest {
+    private static final SslProvider[] SSL_PROVIDERS = {JDK, OPENSSL};
     @SuppressWarnings("rawtypes")
-    public static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
+    private static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
             asList(emptyMap(), serverTcpFastOpenOptions());
-    @DataPoints("clientOptions")
     @SuppressWarnings("rawtypes")
-    public static final List<Map<SocketOption, Object>> CLIENT_OPTIONS = asList(emptyMap(), clientTcpFastOpenOptions());
+    private static final List<Map<SocketOption, Object>> CLIENT_OPTIONS =
+            asList(emptyMap(), clientTcpFastOpenOptions());
 
-    @Theory
-    public void mutualSsl(@FromDataPoints("serverSslProvider") SslProvider serverSslProvider,
-                          @FromDataPoints("clientSslProvider") SslProvider clientSslProvider,
-                          @SuppressWarnings("rawtypes")
-                          @FromDataPoints("serverListenOptions") Map<SocketOption, Object> serverListenOptions,
-                          @SuppressWarnings("rawtypes")
-                          @FromDataPoints("clientOptions") Map<SocketOption, Object> clientOptions)
+    @SuppressWarnings("rawtypes")
+    private static Collection<Arguments> params() {
+        List<Arguments> params = new ArrayList<>();
+        for (SslProvider serverSslProvider : SSL_PROVIDERS) {
+            for (SslProvider clientSslProvider : SSL_PROVIDERS) {
+                for (Map<SocketOption, Object> serverListenOptions : SERVER_LISTEN_OPTIONS) {
+                    for (Map<SocketOption, Object> clientOptions : CLIENT_OPTIONS) {
+                        params.add(Arguments.of(serverSslProvider, clientSslProvider,
+                                serverListenOptions, clientOptions));
+                    }
+                }
+            }
+        }
+        return params;
+    }
+
+    @ParameterizedTest
+    @MethodSource("params")
+    void mutualSsl(SslProvider serverSslProvider,
+                   SslProvider clientSslProvider,
+                   Map<SocketOption, Object> serverListenOptions,
+                   Map<SocketOption, Object> clientOptions)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(

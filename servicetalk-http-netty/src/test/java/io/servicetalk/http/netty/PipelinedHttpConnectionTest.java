@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -29,13 +28,12 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -45,22 +43,19 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-public class PipelinedHttpConnectionTest {
+class PipelinedHttpConnectionTest {
 
-    @Rule
-    public final Timeout serviceTalkTestTimeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExecutionContextRule ctx = immediate();
+    @RegisterExtension
+    final ExecutionContextExtension ctx = immediate();
 
     @SuppressWarnings("unchecked")
     private final NettyConnection<Object, Object> connection = mock(NettyConnection.class);
@@ -82,8 +77,8 @@ public class PipelinedHttpConnectionTest {
                     HTTP_1_1);
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         mockResp = reqRespFactory.ok();
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
@@ -111,7 +106,7 @@ public class PipelinedHttpConnectionTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void http11RequestShouldCompleteSuccessfully() {
+    void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
         when(connection.executionContext()).thenReturn(ctx);
         when(connection.write(any())).thenReturn(completed());
@@ -124,7 +119,7 @@ public class PipelinedHttpConnectionTest {
     }
 
     @Test
-    public void ensureRequestsArePipelined() {
+    void ensureRequestsArePipelined() {
         toSource(pipe.request(reqRespFactory.get("/foo").payloadBody(writePublisher1)))
                 .subscribe(dataSubscriber1);
         toSource(pipe.request(reqRespFactory.get("/bar").payloadBody(writePublisher2)))

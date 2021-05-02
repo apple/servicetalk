@@ -22,13 +22,10 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,22 +37,22 @@ import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractConditionalHttpFilterTest {
-    protected static final String FILTERED_HEADER = "X-Filtered";
+    private static final String FILTERED_HEADER = "X-Filtered";
 
     protected static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HttpProtocolVersion.HTTP_1_1);
 
-    protected static final AsyncContextMap.Key<String> CTX_KEY = newKey("test-key");
+    private static final AsyncContextMap.Key<String> CTX_KEY = newKey("test-key");
 
-    @ClassRule
-    public static final ExecutionContextRule TEST_CTX = cached();
+    @RegisterExtension
+    static final ExecutionContextExtension TEST_CTX = cached();
 
     protected static final Predicate<StreamingHttpRequest> TEST_REQ_PREDICATE = req -> {
         AsyncContext.put(CTX_KEY, "in-predicate");
@@ -65,9 +62,6 @@ public abstract class AbstractConditionalHttpFilterTest {
     protected static final BiFunction<StreamingHttpRequest, StreamingHttpResponseFactory, Single<StreamingHttpResponse>>
             TEST_REQ_HANDLER = (req, resFactory) -> succeeded(resFactory.ok()
             .setHeader(FILTERED_HEADER, req.headers().get(FILTERED_HEADER, "false")));
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     protected static StreamingHttpRequest markFiltered(StreamingHttpRequest req) {
         return req.setHeader(FILTERED_HEADER, "true");
@@ -93,17 +87,17 @@ public abstract class AbstractConditionalHttpFilterTest {
     }
 
     @Test
-    public void predicateAccepts() throws Exception {
+    void predicateAccepts() throws Exception {
         testFilter(true);
     }
 
     @Test
-    public void predicateRejects() throws Exception {
+    void predicateRejects() throws Exception {
         testFilter(false);
     }
 
     @Test
-    public void contextIsPreserved() throws Exception {
+    void contextIsPreserved() throws Exception {
         final StreamingHttpRequest req = REQ_RES_FACTORY.get("/reject");
         AsyncContext.put(CTX_KEY, "in-test");
         AtomicReference<String> ctxKeyValueInNextFilter = new AtomicReference<>();
@@ -128,14 +122,14 @@ public abstract class AbstractConditionalHttpFilterTest {
     }
 
     @Test
-    public void closeAsyncImpactsBoth() throws Exception {
+    void closeAsyncImpactsBoth() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
         returnConditionallyFilteredResource(closed).closeAsync().toFuture().get();
         assertThat(closed.get(), is(true));
     }
 
     @Test
-    public void closeAsyncGracefullyImpactsBoth() throws Exception {
+    void closeAsyncGracefullyImpactsBoth() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
         returnConditionallyFilteredResource(closed).closeAsyncGracefully().toFuture().get();
         assertThat(closed.get(), is(true));

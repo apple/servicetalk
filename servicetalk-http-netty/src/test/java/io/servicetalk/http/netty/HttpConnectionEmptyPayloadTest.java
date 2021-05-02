@@ -19,16 +19,14 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -45,20 +43,18 @@ import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.lang.Integer.parseInt;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class HttpConnectionEmptyPayloadTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutionContextRule executionContextRule = immediate();
+class HttpConnectionEmptyPayloadTest {
+    @RegisterExtension
+    final ExecutionContextExtension executionContextRule = immediate();
 
     @Test
-    public void headRequestContentEmpty() throws Exception {
+    void headRequestContentEmpty() throws Exception {
         try (CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable()) {
             final int expectedContentLength = 128;
             byte[] expectedPayload = new byte[expectedContentLength];

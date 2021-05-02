@@ -35,8 +35,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import javax.annotation.Nullable;
@@ -64,7 +64,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ProxyConnectConnectionFactoryFilterTest {
+class ProxyConnectConnectionFactoryFilterTest {
 
     private static final StreamingHttpRequestFactory REQ_FACTORY = new DefaultStreamingHttpRequestResponseFactory(
             DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
@@ -76,7 +76,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     private final TestPublisher<Object> messageBody;
     private final TestSingleSubscriber<FilterableStreamingHttpConnection> subscriber;
 
-    public ProxyConnectConnectionFactoryFilterTest() {
+    ProxyConnectConnectionFactoryFilterTest() {
         connection = mock(FilterableStreamingHttpConnection.class);
         connectionClose = new TestCompletable.Builder().build(subscriber -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
@@ -148,7 +148,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void newConnectRequestThrows() {
+    void newConnectRequestThrows() {
         when(connection.connect(any())).thenThrow(DELIBERATE_EXCEPTION);
         subscribeToProxyConnectionFactory();
 
@@ -159,7 +159,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void connectRequestFails() {
+    void connectRequestFails() {
         when(connection.request(any(), any())).thenReturn(failed(DELIBERATE_EXCEPTION));
 
         configureConnectRequest();
@@ -171,7 +171,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void nonSuccessfulResponseCode() {
+    void nonSuccessfulResponseCode() {
         StreamingHttpResponse response = mock(StreamingHttpResponse.class);
         when(response.status()).thenReturn(INTERNAL_SERVER_ERROR);
         when(response.messageBody()).thenReturn(messageBody);
@@ -188,7 +188,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void cannotAccessNettyChannel() {
+    void cannotAccessNettyChannel() {
         // Does not implement NettyConnectionContext:
         when(connection.connectionContext()).thenReturn(mock(HttpConnectionContext.class));
 
@@ -202,7 +202,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void noDeferSslHandler() {
+    void noDeferSslHandler() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         // Do not configureDeferSslHandler(pipeline);
         configureConnectionContext(pipeline);
@@ -219,7 +219,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void deferSslHandlerReadyThrows() {
+    void deferSslHandlerReadyThrows() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         when(pipeline.get(DeferSslHandler.class)).thenThrow(DELIBERATE_EXCEPTION);
 
@@ -234,7 +234,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void sslHandshakeFailure() {
+    void sslHandshakeFailure() {
         ChannelPipeline pipeline = configurePipeline(new SslHandshakeCompletionEvent(DELIBERATE_EXCEPTION));
 
         configureDeferSslHandler(pipeline);
@@ -249,8 +249,8 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    @Ignore("https://github.com/apple/servicetalk/issues/1010")
-    public void cancelledBeforeSslHandshakeCompletionEvent() {
+    @Disabled("https://github.com/apple/servicetalk/issues/1010")
+    void cancelledBeforeSslHandshakeCompletionEvent() {
         ChannelPipeline pipeline = configurePipeline(null); // Do not generate any SslHandshakeCompletionEvent
 
         configureDeferSslHandler(pipeline);
@@ -268,7 +268,7 @@ public class ProxyConnectConnectionFactoryFilterTest {
     }
 
     @Test
-    public void successfulConnect() {
+    void successfulConnect() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         configureDeferSslHandler(pipeline);
         configureConnectionContext(pipeline);

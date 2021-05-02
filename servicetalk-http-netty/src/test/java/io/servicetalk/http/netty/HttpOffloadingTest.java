@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -34,15 +33,13 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collection;
 import java.util.Queue;
@@ -60,26 +57,25 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
-public class HttpOffloadingTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class HttpOffloadingTest {
 
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+        ExecutionContextExtension.cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
 
     private StreamingHttpConnection httpConnection;
     private Queue<Throwable> errors;
@@ -88,47 +84,47 @@ public class HttpOffloadingTest {
     private OffloadingVerifyingServiceStreaming service;
     private StreamingHttpClient client;
 
-    @Before
-    public void beforeTest() throws Exception {
+    @BeforeEach
+    void beforeTest() throws Exception {
         service = new OffloadingVerifyingServiceStreaming();
-        serverContext = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .listenStreamingAndAwait(service);
+        serverContext = forAddress(localAddress(0))
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .listenStreamingAndAwait(service);
 
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(serverHostAndPort(serverContext))
-                .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                .buildStreaming();
+            .ioExecutor(CLIENT_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+            .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
     }
 
-    @After
-    public void afterTest() throws Exception {
+    @AfterEach
+    void afterTest() throws Exception {
         newCompositeCloseable().appendAll(httpConnection, client, serverContext).close();
     }
 
     @Test
-    public void requestResponseIsOffloaded() throws Exception {
+    void requestResponseIsOffloaded() throws Exception {
         final Publisher<Buffer> reqPayload =
-                from(httpConnection.connectionContext().executionContext().bufferAllocator()
-                        .fromAscii("Hello"))
-                        .beforeRequest(n -> {
-                            if (inEventLoop().test(currentThread())) {
-                                errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
-                                        + currentThread().getName()));
-                            }
-                        });
+            from(httpConnection.connectionContext().executionContext().bufferAllocator()
+                     .fromAscii("Hello"))
+                .beforeRequest(n -> {
+                    if (inEventLoop().test(currentThread())) {
+                        errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
+                                                      + currentThread().getName()));
+                    }
+                });
         final SingleSource<StreamingHttpResponse> resp = toSource(httpConnection.request(
-                httpConnection.get("/").payloadBody(reqPayload)));
+            httpConnection.get("/").payloadBody(reqPayload)));
         resp.subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSubscribe not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
             }
 
@@ -136,7 +132,7 @@ public class HttpOffloadingTest {
             public void onSuccess(@Nullable final StreamingHttpResponse result) {
                 if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSuccess not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
                 if (result == null) {
                     errors.add(new AssertionError("Client response is null."));
@@ -148,14 +144,14 @@ public class HttpOffloadingTest {
                 }
 
                 subscribeTo(inEventLoop(), errors,
-                        result.payloadBody().afterFinally(terminated::countDown), "Client response payload: ");
+                            result.payloadBody().afterFinally(terminated::countDown), "Client response payload: ");
             }
 
             @Override
             public void onError(final Throwable t) {
                 if (inEventLoop().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onError was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
                 errors.add(new AssertionError("Client response single: Unexpected error.", t));
                 terminated.countDown();
@@ -167,58 +163,58 @@ public class HttpOffloadingTest {
     }
 
     @Test
-    public void reserveConnectionIsOffloaded() throws Exception {
+    void reserveConnectionIsOffloaded() throws Exception {
         toSource(client.reserveConnection(client.get("/")).afterFinally(terminated::countDown))
-                .subscribe(new SingleSource.Subscriber<ReservedStreamingHttpConnection>() {
-                    @Override
-                    public void onSubscribe(final Cancellable cancellable) {
-                        if (inEventLoop().test(currentThread())) {
-                            errors.add(new AssertionError("onSubscribe not offloaded. Thread: "
-                                    + currentThread().getName()));
-                        }
+            .subscribe(new SingleSource.Subscriber<ReservedStreamingHttpConnection>() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    if (inEventLoop().test(currentThread())) {
+                        errors.add(new AssertionError("onSubscribe not offloaded. Thread: "
+                                                      + currentThread().getName()));
                     }
+                }
 
-                    @Override
-                    public void onSuccess(@Nullable final ReservedStreamingHttpConnection result) {
-                        if (result == null) {
-                            errors.add(new AssertionError("Reserved connection is null."));
-                            return;
-                        }
-                        if (inEventLoop().test(currentThread())) {
-                            errors.add(new AssertionError("onSuccess not offloaded. Thread: "
-                                    + currentThread().getName()));
-                        }
+                @Override
+                public void onSuccess(@Nullable final ReservedStreamingHttpConnection result) {
+                    if (result == null) {
+                        errors.add(new AssertionError("Reserved connection is null."));
+                        return;
                     }
+                    if (inEventLoop().test(currentThread())) {
+                        errors.add(new AssertionError("onSuccess not offloaded. Thread: "
+                                                      + currentThread().getName()));
+                    }
+                }
 
-                    @Override
-                    public void onError(final Throwable t) {
-                        if (inEventLoop().test(currentThread())) {
-                            errors.add(new AssertionError("onError was not offloaded. Thread: "
-                                    + currentThread().getName()));
-                        }
-                        errors.add(new AssertionError("Unexpected error.", t));
+                @Override
+                public void onError(final Throwable t) {
+                    if (inEventLoop().test(currentThread())) {
+                        errors.add(new AssertionError("onError was not offloaded. Thread: "
+                                                      + currentThread().getName()));
                     }
-                });
+                    errors.add(new AssertionError("Unexpected error.", t));
+                }
+            });
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void serverCloseAsyncIsOffloaded() throws Exception {
+    void serverCloseAsyncIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, serverContext.closeAsync());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void serverCloseAsyncGracefullyIsOffloaded() throws Exception {
+    void serverCloseAsyncGracefullyIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, serverContext.closeAsyncGracefully());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void serverOnCloseIsOffloaded() throws Exception {
+    void serverOnCloseIsOffloaded() throws Exception {
         serverContext.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, serverContext.onClose());
         terminated.await();
@@ -226,31 +222,31 @@ public class HttpOffloadingTest {
     }
 
     @Test
-    public void clientSettingsStreamIsOffloaded() throws Exception {
+    void clientSettingsStreamIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors,
-                httpConnection.transportEventStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
-                "Client settings stream: ");
+                    httpConnection.transportEventStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
+                    "Client settings stream: ");
         httpConnection.closeAsyncGracefully().toFuture().get();
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void clientCloseAsyncIsOffloaded() throws Exception {
+    void clientCloseAsyncIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, httpConnection.closeAsync());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void clientCloseAsyncGracefullyIsOffloaded() throws Exception {
+    void clientCloseAsyncGracefullyIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors, httpConnection.closeAsyncGracefully());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
-    public void clientOnCloseIsOffloaded() throws Exception {
+    void clientOnCloseIsOffloaded() throws Exception {
         httpConnection.closeAsync().toFuture().get();
         subscribeTo(inEventLoop(), errors, httpConnection.onClose());
         terminated.await();
@@ -263,7 +259,7 @@ public class HttpOffloadingTest {
             public void onSubscribe(final Cancellable cancellable) {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError("onSubscribe was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
             }
 
@@ -271,7 +267,7 @@ public class HttpOffloadingTest {
             public void onComplete() {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError("onComplete was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
             }
 
@@ -279,7 +275,7 @@ public class HttpOffloadingTest {
             public void onError(final Throwable t) {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError("onError was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
                 errors.add(new AssertionError("Unexpected error.", t));
             }
@@ -297,7 +293,7 @@ public class HttpOffloadingTest {
             public void onSubscribe(final Subscription s) {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError(msgPrefix + " onSubscribe was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
                 s.request(MAX_VALUE);
             }
@@ -306,7 +302,7 @@ public class HttpOffloadingTest {
             public void onNext(final T integer) {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError(msgPrefix + " onNext was not offloaded for value: " + integer
-                            + ". Thread: " + currentThread().getName()));
+                                                  + ". Thread: " + currentThread().getName()));
                 }
             }
 
@@ -314,7 +310,7 @@ public class HttpOffloadingTest {
             public void onError(final Throwable t) {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError(msgPrefix + " onError was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
                 errors.add(new AssertionError(msgPrefix + " Unexpected error.", t));
             }
@@ -323,7 +319,7 @@ public class HttpOffloadingTest {
             public void onComplete() {
                 if (notExpectedThread.test(currentThread())) {
                     errors.add(new AssertionError(msgPrefix + " onComplete was not offloaded. Thread: "
-                            + currentThread().getName()));
+                                                  + currentThread().getName()));
                 }
             }
         });
@@ -342,21 +338,21 @@ public class HttpOffloadingTest {
             }
             CountDownLatch latch = new CountDownLatch(1);
             subscribeTo(inEventLoop(), errors,
-                    request.payloadBody().afterFinally(latch::countDown), "Server request: ");
+                        request.payloadBody().afterFinally(latch::countDown), "Server request: ");
             try {
                 latch.await();
             } catch (InterruptedException e) {
                 errors.add(e);
             }
             Publisher responsePayload =
-                    from(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
-                            .beforeRequest(n -> {
-                                if (inEventLoop().test(currentThread())) {
-                                    errors.add(
-                                            new AssertionError("Server response: request-n was not offloaded. Thread: "
-                                            + currentThread().getName()));
-                                }
-                            });
+                from(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
+                    .beforeRequest(n -> {
+                        if (inEventLoop().test(currentThread())) {
+                            errors.add(
+                                new AssertionError("Server response: request-n was not offloaded. Thread: "
+                                                   + currentThread().getName()));
+                        }
+                    });
             return succeeded(factory.ok().payloadBody(responsePayload));
         }
     }

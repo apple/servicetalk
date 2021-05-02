@@ -23,45 +23,33 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.CI;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
-public class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
+class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
 
-    private final boolean useAggregatedApi;
+    private boolean useAggregatedApi;
     private boolean explicitlySetFlushStrategy;
 
-    public FlushStrategyForServerApiTest(final boolean useAggregatedApi) {
-        super(CACHED, CACHED_SERVER);
+    private void setUp(final boolean useAggregatedApi) {
         this.useAggregatedApi = useAggregatedApi;
-    }
-
-    @Parameterized.Parameters(name = "aggregated={0}")
-    public static Collection<Boolean> clientExecutors() {
-        return asList(true, false);
+        setUp(CACHED, CACHED_SERVER);
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         if (useAggregatedApi) {
             super.service((ctx, request, responseFactory) -> {
                 if (explicitlySetFlushStrategy) {
@@ -78,8 +66,8 @@ public class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedApiShouldFlushOnEnd() throws Exception {
-        assumeThat(useAggregatedApi, is(true));
+    void aggregatedApiShouldFlushOnEnd() throws Exception {
+        setUp(true);
         final StreamingHttpConnection connection = streamingHttpConnection();
 
         final Single<StreamingHttpResponse> responseSingle = connection.request(connection.newRequest(GET, "/"));
@@ -93,8 +81,8 @@ public class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedApiShouldNotOverrideExplicit() throws Exception {
-        assumeThat(useAggregatedApi, is(true));
+    void aggregatedApiShouldNotOverrideExplicit() throws Exception {
+        setUp(true);
         explicitlySetFlushStrategy = true;
         final StreamingHttpConnection connection = streamingHttpConnection();
 
@@ -104,8 +92,8 @@ public class FlushStrategyForServerApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void streamingApiShouldFlushOnEach() throws Exception {
-        assumeThat(useAggregatedApi, is(false));
+    void streamingApiShouldFlushOnEach() throws Exception {
+        setUp(false);
         final StreamingHttpConnection connection = streamingHttpConnection();
 
         final Single<StreamingHttpResponse> responseSingle = connection.request(connection.newRequest(GET, "/"));

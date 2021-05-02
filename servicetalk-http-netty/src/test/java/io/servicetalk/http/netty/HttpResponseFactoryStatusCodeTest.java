@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
 import io.servicetalk.http.api.HttpResponse;
@@ -25,10 +24,8 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -42,13 +39,12 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class HttpResponseFactoryStatusCodeTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+class HttpResponseFactoryStatusCodeTest {
+
     private static List<HttpResponseStatus> expectedStatuses;
 
-    @BeforeClass
-    public static void before() {
+    @BeforeAll
+    static void before() {
         expectedStatuses = IntStream.range(100, 600)
                 .mapToObj(code -> HttpResponseStatus.of(Integer.toString(code)))
                 .filter(status -> !"unknown".equals(status.reasonPhrase()))
@@ -56,7 +52,7 @@ public class HttpResponseFactoryStatusCodeTest {
     }
 
     @Test
-    public void testStatusCode() {
+    void testStatusCode() {
         final HttpResponseFactory httpResponseFactory =
                 new DefaultHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
 
@@ -67,7 +63,7 @@ public class HttpResponseFactoryStatusCodeTest {
     }
 
     @Test
-    public void testBlockingStatusCode() {
+    void testBlockingStatusCode() {
 
         final BlockingStreamingHttpResponseFactory blockingStreamingHttpResponseFactory =
                 new DefaultBlockingStreamingHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);
@@ -80,7 +76,7 @@ public class HttpResponseFactoryStatusCodeTest {
     }
 
     @Test
-    public void testStreamingStatusCode() {
+    void testStreamingStatusCode() {
 
         final StreamingHttpResponseFactory streamingHttpResponseFactory =
                 new DefaultStreamingHttpResponseFactory(INSTANCE, DEFAULT_ALLOCATOR, HTTP_1_1);

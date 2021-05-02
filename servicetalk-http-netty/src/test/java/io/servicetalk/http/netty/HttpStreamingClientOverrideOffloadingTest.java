@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -25,16 +24,10 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -52,68 +45,65 @@ import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-@RunWith(Parameterized.class)
-public class HttpStreamingClientOverrideOffloadingTest {
+class HttpStreamingClientOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-client-io-executor";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private IoExecutor ioExecutor;
+    private Executor executor;
+    private Predicate<Thread> isInvalidThread;
+    private HttpExecutionStrategy overridingStrategy;
+    private ServerContext server;
+    private StreamingHttpClient client;
 
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
-    private final Predicate<Thread> isInvalidThread;
-    private final HttpExecutionStrategy overridingStrategy;
-    private final ServerContext server;
-    private final StreamingHttpClient client;
-
-    public HttpStreamingClientOverrideOffloadingTest(@SuppressWarnings("unused") final String description,
-                                                     final Predicate<Thread> isInvalidThread,
-                                                     @Nullable final HttpExecutionStrategy overridingStrategy,
-                                                     @Nullable final HttpExecutionStrategy defaultStrategy)
+    private void setUp(final Params params)
             throws Exception {
         this.ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY));
         this.executor = newCachedThreadExecutor();
-        this.isInvalidThread = isInvalidThread;
-        this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
+        this.isInvalidThread = params.isInvalidThread;
+        this.overridingStrategy = params.overridingStrategy == null ?
+                defaultStrategy(executor) : params.overridingStrategy;
         server = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
-                .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
+                .executionStrategy(params.defaultStrategy == null ?
+                        defaultStrategy(executor) : params.defaultStrategy)
                 .buildStreaming();
     }
 
-    @Parameterized.Parameters(name = "{index} - {0}")
-    public static Collection<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-        params.add(newParam("Override no offload", th -> !isInClientEventLoop(th), noOffloadsStrategy(), null));
-        params.add(newParam("Default no offload", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop,
-                null, noOffloadsStrategy()));
-        params.add(newParam("Both offloads", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null,
-                null));
-        return params;
+    enum Params {
+
+        OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), noOffloadsStrategy(), null),
+        DEFAULT_NO_OFFLOAD(HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null,
+                noOffloadsStrategy()),
+        BOTH_OFFLOADS(HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null, null);
+
+        final Predicate<Thread> isInvalidThread;
+        @Nullable
+        final HttpExecutionStrategy overridingStrategy;
+        @Nullable
+        final HttpExecutionStrategy defaultStrategy;
+
+        Params(final Predicate<Thread> isInvalidThread,
+               @Nullable final HttpExecutionStrategy overridingStrategy,
+               @Nullable final HttpExecutionStrategy defaultStrategy) {
+            this.isInvalidThread = isInvalidThread;
+            this.overridingStrategy = overridingStrategy;
+            this.defaultStrategy = defaultStrategy;
+        }
     }
 
-    private static Object[] newParam(String description, Predicate<Thread> isInvalidThread,
-                                     @Nullable HttpExecutionStrategy overridingStrategy,
-                                     @Nullable HttpExecutionStrategy defaultStrategy) {
-        Object[] param = new Object[4];
-        param[0] = description;
-        param[1] = isInvalidThread;
-        param[2] = overridingStrategy;
-        param[3] = defaultStrategy;
-        return param;
-    }
-
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         newCompositeCloseable().appendAll(client, server, ioExecutor, executor).closeAsync().toFuture().get();
     }
 
-    @Test
-    public void reserveRespectsDisable() throws Exception {
-        client.reserveConnection(overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void reserveRespectsDisable(final Params params) throws Exception {
+        setUp(params);
+        client.reserveConnection(this.overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -121,8 +111,10 @@ public class HttpStreamingClientOverrideOffloadingTest {
         }).toFuture().get().closeAsync().toFuture().get();
     }
 
-    @Test
-    public void requestRespectsDisable() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void requestRespectsDisable(final Params params) throws Exception {
+        setUp(params);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         StreamingHttpRequest req = client.get("/").transformPayloadBody(p -> p.beforeRequest(__ -> {
             if (isInvalidThread()) {
@@ -130,7 +122,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
                         + currentThread()));
             }
         }));
-        client.request(overridingStrategy, req)
+        client.request(this.overridingStrategy, req)
                 .beforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +

@@ -43,15 +43,22 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-test-internal")
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-transport-netty-internal")
-  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-buffer-netty")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "junit:junit:$junitVersion"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  testFixturesImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+  //testFixturesImplementation "junit:junit:$junitVersion"
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

@@ -28,7 +28,9 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -36,30 +38,30 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.CI;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.CI;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
+class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
 
     private final CountDownLatch requestLatch = new CountDownLatch(1);
     private final BlockingQueue<Buffer> payloadBuffersReceived = new ArrayBlockingQueue<>(2);
     private volatile StreamingHttpRequest request;
 
-    public FlushStrategyForClientApiTest() {
-        super(CACHED, CACHED_SERVER);
+    @BeforeEach
+    void setUp() {
+        setUp(CACHED, CACHED_SERVER);
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    void service(final StreamingHttpService service) {
         super.service((ctx, request, responseFactory) -> {
             FlushStrategyForClientApiTest.this.request = request;
             requestLatch.countDown();
@@ -75,7 +77,7 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedApiShouldFlushOnEnd() throws Exception {
+    void aggregatedApiShouldFlushOnEnd() throws Exception {
         final StreamingHttpConnection connection = streamingHttpConnection();
 
         // The payload never completes, so since the aggregated API should use `flushOnEnd`, it should never flush.
@@ -94,7 +96,7 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedApiShouldNotOverrideExplicit() throws Exception {
+    void aggregatedApiShouldNotOverrideExplicit() throws Exception {
         final StreamingHttpConnection connection = streamingHttpConnection();
 
         ((NettyConnectionContext) connection.connectionContext()).updateFlushStrategy(
@@ -111,7 +113,7 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void streamingApiShouldFlushOnEach() throws Exception {
+    void streamingApiShouldFlushOnEach() throws Exception {
         final StreamingHttpConnection connection = streamingHttpConnection();
         final SingleSource.Processor<Buffer, Buffer> payloadItemProcessor = Processors.newSingleProcessor();
         final Publisher<Buffer> payload = fromSource(payloadItemProcessor).toPublisher();
@@ -121,11 +123,11 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
         responseSingle.toFuture(); // Subscribe, to initiate the request, but we don't care about the response.
 
         requestLatch.await(); // Wait for the server to receive the response, meaning the client wrote and flushed.
-        assertThat(payloadBuffersReceived.size(), is(0));
+        MatcherAssert.assertThat(payloadBuffersReceived.size(), is(0));
 
         final Buffer payloadItem = BufferAllocators.DEFAULT_ALLOCATOR.fromAscii("Hello");
         payloadItemProcessor.onSuccess(payloadItem);
         Buffer receivedBuffer = payloadBuffersReceived.take(); // Wait for the server to receive the payload
-        assertThat(receivedBuffer, is(payloadItem));
+        MatcherAssert.assertThat(receivedBuffer, is(payloadItem));
     }
 }

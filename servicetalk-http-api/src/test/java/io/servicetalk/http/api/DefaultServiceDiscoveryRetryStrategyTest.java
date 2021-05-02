@@ -17,22 +17,20 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy.Builder;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.concurrent.api.ExecutorRule.withTestExecutor;
+import static io.servicetalk.concurrent.api.ExecutorExtension.withTestExecutor;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -51,14 +49,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-public class DefaultServiceDiscoveryRetryStrategyTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutorRule<TestExecutor> executorRule = withTestExecutor();
+class DefaultServiceDiscoveryRetryStrategyTest {
+    @RegisterExtension
+    final ExecutorExtension<TestExecutor> executorExtension = withTestExecutor();
 
     @Test
-    public void errorWithNoAddresses() throws Exception {
+    void errorWithNoAddresses() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         sdEvents = triggerRetry(state, sdEvents);
@@ -67,7 +63,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void newAddressPostRetry() throws Exception {
+    void newAddressPostRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
@@ -85,7 +81,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void overlapAddressPostRetry() throws Exception {
+    void overlapAddressPostRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
@@ -106,7 +102,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void addRemoveBeforeRetry() throws Exception {
+    void addRemoveBeforeRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
@@ -122,7 +118,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void removeAfterRetry() throws Exception {
+    void removeAfterRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
@@ -138,7 +134,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void addAndRemovePostRetry() throws Exception {
+    void addAndRemovePostRetry() throws Exception {
         State state = new State(true);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
@@ -155,7 +151,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void noRetainActiveAddresses() throws Exception {
+    void noRetainActiveAddresses() throws Exception {
         State state = new State(false);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
         final DefaultServiceDiscovererEvent<String> evt1 = sendUpAndVerifyReceive(state, "addr1", sdEvents);
@@ -169,7 +165,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
     }
 
     @Test
-    public void noRetainErrorWithNoAddresses() throws Exception {
+    void noRetainErrorWithNoAddresses() throws Exception {
         State state = new State(false);
         TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents = state.pubs.take();
 
@@ -187,7 +183,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
             final State state, final TestPublisher<Collection<ServiceDiscovererEvent<String>>> sdEvents)
             throws Exception {
         sdEvents.onError(DELIBERATE_EXCEPTION);
-        executorRule.executor().advanceTimeBy(1, MINUTES);
+        executorExtension.executor().advanceTimeBy(1, MINUTES);
         return state.pubs.take();
     }
 
@@ -216,7 +212,7 @@ public class DefaultServiceDiscoveryRetryStrategyTest {
 
         State(final boolean retainAddressesTillSuccess) {
             ServiceDiscoveryRetryStrategy<String, ServiceDiscovererEvent<String>> strategy =
-                    Builder.<String>withDefaults(executorRule.executor(), ofSeconds(1), ofMillis(500))
+                    Builder.<String>withDefaults(executorExtension.executor(), ofSeconds(1), ofMillis(500))
                             .retainAddressesTillSuccess(retainAddressesTillSuccess)
                             .build();
             pubs = new LinkedBlockingQueue<>();

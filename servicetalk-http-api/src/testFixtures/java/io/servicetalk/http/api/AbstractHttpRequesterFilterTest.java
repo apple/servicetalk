@@ -20,22 +20,17 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.provider.Arguments;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -48,26 +43,19 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static java.util.Arrays.asList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * This parameterized test facilitates running HTTP requester filter tests under all calling variations: client,
  * connection, reserved connection, with and without SSL context.
  */
-@RunWith(Parameterized.class)
+@ExtendWith(MockitoExtension.class)
 public abstract class AbstractHttpRequesterFilterTest {
 
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HTTP_1_1);
-
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     public enum SecurityType { Secure, Insecure }
 
@@ -75,9 +63,6 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     private final CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
 
-    public final RequesterType type;
-
-    public final SecurityType security;
 
     @Mock
     private HttpExecutionContext mockExecutionContext;
@@ -85,29 +70,25 @@ public abstract class AbstractHttpRequesterFilterTest {
     @Mock
     private HttpConnectionContext mockConnectionContext;
 
-    public AbstractHttpRequesterFilterTest(final RequesterType type, final SecurityType security) {
-        this.type = type;
-        this.security = security;
-    }
-
     @SuppressWarnings("unused")
-    @Parameters(name = "{0}-{1}")
-    public static Collection<Object[]> requesterTypes() {
-        return asList(new Object[][]{
-                {Client, Secure},
-                {Client, Insecure},
-                {Connection, Secure},
-                {Connection, Insecure},
-                {ReservedConnection, Secure},
-                {ReservedConnection, Insecure},
-        });
+    protected static Stream<Arguments> requesterTypes() {
+        return Stream.of(
+                Arguments.of(Client, Secure),
+                Arguments.of(Client, Insecure),
+                Arguments.of(Connection, Secure),
+                Arguments.of(Connection, Insecure),
+                Arguments.of(ReservedConnection, Secure),
+                Arguments.of(ReservedConnection, Insecure));
     }
 
-    @Before
+    @BeforeEach
     public final void setupContext() {
-        when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
-        when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
-        when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
+        lenient().when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
+        lenient().when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
+    }
+
+    protected void setUp(SecurityType security) {
+        lenient().when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
             switch (security) {
                 case Secure:
                     return sslSession();
@@ -124,7 +105,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    protected InetSocketAddress localAddress() {
+    private InetSocketAddress localAddress() {
         return InetSocketAddress.createUnresolved("127.0.1.2", 28080);
     }
 
@@ -136,7 +117,7 @@ public abstract class AbstractHttpRequesterFilterTest {
         return Publisher.empty();
     }
 
-    @After
+    @AfterEach
     public final void closeClients() throws Exception {
         closeables.close();
     }
@@ -148,9 +129,9 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
-        StreamingHttpRequester createFilter(FF filterFactory) {
-        return createFilter(RequestHandler.ok(), ok(), filterFactory);
+    final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+        StreamingHttpRequester createFilter(RequesterType type, FF filterFactory) {
+        return createFilter(type, RequestHandler.ok(), ok(), filterFactory);
     }
 
     /**
@@ -162,8 +143,8 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @return a filtered {@link StreamingHttpRequester}
      */
     protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
-        StreamingHttpRequester createFilter(RequestHandler rh, FF filterFactory) {
-        return createFilter(rh, rh.withContext(), filterFactory);
+        StreamingHttpRequester createFilter(RequesterType type, RequestHandler rh, FF filterFactory) {
+        return createFilter(type, rh, rh.withContext(), filterFactory);
     }
 
     /**
@@ -175,8 +156,9 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
-        StreamingHttpRequester createFilter(RequestHandler rh, RequestWithContextHandler rwch, FF filterFactory) {
+    final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+        StreamingHttpRequester createFilter(RequesterType type, RequestHandler rh,
+                                            RequestWithContextHandler rwch, FF filterFactory) {
         switch (type) {
             case Client:
                 return closeables.prepend(newClient(rh, rwch, filterFactory));
