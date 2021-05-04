@@ -186,13 +186,13 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             showStandardStreams = true
           }
         }
-
+      
+        // if property is defined and true allow tests to continue running after first fail
+        ignoreFailures = Boolean.getBoolean("servicetalk.test.ignoreFailures")
+        
         jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
                 "-XX:+HeapDumpOnOutOfMemoryError"
       }
-      
-      // if property is defined and true allow tests to continue running after first fail
-      ignoreFailures = Boolean.getBoolean("servicetalk.test.ignoreFailures")
 
       dependencies {
         testRuntimeOnly("org.junit.vintage:junit-vintage-engine:$junit5Version") {
