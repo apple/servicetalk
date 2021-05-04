@@ -21,4 +21,10 @@ dependencies {
 
     implementation project(":servicetalk-annotations")
     implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }

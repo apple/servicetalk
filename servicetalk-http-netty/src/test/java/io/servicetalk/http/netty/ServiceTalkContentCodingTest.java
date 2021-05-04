@@ -101,12 +101,12 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                                 .map((String::trim)).collect(toList());
 
                         final List<String> expectedReqAcceptedEncodings = clientSupportedEncodings.stream()
-                                .filter((enc) -> enc != identity())
+                                .filter(enc -> !identity().equals(enc))
                                 .map((ContentCodec::name))
                                 .map(CharSequence::toString)
                                 .collect(toList());
 
-                        if (reqEncoding != identity()) {
+                        if (!identity().equals(reqEncoding)) {
                             assertTrue("Request encoding should be present in the request headers",
                                     contentEquals(reqEncoding.name(),
                                             request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")));

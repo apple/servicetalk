@@ -17,16 +17,15 @@ package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
-
-import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.
  */
 final class IdentityContentCodec implements ContentCodec {
 
-    private static final CharSequence NAME = newAsciiString("identity");
+    private static final CharSequence NAME = CharSequences.newAsciiString("identity");
 
     @Override
     public CharSequence name() {
@@ -61,5 +60,20 @@ final class IdentityContentCodec implements ContentCodec {
     @Override
     public Publisher<Buffer> decode(final Publisher<Buffer> from, final BufferAllocator allocator) {
         return from;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof ContentCodec) {
+            ContentCodec contentCodec = (ContentCodec) other;
+            return hashCode() == contentCodec.hashCode() && CharSequences.contentEquals(name(), contentCodec.name());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return name().hashCode();
     }
 }

@@ -183,6 +183,6 @@ public final class ContentCodingHttpServiceFilter
             encoding = negotiateAcceptedEncoding(requestHeaders.get(ACCEPT_ENCODING), supportedEncodings);
         }
 
-        return encoding == identity() ? null : encoding;
+        return identity().equals(encoding) ? null : encoding;
     }
 }

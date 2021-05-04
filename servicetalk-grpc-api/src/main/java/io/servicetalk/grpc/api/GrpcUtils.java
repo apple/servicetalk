@@ -404,7 +404,7 @@ final class GrpcUtils {
     private static CharSequence acceptedEncodingsHeaderValue0(final List<ContentCodec> codings) {
         StringBuilder builder = new StringBuilder(codings.size() * (12 + CONTENT_ENCODING_SEPARATOR.length()));
         for (ContentCodec codec : codings) {
-            if (codec == identity()) {
+            if (identity().equals(codec)) {
                 continue;
             }
             builder.append(codec.name()).append(CONTENT_ENCODING_SEPARATOR);

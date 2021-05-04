@@ -275,7 +275,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final ContentCodec codec) {
             this.codec = codec;
-            this.encode = codec != identity();
+            this.encode = !identity().equals(codec);
         }
 
         @Override
