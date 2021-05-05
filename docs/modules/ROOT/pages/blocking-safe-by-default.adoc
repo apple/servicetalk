@@ -16,7 +16,7 @@ when using ServiceTalk.
 
 ServiceTalk uses link:https://netty.io[Netty] under the hood which uses the
 link:https://en.wikipedia.org/wiki/Event_loop[Event loop execution model]. A drawback of this construct is that
-any potentially long running work (blocking calls, intensive computations, etc) that is done on the event loop
+any potentially long-running work (blocking calls, intensive computations, etc) that is done on the event loop
 negatively impacts the processing of all subsequent tasks. This is the reason why writing blocking code is usually
 discouraged when using Netty.
 
@@ -94,11 +94,11 @@ provided strategy.
 
 ServiceTalk acknowledges that [.underline]#writing completely asynchronous code is hard and is __not__ an
 "all or nothing" decision#.
-Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
+Practically, applications will have a mixed profile such that some paths are completely asynchronous, and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
 client/server. These selective opt-ins are specific to protocols, for example as elaborated under
-xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP]. In addition there is a way to override
-the strategy for a client/server but it comes with additional responsibility from the user assuming
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP]. In addition, there is a way to override
+the strategy for a client/server, but it comes with additional responsibility from the user assuming
 "you know what you are doing".
 
 === ServiceTalk developers
