@@ -1505,12 +1505,14 @@ public abstract class Completable {
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
      * If such an override is not required, {@link #publishOn(Executor)} can be used.
-     *
+     * @deprecated This method will be removed in a future release. Consider switching to
+     * {@link #publishOn(Executor)} and/or using {@link Executor#execute(Runnable)} for offloading.
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the
      * returned {@link Completable} as well as {@code this} {@link Completable}.
      */
+    @Deprecated
     public final Completable publishOnOverride(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishOnOverride(this, executor);
     }
@@ -1542,12 +1544,14 @@ public abstract class Completable {
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
      * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
-     *
+     * @deprecated This method will be removed in a future release. Consider switching to
+     * {@link #subscribeOn(Executor)} and/or using {@link Executor#execute(Runnable)} for offloading.
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the returned
      * {@link Completable} as well as {@code this} {@link Completable}.
      */
+    @Deprecated
     public final Completable subscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnCompletables.subscribeOnOverride(this, executor);
     }
@@ -1581,12 +1585,14 @@ public abstract class Completable {
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
      * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
-     *
+     * @deprecated This method will be removed in a future release. Consider switching to
+     * {@link #publishAndSubscribeOn(Executor)} and/or using {@link Executor#execute(Runnable)} for offloading.
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)} both for the
      * returned {@link Completable} as well as {@code this} {@link Completable}.
      */
+    @Deprecated
     public final Completable publishAndSubscribeOnOverride(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishAndSubscribeOnOverride(this, executor);
     }
