@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -121,7 +122,10 @@ final class TestServiceStreaming implements StreamingHttpService {
     private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
                                                          final StreamingHttpResponseFactory factory) {
         final StreamingHttpResponse response = factory.ok().version(req.version())
-                .transformMessageBody(pub -> pub.ignoreElements().merge(req.messageBody()));
+                .transformMessageBody(pub -> pub.ignoreElements().merge(req.messageBody()))
+                // Apply empty transform operation only to inform internal PayloadHolder that the payload
+                // body may contain content and trailers
+                .transform(new StatelessTrailersTransformer<>());
         final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
         if (contentLength != null) {
             response.addHeader(CONTENT_LENGTH, contentLength);

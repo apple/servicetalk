@@ -28,7 +28,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpScheme;
-import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
@@ -86,7 +85,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2Headers.scheme(scheme.name());
                 h2Headers.path(metaData.requestTarget());
             }
-            ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
+            writeMetaData(ctx, metaData, h2Headers, promise);
         } else if (msg instanceof Buffer) {
             writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {
@@ -109,7 +108,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
                 }
                 httpStatus = HttpResponseStatus.of(status);
-                if (httpStatus.statusClass().equals(INFORMATIONAL_1XX)) {
+                if (httpStatus.statusClass() == INFORMATIONAL_1XX) {
                     // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
                     // "real" response.
                     //

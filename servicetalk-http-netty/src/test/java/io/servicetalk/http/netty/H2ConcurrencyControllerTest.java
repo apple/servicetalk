@@ -98,7 +98,7 @@ public class H2ConcurrencyControllerTest {
             protected void initChannel(Http2StreamChannel ch) {
                 // Respond only for the first request which is used to propagate MAX_CONCURRENT_STREAMS_VALUE
                 if (secondAndMore.compareAndSet(false, true)) {
-                    ch.pipeline().addLast(EchoHttp2Handler.INSTANCE);
+                    ch.pipeline().addLast(new EchoHttp2Handler());
                 } else {
                     // Do not respond to any subsequent requests, only release the associated latch to notify the client
                     // that server received the request.
