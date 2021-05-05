@@ -1169,7 +1169,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) {
-                ch.pipeline().addLast(EchoHttp2Handler.INSTANCE);
+                ch.pipeline().addLast(new EchoHttp2Handler());
             }
         }, parentPipeline -> parentPipeline.addLast(new ChannelInboundHandlerAdapter() {
             @Override
@@ -1614,13 +1614,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ChannelHandler.Sharable
     static final class EchoHttp2Handler extends ChannelDuplexHandler {
-        static final EchoHttp2Handler INSTANCE = new EchoHttp2Handler();
-
-        private EchoHttp2Handler() {
-            // singleton
-        }
+        private boolean sentHeaders;
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
@@ -1649,8 +1644,8 @@ public class H2PriorKnowledgeFeatureParityTest {
             ctx.write(new DefaultHttp2DataFrame(data.content().retainedDuplicate(), data.isEndStream()));
         }
 
-        private static void onHeadersRead(ChannelHandlerContext ctx, Http2HeadersFrame headers) {
-            if (headers.isEndStream()) {
+        private void onHeadersRead(ChannelHandlerContext ctx, Http2HeadersFrame headers) {
+            if (sentHeaders) {
                 ctx.write(new DefaultHttp2HeadersFrame(headers.headers(), true));
             } else {
                 Http2Headers outHeaders = new DefaultHttp2Headers();
@@ -1672,7 +1667,8 @@ public class H2PriorKnowledgeFeatureParityTest {
                     outHeaders.add(CONTENT_TYPE, contentType);
                 }
                 outHeaders.add(HttpHeaderNames.COOKIE, headers.headers().getAll(HttpHeaderNames.COOKIE));
-                ctx.write(new DefaultHttp2HeadersFrame(outHeaders));
+                ctx.write(new DefaultHttp2HeadersFrame(outHeaders, headers.isEndStream()));
+                sentHeaders = true;
             }
         }
     }

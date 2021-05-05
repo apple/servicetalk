@@ -26,7 +26,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
@@ -64,7 +63,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
-            ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
+            writeMetaData(ctx, metaData, h2Headers, promise);
         } else if (msg instanceof Buffer) {
             writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {

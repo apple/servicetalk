@@ -17,10 +17,13 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopStreamObserver;
 
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -31,7 +34,9 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
+import io.netty.handler.codec.http2.Http2HeadersFrame;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,15 +49,19 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpMethod.PUT;
 import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static java.lang.String.valueOf;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -65,7 +74,7 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class AbstractH2DuplexHandlerTest {
 
-    private static final HttpHeadersFactory HEADERS_FACTORY = DefaultHttpHeadersFactory.INSTANCE;
+    private static final HttpHeadersFactory HEADERS_FACTORY = H2HeadersFactory.INSTANCE;
 
     private enum Variant {
 
@@ -309,5 +318,66 @@ public class AbstractH2DuplexHandlerTest {
         HttpHeaders trailers = channel.readInbound();
         assertThat(trailers.isEmpty(), is(true));
         assertThat(channel.inboundMessages(), is(empty()));
+    }
+
+    @Test
+    public void emptyMessageWrittenAsSingleFrame() {
+        HttpMetaData msg;
+        switch (variant) {
+            case CLIENT_HANDLER:
+                msg = newRequest(GET, "/", HTTP_2_0, HEADERS_FACTORY.newHeaders(), DEFAULT_ALLOCATOR,
+                        HEADERS_FACTORY);
+                break;
+            case SERVER_HANDLER:
+                msg = newResponse(HttpResponseStatus.OK, HTTP_2_0, HEADERS_FACTORY.newHeaders(), DEFAULT_ALLOCATOR,
+                        HEADERS_FACTORY);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected variant: " + variant);
+        }
+        channel.writeOutbound(msg);
+        channel.writeOutbound(EMPTY_BUFFER);
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+
+        Http2HeadersFrame frame = channel.readOutbound();
+        assertThat("Unexpected endStream flag value", frame.isEndStream(), is(true));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
+    }
+
+    @Test
+    public void noDataFramesForEmptyBuffers() {
+        Buffer[] payload = {EMPTY_BUFFER, DEFAULT_ALLOCATOR.fromAscii("data"), EMPTY_BUFFER};
+
+        HttpMetaData msg;
+        switch (variant) {
+            case CLIENT_HANDLER:
+                StreamingHttpRequest request = newRequest(GET, "/", HTTP_2_0,
+                        HEADERS_FACTORY.newHeaders(), DEFAULT_ALLOCATOR, HEADERS_FACTORY);
+                request.payloadBody(from(payload));
+                msg = request;
+                break;
+            case SERVER_HANDLER:
+                StreamingHttpResponse response = newResponse(HttpResponseStatus.OK, HTTP_2_0,
+                        HEADERS_FACTORY.newHeaders(), DEFAULT_ALLOCATOR, HEADERS_FACTORY);
+                response.payloadBody(from(payload));
+                msg = response;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected variant: " + variant);
+        }
+        channel.writeOutbound(msg);
+        for (Buffer buffer : payload) {
+            channel.writeOutbound(buffer);
+        }
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+
+        Http2HeadersFrame headersFrame = channel.readOutbound();
+        assertThat("Unexpected endStream flag value at headers frame", headersFrame.isEndStream(), is(false));
+        Http2DataFrame dataFrame = channel.readOutbound();
+        assertThat("Unexpected data", dataFrame.content().toString(US_ASCII), is("data"));
+        assertThat("Unexpected endStream flag value at data frame", dataFrame.isEndStream(), is(false));
+        dataFrame = channel.readOutbound();
+        assertThat("Unexpected endStream flag value at last frame", dataFrame.isEndStream(), is(true));
+        assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
     }
 }
