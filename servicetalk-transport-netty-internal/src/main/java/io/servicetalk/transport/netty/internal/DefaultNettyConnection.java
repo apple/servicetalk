@@ -643,14 +643,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
                         DefaultNettyConnection.class, "userEventTriggered(ChannelOutputShutdownEvent)"));
             } else if (evt == SslCloseCompletionEvent.SUCCESS) {
-                // Received "close_notify" alert from the peer: https://tools.ietf.org/html/rfc5246#section-7.2.1.
-                // This message notifies that the sender will not send any more messages on this connection.
-
-                // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
-                connection.closeHandler.channelClosedInbound(ctx);
-                // We MUST respond with a "close_notify" alert and close down the connection immediately,
-                // discarding any pending writes.
-                connection.closeHandler.closeChannelOutbound(ctx.channel());
+                connection.closeHandler.channelCloseNotify(ctx);
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting and prevent LB from selecting this connection
                 connection.closeHandler.channelClosedInbound(ctx);
