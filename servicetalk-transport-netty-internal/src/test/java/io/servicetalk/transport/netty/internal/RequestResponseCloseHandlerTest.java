@@ -93,6 +93,7 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IC;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.ID;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IE;
+import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IH;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.IS;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OB;
 import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandlerTest.Scenarios.Events.OC;
@@ -354,6 +355,7 @@ public class RequestResponseCloseHandlerTest {
                 outputShutdown.set(true);
                 LOGGER.debug("channel.shutdownOutput()");
                 h.channelClosedOutbound(ctx); // ChannelOutputShutdownEvent observed from transport
+                h.channelCloseNotify(ctx);  // SslHandler generates SslCloseCompletionEvent immediately
                 return future;
             });
             when(channel.close()).then(__ -> {
@@ -443,9 +445,15 @@ public class RequestResponseCloseHandlerTest {
                         break;
                     case IH:
                         order.verify(channel).shutdownInput();
+                        order.verify(h).channelClosedInbound(ctx);
                         break;
                     case OH:
                         order.verify(channel).shutdownOutput();
+                        order.verify(h).channelClosedOutbound(ctx);
+                        // Verify shutdownOutput() triggers channelCloseNotify, but actually it is no-op
+                        order.verify(h).channelCloseNotify(ctx);
+                        order.verify(h, never()).channelClosedInbound(ctx);
+                        order.verify(h, never()).closeChannelOutbound(channel);
                         break;
                     case FC:
                         order.verify(channel).close();
@@ -488,8 +496,14 @@ public class RequestResponseCloseHandlerTest {
                             verify(h, never()).protocolClosingOutbound(ctx);
                             break;
                         case IS:
+                            if (!events.contains(IH)) {
+                                verify(h, never()).channelClosedInbound(ctx);
+                            }
+                            break;
                         case OS:
-                            // These may be called implicitly, skip verify
+                            if (!events.contains(OH)) {
+                                verify(h, never()).channelClosedOutbound(ctx);
+                            }
                             break;
                         case SR:
                             verify(scc, never()).setSoLinger(0);
