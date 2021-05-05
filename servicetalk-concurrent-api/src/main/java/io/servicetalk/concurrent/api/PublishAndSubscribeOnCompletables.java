@@ -44,6 +44,7 @@ final class PublishAndSubscribeOnCompletables {
         return original.executor() == executor ? original : new PublishAndSubscribeOn(executor, original);
     }
 
+    @Deprecated
     static Completable publishAndSubscribeOnOverride(Completable original, Executor executor) {
         return original.executor() == executor ? original : new PublishAndSubscribeOnOverride(original, executor);
     }
@@ -52,6 +53,7 @@ final class PublishAndSubscribeOnCompletables {
         return original.executor() == executor ? original : new PublishOn(executor, original);
     }
 
+    @Deprecated
     static Completable publishOnOverride(Completable original, Executor executor) {
         return original.executor() == executor ? original : new PublishOnOverride(original, executor);
     }
@@ -60,6 +62,7 @@ final class PublishAndSubscribeOnCompletables {
         return original.executor() == executor ? original : new SubscribeOn(executor, original);
     }
 
+    @Deprecated
     static Completable subscribeOnOverride(Completable original, Executor executor) {
         return original.executor() == executor ? original : new SubscribeOnOverride(original, executor);
     }

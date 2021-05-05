@@ -43,6 +43,7 @@ final class PublishAndSubscribeOnSingles {
         return original.executor() == executor ? original : new PublishAndSubscribeOn<>(executor, original);
     }
 
+    @Deprecated
     static <T> Single<T> publishAndSubscribeOnOverride(Single<T> original, Executor executor) {
         return original.executor() == executor ? original : new PublishAndSubscribeOnOverride<>(original, executor);
     }
@@ -51,6 +52,7 @@ final class PublishAndSubscribeOnSingles {
         return original.executor() == executor ? original : new PublishOn<>(executor, original);
     }
 
+    @Deprecated
     static <T> Single<T> publishOnOverride(Single<T> original, Executor executor) {
         return original.executor() == executor ? original : new PublishOnOverride<>(original, executor);
     }
@@ -59,6 +61,7 @@ final class PublishAndSubscribeOnSingles {
         return original.executor() == executor ? original : new SubscribeOn<>(executor, original);
     }
 
+    @Deprecated
     static <T> Single<T> subscribeOnOverride(Single<T> original, Executor executor) {
         return original.executor() == executor ? original : new SubscribeOnOverride<>(original, executor);
     }
