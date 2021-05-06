@@ -15,27 +15,23 @@
  */
 package io.servicetalk.buffer.netty;
 
+import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-
-import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class BufferAllocatorsTest {
@@ -69,6 +65,11 @@ public class BufferAllocatorsTest {
     @Test
     public void testNewCompositeBuffer() {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer());
+    }
+
+    @Test
+    public void testReadOnlyDirectBuffer() {
+        assertBuffer(allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer()), true);
     }
 
     @Test
