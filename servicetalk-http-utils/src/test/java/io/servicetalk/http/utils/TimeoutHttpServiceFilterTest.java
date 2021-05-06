@@ -23,11 +23,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
-import org.junit.Test;
-
 import java.time.Duration;
 
-import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -59,10 +56,5 @@ public class TimeoutHttpServiceFilterTest extends AbstractTimeoutHttpFilterTest 
         StreamingHttpServiceFilter filter = filterFactory.create(service);
         return filter.handle(mock(HttpServiceContext.class), mock(StreamingHttpRequest.class),
                 mock(StreamingHttpResponseFactory.class));
-    }
-
-    @Test
-    public void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(new TimeoutHttpServiceFilter(Duration.ofDays(1), true));
     }
 }

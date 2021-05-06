@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
+
+import io.servicetalk.opentracing.http.TracingHttpServiceFilter;
+import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 
 import org.junit.Test;
 
-import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
-import static java.util.Collections.singletonList;
+import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 
-public class ContentCodingHttpServiceFilterTest {
+public class TracingHttpServiceFilterTest {
 
     @Test
     public void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(new ContentCodingHttpServiceFilter(singletonList(identity())));
+        final DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
+        verifyServerFilterAsyncContextVisibility(new TracingHttpServiceFilter(tracer, "testServer"));
     }
 }
