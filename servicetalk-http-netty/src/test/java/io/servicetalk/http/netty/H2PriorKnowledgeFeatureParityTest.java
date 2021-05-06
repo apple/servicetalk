@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Processors;
@@ -52,8 +53,11 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -113,6 +117,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -248,7 +253,7 @@ class H2PriorKnowledgeFeatureParityTest {
                         succeeded(responseFactory.badRequest()) :
                         super.handle(ctx, request, responseFactory);
             }
-        });
+        }, null);
         String responseBody = "hello world";
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -447,7 +452,7 @@ class H2PriorKnowledgeFeatureParityTest {
                             return response;
                         });
             }
-        });
+        }, null);
     }
 
     private static void assertHeaderValue(HttpHeaders headers, String key, String value) {
@@ -786,7 +791,7 @@ class H2PriorKnowledgeFeatureParityTest {
                             return aggResp.toStreamingResponse();
                         }));
             }
-        });
+        }, null);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
@@ -1150,6 +1155,8 @@ class H2PriorKnowledgeFeatureParityTest {
     void serverGracefulClose(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         CountDownLatch serverReceivedRequestLatch = new CountDownLatch(1);
+        CountDownLatch connectionOnClosingLatch = new CountDownLatch(1);
+
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -1158,7 +1165,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 serverReceivedRequestLatch.countDown();
                 return delegate().handle(ctx, request, responseFactory);
             }
-        });
+        }, connectionOnClosingLatch);
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildStreaming();
@@ -1178,6 +1185,8 @@ class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.onClose().subscribe(onServerCloseLatch::countDown);
         h1ServerContext.closeAsyncGracefully().subscribe();
 
+        assertTrue(connectionOnClosingLatch.await(300, MILLISECONDS));
+
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
             .protocols(h2PriorKnowledge ? h2Default() : h1Default())
             .executionStrategy(clientExecutionStrategy).buildBlocking()) {
@@ -1186,7 +1195,7 @@ class H2PriorKnowledgeFeatureParityTest {
         }
 
         // We expect this to timeout, because we have not completed the outstanding request.
-        assertFalse(onServerCloseLatch.await(300, MILLISECONDS));
+        assertFalse(onServerCloseLatch.await(30, MILLISECONDS));
 
         requestBody.onComplete();
 
@@ -1362,7 +1371,7 @@ class H2PriorKnowledgeFeatureParityTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 throw DELIBERATE_EXCEPTION;
             }
-        });
+        }, null);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
@@ -1502,15 +1511,27 @@ class H2PriorKnowledgeFeatureParityTest {
     }
 
     private InetSocketAddress bindHttpEchoServer() throws Exception {
-        return bindHttpEchoServer(null);
+        return bindHttpEchoServer(null, null);
     }
 
-    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory)
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
+                                                 @Nullable CountDownLatch connectionOnClosingLatch)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default());
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
+        }
+
+        if (connectionOnClosingLatch != null) {
+            serverBuilder.appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
+                @Override
+                public Completable accept(final ConnectionContext context) {
+                    ((NettyConnectionContext) context).onClosing()
+                            .whenFinally(connectionOnClosingLatch::countDown).subscribe();
+                    return completed();
+                }
+            });
         }
         h1ServerContext = serverBuilder.listenStreaming(
                 (ctx, request, responseFactory) -> {
