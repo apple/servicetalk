@@ -39,6 +39,7 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import java.util.function.Function;
 
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
@@ -102,7 +103,7 @@ public abstract class AbstractTcpServerTest {
                     .peerPort(serverHostAndPort.port())
                     .build());
         }
-        tcpClientConfig.enableWireLogging("servicetalk-tests-wire-logger");
+        tcpClientConfig.enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         return tcpClientConfig;
     }
 
@@ -123,7 +124,7 @@ public abstract class AbstractTcpServerTest {
             tcpServerConfig.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
         }
-        tcpServerConfig.enableWireLogging("servicetalk-tests-wire-logger");
+        tcpServerConfig.enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         return tcpServerConfig;
     }
 

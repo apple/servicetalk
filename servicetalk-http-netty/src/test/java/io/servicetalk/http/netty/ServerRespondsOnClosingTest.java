@@ -51,6 +51,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,7 +79,7 @@ public class ServerRespondsOnClosingTest {
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), immediate(), noOffloadsStrategy());
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
-        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger");
+        httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true);
         ReadOnlyHttpServerConfig config = httpServerConfig.asReadOnly();
         ConnectionObserver connectionObserver = NoopConnectionObserver.INSTANCE;
         HttpService service = (ctx, request, responseFactory) -> {
