@@ -124,7 +124,7 @@ public final class SecureTcpTransportObserverErrorsTest extends AbstractTranspor
             case NOT_MATCHING_PROTOCOLS:
                 clientSslBuilder.sslProtocols("TLSv1.2");
                 clientConfig.sslConfig(clientSslBuilder.build());
-                serverSslBuilder.sslProtocols("TLSv1.1");
+                serverSslBuilder.sslProtocols("TLSv1.3");
                 serverConfig.sslConfig(serverSslBuilder.build());
                 break;
             case NOT_MATCHING_CIPHERS:
