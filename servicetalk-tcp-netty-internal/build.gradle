@@ -52,3 +52,12 @@ dependencies {
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
+
+test {
+  testLogging {
+    events = ["STARTED", "PASSED", "SKIPPED", "FAILED"]
+    showStandardStreams = true
+  }
+  jvmArgs "-server", "-Xms2g", "-Xmx4g", "-dsa", "-da", "-ea:io.servicetalk...",
+      "-XX:+HeapDumpOnOutOfMemoryError", "-Dservicetalk.logger.rootLevel=DEBUG", "-Dervicetalk.logger.wireLogLevel=TRACE"
+}
