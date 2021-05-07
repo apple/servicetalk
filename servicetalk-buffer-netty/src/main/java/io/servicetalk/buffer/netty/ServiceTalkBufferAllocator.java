@@ -164,6 +164,8 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
         final Buffer buf;
         if (buffer.hasArray()) {
             buf = wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        } else if (buffer.isReadOnly()) {
+            buf = new NettyBuffer<>(new UnreleasableReadOnlyByteBufferBuf(this, buffer));
         } else if (buffer.isDirect() && io.netty.util.internal.PlatformDependent.hasUnsafe()) {
             buf = new NettyBuffer<>(new UnreleasableUnsafeDirectByteBuf(this, buffer, buffer.remaining()));
         } else {
