@@ -133,11 +133,6 @@ public class GrpcMessageEncodingTest {
         }
 
         @Override
-        public Buffer encode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Buffer decode(final Buffer src, final BufferAllocator allocator) {
             final Buffer dst = allocator.newBuffer(OUGHT_TO_BE_ENOUGH);
             InflaterInputStream input = null;
@@ -153,11 +148,6 @@ public class GrpcMessageEncodingTest {
             }
 
             return dst;
-        }
-
-        @Override
-        public Buffer decode(final Buffer src, final int offset, final int length, final BufferAllocator allocator) {
-            throw new UnsupportedOperationException();
         }
 
         @Override
