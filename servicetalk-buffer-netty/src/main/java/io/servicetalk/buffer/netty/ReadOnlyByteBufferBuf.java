@@ -46,7 +46,7 @@ import java.nio.ReadOnlyBufferException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
-
+import javax.annotation.Nullable;
 
 /**
  * Read-only ByteBuf which wraps a read-only ByteBuffer.
@@ -55,6 +55,7 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
     protected final ByteBuffer buffer;
     private final ByteBufAllocator allocator;
+    @Nullable
     private ByteBuffer tmpNioBuf;
 
     ReadOnlyByteBufferBuf(ByteBufAllocator allocator, ByteBuffer buffer) {
@@ -69,7 +70,8 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
     }
 
     @Override
-    protected void deallocate() { }
+    protected void deallocate() {
+    }
 
     @Override
     public boolean isWritable() {
@@ -132,8 +134,8 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     protected int _getUnsignedMedium(int index) {
-        return (getByte(index) & 0xff)     << 16 |
-                (getByte(index + 1) & 0xff) << 8  |
+        return (getByte(index) & 0xff) << 16 |
+                (getByte(index + 1) & 0xff) << 8 |
                 getByte(index + 2) & 0xff;
     }
 
@@ -145,7 +147,7 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     protected int _getUnsignedMediumLE(int index) {
-        return getByte(index)      & 0xff       |
+        return getByte(index) & 0xff |
                 (getByte(index + 1) & 0xff) << 8 |
                 (getByte(index + 2) & 0xff) << 16;
     }
@@ -200,7 +202,7 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
         if (dst.hasArray()) {
             getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
         } else if (dst.nioBufferCount() > 0) {
-            for (ByteBuffer bb: dst.nioBuffers(dstIndex, length)) {
+            for (ByteBuffer bb : dst.nioBuffers(dstIndex, length)) {
                 int bbLen = bb.remaining();
                 getBytes(index, bb);
                 index += bbLen;
@@ -366,8 +368,8 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
         if (buffer.hasArray()) {
             out.write(buffer.array(), index + buffer.arrayOffset(), length);
         } else {
-//          Originally, ByteBufUtil.threadLocalTempArray(length) was used,
-//          however it is internal to Netty and if required this optimization can also be brought here.
+            // Originally, ByteBufUtil.threadLocalTempArray(length) was used,
+            // however it is internal to Netty and if required this optimization can also be brought here.
             byte[] tmp = PlatformDependent.allocateUninitializedArray(length);
             ByteBuffer tmpBuf = internalNioBuffer();
             tmpBuf.clear().position(index);
@@ -461,7 +463,7 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     public ByteBuffer[] nioBuffers(int index, int length) {
-        return new ByteBuffer[] { nioBuffer(index, length) };
+        return new ByteBuffer[]{nioBuffer(index, length)};
     }
 
     @Override
