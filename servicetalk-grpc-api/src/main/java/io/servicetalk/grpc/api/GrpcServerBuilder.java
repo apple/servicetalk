@@ -382,7 +382,7 @@ public abstract class GrpcServerBuilder {
         }
     }
 
-    private static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
+    static final class CatchAllHttpServiceFilter extends StreamingHttpServiceFilter {
         CatchAllHttpServiceFilter(final StreamingHttpService service) {
             super(service);
         }

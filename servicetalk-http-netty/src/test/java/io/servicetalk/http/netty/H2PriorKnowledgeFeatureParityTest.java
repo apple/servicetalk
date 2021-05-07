@@ -51,7 +51,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.HostAndPort;
@@ -180,13 +179,13 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    private EventLoopGroup serverEventLoopGroup;
+    private final EventLoopGroup serverEventLoopGroup;
+    private final HttpExecutionStrategy clientExecutionStrategy;
+    private final boolean h2PriorKnowledge;
     @Nullable
     private Channel serverAcceptorChannel;
     @Nullable
     private ServerContext h1ServerContext;
-    private HttpExecutionStrategy clientExecutionStrategy;
-    private boolean h2PriorKnowledge;
 
     public H2PriorKnowledgeFeatureParityTest(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
@@ -962,28 +961,6 @@ public class H2PriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void serverFilterAsyncContext() throws Exception {
-        final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                return asyncContextTestRequest(errorQueue, delegate(), ctx, request, responseFactory);
-            }
-        });
-        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
-                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            final String responseBody = "foo";
-            HttpResponse response = client.request(client.post("/0")
-                    .payloadBody(responseBody, textSerializer()));
-            assertEquals(responseBody, response.payloadBody(textDeserializer()));
-            assertEmpty(errorQueue);
-        }
-    }
-
-    @Test
     public void clientFilterAsyncContext() throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
@@ -1442,50 +1419,6 @@ public class H2PriorKnowledgeFeatureParityTest {
         final PrintWriter printWriter = new PrintWriter(result);
         aThrowable.printStackTrace(printWriter);
         return result.toString();
-    }
-
-    private static Single<StreamingHttpResponse> asyncContextTestRequest(
-            Queue<Throwable> errorQueue, final StreamingHttpService delegate,
-            final HttpServiceContext ctx, final StreamingHttpRequest request,
-            final StreamingHttpResponseFactory responseFactory) {
-        final String v1 = "v1";
-        final String v2 = "v2";
-        AsyncContext.put(K1, v1);
-        return delegate.handle(ctx, request, responseFactory).map(streamingHttpResponse -> {
-            AsyncContext.put(K2, v2);
-            assertAsyncContext(K1, v1, errorQueue);
-            assertAsyncContext(K2, v2, errorQueue);
-            return streamingHttpResponse.transformMessageBody(pub -> {
-                AsyncContext.put(K2, v2);
-                assertAsyncContext(K1, v1, errorQueue);
-                assertAsyncContext(K2, v2, errorQueue);
-                return pub.beforeSubscriber(() -> new PublisherSource.Subscriber<Object>() {
-                    @Override
-                    public void onSubscribe(final PublisherSource.Subscription subscription) {
-                        assertAsyncContext(K1, v1, errorQueue);
-                        assertAsyncContext(K2, v2, errorQueue);
-                    }
-
-                    @Override
-                    public void onNext(@Nullable final Object o) {
-                        assertAsyncContext(K1, v1, errorQueue);
-                        assertAsyncContext(K2, v2, errorQueue);
-                    }
-
-                    @Override
-                    public void onError(final Throwable t) {
-                        assertAsyncContext(K1, v1, errorQueue);
-                        assertAsyncContext(K2, v2, errorQueue);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        assertAsyncContext(K1, v1, errorQueue);
-                        assertAsyncContext(K2, v2, errorQueue);
-                    }
-                });
-            });
-        });
     }
 
     private static Single<StreamingHttpResponse> asyncContextTestRequest(Queue<Throwable> errorQueue,
