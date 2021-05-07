@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -69,6 +70,11 @@ public class BufferAllocatorsTest {
     @Test
     public void testNewCompositeBuffer() {
         assertBufferIsUnreleasable(allocator.newCompositeBuffer());
+    }
+
+    @Test
+    public void testReadOnlyDirectBuffer() {
+        assertBuffer(allocator.wrap(ByteBuffer.allocateDirect(16).asReadOnlyBuffer()), true);
     }
 
     @Test
