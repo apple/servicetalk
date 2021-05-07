@@ -49,7 +49,8 @@ import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Utility verifiers for {@link StreamingHttpServiceFilterFactory} filters and their
@@ -89,8 +90,8 @@ public final class AsyncContextHttpFilterVerifier {
                       .payloadBody(payload, textSerializer());
 
         final HttpResponse resp = client.request(request);
-        assertEquals(OK.code(), resp.status().code());
-        assertEquals(payload, resp.payloadBody(textDeserializer()));
+        assertThat(resp.status(), is(OK));
+        assertThat(resp.payloadBody(textDeserializer()), is(payload));
         assertEmpty(errors);
     }
 
