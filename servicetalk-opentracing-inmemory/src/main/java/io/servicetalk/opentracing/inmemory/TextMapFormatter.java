@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
@@ -33,7 +32,7 @@ import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 
 /**
- * Zipkin-styled header serialization format.
+ * Ziplin-styled header serialization format.
  */
 final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
     public static final TextMapFormatter INSTANCE = new TextMapFormatter();
@@ -44,14 +43,13 @@ final class TextMapFormatter implements InMemoryTraceStateFormat<TextMap> {
     }
 
     @Override
-    public void inject(final InMemorySpanContext context, final TextMap carrier) {
-        final InMemoryTraceState state = context.traceState();
+    public void inject(InMemoryTraceState state, TextMap carrier) {
         carrier.put(TRACE_ID, state.traceIdHex());
         carrier.put(SPAN_ID, state.spanIdHex());
         if (state.parentSpanIdHex() != null) {
             carrier.put(PARENT_SPAN_ID, state.parentSpanIdHex());
         }
-        carrier.put(SAMPLED, context.isSampled() ? "1" : "0");
+        carrier.put(SAMPLED, state.isSampled() ? "1" : "0");
     }
 
     @Nullable

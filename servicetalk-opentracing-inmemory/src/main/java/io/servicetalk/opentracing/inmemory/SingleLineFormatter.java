@@ -15,7 +15,6 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
-import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
@@ -40,9 +39,8 @@ public final class SingleLineFormatter implements InMemoryTraceStateFormat<Singl
     }
 
     @Override
-    public void inject(final InMemorySpanContext context, final SingleLineValue carrier) {
-        final InMemoryTraceState state = context.traceState();
-        carrier.set(format(state.traceIdHex(), state.spanIdHex(), state.parentSpanIdHex(), context.isSampled()));
+    public void inject(InMemoryTraceState state, SingleLineValue carrier) {
+        carrier.set(format(state.traceIdHex(), state.spanIdHex(), state.parentSpanIdHex(), state.isSampled()));
     }
 
     @Nullable

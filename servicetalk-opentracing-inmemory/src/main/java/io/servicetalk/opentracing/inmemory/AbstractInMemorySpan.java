@@ -86,12 +86,28 @@ abstract class AbstractInMemorySpan extends DefaultInMemorySpanContext implement
     }
 
     @Override
-    public String toTraceId() {
+    public final String traceIdHex() {
         return traceState.traceIdHex();
     }
 
     @Override
-    public String toSpanId() {
+    public final String spanIdHex() {
         return traceState.spanIdHex();
+    }
+
+    @Nullable
+    @Override
+    public final String parentSpanIdHex() {
+        return traceState.parentSpanIdHex();
+    }
+
+    @Override
+    public String toTraceId() {
+        return traceIdHex();
+    }
+
+    @Override
+    public String toSpanId() {
+        return spanIdHex();
     }
 }

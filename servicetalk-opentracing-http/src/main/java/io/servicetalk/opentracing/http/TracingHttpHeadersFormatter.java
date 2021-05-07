@@ -17,7 +17,6 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTraceState;
-import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceState;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 import io.servicetalk.opentracing.internal.ZipkinHeaderNames;
@@ -59,15 +58,14 @@ final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<Http
     }
 
     @Override
-    public void inject(final InMemorySpanContext context, final HttpHeaders carrier) {
-        final InMemoryTraceState state = context.traceState();
+    public void inject(final InMemoryTraceState state, final HttpHeaders carrier) {
         carrier.set(TRACE_ID, state.traceIdHex());
         carrier.set(SPAN_ID, state.spanIdHex());
         String parentSpanIdHex = state.parentSpanIdHex();
         if (parentSpanIdHex != null) {
             carrier.set(PARENT_SPAN_ID, parentSpanIdHex);
         }
-        carrier.set(SAMPLED, context.isSampled() ? "1" : "0");
+        carrier.set(SAMPLED, state.isSampled() ? "1" : "0");
     }
 
     @Nullable
@@ -98,6 +96,6 @@ final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<Http
 
         CharSequence sampleId = carrier.get(SAMPLED);
         return new DefaultInMemoryTraceState(traceId.toString(), spanId.toString(),
-                valueOf(parentSpanId), sampleId != null ? (sampleId.length() == 1 && sampleId.charAt(0) != '0') : null);
+                valueOf(parentSpanId), sampleId != null && sampleId.length() == 1 && sampleId.charAt(0) != '0');
     }
 }

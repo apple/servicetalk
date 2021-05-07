@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ abstract class AbstractInMemoryTracer implements InMemoryTracer {
 
         try {
             if (format instanceof InMemoryTraceStateFormat) {
-                ((InMemoryTraceStateFormat<C>) format).inject(spanContext, carrier);
+                ((InMemoryTraceStateFormat<C>) format).inject(spanContext.traceState(), carrier);
             } else if (format == Format.Builtin.TEXT_MAP) {
-                TextMapFormatter.INSTANCE.inject(spanContext, (TextMap) carrier);
+                TextMapFormatter.INSTANCE.inject(spanContext.traceState(), (TextMap) carrier);
             } else {
                 throw new UnsupportedOperationException("Format " + format + " is not supported");
             }

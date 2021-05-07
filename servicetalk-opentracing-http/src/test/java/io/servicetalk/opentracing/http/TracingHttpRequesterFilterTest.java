@@ -143,7 +143,7 @@ public class TracingHttpRequesterFilterTest {
                 assertFalse(lastFinishedSpan.tags().containsKey(ERROR.getKey()));
 
                 verifyTraceIdPresentInLogs(stableAccumulated(1000), requestUrl, serverSpanState.traceId,
-                        serverSpanState.spanId, null, TRACING_TEST_LOG_LINE_PREFIX);
+                        serverSpanState.spanId, serverSpanState.parentSpanId, TRACING_TEST_LOG_LINE_PREFIX);
             }
         }
     }
@@ -168,10 +168,8 @@ public class TracingHttpRequesterFilterTest {
                         assertThat(serverSpanState.spanId, isHexId());
                         assertThat(serverSpanState.parentSpanId, isHexId());
 
-                        assertThat(serverSpanState.traceId, equalToIgnoringCase(
-                                clientSpan.context().traceState().traceIdHex()));
-                        assertThat(serverSpanState.parentSpanId, equalToIgnoringCase(
-                                clientSpan.context().traceState().spanIdHex()));
+                        assertThat(serverSpanState.traceId, equalToIgnoringCase(clientSpan.traceIdHex()));
+                        assertThat(serverSpanState.parentSpanId, equalToIgnoringCase(clientSpan.spanIdHex()));
 
                         // don't mess with caller span state
                         assertEquals(clientSpan, tracer.activeSpan());
