@@ -126,8 +126,10 @@ abstract class AbstractTcpConfig<SslConfigType> {
     /**
      * Enable wire-logging for all connections. All wire events will be logged at trace level.
      *
+     * @deprecated Use {@link #enableWireLogging(String, LogLevel, BooleanSupplier)} instead
      * @param loggerName The name of the logger to log wire events
      */
+    @Deprecated
     public final void enableWireLogging(final String loggerName) {
         enableWireLogging(loggerName, TRACE, () -> false);
     }
