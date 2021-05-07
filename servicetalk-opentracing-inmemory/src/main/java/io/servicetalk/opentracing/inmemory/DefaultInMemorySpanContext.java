@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Map.Entry;
 
 import static io.servicetalk.opentracing.inmemory.SingleLineValue.format;
-import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -38,7 +37,7 @@ class DefaultInMemorySpanContext implements InMemorySpanContext {
     final boolean isSampledOverride;
 
     DefaultInMemorySpanContext(InMemoryTraceState state) {
-        this(state, TRUE.equals(state.isSampled()));
+        this(state, state.isSampled());
     }
 
     DefaultInMemorySpanContext(InMemoryTraceState state,

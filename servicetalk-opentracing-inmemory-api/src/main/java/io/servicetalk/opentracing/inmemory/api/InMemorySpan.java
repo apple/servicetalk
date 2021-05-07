@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 /**
  * A span that allows reading values at runtime.
  */
-public interface InMemorySpan extends Span {
+public interface InMemorySpan extends Span, InMemoryTraceState {
     @Override
     InMemorySpanContext context();
 
@@ -50,7 +50,7 @@ public interface InMemorySpan extends Span {
      * @return low 64 bits of the trace ID
      */
     default long traceId() {
-        String traceIdHex = context().traceState().traceIdHex();
+        String traceIdHex = traceIdHex();
         return longOfHexBytes(traceIdHex, traceIdHex.length() >= 32 ? 16 : 0);
     }
 
@@ -60,7 +60,7 @@ public interface InMemorySpan extends Span {
      * @return high 64 bits of the trace ID
      */
     default long traceIdHigh() {
-        String traceIdHex = context().traceState().traceIdHex();
+        String traceIdHex = traceIdHex();
         return traceIdHex.length() >= 32 ? longOfHexBytes(traceIdHex, 0) : 0;
     }
 
@@ -70,7 +70,7 @@ public interface InMemorySpan extends Span {
      * @return span ID
      */
     default long spanId() {
-        return longOfHexBytes(context().traceState().spanIdHex(), 0);
+        return longOfHexBytes(spanIdHex(), 0);
     }
 
     /**
@@ -80,7 +80,7 @@ public interface InMemorySpan extends Span {
      */
     @Nullable
     default Long parentSpanId() {
-        String parentSpanIdHex = context().traceState().parentSpanIdHex();
+        String parentSpanIdHex = parentSpanIdHex();
         return parentSpanIdHex == null ? null : longOfHexBytes(parentSpanIdHex, 0);
     }
 
@@ -90,7 +90,7 @@ public interface InMemorySpan extends Span {
      * @return parent span ID in hex
      */
     default String nonnullParentSpanIdHex() {
-        String parentSpanIdHex = context().traceState().parentSpanIdHex();
+        String parentSpanIdHex = parentSpanIdHex();
         return parentSpanIdHex == null ? NO_PARENT_ID : parentSpanIdHex;
     }
 

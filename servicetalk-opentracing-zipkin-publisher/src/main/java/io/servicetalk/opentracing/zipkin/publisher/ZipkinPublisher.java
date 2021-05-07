@@ -161,9 +161,9 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, AsyncCl
 
         Span.Builder builder = Span.newBuilder()
                 .name(span.operationName())
-                .traceId(span.context().traceState().traceIdHex())
+                .traceId(span.traceIdHex())
                 .id(span.spanId())
-                .parentId(span.context().traceState().parentSpanIdHex())
+                .parentId(span.parentSpanIdHex())
                 .timestamp(begin)
                 .addAnnotation(end, "end")
                 .localEndpoint(endpoint)
