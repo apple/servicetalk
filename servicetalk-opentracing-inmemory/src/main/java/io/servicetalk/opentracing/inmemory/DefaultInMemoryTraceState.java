@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@ public final class DefaultInMemoryTraceState implements InMemoryTraceState {
     private final String spanIdHex;
     @Nullable
     private final String parentSpanIdHex;
-    @Nullable
-    private final Boolean sampled;
+    private final boolean sampled;
 
     /**
      * Constructs an instance.
@@ -36,10 +35,10 @@ public final class DefaultInMemoryTraceState implements InMemoryTraceState {
      * @param traceIdHex      trace ID
      * @param spanIdHex       span ID
      * @param parentSpanIdHex parent span ID, optional
-     * @param sampled         whether the trace is sampled
+     * @param sampled      whether the trace is sampled
      */
     public DefaultInMemoryTraceState(String traceIdHex, String spanIdHex, @Nullable String parentSpanIdHex,
-                                     @Nullable Boolean sampled) {
+                                     boolean sampled) {
         this.traceIdHex = traceIdHex;
         this.spanIdHex = spanIdHex;
         this.parentSpanIdHex = parentSpanIdHex;
@@ -63,7 +62,7 @@ public final class DefaultInMemoryTraceState implements InMemoryTraceState {
     }
 
     @Override
-    public Boolean isSampled() {
+    public boolean isSampled() {
         return sampled;
     }
 }
