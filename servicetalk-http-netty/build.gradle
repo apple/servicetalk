@@ -55,4 +55,8 @@ dependencies {
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+
+  testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-http-utils")
+  testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }

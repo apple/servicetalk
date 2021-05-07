@@ -51,8 +51,9 @@ import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_R
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forPort;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -72,7 +73,8 @@ public class AutoRetryTest {
     private BlockingHttpClient client;
 
     public AutoRetryTest() throws Exception {
-        svcCtx = forPort(0).listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        svcCtx = forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         clientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
                 .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
                         .from(new InspectingLoadBalancerFactory<>()).build())
