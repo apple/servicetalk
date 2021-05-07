@@ -175,9 +175,9 @@ class H2PriorKnowledgeFeatureParityTest {
     private static final AsyncContextMap.Key<String> K1 = AsyncContextMap.Key.newKey("k1");
     private static final AsyncContextMap.Key<String> K2 = AsyncContextMap.Key.newKey("k2");
     private static final AsyncContextMap.Key<String> K3 = AsyncContextMap.Key.newKey("k3");
-    private final EventLoopGroup serverEventLoopGroup;
-    private final HttpExecutionStrategy clientExecutionStrategy;
-    private final boolean h2PriorKnowledge;
+    private EventLoopGroup serverEventLoopGroup;
+    private HttpExecutionStrategy clientExecutionStrategy;
+    private boolean h2PriorKnowledge;
     @Nullable
     private Channel serverAcceptorChannel;
     @Nullable

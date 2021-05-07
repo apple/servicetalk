@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 

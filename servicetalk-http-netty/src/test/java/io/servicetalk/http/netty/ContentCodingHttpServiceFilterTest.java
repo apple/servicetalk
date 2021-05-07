@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.encoding.api.Identity.identity;
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
