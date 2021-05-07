@@ -53,7 +53,7 @@ import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_R
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.EchoHttp2Handler.INSTANCE;
+import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.EchoHttp2Handler;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;

@@ -329,8 +329,10 @@ public class AbstractH2DuplexHandlerTest {
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
-    @Test
-    public void emptyMessageWrittenAsSingleFrame() {
+    @ParameterizedTest
+    @EnumSource(Variant.class)
+    public void emptyMessageWrittenAsSingleFrame(Variant param) {
+        setUp(param);
         HttpMetaData msg;
         switch (variant) {
             case CLIENT_HANDLER:
@@ -353,8 +355,10 @@ public class AbstractH2DuplexHandlerTest {
         assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
     }
 
-    @Test
-    public void noDataFramesForEmptyBuffers() {
+    @ParameterizedTest
+    @EnumSource(Variant.class)
+    public void noDataFramesForEmptyBuffers(Variant param) {
+        setUp(param);
         Buffer[] payload = {EMPTY_BUFFER, DEFAULT_ALLOCATOR.fromAscii("data"), EMPTY_BUFFER};
 
         HttpMetaData msg;
