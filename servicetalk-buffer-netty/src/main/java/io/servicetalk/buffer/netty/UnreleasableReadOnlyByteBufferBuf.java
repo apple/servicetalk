@@ -499,13 +499,13 @@ final class UnreleasableReadOnlyByteBufferBuf extends AbstractReferenceCountedBy
     @Override
     public ByteBuffer nioBuffer(int index, int length) {
         checkIndex(index, length);
-        return buffer.duplicate().position(index).limit(index + length);
+        return (ByteBuffer) buffer.duplicate().position(index).limit(index + length);
     }
 
     @Override
     public ByteBuffer internalNioBuffer(int index, int length) {
         ensureAccessible();
-        return internalNioBuffer().clear().position(index).limit(index + length);
+        return (ByteBuffer) internalNioBuffer().clear().position(index).limit(index + length);
     }
 
     @Override
