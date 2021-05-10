@@ -211,7 +211,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
-        if (!invokedBuild && null != timeout) {
+        if (!invokedBuild) {
             httpClientBuilder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
         }
         invokedBuild = true;
