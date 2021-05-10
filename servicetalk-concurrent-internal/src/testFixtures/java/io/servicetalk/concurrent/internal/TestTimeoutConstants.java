@@ -19,7 +19,7 @@ import static java.lang.Boolean.parseBoolean;
 
 public final class TestTimeoutConstants {
     public static final boolean CI = parseBoolean(System.getenv("CI"));
-    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 90 : 10;
+    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 30 : 10;
 
     private TestTimeoutConstants() {
     }
