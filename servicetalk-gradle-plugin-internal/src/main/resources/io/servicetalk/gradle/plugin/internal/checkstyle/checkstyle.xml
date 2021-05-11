@@ -221,7 +221,7 @@
     <!-- Javadocs -->
     <module name="AtclauseOrder"/>
     <module name="JavadocMethod">
-      <property name="scope" value="protected"/>
+      <property name="accessModifiers" value="public, protected"/>
     </module>
     <module name="NonEmptyAtclauseDescription"/>
     <module name="JavadocStyle">
