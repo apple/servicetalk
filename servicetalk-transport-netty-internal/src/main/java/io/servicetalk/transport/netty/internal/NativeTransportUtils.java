@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,123 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.util.concurrent.EventExecutorGroup;
+import io.servicetalk.transport.api.DomainSocketAddress;
+import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueue;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.util.internal.PlatformDependent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static io.netty.util.internal.PlatformDependent.normalizedArch;
+
+/**
+ * Utility to check availability of Netty <a href="https://netty.io/wiki/native-transports.html">native transports</a>.
+ * <p>
+ * It also prevents the load of classes and libraries when OS does not support it, and logs when OS supports but
+ * libraries are not available.
+ */
 final class NativeTransportUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NativeTransportUtils.class);
+
+    private static final boolean IS_LINUX;
+    private static final boolean IS_OSX_OR_BSD;
+
+    static {
+        final String os = PlatformDependent.normalizedOs();
+        IS_LINUX = "linux".equals(os);
+        IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
+
+        if (IS_LINUX && !Epoll.isAvailable()) {
+            logUnavailability("epoll", os, Epoll.unavailabilityCause());
+        } else if (IS_OSX_OR_BSD && !KQueue.isAvailable()) {
+            logUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
+        }
+    }
 
     private NativeTransportUtils() {
         // No instances
     }
 
-    /**
-     * Determine if the {@code group} supports UDS.
-     * @param group the group to test.
-     * @return {@code true} if UDS are supported by {@code group}.
-     */
-    static boolean isUnixDomainSocketSupported(EventExecutorGroup group) {
-        return group instanceof EpollEventLoopGroup || group instanceof KQueueEventLoopGroup;
+    private static void logUnavailability(final String transport, final String os, final Throwable cause) {
+        LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
+                        "performance of the application. See https://netty.io/wiki/native-transports.html",
+                transport, os, normalizedArch(), cause);
     }
 
     /**
-     * Determine if {@code FileDescriptorSocketAddress} is supported.
-     * @param group the group to test.
-     * @return {@code true} if {@code FileDescriptorSocketAddress} are supported by {@code group}.
+     * Determine if {@link Epoll} is available.
+     *
+     * @return {@code true} if {@link Epoll} is available
      */
-    static boolean isFileDescriptorSocketAddressSupported(EventExecutorGroup group) {
-        return group instanceof EpollEventLoopGroup || group instanceof KQueueEventLoopGroup;
+    static boolean isEpollAvailable() {
+        return IS_LINUX && Epoll.isAvailable();
+    }
+
+    /**
+     * Determine if {@link KQueue} is available.
+     *
+     * @return {@code true} if {@link KQueue} is available
+     */
+    static boolean isKQueueAvailable() {
+        return IS_OSX_OR_BSD && KQueue.isAvailable();
+    }
+
+    /**
+     * Returns {@code true} if native {@link Epoll} transport should be used.
+     *
+     * @param group the used {@link EventLoopGroup}
+     * @return {@code true} if native {@link Epoll} transport should be used
+     */
+    static boolean useEpoll(final EventLoopGroup group) {
+        if (!isEpollAvailable()) {
+            return false;
+        }
+        // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
+        // or if the passed group is a EventLoop and it's parent is an EpollEventLoopGroup.
+        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
+                ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
+    }
+
+    /**
+     * Returns {@code true} if native {@link KQueue} transport should be used.
+     *
+     * @param group the used {@link EventLoopGroup}
+     * @return {@code true} if native {@link KQueue} transport should be used
+     */
+    static boolean useKQueue(final EventLoopGroup group) {
+        if (!isKQueueAvailable()) {
+            return false;
+        }
+        // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
+        // or if the passed group is a EventLoop and it's parent is an KQueueEventLoopGroup.
+        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
+                ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
+    }
+
+    /**
+     * Determine if {@link DomainSocketAddress} is supported.
+     *
+     * @param group the group to test.
+     * @return {@code true} if {@link DomainSocketAddress} is supported by {@code group}
+     */
+    static boolean isUnixDomainSocketSupported(final EventLoopGroup group) {
+        return useEpoll(group) || useKQueue(group);
+    }
+
+    /**
+     * Determine if {@link FileDescriptorSocketAddress} is supported.
+     *
+     * @param group the group to test.
+     * @return {@code true} if {@link FileDescriptorSocketAddress} is supported by {@code group}
+     */
+    static boolean isFileDescriptorSocketAddressSupported(final EventLoopGroup group) {
+        return useEpoll(group) || useKQueue(group);
     }
 }
