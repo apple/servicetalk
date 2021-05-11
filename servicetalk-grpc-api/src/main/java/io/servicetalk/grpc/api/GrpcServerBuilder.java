@@ -16,9 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
@@ -54,15 +52,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
-
-    /**
-     * gRPC timeout is stored in context as a deadline so that when propagated to a new client request the remaining
-     * time to be included in the request can be calculated.
-     *
-     * @deprecated Do not use. This is internal implementation details that users should not depend on.
-     */
-    @Deprecated
-    protected static final AsyncContextMap.Key<Long> GRPC_DEADLINE_KEY = DeadlineUtils.GRPC_DEADLINE_KEY;
 
     private boolean appendedCatchAllFilter;
 
