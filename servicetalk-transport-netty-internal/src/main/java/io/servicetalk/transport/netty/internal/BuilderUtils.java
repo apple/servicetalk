@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,15 @@ import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.api.HostAndPort;
 
 import io.netty.channel.Channel;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueDomainSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueServerDomainSocketChannel;
 import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.kqueue.KQueueSocketChannel;
@@ -51,6 +48,8 @@ import java.net.UnknownHostException;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useEpoll;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useKQueue;
 import static java.net.InetAddress.getByAddress;
 
 /**
@@ -59,32 +58,6 @@ import static java.net.InetAddress.getByAddress;
 public final class BuilderUtils {
     private BuilderUtils() {
         // Utility methods only
-    }
-
-    /**
-     * Returns {@code true} if native epoll transport should be used.
-     *
-     * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native transport should be used
-     */
-    public static boolean useEpoll(EventLoopGroup group) {
-        // Check if we should use the epoll transport. This is true if either the EpollEventLoopGroup is used directly
-        // or if the passed group is a EventLoop and it's parent is an EpollEventLoopGroup.
-        return group instanceof EpollEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof EpollEventLoopGroup);
-    }
-
-    /**
-     * Returns {@code true} if native kqueue transport should be used.
-     *
-     * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native transport should be used
-     */
-    public static boolean useKQueue(EventLoopGroup group) {
-        // Check if we should use the kqueue transport. This is true if either the KQueueEventLoopGroup is used directly
-        // or if the passed group is a EventLoop and it's parent is an KQueueEventLoopGroup.
-        return group instanceof KQueueEventLoopGroup || (group instanceof EventLoop &&
-                ((EventLoop) group).parent() instanceof KQueueEventLoopGroup);
     }
 
     /**
