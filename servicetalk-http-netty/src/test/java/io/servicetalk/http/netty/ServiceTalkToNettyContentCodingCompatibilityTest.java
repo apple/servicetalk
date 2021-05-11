@@ -34,7 +34,6 @@ import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpServerCodec;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -51,6 +50,8 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkContentCodingTest {
 
@@ -101,8 +102,8 @@ class ServiceTalkToNettyContentCodingCompatibilityTest extends ServiceTalkConten
                            final boolean valid) throws Throwable {
         setUp(protocol, serverCodings, clientCodings, compression, valid);
         start();
-        Assumptions.assumeFalse(scenario.protocol.version.equals(HTTP_2_0), "Only testing H1 scenarios yet.");
-        Assumptions.assumeTrue(scenario.valid, "Only testing successful configurations; Netty doesn't have knowledge " +
+        assumeFalse(scenario.protocol.version.equals(HTTP_2_0), "Only testing H1 scenarios yet.");
+        assumeTrue(scenario.valid, "Only testing successful configurations; Netty doesn't have knowledge " +
                 "about unsupported compression types.");
 
         if (scenario.valid) {

@@ -25,7 +25,6 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,6 +43,7 @@ import static io.servicetalk.transport.api.SslProvider.JDK;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -63,10 +63,10 @@ class SslProvidersTest {
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .provider(serverSslProvider).build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    MatcherAssert.assertThat(ctx.sslSession(), is(notNullValue()));
-                    MatcherAssert.assertThat(request.path(), is("/path"));
-                    MatcherAssert.assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-                    MatcherAssert.assertThat(request.payloadBody(textDeserializer()),
+                    assertThat(ctx.sslSession(), is(notNullValue()));
+                    assertThat(request.path(), is("/path"));
+                    assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
+                    assertThat(request.payloadBody(textDeserializer()),
                             is("request-payload-body-" + payloadBody));
 
                     return responseFactory.ok()
@@ -113,9 +113,9 @@ class SslProvidersTest {
         HttpResponse response = client.request(client.get("/path")
                 .payloadBody("request-payload-body-" + payloadBody, textSerializer()));
 
-        MatcherAssert.assertThat(response.status(), is(OK));
-        MatcherAssert.assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-        MatcherAssert.assertThat(response.payloadBody(textDeserializer()), is("response-payload-body-" + payloadBody));
+        assertThat(response.status(), is(OK));
+        assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
+        assertThat(response.payloadBody(textDeserializer()), is("response-payload-body-" + payloadBody));
     }
 
     private static String randomString(final int length) {

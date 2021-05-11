@@ -21,7 +21,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -29,6 +28,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
@@ -103,7 +103,7 @@ class ResponseConversionTests extends AbstractConversionTest {
     }
 
     private HttpResponse convertToAggregated() throws Exception {
-        HttpResponse aggr = Objects.requireNonNull(original).toResponse().toFuture().get();
+        HttpResponse aggr = requireNonNull(original).toResponse().toFuture().get();
 
         assertThat("Unexpected response implementation.", aggr, instanceOf(PayloadInfo.class));
         verifyAggregatedPayloadInfo((PayloadInfo) aggr);
@@ -114,7 +114,7 @@ class ResponseConversionTests extends AbstractConversionTest {
     }
 
     private BlockingStreamingHttpResponse convertToBlockingStreaming() {
-        BlockingStreamingHttpResponse bs = Objects.requireNonNull(original).toBlockingStreamingResponse();
+        BlockingStreamingHttpResponse bs = requireNonNull(original).toBlockingStreamingResponse();
         assertThat("Unexpected request implementation.", bs, instanceOf(PayloadInfo.class));
         verifyPayloadInfo((PayloadInfo) bs);
 
