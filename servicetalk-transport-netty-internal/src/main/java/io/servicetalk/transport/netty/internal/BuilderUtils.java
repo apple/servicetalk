@@ -21,13 +21,11 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
-import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueDomainSocketChannel;
 import io.netty.channel.kqueue.KQueueServerDomainSocketChannel;
@@ -50,6 +48,8 @@ import java.net.UnknownHostException;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useEpoll;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useKQueue;
 import static java.net.InetAddress.getByAddress;
 
 /**
@@ -58,30 +58,6 @@ import static java.net.InetAddress.getByAddress;
 public final class BuilderUtils {
     private BuilderUtils() {
         // Utility methods only
-    }
-
-    /**
-     * Returns {@code true} if native {@link Epoll} transport could be used.
-     *
-     * @deprecated Use {@link NativeTransportUtils#useEpoll(EventLoopGroup)}
-     * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link Epoll} transport could be used
-     */
-    @Deprecated
-    public static boolean useEpoll(EventLoopGroup group) {
-        return NativeTransportUtils.useEpoll(group);
-    }
-
-    /**
-     * Returns {@code true} if native {@link KQueue} transport could be used.
-     *
-     * @deprecated Use {@link NativeTransportUtils#useKQueue(EventLoopGroup)}
-     * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link KQueue} transport could be used
-     */
-    @Deprecated
-    public static boolean useKQueue(EventLoopGroup group) {
-        return NativeTransportUtils.useKQueue(group);
     }
 
     /**
