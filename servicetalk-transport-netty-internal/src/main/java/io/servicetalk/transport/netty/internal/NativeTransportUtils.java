@@ -84,10 +84,10 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Returns {@code true} if native {@link Epoll} transport should be used.
+     * Returns {@code true} if native {@link Epoll} transport could be used.
      *
      * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link Epoll} transport should be used
+     * @return {@code true} if native {@link Epoll} transport could be used
      */
     static boolean useEpoll(final EventLoopGroup group) {
         if (!isEpollAvailable()) {
@@ -100,10 +100,10 @@ final class NativeTransportUtils {
     }
 
     /**
-     * Returns {@code true} if native {@link KQueue} transport should be used.
+     * Returns {@code true} if native {@link KQueue} transport could be used.
      *
      * @param group the used {@link EventLoopGroup}
-     * @return {@code true} if native {@link KQueue} transport should be used
+     * @return {@code true} if native {@link KQueue} transport could be used
      */
     static boolean useKQueue(final EventLoopGroup group) {
         if (!isKQueueAvailable()) {
