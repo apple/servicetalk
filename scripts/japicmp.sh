@@ -42,7 +42,7 @@ BASEPATH=$MVN_REPO/$GROUP_PATH/
 # All servicetalk modules except:
 # servicetalk-benchmarks, servicetalk-bom, servicetalk-examples, servicetalk-gradle-plugin-internal
 ARTIFACTS="$(ls -d -- */ | grep 'servicetalk-' | sed 's/.$//' | \
-  grep -v 'benchmark' | grep -v 'bom' | grep -v 'examples' | grep -v 'gradle-plugin-internal' | grep 'grpc')"
+  grep -v 'benchmark' | grep -v 'bom' | grep -v 'examples' | grep -v 'gradle-plugin-internal')"
 
 for ARTIFACT_ID in $ARTIFACTS
 do
