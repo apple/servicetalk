@@ -21,10 +21,13 @@ if [ $# -lt 2 ] || [ $# -gt 3 ]; then
   exit 1
 fi
 
+MVN_REPO=$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)
+
 JAPICMP_VERSION=0.15.3
-JAR_FILE=$HOME/.m2/repository/com/github/siom79/japicmp/japicmp/$JAPICMP_VERSION/japicmp-$JAPICMP_VERSION-jar-with-dependencies.jar
+JAR_FILE=$MVN_REPO/com/github/siom79/japicmp/japicmp/$JAPICMP_VERSION/japicmp-$JAPICMP_VERSION-jar-with-dependencies.jar
 if ! test -e "$JAR_FILE"; then
-    mvn -N dependency:get -DgroupId=com.github.siom79.japicmp -DartifactId=japicmp -Dversion=$JAPICMP_VERSION -Dtransitive=false -Dclassifier=jar-with-dependencies 1>&2
+    mvn -N dependency:get -DgroupId=com.github.siom79.japicmp -DartifactId=japicmp -Dversion=$JAPICMP_VERSION \
+        -Dtransitive=false -Dclassifier=jar-with-dependencies 1>&2
 fi
 
 OLD_ST_VERSION=$1
@@ -34,16 +37,21 @@ if [ -z "$GROUP_ID" ]; then
   GROUP_ID=io.servicetalk
 fi
 GROUP_PATH=$(echo "$GROUP_ID" | tr '.' '/')
-BASEPATH=$HOME/.m2/repository/$GROUP_PATH/
+BASEPATH=$MVN_REPO/$GROUP_PATH/
 
-# All servicetalk modules except: servicetalk-benchmarks, servicetalk-bom, servicetalk-examples, servicetalk-gradle-plugin-internal:
+# All servicetalk modules except:
+# servicetalk-benchmarks, servicetalk-bom, servicetalk-examples, servicetalk-gradle-plugin-internal
 ARTIFACTS="$(ls -d -- */ | grep 'servicetalk-' | sed 's/.$//' | \
-  grep -v 'benchmark' | grep -v 'bom' | grep -v 'examples' | grep -v 'gradle-plugin-internal')"
+  grep -v 'benchmark' | grep -v 'bom' | grep -v 'examples' | grep -v 'gradle-plugin-internal' | grep 'grpc')"
 
 for ARTIFACT_ID in $ARTIFACTS
 do
-  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$OLD_ST_VERSION -Dtransitive=false >/dev/null
-  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$NEW_ST_VERSION -Dtransitive=false >/dev/null
-  java -jar "$JAR_FILE" -b --ignore-missing-classes --old $BASEPATH/$ARTIFACT_ID/$OLD_ST_VERSION/$ARTIFACT_ID-$OLD_ST_VERSION.jar --new $BASEPATH/$ARTIFACT_ID/$NEW_ST_VERSION/$ARTIFACT_ID-$NEW_ST_VERSION.jar
+  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$OLD_ST_VERSION \
+      -Dtransitive=false >/dev/null
+  mvn -N dependency:get -DgroupId=$GROUP_ID -DartifactId=$ARTIFACT_ID -Dversion=$NEW_ST_VERSION \
+      -Dtransitive=false >/dev/null
+  java -jar "$JAR_FILE" -b --ignore-missing-classes \
+      --old $BASEPATH/$ARTIFACT_ID/$OLD_ST_VERSION/$ARTIFACT_ID-$OLD_ST_VERSION.jar \
+      --new $BASEPATH/$ARTIFACT_ID/$NEW_ST_VERSION/$ARTIFACT_ID-$NEW_ST_VERSION.jar
   echo ""
 done
