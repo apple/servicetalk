@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,14 @@
  */
 package io.servicetalk.examples.http.jaxrs;
 
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 
 /**
@@ -26,6 +31,10 @@ import static java.util.Collections.singleton;
 public class HelloWorldJaxRsApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
-        return singleton(HelloWorldJaxRsResource.class);
+        return new HashSet<>(asList(
+                MultiPartFeature.class,
+                HelloWorldJaxRsResource.class
+            )
+        );
     }
 }
