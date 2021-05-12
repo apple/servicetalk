@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -89,7 +90,7 @@ public final class HeaderUtils {
         }
 
         for (ContentCodec encoding : serverSupportedEncodings) {
-            if (!identity().equals(encoding) && clientSupportedEncodings.contains(encoding)) {
+            if (!isIdentity(encoding) && clientSupportedEncodings.contains(encoding)) {
                 return encoding;
             }
         }

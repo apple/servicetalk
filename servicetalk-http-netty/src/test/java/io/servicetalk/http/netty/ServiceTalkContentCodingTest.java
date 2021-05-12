@@ -53,6 +53,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
@@ -101,12 +102,12 @@ public class ServiceTalkContentCodingTest extends BaseContentCodingTest {
                                 .map((String::trim)).collect(toList());
 
                         final List<String> expectedReqAcceptedEncodings = clientSupportedEncodings.stream()
-                                .filter(enc -> !identity().equals(enc))
+                                .filter(enc -> !isIdentity(enc))
                                 .map((ContentCodec::name))
                                 .map(CharSequence::toString)
                                 .collect(toList());
 
-                        if (!identity().equals(reqEncoding)) {
+                        if (!isIdentity(reqEncoding)) {
                             assertTrue("Request encoding should be present in the request headers",
                                     contentEquals(reqEncoding.name(),
                                             request.headers().get(ACCEPT_ENCODING, "NOT_PRESENT")));

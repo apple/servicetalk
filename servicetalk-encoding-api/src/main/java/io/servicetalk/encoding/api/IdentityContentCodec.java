@@ -20,12 +20,14 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
+
 /**
  * Default, always supported NOOP 'identity' {@link ContentCodec}.
  */
 final class IdentityContentCodec implements ContentCodec {
 
-    private static final CharSequence NAME = CharSequences.newAsciiString("identity");
+    private static final CharSequence NAME = newAsciiString("identity");
 
     @Override
     public CharSequence name() {
@@ -66,10 +68,10 @@ final class IdentityContentCodec implements ContentCodec {
     public boolean equals(Object other) {
         if (other instanceof ContentCodec) {
             ContentCodec contentCodec = (ContentCodec) other;
-            return hashCode() == contentCodec.hashCode() && CharSequences.contentEquals(name(), contentCodec.name());
-        } else {
-            return false;
+            return CharSequences.contentEquals(name(), contentCodec.name());
         }
+
+        return false;
     }
 
     @Override

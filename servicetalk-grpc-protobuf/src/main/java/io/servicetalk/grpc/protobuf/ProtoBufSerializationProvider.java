@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.CodedOutputStream.newInstance;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -275,7 +275,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         ProtoSerializer(final ContentCodec codec) {
             this.codec = codec;
-            this.encode = !identity().equals(codec);
+            this.encode = !isIdentity(codec);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,11 @@ import io.servicetalk.encoding.api.Identity;
 
 import java.util.Objects;
 
+/**
+ * Extension of {@link NoopContentCodec} with custom implementations for {@link #equals(Object)} and {@link #hashCode()}
+ * based on {@link #name()}.
+ * This class can be used as is or can be extended to create a {@link ContentCodec} with custom behaviour.
+ */
 public class CustomIdentityContentCodec extends NoopContentCodec {
 
     public CustomIdentityContentCodec() {

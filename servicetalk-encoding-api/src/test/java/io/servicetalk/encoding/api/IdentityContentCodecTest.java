@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,7 @@ class IdentityContentCodecTest {
     private static Stream<Arguments> equalsParams() {
         return Stream.of(
                 Arguments.of(IDENTITY_CODEC, new IdentityContentCodec()),
-                Arguments.of(IDENTITY_CODEC, new CustomIdentityContentCodec())
-        );
-    }
-
-    private static Stream<Arguments> notEqualsParams() {
-        return Stream.of(
-                Arguments.of(IDENTITY_CODEC, new Object()),
-                Arguments.of(IDENTITY_CODEC, new NoopContentCodec(IDENTITY_CODEC.name() + "different")),
+                Arguments.of(IDENTITY_CODEC, new CustomIdentityContentCodec()),
                 Arguments.of(IDENTITY_CODEC, new CustomIdentityContentCodec() {
                     @Override
                     public int hashCode() {
@@ -56,7 +49,14 @@ class IdentityContentCodecTest {
                     public boolean equals(Object other) {
                         return super.equals(other);
                     }
-                }),
+                })
+        );
+    }
+
+    private static Stream<Arguments> notEqualsParams() {
+        return Stream.of(
+                Arguments.of(IDENTITY_CODEC, new Object()),
+                Arguments.of(IDENTITY_CODEC, new NoopContentCodec(IDENTITY_CODEC.name() + "different")),
                 Arguments.of(IDENTITY_CODEC, null)
         );
     }
@@ -68,19 +68,19 @@ class IdentityContentCodecTest {
         );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("equalsParams")
     void equals(IdentityContentCodec identity, Object other) {
         assertThat(identity, is(equalTo(other)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("notEqualsParams")
     void notEquals(IdentityContentCodec identity, Object other) {
         assertThat(identity, is(not(equalTo(other))));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @MethodSource("hasSameHashCodeParams")
     void hasSameHashCode(IdentityContentCodec identity, Object other) {
         assertThat(identity.hashCode(), is(equalTo(other.hashCode())));

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentEncoding;
 import static io.servicetalk.http.api.HeaderUtils.identifyContentEncodingOrNullIfIdentity;
@@ -183,6 +183,6 @@ public final class ContentCodingHttpServiceFilter
             encoding = negotiateAcceptedEncoding(requestHeaders.get(ACCEPT_ENCODING), supportedEncodings);
         }
 
-        return identity().equals(encoding) ? null : encoding;
+        return isIdentity(encoding) ? null : encoding;
     }
 }

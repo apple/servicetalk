@@ -15,6 +15,8 @@
  */
 package io.servicetalk.encoding.api;
 
+import javax.annotation.Nullable;
+
 /**
  * Utility class that constructs and provides the default, always supported NOOP 'identity' {@link ContentCodec}.
  */
@@ -32,5 +34,15 @@ public final class Identity {
      */
     public static ContentCodec identity() {
         return IDENTITY;
+    }
+
+    /**
+     * Returns if the provided {@link ContentCodec codec} has name equal to {@code identity}.
+     *
+     * @param codec The {@link ContentCodec codec} to check.
+     * @return {@code true} if the provided {@link ContentCodec} has name equal to {@code identity}.
+     */
+    public static boolean isIdentity(@Nullable final ContentCodec codec) {
+        return IDENTITY.equals(codec);
     }
 }

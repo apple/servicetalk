@@ -72,6 +72,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor;
 import static io.servicetalk.encoding.netty.ContentCodings.deflateDefault;
 import static io.servicetalk.encoding.netty.ContentCodings.gzipDefault;
@@ -200,7 +201,7 @@ public class GrpcMessageEncodingTest {
                                     assertEquals(GZIP_MAGIC, actualHeader);
                                 }
 
-                                if (!identity().equals(reqEncoding)) {
+                                if (!isIdentity(reqEncoding)) {
                                     assertTrue("Compressed content length should be less than the " +
                                                     "original payload size", buffer.readableBytes() < PAYLOAD_SIZE);
                                 } else {
@@ -208,7 +209,7 @@ public class GrpcMessageEncodingTest {
                                                     "original payload size", buffer.readableBytes() > PAYLOAD_SIZE);
                                 }
 
-                                assertEquals(!identity().equals(reqEncoding) ? 1 : 0, compressedFlag);
+                                assertEquals(!isIdentity(reqEncoding) ? 1 : 0, compressedFlag);
                             } catch (Throwable t) {
                                 errors.add(t);
                                 throw t;
@@ -217,7 +218,7 @@ public class GrpcMessageEncodingTest {
                         })));
 
                         assertValidCodingHeader(clientSupportedEncodings, request.headers());
-                        if (identity().equals(reqEncoding)) {
+                        if (isIdentity(reqEncoding)) {
                             assertThat("Message-Encoding should NOT be present in the headers if identity",
                                     request.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
@@ -260,7 +261,7 @@ public class GrpcMessageEncodingTest {
                             }
                         }
 
-                        if (identity().equals(expected)) {
+                        if (isIdentity(expected)) {
                             assertThat("Response shouldn't contain Message-Encoding header if identity",
                                     response.headers().contains(MESSAGE_ENCODING), is(false));
                         } else {
@@ -494,7 +495,7 @@ public class GrpcMessageEncodingTest {
     @Nonnull
     private static List<String> encodingsAsStrings(final List<ContentCodec> supportedEncodings) {
         return supportedEncodings.stream()
-                .filter(enc -> !identity().equals(enc))
+                .filter(enc -> !isIdentity(enc))
                 .map(ContentCodec::name)
                 .map(CharSequence::toString)
                 .collect(toList());

@@ -41,6 +41,7 @@ import java.util.Map;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.encoding.api.Identity.identity;
+import static io.servicetalk.encoding.api.Identity.isIdentity;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
@@ -258,7 +259,7 @@ public final class ProtoBufSerializationProviderBuilder {
 
         private void addContentHeaders(final HttpHeaders headers) {
             headers.set(CONTENT_TYPE, APPLICATION_GRPC_PROTO);
-            if (!identity().equals(codec)) {
+            if (!isIdentity(codec)) {
                 headers.set(GRPC_MESSAGE_ENCODING_KEY, codec.name());
             }
         }
