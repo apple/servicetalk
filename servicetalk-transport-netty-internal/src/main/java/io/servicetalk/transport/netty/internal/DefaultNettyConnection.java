@@ -408,6 +408,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     protected void doCloseAsyncGracefully() {
+        if (onClosing != null) {
+            // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+            onClosing.onComplete();
+        }
         EventLoop eventLoop = channel().eventLoop();
         if (eventLoop.inEventLoop()) {
             invokeUserCloseHandler();
