@@ -27,8 +27,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
@@ -39,23 +37,14 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
-
-@RunWith(Parameterized.class)
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
 public class ExecutorThrowsTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final LinkedBlockingQueue<Throwable> errors;
-
-    public ExecutorThrowsTest(@SuppressWarnings("unused") final boolean threadBased) {
-        errors = new LinkedBlockingQueue<>();
-    }
-
-    @Parameterized.Parameters(name = " {index} thread based? {0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
-    }
+    private final LinkedBlockingQueue<Throwable> errors = new LinkedBlockingQueue<>();
 
     @Test
     public void publisherExecutorThrows() throws Throwable {
@@ -170,8 +159,6 @@ public class ExecutorThrowsTest {
 
     private void verifyError() throws Throwable {
         Throwable err = errors.take();
-        if (err != DELIBERATE_EXCEPTION) {
-            throw err;
-        }
+        assertThat("Expected DELIBERATE_EXCEPTION", err, sameInstance(DELIBERATE_EXCEPTION));
     }
 }
