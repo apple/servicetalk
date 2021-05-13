@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -41,15 +42,28 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskBasedAsyncCompletableOperator.class);
 
+    private volatile boolean hasOffloaded;
+    private final BooleanSupplier offload;
     private final Executor executor;
 
-    TaskBasedAsyncCompletableOperator(Completable original, Executor executor) {
+    TaskBasedAsyncCompletableOperator(Completable original, BooleanSupplier offload, Executor executor) {
         super(original);
+        this.offload = offload;
         this.executor = executor;
     }
 
     final Executor executor() {
         return executor;
+    }
+
+    protected boolean offload() {
+        if (!hasOffloaded) {
+            if (!offload.getAsBoolean()) {
+                return false;
+            }
+            hasOffloaded = true;
+        }
+        return true;
     }
 
     @Override
@@ -73,6 +87,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         private static final AtomicIntegerFieldUpdater<AbstractOffloadedSingleValueSubscriber> stateUpdater =
                 newUpdater(AbstractOffloadedSingleValueSubscriber.class, "state");
 
+        boolean hasOffloaded;
+        final BooleanSupplier offload;
         final Executor executor;
         @Nullable
         // Visibility: Task submitted to executor happens-before task execution.
@@ -81,7 +97,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         private Object terminal;
         private volatile int state = STATE_INIT;
 
-        AbstractOffloadedSingleValueSubscriber(final Executor executor) {
+        AbstractOffloadedSingleValueSubscriber(final BooleanSupplier offload, final Executor executor) {
+            this.offload = offload;
             this.executor = executor;
         }
 
@@ -92,7 +109,11 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
                 LOGGER.trace("executing {} onSubscribe on {}",
                         this instanceof CompletableSubscriberOffloadedTerminals ? "Completable" : "Single",
                         executor);
-                executor.execute(this::deliverSignals);
+                if (offload.getAsBoolean()) {
+                    executor.execute(this::deliverSignals);
+                } else {
+                    deliverSignals();
+                }
             } catch (Throwable t) {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
@@ -153,7 +174,11 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
                     // have not seen onSubscribe and there is a sequencing issue on the Subscriber. Either way we avoid
                     // looping and deliver the terminal event.
                     try {
-                        executor.execute(this::deliverSignals);
+                        if (hasOffloaded || offload.getAsBoolean()) {
+                            executor.execute(this::deliverSignals);
+                        } else {
+                            deliverSignals();
+                        }
                     } catch (Throwable t) {
                         state = STATE_TERMINATED;
                         // As a policy, we call the target in the calling thread when the executor is inadequately
@@ -209,8 +234,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
         };
         private final Subscriber subscriber;
 
-        CompletableSubscriberOffloadedTerminals(final Subscriber subscriber, final Executor executor) {
-            super(executor);
+        CompletableSubscriberOffloadedTerminals(Subscriber subscriber, BooleanSupplier offload, Executor executor) {
+            super(offload, executor);
             this.subscriber = requireNonNull(subscriber);
         }
 
@@ -264,16 +289,19 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
      */
     static final class CompletableSubscriberOffloadedCancellable implements Subscriber {
         private final Subscriber subscriber;
+        private final BooleanSupplier offload;
         private final Executor executor;
 
-        CompletableSubscriberOffloadedCancellable(final Subscriber subscriber, final Executor executor) {
+        CompletableSubscriberOffloadedCancellable(final Subscriber subscriber,
+                                                  final BooleanSupplier offload, final Executor executor) {
             this.subscriber = requireNonNull(subscriber);
+            this.offload = offload;
             this.executor = executor;
         }
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            subscriber.onSubscribe(new OffloadedCancellable(cancellable, executor));
+            subscriber.onSubscribe(new OffloadedCancellable(cancellable, offload, executor));
         }
 
         @Override
@@ -292,27 +320,33 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractAsynchronousCom
      */
     static final class OffloadedCancellable implements Cancellable {
         private final Cancellable cancellable;
+        private final BooleanSupplier offload;
         private final Executor executor;
 
-        OffloadedCancellable(final Cancellable cancellable, final Executor executor) {
+        OffloadedCancellable(final Cancellable cancellable, final BooleanSupplier offload, final Executor executor) {
             this.cancellable = requireNonNull(cancellable);
+            this.offload = offload;
             this.executor = executor;
         }
 
         @Override
         public void cancel() {
-            try {
-                LOGGER.debug("executing Completable cancel on {}", executor);
-                executor.execute(() -> safeCancel(cancellable));
-            } catch (Throwable t) {
-                LOGGER.warn("Failed to execute task on the executor {}. " +
-                                "Invoking Cancellable (cancel()) in the caller thread. Cancellable {}. ",
-                        executor, cancellable, t);
-                // As a policy, we call the target in the calling thread when the executor is inadequately
-                // provisioned. In the future we could make this configurable.
+            if (offload.getAsBoolean()) {
+                try {
+                    LOGGER.debug("executing Completable cancel on {}", executor);
+                    executor.execute(() -> safeCancel(cancellable));
+                } catch (Throwable t) {
+                    LOGGER.warn("Failed to execute task on the executor {}. " +
+                                    "Invoking Cancellable (cancel()) in the caller thread. Cancellable {}. ",
+                            executor, cancellable, t);
+                    // As a policy, we call the target in the calling thread when the executor is inadequately
+                    // provisioned. In the future we could make this configurable.
+                    safeCancel(cancellable);
+                    // We swallow the error here as we are forwarding the actual call and throwing from here will
+                    // interrupt the control flow.
+                }
+            } else {
                 safeCancel(cancellable);
-                // We swallow the error here as we are forwarding the actual call and throwing from here will
-                // interrupt the control flow.
             }
         }
     }

@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BooleanSupplier;
+
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
@@ -47,12 +49,12 @@ final class PublishAndSubscribeOnCompletables {
         deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
     }
 
-    static Completable publishOn(Completable original, Executor executor) {
-        return executor == immediate() ? original : new PublishOn(original, executor);
+    static Completable publishOn(Completable original, BooleanSupplier offload, Executor executor) {
+        return executor == immediate() ? original : new PublishOn(original, offload, executor);
     }
 
-    static Completable subscribeOn(Completable original, Executor executor) {
-        return executor == immediate() ? original : new SubscribeOn(original, executor);
+    static Completable subscribeOn(Completable original, BooleanSupplier offload, Executor executor) {
+        return executor == immediate() ? original : new SubscribeOn(original, offload, executor);
     }
 
     /**
@@ -64,13 +66,13 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class PublishOn extends TaskBasedAsyncCompletableOperator {
 
-        PublishOn(final Completable original, final Executor executor) {
-            super(original, executor);
+        PublishOn(final Completable original, final BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedTerminals(subscriber, executor());
+            return new CompletableSubscriberOffloadedTerminals(subscriber, this::offload, executor());
         }
 
         @Override
@@ -92,13 +94,13 @@ final class PublishAndSubscribeOnCompletables {
      */
     private static final class SubscribeOn extends TaskBasedAsyncCompletableOperator {
 
-        SubscribeOn(final Completable original, final Executor executor) {
-            super(original, executor);
+        SubscribeOn(final Completable original, final BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber apply(Subscriber subscriber) {
-            return new CompletableSubscriberOffloadedCancellable(subscriber, executor());
+            return new CompletableSubscriberOffloadedCancellable(subscriber, this::offload, executor());
         }
 
         @Override
@@ -109,8 +111,12 @@ final class PublishAndSubscribeOnCompletables {
                 Subscriber wrapped = contextProvider.wrapCancellable(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Completable subscribe() on {}", executor());
-                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                if (offload()) {
+                    LOGGER.trace("Offloading Completable subscribe() on {}", executor());
+                    executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                } else {
+                    super.handleSubscribe(wrapped, contextMap, contextProvider);
+                }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 deliverErrorFromSource(subscriber, throwable);

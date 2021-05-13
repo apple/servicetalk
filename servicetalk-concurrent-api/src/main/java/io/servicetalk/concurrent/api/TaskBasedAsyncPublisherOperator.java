@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
@@ -56,15 +57,28 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         }
     };
 
+    private volatile boolean hasOffloaded;
+    private final BooleanSupplier offload;
     private final Executor executor;
 
-    TaskBasedAsyncPublisherOperator(Publisher<T> original, Executor executor) {
+    TaskBasedAsyncPublisherOperator(Publisher<T> original, BooleanSupplier offload, Executor executor) {
         super(original);
+        this.offload = offload;
         this.executor = executor;
     }
 
     final Executor executor() {
         return executor;
+    }
+
+    protected boolean offload() {
+        if (!hasOffloaded) {
+            if (!offload.getAsBoolean()) {
+                return false;
+            }
+            hasOffloaded = true;
+        }
+        return true;
     }
 
     @Override
@@ -94,6 +108,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         private volatile int state = STATE_IDLE;
 
         private final Subscriber<? super T> target;
+        private final BooleanSupplier offload;
         private final Executor executor;
         private final Queue<Object> signals;
         // Set in onSubscribe before we enqueue the task which provides memory visibility inside the task.
@@ -102,13 +117,14 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         @Nullable
         private Subscription subscription;
 
-        OffloadedSubscriber(final Subscriber<? super T> target, final Executor executor) {
-            this(target, executor, 2);
+        OffloadedSubscriber(Subscriber<? super T> target, BooleanSupplier offload, Executor executor) {
+            this(target, offload, executor, 2);
         }
 
-        OffloadedSubscriber(final Subscriber<? super T> target, final Executor executor,
+        OffloadedSubscriber(final Subscriber<? super T> target, final BooleanSupplier offload, final Executor executor,
                             final int publisherSignalQueueInitialCapacity) {
             this.target = target;
+            this.offload = offload;
             this.executor = executor;
             // Queue is bounded by request-n
             signals = newUnboundedSpscQueue(publisherSignalQueueInitialCapacity);
@@ -246,8 +262,12 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             }
 
             try {
-                LOGGER.debug("delivering Subscriber signals on {}", executor);
-                executor.execute(this::deliverSignals);
+                if (offload.getAsBoolean()) {
+                    LOGGER.trace("delivering Subscriber signals on {}", executor);
+                    executor.execute(this::deliverSignals);
+                } else {
+                    deliverSignals();
+                }
             } catch (Throwable t) {
                 state = STATE_TERMINATED;
                 try {
@@ -280,16 +300,18 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
      */
     static final class OffloadedSubscriptionSubscriber<T> implements Subscriber<T> {
         private final Subscriber<T> subscriber;
+        private final BooleanSupplier offload;
         private final Executor executor;
 
-        OffloadedSubscriptionSubscriber(final Subscriber<T> subscriber, final Executor executor) {
+        OffloadedSubscriptionSubscriber(Subscriber<T> subscriber, BooleanSupplier offload, Executor executor) {
             this.subscriber = requireNonNull(subscriber);
+            this.offload = offload;
             this.executor = executor;
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
-            subscriber.onSubscribe(new OffloadedSubscription(executor, s));
+            subscriber.onSubscribe(new OffloadedSubscription(executor, offload, s));
         }
 
         @Override
@@ -324,13 +346,15 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
         private static final AtomicLongFieldUpdater<OffloadedSubscription> requestedUpdater =
                 AtomicLongFieldUpdater.newUpdater(OffloadedSubscription.class, "requested");
 
-        private final io.servicetalk.concurrent.Executor executor;
+        private final Executor executor;
+        private final BooleanSupplier offload;
         private final Subscription target;
         private volatile int state = STATE_IDLE;
         private volatile long requested;
 
-        OffloadedSubscription(final io.servicetalk.concurrent.Executor executor, final Subscription target) {
+        OffloadedSubscription(Executor executor, BooleanSupplier offload, Subscription target) {
             this.executor = executor;
+            this.offload = offload;
             this.target = requireNonNull(target);
         }
 
@@ -357,8 +381,12 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractAsynchronousPu
             final int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
-                    LOGGER.debug("executing {} on {}", forRequestN ? "request" : "cancel", executor);
-                    executor.execute(this::executeTask);
+                    if (offload.getAsBoolean()) {
+                        LOGGER.debug("executing {} on {}", forRequestN ? "request" : "cancel", executor);
+                        executor.execute(this::executeTask);
+                    } else {
+                        executeTask();
+                    }
                 } catch (Throwable t) {
                     // Ideally, we should send an error to the related Subscriber but that would mean we make sure
                     // we do not concurrently invoke the Subscriber with the original source which would mean we

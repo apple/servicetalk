@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.SingleSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BooleanSupplier;
+
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
@@ -43,12 +45,12 @@ final class PublishAndSubscribeOnSingles {
         deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Single<T> publishOn(Single<T> original, Executor executor) {
-        return immediate() == executor ? original : new PublishOn<>(original, executor);
+    static <T> Single<T> publishOn(Single<T> original, BooleanSupplier offload, Executor executor) {
+        return immediate() == executor ? original : new PublishOn<>(original, offload, executor);
     }
 
-    static <T> Single<T> subscribeOn(Single<T> original, Executor executor) {
-        return immediate() == executor ? original : new SubscribeOn<>(original, executor);
+    static <T> Single<T> subscribeOn(Single<T> original, BooleanSupplier offload, Executor executor) {
+        return immediate() == executor ? original : new SubscribeOn<>(original, offload, executor);
     }
 
     /**
@@ -60,13 +62,13 @@ final class PublishAndSubscribeOnSingles {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
-        PublishOn(final Single<T> original, final Executor executor) {
-            super(original, executor);
+        PublishOn(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedTerminals<>(subscriber, executor());
+            return new SingleSubscriberOffloadedTerminals<>(subscriber, this::offload, executor());
         }
 
         @Override
@@ -88,13 +90,13 @@ final class PublishAndSubscribeOnSingles {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
-        SubscribeOn(final Single<T> original, final Executor executor) {
-            super(original, executor);
+        SubscribeOn(final Single<T> original, final BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new SingleSubscriberOffloadedCancellable<>(subscriber, executor());
+            return new SingleSubscriberOffloadedCancellable<>(subscriber, this::offload, executor());
         }
 
         @Override
@@ -105,9 +107,14 @@ final class PublishAndSubscribeOnSingles {
                 Subscriber<? super T> wrapped =
                         contextProvider.wrapCancellable(subscriber, contextMap);
 
-                // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Single subscribe() on {}", executor());
-                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                if (offload()) {
+                    // offload the remainder of subscribe()
+                    LOGGER.trace("Offloading Single subscribe() on {}", executor());
+                    executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                } else {
+                    // continue on the current thread
+                    super.handleSubscribe(wrapped, contextMap, contextProvider);
+                }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 // note that the subscriber error is not offloaded.

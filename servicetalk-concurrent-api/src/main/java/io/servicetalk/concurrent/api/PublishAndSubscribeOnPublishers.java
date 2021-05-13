@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BooleanSupplier;
+
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
@@ -42,12 +44,12 @@ final class PublishAndSubscribeOnPublishers {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
 
-    static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
-        return immediate() == executor ? original : new PublishOn<>(original, executor);
+    static <T> Publisher<T> publishOn(Publisher<T> original, BooleanSupplier offload, Executor executor) {
+        return immediate() == executor ? original : new PublishOn<>(original, offload, executor);
     }
 
-    static <T> Publisher<T> subscribeOn(Publisher<T> original, Executor executor) {
-        return immediate() == executor ? original : new SubscribeOn<>(original, executor);
+    static <T> Publisher<T> subscribeOn(Publisher<T> original, BooleanSupplier offload, Executor executor) {
+        return immediate() == executor ? original : new SubscribeOn<>(original, offload, executor);
     }
 
     /**
@@ -59,13 +61,13 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        PublishOn(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
+        PublishOn(final Publisher<T> original, final BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriber<>(subscriber, executor());
+            return new OffloadedSubscriber<>(subscriber, this::offload, executor());
         }
 
         @Override
@@ -88,13 +90,13 @@ final class PublishAndSubscribeOnPublishers {
      */
     private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
-        SubscribeOn(final Publisher<T> original, final Executor executor) {
-            super(original, executor);
+        SubscribeOn(final Publisher<T> original, BooleanSupplier offload, final Executor executor) {
+            super(original, offload, executor);
         }
 
         @Override
         public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-            return new OffloadedSubscriptionSubscriber<>(subscriber, executor());
+            return new OffloadedSubscriptionSubscriber<>(subscriber, this::offload, executor());
         }
 
         @Override
@@ -106,8 +108,12 @@ final class PublishAndSubscribeOnPublishers {
                         contextProvider.wrapSubscription(subscriber, contextMap);
 
                 // offload the remainder of subscribe()
-                LOGGER.trace("Offloading Publisher subscribe() on {}", executor());
-                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                if (offload()) {
+                    LOGGER.trace("Offloading Publisher subscribe() on {}", executor());
+                    executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+                } else {
+                    super.handleSubscribe(wrapped, contextMap, contextProvider);
+                }
             } catch (Throwable throwable) {
                 // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
                 // note that the subscriber error is not offloaded.

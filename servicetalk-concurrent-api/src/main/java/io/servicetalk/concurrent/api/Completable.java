@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -1387,7 +1388,23 @@ public abstract class Completable {
      * {@link Subscriber}.
      */
     public final Completable publishOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, executor);
+        return PublishAndSubscribeOnCompletables.publishOn(this, Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param offload Offload only if supplier returns true otherwise continue execution on the same thread.
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Completable publishOn(BooleanSupplier offload, Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishOn(this, offload, executor);
     }
 
     /**
@@ -1405,7 +1422,26 @@ public abstract class Completable {
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
      */
     public final Completable subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.subscribeOn(this, executor);
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}.
+     *
+     * @param offload Offload only if supplier returns true otherwise continue execution on the same thread.
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     */
+    public final Completable subscribeOn(BooleanSupplier offload, Executor executor) {
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, offload, executor);
     }
 
     /**
