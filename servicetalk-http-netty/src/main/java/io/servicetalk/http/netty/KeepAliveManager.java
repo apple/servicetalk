@@ -274,7 +274,7 @@ final class KeepAliveManager {
     private void gracefulCloseWriteSecondGoAway() {
         assert channel.eventLoop().inEventLoop();
 
-        if (gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
+        if (gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT || gracefulCloseState == CLOSED) {
             return;
         }
 
