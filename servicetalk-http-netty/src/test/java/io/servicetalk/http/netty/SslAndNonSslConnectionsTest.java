@@ -25,6 +25,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.net.InetAddress;
 import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import javax.annotation.Nullable;
@@ -175,7 +177,21 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    void hostNameVerificationIsEnabledByDefault() throws Exception {
+    public void singleAddressClientWithSslToSecureServerWithoutPeerHost() throws Exception {
+        assert secureServerCtx != null;
+        try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                        .peerHost(null)
+                        // if verification is not disabled, identity check fails against the undefined address
+                        .hostnameVerificationAlgorithm("")
+                        .build())
+                .buildBlocking()) {
+            testRequestResponse(client, "/", true);
+        }
+    }
+
+    @Test
+    public void hostNameVerificationIsEnabledByDefault() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
@@ -189,7 +205,22 @@ class SslAndNonSslConnectionsTest {
     }
 
     @Test
-    void multiAddressClientWithSslToSecureServer() throws Exception {
+    public void hostNameVerificationUsesInferredAddress() throws Exception {
+        assert secureServerCtx != null;
+
+        HostAndPort localAddress = HostAndPort.of(
+                InetAddress.getLoopbackAddress().getHostName(), serverHostAndPort(secureServerCtx).port()
+        );
+
+        try (BlockingHttpClient client = HttpClients.forSingleAddress(localAddress)
+                .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                .buildBlocking()) {
+            testRequestResponse(client, "/", true);
+        }
+    }
+
+    @Test
+    public void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
                 .initializer((scheme, address, builder) ->
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)

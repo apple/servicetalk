@@ -41,6 +41,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     private int peerPort = -1;
     @Nullable
     private String sniHostname;
+    private boolean isPeerHostSet;
 
     /**
      * Create a new instance using this JVM's {@link TrustManagerFactory#getDefaultAlgorithm()} and default
@@ -75,7 +76,8 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      *
      * @param algorithm The algorithm to use when verifying the host name.
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
-     * Endpoint Identification Algorithm Name</a>
+     * Endpoint Identification Algorithm Name</a>.
+     * An empty {@code String} disables hostname verification.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
@@ -99,16 +101,16 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
     }
 
     /**
-     * Set the non-authoritative name of the peer.
+     * Set the non-authoritative name of the peer. When set, the value won't be inferred from the connection address.
+     * If it's set to {@code null}, it's worth considering disabling hostname verification in case SNI is also disabled.
      * @param peerHost the non-authoritative name of the peer.
+     *   {@code null} disables value inference from connection address.
      * @return {@code this}.
      * @see SSLEngine#getPeerHost()
      */
-    public ClientSslConfigBuilder peerHost(String peerHost) {
-        if (peerHost.isEmpty()) {
-            throw new IllegalArgumentException("peerHost cannot be empty");
-        }
+    public ClientSslConfigBuilder peerHost(@Nullable String peerHost) {
         this.peerHost = peerHost;
+        this.isPeerHostSet = true;
         return this;
     }
 
@@ -146,7 +148,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
      * @return a new {@link ClientSslConfig}.
      */
     public ClientSslConfig build() {
-        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname,
+        return new DefaultClientSslConfig(hostnameVerificationAlgorithm, peerHost, peerPort, sniHostname, isPeerHostSet,
                 trustManager(), trustCertChainSupplier(), keyManager(), keyCertChainSupplier(), keySupplier(),
                 keyPassword(), sslProtocols(), alpnProtocols(), ciphers(), sessionCacheSize(), sessionTimeout(),
                 provider());
@@ -165,9 +167,13 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         private final int peerPort;
         @Nullable
         private final String sniHostname;
+        private final boolean isPeerHostSet;
 
-        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm, @Nullable final String peerHost,
-                               final int peerPort, @Nullable final String sniHostname,
+        DefaultClientSslConfig(@Nullable final String hostnameVerificationAlgorithm,
+                               @Nullable final String peerHost,
+                               final int peerPort,
+                               @Nullable final String sniHostname,
+                               final boolean isPeerHostSet,
                                @Nullable final TrustManagerFactory trustManagerFactory,
                                @Nullable final Supplier<InputStream> trustCertChainSupplier,
                                @Nullable final KeyManagerFactory keyManagerFactory,
@@ -182,6 +188,7 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
             this.peerHost = peerHost;
             this.peerPort = peerPort;
             this.sniHostname = sniHostname;
+            this.isPeerHostSet = isPeerHostSet;
         }
 
         @Nullable
@@ -205,6 +212,11 @@ public final class ClientSslConfigBuilder extends AbstractSslConfigBuilder<Clien
         @Override
         public String sniHostname() {
             return sniHostname;
+        }
+
+        @Override
+        public boolean isPeerHostSet() {
+            return isPeerHostSet;
         }
     }
 }

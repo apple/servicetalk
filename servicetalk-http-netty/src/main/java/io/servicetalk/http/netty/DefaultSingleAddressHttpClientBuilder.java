@@ -559,7 +559,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(ClientSslConfig sslConfig) {
         assert address != null;
         // defer setting the fallback host/port so the user has a chance to configure hostToCharSequenceFunction.
-        setFallbackHostAndPort(config, address);
+        if (!sslConfig.isPeerHostSet()) {
+            setFallbackHostAndPort(config, address);
+        }
         config.tcpConfig().sslConfig(sslConfig);
         return this;
     }

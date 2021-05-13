@@ -46,4 +46,9 @@ class DelegatingClientSslConfig extends DelegatingSslConfig<ClientSslConfig> imp
     public String sniHostname() {
         return delegate().sniHostname();
     }
+
+    @Override
+    public boolean isPeerHostSet() {
+        return delegate().isPeerHostSet();
+    }
 }
