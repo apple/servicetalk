@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -162,8 +162,8 @@ public class ClosureTest {
         return autoCloseable;
     }
 
-    private <T extends GracefulAutoCloseable> T setupBlockingCloseMock(final T autoCloseable,
-                                                                       final AsyncCloseable closeSignal)
+    private <T extends GracefulCloseable> T setupBlockingCloseMock(final T autoCloseable,
+                                                                   final AsyncCloseable closeSignal)
             throws Exception {
         doAnswer(__ -> closeSignal.closeAsync().toFuture().get()).when(autoCloseable).close();
         doAnswer(__ -> closeSignal.closeAsyncGracefully().toFuture().get()).when(autoCloseable).closeGracefully();
@@ -181,11 +181,11 @@ public class ClosureTest {
         verifyNoMoreInteractions(closeable);
     }
 
-    private void verifyClosure(GracefulAutoCloseable closeable) throws Exception {
+    private void verifyClosure(GracefulCloseable closeable) throws Exception {
         verifyClosure(closeable, 1);
     }
 
-    private void verifyClosure(GracefulAutoCloseable closeable, int times) throws Exception {
+    private void verifyClosure(GracefulCloseable closeable, int times) throws Exception {
         if (closeGracefully) {
             verify(closeable, times(times)).closeGracefully();
         } else {

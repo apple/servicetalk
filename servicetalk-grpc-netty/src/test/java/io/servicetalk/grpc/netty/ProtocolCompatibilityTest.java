@@ -80,6 +80,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -1223,8 +1224,13 @@ public class ProtocolCompatibilityTest {
             }
 
             @Override
-            public void close() throws Exception {
-                channel.shutdown().awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+            public void close() throws IOException {
+                try {
+                    channel.shutdown().awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException(e);
+                }
             }
 
             @Override

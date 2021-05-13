@@ -25,11 +25,13 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import javax.lang.model.element.Modifier;
@@ -1144,7 +1146,7 @@ final class Generator {
                         .addStatement("return $L", client)
                         .build())
                 .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
-                .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(Exception.class)));
+                .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(IOException.class)));
 
         state.clientMetaDatas.forEach(clientMetaData -> {
             final CodeBlock requestExpression = clientMetaData.methodProto.getClientStreaming() ?
@@ -1315,8 +1317,15 @@ final class Generator {
         return methodBuilder(blockingMethodName)
                 .addModifiers(PUBLIC)
                 .addAnnotation(Override.class)
-                .addException(Exception.class)
+                .addException(IOException.class)
+                .beginControlFlow("try")
                 .addStatement("$L.$L().toFuture().get()", fieldName, completableMethodName)
+                .nextControlFlow("catch ($T e)", InterruptedException.class)
+                .addStatement("Thread.currentThread().interrupt()")
+                .addStatement("throw new $T(e)", IOException.class)
+                .nextControlFlow("catch ($T e)", ExecutionException.class)
+                .addStatement("throw new $T(e)", IOException.class)
+                .endControlFlow()
                 .build();
     }
 }

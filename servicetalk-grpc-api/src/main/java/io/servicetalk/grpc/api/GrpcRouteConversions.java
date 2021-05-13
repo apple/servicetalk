@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
@@ -298,7 +298,7 @@ final class GrpcRouteConversions {
         return toResponseStreamingRoute(toStreaming(original));
     }
 
-    static AsyncCloseable toAsyncCloseable(final GracefulAutoCloseable original) {
+    static AsyncCloseable toAsyncCloseable(final GracefulCloseable original) {
         return AsyncCloseables.toAsyncCloseable(graceful -> new Completable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {

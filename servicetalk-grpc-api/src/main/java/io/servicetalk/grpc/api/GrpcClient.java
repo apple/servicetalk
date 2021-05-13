@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+
+import java.io.IOException;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -26,7 +28,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  * @param <BlockingClient> The corresponding {@link BlockingGrpcClient}
  */
 public interface GrpcClient<BlockingClient extends BlockingGrpcClient>
-        extends ListenableAsyncCloseable, GracefulAutoCloseable {
+        extends ListenableAsyncCloseable, GracefulCloseable {
 
     /**
      * Converts this {@link GrpcClient} to a blocking client.
@@ -46,7 +48,7 @@ public interface GrpcClient<BlockingClient extends BlockingGrpcClient>
     GrpcExecutionContext executionContext();
 
     @Override
-    default void close() throws Exception {
+    default void close() throws IOException {
         awaitTermination(closeAsync().toFuture());
     }
 }

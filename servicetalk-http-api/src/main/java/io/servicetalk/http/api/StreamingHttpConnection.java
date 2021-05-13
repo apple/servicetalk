@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.api.Single;
+
+import java.io.IOException;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -24,7 +26,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpConnection extends FilterableStreamingHttpConnection, GracefulAutoCloseable {
+public interface StreamingHttpConnection extends FilterableStreamingHttpConnection, GracefulCloseable {
     /**
      * Send a {@code request}.
      *
@@ -61,12 +63,12 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
     BlockingHttpConnection asBlockingConnection();
 
     @Override
-    default void close() throws Exception {
+    default void close() throws IOException {
         awaitTermination(closeAsync().toFuture());
     }
 
     @Override
-    default void closeGracefully() throws Exception {
+    default void closeGracefully() throws IOException {
         awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

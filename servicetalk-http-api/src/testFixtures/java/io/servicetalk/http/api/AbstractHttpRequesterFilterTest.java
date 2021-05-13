@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -305,7 +306,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public void close() throws Exception {
+            public void close() throws IOException {
                 connection.close();
             }
 

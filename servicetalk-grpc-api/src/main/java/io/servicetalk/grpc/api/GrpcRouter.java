@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.concurrent.GracefulAutoCloseable;
+import io.servicetalk.concurrent.GracefulCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
@@ -471,12 +471,12 @@ final class GrpcRouter {
                         }
 
                         @Override
-                        public void close() throws Exception {
+                        public void close() throws IOException {
                             route.close();
                         }
 
                         @Override
-                        public void closeGracefully() throws Exception {
+                        public void closeGracefully() throws IOException {
                             route.closeGracefully();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
@@ -540,12 +540,12 @@ final class GrpcRouter {
                         }
 
                         @Override
-                        public void close() throws Exception {
+                        public void close() throws IOException {
                             route.close();
                         }
 
                         @Override
-                        public void closeGracefully() throws Exception {
+                        public void closeGracefully() throws IOException {
                             route.closeGracefully();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
@@ -587,12 +587,12 @@ final class GrpcRouter {
                         }
 
                         @Override
-                        public void close() throws Exception {
+                        public void close() throws IOException {
                             route.close();
                         }
 
                         @Override
-                        public void closeGracefully() throws Exception {
+                        public void closeGracefully() throws IOException {
                             route.closeGracefully();
                         }
                     },
@@ -640,12 +640,12 @@ final class GrpcRouter {
                         }
 
                         @Override
-                        public void close() throws Exception {
+                        public void close() throws IOException {
                             route.close();
                         }
 
                         @Override
-                        public void closeGracefully() throws Exception {
+                        public void closeGracefully() throws IOException {
                             route.closeGracefully();
                         }
                     },
@@ -761,7 +761,7 @@ final class GrpcRouter {
                       final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
                       final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
                       final Supplier<Route<?, ?>> toRouteConverter,
-                      final GracefulAutoCloseable closeable) {
+                      final GracefulCloseable closeable) {
             this(routeProvider, toStreamingConverter, toRequestStreamingRouteConverter,
                     toResponseStreamingRouteConverter, toRouteConverter, toAsyncCloseable(closeable));
         }

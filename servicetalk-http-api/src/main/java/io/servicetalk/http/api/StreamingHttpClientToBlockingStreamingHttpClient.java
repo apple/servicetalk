@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+
+import java.io.IOException;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
@@ -84,12 +86,12 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         client.close();
     }
 
     @Override
-    public void closeGracefully() throws Exception {
+    public void closeGracefully() throws IOException {
         client.closeGracefully();
     }
 
@@ -178,12 +180,12 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() throws IOException {
             connection.close();
         }
 
         @Override
-        public void closeGracefully() throws Exception {
+        public void closeGracefully() throws IOException {
             connection.closeGracefully();
         }
 
