@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
@@ -34,6 +36,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_IDLE_DURATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -232,9 +235,11 @@ public class KeepAliveManagerTest {
         verifyNoWrite();
         verifyNoScheduledTasks();
 
-        manager.initiateGracefulClose(() -> { });
+        CompletableSource.Processor onClosing = newCompletableProcessor();
+        manager.initiateGracefulClose(onClosing);
         verifyNoWrite();
         verifyNoScheduledTasks();
+        StepVerifiers.createForSource(onClosing).expectCancellable().expectComplete().verify();
     }
 
     private ScheduledTask verifyPingAckTimeoutScheduled() {
@@ -265,7 +270,10 @@ public class KeepAliveManagerTest {
     }
 
     private Http2PingFrame initiateGracefulCloseVerifyGoAwayAndPing(final KeepAliveManager manager) {
-        manager.initiateGracefulClose(() -> { });
+        CompletableSource.Processor onClosing = newCompletableProcessor();
+        manager.initiateGracefulClose(onClosing);
+        StepVerifiers.createForSource(onClosing).expectCancellable().expectComplete().verify();
+
         Http2GoAwayFrame firstGoAway = verifyWrite(instanceOf(Http2GoAwayFrame.class));
         assertThat("Unexpected error in go_away", firstGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
         Http2PingFrame pingFrame = verifyWrite(instanceOf(Http2PingFrame.class));
@@ -289,7 +297,7 @@ public class KeepAliveManagerTest {
         assertThat("Unexpected tasks scheduled.", scheduledTasks.poll(), is(nullValue()));
     }
 
-    private EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
+    private static EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
         EmbeddedChannel stream = new EmbeddedChannel();
         manager.trackActiveStream(stream);
         return stream;

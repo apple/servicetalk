@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import io.netty.channel.Channel;
@@ -177,12 +178,15 @@ final class KeepAliveManager {
         keepAliveState = CLOSED;
     }
 
-    void initiateGracefulClose(final Runnable whenInitiated) {
+    void initiateGracefulClose(CompletableSource.Processor onClosing) {
+        // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+        onClosing.onComplete();
+
         EventLoop eventLoop = channel.eventLoop();
         if (eventLoop.inEventLoop()) {
-            doCloseAsyncGracefully0(whenInitiated);
+            doCloseAsyncGracefully0();
         } else {
-            eventLoop.execute(() -> doCloseAsyncGracefully0(whenInitiated));
+            eventLoop.execute(this::doCloseAsyncGracefully0);
         }
     }
 
@@ -232,15 +236,13 @@ final class KeepAliveManager {
         void configure(Channel channel, int idlenessThresholdSeconds, Runnable onIdle);
     }
 
-    private void doCloseAsyncGracefully0(final Runnable whenInitiated) {
+    private void doCloseAsyncGracefully0() {
         assert channel.eventLoop().inEventLoop();
 
         if (gracefulCloseState != null) {
             // either we are already closed or have already initiated graceful closure.
             return;
         }
-
-        whenInitiated.run();
 
         // Set the pingState before doing the write, because we will reference the state
         // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the

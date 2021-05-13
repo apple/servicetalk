@@ -39,10 +39,13 @@ import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
+import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
 import java.net.SocketAddress;
@@ -151,7 +154,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     protected final void doCloseAsyncGracefully() {
-        keepAliveManager.initiateGracefulClose(onClosing::onComplete);
+        keepAliveManager.initiateGracefulClose(onClosing);
     }
 
     final void trackActiveStream(Channel streamChannel) {
@@ -203,18 +206,20 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void channelInactive(ChannelHandlerContext ctx) {
-            if (hasSubscriber()) {
-                tryFailSubscriber(StacklessClosedChannelException.newInstance(
-                        H2ParentConnectionContext.class, "channelInactive(...)"));
-            }
-            parentContext.keepAliveManager.channelClosed();
+            doChannelClosed("channelInactive(...)");
         }
 
         @Override
         public final void handlerRemoved(ChannelHandlerContext ctx) {
+            doChannelClosed("handlerRemoved(...)");
+        }
+
+        private void doChannelClosed(final String method) {
+            // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+            parentContext.onClosing.onComplete();
+
             if (hasSubscriber()) {
-                tryFailSubscriber(StacklessClosedChannelException.newInstance(
-                        H2ParentConnectionContext.class, "handlerRemoved(...)"));
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
             }
             parentContext.keepAliveManager.channelClosed();
         }
@@ -236,6 +241,10 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                             (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
                             observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
+                } else if (evt == SslCloseCompletionEvent.SUCCESS || evt == ChannelInputShutdownReadComplete.INSTANCE ||
+                        evt == ChannelOutputShutdownEvent.INSTANCE) {
+                    // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+                    parentContext.onClosing.onComplete();
                 }
             } finally {
                 release(evt);
@@ -251,12 +260,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             } else if (msg instanceof Http2GoAwayFrame) {
                 Http2GoAwayFrame goAwayFrame = (Http2GoAwayFrame) msg;
                 goAwayFrame.release();
-                parentContext.onClosing.onComplete();
 
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.keepAliveManager.initiateGracefulClose(parentContext.onClosing::onComplete);
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext.onClosing);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)
