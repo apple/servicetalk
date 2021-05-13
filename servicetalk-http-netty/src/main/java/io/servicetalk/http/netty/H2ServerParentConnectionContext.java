@@ -231,8 +231,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
 
         @Override
         boolean ackSettings(final ChannelHandlerContext ctx, final Http2SettingsFrame settingsFrame) {
-            // server side doesn't asynchronously need to ACK the settings because there is no need to coordinate
+            // Server side doesn't asynchronously need to ACK the settings because there is no need to coordinate
             // the maximum concurrent streams value with the application.
+            // All SETTINGS frames are automatically ack'ed by netty, see
+            // Http2FrameCodecBuilder#autoAckSettingsFrame(boolean) in H2ServerParentChannelInitializer.
             return false;
         }
     }
