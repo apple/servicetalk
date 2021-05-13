@@ -50,7 +50,8 @@ class SingleAmbWithAsyncTest {
 
     @Test
     void offloadSuccessFromFirst() throws Exception {
-        assertThat("Unexpected result.", testOffloadSecond(succeeded(1), never()), is(1));
+        assertThat("Unexpected result.",
+                testOffloadSecond(FIRST_EXECUTOR_THREAD_NAME_PREFIX, succeeded(1), never()), is(1));
     }
 
     private static void assertThrowsWithDeliberateExceptionAsCause(Executable executable) {
@@ -60,17 +61,20 @@ class SingleAmbWithAsyncTest {
 
     @Test
     void offloadErrorFromFirst() {
-        assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testOffloadSecond(SECOND_EXECUTOR_THREAD_NAME_PREFIX, never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
     void offloadSuccessFromSecond() throws Exception {
-        assertThat("Unexpected result.", testOffloadSecond(never(), succeeded(2)), is(2));
+        assertThat("Unexpected result.",
+                testOffloadSecond(SECOND_EXECUTOR_THREAD_NAME_PREFIX, never(), succeeded(2)), is(2));
     }
 
     @Test
     void offloadErrorFromSecond() {
-        assertThrowsWithDeliberateExceptionAsCause(() -> testOffloadSecond(never(), failed(DELIBERATE_EXCEPTION)));
+        assertThrowsWithDeliberateExceptionAsCause(() ->
+                testOffloadSecond(SECOND_EXECUTOR_THREAD_NAME_PREFIX, never(), failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test
@@ -161,12 +165,13 @@ class SingleAmbWithAsyncTest {
                 testContextFromSecondOnSubscribe(never(), failed(DELIBERATE_EXCEPTION)));
     }
 
-    private int testOffloadSecond(final Single<Integer> first, final Single<Integer> second) throws Exception {
+    private int testOffloadSecond(String completeOn, final Single<Integer> first, final Single<Integer> second)
+            throws Exception {
         return first.publishOn(firstExec.executor())
                 .ambWith(second.publishOn(secondExec.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected thread.", Thread.currentThread().getName(),
-                                startsWith(FIRST_EXECUTOR_THREAD_NAME_PREFIX)))
+                                startsWith(completeOn)))
                 .toFuture().get();
     }
 

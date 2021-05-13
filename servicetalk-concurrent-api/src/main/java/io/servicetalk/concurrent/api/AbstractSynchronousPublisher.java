@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
-
 /**
  * Base class for all {@link Publisher}s that are created with already realized values and do not generate values
  * asynchronously.
@@ -26,14 +24,11 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
-    final void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+    final void handleSubscribe(Subscriber<? super T> subscriber,
                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
-        // asynchronously processes signals and hence may not be safe to execute user code.
-        //
         // We need to wrap the Subscriber to save/restore the AsyncContext on each operation or else the AsyncContext
         // may leak from another thread.
-        doSubscribe(signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)));
+        doSubscribe(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
     }
 
     /**

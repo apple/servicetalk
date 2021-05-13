@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -46,6 +47,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -98,18 +100,17 @@ class HttpServerOverrideOffloadingTest {
         assertThat("Service-1, unexpected errors: " + service1.errors, service1.errors, hasSize(0));
         client.request(client.get("/service2")).toFuture().get();
         assertThat("Service-2 unexpected invocation count.", service2.invoked.get(), is(1));
-        assertThat("Service-2, unexpected errors: " + service2.errors, service2.errors, hasSize(0));
+        assertNoAsyncErrors("Service-2, unexpected errors: " + service2.errors, service2.errors);
     }
 
     private static final class OffloadingTesterService implements StreamingHttpService {
 
         private final AtomicInteger invoked = new AtomicInteger();
         private final Predicate<Thread> isInvalidThread;
-        private final ConcurrentLinkedQueue<AssertionError> errors;
+        private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
 
         private OffloadingTesterService(final Predicate<Thread> isInvalidThread) {
             this.isInvalidThread = isInvalidThread;
-            errors = new ConcurrentLinkedQueue<>();
         }
 
         @Override

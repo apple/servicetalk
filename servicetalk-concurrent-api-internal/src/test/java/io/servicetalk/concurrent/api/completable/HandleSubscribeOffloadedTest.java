@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AbstractHandleSubscribeOffloadedTest;
 import io.servicetalk.concurrent.api.Completable;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.lang.Thread.currentThread;
 
+@Disabled("Needs to be redone without signaloffloader")
 class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
 
     private final Completable source = new Completable() {

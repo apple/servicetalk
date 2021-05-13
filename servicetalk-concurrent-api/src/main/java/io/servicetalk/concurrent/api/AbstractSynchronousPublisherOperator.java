@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.concurrent.api;
-
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,13 +40,8 @@ abstract class AbstractSynchronousPublisherOperator<T, R> extends AbstractNoHand
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader,
+    final void handleSubscribe(Subscriber<? super R> subscriber,
                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        original.delegateSubscribe(apply(subscriber), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(apply(subscriber), contextMap, contextProvider);
     }
 }

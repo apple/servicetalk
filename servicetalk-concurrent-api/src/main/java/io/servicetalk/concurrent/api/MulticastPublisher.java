@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.DefaultPriorityQueue.Node;
 import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.RejectedSubscribeException;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         state.addSubscriber(subscriber, contextMap, contextProvider);
     }
@@ -157,7 +156,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                            AsyncContextProvider contextProvider) {
             final int sCount = subscribeCountUpdater.incrementAndGet(this);
             if (exactlyMinSubscribers && sCount > minSubscribers) {
-                deliverOnSubscribeAndOnError(subscriber, NoopOffloader.NOOP_OFFLOADER, contextMap, contextProvider,
+                deliverOnSubscribeAndOnError(subscriber, contextMap, contextProvider,
                         new RejectedSubscribeException("Only " + minSubscribers + " subscribers are allowed!"));
                 return;
             }
@@ -179,7 +178,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                         if (sCount == minSubscribers) {
                             // This operator has special behavior where it chooses to use the AsyncContext and signal
                             // offloader from the last subscribe operation.
-                            original.delegateSubscribe(this, NoopOffloader.NOOP_OFFLOADER, contextMap, contextProvider);
+                            original.delegateSubscribe(this, contextMap, contextProvider);
                         }
                         break;
                     }

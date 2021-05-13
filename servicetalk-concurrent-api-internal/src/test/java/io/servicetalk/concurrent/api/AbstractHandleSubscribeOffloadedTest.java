@@ -15,24 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
-import io.servicetalk.concurrent.internal.DelegatingSignalOffloader;
-import io.servicetalk.concurrent.internal.DelegatingSignalOffloaderFactory;
-import io.servicetalk.concurrent.internal.SignalOffloader;
-import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
-
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.api.ExecutorExtension.withExecutor;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -52,39 +41,8 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
     private final AtomicInteger offloadSingleSubscribeCalled = new AtomicInteger();
     private final AtomicInteger offloadCompletableSubscribeCalled = new AtomicInteger();
     private final AtomicInteger signalOffloaderCreated = new AtomicInteger();
-    private final SignalOffloaderFactory factory;
 
     protected AbstractHandleSubscribeOffloadedTest() {
-        factory = new DelegatingSignalOffloaderFactory(defaultOffloaderFactory()) {
-            @Override
-            public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
-                signalOffloaderCreated.incrementAndGet();
-                return new DelegatingSignalOffloader(super.newSignalOffloader(executor)) {
-                    @Override
-                    public <T> void offloadSubscribe(
-                            final PublisherSource.Subscriber<? super T> subscriber,
-                            final Consumer<PublisherSource.Subscriber<? super T>> handleSubscribe) {
-                        offloadPublisherSubscribeCalled.incrementAndGet();
-                        super.offloadSubscribe(subscriber, handleSubscribe);
-                    }
-
-                    @Override
-                    public <T> void offloadSubscribe(
-                            final SingleSource.Subscriber<? super T> subscriber,
-                            final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
-                        offloadSingleSubscribeCalled.incrementAndGet();
-                        super.offloadSubscribe(subscriber, handleSubscribe);
-                    }
-
-                    @Override
-                    public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
-                                                 final Consumer<CompletableSource.Subscriber> handleSubscribe) {
-                        offloadCompletableSubscribeCalled.incrementAndGet();
-                        super.offloadSubscribe(subscriber, handleSubscribe);
-                    }
-                };
-            }
-        };
     }
 
     protected void verifyHandleSubscribeInvoker() {
@@ -96,20 +54,23 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
 
     protected void verifyPublisherOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadPublisherSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe(Publisher).",
+                offloadPublisherSubscribeCalled.get(), is(1));
     }
 
     protected void verifySingleOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadSingleSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe(Single).",
+                offloadSingleSubscribeCalled.get(), is(1));
     }
 
     protected void verifyCompletableOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadCompletableSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe.(Completable)",
+                offloadCompletableSubscribeCalled.get(), is(1));
     }
 
-    protected OffloaderAwareExecutor newOffloadingAwareExecutor() {
-        return new OffloaderAwareExecutor(executorForOffloadRule.executor(), factory);
+    protected Executor newOffloadingAwareExecutor() {
+        return executorForOffloadRule.executor();
     }
 }

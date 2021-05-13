@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.SignalOffloader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
@@ -29,86 +31,89 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  */
 final class PublishAndSubscribeOnSingles {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
+
     private PublishAndSubscribeOnSingles() {
         // No instance.
     }
 
     static <T> void deliverOnSubscribeAndOnError(SingleSource.Subscriber<? super T> subscriber,
-                                                 SignalOffloader signalOffloader, AsyncContextMap contextMap,
+                                                 AsyncContextMap contextMap,
                                                  AsyncContextProvider contextProvider, Throwable cause) {
-        deliverErrorFromSource(
-                signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap)), cause);
+        deliverErrorFromSource(contextProvider.wrapSingleSubscriber(subscriber, contextMap), cause);
     }
 
     static <T> Single<T> publishOn(Single<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new PublishOn<>(original, executor);
+        return immediate() == executor ? original : new PublishOn<>(original, executor);
     }
 
     static <T> Single<T> subscribeOn(Single<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new SubscribeOn<>(original, executor);
+        return immediate() == executor ? original : new SubscribeOn<>(original, executor);
     }
 
-    private abstract static class OffloadingSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
-        protected final Executor executor;
-        protected final Single<T> original;
-
-        protected OffloadingSingle(final Single<T> original, final Executor executor) {
-            this.original = original;
-            this.executor = executor;
-        }
-
-        @Override
-        final Executor executor() {
-            return executor;
-        }
-    }
-
-    private static class PublishOn<T> extends OffloadingSingle<T> {
+    /**
+     * Completable that invokes the following methods on the provided executor
+     *
+     * <ul>
+     *     <li>All {@link CompletableSource.Subscriber} methods.</li>
+     * </ul>
+     */
+    private static final class PublishOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         PublishOn(final Single<T> original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.executor(), executor));
+            super(original, executor);
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Single that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(
-                            contextProvider.wrapSingleSubscriber(subscriber, contextMap)), contextProvider);
+        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+            return new SingleSubscriberOffloadedTerminals(subscriber, executor());
+        }
+
+        @Override
+        public void handleSubscribe(final Subscriber<? super T> subscriber,
+                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            // re-wrap the subscriber so that async context is restored during offloading.
+            Subscriber<? super T> wrapped = contextProvider.wrapSingleSubscriber(subscriber, contextMap);
+
+            super.handleSubscribe(wrapped, contextMap, contextProvider);
         }
     }
 
-    private static final class SubscribeOn<T> extends OffloadingSingle<T> {
+    /**
+     * Completable that invokes on the provided executor the following methods:
+     *
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
+     * </ul>
+     */
+    private static final class SubscribeOn<T> extends TaskBasedAsyncSingleOperator<T> {
 
         SubscribeOn(final Single<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
+            super(original, executor);
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Single that is returned
-            // by this operator.
-            //
-            // Subscription and handleSubscribe are offloaded at subscribe so we do not need to do anything specific
-            // here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(subscriber, contextProvider);
+        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+            return new SingleSubscriberOffloadedCancellable(subscriber, executor());
+        }
+
+        @Override
+        public void handleSubscribe(final Subscriber<? super T> subscriber,
+                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            try {
+                // re-wrap the subscriber so that async context is restored during offloading.
+                Subscriber<? super T> wrapped =
+                        contextProvider.wrapSingleSubscriberAndCancellable(subscriber, contextMap);
+
+                // offload the remainder of subscribe()
+                LOGGER.trace("Offloading Single subscribe() on {}", executor);
+                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
+                // note that the subscriber error is not offloaded.
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 }

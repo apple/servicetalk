@@ -19,11 +19,13 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AbstractHandleSubscribeOffloadedTest;
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.lang.Thread.currentThread;
 
+@Disabled("needs to be reworked without SignalOffloader")
 class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
 
     private final Single<Integer> source = new Single<Integer>() {

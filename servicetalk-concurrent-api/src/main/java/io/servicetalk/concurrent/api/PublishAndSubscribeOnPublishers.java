@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.internal.SignalOffloader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
-import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 
 /**
@@ -29,86 +30,90 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
  */
 final class PublishAndSubscribeOnPublishers {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishAndSubscribeOnPublishers.class);
+
     private PublishAndSubscribeOnPublishers() {
         // No instance.
     }
 
-    static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+    static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber,
                                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
-        deliverErrorFromSource(
-                signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)),
-                cause);
+        deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
     }
 
     static <T> Publisher<T> publishOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new PublishOn<>(original, executor);
+        return immediate() == executor ? original : new PublishOn<>(original, executor);
     }
 
     static <T> Publisher<T> subscribeOn(Publisher<T> original, Executor executor) {
-        return original.executor() == executor || immediate() == executor ?
-                original :
-                new SubscribeOn<>(original, executor);
+        return immediate() == executor ? original : new SubscribeOn<>(original, executor);
     }
 
-    private abstract static class OffloadingPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-        protected final Executor executor;
-        protected final Publisher<T> original;
-
-        protected OffloadingPublisher(final Publisher<T> original, final Executor executor) {
-            this.original = original;
-            this.executor = executor;
-        }
-
-        @Override
-        final Executor executor() {
-            return executor;
-        }
-    }
-
-    private static final class PublishOn<T> extends OffloadingPublisher<T> {
+    /**
+     * {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     * </ul>
+     * @param <T> type of items
+     */
+    private static final class PublishOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         PublishOn(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadPublish(original.executor(), executor));
+            super(original, executor);
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
-            // by this operator.
-            //
-            // Here we offload signals from original to subscriber using signalOffloader.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)));
+        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+            return new OffloadedSubscriber(subscriber, executor());
+        }
+
+        @Override
+        public void handleSubscribe(final Subscriber<? super T> subscriber,
+                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            // re-wrap the subscriber so that async context is restored during offloading.
+            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+
+            super.handleSubscribe(wrapped, contextMap, contextProvider);
         }
     }
 
-    private static final class SubscribeOn<T> extends OffloadingPublisher<T> {
+    /**
+     * {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
+     * </ul>
+     *
+     * @param <T> type of items
+     */
+    private static final class SubscribeOn<T> extends TaskBasedAsyncPublisherOperator<T> {
 
         SubscribeOn(final Publisher<T> original, final Executor executor) {
-            super(original, mergeAndOffloadSubscribe(original.executor(), executor));
+            super(original, executor);
         }
 
         @Override
-        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                             final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            // This operator is to make sure that we use the executor to subscribe to the Publisher that is returned
-            // by this operator.
-            //
-            // Subscription and handleSubscribe are offloaded at subscribe so we do not need to do anything specific
-            // here.
-            //
-            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
-            // chain. If there is already an Executor defined for original, it will be used to offload signals until
-            // they hit this operator.
-            original.subscribeWithSharedContext(subscriber);
+        public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+            return new OffloadedSubscriptionSubscriber(subscriber, executor());
+        }
+
+        @Override
+        public void handleSubscribe(final Subscriber<? super T> subscriber,
+                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+            try {
+                // re-wrap the subscriber so that async context is restored during offloading.
+                Subscriber<? super T> wrapped =
+                        contextProvider.wrapPublisherSubscriberAndSubscription(subscriber, contextMap);
+
+                // offload the remainder of subscribe()
+                LOGGER.trace("Offloading Publisher subscribe() on {}", executor);
+                executor().execute(() -> super.handleSubscribe(wrapped, contextMap, contextProvider));
+            } catch (Throwable throwable) {
+                // We assume that if executor accepted the task, it will be run otherwise handle thrown exception
+                // note that the subscriber error is not offloaded.
+                deliverErrorFromSource(subscriber, throwable);
+            }
         }
     }
 }

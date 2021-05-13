@@ -18,9 +18,12 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.RunnableFuture;
@@ -33,11 +36,36 @@ import static io.servicetalk.concurrent.api.ExecutorExtension.withCachedExecutor
 import static io.servicetalk.concurrent.api.ExecutorExtension.withExecutor;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.test.resources.TestUtils.matchThreadNamePrefix;
+import static org.hamcrest.CoreMatchers.is;
 
-public abstract class AbstractPublishAndSubscribeOnTest {
+public abstract class AbstractOffloadingTest {
 
-    private static final String APP_EXECUTOR_PREFIX = "app";
-    private static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
+    protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractOffloadingTest.class);
+
+    protected static final DeliberateException DELIBERATE_EXCEPTION = new DeliberateException();
+
+    public enum CaptureSlot {
+        APP_THREAD,
+        ORIGINAL_SUBSCRIBE_THREAD,
+        OFFLOADED_SUBSCRIBE_THREAD,
+        ORIGINAL_SUBSCRIBER_THREAD,
+        OFFLOADED_SUBSCRIBER_THREAD,
+        ORIGINAL_SUBSCRIPTION_THREAD,
+        OFFLOADED_SUBSCRIPTION_THREAD
+    }
+
+    protected enum TerminalOperation {
+        CANCEL,
+        COMPLETE,
+        ERROR
+    }
+
+    /**
+     * If true then "application" is executed on a separate thread from the test.
+     */
+    protected static final boolean APP_ISOLATION = true;
+    protected static final String APP_EXECUTOR_PREFIX = "app";
+    protected static final String OFFLOAD_EXECUTOR_PREFIX = "offload";
     protected static final Matcher<Thread> APP_EXECUTOR = matchThreadNamePrefix(APP_EXECUTOR_PREFIX);
     protected static final Matcher<Thread> OFFLOAD_EXECUTOR = matchThreadNamePrefix(OFFLOAD_EXECUTOR_PREFIX);
 
@@ -55,10 +83,12 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         protected void beforeExecute(final Thread t, final Runnable r) {
             super.beforeExecute(t, r);
             offloadsStarted.getAndIncrement();
+            LOGGER.trace("Executing offload of {} on {}", r, t);
         }
 
         @Override
         protected void afterExecute(final Runnable r, final Throwable t) {
+            LOGGER.trace("Finished offload of {}", r);
             offloadsFinished.getAndIncrement();
             super.afterExecute(r, t);
         }
@@ -98,7 +128,16 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
     protected final CaptureThreads capturedThreads;
 
-    protected AbstractPublishAndSubscribeOnTest(CaptureThreads captures) {
-        capturedThreads = captures;
+    protected AbstractOffloadingTest() {
+        this(new CaptureThreads(CaptureSlot.class) {
+            @Override
+            public void assertCaptured() {
+                assertCaptured(CaptureSlot.APP_THREAD, APP_ISOLATION ? APP_EXECUTOR : is(Thread.currentThread()));
+            }
+        });
+    }
+
+    protected AbstractOffloadingTest(CaptureThreads<CaptureSlot> capturedThreads) {
+        this.capturedThreads = capturedThreads;
     }
 }

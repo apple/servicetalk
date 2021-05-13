@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
@@ -43,6 +44,7 @@ class DefaultHttpExecutionStrategyMergeTest {
     }
 
     @Test
+    @Disabled("Thread affinity is not currently supported")
     void mergeThreadAffinity() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().offloadWithThreadAffinity().build();
         HttpExecutionStrategy other = customStrategyBuilder().offloadSend().build();

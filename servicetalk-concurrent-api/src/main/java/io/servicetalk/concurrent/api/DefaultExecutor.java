@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
-import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -34,7 +32,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.defaultOffloaderFactory;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -43,7 +40,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute
  * tasks.
  */
-final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Consumer<Runnable> {
+final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnable> {
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
@@ -58,7 +55,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
-    private final SignalOffloaderFactory offloaderFactory;
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
@@ -99,7 +95,11 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         executor = newInternalExecutor(jdkExecutor, interruptOnCancel);
         this.scheduler = scheduler;
-        offloaderFactory = defaultOffloaderFactory();
+    }
+
+    @Override
+    public String toString() {
+        return DefaultExecutor.class.getSimpleName() + "{executor=" + executor + ", scheduler=" + scheduler + '}';
     }
 
     @Override
@@ -119,16 +119,6 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
         } finally {
             scheduler.run();
         }
-    }
-
-    @Override
-    public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
-        return offloaderFactory.newSignalOffloader(executor);
-    }
-
-    @Override
-    public boolean hasThreadAffinity() {
-        return offloaderFactory.hasThreadAffinity();
     }
 
     @Override
@@ -168,6 +158,12 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
                 private final ExecutorService service = (ExecutorService) jdkExecutor;
 
                 @Override
+                public String toString() {
+                    return "InternalExecutor{service=ExecutorService@" +
+                            Integer.toHexString(System.identityHashCode(jdkExecutor)) + '}';
+                }
+
+                @Override
                 public void run() {
                     service.shutdown();
                 }
@@ -180,6 +176,12 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
             };
         }
         return new InternalExecutor() {
+            @Override
+            public String toString() {
+                return "InternalExecutor{service=Executor@" +
+                        Integer.toHexString(System.identityHashCode(jdkExecutor)) + '}';
+            }
+
             @Override
             public void run() {
                 shutdownExecutor(jdkExecutor);
@@ -195,6 +197,12 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     private static InternalScheduler newScheduler(ScheduledExecutorService service, boolean interruptOnCancel) {
         return new InternalScheduler() {
+            @Override
+            public String toString() {
+                return "InternalScheduler{service=ScheduledExecutorService@" +
+                        Integer.toHexString(System.identityHashCode(service)) + '}';
+            }
+
             @Override
             public void run() {
                 service.shutdown();
@@ -214,6 +222,12 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
         SingleThreadedScheduler(final java.util.concurrent.Executor offloadExecutor) {
             this.offloadExecutor = offloadExecutor;
+        }
+
+        @Override
+        public String toString() {
+            return "SingleThreadedScheduler{offload=Executor@" +
+                    Integer.toHexString(System.identityHashCode(offloadExecutor)) + '}';
         }
 
         @Override

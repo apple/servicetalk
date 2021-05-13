@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.function.BiPredicate;
@@ -40,17 +39,12 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     @Override
-    Executor executor() {
-        return original.executor();
-    }
-
-    @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
         original.delegateSubscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, contextMap.copy(),
-                contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
+                contextProvider, this), contextMap, contextProvider);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
@@ -90,16 +84,14 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final RedoPublisher<T> redoPublisher;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
-        private final SignalOffloader offloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
                        AsyncContextMap contextMap, AsyncContextProvider contextProvider,
-                       RedoPublisher<T> redoPublisher, SignalOffloader offloader) {
+                       RedoPublisher<T> redoPublisher) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             this.contextMap = contextMap;
             this.contextProvider = contextProvider;
-            this.offloader = offloader;
         }
 
         @Override
@@ -137,7 +129,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 // we save a copy upfront.
                 redoPublisher.original.delegateSubscribe(
                         new RedoSubscriber<>(subscription, redoCount + 1,
-                        subscriber, contextMap.copy(), contextProvider, redoPublisher, offloader), offloader,
+                        subscriber, contextMap.copy(), contextProvider, redoPublisher),
                         contextMap, contextProvider);
             } else {
                 notification.terminate(subscriber);

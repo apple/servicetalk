@@ -56,14 +56,14 @@ class PublisherBufferConcurrencyTest {
     @Test
     void executorIsPreserved() throws Exception {
         final Executor executor = executorExtension.executor();
-        runTest(beforeBuffer -> beforeBuffer.publishOn(executor),
-                afterBuffer -> afterBuffer.beforeOnNext(__ ->
+        runTest(beforeBuffer -> beforeBuffer.publishOn(executor).beforeOnNext(__ ->
                         assertThat("Unexpected thread in onNext.", Thread.currentThread().getName(),
                                 startsWith(THREAD_NAME_PREFIX)))
                         .beforeOnComplete(() ->
                                 assertThat("Unexpected thread in onComplete.", Thread.currentThread().getName(),
                                         startsWith(THREAD_NAME_PREFIX))
-        ));
+                        ),
+                afterBuffer -> afterBuffer);
     }
 
     @Test

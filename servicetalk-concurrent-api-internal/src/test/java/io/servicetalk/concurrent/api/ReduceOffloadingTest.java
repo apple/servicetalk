@@ -15,15 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -33,10 +30,10 @@ class ReduceOffloadingTest {
     void reduceShouldOffloadOnce() throws Exception {
         Executor executor = newFixedSizeExecutor(1);
         AtomicInteger taskCount = new AtomicInteger();
-        Executor wrapped = new OffloaderAwareExecutor(from(task -> {
+        Executor wrapped = from(task -> {
             taskCount.incrementAndGet();
             executor.execute(task);
-        }), threadBasedOffloaderFactory());
+        });
         int sum = Publisher.from(1, 2, 3, 4).publishOn(wrapped)
                 .collect(() -> 0, Integer::sum).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));

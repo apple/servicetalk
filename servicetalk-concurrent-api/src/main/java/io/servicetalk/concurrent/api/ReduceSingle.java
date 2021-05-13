@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -55,28 +54,20 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
     }
 
     @Override
-    Executor executor() {
-        return source.executor();
-    }
-
-    @Override
-    void handleSubscribe(final Subscriber<? super R> singleSubscriber, final SignalOffloader signalOffloader,
+    void handleSubscribe(final Subscriber<? super R> singleSubscriber,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         final R r;
         try {
             r = resultFactory.get();
         } catch (Throwable t) {
-            deliverOnSubscribeAndOnError(singleSubscriber, signalOffloader, contextMap, contextProvider, t);
+            deliverOnSubscribeAndOnError(singleSubscriber, contextMap, contextProvider, t);
             return;
         }
-        // We are now subscribing to the original Publisher chain for the first time, re-using the SignalOffloader.
-        // Using the special subscribe() method means it will not offload the Subscription (done in the public
-        // subscribe() method). So, we use the SignalOffloader to offload subscription if required.
-        PublisherSource.Subscriber<? super T> offloadedSubscription = signalOffloader.offloadSubscription(
-                contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap));
+        PublisherSource.Subscriber<? super T> offloadedSubscription =
+                contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap);
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
-        source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
+        source.delegateSubscribe(offloadedSubscription, contextMap, contextProvider);
     }
 
     private static final class ReduceSubscriber<R, T> extends DelayedCancellable

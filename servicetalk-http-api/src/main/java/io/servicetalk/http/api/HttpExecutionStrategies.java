@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND;
@@ -164,11 +165,8 @@ public final class HttpExecutionStrategies {
     public static final class Builder {
 
         static final HttpExecutionStrategy DEFAULT = new Builder().offloadAll().mergeStrategy(ReturnOther).build();
-
-        @Nullable
-        private Executor executor;
+        private Executor executor = immediate();
         private byte offloads;
-        private boolean threadAffinity;
         @Nullable
         private MergeStrategy mergeStrategy;
 
@@ -242,8 +240,7 @@ public final class HttpExecutionStrategies {
          */
         @Deprecated
         public Builder offloadWithThreadAffinity() {
-            threadAffinity = true;
-            return this;
+            throw new UnsupportedOperationException("thread affinity not currently supported");
         }
 
         /**
@@ -265,14 +262,14 @@ public final class HttpExecutionStrategies {
          */
         public HttpExecutionStrategy build() {
             if (offloads == 0 && mergeStrategy == null) {
-                return executor == null ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor);
+                return executor == immediate() ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor);
             } else {
                 if (mergeStrategy == null) {
                     // User provided strategies will always be used without merging. Any custom behavior will be used at
                     // the merged call site.
                     mergeStrategy = ReturnSelf;
                 }
-                return new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
+                return new DefaultHttpExecutionStrategy(executor, offloads, mergeStrategy);
             }
         }
 

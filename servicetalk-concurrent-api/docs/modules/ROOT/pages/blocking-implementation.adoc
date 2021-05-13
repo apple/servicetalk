@@ -85,7 +85,7 @@ Taking the same example from xref:{page-version}@servicetalk-concurrent-api::blo
 
 In the above example the operators `map` and `filter` will not wrap `Subscriber` and `Subscription` since they do not do
 any asynchronous work. However, `flatmap` will wrap `Subscriber` and `Subscription` to offload the calls to the chosen
-`SignalOffloader`.
+`Executor`.
 
 == Why should we wrap `Subscriber` and `Subscription`?
 

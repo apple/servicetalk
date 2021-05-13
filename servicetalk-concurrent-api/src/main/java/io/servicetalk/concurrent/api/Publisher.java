@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.BufferStrategy.Accumulator;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,6 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
-import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
@@ -1505,7 +1503,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor());
+        return timeout(duration, unit, immediate());
     }
 
     /**
@@ -1523,7 +1521,7 @@ public abstract class Publisher<T> {
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
-        return timeout(duration, executor());
+        return timeout(duration, immediate());
     }
 
     /**
@@ -1578,7 +1576,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration) {
-        return timeoutTerminal(duration, executor());
+        return timeoutTerminal(duration, immediate());
     }
 
     /**
@@ -1614,7 +1612,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
-        return timeoutTerminal(duration, unit, executor());
+        return timeoutTerminal(duration, unit, immediate());
     }
 
     /**
@@ -3288,15 +3286,26 @@ public abstract class Publisher<T> {
     //
 
     /**
+     * Returns the {@link AsyncContextMap} to be used for a subscribe.
+     *
+     * @param provider The {@link AsyncContextProvider} which is the source of the map
+     * @return {@link AsyncContextMap} for this subscribe operation.
+     */
+    protected AsyncContextMap contextForSubscribe(AsyncContextProvider provider) {
+        // the default behavior is to copy the map. Some operators may want to use shared map
+        return provider.contextMap().copy();
+    }
+
+    /**
      * A internal subscribe method similar to {@link PublisherSource#subscribe(Subscriber)} which can be used by
      * different implementations to subscribe.
      *
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
-    protected final void subscribeInternal(Subscriber<? super T> subscriber) {
-        AsyncContextProvider provider = AsyncContext.provider();
-        subscribeWithContext(subscriber, provider,
-                shareContextOnSubscribe() ? provider.contextMap() : provider.contextMap().copy());
+    protected void subscribeInternal(Subscriber<? super T> subscriber) {
+        AsyncContextProvider contextProvider = AsyncContext.provider();
+        AsyncContextMap contextMap = contextForSubscribe(contextProvider);
+        subscribeWithContext(subscriber, contextProvider, contextMap);
     }
 
     /**
@@ -3579,60 +3588,38 @@ public abstract class Publisher<T> {
     /**
      * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
      * source.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+    final void delegateSubscribe(Subscriber<? super T> subscriber,
                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+        handleSubscribe(subscriber, contextMap, contextProvider);
     }
 
-    private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
-                                      AsyncContextMap contextMap) {
+    private void subscribeWithContext(Subscriber<? super T> subscriber,
+                                      AsyncContextProvider provider, AsyncContextMap contextMap) {
         requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber<? super T> offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
-            // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor());
-            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
-            offloadedSubscriber =
-                    signalOffloader.offloadSubscription(provider.wrapSubscription(subscriber, contextMap));
-        } catch (Throwable t) {
-            deliverErrorFromSource(subscriber, t);
-            return;
-        }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
-                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
+        Subscriber<? super T> wrapped = provider.wrapSubscription(subscriber, contextMap);
+        provider.wrapRunnable(() -> handleSubscribe(wrapped, contextMap, provider), contextMap).run();
     }
 
     /**
-     * Override for {@link #handleSubscribe(PublisherSource.Subscriber)} to offload the
-     * {@link #handleSubscribe(PublisherSource.Subscriber)} call to the passed {@link SignalOffloader}.
-     * <p>
-     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(PublisherSource.Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
+     * This method wraps the passed {@link Subscriber} using
+     * @link AsyncContextProvider#wrapPublisherSubscriber(Subscriber,AsyncContextMap)} and
+     * then calls {@link #handleSubscribe(PublisherSource.Subscriber)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
-     *
      * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
+    void handleSubscribe(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            Subscriber<? super T> offloaded =
-                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
-            handleSubscribe(offloaded);
+            Subscriber<? super T> wrapped = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
+            handleSubscribe(wrapped);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the
@@ -3647,25 +3634,6 @@ public abstract class Publisher<T> {
             // further signals occur.
             deliverErrorFromSource(subscriber, t);
         }
-    }
-
-    /**
-     * Returns the {@link Executor} used for this {@link Publisher}.
-     *
-     * @return {@link Executor} used for this {@link Publisher}.
-     */
-    Executor executor() {
-        return immediate();
-    }
-
-    /**
-     * Returns true if the async context should be shared on subscribe otherwise false if the async context will be
-     * copied.
-     *
-     * @return true if the async context should be shared on subscribe
-     */
-    boolean shareContextOnSubscribe() {
-        return false;
     }
 
     //

@@ -20,12 +20,14 @@ import io.servicetalk.concurrent.api.AbstractHandleSubscribeOffloadedTest;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
 import static java.lang.Thread.currentThread;
 
+@Disabled("This needs to be reworked without SignalOffloader")
 class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffloadedTest {
     private final Publisher<Integer> source = new Publisher<Integer>() {
         @Override
