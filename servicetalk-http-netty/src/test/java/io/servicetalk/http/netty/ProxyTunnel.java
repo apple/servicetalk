@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -86,7 +85,7 @@ final class ProxyTunnel implements AutoCloseable {
             }
             return null;
         });
-        return HostAndPort.of((InetSocketAddress) serverSocket.getLocalSocketAddress());
+        return HostAndPort.of(getLoopbackAddress().getHostAddress(), serverSocket.getLocalPort());
     }
 
     void badResponseProxy() {
