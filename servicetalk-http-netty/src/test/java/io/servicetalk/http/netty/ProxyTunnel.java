@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -60,6 +61,7 @@ final class ProxyTunnel implements AutoCloseable {
 
     HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
+        final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
         executor.submit(() -> {
             while (!executor.isShutdown()) {
                 final Socket socket = serverSocket.accept();
@@ -85,7 +87,7 @@ final class ProxyTunnel implements AutoCloseable {
             }
             return null;
         });
-        InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
+
         return HostAndPort.of(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
     }
 
