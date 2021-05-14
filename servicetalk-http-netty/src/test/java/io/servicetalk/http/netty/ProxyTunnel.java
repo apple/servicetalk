@@ -85,7 +85,8 @@ final class ProxyTunnel implements AutoCloseable {
             }
             return null;
         });
-        return HostAndPort.of(getLoopbackAddress().getHostAddress(), serverSocket.getLocalPort());
+        InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
+        return HostAndPort.of(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
     }
 
     void badResponseProxy() {
