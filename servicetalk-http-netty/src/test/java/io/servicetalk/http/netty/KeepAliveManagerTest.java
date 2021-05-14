@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
@@ -36,7 +34,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_IDLE_DURATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,6 +43,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class KeepAliveManagerTest {
@@ -235,11 +234,11 @@ public class KeepAliveManagerTest {
         verifyNoWrite();
         verifyNoScheduledTasks();
 
-        CompletableSource.Processor onClosing = newCompletableProcessor();
-        manager.initiateGracefulClose(onClosing);
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated, never()).run();
         verifyNoWrite();
         verifyNoScheduledTasks();
-        StepVerifiers.createForSource(onClosing).expectCancellable().expectComplete().verify();
     }
 
     private ScheduledTask verifyPingAckTimeoutScheduled() {
@@ -270,9 +269,9 @@ public class KeepAliveManagerTest {
     }
 
     private Http2PingFrame initiateGracefulCloseVerifyGoAwayAndPing(final KeepAliveManager manager) {
-        CompletableSource.Processor onClosing = newCompletableProcessor();
-        manager.initiateGracefulClose(onClosing);
-        StepVerifiers.createForSource(onClosing).expectCancellable().expectComplete().verify();
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated).run();
 
         Http2GoAwayFrame firstGoAway = verifyWrite(instanceOf(Http2GoAwayFrame.class));
         assertThat("Unexpected error in go_away", firstGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
