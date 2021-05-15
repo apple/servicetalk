@@ -44,7 +44,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.from;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.api.Executors.newSingleThreadedExecutor;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -67,6 +70,38 @@ final class DefaultExecutorTest {
     private Executor executor;
 
     private enum ExecutorParam {
+        IMMEDIATE {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return immediate();
+            }
+
+            @Override
+            int size() {
+                return 0;
+            }
+        },
+        SINGLE_THREAD {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return newSingleThreadedExecutor();
+            }
+
+            @Override
+            int size() {
+                return 1;
+            }
+        },
         FIXED_SIZE {
             @Override
             boolean supportsCancellation() {
@@ -91,7 +126,7 @@ final class DefaultExecutorTest {
 
             @Override
             Executor get() {
-                return io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor();
+                return newCachedThreadExecutor();
             }
 
             @Override
@@ -176,6 +211,8 @@ final class DefaultExecutorTest {
     @EnumSource(ExecutorParam.class)
     void longRunningTasksDoesNotHaltOthers(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
+        assumeTrue(executorParam.size() == UNBOUNDED || executorParam.size() > 1,
+                () -> "Ignoring executor: " + executorParam + ", it has only a single thread");
         Task awaitForever = Task.newAwaitForeverTask();
         executor.execute(awaitForever);
         Task task = new Task();
