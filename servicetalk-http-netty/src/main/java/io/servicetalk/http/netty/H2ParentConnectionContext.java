@@ -39,13 +39,10 @@ import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.socket.ChannelInputShutdownReadComplete;
-import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
-import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
 import java.net.SocketAddress;
@@ -241,10 +238,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                             (SslHandshakeCompletionEvent) evt, this::tryFailSubscriber,
                             observer != NoopConnectionObserver.INSTANCE);
                     tryCompleteSubscriber();
-                } else if (evt == SslCloseCompletionEvent.SUCCESS || evt == ChannelInputShutdownReadComplete.INSTANCE ||
-                        evt == ChannelOutputShutdownEvent.INSTANCE) {
-                    // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
-                    parentContext.onClosing.onComplete();
                 }
             } finally {
                 release(evt);
