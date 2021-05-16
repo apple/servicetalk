@@ -43,6 +43,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class KeepAliveManagerTest {
@@ -232,7 +234,9 @@ public class KeepAliveManagerTest {
         verifyNoWrite();
         verifyNoScheduledTasks();
 
-        manager.initiateGracefulClose(() -> { });
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated, never()).run();
         verifyNoWrite();
         verifyNoScheduledTasks();
     }
@@ -265,7 +269,10 @@ public class KeepAliveManagerTest {
     }
 
     private Http2PingFrame initiateGracefulCloseVerifyGoAwayAndPing(final KeepAliveManager manager) {
-        manager.initiateGracefulClose(() -> { });
+        Runnable whenInitiated = mock(Runnable.class);
+        manager.initiateGracefulClose(whenInitiated);
+        verify(whenInitiated).run();
+
         Http2GoAwayFrame firstGoAway = verifyWrite(instanceOf(Http2GoAwayFrame.class));
         assertThat("Unexpected error in go_away", firstGoAway.errorCode(), is(Http2Error.NO_ERROR.code()));
         Http2PingFrame pingFrame = verifyWrite(instanceOf(Http2PingFrame.class));
@@ -289,7 +296,7 @@ public class KeepAliveManagerTest {
         assertThat("Unexpected tasks scheduled.", scheduledTasks.poll(), is(nullValue()));
     }
 
-    private EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
+    private static EmbeddedChannel addActiveStream(final KeepAliveManager manager) {
         EmbeddedChannel stream = new EmbeddedChannel();
         manager.trackActiveStream(stream);
         return stream;
