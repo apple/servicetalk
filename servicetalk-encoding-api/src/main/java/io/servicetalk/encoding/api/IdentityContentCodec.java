@@ -17,9 +17,9 @@ package io.servicetalk.encoding.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 
 /**
@@ -68,7 +68,7 @@ final class IdentityContentCodec implements ContentCodec {
     public boolean equals(Object other) {
         if (other instanceof ContentCodec) {
             ContentCodec contentCodec = (ContentCodec) other;
-            return CharSequences.contentEquals(name(), contentCodec.name());
+            return contentEquals(name(), contentCodec.name());
         }
 
         return false;

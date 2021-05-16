@@ -16,14 +16,14 @@
 package io.servicetalk.encoding.api.internal;
 
 import io.servicetalk.encoding.api.ContentCodec;
-import io.servicetalk.encoding.api.Identity;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+import static io.servicetalk.encoding.api.Identity.identity;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -32,13 +32,10 @@ class HeaderUtilsTest {
 
     @Test
     void negotiateAcceptedEncoding() {
-        List<ContentCodec> clientSupportedEncodings = Arrays.asList(Identity.identity(), new NoopContentCodec("any"));
-
-        List<ContentCodec> serverSupportedEncodings = Collections.singletonList(new CustomIdentityContentCodec());
-
+        List<ContentCodec> clientSupportedEncodings = asList(identity(), new NoopContentCodec("any"));
+        List<ContentCodec> serverSupportedEncodings = singletonList(new CustomIdentityContentCodec());
         ContentCodec acceptedEncoding = HeaderUtils.negotiateAcceptedEncoding(clientSupportedEncodings,
                 serverSupportedEncodings);
-
         assertThat(acceptedEncoding, is(nullValue()));
     }
 }

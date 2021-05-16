@@ -37,7 +37,7 @@ public final class Identity {
     }
 
     /**
-     * Returns if the provided {@link ContentCodec codec} has name equal to {@code identity}.
+     * Returns {@code true} if the provided {@link ContentCodec codec} has name equal to {@code identity}.
      *
      * @param codec The {@link ContentCodec codec} to check.
      * @return {@code true} if the provided {@link ContentCodec} has name equal to {@code identity}.
