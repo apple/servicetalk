@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.BlockingIterables;
 import io.servicetalk.serialization.api.SerializationException;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,13 +40,11 @@ import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FormUrlEncodedHttpSerializerTest {
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
 
     private static final FormUrlEncodedHttpSerializer SERIALIZER = FormUrlEncodedHttpSerializer.UTF8;
 
@@ -73,13 +69,13 @@ public class FormUrlEncodedHttpSerializerTest {
 
     private HttpHeaders headers;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
     }
 
     @Test
-    public void formParametersAreEncoded() {
+    void formParametersAreEncoded() {
         final Map<String, List<String>> formParameters = new HashMap<>();
         formParameters.put("emptyParam", singletonList(""));
         formParameters.put("escape&this=", singletonList("and&this%"));
@@ -87,128 +83,121 @@ public class FormUrlEncodedHttpSerializerTest {
 
         final Buffer serialized = SERIALIZER.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
-        assertEquals("Unexpected serialized content.",
-                "emptyParam=&escape%26this%3D=and%26this%25&param2=foo&param2=bar",
-                serialized.toString(UTF_8));
-        assertTrue("Unexpected content type.",
-                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
+        assertEquals("emptyParam=&escape%26this%3D=and%26this%25&param2=foo&param2=bar",
+                serialized.toString(UTF_8), "Unexpected serialized content.");
+        assertTrue(headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"),
+                "Unexpected content type.");
     }
 
     @Test
-    public void serializeEmptyMap() {
+    void serializeEmptyMap() {
         final Buffer serialized = SERIALIZER.serialize(headers, EMPTY_MAP, DEFAULT_ALLOCATOR);
-        assertEquals("Unexpected buffer length.", 0, serialized.readableBytes());
-        assertTrue("Unexpected content type.",
-                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
+        assertEquals(0, serialized.readableBytes(), "Unexpected buffer length.");
+        assertTrue(headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"),
+                "Unexpected content type.");
     }
 
     @Test
-    public void serializeMapWithNullKey() {
-        expected.expect(SerializationException.class);
-        SERIALIZER.serialize(headers, MAP_NULL_KEY, DEFAULT_ALLOCATOR);
+    void serializeMapWithNullKey() {
+        assertThrows(SerializationException.class,
+                () -> SERIALIZER.serialize(headers, MAP_NULL_KEY, DEFAULT_ALLOCATOR));
     }
 
     @Test
-    public void serializeStreamingMultipleParts() throws Exception {
+    void serializeStreamingMultipleParts() throws Exception {
         final Publisher<Buffer> serialized = SERIALIZER.serialize(headers,
                 Publisher.from(MAP_A, MAP_B), DEFAULT_ALLOCATOR);
         String queryStr = queryStringFromPublisher(serialized);
 
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeStreamingMultiplePartsWithEmptySecondMap() throws Exception {
+    void serializeStreamingMultiplePartsWithEmptySecondMap() throws Exception {
         String queryStr = queryStringFromPublisher(SERIALIZER.serialize(headers,
                 Publisher.from(MAP_A, EMPTY_MAP), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "key1=val1&key2=val2", queryStr);
+        assertEquals("key1=val1&key2=val2", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeStreamingMultiplePartsWithEmptyFirstMap() throws Exception {
+    void serializeStreamingMultiplePartsWithEmptyFirstMap() throws Exception {
         String queryStr = queryStringFromPublisher(SERIALIZER.serialize(headers,
                 Publisher.from(EMPTY_MAP, MAP_A), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "key1=val1&key2=val2", queryStr);
+        assertEquals("key1=val1&key2=val2", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeStreamingMultiplePartsWithEmptyAllMaps() throws Exception {
+    void serializeStreamingMultiplePartsWithEmptyAllMaps() throws Exception {
         String queryStr = queryStringFromPublisher(SERIALIZER.serialize(headers,
                 Publisher.from(EMPTY_MAP, EMPTY_MAP), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "", queryStr);
+        assertEquals("", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeStreamingMultiplePartsWithMixOfEmptyAndNotEmptyMaps() throws Exception {
+    void serializeStreamingMultiplePartsWithMixOfEmptyAndNotEmptyMaps() throws Exception {
         String queryStr = queryStringFromPublisher(SERIALIZER.serialize(headers,
                 Publisher.from(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeStreamingMultiplePartsWithMixOfEmptyAndNotEmptyMapsAndResubscribe() throws Exception {
+    void serializeStreamingMultiplePartsWithMixOfEmptyAndNotEmptyMapsAndResubscribe() throws Exception {
         Publisher<Buffer> pub = SERIALIZER.serialize(headers,
                 Publisher.from(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B), DEFAULT_ALLOCATOR);
 
         String queryStr = queryStringFromPublisher(pub);
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
 
         queryStr = queryStringFromPublisher(pub);
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeBlockingItMultipleParts() {
+    void serializeBlockingItMultipleParts() {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(MAP_A, MAP_B)), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeBlockingItMultiplePartsWithEmptySecondMap() {
+    void serializeBlockingItMultiplePartsWithEmptySecondMap() {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(MAP_A, EMPTY_MAP)), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "key1=val1&key2=val2", queryStr);
+        assertEquals("key1=val1&key2=val2", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeBlockingItMultiplePartsWithEmptyFirstMap() {
+    void serializeBlockingItMultiplePartsWithEmptyFirstMap() {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(EMPTY_MAP, MAP_A)), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "key1=val1&key2=val2", queryStr);
+        assertEquals("key1=val1&key2=val2", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeBlockingItMultiplePartsWithEmptyAllMaps() {
+    void serializeBlockingItMultiplePartsWithEmptyAllMaps() {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(EMPTY_MAP, EMPTY_MAP)), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.", "", queryStr);
+        assertEquals("", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void serializeBlockingItMultiplePartsWithMixOfEmptyAndNotEmptyMaps() {
+    void serializeBlockingItMultiplePartsWithMixOfEmptyAndNotEmptyMaps() {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B)), DEFAULT_ALLOCATOR));
 
-        assertEquals("Unexpected serialized content.",
-                "key1=val1&key2=val2&key3=val3&key4=val4", queryStr);
+        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
     }
 
     @Test
-    public void iterableCloseIsPropagated() throws Exception {
+    void iterableCloseIsPropagated() throws Exception {
         final AtomicBoolean isClosed = new AtomicBoolean(false);
 
         final BlockingIterable<Map<String, List<String>>> formParametersIterable =
@@ -244,8 +233,8 @@ public class FormUrlEncodedHttpSerializerTest {
         serialized.iterator().close();
 
         assertTrue(isClosed.get());
-        assertTrue("Unexpected content type.",
-                headers.contains(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8"));
+        assertTrue(headers.contains(CONTENT_TYPE,
+                "application/x-www-form-urlencoded; charset=UTF-8"), "Unexpected content type.");
     }
 
     private String queryStringFromPublisher(Publisher<Buffer> serialized) throws Exception {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
@@ -42,10 +42,10 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
+class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
 
     @Test
-    public void httpClientWithStaticLoadBalancing() throws Exception {
+    void httpClientWithStaticLoadBalancing() throws Exception {
 
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);
@@ -54,7 +54,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @Test
-    public void httpClientWithDynamicLoadBalancing() throws Exception {
+    void httpClientWithDynamicLoadBalancing() throws Exception {
 
         TestPublisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub = new TestPublisher<>();
 
@@ -71,7 +71,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @Test
-    public void withConnectionFactoryFilter() throws Exception {
+    void withConnectionFactoryFilter() throws Exception {
         ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory1 = newFilter();
         ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory2 = newFilter();
         StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
@@ -106,7 +106,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         return factory;
     }
 
-    private static void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
+    private void sendRequestAndValidate(final Publisher<ServiceDiscovererEvent<InetSocketAddress>> sdPub)
             throws ExecutionException, InterruptedException {
         @SuppressWarnings("unchecked")
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -35,12 +34,10 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -51,13 +48,15 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -66,15 +65,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SecurityHandshakeObserverTest {
+class SecurityHandshakeObserverTest {
 
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached("server-io", "server-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+        ExecutionContextExtension.cached("client-io", "client-executor");
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+
 
     private final TransportObserver clientTransportObserver;
     private final ConnectionObserver clientConnectionObserver;
@@ -84,7 +84,7 @@ public class SecurityHandshakeObserverTest {
     private final ConnectionObserver serverConnectionObserver;
     private final SecurityHandshakeObserver serverSecurityHandshakeObserver;
 
-    public SecurityHandshakeObserverTest() {
+    SecurityHandshakeObserverTest() {
         clientTransportObserver = mock(TransportObserver.class, "clientTransportObserver");
         clientConnectionObserver = mock(ConnectionObserver.class, "clientConnectionObserver");
         clientSecurityHandshakeObserver = mock(SecurityHandshakeObserver.class, "clientSecurityHandshakeObserver");
@@ -97,7 +97,7 @@ public class SecurityHandshakeObserverTest {
         when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
         when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-                .thenReturn(clientMultiplexedObserver);
+            .thenReturn(clientMultiplexedObserver);
         when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
         when(clientStreamObserver.streamEstablished()).thenReturn(clientDataObserver);
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
@@ -115,7 +115,7 @@ public class SecurityHandshakeObserverTest {
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
         when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
-                .thenReturn(serverMultiplexedObserver);
+            .thenReturn(serverMultiplexedObserver);
         when(serverMultiplexedObserver.onNewStream()).thenReturn(serverStreamObserver);
         when(serverStreamObserver.streamEstablished()).thenReturn(serverDataObserver);
         when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
@@ -123,58 +123,58 @@ public class SecurityHandshakeObserverTest {
     }
 
     @Test
-    public void withH1() throws Exception {
-        verifyHandshakeObserved(address -> HttpServers.forAddress(address).protocols(h1Default()),
-                address -> HttpClients.forSingleAddress(address).protocols(h1Default()));
+    void withH1() throws Exception {
+        verifyHandshakeObserved(address -> forAddress(address).protocols(h1Default()),
+                                address -> forSingleAddress(address).protocols(h1Default()));
     }
 
     @Test
-    public void withH2() throws Exception {
-        verifyHandshakeObserved(address -> HttpServers.forAddress(address).protocols(h2Default()),
-                address -> HttpClients.forSingleAddress(address).protocols(h2Default()));
+    void withH2() throws Exception {
+        verifyHandshakeObserved(address -> forAddress(address).protocols(h2Default()),
+                                address -> forSingleAddress(address).protocols(h2Default()));
     }
 
     @Test
-    public void withAlpnPreferH1() throws Exception {
-        verifyHandshakeObserved(address -> HttpServers.forAddress(address).protocols(h1Default(), h2Default()),
-                address -> HttpClients.forSingleAddress(address).protocols(h1Default(), h2Default()));
+    void withAlpnPreferH1() throws Exception {
+        verifyHandshakeObserved(address -> forAddress(address).protocols(h1Default(), h2Default()),
+                                address -> forSingleAddress(address).protocols(h1Default(), h2Default()));
     }
 
     @Test
-    public void withAlpnPreferH2() throws Exception {
-        verifyHandshakeObserved(address -> HttpServers.forAddress(address).protocols(h2Default(), h1Default()),
-                address -> HttpClients.forSingleAddress(address).protocols(h2Default(), h1Default()));
+    void withAlpnPreferH2() throws Exception {
+        verifyHandshakeObserved(address -> forAddress(address).protocols(h2Default(), h1Default()),
+                                address -> forSingleAddress(address).protocols(h2Default(), h1Default()));
     }
 
     @Test
-    public void withProxyTunnel() throws Exception {
+    void withProxyTunnel() throws Exception {
         try (ProxyTunnel proxyTunnel = new ProxyTunnel()) {
             HostAndPort proxyAddress = proxyTunnel.startProxy();
             verifyHandshakeObserved(HttpServers::forAddress,
-                    address -> HttpClients.forSingleAddressViaProxy(address, proxyAddress));
+                                    address -> forSingleAddressViaProxy(address, proxyAddress));
         }
     }
 
     private void verifyHandshakeObserved(Function<SocketAddress, HttpServerBuilder> serverBuilderFactory,
                                          Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort,
-                                                 InetSocketAddress>> clientBuilderFactory) throws Exception {
+                                             InetSocketAddress>> clientBuilderFactory) throws Exception {
 
         try (ServerContext serverContext = serverBuilderFactory.apply(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .sslConfig(new ServerSslConfigBuilder(
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .sslConfig(new ServerSslConfigBuilder(
                         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
-                .transportObserver(serverTransportObserver)
-                .listenStreamingAndAwait(new TestServiceStreaming());
+            .transportObserver(serverTransportObserver)
+            .listenStreamingAndAwait(new TestServiceStreaming());
 
              BlockingHttpClient client = clientBuilderFactory.apply(serverHostAndPort(serverContext))
-                     .ioExecutor(CLIENT_CTX.ioExecutor())
-                     .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
-                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                 .ioExecutor(CLIENT_CTX.ioExecutor())
+                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                              .peerHost(serverPemHostname()).build())
-                     .appendConnectionFactoryFilter(
-                             new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
-                     .buildBlocking()) {
+                 .appendConnectionFactoryFilter(
+                     new TransportObserverConnectionFactoryFilter<>(clientTransportObserver))
+                 .buildBlocking()) {
 
             String content = "payload_body";
             HttpResponse response = client.request(client.post(SVC_ECHO).payloadBody(content, textSerializer()));

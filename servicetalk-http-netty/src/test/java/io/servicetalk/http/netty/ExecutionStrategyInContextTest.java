@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
@@ -34,10 +34,9 @@ import io.servicetalk.transport.api.ServerContext;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,10 +51,8 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ExecutionStrategyInContextTest {
-
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+@ExtendWith(TimeoutTracingInfoExtension.class)
+class ExecutionStrategyInContextTest {
 
     @Nullable
     private ServerContext context;
@@ -67,8 +64,8 @@ public class ExecutionStrategyInContextTest {
     private HttpExecutionStrategy expectedClientStrategy;
     private final AtomicReference<HttpExecutionStrategy> serviceStrategyRef = new AtomicReference<>();
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (clientAsCloseable != null) {
             clientAsCloseable.close();
         }
@@ -78,42 +75,42 @@ public class ExecutionStrategyInContextTest {
     }
 
     @Test
-    public void streamingDefaultStrategy() throws Exception {
+    void streamingDefaultStrategy() throws Exception {
         testStreaming(false);
     }
 
     @Test
-    public void streamingCustomStrategy() throws Exception {
+    void streamingCustomStrategy() throws Exception {
         testStreaming(true);
     }
 
     @Test
-    public void asyncDefaultStrategy() throws Exception {
+    void asyncDefaultStrategy() throws Exception {
         testAsync(false);
     }
 
     @Test
-    public void asyncCustomStrategy() throws Exception {
+    void asyncCustomStrategy() throws Exception {
         testAsync(true);
     }
 
     @Test
-    public void blockingDefaultStrategy() throws Exception {
+    void blockingDefaultStrategy() throws Exception {
         testBlocking(false);
     }
 
     @Test
-    public void blockingCustomStrategy() throws Exception {
+    void blockingCustomStrategy() throws Exception {
         testBlocking(true);
     }
 
     @Test
-    public void blockingStreamingDefaultStrategy() throws Exception {
+    void blockingStreamingDefaultStrategy() throws Exception {
         testBlockingStreaming(false);
     }
 
     @Test
-    public void blockingStreamingCustomStrategy() throws Exception {
+    void blockingStreamingCustomStrategy() throws Exception {
         testBlockingStreaming(true);
     }
 
@@ -139,7 +136,7 @@ public class ExecutionStrategyInContextTest {
         assertThat("Unexpected connection strategy (from execution context).",
                 conn.executionContext().executionStrategy(), equalStrategies(expectedClientStrategy));
         assertThat("Unexpected connection strategy (from execution context).",
-                (HttpExecutionStrategy) conn.connectionContext().executionContext().executionStrategy(),
+                conn.connectionContext().executionContext().executionStrategy(),
                 equalStrategies(expectedClientStrategy));
     }
 
@@ -165,7 +162,7 @@ public class ExecutionStrategyInContextTest {
         assertThat("Unexpected connection strategy (from execution context).",
                 conn.executionContext().executionStrategy(), equalStrategies(expectedClientStrategy));
         assertThat("Unexpected connection strategy (from execution context).",
-                (HttpExecutionStrategy) conn.connectionContext().executionContext().executionStrategy(),
+                conn.connectionContext().executionContext().executionStrategy(),
                 equalStrategies(expectedClientStrategy));
     }
 
@@ -191,7 +188,7 @@ public class ExecutionStrategyInContextTest {
         assertThat("Unexpected connection strategy (from execution context).",
                 conn.executionContext().executionStrategy(), equalStrategies(expectedClientStrategy));
         assertThat("Unexpected connection strategy (from execution context).",
-                (HttpExecutionStrategy) conn.connectionContext().executionContext().executionStrategy(),
+                conn.connectionContext().executionContext().executionStrategy(),
                 equalStrategies(expectedClientStrategy));
     }
 
@@ -223,12 +220,12 @@ public class ExecutionStrategyInContextTest {
         assertThat("Unexpected connection strategy (from execution context).",
                 conn.executionContext().executionStrategy(), equalStrategies(expectedClientStrategy));
         assertThat("Unexpected connection strategy (from execution context).",
-                (HttpExecutionStrategy) conn.connectionContext().executionContext().executionStrategy(),
+                conn.connectionContext().executionContext().executionStrategy(),
                 equalStrategies(expectedClientStrategy));
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> initClientAndServer(
-            Function<HttpServerBuilder, Single<ServerContext>> serverStarter, boolean customStrategy)
+        Function<HttpServerBuilder, Single<ServerContext>> serverStarter, boolean customStrategy)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {

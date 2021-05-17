@@ -51,7 +51,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
@@ -94,7 +94,7 @@ public class NettyChannelPublisherTest {
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection =
-                DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
+                DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
             immediate(), terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
                                 channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                 @Override
@@ -124,7 +124,7 @@ public class NettyChannelPublisherTest {
                 defaultFlushStrategy(), null, channel -> {
                     channel.pipeline().addLast(new ChannelDuplexHandler() {
                         @Override
-                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
                             if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                                 ctx.fireChannelRead(10);
                             }
@@ -132,13 +132,13 @@ public class NettyChannelPublisherTest {
                         }
 
                         @Override
-                        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                        public void channelInactive(ChannelHandlerContext ctx) {
                             ctx.fireChannelRead(11);
                             ctx.fireChannelInactive();
                         }
 
                         @Override
-                        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+                        public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
                             ctx.fireChannelRead(12);
                             ctx.close(promise);
                         }

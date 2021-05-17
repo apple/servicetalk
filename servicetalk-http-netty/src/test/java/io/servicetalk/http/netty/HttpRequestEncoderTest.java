@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -40,7 +39,7 @@ import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
@@ -52,11 +51,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.hamcrest.Matchers;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.CountDownLatch;
@@ -93,14 +89,12 @@ import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -112,15 +106,13 @@ public class HttpRequestEncoderTest {
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    @ClassRule
-    public static final ExecutionContextRule SEC = new ExecutionContextRule(() -> allocator,
-            () -> createIoExecutor(new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
-            Executors::immediate);
-    @ClassRule
-    public static final ExecutionContextRule CEC = new ExecutionContextRule(() -> allocator,
+    @RegisterExtension
+    static final ExecutionContextExtension SEC =
+            new ExecutionContextExtension(() -> allocator,
+                    () -> createIoExecutor(new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
+                    Executors::immediate);
+    @RegisterExtension
+    static final ExecutionContextExtension CEC = new ExecutionContextExtension(() -> allocator,
             () -> createIoExecutor(new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
             Executors::newCachedThreadExecutor);
 
@@ -131,7 +123,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void contentLengthNoTrailers() {
+    void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -149,20 +141,18 @@ public class HttpRequestEncoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void contentLengthNoTrailersHeaderWhiteSpaceThrowByDefault() {
+    @Test
+    void contentLengthNoTrailersHeaderWhiteSpaceThrowByDefault() {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        try {
-            request.addHeader(" " + CONNECTION, KEEP_ALIVE);
-        } finally {
-            assertFalse(channel.finishAndReleaseAll());
-        }
+                                                         GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
+
+        assertThrows(IllegalArgumentException.class, () -> request.addHeader(" " + CONNECTION, KEEP_ALIVE));
+        assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
-    public void contentLengthNoTrailersHeaderWhiteSpaceEncodedWithValidationOff() {
+    void contentLengthNoTrailersHeaderWhiteSpaceEncodedWithValidationOff() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -181,15 +171,16 @@ public class HttpRequestEncoderTest {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                " " + CONNECTION + " :  " + KEEP_ALIVE + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                "  " + USER_AGENT + "   :     unit-test   " + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                CONTENT_LENGTH + ": " + valueOf(buffer.readableBytes()) + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.endsWith("\r\n" + "\r\n"));
+        assertTrue(actualMetaData.contains(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(
+                " " + CONNECTION + " :  " + KEEP_ALIVE + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(
+                "  " + USER_AGENT + "   :     unit-test   " + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(
+                CONTENT_LENGTH + ": " + buffer.readableBytes() + "\r\n"),
+                () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.endsWith("\r\n" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
         byteBuf = channel.readOutbound();
         assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
         byteBuf.release();
@@ -199,7 +190,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void chunkedNoTrailers() {
+    void chunkedNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -218,7 +209,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void chunkedWithTrailers() {
+    void chunkedWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -240,7 +231,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void chunkedNoTrailersNoContent() {
+    void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
@@ -256,7 +247,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void variableNoTrailersNoContent() {
+    void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
@@ -271,7 +262,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void variableNoTrailers() {
+    void variableNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -289,7 +280,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void variableWithTrailers() {
+    void variableWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -311,7 +302,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void contentLengthWithTrailers() {
+    void contentLengthWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -338,17 +329,17 @@ public class HttpRequestEncoderTest {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                CONNECTION + ": " + KEEP_ALIVE + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                USER_AGENT + ": unit-test" + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.endsWith("\r\n" + "\r\n"));
+        assertTrue(actualMetaData.contains(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(
+                CONNECTION + ": " + KEEP_ALIVE + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(
+                USER_AGENT + ": unit-test" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.endsWith("\r\n" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
         switch (encoding) {
             case Chunked:
-                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                        TRANSFER_ENCODING + ": " + CHUNKED + "\r\n"));
+                assertTrue(actualMetaData.contains(
+                        TRANSFER_ENCODING + ": " + CHUNKED + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
                 if (buffer.readableBytes() != 0) {
                     byteBuf = channel.readOutbound();
                     assertEquals(toHexString(buffer.readableBytes()) + "\r\n", byteBuf.toString(US_ASCII));
@@ -378,8 +369,9 @@ public class HttpRequestEncoderTest {
                 }
                 break;
             case ContentLength:
-                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
-                        CONTENT_LENGTH + ": " + valueOf(buffer.readableBytes()) + "\r\n"));
+                assertTrue(actualMetaData.contains(
+                        CONTENT_LENGTH + ": " + buffer.readableBytes() + "\r\n"),
+                        () -> "unexpected metadata: " + actualMetaData);
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
                 consumeEmptyBufferFromTrailers(channel);
@@ -408,7 +400,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void protocolPayloadEndOutboundShouldNotTriggerOnFailedFlush() throws Exception {
+    void protocolPayloadEndOutboundShouldNotTriggerOnFailedFlush() throws Exception {
         AtomicReference<CloseHandler> closeHandlerRef = new AtomicReference<>();
         try (CompositeCloseable resources = newCompositeCloseable()) {
             Processor serverCloseTrigger = newCompletableProcessor();
@@ -463,8 +455,8 @@ public class HttpRequestEncoderTest {
             serverChannelLatch.await();
             Channel serverChannel = serverChannelRef.get();
             assertNotNull(serverChannel);
-            assumeThat("Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.", serverChannel,
-                    is(Matchers.not(instanceOf(NioSocketChannel.class))));
+            assumeFalse(serverChannel instanceof NioSocketChannel,
+                    "Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.");
             ((SocketChannel) serverChannel).config().setSoLinger(0);
             serverChannel.close(); // Close and send RST concurrently with client write
 
@@ -481,7 +473,7 @@ public class HttpRequestEncoderTest {
     }
 
     @Test
-    public void withContentLengthAndChunked() {
+    void withContentLengthAndChunked() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -497,8 +489,9 @@ public class HttpRequestEncoderTest {
         channel.writeOutbound(buffer.duplicate());
         channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         String metaData = verifyHttpRequest(channel, buffer, TransferEncoding.Chunked, false);
-        assertFalse("Unexpected content-length header in meta-data while chunked encoding is used: " + metaData,
-                metaData.contains(CONTENT_LENGTH));
+        assertFalse(
+            metaData.contains(CONTENT_LENGTH),
+            "Unexpected content-length header in meta-data while chunked encoding is used: " + metaData);
         assertFalse(channel.finishAndReleaseAll());
     }
 }

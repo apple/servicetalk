@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -31,14 +31,15 @@ import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractHttpHeadersTest {
 
@@ -47,7 +48,7 @@ public abstract class AbstractHttpHeadersTest {
     protected abstract HttpHeaders newHeaders(int initialSizeHint);
 
     @Test
-    public void minimalBucketsIterationOrder() {
+    void minimalBucketsIterationOrder() {
         final HttpHeaders headers = newHeaders(1);
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -78,8 +79,8 @@ public abstract class AbstractHttpHeadersTest {
         assertTrue(entries.isEmpty());
     }
 
-    @Test(expected = ConcurrentModificationException.class)
-    public void removalAndInsertionConcurrentModification() {
+    @Test
+    void removalAndInsertionConcurrentModification() {
         final HttpHeaders headers = newHeaders(0);
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -106,11 +107,12 @@ public abstract class AbstractHttpHeadersTest {
 
         assertTrue(name2Itr.hasNext());
         assertEquals("value2", name2Itr.next()); // The first value is eagerly loaded.
-        name2Itr.remove(); // this value has already been removed!
+        // this value has already been removed!
+        assertThrows(ConcurrentModificationException.class, () -> name2Itr.remove());
     }
 
     @Test
-    public void removalAndInsertionDuringIteration() {
+    void removalAndInsertionDuringIteration() {
         final HttpHeaders headers = newHeaders(1);
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -147,7 +149,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void caseInsensitiveContains() {
+    void caseInsensitiveContains() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         assertTrue(headers.containsIgnoreCase("name1", "Value1"));
@@ -155,7 +157,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void addIterableShouldIncreaseAndRemoveShouldDecreaseTheSize() {
+    void addIterableShouldIncreaseAndRemoveShouldDecreaseTheSize() {
         final HttpHeaders headers = newHeaders();
         assertEquals(0, headers.size());
         headers.add("name1", asList("value1", "value2"));
@@ -175,7 +177,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void addShouldIncreaseAndRemoveShouldDecreaseTheSize() {
+    void addShouldIncreaseAndRemoveShouldDecreaseTheSize() {
         final HttpHeaders headers = newHeaders();
         assertEquals(0, headers.size());
         headers.add("name1", "value1", "value2");
@@ -195,7 +197,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void afterClearHeadersShouldBeEmpty() {
+    void afterClearHeadersShouldBeEmpty() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -208,7 +210,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void removingANameForASecondTimeShouldReturnFalse() {
+    void removingANameForASecondTimeShouldReturnFalse() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -217,7 +219,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void multipleValuesPerNameShouldBeAllowed() {
+    void multipleValuesPerNameShouldBeAllowed() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value1");
         headers.add("name", "value2");
@@ -228,14 +230,14 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void absentHeaderIteratorEmpty() {
+    void absentHeaderIteratorEmpty() {
         final HttpHeaders headers = newHeaders();
 
         assertIteratorIs(headers.valuesIterator("name"), new String[]{});
     }
 
     @Test
-    public void testContains() {
+    void testContains() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
         assertTrue(headers.contains("name", "value"));
@@ -243,7 +245,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testAddHeaders() {
+    void testAddHeaders() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
 
@@ -255,7 +257,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testAddHeadersSlowPath() {
+    void testAddHeadersSlowPath() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("name", "value");
 
         final HttpHeaders headers2 = newHeaders().add(headers);
@@ -266,7 +268,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testCopy() {
+    void testCopy() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
 
@@ -279,7 +281,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testGetAndRemove() {
+    void testGetAndRemove() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2", "value3");
@@ -304,14 +306,14 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void whenNameContainsMultipleValuesGetShouldReturnTheFirst() {
+    void whenNameContainsMultipleValuesGetShouldReturnTheFirst() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1", "value2");
         assertEquals("value1", headers.get("name1"));
     }
 
     @Test
-    public void getWithDefaultValueWorks() {
+    void getWithDefaultValueWorks() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
 
@@ -320,7 +322,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setShouldOverWritePreviousValue() {
+    void setShouldOverWritePreviousValue() {
         final HttpHeaders headers = newHeaders();
         headers.set("name", "value1");
         headers.set("name", "value2");
@@ -330,7 +332,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setIterableShouldOverWritePreviousValue() {
+    void setIterableShouldOverWritePreviousValue() {
         final HttpHeaders headers = newHeaders();
         headers.set("name", "value1");
         headers.set("name", asList("value2", "value3"));
@@ -340,7 +342,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setArrayShouldOverWritePreviousValue() {
+    void setArrayShouldOverWritePreviousValue() {
         final HttpHeaders headers = newHeaders();
         headers.set("name", "value1");
         headers.set("name", "value2", "value3");
@@ -350,7 +352,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setAllShouldOverwriteSomeAndLeaveOthersUntouched() {
+    void setAllShouldOverwriteSomeAndLeaveOthersUntouched() {
         final HttpHeaders h1 = newHeaders();
 
         h1.add("name1", "value1");
@@ -375,7 +377,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setHeadersShouldClear() {
+    void setHeadersShouldClear() {
         final HttpHeaders h1 = newHeaders();
 
         h1.add("name1", "value1");
@@ -394,7 +396,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void headersWithSameNamesAndValuesShouldBeEquivalent() {
+    void headersWithSameNamesAndValuesShouldBeEquivalent() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name1", "value1");
         headers1.add("name2", "value2");
@@ -415,7 +417,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void emptyHeadersShouldBeEqual() {
+    void emptyHeadersShouldBeEqual() {
         final HttpHeaders headers1 = newHeaders();
         final HttpHeaders headers2 = newHeaders();
         assertNotSame(headers1, headers2);
@@ -424,7 +426,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void headersWithSameNamesButDifferentValuesShouldNotBeEquivalent() {
+    void headersWithSameNamesButDifferentValuesShouldNotBeEquivalent() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name1", "value1");
         final HttpHeaders headers2 = newHeaders();
@@ -433,7 +435,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void subsetOfHeadersShouldNotBeEquivalent() {
+    void subsetOfHeadersShouldNotBeEquivalent() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name1", "value1");
         headers1.add("name2", "value2");
@@ -443,7 +445,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void headersWithDifferentNamesAndValuesShouldNotBeEquivalent() {
+    void headersWithDifferentNamesAndValuesShouldNotBeEquivalent() {
         final HttpHeaders h1 = newHeaders();
         h1.set("name1", "value1");
         final HttpHeaders h2 = newHeaders();
@@ -454,17 +456,17 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals(h2, h2);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void entryIteratorThrowsIfNoNextCall() {
+    @Test
+    void entryIteratorThrowsIfNoNextCall() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         final Iterator<Entry<CharSequence, CharSequence>> itr = headers.iterator();
         assertTrue(itr.hasNext());
-        itr.remove();
+        assertThrows(IllegalStateException.class, () -> itr.remove());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void entryIteratorThrowsIfDoubleRemove() {
+    @Test
+    void entryIteratorThrowsIfDoubleRemove() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         final Iterator<Entry<CharSequence, CharSequence>> itr = headers.iterator();
@@ -475,42 +477,43 @@ public abstract class AbstractHttpHeadersTest {
         itr.remove();
         assertTrue(headers.isEmpty());
         assertEquals(0, headers.size());
-        itr.remove();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidHeaderNameOutOfRangeCharacter() {
-        final HttpHeaders headers = newHeaders();
-        headers.add(String.valueOf((char) -1), "foo");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidHeaderNameOutOfRangeCharacterAsciiString() {
-        final HttpHeaders headers = newHeaders();
-        headers.add(newAsciiString(String.valueOf((char) -1)), "foo");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidHeaderNameCharacter() {
-        final HttpHeaders headers = newHeaders();
-        headers.add("=", "foo");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidHeaderNameCharacterAsciiString() {
-        final HttpHeaders headers = newHeaders();
-        headers.add(newAsciiString("="), "foo");
-    }
-
-    @Test(expected = NoSuchElementException.class)
-    public void iterateEmptyHeadersShouldThrow() {
-        final Iterator<Entry<CharSequence, CharSequence>> iterator = newHeaders().iterator();
-        assertFalse(iterator.hasNext());
-        iterator.next();
+        assertThrows(IllegalStateException.class, () -> itr.remove());
     }
 
     @Test
-    public void iteratorShouldReturnAllNameValuePairs() {
+    void invalidHeaderNameOutOfRangeCharacter() {
+        final HttpHeaders headers = newHeaders();
+        assertThrows(IllegalArgumentException.class, () -> headers.add(String.valueOf((char) -1), "foo"));
+    }
+
+    @Test
+    void invalidHeaderNameOutOfRangeCharacterAsciiString() {
+        final HttpHeaders headers = newHeaders();
+        assertThrows(IllegalArgumentException.class, () ->
+                headers.add(newAsciiString(String.valueOf((char) -1)), "foo"));
+    }
+
+    @Test
+    void invalidHeaderNameCharacter() {
+        final HttpHeaders headers = newHeaders();
+        assertThrows(IllegalArgumentException.class, () -> headers.add("=", "foo"));
+    }
+
+    @Test
+    void invalidHeaderNameCharacterAsciiString() {
+        final HttpHeaders headers = newHeaders();
+        assertThrows(IllegalArgumentException.class, () -> headers.add(newAsciiString("="), "foo"));
+    }
+
+    @Test
+    void iterateEmptyHeadersShouldThrow() {
+        final Iterator<Entry<CharSequence, CharSequence>> iterator = newHeaders().iterator();
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, () -> iterator.next());
+    }
+
+    @Test
+    void iteratorShouldReturnAllNameValuePairs() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name1", "value1", "value2");
         headers1.add("name2", "value3");
@@ -527,7 +530,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void iteratorSetValueShouldChangeHeaderValue() {
+    void iteratorSetValueShouldChangeHeaderValue() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1", "value2", "value3");
         headers.add("name2", "value4");
@@ -552,7 +555,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testEntryEquals() {
+    void testEntryEquals() {
         final Entry<CharSequence, CharSequence> same1 = newHeaders().add("name", "value").iterator().next();
         final Entry<CharSequence, CharSequence> same2 = newHeaders().add("name", "value").iterator().next();
         assertEquals(same1, same2);
@@ -570,13 +573,13 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void getAllReturnsEmptyListForUnknownName() {
+    void getAllReturnsEmptyListForUnknownName() {
         final HttpHeaders headers = newHeaders();
         assertFalse(headers.valuesIterator("noname").hasNext());
     }
 
     @Test
-    public void setHeadersShouldClearAndOverwrite() {
+    void setHeadersShouldClearAndOverwrite() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name", "value");
 
@@ -589,7 +592,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void setAllHeadersShouldOnlyOverwriteHeaders() {
+    void setAllHeadersShouldOnlyOverwriteHeaders() {
         final HttpHeaders headers1 = newHeaders();
         headers1.add("name", "value");
         headers1.add("name1", "value1");
@@ -608,7 +611,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testAddSelf() {
+    void testAddSelf() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
         assertEquals(1, headers.size());
@@ -617,7 +620,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testSetSelfIsNoOp() {
+    void testSetSelfIsNoOp() {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
         headers.set(headers);
@@ -625,39 +628,39 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void testToString() {
+    void testToString() {
         HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name1", "value2");
         headers.add("name2", "value3");
         String result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
-        assertTrue(result, result.toLowerCase().contains("name1: value1"));
-        assertTrue(result, result.toLowerCase().contains("name1: value2"));
-        assertTrue(result, result.toLowerCase().contains("name2: value3"));
+        assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
+        assertTrue(result.toLowerCase().contains("name1: value1"), result);
+        assertTrue(result.toLowerCase().contains("name1: value2"), result);
+        assertTrue(result.toLowerCase().contains("name2: value3"), result);
 
         headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
         headers.add("name3", "value3");
         result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
-        assertTrue(result, result.toLowerCase().contains("name1: value1"));
-        assertTrue(result, result.toLowerCase().contains("name2: value2"));
-        assertTrue(result, result.toLowerCase().contains("name3: value3"));
+        assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
+        assertTrue(result.toLowerCase().contains("name1: value1"), result);
+        assertTrue(result.toLowerCase().contains("name2: value2"), result);
+        assertTrue(result.toLowerCase().contains("name3: value3"), result);
 
         headers = newHeaders();
         headers.add("name1", "value1");
         result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
-        assertTrue(result, result.toLowerCase().contains("name1: value1"));
+        assertTrue(result.startsWith(headers.getClass().getSimpleName() + "["), result);
+        assertTrue(result.toLowerCase().contains("name1: value1"), result);
 
         headers = newHeaders();
         assertEquals(headers.getClass().getSimpleName() + "[]", headers.toString((name, value) -> value));
     }
 
     @Test
-    public void testSimultaneousIteratorRemove() {
+    void testSimultaneousIteratorRemove() {
         final HttpHeaders h = newHeaders();
         h.add("n1", "v11");
         h.add("n2", "v21");
@@ -675,7 +678,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void getValueIteratorRemove() {
+    void getValueIteratorRemove() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name1", "value2");
@@ -702,7 +705,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void overallIteratorRemoveFirstAndLast() {
+    void overallIteratorRemoveFirstAndLast() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -744,7 +747,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void overallIteratorRemoveMiddle() {
+    void overallIteratorRemoveMiddle() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -786,7 +789,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void overallIteratorRemoveAll() {
+    void overallIteratorRemoveAll() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", "value2");
@@ -817,7 +820,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void removeByNameAndValuePairWhichDoesNotExist() {
+    void removeByNameAndValuePairWhichDoesNotExist() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", asList("value1", "value2"));
@@ -835,7 +838,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void removeByNameValueAndCase() {
+    void removeByNameValueAndCase() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", asList("value1", "value2"));
@@ -873,7 +876,7 @@ public abstract class AbstractHttpHeadersTest {
     }
 
     @Test
-    public void removeByNameAndValueCaseInsensitive() {
+    void removeByNameAndValueCaseInsensitive() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
         headers.add("name2", asList("value1", "value2"));

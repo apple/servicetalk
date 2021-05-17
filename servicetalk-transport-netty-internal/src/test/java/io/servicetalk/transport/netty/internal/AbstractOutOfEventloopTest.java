@@ -34,7 +34,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -45,7 +45,7 @@ public abstract class AbstractOutOfEventloopTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     protected Channel channel;
-    protected EventLoopGroup eventLoopGroup;
+    private EventLoopGroup eventLoopGroup;
     protected BlockingQueue<Integer> pendingFlush;
     protected BlockingQueue<Integer> written;
 

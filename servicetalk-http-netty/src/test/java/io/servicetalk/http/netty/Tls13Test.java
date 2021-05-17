@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpResponse;
@@ -24,16 +23,14 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -43,78 +40,66 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslProvider.JDK;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-@RunWith(Parameterized.class)
-public class Tls13Test {
+class Tls13Test {
 
-    @ClassRule
-    public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+        ExecutionContextExtension.cached("server-io", "server-executor");
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+        ExecutionContextExtension.cached("client-io", "client-executor");
 
     private static final String TLS1_3 = "TLSv1.3";
     private static final String TLS1_3_REQUIRED_CIPHER = "TLS_AES_128_GCM_SHA256";
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final SslProvider serverSslProvider;
-    private final SslProvider clientSslProvider;
-    @Nullable
-    private final String cipher;
-
-    public Tls13Test(SslProvider serverSslProvider, SslProvider clientSslProvider, @Nullable String cipher) {
-        this.serverSslProvider = requireNonNull(serverSslProvider);
-        this.clientSslProvider = requireNonNull(clientSslProvider);
-        this.cipher = cipher;
-    }
-
-    @Parameterized.Parameters(name = "server={0} client={1} cipher={2}")
-    public static Collection<Object[]> sslProviders() {
-        return asList(new Object[]{JDK, JDK, null},
-                new Object[]{JDK, JDK, TLS1_3_REQUIRED_CIPHER},
-                new Object[]{JDK, OPENSSL, null},
-                new Object[]{JDK, OPENSSL, TLS1_3_REQUIRED_CIPHER},
-                new Object[]{OPENSSL, JDK, null},
-                new Object[]{OPENSSL, JDK, TLS1_3_REQUIRED_CIPHER},
-                new Object[]{OPENSSL, OPENSSL, null},
-                new Object[]{OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER}
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> sslProviders() {
+        return Stream.of(
+                Arguments.of(JDK, JDK, null),
+                Arguments.of(JDK, JDK, TLS1_3_REQUIRED_CIPHER),
+                Arguments.of(JDK, OPENSSL, null),
+                Arguments.of(JDK, OPENSSL, TLS1_3_REQUIRED_CIPHER),
+                Arguments.of(OPENSSL, JDK, null),
+                Arguments.of(OPENSSL, JDK, TLS1_3_REQUIRED_CIPHER),
+                Arguments.of(OPENSSL, OPENSSL, null),
+                Arguments.of(OPENSSL, OPENSSL, TLS1_3_REQUIRED_CIPHER)
         );
     }
 
-    @Test
-    public void requiredCipher() throws Exception {
+    @ParameterizedTest
+    @MethodSource("sslProviders")
+    void requiredCipher(SslProvider serverSslProvider, SslProvider clientSslProvider, @Nullable String cipher)
+        throws Exception {
         ServerSslConfigBuilder serverSslBuilder = new ServerSslConfigBuilder(
                 DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .sslProtocols(TLS1_3).provider(serverSslProvider);
         if (cipher != null) {
             serverSslBuilder.ciphers(singletonList(cipher));
         }
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
-                .sslConfig(serverSslBuilder.build())
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    assertThat(request.payloadBody(textDeserializer()), equalTo("request-payload-body"));
-                    SSLSession sslSession = ctx.sslSession();
-                    assertThat(sslSession, is(notNullValue()));
-                    return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializer());
-                })) {
+        try (ServerContext serverContext = forAddress(localAddress(0))
+            .ioExecutor(SERVER_CTX.ioExecutor())
+            .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+            .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> false)
+            .sslConfig(serverSslBuilder.build())
+            .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                assertThat(request.payloadBody(textDeserializer()), equalTo("request-payload-body"));
+                SSLSession sslSession = ctx.sslSession();
+                assertThat(sslSession, is(notNullValue()));
+                return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializer());
+            })) {
 
             ClientSslConfigBuilder clientSslBuilder =
                     new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
@@ -136,7 +121,7 @@ public class Tls13Test {
                     assertThat(sslSession.getCipherSuite(), equalTo(cipher));
                 }
                 HttpResponse response = client.request(client.post("/")
-                        .payloadBody("request-payload-body", textSerializer()));
+                                                           .payloadBody("request-payload-body", textSerializer()));
 
                 assertThat(response.status(), is(OK));
                 assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));

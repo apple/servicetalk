@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,10 +33,8 @@ import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 import io.servicetalk.transport.api.TransportObserver;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
@@ -65,43 +63,42 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMostOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
-public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
+class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
 
-    private final HttpProtocol protocol;
+    private HttpProtocol protocol;
 
-    private final TransportObserver clientTransportObserver;
-    private final ConnectionObserver clientConnectionObserver;
-    private final DataObserver clientDataObserver;
-    private final MultiplexedObserver clientMultiplexedObserver;
-    private final StreamObserver clientStreamObserver;
-    private final ReadObserver clientReadObserver;
-    private final WriteObserver clientWriteObserver;
+    private TransportObserver clientTransportObserver;
+    private ConnectionObserver clientConnectionObserver;
+    private DataObserver clientDataObserver;
+    private MultiplexedObserver clientMultiplexedObserver;
+    private StreamObserver clientStreamObserver;
+    private ReadObserver clientReadObserver;
+    private WriteObserver clientWriteObserver;
 
-    private final TransportObserver serverTransportObserver;
-    private final ConnectionObserver serverConnectionObserver;
-    private final DataObserver serverDataObserver;
-    private final MultiplexedObserver serverMultiplexedObserver;
-    private final StreamObserver serverStreamObserver;
-    private final ReadObserver serverReadObserver;
-    private final WriteObserver serverWriteObserver;
+    private TransportObserver serverTransportObserver;
+    private ConnectionObserver serverConnectionObserver;
+    private DataObserver serverDataObserver;
+    private MultiplexedObserver serverMultiplexedObserver;
+    private StreamObserver serverStreamObserver;
+    private ReadObserver serverReadObserver;
+    private WriteObserver serverWriteObserver;
 
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
     private final CountDownLatch requestReceived = new CountDownLatch(1);
     private final CountDownLatch processRequest = new CountDownLatch(1);
 
-    public HttpTransportObserverTest(HttpProtocol protocol) {
-        super(CACHED, CACHED_SERVER);
+    private void setUp(HttpProtocol protocol) {
         this.protocol = protocol;
         protocol(protocol.config);
         connectionAcceptor(ctx -> {
@@ -131,13 +128,14 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
         when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
-        when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
-        when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
+        lenient().when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
+                .thenReturn(clientDataObserver);
+        lenient().when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(clientMultiplexedObserver);
-        when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
-        when(clientStreamObserver.streamEstablished()).thenReturn(clientDataObserver);
-        when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
-        when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
+        lenient().when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
+        lenient().when(clientStreamObserver.streamEstablished()).thenReturn(clientDataObserver);
+        lenient().when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
+        lenient().when(clientDataObserver.onNewWrite()).thenReturn(clientWriteObserver);
 
         serverTransportObserver = mock(TransportObserver.class, "serverTransportObserver");
         serverConnectionObserver = mock(ConnectionObserver.class, "serverConnectionObserver");
@@ -147,24 +145,23 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
         when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
-        when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
-        when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
+        lenient().when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
+                .thenReturn(serverDataObserver);
+        lenient().when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(serverMultiplexedObserver);
-        when(serverMultiplexedObserver.onNewStream()).thenReturn(serverStreamObserver);
-        when(serverStreamObserver.streamEstablished()).thenReturn(serverDataObserver);
-        when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
-        when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
+        lenient().when(serverMultiplexedObserver.onNewStream()).thenReturn(serverStreamObserver);
+        lenient().when(serverStreamObserver.streamEstablished()).thenReturn(serverDataObserver);
+        lenient().when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
+        lenient().when(serverDataObserver.onNewWrite()).thenReturn(serverWriteObserver);
 
         transportObserver(clientTransportObserver, serverTransportObserver);
+        setUp(CACHED, CACHED_SERVER);
     }
 
-    @Parameters(name = "protocol={0}")
-    public static HttpProtocol[] data() {
-        return HttpProtocol.values();
-    }
-
-    @Test
-    public void connectionEstablished() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void connectionEstablished(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         processRequest.countDown();
         StreamingHttpConnection connection = streamingHttpConnection();
 
@@ -195,22 +192,26 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
     }
 
-    @Test
-    public void echoRequestResponse() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void echoRequestResponse(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         String requestContent = "request_content";
         testRequestResponse(streamingHttpConnection().post(SVC_ECHO)
                 .addHeader(CONTENT_LENGTH, String.valueOf(requestContent.length()))
                 .payloadBody(getChunkPublisherFromStrings(requestContent)), OK, requestContent.length());
     }
 
-    @Test
-    public void serverHandlerError() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverHandlerError(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         testRequestResponse(streamingHttpConnection().get(SVC_THROW_ERROR).addHeader(CONTENT_LENGTH, ZERO),
                 INTERNAL_SERVER_ERROR, 0);
     }
 
-    public void testRequestResponse(StreamingHttpRequest request, HttpResponseStatus expectedStatus,
-                                    int expectedResponseLength) throws Exception {
+    void testRequestResponse(StreamingHttpRequest request, HttpResponseStatus expectedStatus,
+                             int expectedResponseLength) throws Exception {
         processRequest.countDown();
         assertResponse(makeRequest(request), protocol.version, expectedStatus, expectedResponseLength);
 
@@ -245,17 +246,21 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
     }
 
-    @Test
-    public void serverFailsResponsePayloadBodyBeforeRead() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverFailsResponsePayloadBodyBeforeRead(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         testServerFailsResponsePayloadBody(SVC_ERROR_BEFORE_READ, false);
     }
 
-    @Test
-    public void serverFailsResponsePayloadBodyDuringRead() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void serverFailsResponsePayloadBodyDuringRead(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         testServerFailsResponsePayloadBody(SVC_ERROR_DURING_READ, true);
     }
 
-    public void testServerFailsResponsePayloadBody(String path, boolean serverReadCompletes) throws Exception {
+    void testServerFailsResponsePayloadBody(String path, boolean serverReadCompletes) throws Exception {
         processRequest.countDown();
         StreamingHttpConnection connection = streamingHttpConnection();
         StreamingHttpResponse response = makeRequest(connection.post(path)
@@ -315,8 +320,10 @@ public class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                 serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
     }
 
-    @Test
-    public void clientFailsRequestPayloadBody() throws Exception {
+    @ParameterizedTest(name = "protocol={0}")
+    @EnumSource(HttpProtocol.class)
+    void clientFailsRequestPayloadBody(HttpProtocol httpProtocol) throws Exception {
+        setUp(httpProtocol);
         StreamingHttpConnection connection = streamingHttpConnection();
         String requestContent = "request_content";
         ExecutionException e = assertThrows(ExecutionException.class,

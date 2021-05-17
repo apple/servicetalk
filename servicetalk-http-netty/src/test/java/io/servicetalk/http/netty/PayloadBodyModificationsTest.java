@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -30,16 +30,16 @@ import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupp
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 
-public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
+class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
 
     private static final String CONTENT = "content";
 
-    public PayloadBodyModificationsTest() {
-        super(CACHED, CACHED_SERVER);
+    PayloadBodyModificationsTest() {
+        setUp(CACHED, CACHED_SERVER);
     }
 
     @Test
-    public void aggregatedSetPayloadBody() throws Exception {
+    void aggregatedSetPayloadBody() throws Exception {
         HttpClient client = streamingHttpClient().asClient();
         HttpRequest request = client.post(SVC_ECHO)
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii(CONTENT));
@@ -47,14 +47,14 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedSetPayloadBodyWithSerializer() throws Exception {
+    void aggregatedSetPayloadBodyWithSerializer() throws Exception {
         HttpRequest request = streamingHttpClient().asClient().post(SVC_ECHO)
                 .payloadBody(CONTENT, textSerializer());
         assertResponse(makeRequest(request.toStreamingRequest()), request.version(), OK, CONTENT);
     }
 
     @Test
-    public void aggregatedExpandOriginalBuffer() throws Exception {
+    void aggregatedExpandOriginalBuffer() throws Exception {
         HttpRequest request = streamingHttpClient().asClient().post(SVC_ECHO);
         Buffer payload = request.payloadBody();
         payload.writeAscii(CONTENT);
@@ -62,7 +62,7 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedExpandOriginalBufferAfterTypeConversion() throws Exception {
+    void aggregatedExpandOriginalBufferAfterTypeConversion() throws Exception {
         HttpRequest request = streamingHttpClient().asClient().post(SVC_ECHO);
         Buffer payload = request.payloadBody();
         StreamingHttpRequest streamingRequest = request.toStreamingRequest();
@@ -71,7 +71,7 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void aggregatedTakeAndExpandOriginalBufferAfterTypeConversion() throws Exception {
+    void aggregatedTakeAndExpandOriginalBufferAfterTypeConversion() throws Exception {
         HttpRequest request = streamingHttpClient().asClient().post(SVC_ECHO);
         StreamingHttpRequest streamingRequest = request.toStreamingRequest();
         // Too late to take the buffer from the original aggregated request object, modifications won't be visible:
@@ -81,7 +81,7 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void streamingSetPayloadBody() throws Exception {
+    void streamingSetPayloadBody() throws Exception {
         StreamingHttpClient client = streamingHttpClient();
         StreamingHttpRequest request = client.post(SVC_ECHO)
                 .payloadBody(from(client.executionContext().bufferAllocator().fromAscii(CONTENT)));
@@ -89,14 +89,14 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void streamingSetPayloadBodyWithSerializer() throws Exception {
+    void streamingSetPayloadBodyWithSerializer() throws Exception {
         StreamingHttpRequest request = streamingHttpClient().post(SVC_ECHO)
                 .payloadBody(from(CONTENT), textSerializer());
         assertResponse(makeRequest(request), request.version(), OK, CONTENT);
     }
 
     @Test
-    public void streamingExpandOriginalBuffer() throws Exception {
+    void streamingExpandOriginalBuffer() throws Exception {
         StreamingHttpClient client = streamingHttpClient();
         Buffer buffer = client.executionContext().bufferAllocator().newBuffer(0, false);
         StreamingHttpRequest request = client.post(SVC_ECHO).payloadBody(from(buffer));
@@ -105,7 +105,7 @@ public class PayloadBodyModificationsTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
-    public void streamingExpandOriginalBufferAfterTypeConversions() throws Exception {
+    void streamingExpandOriginalBufferAfterTypeConversions() throws Exception {
         StreamingHttpClient client = streamingHttpClient();
         Buffer buffer = client.executionContext().bufferAllocator().newBuffer(0, false);
         StreamingHttpRequest request = client.post(SVC_ECHO).payloadBody(from(buffer))
