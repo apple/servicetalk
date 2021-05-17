@@ -40,11 +40,13 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
     private static final String DEFAULT_NAME_PREFIX = "servicetalk-solo";
     private static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
     /**
-     * Using plain {@link BlockingQueue#offer(Object)} with only a single worker thread will result in occasional
-     * spurious rejections as scheduling jitter can cause delay it entering {@link BlockingQueue#poll()} following a
-     * task. Almost any amount of delay is sufficient.
+     * Using plain {@link SynchronousQueue#offer(Object)} with only a single worker thread will result in occasional
+     * spurious rejections as thread scheduling jitter can cause delay it entering {@link SynchronousQueue#poll()}
+     * following a task. The "right" default is unfortunately difficult because the reasonable amount of time to wait is
+     * dependent upon system environment and load and is, in any event, just a guess. The default is instead chosen to
+     * reflect the cost of a rejected task.
      */
-    private static final long DEFAULT_OFFER_WAIT = TimeUnit.MICROSECONDS.toNanos(100);
+    private static final long DEFAULT_OFFER_WAIT = TimeUnit.MILLISECONDS.toNanos(1);
 
     /**
      * If less than {@link Long#MAX_VALUE} then the {@link #execute(Runnable)} queue operation will be non-blocking and
