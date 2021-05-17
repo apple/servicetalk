@@ -69,128 +69,9 @@ final class DefaultExecutorTest {
     private static final int UNBOUNDED = -1;
     private Executor executor;
 
-    private enum ExecutorParam {
-        IMMEDIATE {
-            @Override
-            boolean supportsCancellation() {
-                return false;
-            }
-
-            @Override
-            Executor get() {
-                return immediate();
-            }
-
-            @Override
-            int size() {
-                return 0;
-            }
-        },
-        SINGLE_THREAD {
-            @Override
-            boolean supportsCancellation() {
-                return false;
-            }
-
-            @Override
-            Executor get() {
-                return newSingleThreadedExecutor();
-            }
-
-            @Override
-            int size() {
-                return 1;
-            }
-        },
-        FIXED_SIZE {
-            @Override
-            boolean supportsCancellation() {
-                return true;
-            }
-
-            @Override
-            Executor get() {
-                return newFixedSizeExecutor(2);
-            }
-
-            @Override
-            int size() {
-                return 2;
-            }
-        },
-        CACHED {
-            @Override
-            boolean supportsCancellation() {
-                return true;
-            }
-
-            @Override
-            Executor get() {
-                return newCachedThreadExecutor();
-            }
-
-            @Override
-            int size() {
-                return UNBOUNDED;
-            }
-        },
-        SIMPLE {
-            @Override
-            boolean supportsCancellation() {
-                return false;
-            }
-
-            @Override
-            Executor get() {
-                ExecutorService service = Executors.newCachedThreadPool();
-                //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
-                return from(command -> service.execute(command));
-            }
-
-            @Override
-            int size() {
-                return UNBOUNDED;
-            }
-        },
-        SCHEDULED {
-            @Override
-            boolean supportsCancellation() {
-                return true;
-            }
-
-            @Override
-            Executor get() {
-                return from(newScheduledThreadPool(2));
-            }
-
-            @Override
-            int size() {
-                return UNBOUNDED;
-            }
-        },
-        DIFFERENT_EXECUTORS {
-            @Override
-            boolean supportsCancellation() {
-                return true;
-            }
-
-            @Override
-            Executor get() {
-                return from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
-                        new SynchronousQueue<>()), newScheduledThreadPool(2));
-            }
-
-            @Override
-            int size() {
-                return 2;
-            }
-        };
-
-        abstract boolean supportsCancellation();
-
-        abstract Executor get();
-
-        abstract int size();
+    private static void assertThrowsExecutionException(Executable executable, Class cause) {
+        ExecutionException e = assertThrows(ExecutionException.class, executable);
+        assertThat(e.getCause(), instanceOf(cause));
     }
 
     @AfterEach
@@ -212,7 +93,7 @@ final class DefaultExecutorTest {
     void longRunningTasksDoesNotHaltOthers(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         assumeTrue(executorParam.size() == UNBOUNDED || executorParam.size() > 1,
-                () -> "Ignoring executor: " + executorParam + ", it has only a single thread");
+                () -> "Ignoring non-concurrent executor: " + executorParam);
         Task awaitForever = Task.newAwaitForeverTask();
         executor.execute(awaitForever);
         Task task = new Task();
@@ -267,13 +148,28 @@ final class DefaultExecutorTest {
     void executeRejection(ExecutorParam executorParam) {
         executor = executorParam.get();
         assumeTrue(executorParam.size() > 0,
-                () -> "Ignoring executor: " + executorParam + ", it has an unbounded thread pool.");
+                () -> "Ignoring executor: " + executorParam + ", it has an unbounded thread pool or no concurrency.");
 
         for (int i = 0; i < executorParam.size(); i++) {
             executor.execute(Task.newAwaitForeverTask());
         }
         Task reject = new Task();
         assertThrows(RejectedExecutionException.class, () -> executor.execute(reject));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(ExecutorParam.class)
+    public void executeRecursive(ExecutorParam executorParam) throws Throwable {
+        executor = executorParam.get();
+        assumeTrue(executorParam.supportsImmediateExecutionDuringExecute() || executorParam.size() >= 2,
+                () -> "Ignoring incompatible executor: " + executorParam);
+
+        for (int i = 0; i < executorParam.size() - 2; i++) {
+            executor.execute(Task.newAwaitForeverTask());
+        }
+        Task recursive = new Task();
+        executor.execute(recursive);
+        recursive.awaitDone();
     }
 
     @Test
@@ -473,9 +369,172 @@ final class DefaultExecutorTest {
         assertThrowsExecutionException(executable, DeliberateException.class);
     }
 
-    private static void assertThrowsExecutionException(Executable executable, Class cause) {
-        ExecutionException e = assertThrows(ExecutionException.class, executable);
-        assertThat(e.getCause(), instanceOf(cause));
+    private enum ExecutorParam {
+        IMMEDIATE {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return immediate();
+            }
+
+            @Override
+            int size() {
+                return 0;
+            }
+        },
+        SINGLE_THREAD {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return true;
+            }
+
+            @Override
+            Executor get() {
+                return newSingleThreadedExecutor();
+            }
+
+            @Override
+            int size() {
+                return 1;
+            }
+        },
+        FIXED_SIZE {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return newFixedSizeExecutor(2);
+            }
+
+            @Override
+            int size() {
+                return 2;
+            }
+        },
+        CACHED {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return newCachedThreadExecutor();
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        SIMPLE {
+            @Override
+            boolean supportsCancellation() {
+                return false;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                ExecutorService service = Executors.newCachedThreadPool();
+                //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
+                return from(command -> service.execute(command));
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        SCHEDULED {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return from(newScheduledThreadPool(2));
+            }
+
+            @Override
+            int size() {
+                return UNBOUNDED;
+            }
+        },
+        DIFFERENT_EXECUTORS {
+            @Override
+            boolean supportsCancellation() {
+                return true;
+            }
+
+            @Override
+            boolean supportsImmediateExecutionDuringExecute() {
+                return false;
+            }
+
+            @Override
+            Executor get() {
+                return from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
+                        new SynchronousQueue<>()), newScheduledThreadPool(2));
+            }
+
+            @Override
+            int size() {
+                return 2;
+            }
+        };
+
+        abstract boolean supportsCancellation();
+
+        /**
+         * Calling {@link Executor#execute(Runnable)} from Executor worker thread executes synchronously.
+         */
+        abstract boolean supportsImmediateExecutionDuringExecute();
+
+        abstract Executor get();
+
+        /**
+         * The additional potential concurrency offered beyond the calling thread.
+         * Sum of max worker threads and max queue length or {@link #UNBOUNDED}
+         */
+        abstract int size();
     }
 
     private static final class CallableTask<V> implements Callable<V> {
@@ -507,9 +566,9 @@ final class DefaultExecutorTest {
         private static final Runnable NOOP_TASK = () -> { };
         private final CountDownLatch started = new CountDownLatch(1);
         private final CountDownLatch done = new CountDownLatch(1);
+        private final Runnable actualTask;
         @Nullable
         private volatile TerminalNotification terminalNotification;
-        private final Runnable actualTask;
 
         Task() {
             this(NOOP_TASK);
@@ -517,19 +576,6 @@ final class DefaultExecutorTest {
 
         Task(Runnable actualTask) {
             this.actualTask = actualTask;
-        }
-
-        @Override
-        public void run() {
-            started.countDown();
-            try {
-                actualTask.run();
-                terminalNotification = complete();
-            } catch (Throwable t) {
-                terminalNotification = error(t);
-            } finally {
-                done.countDown();
-            }
         }
 
         static Task newAwaitForeverTask() {
@@ -545,6 +591,34 @@ final class DefaultExecutorTest {
                     throw new RuntimeException(e);
                 }
             });
+        }
+
+        static Task recursiveInvocation(Executor executor) {
+            return new Task(() -> {
+                try {
+                    Task recursive = new Task();
+                    executor.execute(recursive);
+                    recursive.awaitDone();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                } catch (Throwable all) {
+                    throw new RuntimeException(all);
+                }
+            });
+        }
+
+        @Override
+        public void run() {
+            started.countDown();
+            try {
+                actualTask.run();
+                terminalNotification = complete();
+            } catch (Throwable t) {
+                terminalNotification = error(t);
+            } finally {
+                done.countDown();
+            }
         }
 
         void awaitStart() throws InterruptedException {
