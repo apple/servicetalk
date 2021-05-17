@@ -136,10 +136,7 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
 
     TypeSafeMatcher<Thread> sameThreadFactory(Thread matchThread) {
         return new TypeSafeMatcher<Thread>() {
-            final String matchPrefix;
-            {
-                matchPrefix = getNamePrefix(matchThread.getName());
-            }
+            final String matchPrefix = getNamePrefix(matchThread.getName());
 
             @Override
             public void describeTo(final Description description) {
