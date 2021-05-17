@@ -533,7 +533,7 @@ class GracefulConnectionClosureHandlingTest {
     private void assertClosedChannelException(Executable runnable, CloseEvent expectedCloseEvent) {
         Exception e = assertThrows(ExecutionException.class, runnable);
         Throwable cause = e.getCause();
-        assertThat(cause, instanceOf(ClosedChannelException.class));
+        assertThat(cause, anyOf(instanceOf(ClosedChannelException.class), instanceOf(IOException.class)));
         if (protocol == HTTP_2) {
             // HTTP/2 does not enhance ClosedChannelException with CloseEvent
             return;
