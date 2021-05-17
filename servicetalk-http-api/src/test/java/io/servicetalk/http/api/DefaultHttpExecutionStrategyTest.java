@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,15 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -59,29 +53,24 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Parameterized.class)
-public class DefaultHttpExecutionStrategyTest {
+class DefaultHttpExecutionStrategyTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
-
-    private final boolean offloadReceiveMeta;
-    private final boolean offloadReceiveData;
-    private final boolean offloadSend;
-    private final HttpExecutionStrategy strategy;
+    private boolean offloadReceiveMeta;
+    private boolean offloadReceiveData;
+    private boolean offloadSend;
+    private HttpExecutionStrategy strategy;
     private final Executor executor = newCachedThreadExecutor();
-    @Rule
-    public final ExecutionContextRule contextRule = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> NettyIoExecutors.createIoExecutor(new DefaultThreadFactory()), () -> executor);
+    @RegisterExtension
+    final ExecutionContextExtension contextRule =
+            new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
+                    () -> NettyIoExecutors.createIoExecutor(new DefaultThreadFactory()), () -> executor);
 
-    public DefaultHttpExecutionStrategyTest(@SuppressWarnings("unused") final String description,
-                                            final boolean offloadReceiveMeta, final boolean offloadReceiveData,
-                                            final boolean offloadSend, final boolean strategySpecifiesExecutor) {
-        this.offloadReceiveMeta = offloadReceiveMeta;
-        this.offloadReceiveData = offloadReceiveData;
-        this.offloadSend = offloadSend;
+    private void setUp(final Params params) {
+        this.offloadReceiveMeta = params.offloadReceiveMeta;
+        this.offloadReceiveData = params.offloadReceiveData;
+        this.offloadSend = params.offloadSend;
         HttpExecutionStrategies.Builder builder = customStrategyBuilder();
-        if (strategySpecifiesExecutor) {
+        if (params.strategySpecifiesExecutor) {
             builder.executor(executor);
         }
         if (offloadReceiveMeta) {
@@ -96,52 +85,62 @@ public class DefaultHttpExecutionStrategyTest {
         strategy = builder.build();
     }
 
-    @Parameterized.Parameters(name = "{index} - {0}")
-    public static Collection<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-        params.add(newParam("exec & offload none", false, false, false, true));
-        params.add(newParam("exec & offload all", true, true, true, true));
-        params.add(newParam("exec & offload recv meta", true, false, false, true));
-        params.add(newParam("exec & offload recv data", false, true, false, true));
-        params.add(newParam("exec & offload recv all", true, true, false, true));
-        params.add(newParam("exec & offload send", false, false, true, true));
-        params.add(newParam("no exec & offload none", false, false, false, false));
-        params.add(newParam("no exec & offload all", true, true, true, false));
-        params.add(newParam("no exec & offload recv meta", true, false, false, false));
-        params.add(newParam("no exec & offload recv data", false, true, false, false));
-        params.add(newParam("no exec & offload recv all", true, true, false, false));
-        params.add(newParam("no exec & offload send", false, false, true, false));
-        return params;
+    enum Params {
+        EXEC_OFFLOAD_NONE(false, false, false, true),
+        EXEC_OFFLOAD_ALL(true, true, true, true),
+        EXEC_OFFLOAD_RECV_META(true, false, false, true),
+        EXEC_OFFLOAD_RECV_DATA(false, true, false, true),
+        EXEC_OFFLOAD_RECV_ALL(true, true, false, true),
+        EXEC_OFFLOAD_SEND(false, false, true, true),
+        NO_EXEC_OFFLOAD_NONE(false, false, false, false),
+        NO_EXEC_OFFLOAD_ALL(true, true, true, false),
+        NO_EXEC_OFFLOAD_RECV_META(true, false, false, false),
+        NO_EXEC_OFFLOAD_RECV_DATA(false, true, false, false),
+        NO_EXEC_OFFLOAD_RECV_ALL(true, true, false, false),
+        NO_EXEC_OFFLOAD_SEND(false, false, true, false);
+
+        final boolean offloadReceiveMeta;
+        final boolean offloadReceiveData;
+        final boolean offloadSend;
+        final boolean strategySpecifiesExecutor;
+
+        Params(final boolean offloadReceiveMeta, final boolean offloadReceiveData,
+               final boolean offloadSend, final boolean strategySpecifiesExecutor) {
+
+            this.offloadReceiveMeta = offloadReceiveMeta;
+            this.offloadReceiveData = offloadReceiveData;
+            this.offloadSend = offloadSend;
+            this.strategySpecifiesExecutor = strategySpecifiesExecutor;
+        }
     }
 
-    private static Object[] newParam(String description, final boolean offloadReceiveMeta,
-                                     final boolean offloadReceiveData, final boolean offloadSend,
-                                     final boolean strategySpecifiesExecutor) {
-        return new Object[]{description, offloadReceiveMeta, offloadReceiveData, offloadSend,
-                strategySpecifiesExecutor};
-    }
-
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         executor.closeAsync().toFuture().get();
     }
 
-    @Test
-    public void invokeClient() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void invokeClient(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpRequest req = analyzer.createNewRequest();
         StreamingHttpResponse resp = analyzer.createNewResponse();
 
-        analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.messageBody()),
-                null, (publisher, __) ->
-                        analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements().concat(succeeded(resp))))
+        analyzer.instrumentedResponseForClient(
+                strategy.invokeClient(executor, from(req, req.messageBody()),
+                        null, (publisher, __) ->
+                                analyzer.instrumentedFlatRequestForClient(publisher)
+                                        .ignoreElements().concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                .toFuture().get();
+            .toFuture().get();
         analyzer.verify();
     }
 
-    @Test
-    public void invokeService() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void invokeService(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpRequest req = analyzer.createNewRequest();
         StreamingHttpResponse resp = analyzer.createNewResponse();
@@ -149,14 +148,16 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.messageBody());
+                .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.messageBody());
         }, (throwable, executor1) -> failed(throwable))).toFuture().get();
 
         analyzer.verify();
     }
 
-    @Test
-    public void invokeCallableService() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void invokeCallableService(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         @SuppressWarnings("unchecked")
         Function<Executor, String> service = Mockito.mock(Function.class);
@@ -167,74 +168,93 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.verifyNoErrors();
     }
 
-    @Test
-    public void wrapServiceThatWasAlreadyOffloaded() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void wrapServiceThatWasAlreadyOffloaded(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpService svc = strategy.offloadService(executor, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocationNotOffloaded();
-            return succeeded(analyzer.createNewResponse()
-                    .payloadBody(analyzer.instrumentedRequestPayloadForServerNotOffloaded(request.payloadBody())));
+            return succeeded(
+                    analyzer.createNewResponse()
+                            .payloadBody(
+                                    analyzer.instrumentedRequestPayloadForServerNotOffloaded(request.payloadBody())));
         });
         StreamingHttpRequest req = analyzer.createNewRequest();
         DefaultStreamingHttpRequestResponseFactory respFactory =
                 new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
-        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
-                // Use the same strategy for the ctx to indicate that server already did all required offloads.
-                // So, the difference function inside #offloadService will return null.
-                new ExecutionContextToHttpExecutionContext(contextRule, strategy));
+        TestHttpServiceContext ctx =
+                new TestHttpServiceContext(INSTANCE, respFactory,
+                        // Use the same strategy for the ctx to indicate that server already did all required offloads.
+                        // So, the difference function inside #offloadService will return null.
+                        new ExecutionContextToHttpExecutionContext(contextRule,
+                                strategy));
         analyzer.instrumentedResponseForServerNotOffloaded(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();
     }
 
-    @Test
-    public void wrapServiceThatWasNotOffloaded() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void wrapServiceThatWasNotOffloaded(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpService svc = strategy.offloadService(executor, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocation();
             return succeeded(analyzer.createNewResponse()
-                    .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
+                                 .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
         });
         StreamingHttpRequest req = analyzer.createNewRequest();
         DefaultStreamingHttpRequestResponseFactory respFactory =
-                new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
-        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
-                // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
-                // So, the difference function inside #offloadService will return the tested strategy.
-                new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
+        TestHttpServiceContext ctx =
+                new TestHttpServiceContext(INSTANCE, respFactory,
+                        // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
+                        // So, the difference function inside #offloadService will return the tested strategy.
+                        new ExecutionContextToHttpExecutionContext(contextRule,
+                                noOffloadsStrategy()));
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                .toFuture().get();
+            .toFuture().get();
         analyzer.verify();
     }
 
-    @Test
-    public void offloadSendSingle() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void offloadSendSingle(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.offloadSend(executor, never())).subscribe(__ -> { }).cancel();
+        analyzer.instrumentSend(strategy.offloadSend(executor, never())).subscribe(__ -> {
+        }).cancel();
         analyzer.awaitCancel.await();
         analyzer.verifySend();
     }
 
-    @Test
-    public void offloadSendPublisher() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void offloadSendPublisher(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentSend(strategy.offloadSend(executor, from(1))).toFuture().get();
         analyzer.verifySend();
     }
 
-    @Test
-    public void offloadReceiveSingle() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void offloadReceiveSingle(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentReceive(strategy.offloadReceive(executor, succeeded(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 
-    @Test
-    public void offloadReceivePublisher() throws Exception {
+    @ParameterizedTest
+    @EnumSource(Params.class)
+    void offloadReceivePublisher(final Params params) throws Exception {
+        setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentReceive(strategy.offloadReceive(executor, from(1))).toFuture().get();
         analyzer.verifyReceive();
@@ -252,13 +272,13 @@ public class DefaultHttpExecutionStrategyTest {
 
         StreamingHttpRequest createNewRequest() {
             return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, INSTANCE)
-                    .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello")));
+                .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello")));
         }
 
         StreamingHttpResponse createNewResponse() {
             return newResponse(HttpResponseStatus.OK, HTTP_1_1, INSTANCE.newHeaders(),
-                    DEFAULT_ALLOCATOR, INSTANCE)
-                    .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
+                               DEFAULT_ALLOCATOR, INSTANCE)
+                .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {
@@ -332,7 +352,7 @@ public class DefaultHttpExecutionStrategyTest {
                 }
             } else if (context.executionContext().executor() != executor) {
                 errors.add(new AssertionError("Unexpected executor in context. Expected: " + executor +
-                        ", actual: " + context.executionContext().executor()));
+                                              ", actual: " + context.executionContext().executor()));
             }
         }
 

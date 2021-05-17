@@ -68,7 +68,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -357,7 +357,6 @@ public class RoundRobinLoadBalancerTest {
         assertThat(connectionsCreated, hasSize(2));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void closedConnectionPruning() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -439,7 +438,7 @@ public class RoundRobinLoadBalancerTest {
 
     @SuppressWarnings("unchecked")
     private void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
-        serviceDiscoveryPublisher.onNext((ServiceDiscovererEvent<String>[]) events);
+        serviceDiscoveryPublisher.onNext(events);
     }
 
     private static ServiceDiscovererEvent upEvent(final String address) {
@@ -465,7 +464,6 @@ public class RoundRobinLoadBalancerTest {
         return succeeded(newConnection(address));
     }
 
-    @SuppressWarnings("unchecked")
     private TestLoadBalancedConnection newConnection(final String address) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
         final ListenableAsyncCloseable closeable = emptyAsyncCloseable();

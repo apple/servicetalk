@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -26,12 +25,11 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -48,27 +46,25 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static java.lang.Thread.NORM_PRIORITY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpServerMultipleRequestsTest {
+class HttpServerMultipleRequestsTest {
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
 
-    @Rule
-    public final ExecutionContextRule serverExecution =
+    @RegisterExtension
+    final ExecutionContextExtension serverExecution =
             cached(new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
-    @Rule
-    public final ExecutionContextRule clientExecution =
+    @RegisterExtension
+    final ExecutionContextExtension clientExecution =
             cached(new DefaultThreadFactory("client-io", true, NORM_PRIORITY));
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    @Ignore("https://github.com/apple/servicetalk/issues/981")
+    @Disabled("https://github.com/apple/servicetalk/issues/981")
     @Test
-    public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
+    void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
         StreamingHttpService service = (ctx, request, responseFactory) -> {
             request.messageBody().ignoreElements().subscribe();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -26,15 +25,13 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
@@ -46,22 +43,17 @@ import static io.servicetalk.transport.api.SslProvider.JDK;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-@RunWith(Parameterized.class)
-public class SslProvidersTest {
+class SslProvidersTest {
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+    private String payloadBody;
+    private ServerContext serverContext;
+    private BlockingHttpClient client;
 
-    private final String payloadBody;
-    private final ServerContext serverContext;
-    private final BlockingHttpClient client;
-
-    public SslProvidersTest(SslProvider serverSslProvider, SslProvider clientSslProvider, int payloadLength)
+    private void setUp(SslProvider serverSslProvider, SslProvider clientSslProvider, int payloadLength)
             throws Exception {
 
         payloadBody = randomString(payloadLength);
@@ -74,7 +66,8 @@ public class SslProvidersTest {
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     assertThat(request.path(), is("/path"));
                     assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-                    assertThat(request.payloadBody(textDeserializer()), is("request-payload-body-" + payloadBody));
+                    assertThat(request.payloadBody(textDeserializer()),
+                            is("request-payload-body-" + payloadBody));
 
                     return responseFactory.ok()
                             .payloadBody("response-payload-body-" + payloadBody, textSerializer());
@@ -87,22 +80,21 @@ public class SslProvidersTest {
                 .buildBlocking();
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1} payloadLength={2}")
-    public static Collection<Object[]> sslProviders() {
-        return asList(
-                new Object[]{JDK, JDK, 256},
-                new Object[]{JDK, OPENSSL, 256},
-                new Object[]{OPENSSL, JDK, 256},
-                new Object[]{OPENSSL, OPENSSL, 256},
-                new Object[]{JDK, JDK, 16384},
-                new Object[]{JDK, OPENSSL, 16384},
-                new Object[]{OPENSSL, JDK, 16384},
-                new Object[]{OPENSSL, OPENSSL, 16384}
-        );
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> sslProviders() {
+        return Stream.of(
+                Arguments.of(JDK, JDK, 256),
+                Arguments.of(JDK, OPENSSL, 256),
+                Arguments.of(OPENSSL, JDK, 256),
+                Arguments.of(OPENSSL, OPENSSL, 256),
+                Arguments.of(JDK, JDK, 16384),
+                Arguments.of(JDK, OPENSSL, 16384),
+                Arguments.of(OPENSSL, JDK, 16384),
+                Arguments.of(OPENSSL, OPENSSL, 16384));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         try {
             client.close();
         } finally {
@@ -110,8 +102,14 @@ public class SslProvidersTest {
         }
     }
 
-    @Test
-    public void testSecureClientToSecureServer() throws Exception {
+    @ParameterizedTest
+    @MethodSource("sslProviders")
+    void testSecureClientToSecureServer(SslProvider serverSslProvider,
+                                        SslProvider clientSslProvider,
+                                        int payloadLength)
+        throws Exception {
+        setUp(serverSslProvider, clientSslProvider, payloadLength);
+
         HttpResponse response = client.request(client.get("/path")
                 .payloadBody("request-payload-body-" + payloadBody, textSerializer()));
 

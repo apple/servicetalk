@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,21 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.lang.System.lineSeparator;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMetaData> {
-
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
-
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
 
     protected T fixture;
 
     protected abstract void createFixture();
 
     @Test
-    public void testToString() {
+    void testToString() {
         createFixture();
         fixture.headers().set(CONTENT_TYPE, "text/json");
         fixture.headers().set(AUTHORIZATION, "some auth info");
@@ -48,7 +38,7 @@ public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMet
     }
 
     @Test
-    public void testToStringWithPassFilter() {
+    void testToStringWithPassFilter() {
         createFixture();
         fixture.headers().set(CONTENT_TYPE, "text/json");
         fixture.headers().set(AUTHORIZATION, "some auth info");
@@ -59,7 +49,7 @@ public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMet
     }
 
     @Test
-    public void testToStringWithRedactFilter() {
+    void testToStringWithRedactFilter() {
         createFixture();
         fixture.headers().set(CONTENT_TYPE, "text/json");
         fixture.headers().set(AUTHORIZATION, "some auth info");

@@ -22,11 +22,9 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -42,15 +40,13 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 public abstract class AbstractBlockingStreamingHttpRequesterTest {
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Mock
     private HttpExecutionContext mockExecutionCtx;
     @Mock
@@ -76,8 +72,8 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         boolean isClosed();
     }
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         MockitoAnnotations.initMocks(this);
         when(mockExecutionCtx.executor()).thenReturn(immediate());
         when(mockCtx.executionContext()).thenReturn(mockExecutionCtx);
@@ -85,7 +81,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     }
 
     @Test
-    public void asyncToSyncNoPayload() throws Exception {
+    void asyncToSyncNoPayload() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> succeeded(reqRespFactory.ok()));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
@@ -96,7 +92,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     }
 
     @Test
-    public void asyncToSyncWithPayload() throws Exception {
+    void asyncToSyncWithPayload() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(from(allocator.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
@@ -111,7 +107,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     }
 
     @Test
-    public void asyncToSyncWithPayloadInputStream() throws Exception {
+    void asyncToSyncWithPayloadInputStream() throws Exception {
         String expectedPayload = "hello";
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
@@ -130,7 +126,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     }
 
     @Test
-    public void asyncToSyncClose() throws Exception {
+    void asyncToSyncClose() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> failed(new IllegalStateException("shouldn't be called!")));
         BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
@@ -139,7 +135,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     }
 
     @Test
-    public void asyncToSyncCancelPropagated() throws Exception {
+    void asyncToSyncCancelPropagated() throws Exception {
         StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(publisher)));
         TestSubscription subscription = new TestSubscription();

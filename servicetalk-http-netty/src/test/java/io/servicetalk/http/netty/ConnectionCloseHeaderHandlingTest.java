@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -32,16 +31,14 @@ import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -53,6 +50,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -75,7 +73,7 @@ import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
@@ -83,53 +81,54 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@RunWith(Enclosed.class)
-public class ConnectionCloseHeaderHandlingTest {
+final class ConnectionCloseHeaderHandlingTest {
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
     private static final String SERVER_SHOULD_CLOSE = "serverShouldClose";
 
-    public abstract static class ConnectionSetup {
-        @ClassRule
-        public static final ExecutionContextRule SERVER_CTX = cached("server-io", "server-executor");
-        @ClassRule
-        public static final ExecutionContextRule CLIENT_CTX = cached("client-io", "client-executor");
-        @Rule
-        public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    private ConnectionCloseHeaderHandlingTest() {
+    }
+
+    @Nested
+    abstract class ConnectionSetup {
+        @RegisterExtension
+        final ExecutionContextExtension serverCtx = cached("server-io", "server-executor");
+        @RegisterExtension
+        final ExecutionContextExtension clientCtx = cached("client-io", "client-executor");
 
         @Nullable
-        private final ProxyTunnel proxyTunnel;
-        private final ServerContext serverContext;
-        private final StreamingHttpClient client;
-        protected final ReservedStreamingHttpConnection connection;
+        private ProxyTunnel proxyTunnel;
+        private ServerContext serverContext;
+        private StreamingHttpClient client;
+        ReservedStreamingHttpConnection connection;
 
         private final CountDownLatch clientConnectionClosed = new CountDownLatch(1);
         private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
 
-        protected final BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
+        final BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
 
-        protected final CountDownLatch sendResponse = new CountDownLatch(1);
-        protected final CountDownLatch responseReceived = new CountDownLatch(1);
-        protected final CountDownLatch requestReceived = new CountDownLatch(1);
-        protected final CountDownLatch requestPayloadReceived = new CountDownLatch(1);
-        protected final AtomicInteger requestPayloadSize = new AtomicInteger();
+        final CountDownLatch sendResponse = new CountDownLatch(1);
+        final CountDownLatch responseReceived = new CountDownLatch(1);
+        final CountDownLatch requestReceived = new CountDownLatch(1);
+        final CountDownLatch requestPayloadReceived = new CountDownLatch(1);
+        final AtomicInteger requestPayloadSize = new AtomicInteger();
 
-        protected ConnectionSetup(boolean useUds, boolean viaProxy, boolean awaitRequestPayload) throws Exception {
+        void setUp(boolean useUds, boolean viaProxy, boolean awaitRequestPayload) throws Exception {
             if (useUds) {
-                assumeTrue("Server's IoExecutor does not support UnixDomainSocket",
-                        SERVER_CTX.ioExecutor().isUnixDomainSocketSupported());
-                assumeTrue("Client's IoExecutor does not support UnixDomainSocket",
-                        CLIENT_CTX.ioExecutor().isUnixDomainSocketSupported());
-                assumeFalse("UDS cannot be used via proxy", viaProxy);
+                assumeTrue(serverCtx.ioExecutor().isUnixDomainSocketSupported(),
+                        "Server's IoExecutor does not support UnixDomainSocket");
+                assumeTrue(clientCtx.ioExecutor().isUnixDomainSocketSupported(),
+                        "Client's IoExecutor does not support UnixDomainSocket");
+                assumeFalse(viaProxy, "UDS cannot be used via proxy");
             }
             HttpServerBuilder serverBuilder = (useUds ?
                     HttpServers.forAddress(newSocketAddress()) :
                     HttpServers.forAddress(localAddress(0)))
-                    .ioExecutor(SERVER_CTX.ioExecutor())
-                    .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
+                    .ioExecutor(serverCtx.ioExecutor())
+                    .executionStrategy(defaultStrategy(serverCtx.executor()))
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                         @Override
@@ -198,16 +197,16 @@ public class ConnectionCloseHeaderHandlingTest {
                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                             .peerHost(serverPemHostname()).build()) :
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
-                    .ioExecutor(CLIENT_CTX.ioExecutor())
-                    .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
+                    .ioExecutor(clientCtx.ioExecutor())
+                    .executionStrategy(defaultStrategy(clientCtx.executor()))
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .buildStreaming();
             connection = client.reserveConnection(client.get("/")).toFuture().get();
             connection.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
         }
 
-        @After
-        public void tearDown() throws Exception {
+        @AfterEach
+        void tearDown() throws Exception {
             try {
                 newCompositeCloseable().appendAll(connection, client, serverContext).close();
             } finally {
@@ -217,25 +216,25 @@ public class ConnectionCloseHeaderHandlingTest {
             }
         }
 
-        protected void assertClosedChannelException(String path) {
+        void assertClosedChannelException(String path) {
             assertClosedChannelException(sendZeroLengthRequest(path));
         }
 
-        protected void assertClosedChannelException(Future<StreamingHttpResponse> responseFuture) {
+        void assertClosedChannelException(Future<StreamingHttpResponse> responseFuture) {
             Exception e = assertThrows(ExecutionException.class, responseFuture::get);
             assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
         }
 
-        protected Future<StreamingHttpResponse> sendZeroLengthRequest(String path) {
+        Future<StreamingHttpResponse> sendZeroLengthRequest(String path) {
             return connection.request(connection.get(path).addHeader(CONTENT_LENGTH, ZERO)).toFuture();
         }
 
-        protected static void assertResponse(StreamingHttpResponse response) {
+        void assertResponse(StreamingHttpResponse response) {
             assertThat(response.status(), is(OK));
             assertThat(response.headers().get(CONNECTION), contentEqualTo(CLOSE));
         }
 
-        protected static void assertResponsePayloadBody(StreamingHttpResponse response) throws Exception {
+        void assertResponsePayloadBody(StreamingHttpResponse response) throws Exception {
             CharSequence contentLengthHeader = response.headers().get(CONTENT_LENGTH);
             assertThat(contentLengthHeader, is(notNullValue()));
             int actualContentLength = response.payloadBody().map(Buffer::readableBytes)
@@ -243,57 +242,48 @@ public class ConnectionCloseHeaderHandlingTest {
             assertThat(valueOf(actualContentLength), contentEqualTo(contentLengthHeader));
         }
 
-        protected void awaitConnectionClosed() throws Exception {
+        void awaitConnectionClosed() throws Exception {
             clientConnectionClosed.await();
             serverConnectionClosed.await();
         }
     }
 
-    @RunWith(Parameterized.class)
-    public static class NonPipelinedRequestsTest extends ConnectionSetup {
-
-        private final CountDownLatch responsePayloadReceived = new CountDownLatch(1);
-
-        private final boolean requestInitiatesClosure;
-        private final boolean noRequestContent;
-        private final boolean noResponseContent;
-
-        public NonPipelinedRequestsTest(boolean useUds, boolean viaProxy, boolean awaitRequestPayload,
-                                        boolean requestInitiatesClosure,
-                                        boolean noRequestContent, boolean noResponseContent) throws Exception {
-            super(useUds, viaProxy, awaitRequestPayload);
-            this.requestInitiatesClosure = requestInitiatesClosure;
-            this.noRequestContent = noRequestContent;
-            this.noResponseContent = noResponseContent;
-        }
-
-        @Parameters(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}, " +
-                "requestInitiatesClosure={3}, noRequestContent={4}, noResponseContent={5}")
-        public static Collection<Boolean[]> data() {
-            Collection<Boolean[]> data = new ArrayList<>();
-            for (boolean useUds : TRUE_FALSE) {
-                for (boolean viaProxy : TRUE_FALSE) {
-                    if (useUds && viaProxy) {
-                        // UDS cannot be used via proxy
-                        continue;
-                    }
-                    for (boolean awaitRequestPayload : TRUE_FALSE) {
-                        for (boolean requestInitiatesClosure : TRUE_FALSE) {
-                            for (boolean noRequestContent : TRUE_FALSE) {
-                                for (boolean noResponseContent : TRUE_FALSE) {
-                                    data.add(new Boolean[] {useUds, viaProxy, awaitRequestPayload,
-                                            requestInitiatesClosure, noRequestContent, noResponseContent});
-                                }
+    @SuppressWarnings("unused")
+    static Collection<Arguments> nonPipelinedRequestsTestData() {
+        Collection<Arguments> data = new ArrayList<>();
+        for (boolean useUds : TRUE_FALSE) {
+            for (boolean viaProxy : TRUE_FALSE) {
+                if (useUds && viaProxy) {
+                    // UDS cannot be used via proxy
+                    continue;
+                }
+                for (boolean awaitRequestPayload : TRUE_FALSE) {
+                    for (boolean requestInitiatesClosure : TRUE_FALSE) {
+                        for (boolean noRequestContent : TRUE_FALSE) {
+                            for (boolean noResponseContent : TRUE_FALSE) {
+                                data.add(Arguments.of(useUds, viaProxy, awaitRequestPayload,
+                                                      requestInitiatesClosure, noRequestContent, noResponseContent));
                             }
                         }
                     }
                 }
             }
-            return data;
         }
+        return data;
+    }
 
-        @Test
-        public void testConnectionClosure() throws Exception {
+    @Nested
+    class NonPipelinedRequestsTest extends ConnectionSetup {
+
+        private final CountDownLatch responsePayloadReceived = new CountDownLatch(1);
+
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}, " +
+                                  "requestInitiatesClosure={3}, noRequestContent={4}, noResponseContent={5}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#nonPipelinedRequestsTestData")
+        void testConnectionClosure(boolean useUds, boolean viaProxy, boolean awaitRequestPayload,
+                                   boolean requestInitiatesClosure,
+                                   boolean noRequestContent, boolean noResponseContent) throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             String content = "request_content";
             StreamingHttpRequest request = connection.newRequest(noRequestContent ? GET : POST, "/first")
                     .setQueryParameter("noResponseContent", valueOf(noResponseContent))
@@ -328,27 +318,26 @@ public class ConnectionCloseHeaderHandlingTest {
         }
     }
 
-    @RunWith(Parameterized.class)
-    public static class PipelinedRequestsTest extends ConnectionSetup {
+    @SuppressWarnings("unused")
+    static Stream<Arguments> pipelinedRequestsTestData() {
+        return Stream.of(
+            Arguments.of(false, false, false),
+            Arguments.of(false, false, true),
+            Arguments.of(false, true, false),
+            Arguments.of(false, true, true),
+            Arguments.of(true, false, false),
+            Arguments.of(true, false, true));
+    }
 
-        public PipelinedRequestsTest(boolean useUds, boolean viaProxy, boolean awaitRequestPayload) throws Exception {
-            super(useUds, viaProxy, awaitRequestPayload);
-        }
+    @Nested
+    class PipelinedRequestsTest extends ConnectionSetup {
 
-        @Parameters(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
-        public static Collection<Boolean[]> data() {
-            return asList(
-                    new Boolean[] {false, false, false},
-                    new Boolean[] {false, false, true},
-                    new Boolean[] {false, true, false},
-                    new Boolean[] {false, true, true},
-                    new Boolean[] {true, false, false},
-                    new Boolean[] {true, false, true}
-            );
-        }
-
-        @Test
-        public void serverCloseTwoPipelinedRequestsSentBeforeFirstResponse() throws Exception {
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#pipelinedRequestsTestData")
+        void serverCloseTwoPipelinedRequestsSentBeforeFirstResponse(boolean useUds, boolean viaProxy,
+                                                                    boolean awaitRequestPayload)
+                throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
 
@@ -376,8 +365,11 @@ public class ConnectionCloseHeaderHandlingTest {
             assertClosedChannelException("/third");
         }
 
-        @Test
-        public void serverCloseSecondPipelinedRequestWriteAborted() throws Exception {
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#pipelinedRequestsTestData")
+        void serverCloseSecondPipelinedRequestWriteAborted(boolean useUds, boolean viaProxy,
+                                                           boolean awaitRequestPayload) throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             AtomicReference<Throwable> secondRequestError = new AtomicReference<>();
             CountDownLatch secondResponseReceived = new CountDownLatch(1);
 
@@ -407,8 +399,11 @@ public class ConnectionCloseHeaderHandlingTest {
             assertClosedChannelException("/third");
         }
 
-        @Test
-        public void serverCloseTwoPipelinedRequestsInSequence() throws Exception {
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#pipelinedRequestsTestData")
+        void serverCloseTwoPipelinedRequestsInSequence(boolean useUds, boolean viaProxy,
+                                                       boolean awaitRequestPayload) throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             sendResponse.countDown();
             StreamingHttpResponse response = connection.request(connection.get("/first")
                     .addQueryParameter(SERVER_SHOULD_CLOSE, "true")
@@ -424,8 +419,12 @@ public class ConnectionCloseHeaderHandlingTest {
             awaitConnectionClosed();
         }
 
-        @Test
-        public void clientCloseTwoPipelinedRequestsSentFirstInitiatesClosure() throws Exception {
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#pipelinedRequestsTestData")
+        void clientCloseTwoPipelinedRequestsSentFirstInitiatesClosure(boolean useUds, boolean viaProxy,
+                                                                      boolean awaitRequestPayload)
+                throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             connection.request(connection.get("/first")
                     .addHeader(CONTENT_LENGTH, ZERO)
                     // Request connection closure:
@@ -444,8 +443,12 @@ public class ConnectionCloseHeaderHandlingTest {
             awaitConnectionClosed();
         }
 
-        @Test
-        public void clientCloseTwoPipelinedRequestsSentSecondInitiatesClosure() throws Exception {
+        @ParameterizedTest(name = "{index}: useUds={0}, viaProxy={1}, awaitRequestPayload={2}")
+        @MethodSource("io.servicetalk.http.netty.ConnectionCloseHeaderHandlingTest#pipelinedRequestsTestData")
+        void clientCloseTwoPipelinedRequestsSentSecondInitiatesClosure(boolean useUds, boolean viaProxy,
+                                                                       boolean awaitRequestPayload)
+                throws Exception {
+            setUp(useUds, viaProxy, awaitRequestPayload);
             connection.request(connection.get("/first")
                     .addHeader(CONTENT_LENGTH, ZERO))
                     .subscribe(responses::add);

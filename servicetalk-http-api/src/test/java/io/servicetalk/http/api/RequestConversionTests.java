@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.encoding.api.Identity.identity;
@@ -32,46 +33,59 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
-@RunWith(Parameterized.class)
-public class RequestConversionTests extends AbstractConversionTest {
+class RequestConversionTests extends AbstractConversionTest {
 
-    private final StreamingHttpRequest original;
+    @Nullable
+    private StreamingHttpRequest original;
 
-    public RequestConversionTests(final Supplier<StreamingHttpRequest> originalSupplier, PayloadInfo payloadInfo,
-                                  @SuppressWarnings("unused") String name) {
-        super(payloadInfo);
+    private void setUp(final Supplier<StreamingHttpRequest> originalSupplier,
+                       final Supplier<PayloadInfo> payloadInfoSupplier) {
+        setUp(payloadInfoSupplier.get());
         this.original = originalSupplier.get();
     }
 
-    @Parameterized.Parameters(name = "{index}: name: {2}")
-    public static List<Object[]> data() {
-        List<Object[]> params = new ArrayList<>();
-        params.add(newParam(new DefaultPayloadInfo(), "no-payload-info"));
-        params.add(newParam(new DefaultPayloadInfo().setMayHaveTrailers(true), "trailers"));
-        params.add(newParam(new DefaultPayloadInfo().setGenericTypeBuffer(true), "publisher-buffer"));
-        params.add(newParam(new DefaultPayloadInfo().setSafeToAggregate(true), "safe-to-aggregate"));
-        return params;
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> data() {
+        return Stream.of(
+            newArguments(() -> new DefaultPayloadInfo(), "no-payload-info"),
+            newArguments(() -> new DefaultPayloadInfo().setMayHaveTrailers(true), "trailers"),
+            newArguments(() -> new DefaultPayloadInfo().setGenericTypeBuffer(true), "publisher-buffer"),
+            newArguments(() -> new DefaultPayloadInfo().setSafeToAggregate(true), "safe-to-aggregate"));
     }
 
-    private static Object[] newParam(final DefaultPayloadInfo payloadInfo, final String paramName) {
-        return new Object[]{(Supplier<StreamingHttpRequest>) () -> new DefaultStreamingHttpRequest(GET, "/", HTTP_1_1,
+    private static Arguments newArguments(final Supplier<DefaultPayloadInfo> payloadInfoSupplier,
+                                          final String paramName) {
+        DefaultPayloadInfo payloadInfo = payloadInfoSupplier.get();
+        return Arguments.of((Supplier<StreamingHttpRequest>) () -> new DefaultStreamingHttpRequest(GET, "/", HTTP_1_1,
                 DefaultHttpHeadersFactory.INSTANCE.newHeaders(), identity(), DEFAULT_ALLOCATOR,
                 new SingleSubscribePublisher(payloadInfo), payloadInfo, DefaultHttpHeadersFactory.INSTANCE),
-                payloadInfo, paramName};
+                (Supplier<DefaultPayloadInfo>) () -> payloadInfo, paramName);
     }
 
-    @Test
-    public void toAggregated() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: name: {2}")
+    @MethodSource("data")
+    void toAggregated(final Supplier<StreamingHttpRequest> originalSupplier,
+                      final Supplier<PayloadInfo> payloadInfoSupplier,
+                      @SuppressWarnings("unused") String name) throws Exception {
+        setUp(originalSupplier, payloadInfoSupplier);
         convertToAggregated();
     }
 
-    @Test
-    public void toAggregatedToStreaming() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: name: {2}")
+    @MethodSource("data")
+    void toAggregatedToStreaming(final Supplier<StreamingHttpRequest> originalSupplier,
+                                 final Supplier<PayloadInfo> payloadInfoSupplier,
+                                 @SuppressWarnings("unused") String name) throws Exception {
+        setUp(originalSupplier, payloadInfoSupplier);
         verifyConvertedStreamingPayload(convertToAggregated().toStreamingRequest().messageBody());
     }
 
-    @Test
-    public void toBlockingStreaming() {
+    @ParameterizedTest(name = "{displayName} [{index}]: name: {2}")
+    @MethodSource("data")
+    void toBlockingStreaming(final Supplier<StreamingHttpRequest> originalSupplier,
+                             final Supplier<PayloadInfo> payloadInfoSupplier,
+                             @SuppressWarnings("unused") String name) {
+        setUp(originalSupplier, payloadInfoSupplier);
         BlockingStreamingHttpRequest bs = convertToBlockingStreaming();
         // We do not expose trailers from a blocking-streaming entity, so no need to verify here.
         for (Buffer buffer : bs.payloadBody()) {
@@ -79,13 +93,17 @@ public class RequestConversionTests extends AbstractConversionTest {
         }
     }
 
-    @Test
-    public void toBlockingStreamingToStreaming() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}]: name: {2}")
+    @MethodSource("data")
+    void toBlockingStreamingToStreaming(final Supplier<StreamingHttpRequest> originalSupplier,
+                                        Supplier<PayloadInfo> payloadInfoSupplier,
+                                        @SuppressWarnings("unused") String name) throws Exception {
+        setUp(originalSupplier, payloadInfoSupplier);
         verifyConvertedStreamingPayload(convertToBlockingStreaming().toStreamingRequest().messageBody());
     }
 
     private HttpRequest convertToAggregated() throws Exception {
-        HttpRequest aggr = original.toRequest().toFuture().get();
+        HttpRequest aggr = Objects.requireNonNull(original).toRequest().toFuture().get();
         assertThat("Unexpected request implementation.", aggr, instanceOf(PayloadInfo.class));
         verifyAggregatedPayloadInfo((PayloadInfo) aggr);
         verifyPayload(aggr.payloadBody());
@@ -95,7 +113,7 @@ public class RequestConversionTests extends AbstractConversionTest {
     }
 
     private BlockingStreamingHttpRequest convertToBlockingStreaming() {
-        BlockingStreamingHttpRequest bs = original.toBlockingStreamingRequest();
+        BlockingStreamingHttpRequest bs = Objects.requireNonNull(original).toBlockingStreamingRequest();
         assertThat("Unexpected request implementation.", bs, instanceOf(PayloadInfo.class));
         assertThat("Unexpected request implementation.", bs, instanceOf(PayloadInfo.class));
         verifyPayloadInfo((PayloadInfo) bs);

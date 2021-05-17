@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 import javax.net.ssl.SSLHandshakeException;
@@ -32,13 +32,13 @@ import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SniTest {
+class SniTest {
     private static final String SNI_HOSTNAME = "servicetalk.io";
     @Test
-    public void sniSuccess() throws Exception {
+    void sniSuccess() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(untrustedServerConfig(), singletonMap(SNI_HOSTNAME, trustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
@@ -48,7 +48,7 @@ public class SniTest {
     }
 
     @Test
-    public void sniDefaultFallbackSuccess() throws Exception {
+    void sniDefaultFallbackSuccess() throws Exception {
         sniDefaultFallbackSuccess(SniTest::newClient);
     }
 
@@ -63,7 +63,7 @@ public class SniTest {
     }
 
     @Test
-    public void sniFailExpected() throws Exception {
+    void sniFailExpected() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(trustedServerConfig(), singletonMap(SNI_HOSTNAME, untrustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
@@ -73,7 +73,7 @@ public class SniTest {
     }
 
     @Test
-    public void sniDefaultFallbackFailExpected() throws Exception {
+    void sniDefaultFallbackFailExpected() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(untrustedServerConfig(), singletonMap("no_match" + SNI_HOSTNAME, trustedServerConfig()))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
@@ -83,7 +83,7 @@ public class SniTest {
     }
 
     @Test
-    public void sniClientDefaultServerSuccess() throws Exception {
+    void sniClientDefaultServerSuccess() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(trustedServerConfig())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
@@ -93,7 +93,7 @@ public class SniTest {
     }
 
     @Test
-    public void noSniClientDefaultServerFallbackSuccess() throws Exception {
+    void noSniClientDefaultServerFallbackSuccess() throws Exception {
         sniDefaultFallbackSuccess(serverContext -> HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build())

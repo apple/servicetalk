@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,12 +33,14 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasToString;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * This is a test-case for the {@link AbstractHttpRequesterFilterTest} HTTP request filter test utilities.
@@ -46,12 +49,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
 
     private SSLSession session;
 
-    public SimpleHttpRequesterFilterTest(final RequesterType type, final SecurityType security) {
-        super(type, security);
-    }
-
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         session = mock(SSLSession.class);
     }
 
@@ -118,9 +117,11 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
     }
 
-    @Test
-    public void headersEnrichedByFilter() {
-        StreamingHttpRequester filter = createFilter(new HeaderEnrichingRequestFilter());
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void headersEnrichedByFilter(final RequesterType type, final SecurityType security) {
+        setUp(security);
+        StreamingHttpRequester filter = createFilter(type, new HeaderEnrichingRequestFilter());
         StreamingHttpRequest request = filter.get("/");
         filter.request(defaultStrategy(), request);
 
@@ -137,7 +138,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
     private static final class InterceptingRequestFilter
             implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
-        AtomicInteger requestCalls = new AtomicInteger();
+        final AtomicInteger requestCalls = new AtomicInteger();
 
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -184,10 +185,12 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
     }
 
-    @Test
-    public void requestInterceptedByFilter() {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void requestInterceptedByFilter(final RequesterType type, final SecurityType security) {
+        setUp(security);
         InterceptingRequestFilter filterFactory = new InterceptingRequestFilter();
-        StreamingHttpRequester filter = createFilter(
+        StreamingHttpRequester filter = createFilter(type,
                 (respFactory, request) -> {
                     fail("Filter should have intercepted this request() call");
                     return null;
@@ -257,27 +260,34 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
     }
 
-    @Test
-    public void unauthorizedConnectionRefusingFilterWithInvalidPrincipal() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void unauthorizedConnectionRefusingFilterWithInvalidPrincipal(final RequesterType type,
+                                                                  final SecurityType security)
+        throws Exception {
+        setUp(security);
 
-        BlockingHttpRequester filter = asBlockingRequester(createFilter(new SecurityEnforcingFilter()));
+        BlockingHttpRequester filter = asBlockingRequester(createFilter(type, new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(defaultStrategy(), filter.get("/"));
 
         if (type == Client) {
             return; // Clients don't carry SSL Context
         }
 
-        assertThat(resp.status(), equalTo(HttpResponseStatus.UNAUTHORIZED));
+        assertThat(resp.status(), equalTo(UNAUTHORIZED));
     }
 
-    @Test
-    public void unauthorizedConnectionRefusingFilterWithValidPrincipal() throws Exception {
-
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void unauthorizedConnectionRefusingFilterWithValidPrincipal(final RequesterType type,
+                                                                final SecurityType security)
+        throws Exception {
+        setUp(security);
         final Principal principal = mock(Principal.class);
-        when(principal.getName()).thenReturn("unit.test.auth");
-        when(session.getPeerPrincipal()).thenReturn(principal);
+        lenient().when(principal.getName()).thenReturn("unit.test.auth");
+        lenient().when(session.getPeerPrincipal()).thenReturn(principal);
 
-        BlockingHttpRequester filter = asBlockingRequester(createFilter(new SecurityEnforcingFilter()));
+        BlockingHttpRequester filter = asBlockingRequester(createFilter(type, new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(defaultStrategy(), filter.get("/"));
 
         if (type == Client) {
@@ -285,9 +295,9 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
 
         if (security == Insecure) {
-            assertThat(resp.status(), equalTo(HttpResponseStatus.UNAUTHORIZED));
+            assertThat(resp.status(), equalTo(UNAUTHORIZED));
         } else {
-            assertThat(resp.status(), equalTo(HttpResponseStatus.OK));
+            assertThat(resp.status(), equalTo(OK));
         }
     }
 }

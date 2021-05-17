@@ -20,7 +20,6 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -36,12 +35,9 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -69,10 +65,9 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@RunWith(Parameterized.class)
-public class ResponseTimeoutTest {
+class ResponseTimeoutTest {
 
     /**
      * multiplier for timeouts. Should be sufficiently small to ensure that test completes in reasonable time and large
@@ -80,19 +75,15 @@ public class ResponseTimeoutTest {
      */
     private static final long MILLIS_MULTIPLIER = 100L;
 
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
     private final BlockingQueue<Single<HttpResponse>> serverResponses = new LinkedBlockingQueue<>();
     private final BlockingQueue<Cancellable> delayedClientCancels = new LinkedBlockingQueue<>();
     private final BlockingQueue<ClientTerminationSignal> delayedClientTermination = new LinkedBlockingQueue<>();
-    private final ServerContext ctx;
-    private final HttpClient client;
+    private ServerContext ctx;
+    private HttpClient client;
     private final AtomicInteger connectionCount = new AtomicInteger();
-    private final Class<? extends Throwable> expectThrowableClazz;
 
-    public ResponseTimeoutTest(Duration clientTimeout,
-                               Duration serverTimeout,
-                               Class<? extends Throwable> expectThrowableClazz) throws Exception {
+    private void setUp(Duration clientTimeout,
+                       Duration serverTimeout) throws Exception {
         ctx = forAddress(localAddress(0))
                 .appendServiceFilter(new TimeoutHttpServiceFilter(__ -> serverTimeout, true))
                 .listenAndAwait((__, ___, factory) -> {
@@ -141,25 +132,28 @@ public class ResponseTimeoutTest {
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
                 .appendClientFilter(new TimeoutHttpRequesterFilter(__ -> clientTimeout, true))
                 .build();
-        this.expectThrowableClazz = expectThrowableClazz;
     }
 
-    @Parameterized.Parameters(name = "{index}: client = {0} server = {1}")
-    public static Collection<Object> data() {
+    static Collection<Object> data() {
         return Arrays.asList(
                 new Object[]{Duration.ofMillis(2 * MILLIS_MULTIPLIER), null, TimeoutException.class},
                 new Object[]{null, Duration.ofMillis(2 * MILLIS_MULTIPLIER), HttpResponseStatusException.class}
         );
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         // Do not use graceful close as we are not finishing responses.
         newCompositeCloseable().appendAll(ctx, client).closeAsync().toFuture().get();
     }
 
-    @Test
-    public void timeout() throws Throwable {
+    @ParameterizedTest(name = "{index}: client = {0} server = {1}")
+    @MethodSource("data")
+    void timeout(Duration clientTimeout,
+                 Duration serverTimeout,
+                 Class<? extends Throwable> expectThrowableClazz) throws Throwable {
+        setUp(clientTimeout, serverTimeout);
+
         try {
             CountDownLatch latch = new CountDownLatch(1);
             sendRequest(latch);

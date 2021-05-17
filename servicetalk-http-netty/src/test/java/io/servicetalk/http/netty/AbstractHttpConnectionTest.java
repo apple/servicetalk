@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
@@ -31,13 +30,13 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
@@ -60,7 +59,6 @@ import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMet
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
-import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -71,13 +69,10 @@ import static org.mockito.Mockito.when;
 /**
  * This tests the common functionality in {@link AbstractStreamingHttpConnection}.
  */
-public final class AbstractHttpConnectionTest {
+final class AbstractHttpConnectionTest {
 
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-
-    @Rule
-    public final ExecutionContextRule ctx = immediate();
+    @RegisterExtension
+    final ExecutionContextExtension ctx = ExecutionContextExtension.immediate();
 
     // Use Function to mock connection req/resp
     private Function<Publisher<Object>, Publisher<Object>> reqResp;
@@ -103,8 +98,8 @@ public final class AbstractHttpConnectionTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         reqResp = mock(Function.class);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
@@ -114,7 +109,7 @@ public final class AbstractHttpConnectionTest {
     }
 
     @Test
-    public void shouldEmitMaxConcurrencyInEventStream() throws Exception {
+    void shouldEmitMaxConcurrencyInEventStream() throws Exception {
         Integer max = http.transportEventStream(MAX_CONCURRENCY)
                 .afterOnNext(ConsumableEvent::eventConsumed).map(ConsumableEvent::event)
                 .firstOrElse(() -> null).toFuture().get();
@@ -123,7 +118,7 @@ public final class AbstractHttpConnectionTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void requestShouldWriteFlatStreamToConnectionAndReadFlatStreamSplicedIntoResponseAndPayload()
+    void requestShouldWriteFlatStreamToConnectionAndReadFlatStreamSplicedIntoResponseAndPayload()
             throws Exception {
 
         Buffer chunk1 = allocator.fromAscii("test");
@@ -158,7 +153,7 @@ public final class AbstractHttpConnectionTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing() throws Exception {
+    void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing() throws Exception {
 
         Buffer chunk1 = allocator.fromAscii("test");
         Buffer chunk2 = allocator.fromAscii("payload");
