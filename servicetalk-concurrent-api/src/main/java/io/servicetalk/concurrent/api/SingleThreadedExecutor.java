@@ -107,7 +107,7 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
     @Override
     public void execute(final Runnable command) throws RejectedExecutionException {
         if (WorkerThread.OPEN != thread.state) {
-            throw new RejectedExecutionException("Executor closed");
+            throw new RejectedExecutionException(thread.getName() + ": Executor closed");
         }
 
         if (Thread.currentThread() == thread) {
@@ -123,14 +123,14 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
                     // Using non-waiting offer() resulted in spurious rejections for sequential tasks.
                     if (!thread.queue.offer(command, offerWaitNanos, TimeUnit.NANOSECONDS)) {
                         // worker thread is probably busy with another task.
-                        throw new RejectedExecutionException("Enqueue rejected, refusing to wait");
+                        throw new RejectedExecutionException(thread.getName() + ": Enqueue rejected, refusing to wait");
                     }
                  } else {
                     thread.queue.put(command);
                 }
             } catch (InterruptedException woken) {
                 // Interrupt status is not cleared
-                throw new RejectedExecutionException("Task enqueue was interrupted", woken);
+                throw new RejectedExecutionException(thread.getName() + ": Task enqueue was interrupted", woken);
             }
         }
     }
