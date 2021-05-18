@@ -100,17 +100,20 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
 
     protected void verifyPublisherOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadPublisherSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe(Publisher).",
+                offloadPublisherSubscribeCalled.get(), is(1));
     }
 
     protected void verifySingleOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadSingleSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe(Single).",
+                offloadSingleSubscribeCalled.get(), is(1));
     }
 
     protected void verifyCompletableOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.", offloadCompletableSubscribeCalled.get(), is(1));
+        assertThat("Unexpected calls to offloadSubscribe.",
+                offloadCompletableSubscribeCalled.get(), is(0));
     }
 
     protected OffloaderAwareExecutor newOffloadingAwareExecutor() {
