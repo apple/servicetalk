@@ -31,8 +31,8 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Executor that can execute one task at a time on a dedicated worker thread. While concurrent tasks are generally
- * rejected, the `execute(Runnable)` method provides special behavior if the invoking thread is the executor worker
- * thread: the `Runnable` will be executed immediately on the calling thread.
+ * rejected, the {@link Executor#execute(Runnable)} method provides special behavior if the invoking thread is the
+ * executor worker thread: the {@code Runnable} will be executed immediately on the calling thread.
  */
 class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoCloseable {
     static final Logger LOGGER = LoggerFactory.getLogger(SingleThreadedExecutor.class);
@@ -52,12 +52,12 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
      * If less than {@link Long#MAX_VALUE} then the {@link #execute(Runnable)} queue operation will be non-blocking and
      * fast-fail if the command cannot be immediately executed.
      */
-    final long offerWaitNanos;
+    private final long offerWaitNanos;
     /**
      * If true then {@link #close()} will {@linkplain Thread#interrupt() interrupt} the worker
      * thread.
      */
-    final boolean interruptOnClose;
+    private final boolean interruptOnClose;
     private final WorkerThread thread;
 
     /**
@@ -69,6 +69,9 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
 
     /**
      * Construct new instance.
+     *
+     * @param namePrefix Prefix to use for name of worker thread. The prefix will always have a sequence number
+     * appended.
      */
     SingleThreadedExecutor(String namePrefix) {
         this(namePrefix, SynchronousQueue::new, DEFAULT_OFFER_WAIT, TimeUnit.NANOSECONDS, true);
@@ -76,7 +79,8 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
 
     /**
      * Construct new instance.
-     *  @param namePrefix Prefix to use for name of worker thread. The prefix will always have a sequence number
+     *
+     * @param namePrefix Prefix to use for name of worker thread. The prefix will always have a sequence number
      * appended.
      * @param queueSupplier Supplier for the queue used for tasks.
      * @param offerWait If less than {@link Long#MAX_VALUE} nanos then the {@link #execute(Runnable)} queue operation
@@ -85,7 +89,7 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
      * @param interruptOnClose If true then {@link #close()} will {@linkplain Thread#interrupt() interrupt} the worker
      * thread to close it more quickly.
      */
-    SingleThreadedExecutor(String namePrefix, Supplier<BlockingQueue> queueSupplier,
+    SingleThreadedExecutor(String namePrefix, Supplier<? extends BlockingQueue> queueSupplier,
                            long offerWait, TimeUnit offerWaitUnits,
                            boolean interruptOnClose) {
         String name = namePrefix + "-" + INSTANCE_COUNT.incrementAndGet();
@@ -119,11 +123,17 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
         } else {
             try {
                 if (offerWaitNanos < Long.MAX_VALUE) {
-                    // offer() with a (typically) very small wait to give worker a chance to enter poll().
-                    // Using non-waiting offer() resulted in spurious rejections for sequential tasks.
-                    if (!thread.queue.offer(command, offerWaitNanos, TimeUnit.NANOSECONDS)) {
-                        // worker thread is probably busy with another task.
-                        throw new RejectedExecutionException(thread.getName() + ": Enqueue rejected, refusing to wait");
+                    // Using non-waiting offer() sometimes results in spurious rejections for sequential tasks.
+                    if (!thread.queue.offer(command)) {
+                        // So if offer() fails, try again giving the worker thread a better chance to be ready and
+                        // waiting in poll() before rejecting execution.
+                        Thread.yield();
+                        // offer() again with a (typically) very small wait to give worker thread a chance to poll().
+                        if (!thread.queue.offer(command, offerWaitNanos, TimeUnit.NANOSECONDS)) {
+                            // worker thread is probably busy with another task.
+                            throw new RejectedExecutionException(
+                                    thread.getName() + ": Enqueue rejected, refusing to wait");
+                        }
                     }
                  } else {
                     thread.queue.put(command);
@@ -148,20 +158,19 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
     private static class WorkerThread extends AsyncContextHolderThread {
         static final AtomicIntegerFieldUpdater<WorkerThread> stateUpdater =
                 newUpdater(WorkerThread.class, "state");
+        private volatile int state;
         static final int OPEN = 0; // running tasks
         static final int CLOSED = 1; // executor has closed
         static final int ORPHANED = 2; // executor GCed without close()
         static final int EXITED = 3; // Worker thread exit
 
-        final BlockingQueue<Runnable> queue;
+        private final BlockingQueue<Runnable> queue;
         /**
          * If the executor is discarded and GCed this reference will be cleared and the worker thread can exit.
          */
         private final WeakReference<SingleThreadedExecutor> owner;
 
-        volatile int state;
-
-        WorkerThread(SingleThreadedExecutor owner, Supplier<BlockingQueue> queueSupplier, String name) {
+        WorkerThread(SingleThreadedExecutor owner, Supplier<? extends BlockingQueue> queueSupplier, String name) {
             super(name);
             this.queue = queueSupplier.get();
             this.owner = new WeakReference<>(owner);
@@ -175,10 +184,11 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
             }
         }
 
+        @Override
         public void run() {
             while (OPEN == state && null != owner.get()) {
                 try {
-                    // poll vs. take because we need to occasionally check if closed or abandoned
+                    // poll() vs. take() because we need to occasionally check if closed or orphaned
                     Runnable command = queue.poll(1L, TimeUnit.MINUTES);
                     if (null == command) {
                         continue;
@@ -187,6 +197,9 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
                         command.run();
                     } catch (Throwable all) {
                         LOGGER.warn("Uncaught throwable from command {}", command, all);
+                    } finally {
+                        // clear the map in case somebody forgot.
+                        asyncContextMap(null);
                     }
                 } catch (InterruptedException woken) {
                     Thread.interrupted();
@@ -195,8 +208,13 @@ class SingleThreadedExecutor implements java.util.concurrent.Executor, AutoClose
                     LOGGER.warn("Uncaught throwable in worker thread", all);
                 }
             }
-            int was = stateUpdater.getAndSet(this, null != owner.get() ? ORPHANED : EXITED);
-            LOGGER.debug("WorkerThread exiting " + (CLOSED == was ? "cleanly" : "messily"));
+            int terminal = null != owner.get() ? ORPHANED : EXITED;
+            int was = stateUpdater.getAndSet(this, terminal);
+            if (CLOSED == was) {
+                LOGGER.debug("WorkerThread exiting cleanly");
+            } else {
+                LOGGER.warn("WorkerThread exiting messily " + was + " → " + terminal);
+            }
         }
     }
 }
