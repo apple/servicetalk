@@ -32,6 +32,7 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
         @Override
         protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
             handleSubscribeInvokerRef.set(currentThread());
+            offloadCompletableSubscribeCalled.incrementAndGet();
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onComplete();
         }

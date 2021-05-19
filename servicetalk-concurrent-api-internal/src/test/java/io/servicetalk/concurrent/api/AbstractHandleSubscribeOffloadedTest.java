@@ -112,7 +112,7 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
 
     protected void verifyCompletableOffloadCount() {
         assertThat("Unexpected offloader instances created.", signalOffloaderCreated.get(), is(1));
-        assertThat("Unexpected calls to offloadSubscribe.",
+        assertThat("Unexpected calls to offloadSubscribe.(Completable)",
                 offloadCompletableSubscribeCalled.get(), is(0));
     }
 

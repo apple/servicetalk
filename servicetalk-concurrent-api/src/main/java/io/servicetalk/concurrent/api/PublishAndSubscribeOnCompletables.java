@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
 import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
@@ -52,7 +53,19 @@ final class PublishAndSubscribeOnCompletables {
         return original.executor() == executor ? original : new SubscribeOn(executor, original);
     }
 
-    private static final class PublishAndSubscribeOn extends AbstractNoHandleSubscribeCompletable {
+    private static class AbstractOffloadingCompletable extends AbstractNoHandleSubscribeCompletable {
+        protected final Executor executor;
+        AbstractOffloadingCompletable(Executor executor) {
+            super(immediate());
+            this.executor = executor;
+        }
+
+        final Executor executor() {
+            return executor;
+        }
+    }
+
+    private static final class PublishAndSubscribeOn extends AbstractOffloadingCompletable {
         private final Completable original;
 
         PublishAndSubscribeOn(final Executor executor, final Completable original) {
@@ -79,7 +92,7 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static final class PublishOn extends AbstractNoHandleSubscribeCompletable {
+    private static final class PublishOn extends AbstractOffloadingCompletable {
         private final Completable original;
 
         PublishOn(final Executor executor, final Completable original) {
@@ -104,7 +117,7 @@ final class PublishAndSubscribeOnCompletables {
         }
     }
 
-    private static final class SubscribeOn extends AbstractNoHandleSubscribeCompletable {
+    private static final class SubscribeOn extends AbstractOffloadingCompletable {
         private final Completable original;
 
         SubscribeOn(final Executor executor, final Completable original) {
