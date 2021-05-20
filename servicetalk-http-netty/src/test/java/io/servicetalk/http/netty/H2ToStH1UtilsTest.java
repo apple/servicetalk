@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,19 +35,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 
-public class H2ToStH1UtilsTest {
+class H2ToStH1UtilsTest {
 
     @Test
-    public void testH1HeadersSplitCookieCrumbsForH1Headers() {
+    void testH1HeadersSplitCookieCrumbsForH1Headers() {
         testH1HeadersSplitCookieCrumbs(DefaultHttpHeadersFactory.INSTANCE);
     }
 
     @Test
-    public void testH1HeadersSplitCookieCrumbsForH2Headers() {
+    void testH1HeadersSplitCookieCrumbsForH2Headers() {
         testH1HeadersSplitCookieCrumbs(H2HeadersFactory.INSTANCE);
     }
 
-    public void testH1HeadersSplitCookieCrumbs(HttpHeadersFactory headersFactory) {
+    void testH1HeadersSplitCookieCrumbs(HttpHeadersFactory headersFactory) {
         HttpHeaders headers = headersFactory.newHeaders();
         // Add two headers which will be saved in the same entries[index]:
         headers.add(new ConstantHashCharSequence(COOKIE), "a=b; c=d; e=f");

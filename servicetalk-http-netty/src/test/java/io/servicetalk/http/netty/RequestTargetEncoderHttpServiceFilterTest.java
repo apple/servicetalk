@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.utils.RequestTargetEncoderHttpServiceFilter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 

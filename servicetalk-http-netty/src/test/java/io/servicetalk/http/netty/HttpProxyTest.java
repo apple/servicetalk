@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -41,10 +39,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class HttpProxyTest {
-
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+class HttpProxyTest {
 
     @Nullable
     private HttpClient proxyClient;
@@ -60,22 +55,22 @@ public class HttpProxyTest {
     private BlockingHttpClient client;
     private final AtomicInteger proxyRequestCount = new AtomicInteger();
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         startProxy();
         startServer();
         createClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() {
         safeClose(client);
         safeClose(proxyClient);
         safeClose(proxyContext);
         safeClose(serverContext);
     }
 
-    public void startProxy() throws Exception {
+    void startProxy() throws Exception {
         proxyClient = HttpClients.forMultiAddressUrl().build();
         proxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
@@ -85,21 +80,21 @@ public class HttpProxyTest {
         proxyAddress = serverHostAndPort(proxyContext);
     }
 
-    public void startServer() throws Exception {
+    void startServer() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverAddress = serverHostAndPort(serverContext);
     }
 
-    public void createClient() {
+    void createClient() {
         assert serverAddress != null && proxyAddress != null;
         client = HttpClients.forSingleAddressViaProxy(serverAddress, proxyAddress)
                 .buildBlocking();
     }
 
     @Test
-    public void testRequest() throws Exception {
+    void testRequest() throws Exception {
         assert client != null;
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));

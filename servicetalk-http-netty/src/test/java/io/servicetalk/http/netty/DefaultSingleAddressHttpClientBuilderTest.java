@@ -22,56 +22,57 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forResolvedAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-public class DefaultSingleAddressHttpClientBuilderTest {
+class DefaultSingleAddressHttpClientBuilderTest {
     @Test
-    public void hostToCharSequenceFunctionIPv4() throws Exception {
+    void hostToCharSequenceFunctionIPv4() throws Exception {
         hostToCharSequenceFunction("", "1.2.3.4", ":", 9999);
     }
 
     @Test
-    public void hostToCharSequenceFunctionIPv6() throws Exception {
+    void hostToCharSequenceFunctionIPv6() throws Exception {
         hostToCharSequenceFunction("[", "1:2:3::5%80", "]:", 1);
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void hostToCharSequenceFunctionIPv4NoPort() throws Exception {
-        hostToCharSequenceFunction("", "1.2.3.4", ":", null);
+    @Test
+    void hostToCharSequenceFunctionIPv4NoPort() {
+        assertThrows(NumberFormatException.class, () -> hostToCharSequenceFunction("", "1.2.3.4", ":", null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void hostToCharSequenceFunctionIPv6NoPort() throws Exception {
-        hostToCharSequenceFunction("[", "1:2:3::5%80", ":", null);
+    @Test
+    void hostToCharSequenceFunctionIPv6NoPort() {
+        assertThrows(IllegalArgumentException.class, () -> hostToCharSequenceFunction("[", "1:2:3::5%80", ":", null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void hostToCharSequenceFunctionIPv6MissingEndBracket() throws Exception {
-        hostToCharSequenceFunction("[", "1:2:3::5%80", ":", 1);
+    @Test
+    void hostToCharSequenceFunctionIPv6MissingEndBracket() {
+        assertThrows(IllegalArgumentException.class, () -> hostToCharSequenceFunction("[", "1:2:3::5%80", ":", 1));
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void hostToCharSequenceFunctionIPv6MissingStartBracket() throws Exception {
-        hostToCharSequenceFunction("", "1:2:3::5%80", "]:", 1);
+    @Test
+    void hostToCharSequenceFunctionIPv6MissingStartBracket() {
+        assertThrows(NumberFormatException.class, () -> hostToCharSequenceFunction("", "1:2:3::5%80", "]:", 1));
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void hostToCharSequenceFunctionIPv4InvalidPort() throws Exception {
-        hostToCharSequenceFunction("", "1.2.3.4", ":s", 999);
+    @Test
+    void hostToCharSequenceFunctionIPv4InvalidPort() {
+        assertThrows(NumberFormatException.class, () -> hostToCharSequenceFunction("", "1.2.3.4", ":s", 999));
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void hostToCharSequenceFunctionIPv6InvalidPort() throws Exception {
-        hostToCharSequenceFunction("[", "1:2:3::5%80]", ":s", 1);
+    @Test
+    void hostToCharSequenceFunctionIPv6InvalidPort() {
+        assertThrows(NumberFormatException.class, () -> hostToCharSequenceFunction("[", "1:2:3::5%80]", ":s", 1));
     }
 
     private static void hostToCharSequenceFunction(String hostNamePrefix, String hostName, String hostNameSuffix,

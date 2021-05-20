@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.net.ssl.SSLSession;
 
@@ -42,7 +42,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 
@@ -50,17 +49,12 @@ import static org.mockito.Mockito.mock;
  * This test-case is for integration testing the {@link RedirectingHttpRequesterFilter} with the various types
  * of {@link HttpClient} and {@link HttpConnection} builders.
  */
-@RunWith(Parameterized.class)
 public final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequesterFilterTest {
 
     private SSLSession session;
 
-    public RedirectingClientAndConnectionFilterTest(final RequesterType type, final SecurityType security) {
-        super(type, security);
-    }
-
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         session = mock(SSLSession.class);
     }
 
@@ -69,9 +63,13 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         return session;
     }
 
-    @Test
-    public void redirectFilterNoHostHeaderRelativeLocation() throws Exception {
-        BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void redirectFilterNoHostHeaderRelativeLocation(final RequesterType type,
+                                                    final SecurityType security)
+        throws Exception {
+        setUp(security);
+        BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
                 return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION, "/next"));
             }
@@ -81,22 +79,26 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
 
         HttpRequest request = client.get("/");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
         response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(OK));
+        MatcherAssert.assertThat(response.status(), equalTo(OK));
 
         // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
         response = client.request(noOffloadsStrategy(),
                 client.get("/")
                         .version(HTTP_1_0)
                         .addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
     }
 
-    @Test
-    public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
-        BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void redirectFilterNoHostHeaderAbsoluteLocation(final RequesterType type,
+                                                    final SecurityType security)
+        throws Exception {
+        setUp(security);
+        BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
                 return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION,
                         format("http://%s/next", hostHeader(HostAndPort.of(remoteAddress())))));
@@ -105,23 +107,26 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         }, newFilterFactory()));
         HttpRequest request = client.get("/");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
         response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(OK));
+        MatcherAssert.assertThat(response.status(), equalTo(OK));
 
         // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
         response = client.request(noOffloadsStrategy(),
                 client.get("/")
                         .version(HTTP_1_0)
                         .addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
     }
 
-    @Test
-    public void redirectFilterWithHostHeaderRelativeLocation() throws Exception {
-
-        BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void redirectFilterWithHostHeaderRelativeLocation(final RequesterType type,
+                                                      final SecurityType security)
+        throws Exception {
+        setUp(security);
+        BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
                 return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "/next"));
@@ -130,16 +135,19 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
         response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(OK));
+        MatcherAssert.assertThat(response.status(), equalTo(OK));
     }
 
-    @Test
-    public void redirectFilterWithHostHeaderAbsoluteLocation() throws Exception {
-
-        BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
+    @MethodSource("requesterTypes")
+    void redirectFilterWithHostHeaderAbsoluteLocation(final RequesterType type,
+                                                      final SecurityType security)
+        throws Exception {
+        setUp(security);
+        BlockingHttpRequester client = asBlockingRequester(createFilter(type, (responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
                 return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "http://servicetalk.io/next"));
@@ -148,10 +156,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
-        assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
+        MatcherAssert.assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
         response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
-        assertThat(response.status(), equalTo(OK));
+        MatcherAssert.assertThat(response.status(), equalTo(OK));
     }
 
     private FilterFactory newFilterFactory() {

@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.http.api.ContentCodingHttpServiceFilter;
+import static java.lang.Boolean.parseBoolean;
 
-import org.junit.jupiter.api.Test;
+public final class TestTimeoutConstants {
+    public static final boolean CI = parseBoolean(System.getenv("CI"));
+    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 30 : 10;
 
-import static io.servicetalk.encoding.api.Identity.identity;
-import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
-import static java.util.Collections.singletonList;
-
-public class ContentCodingHttpServiceFilterTest {
-
-    @Test
-    public void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(new ContentCodingHttpServiceFilter(singletonList(identity())));
+    private TestTimeoutConstants() {
     }
 }

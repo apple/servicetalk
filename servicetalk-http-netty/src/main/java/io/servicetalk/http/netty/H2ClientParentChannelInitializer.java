@@ -47,6 +47,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
                 .autoAckSettingsFrame(false)
+                // We ack PING frames in KeepAliveManager#pingReceived.
+                .autoAckPingFrame(false)
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
