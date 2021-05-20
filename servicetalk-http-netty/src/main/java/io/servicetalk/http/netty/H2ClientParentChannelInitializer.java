@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import java.util.function.BiPredicate;
 
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
-import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
@@ -41,7 +40,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @Override
     public void init(final Channel channel) {
-        final Http2FrameCodecBuilder multiplexCodecBuilder = forClient()
+        final Http2FrameCodecBuilder multiplexCodecBuilder = new OptimizedHttp2FrameCodecBuilder(false)
                 // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
                 // close, we do the appropriate go away handling.
                 .decoupleCloseAndGoAway(true)
