@@ -585,13 +585,16 @@ link:https://wiki.mozilla.org/Security/Server_Side_TLS[Mozilla Server Side TLS])
 [source, java]
 ----
 
-// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
+// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
 
 BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
         .secure().provider(SecurityConfigurator.SslProvider.OPENSSL).commit()
         .buildBlocking();
 HttpResponse resp = client.request(client.get("/"));
 ----
+
+Latest `netty-tcnative-boringssl-static` version can be found
+link:https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static[here].
 
 === Netty LEAK-detection
 ServiceTalk is built on top of Netty. Netty supports
