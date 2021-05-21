@@ -593,8 +593,8 @@ BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
 HttpResponse resp = client.request(client.get("/"));
 ----
 
-Latest `netty-tcnative-boringssl-static` version can be found
-link:https://mvnrepository.com/artifact/io.netty/netty-tcnative-boringssl-static[here].
+Latest `netty-tcnative-boringssl-static` version can be found in
+link:https://search.maven.org/artifact/io.netty/netty-tcnative-boringssl-static[Maven Central Repository].
 
 === Netty LEAK-detection
 ServiceTalk is built on top of Netty. Netty supports
