@@ -27,11 +27,8 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -43,25 +40,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.mock;
 
 /**
  * This test-case is for integration testing the {@link RedirectingHttpRequesterFilter} with the various types
  * of {@link HttpClient} and {@link HttpConnection} builders.
  */
 public final class RedirectingClientAndConnectionFilterTest extends AbstractHttpRequesterFilterTest {
-
-    private SSLSession session;
-
-    @BeforeEach
-    void setUp() {
-        session = mock(SSLSession.class);
-    }
-
-    @Override
-    protected SSLSession sslSession() {
-        return session;
-    }
 
     @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
     @MethodSource("requesterTypes")

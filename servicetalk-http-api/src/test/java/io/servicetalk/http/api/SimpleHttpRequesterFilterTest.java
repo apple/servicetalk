@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -46,18 +45,6 @@ import static org.mockito.Mockito.mock;
  * This is a test-case for the {@link AbstractHttpRequesterFilterTest} HTTP request filter test utilities.
  */
 public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTest {
-
-    private SSLSession session;
-
-    @BeforeEach
-    void setUp() {
-        session = mock(SSLSession.class);
-    }
-
-    @Override
-    protected SSLSession sslSession() {
-        return session;
-    }
 
     private static final class HeaderEnrichingRequestFilter implements StreamingHttpClientFilterFactory,
                                                                        StreamingHttpConnectionFilterFactory {
@@ -285,7 +272,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         setUp(security);
         final Principal principal = mock(Principal.class);
         lenient().when(principal.getName()).thenReturn("unit.test.auth");
-        lenient().when(session.getPeerPrincipal()).thenReturn(principal);
+        lenient().when(sslSession().getPeerPrincipal()).thenReturn(principal);
 
         BlockingHttpRequester filter = asBlockingRequester(createFilter(type, new SecurityEnforcingFilter()));
         HttpResponse resp = filter.request(defaultStrategy(), filter.get("/"));
