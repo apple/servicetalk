@@ -61,8 +61,8 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     public enum RequesterType { Client, Connection, ReservedConnection }
 
+    private final SSLSession sslSession = mock(SSLSession.class);
     private final CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
-
 
     @Mock
     private HttpExecutionContext mockExecutionContext;
@@ -82,7 +82,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     @BeforeEach
-    public final void setupContext() {
+    final void setupContext() {
         lenient().when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
         lenient().when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
     }
@@ -105,12 +105,12 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private InetSocketAddress localAddress() {
+    protected InetSocketAddress localAddress() {
         return InetSocketAddress.createUnresolved("127.0.1.2", 28080);
     }
 
     protected SSLSession sslSession() {
-        return mock(SSLSession.class);
+        return sslSession;
     }
 
     protected Publisher<Object> loadbalancerEvents() {
@@ -118,7 +118,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     @AfterEach
-    public final void closeClients() throws Exception {
+    final void closeClients() throws Exception {
         closeables.close();
     }
 
@@ -129,7 +129,7 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
         StreamingHttpRequester createFilter(RequesterType type, FF filterFactory) {
         return createFilter(type, RequestHandler.ok(), ok(), filterFactory);
     }
@@ -156,7 +156,7 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
         StreamingHttpRequester createFilter(RequesterType type, RequestHandler rh,
                                             RequestWithContextHandler rwch, FF filterFactory) {
         switch (type) {

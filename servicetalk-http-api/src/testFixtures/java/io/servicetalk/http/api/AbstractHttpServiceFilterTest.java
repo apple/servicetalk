@@ -29,8 +29,8 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * This parameterized test facilitates running HTTP service filter tests under all calling variations:
@@ -52,14 +52,14 @@ public abstract class AbstractHttpServiceFilterTest {
     private HttpServiceContext mockConnectionContext;
 
     @BeforeEach
-    public void setUp() {
-        when(mockConnectionContext.executionContext()).thenReturn(executionContext);
-        when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
-        when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
+    void setUp() {
+        lenient().when(mockConnectionContext.executionContext()).thenReturn(executionContext);
+        lenient().when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
+        lenient().when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
     }
 
     protected void setUp(SecurityType security) {
-        when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
+        lenient().when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
             switch (security) {
                 case Secure:
                     return sslSession();
@@ -71,16 +71,16 @@ public abstract class AbstractHttpServiceFilterTest {
     }
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private InetSocketAddress remoteAddress() {
+    protected InetSocketAddress remoteAddress() {
         return InetSocketAddress.createUnresolved("127.0.1.2", 28080);
     }
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    private InetSocketAddress localAddress() {
+    protected InetSocketAddress localAddress() {
         return InetSocketAddress.createUnresolved("127.0.1.1", 80);
     }
 
-    private SSLSession sslSession() {
+    protected SSLSession sslSession() {
         return mock(SSLSession.class);
     }
 
